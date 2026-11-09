@@ -1,0 +1,827 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "parallel-region-compositions-order-fulfilment-checks-first-reversed",
+    "sha256": "44dd4a3d661dadfd71a0021abd83359f35733adf12b50ece923ab045ef25148b"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "orderId",
+            "value": "o-1"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-effect-ChargeCard-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "orderId",
+            "value": "o-1"
+          },
+          {
+            "name": "receipt",
+            "value": "r-1"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-complete-CheckAddress-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "address",
+            "value": "valid"
+          },
+          {
+            "name": "orderId",
+            "value": "o-1"
+          },
+          {
+            "name": "receipt",
+            "value": "r-1"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-complete-CheckSanctions-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "address",
+            "value": "valid"
+          },
+          {
+            "name": "orderId",
+            "value": "o-1"
+          },
+          {
+            "name": "receipt",
+            "value": "r-1"
+          },
+          {
+            "name": "sanctions",
+            "value": "clear"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-complete-PickItems-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "address",
+            "value": "valid"
+          },
+          {
+            "name": "orderId",
+            "value": "o-1"
+          },
+          {
+            "name": "picked",
+            "value": "p-1"
+          },
+          {
+            "name": "receipt",
+            "value": "r-1"
+          },
+          {
+            "name": "sanctions",
+            "value": "clear"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s06-complete-ShipOrder-1",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "address",
+            "value": "valid"
+          },
+          {
+            "name": "orderId",
+            "value": "o-1"
+          },
+          {
+            "name": "picked",
+            "value": "p-1"
+          },
+          {
+            "name": "receipt",
+            "value": "r-1"
+          },
+          {
+            "name": "sanctions",
+            "value": "clear"
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "tasks": [
+          {
+            "elementId": "PickItems",
+            "name": "Pick items",
+            "identityLinks": [],
+            "formFields": [
+              {
+                "id": "picked",
+                "typeName": "string"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-effect-ChargeCard-1",
+        "tasks": [
+          {
+            "elementId": "PickItems",
+            "name": "Pick items",
+            "identityLinks": [],
+            "formFields": [
+              {
+                "id": "picked",
+                "typeName": "string"
+              }
+            ]
+          },
+          {
+            "elementId": "CheckSanctions",
+            "name": "Check sanctions",
+            "identityLinks": [],
+            "formFields": [
+              {
+                "id": "sanctions",
+                "typeName": "string"
+              }
+            ]
+          },
+          {
+            "elementId": "CheckAddress",
+            "name": "Check address",
+            "identityLinks": [],
+            "formFields": [
+              {
+                "id": "address",
+                "typeName": "string"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-complete-CheckAddress-1",
+        "tasks": [
+          {
+            "elementId": "PickItems",
+            "name": "Pick items",
+            "identityLinks": [],
+            "formFields": [
+              {
+                "id": "picked",
+                "typeName": "string"
+              }
+            ]
+          },
+          {
+            "elementId": "CheckSanctions",
+            "name": "Check sanctions",
+            "identityLinks": [],
+            "formFields": [
+              {
+                "id": "sanctions",
+                "typeName": "string"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-complete-CheckSanctions-1",
+        "tasks": [
+          {
+            "elementId": "PickItems",
+            "name": "Pick items",
+            "identityLinks": [],
+            "formFields": [
+              {
+                "id": "picked",
+                "typeName": "string"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-complete-PickItems-1",
+        "tasks": [
+          {
+            "elementId": "ShipOrder",
+            "name": "Ship order"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s06-complete-ShipOrder-1",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s02-effect-ChargeCard-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s03-complete-CheckAddress-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s04-complete-CheckSanctions-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s05-complete-PickItems-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s06-complete-ShipOrder-1",
+        "jobs": []
+      }
+    ],
+    "effectJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": [
+          {
+            "elementId": "ChargeCard",
+            "activation": 1,
+            "protocol": "urn:bpmn-lean:effect:probe-v1",
+            "handler": "bpmnLeanEffectHandler",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-effect-ChargeCard-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s03-complete-CheckAddress-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s04-complete-CheckSanctions-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s05-complete-PickItems-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s06-complete-ShipOrder-1",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "s01-start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s02-effect-ChargeCard-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s03-complete-CheckAddress-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s04-complete-CheckSanctions-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s05-complete-PickItems-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s06-complete-ShipOrder-1",
+        "state": "COMPLETED"
+      }
+    ],
+    "effectExecutions": [
+      {
+        "afterCommandId": "s02-effect-ChargeCard-1",
+        "schedule": "plainSuccess",
+        "invocations": 1,
+        "mutations": 1,
+        "initialRetries": 3,
+        "retriesAfterFirstFailure": null
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "o-1"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ChargeCard",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "urn:bpmn-lean:effect-operation:probe-v1",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "PickItems",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Pick items",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "picked",
+                  "type": "string"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s02-effect-ChargeCard-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "o-1"
+            }
+          },
+          {
+            "name": "receipt",
+            "value": {
+              "kind": "string",
+              "value": "r-1"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "CheckAddress",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Check address",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "address",
+                  "type": "string"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "CheckSanctions",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Check sanctions",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "sanctions",
+                  "type": "string"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "PickItems",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Pick items",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "picked",
+                  "type": "string"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s03-complete-CheckAddress-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "address",
+            "value": {
+              "kind": "string",
+              "value": "valid"
+            }
+          },
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "o-1"
+            }
+          },
+          {
+            "name": "receipt",
+            "value": {
+              "kind": "string",
+              "value": "r-1"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "CheckSanctions",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Check sanctions",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "sanctions",
+                  "type": "string"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "PickItems",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Pick items",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "picked",
+                  "type": "string"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s04-complete-CheckSanctions-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "address",
+            "value": {
+              "kind": "string",
+              "value": "valid"
+            }
+          },
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "o-1"
+            }
+          },
+          {
+            "name": "receipt",
+            "value": {
+              "kind": "string",
+              "value": "r-1"
+            }
+          },
+          {
+            "name": "sanctions",
+            "value": {
+              "kind": "string",
+              "value": "clear"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "PickItems",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Pick items",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "picked",
+                  "type": "string"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s05-complete-PickItems-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "address",
+            "value": {
+              "kind": "string",
+              "value": "valid"
+            }
+          },
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "o-1"
+            }
+          },
+          {
+            "name": "picked",
+            "value": {
+              "kind": "string",
+              "value": "p-1"
+            }
+          },
+          {
+            "name": "receipt",
+            "value": {
+              "kind": "string",
+              "value": "r-1"
+            }
+          },
+          {
+            "name": "sanctions",
+            "value": {
+              "kind": "string",
+              "value": "clear"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ShipOrder",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Ship order",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s06-complete-ShipOrder-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "address",
+            "value": {
+              "kind": "string",
+              "value": "valid"
+            }
+          },
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "o-1"
+            }
+          },
+          {
+            "name": "picked",
+            "value": {
+              "kind": "string",
+              "value": "p-1"
+            }
+          },
+          {
+            "name": "receipt",
+            "value": {
+              "kind": "string",
+              "value": "r-1"
+            }
+          },
+          {
+            "name": "sanctions",
+            "value": {
+              "kind": "string",
+              "value": "clear"
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}

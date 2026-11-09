@@ -15,9 +15,9 @@ Browser eligibility separates 3 human-work journeys from 9 guided simulations wi
 | Review a request with assignment and form metadata | retainedScenario | human-review-with-form | accepted | user-task-assignment-form-metadata | retainedEvidence | journeyBacked |
 | Review content and risk in parallel | retainedScenario | parallel-two-human-tasks | accepted | parallel-user-task-metadata-content-then-risk | retainedEvidence | journeyBacked |
 | Prepare two work items in parallel | retainedScenario | parallel-two-human-tasks | accepted | parallel-fork-join-a-then-b | retainedEvidence | notCatalogReady |
-| Resolve an expense exception with structured human work | retainedScenario | structured-expense-exception-review | accepted | expense-exception-review-approve | notSelected | journeyBacked |
-| Route a Boolean decision | retainedScenario | exclusive-boolean-decision | accepted | exclusive-gateway-simple-boolean-first-true | notSelected | notCatalogReady |
-| Fulfil work through a called Process | retainedScenario | called-process-human-work | accepted | called-process-call-activity | notSelected | notCatalogReady |
+| Resolve an expense exception with structured human work | retainedScenario | structured-expense-exception-review | accepted | expense-exception-review-approve | retainedEvidence | journeyBacked |
+| Route a Boolean decision | retainedScenario | exclusive-boolean-decision | accepted | exclusive-gateway-simple-boolean-first-true | retainedEvidence | notCatalogReady |
+| Fulfil work through a called Process | retainedScenario | called-process-human-work | accepted | called-process-call-activity | retainedEvidence | notCatalogReady |
 | Onboard a supplier through isolated due diligence | retainedScenario | supplier-onboarding-call-data | accepted | call-data-supplier-string | notSelected | notCatalogReady |
 | Assess, route and archive an invoice | retainedScenario | structured-invoice-handoff | accepted | structured-composition-invoice-approve | notSelected | notCatalogReady |
 | Hand a review decision to archive work | retainedScenario | structured-serial-handoff | accepted | structured-composition-serial-string | notSelected | notCatalogReady |
@@ -37,8 +37,8 @@ Browser eligibility separates 3 human-work journeys from 9 guided simulations wi
 | Take in an insurance claim | retainedScenario | claim-intake-priced-assessments | accepted | concurrent-scope-effects-claim-price-two-first | notSelected | notCatalogReady |
 | Assess claim damage | retainedScenario | claim-damage-assessment-concurrent-pricing | accepted | concurrent-scope-data-claim-fetch-one-first | notSelected | notCatalogReady |
 | Inspect a facility | retainedScenario | facility-inspection-concurrent-checks | accepted | concurrent-scope-data-facility-inspection | notSelected | notCatalogReady |
-| Ask two experts about a supplier at once | retainedScenario | supplier-onboarding-concurrent-expert-calls | accepted | concurrent-mapped-calls-supplier-compliance-first | notSelected | notCatalogReady |
-| Prepare a business trip | retainedScenario | travel-request-concurrent-checks | accepted | concurrent-mapped-calls-travel-request | notSelected | notCatalogReady |
+| Ask two experts about a supplier at once | retainedScenario | supplier-onboarding-concurrent-expert-calls | accepted | concurrent-mapped-calls-supplier-compliance-first | retainedEvidence | notCatalogReady |
+| Prepare a business trip | retainedScenario | travel-request-concurrent-checks | accepted | concurrent-mapped-calls-travel-request | retainedEvidence | notCatalogReady |
 | Fulfil an order | retainedScenario | order-fulfilment-concurrent-structured-data | accepted | concurrent-structured-scope-data-order-review-first | notSelected | notCatalogReady |
 | Assess a loan application | retainedScenario | loan-assessment-concurrent-expert-reviews | accepted | concurrent-structured-scope-data-loan-credit-first | notSelected | notCatalogReady |
 | Assess an insurance claim with rework | retainedScenario | claim-assessment-rework | accepted | scope-reentry-claim-rework-then-approve | notSelected | notCatalogReady |
@@ -70,51 +70,51 @@ Browser eligibility separates 3 human-work journeys from 9 guided simulations wi
 | Acknowledge, assess and settle a claim | retainedScenario | claim-acknowledgement-send-task | accepted | send-task-claim-assessed-first | notSelected | notCatalogReady |
 | Route and pay out an expense claim | retainedScenario | expense-routing-without-default | accepted | exclusive-choice-without-default-urgent-travel | notSelected | notCatalogReady |
 | Triage a support ticket and route it by severity | retainedScenario | ticket-triage-without-default | accepted | exclusive-choice-without-default-medium-triage | notSelected | notCatalogReady |
-| Onboard a supplier through shared approvals | retainedScenario | supplier-onboarding-repeated-nested-calls | accepted | repeated-nested-calls-natural-order | notSelected | notCatalogReady |
+| Onboard a supplier through shared approvals | retainedScenario | supplier-onboarding-repeated-nested-calls | accepted | repeated-nested-calls-natural-order | retainedEvidence | notCatalogReady |
 | Decide a guaranteed loan through two identity checks | retainedScenario | guarantor-loan-embedded-mapped-calls | accepted | repeated-nested-calls-guarantor-verified | notSelected | notCatalogReady |
 | Recover scoped work after a business error | retainedScenario | subprocess-error-recovery | accepted | subprocess-error-propagation-trigger-first | retainedEvidence | notCatalogReady |
-| Wait for a review window | retainedScenario | timer-then-human-review | accepted | timer-user-task-composition | notSelected | notCatalogReady |
-| Continue a review after a message | retainedScenario | message-then-human-review | accepted | intermediate-catch-message | notSelected | notCatalogReady |
+| Wait for a review window | retainedScenario | timer-then-human-review | accepted | timer-user-task-composition | retainedEvidence | notCatalogReady |
+| Continue a review after a message | retainedScenario | message-then-human-review | accepted | intermediate-catch-message | retainedEvidence | notCatalogReady |
 | Review a confirmed settlement | retainedScenario | message-payload-then-human-review | accepted | message-payload-catch-supplied-scalar | notSelected | notCatalogReady |
 | Review a received shipment manifest | retainedScenario | shipment-manifest-structured-payload | accepted | portable-message-payload-manifest-delivered | notSelected | notCatalogReady |
 | Correlate a settlement confirmation to its waiting case | retainedScenario | message-key-correlated-settlement-review | accepted | message-key-correlation-unique | notSelected | notCatalogReady |
 | Wait for an invoice receipt | retainedScenario | addressed-receive-task | accepted | message-addressed-receive-task | retainedEvidence | guidedJourneyBacked |
 | Wait for a courier to pick up a parcel | retainedScenario | addressless-receive-task | accepted | addressless-receive-task | retainedEvidence | notCatalogReady |
-| Prepare every applicable review track | retainedScenario | inclusive-human-review-tracks | accepted | inclusive-gateway-both-true-a-then-b | notSelected | notCatalogReady |
-| Continue on a message or deadline | retainedScenario | message-timer-event-race | accepted | event-based-gateway-message-wins | notSelected | notCatalogReady |
-| Escalate work that misses a deadline | retainedScenario | interrupting-task-deadline | accepted | activity-boundary-timer-deadline-wins | notSelected | notCatalogReady |
-| Withdraw an application during review | retainedScenario | interrupting-task-withdrawal-message | accepted | activity-boundary-message-message-wins | notSelected | notCatalogReady |
-| Escalate a bounded work package | retainedScenario | interrupting-subprocess-deadline | accepted | subprocess-boundary-timer-deadline-wins | notSelected | notCatalogReady |
-| Remind and finish monitored work | retainedScenario | non-interrupting-task-reminder | accepted | non-interrupting-boundary-timer-deadline-then-both-branches | notSelected | notCatalogReady |
-| Review and rework a request until accepted | retainedScenario | cyclic-human-rework | accepted | user-task-cycle-repeat-rework-exit | notSelected | notCatalogReady |
-| Start approval from an addressed message | retainedScenario | message-start-human-approval | accepted | message-start-event | notSelected | notCatalogReady |
-| Start a scheduled review | retainedScenario | timer-start-human-review | accepted | timer-start-event | notSelected | notCatalogReady |
-| Stop remaining scoped work after termination | retainedScenario | subprocess-termination | accepted | terminate-end-event-trigger-first | notSelected | notCatalogReady |
-| Run a configured integration before review | retainedScenario | configured-effect-human-review | accepted | configured-task | notSelected | notCatalogReady |
+| Prepare every applicable review track | retainedScenario | inclusive-human-review-tracks | accepted | inclusive-gateway-both-true-a-then-b | retainedEvidence | notCatalogReady |
+| Continue on a message or deadline | retainedScenario | message-timer-event-race | accepted | event-based-gateway-message-wins | retainedEvidence | notCatalogReady |
+| Escalate work that misses a deadline | retainedScenario | interrupting-task-deadline | accepted | activity-boundary-timer-deadline-wins | retainedEvidence | notCatalogReady |
+| Withdraw an application during review | retainedScenario | interrupting-task-withdrawal-message | accepted | activity-boundary-message-message-wins | retainedEvidence | notCatalogReady |
+| Escalate a bounded work package | retainedScenario | interrupting-subprocess-deadline | accepted | subprocess-boundary-timer-deadline-wins | retainedEvidence | notCatalogReady |
+| Remind and finish monitored work | retainedScenario | non-interrupting-task-reminder | accepted | non-interrupting-boundary-timer-deadline-then-both-branches | retainedEvidence | notCatalogReady |
+| Review and rework a request until accepted | retainedScenario | cyclic-human-rework | accepted | user-task-cycle-repeat-rework-exit | retainedEvidence | notCatalogReady |
+| Start approval from an addressed message | retainedScenario | message-start-human-approval | accepted | message-start-event | retainedEvidence | notCatalogReady |
+| Start a scheduled review | retainedScenario | timer-start-human-review | accepted | timer-start-event | retainedEvidence | notCatalogReady |
+| Stop remaining scoped work after termination | retainedScenario | subprocess-termination | accepted | terminate-end-event-trigger-first | retainedEvidence | notCatalogReady |
+| Run a configured integration before review | retainedScenario | configured-effect-human-review | accepted | configured-task | retainedEvidence | notCatalogReady |
 | Retain a mapped service result | retainedScenario | mapped-service-success | accepted | mapped-success-service-task | retainedEvidence | guidedJourneyBacked |
 | Route a mapped business error to review | retainedScenario | mapped-service-boundary-error | accepted | mapped-boundary-error-service-task-caught | retainedEvidence | notCatalogReady |
-| Review an ordered batch of documents | retainedScenario | sequential-batch-review | accepted | sequential-multi-instance-natural | notSelected | guidedJourneyBacked |
-| Escalate a batch review at its shared deadline | retainedScenario | sequential-batch-review | accepted | sequential-multi-instance-interrupted | notSelected | notCatalogReady |
-| Complete every parallel risk assessment | retainedScenario | parallel-risk-review | accepted | parallel-multi-instance-all | notSelected | guidedJourneyBacked |
-| Stop a parallel review at the first material risk | retainedScenario | parallel-risk-review | accepted | parallel-multi-instance-first | notSelected | notCatalogReady |
-| Escalate a parallel risk review at its shared deadline | retainedScenario | parallel-risk-review | accepted | parallel-multi-instance-interrupted | notSelected | notCatalogReady |
-| Review an invoice with its supplied context | retainedScenario | human-review-with-direct-data-input | accepted | activity-data-input-present | notSelected | notCatalogReady |
-| Record an underwriting decision on the application | retainedScenario | human-decision-with-direct-data-output | accepted | activity-data-output-supplied | notSelected | notCatalogReady |
-| Assess a claim and record its decision | retainedScenario | human-assessment-with-direct-data-input-output | accepted | activity-data-input-output-present | notSelected | guidedJourneyBacked |
-| Review an application with repeated reminder Messages | retainedScenario | subprocess-termination | accepted | subscription-boundary-message-repeat | notSelected | guidedJourneyBacked |
-| Remind an application reviewer every second | retainedScenario | subprocess-termination | accepted | subscription-boundary-timer-repeat | notSelected | notCatalogReady |
-| Remind the application review team until its region closes | retainedScenario | subprocess-termination | accepted | subscription-subprocess-boundary-timer-repeat | notSelected | notCatalogReady |
-| Escalate a delayed application review once | retainedScenario | subprocess-termination | accepted | subscription-subprocess-boundary-one-shot-fire | notSelected | notCatalogReady |
-| Continue audit reminders after application review closes | retainedScenario | subprocess-termination | accepted | subscription-message-host-with-child-entry-repeat | notSelected | notCatalogReady |
-| Await an application response during parallel review | retainedScenario | subprocess-termination | accepted | subscription-catch-message-resume | notSelected | notCatalogReady |
-| Await a review deadline beside independent audit | retainedScenario | subprocess-termination | accepted | subscription-catch-timer-resume | notSelected | notCatalogReady |
-| Receive application documents during review | retainedScenario | subprocess-termination | accepted | subscription-receive-task-resume | notSelected | notCatalogReady |
-| Cancel a confirmed travel itinerary | retainedScenario | dependency-aware-travel-compensation | accepted | compensation-success-b-c-a | notSelected | guidedJourneyBacked |
+| Review an ordered batch of documents | retainedScenario | sequential-batch-review | accepted | sequential-multi-instance-natural | retainedEvidence | guidedJourneyBacked |
+| Escalate a batch review at its shared deadline | retainedScenario | sequential-batch-review | accepted | sequential-multi-instance-interrupted | retainedEvidence | notCatalogReady |
+| Complete every parallel risk assessment | retainedScenario | parallel-risk-review | accepted | parallel-multi-instance-all | retainedEvidence | guidedJourneyBacked |
+| Stop a parallel review at the first material risk | retainedScenario | parallel-risk-review | accepted | parallel-multi-instance-first | retainedEvidence | notCatalogReady |
+| Escalate a parallel risk review at its shared deadline | retainedScenario | parallel-risk-review | accepted | parallel-multi-instance-interrupted | retainedEvidence | notCatalogReady |
+| Review an invoice with its supplied context | retainedScenario | human-review-with-direct-data-input | accepted | activity-data-input-present | retainedEvidence | notCatalogReady |
+| Record an underwriting decision on the application | retainedScenario | human-decision-with-direct-data-output | accepted | activity-data-output-supplied | retainedEvidence | notCatalogReady |
+| Assess a claim and record its decision | retainedScenario | human-assessment-with-direct-data-input-output | accepted | activity-data-input-output-present | retainedEvidence | guidedJourneyBacked |
+| Review an application with repeated reminder Messages | retainedScenario | subprocess-termination | accepted | subscription-boundary-message-repeat | retainedEvidence | guidedJourneyBacked |
+| Remind an application reviewer every second | retainedScenario | subprocess-termination | accepted | subscription-boundary-timer-repeat | retainedEvidence | notCatalogReady |
+| Remind the application review team until its region closes | retainedScenario | subprocess-termination | accepted | subscription-subprocess-boundary-timer-repeat | retainedEvidence | notCatalogReady |
+| Escalate a delayed application review once | retainedScenario | subprocess-termination | accepted | subscription-subprocess-boundary-one-shot-fire | retainedEvidence | notCatalogReady |
+| Continue audit reminders after application review closes | retainedScenario | subprocess-termination | accepted | subscription-message-host-with-child-entry-repeat | retainedEvidence | notCatalogReady |
+| Await an application response during parallel review | retainedScenario | subprocess-termination | accepted | subscription-catch-message-resume | retainedEvidence | notCatalogReady |
+| Await a review deadline beside independent audit | retainedScenario | subprocess-termination | accepted | subscription-catch-timer-resume | retainedEvidence | notCatalogReady |
+| Receive application documents during review | retainedScenario | subprocess-termination | accepted | subscription-receive-task-resume | retainedEvidence | notCatalogReady |
+| Cancel a confirmed travel itinerary | retainedScenario | dependency-aware-travel-compensation | accepted | compensation-success-b-c-a | retainedEvidence | guidedJourneyBacked |
 | Withdraw a resource reservation | retainedScenario | transaction-reservation-withdrawal | accepted | transaction-cancellation-retained-active | notSelected | guidedJourneyBacked |
 | Validate and classify an invoice | retainedScenario | invoice-validation-classification | accepted | classification | notSelected | notCatalogReady |
 | Review and rework an invoice | retainedScenario | invoice-validation-rework | accepted | invoice-rework | notSelected | notCatalogReady |
 | Recover from invoice business Errors | retainedScenario | invoice-business-error-recovery | accepted | invoice-business-error-recovery | notSelected | notCatalogReady |
-| Debounce an alarm before paging | retainedScenario | timer-then-human-review | accepted | intermediate-catch-timer-alarm-debounce | notSelected | notCatalogReady |
+| Debounce an alarm before paging | retainedScenario | timer-then-human-review | accepted | intermediate-catch-timer-alarm-debounce | retainedEvidence | notCatalogReady |
 | CIB Seven order goods | externalGit | cib-order-goods | rejected | none | notApplicable | notCatalogReady |
 | CIB Seven review invoice | externalGit | cib-review-invoice | rejected | none | notApplicable | notCatalogReady |
 | CIB Seven invoice receipt version 1 | externalGit | cib-invoice-receipt | rejected | none | notApplicable | notCatalogReady |

@@ -1,0 +1,45 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "mi-user-sequential-timer-while-work-remains",
+    "sha256": "28c531786e39310f9f2e5d908759dcaf1d56e6ecf8c119789b1a01ba3a645958"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [],
+    "taskQueries": [],
+    "timerJobs": [],
+    "historicProcessStates": []
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "rolledBack"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "rolledBack"
+      }
+    ]
+  }
+}

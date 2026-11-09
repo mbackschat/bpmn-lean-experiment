@@ -1,0 +1,735 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "call-exceptional-return-timer-interrupts-while-book-called",
+    "sha256": "6177cf2834ffe0a7245c3c68f2d72033f61aea0fb6348ea2c6d87be690eac516"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "priority",
+            "value": "high"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-plan-route",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "priority",
+            "value": "high"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-route-timeout",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 10000,
+        "variables": [
+          {
+            "name": "priority",
+            "value": "high"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-late-reserve-book",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 10000,
+        "variables": [
+          {
+            "name": "priority",
+            "value": "high"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-expedite",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 10000,
+        "variables": [
+          {
+            "name": "priority",
+            "value": "high"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s06-reserve-spare",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 10000,
+        "variables": [
+          {
+            "name": "priority",
+            "value": "high"
+          },
+          {
+            "name": "spareSlot",
+            "value": "S-spare"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s07-file-spare",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 10000,
+        "variables": [
+          {
+            "name": "priority",
+            "value": "high"
+          },
+          {
+            "name": "spareSlot",
+            "value": "S-spare"
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "tasks": [
+          {
+            "elementId": "UserTask_Plan",
+            "name": "Plan the route"
+          },
+          {
+            "elementId": "UserTask_Reserve",
+            "name": "Reserve the slot"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-plan-route",
+        "tasks": [
+          {
+            "elementId": "UserTask_Reserve",
+            "name": "Reserve the slot"
+          },
+          {
+            "elementId": "UserTask_Reserve",
+            "name": "Reserve the slot"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-route-timeout",
+        "tasks": [
+          {
+            "elementId": "UserTask_Expedite",
+            "name": "Expedite the shipment by hand"
+          },
+          {
+            "elementId": "UserTask_Reserve",
+            "name": "Reserve the slot"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-late-reserve-book",
+        "tasks": [
+          {
+            "elementId": "UserTask_Expedite",
+            "name": "Expedite the shipment by hand"
+          },
+          {
+            "elementId": "UserTask_Reserve",
+            "name": "Reserve the slot"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-expedite",
+        "tasks": [
+          {
+            "elementId": "UserTask_Reserve",
+            "name": "Reserve the slot"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s06-reserve-spare",
+        "tasks": [
+          {
+            "elementId": "UserTask_AfterSpare",
+            "name": "File the spare booking"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s07-file-spare",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": [
+          {
+            "elementId": "Boundary_Route_Timeout",
+            "dueDateDeltaMs": 10000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-plan-route",
+        "jobs": [
+          {
+            "elementId": "Boundary_Route_Timeout",
+            "dueDateDeltaMs": 10000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-route-timeout",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s04-late-reserve-book",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s05-expedite",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s06-reserve-spare",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s07-file-spare",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "s01-start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s02-plan-route",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s03-route-timeout",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s04-late-reserve-book",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s05-expedite",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s06-reserve-spare",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s07-file-spare",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "priority",
+            "value": {
+              "kind": "string",
+              "value": "high"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Boundary_Route_Timeout",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 10000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:18:CallActivity_Route:1",
+              "elementId": "UserTask_Plan",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_Route",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Plan the route",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:18:CallActivity_Spare:1",
+              "elementId": "UserTask_Reserve",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_Book",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Reserve the slot",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s02-plan-route",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "priority",
+            "value": {
+              "kind": "string",
+              "value": "high"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Boundary_Route_Timeout",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 10000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:18:CallActivity_Spare:1",
+              "elementId": "UserTask_Reserve",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_Book",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Reserve the slot",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "call:42:call:10:Instance_1:18:CallActivity_Route:1:17:CallActivity_Book:1",
+              "elementId": "UserTask_Reserve",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_Book",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Reserve the slot",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s03-route-timeout",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 10000,
+        "variables": [
+          {
+            "name": "priority",
+            "value": {
+              "kind": "string",
+              "value": "high"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Expedite",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Expedite the shipment by hand",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:18:CallActivity_Spare:1",
+              "elementId": "UserTask_Reserve",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_Book",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Reserve the slot",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s04-late-reserve-book",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 10000,
+        "variables": [
+          {
+            "name": "priority",
+            "value": {
+              "kind": "string",
+              "value": "high"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Expedite",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Expedite the shipment by hand",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:18:CallActivity_Spare:1",
+              "elementId": "UserTask_Reserve",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_Book",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Reserve the slot",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s05-expedite",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 10000,
+        "variables": [
+          {
+            "name": "priority",
+            "value": {
+              "kind": "string",
+              "value": "high"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:18:CallActivity_Spare:1",
+              "elementId": "UserTask_Reserve",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_Book",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Reserve the slot",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s06-reserve-spare",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 10000,
+        "variables": [
+          {
+            "name": "priority",
+            "value": {
+              "kind": "string",
+              "value": "high"
+            }
+          },
+          {
+            "name": "spareSlot",
+            "value": {
+              "kind": "string",
+              "value": "S-spare"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_AfterSpare",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "File the spare booking",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s07-file-spare",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "completed",
+        "logicalTimeMs": 10000,
+        "variables": [
+          {
+            "name": "priority",
+            "value": {
+              "kind": "string",
+              "value": "high"
+            }
+          },
+          {
+            "name": "spareSlot",
+            "value": {
+              "kind": "string",
+              "value": "S-spare"
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}

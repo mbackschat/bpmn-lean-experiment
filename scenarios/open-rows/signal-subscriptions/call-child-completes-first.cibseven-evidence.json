@@ -1,0 +1,1319 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "signal-subscriptions-call-child-completes-first",
+    "sha256": "fe2847a0d1c4acff93ddc8fe9c1649e78182814d7aa1f29875d9620949702933"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "items",
+            "value": [
+              "a",
+              "b"
+            ]
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-complete-Child_Work",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "items",
+            "value": [
+              "a",
+              "b"
+            ]
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-signal-Quit_Call",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "items",
+            "value": [
+              "a",
+              "b"
+            ]
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-complete-After_Call",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "items",
+            "value": [
+              "a",
+              "b"
+            ]
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "tasks": [
+          {
+            "elementId": "Host_User",
+            "name": "Review the case"
+          },
+          {
+            "elementId": "Inner",
+            "name": "Decide in the region"
+          },
+          {
+            "elementId": "Work_Esp",
+            "name": "Work in the guarded region"
+          },
+          {
+            "elementId": "Inner_Body",
+            "name": "Inspect one lot"
+          },
+          {
+            "elementId": "Inner_Body",
+            "name": "Inspect one lot"
+          },
+          {
+            "elementId": "Child_Work",
+            "name": "Carry out the check"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-complete-Child_Work",
+        "tasks": [
+          {
+            "elementId": "Host_User",
+            "name": "Review the case"
+          },
+          {
+            "elementId": "Inner",
+            "name": "Decide in the region"
+          },
+          {
+            "elementId": "Work_Esp",
+            "name": "Work in the guarded region"
+          },
+          {
+            "elementId": "Inner_Body",
+            "name": "Inspect one lot"
+          },
+          {
+            "elementId": "Inner_Body",
+            "name": "Inspect one lot"
+          },
+          {
+            "elementId": "After_Call",
+            "name": "File the check"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-signal-Quit_Call",
+        "tasks": [
+          {
+            "elementId": "Host_User",
+            "name": "Review the case"
+          },
+          {
+            "elementId": "Inner",
+            "name": "Decide in the region"
+          },
+          {
+            "elementId": "Work_Esp",
+            "name": "Work in the guarded region"
+          },
+          {
+            "elementId": "Inner_Body",
+            "name": "Inspect one lot"
+          },
+          {
+            "elementId": "Inner_Body",
+            "name": "Inspect one lot"
+          },
+          {
+            "elementId": "After_Call",
+            "name": "File the check"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-complete-After_Call",
+        "tasks": [
+          {
+            "elementId": "Host_User",
+            "name": "Review the case"
+          },
+          {
+            "elementId": "Inner",
+            "name": "Decide in the region"
+          },
+          {
+            "elementId": "Work_Esp",
+            "name": "Work in the guarded region"
+          },
+          {
+            "elementId": "Inner_Body",
+            "name": "Inspect one lot"
+          },
+          {
+            "elementId": "Inner_Body",
+            "name": "Inspect one lot"
+          }
+        ]
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s02-complete-Child_Work",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s03-signal-Quit_Call",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s04-complete-After_Call",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "s01-start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s02-complete-Child_Work",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s03-signal-Quit_Call",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s04-complete-After_Call",
+        "state": "ACTIVE"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b"
+              ]
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Cancel_User",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "signal",
+              "name": "cancel",
+              "payload": false
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Catch_Stop",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "signal",
+              "name": "stop",
+              "payload": false
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Host_User",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review the case",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Inner",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Decide in the region",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Inner_Body",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Inspect one lot",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Inner_Body",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Inspect one lot",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Note_User",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "signal",
+              "name": "note",
+              "payload": false
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Ping_Body",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "signal",
+              "name": "ping",
+              "payload": false
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Ping_Body",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "signal",
+              "name": "ping",
+              "payload": false
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Quit_Call",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "signal",
+              "name": "quit",
+              "payload": false
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Start_Abort",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "signal",
+              "name": "abort",
+              "payload": false
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Start_Alert",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "signal",
+              "name": "alert",
+              "payload": false
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Stop_Region",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "signal",
+              "name": "stop",
+              "payload": false
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Work_Esp",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Work in the guarded region",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:9:Host_Call:1",
+              "elementId": "Child_Work",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_Child",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Carry out the check",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s02-complete-Child_Work",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b"
+              ]
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "After_Call",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "File the check",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Cancel_User",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "signal",
+              "name": "cancel",
+              "payload": false
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Catch_Stop",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "signal",
+              "name": "stop",
+              "payload": false
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Host_User",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review the case",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Inner",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Decide in the region",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Inner_Body",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Inspect one lot",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Inner_Body",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Inspect one lot",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Note_User",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "signal",
+              "name": "note",
+              "payload": false
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Ping_Body",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "signal",
+              "name": "ping",
+              "payload": false
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Ping_Body",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "signal",
+              "name": "ping",
+              "payload": false
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Start_Abort",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "signal",
+              "name": "abort",
+              "payload": false
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Start_Alert",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "signal",
+              "name": "alert",
+              "payload": false
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Stop_Region",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "signal",
+              "name": "stop",
+              "payload": false
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Work_Esp",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Work in the guarded region",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s03-signal-Quit_Call",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b"
+              ]
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "After_Call",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "File the check",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Cancel_User",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "signal",
+              "name": "cancel",
+              "payload": false
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Catch_Stop",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "signal",
+              "name": "stop",
+              "payload": false
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Host_User",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review the case",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Inner",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Decide in the region",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Inner_Body",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Inspect one lot",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Inner_Body",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Inspect one lot",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Note_User",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "signal",
+              "name": "note",
+              "payload": false
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Ping_Body",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "signal",
+              "name": "ping",
+              "payload": false
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Ping_Body",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "signal",
+              "name": "ping",
+              "payload": false
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Start_Abort",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "signal",
+              "name": "abort",
+              "payload": false
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Start_Alert",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "signal",
+              "name": "alert",
+              "payload": false
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Stop_Region",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "signal",
+              "name": "stop",
+              "payload": false
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Work_Esp",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Work in the guarded region",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s04-complete-After_Call",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b"
+              ]
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Cancel_User",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "signal",
+              "name": "cancel",
+              "payload": false
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Catch_Stop",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "signal",
+              "name": "stop",
+              "payload": false
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Host_User",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review the case",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Inner",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Decide in the region",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Inner_Body",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Inspect one lot",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Inner_Body",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Inspect one lot",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Note_User",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "signal",
+              "name": "note",
+              "payload": false
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Ping_Body",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "signal",
+              "name": "ping",
+              "payload": false
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Ping_Body",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "signal",
+              "name": "ping",
+              "payload": false
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Start_Abort",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "signal",
+              "name": "abort",
+              "payload": false
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Start_Alert",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "signal",
+              "name": "alert",
+              "payload": false
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Stop_Region",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "signal",
+              "name": "stop",
+              "payload": false
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Work_Esp",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Work in the guarded region",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      }
+    ]
+  }
+}

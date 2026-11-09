@@ -1,0 +1,134 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "activity-data-output-omitted",
+    "sha256": "528414523db8efc267decfd68d843aea26625863c5c59455643c21ef775a1ab5"
+  },
+  "profile": {
+    "id": "bpmn-2.0.2",
+    "sha256": "2a1e548c9f7d2dbf5a04e34279aab75bded1192883aae5cbd49f9df972d491a0"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start-activity-data-output-omitted",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "decide-omitted",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": []
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start-activity-data-output-omitted",
+        "tasks": [
+          {
+            "elementId": "UserTask_Decide",
+            "name": "Decide credit application"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "decide-omitted",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start-activity-data-output-omitted",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "decide-omitted",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start-activity-data-output-omitted",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "decide-omitted",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start-activity-data-output-omitted",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "ActivityDataOutputOmitted",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "ActivityDataOutputOmitted",
+              "elementId": "UserTask_Decide",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Decide credit application",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "decide-omitted",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "ActivityDataOutputOmitted",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": []
+      }
+    ]
+  }
+}

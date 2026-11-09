@@ -1,0 +1,569 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "scope-data-visibility-shadowing-lifecycle",
+    "sha256": "1c2f3555437d6fab839ee786fff21423f7bfbe38dc7c77054f1cccf1fc111491"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "memo",
+            "value": "root-memo"
+          },
+          {
+            "name": "memo",
+            "value": "sub-memo"
+          },
+          {
+            "name": "status",
+            "value": "open"
+          },
+          {
+            "name": "status",
+            "value": null
+          },
+          {
+            "name": "subOnly",
+            "value": "sub-only"
+          },
+          {
+            "name": "ticket",
+            "value": "T-1"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-inspect",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "finalMemo",
+            "value": "sub-memo"
+          },
+          {
+            "name": "finalStatus",
+            "value": "closed"
+          },
+          {
+            "name": "finalSubOnly",
+            "value": "sub-written"
+          },
+          {
+            "name": "fresh",
+            "value": "new"
+          },
+          {
+            "name": "memo",
+            "value": "root-memo"
+          },
+          {
+            "name": "memo",
+            "value": "sub-memo"
+          },
+          {
+            "name": "status",
+            "value": "open"
+          },
+          {
+            "name": "status",
+            "value": "closed"
+          },
+          {
+            "name": "subOnly",
+            "value": "sub-written"
+          },
+          {
+            "name": "ticket",
+            "value": "T-2"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-after",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "finalMemo",
+            "value": "sub-memo"
+          },
+          {
+            "name": "finalStatus",
+            "value": "closed"
+          },
+          {
+            "name": "finalSubOnly",
+            "value": "sub-written"
+          },
+          {
+            "name": "fresh",
+            "value": "new"
+          },
+          {
+            "name": "memo",
+            "value": "root-memo"
+          },
+          {
+            "name": "memo",
+            "value": "sub-memo"
+          },
+          {
+            "name": "status",
+            "value": "open"
+          },
+          {
+            "name": "status",
+            "value": "closed"
+          },
+          {
+            "name": "subOnly",
+            "value": "sub-written"
+          },
+          {
+            "name": "ticket",
+            "value": "T-2"
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start",
+        "tasks": [
+          {
+            "elementId": "UserTask_Inspect",
+            "name": "Inspect"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-inspect",
+        "tasks": [
+          {
+            "elementId": "UserTask_After",
+            "name": "After the review"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-after",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-inspect",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-after",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-inspect",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-after",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Run_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "memo",
+            "value": {
+              "kind": "string",
+              "value": "root-memo"
+            }
+          },
+          {
+            "name": "memo",
+            "value": {
+              "kind": "string",
+              "value": "sub-memo"
+            }
+          },
+          {
+            "name": "status",
+            "value": {
+              "kind": "string",
+              "value": "open"
+            }
+          },
+          {
+            "name": "status",
+            "value": {
+              "kind": "null"
+            }
+          },
+          {
+            "name": "subOnly",
+            "value": {
+              "kind": "string",
+              "value": "sub-only"
+            }
+          },
+          {
+            "name": "ticket",
+            "value": {
+              "kind": "string",
+              "value": "T-1"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Run_1",
+              "elementId": "UserTask_Inspect",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Inspect",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "memo",
+                  "value": {
+                    "kind": "string",
+                    "value": "task-memo"
+                  }
+                },
+                {
+                  "name": "seenMemo",
+                  "value": {
+                    "kind": "string",
+                    "value": "sub-memo"
+                  }
+                },
+                {
+                  "name": "seenStatus",
+                  "value": {
+                    "kind": "null"
+                  }
+                },
+                {
+                  "name": "seenSubOnly",
+                  "value": {
+                    "kind": "string",
+                    "value": "sub-only"
+                  }
+                },
+                {
+                  "name": "seenTicket",
+                  "value": {
+                    "kind": "string",
+                    "value": "T-1"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-inspect",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Run_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "finalMemo",
+            "value": {
+              "kind": "string",
+              "value": "sub-memo"
+            }
+          },
+          {
+            "name": "finalStatus",
+            "value": {
+              "kind": "string",
+              "value": "closed"
+            }
+          },
+          {
+            "name": "finalSubOnly",
+            "value": {
+              "kind": "string",
+              "value": "sub-written"
+            }
+          },
+          {
+            "name": "fresh",
+            "value": {
+              "kind": "string",
+              "value": "new"
+            }
+          },
+          {
+            "name": "memo",
+            "value": {
+              "kind": "string",
+              "value": "root-memo"
+            }
+          },
+          {
+            "name": "memo",
+            "value": {
+              "kind": "string",
+              "value": "sub-memo"
+            }
+          },
+          {
+            "name": "status",
+            "value": {
+              "kind": "string",
+              "value": "open"
+            }
+          },
+          {
+            "name": "status",
+            "value": {
+              "kind": "string",
+              "value": "closed"
+            }
+          },
+          {
+            "name": "subOnly",
+            "value": {
+              "kind": "string",
+              "value": "sub-written"
+            }
+          },
+          {
+            "name": "ticket",
+            "value": {
+              "kind": "string",
+              "value": "T-2"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Run_1",
+              "elementId": "UserTask_After",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "After the review",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "afterFinalMemo",
+                  "value": {
+                    "kind": "string",
+                    "value": "sub-memo"
+                  }
+                },
+                {
+                  "name": "afterFinalStatus",
+                  "value": {
+                    "kind": "string",
+                    "value": "closed"
+                  }
+                },
+                {
+                  "name": "afterFinalSubOnly",
+                  "value": {
+                    "kind": "string",
+                    "value": "sub-written"
+                  }
+                },
+                {
+                  "name": "afterFresh",
+                  "value": {
+                    "kind": "string",
+                    "value": "new"
+                  }
+                },
+                {
+                  "name": "afterMemo",
+                  "value": {
+                    "kind": "string",
+                    "value": "root-memo"
+                  }
+                },
+                {
+                  "name": "afterStatus",
+                  "value": {
+                    "kind": "string",
+                    "value": "open"
+                  }
+                },
+                {
+                  "name": "afterTicket",
+                  "value": {
+                    "kind": "string",
+                    "value": "T-2"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-after",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Run_1",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "finalMemo",
+            "value": {
+              "kind": "string",
+              "value": "sub-memo"
+            }
+          },
+          {
+            "name": "finalStatus",
+            "value": {
+              "kind": "string",
+              "value": "closed"
+            }
+          },
+          {
+            "name": "finalSubOnly",
+            "value": {
+              "kind": "string",
+              "value": "sub-written"
+            }
+          },
+          {
+            "name": "fresh",
+            "value": {
+              "kind": "string",
+              "value": "new"
+            }
+          },
+          {
+            "name": "memo",
+            "value": {
+              "kind": "string",
+              "value": "root-memo"
+            }
+          },
+          {
+            "name": "memo",
+            "value": {
+              "kind": "string",
+              "value": "sub-memo"
+            }
+          },
+          {
+            "name": "status",
+            "value": {
+              "kind": "string",
+              "value": "open"
+            }
+          },
+          {
+            "name": "status",
+            "value": {
+              "kind": "string",
+              "value": "closed"
+            }
+          },
+          {
+            "name": "subOnly",
+            "value": {
+              "kind": "string",
+              "value": "sub-written"
+            }
+          },
+          {
+            "name": "ticket",
+            "value": {
+              "kind": "string",
+              "value": "T-2"
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}

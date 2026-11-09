@@ -1,0 +1,1033 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "terminate-called-child-terminate-both-calls-reversed",
+    "sha256": "5911c0732140ac6a781add86d2a2a9a66d624f42878bcaaf3dd63bec33dfa3bd"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "s02-finish-south",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "receiptB",
+            "value": "R-south"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-finish-north",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "receiptA",
+            "value": "R-north"
+          },
+          {
+            "name": "receiptB",
+            "value": "R-south"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-file-south",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "receiptA",
+            "value": "R-north"
+          },
+          {
+            "name": "receiptB",
+            "value": "R-south"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-file-north",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "receiptA",
+            "value": "R-north"
+          },
+          {
+            "name": "receiptB",
+            "value": "R-south"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s06-update-log",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "receiptA",
+            "value": "R-north"
+          },
+          {
+            "name": "receiptB",
+            "value": "R-south"
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "tasks": [
+          {
+            "elementId": "UserTask_CallerOutside",
+            "name": "Update the pickup log"
+          },
+          {
+            "elementId": "UserTask_Finish",
+            "name": "Finish the handover"
+          },
+          {
+            "elementId": "UserTask_Other",
+            "name": "Count the parcels"
+          },
+          {
+            "elementId": "UserTask_Finish",
+            "name": "Finish the handover"
+          },
+          {
+            "elementId": "UserTask_Other",
+            "name": "Count the parcels"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-finish-south",
+        "tasks": [
+          {
+            "elementId": "UserTask_CallerOutside",
+            "name": "Update the pickup log"
+          },
+          {
+            "elementId": "UserTask_AfterB",
+            "name": "File the south receipt"
+          },
+          {
+            "elementId": "UserTask_Finish",
+            "name": "Finish the handover"
+          },
+          {
+            "elementId": "UserTask_Other",
+            "name": "Count the parcels"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-finish-north",
+        "tasks": [
+          {
+            "elementId": "UserTask_CallerOutside",
+            "name": "Update the pickup log"
+          },
+          {
+            "elementId": "UserTask_AfterB",
+            "name": "File the south receipt"
+          },
+          {
+            "elementId": "UserTask_AfterA",
+            "name": "File the north receipt"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-file-south",
+        "tasks": [
+          {
+            "elementId": "UserTask_CallerOutside",
+            "name": "Update the pickup log"
+          },
+          {
+            "elementId": "UserTask_AfterA",
+            "name": "File the north receipt"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-file-north",
+        "tasks": [
+          {
+            "elementId": "UserTask_CallerOutside",
+            "name": "Update the pickup log"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s06-update-log",
+        "tasks": []
+      }
+    ],
+    "messageSubscriptions": [
+      {
+        "afterCommandId": "s01-start",
+        "subscriptions": [
+          {
+            "elementId": "ReceiveTask_Ack",
+            "eventName": "handoverAcknowledged",
+            "messageId": "Message_Acknowledged",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          },
+          {
+            "elementId": "ReceiveTask_Ack",
+            "eventName": "handoverAcknowledged",
+            "messageId": "Message_Acknowledged",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-finish-south",
+        "subscriptions": [
+          {
+            "elementId": "ReceiveTask_Ack",
+            "eventName": "handoverAcknowledged",
+            "messageId": "Message_Acknowledged",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-finish-north",
+        "subscriptions": []
+      },
+      {
+        "afterCommandId": "s04-file-south",
+        "subscriptions": []
+      },
+      {
+        "afterCommandId": "s05-file-north",
+        "subscriptions": []
+      },
+      {
+        "afterCommandId": "s06-update-log",
+        "subscriptions": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s02-finish-south",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s03-finish-north",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s04-file-south",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s05-file-north",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s06-update-log",
+        "jobs": []
+      }
+    ],
+    "effectJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": [
+          {
+            "elementId": "ServiceTask_Notify",
+            "activation": 1,
+            "protocol": "urn:bpmn-lean:effect:probe-v1",
+            "handler": "bpmnLeanEffectHandler",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          },
+          {
+            "elementId": "ServiceTask_Notify",
+            "activation": 1,
+            "protocol": "urn:bpmn-lean:effect:probe-v1",
+            "handler": "bpmnLeanEffectHandler",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-finish-south",
+        "jobs": [
+          {
+            "elementId": "ServiceTask_Notify",
+            "activation": 1,
+            "protocol": "urn:bpmn-lean:effect:probe-v1",
+            "handler": "bpmnLeanEffectHandler",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-finish-north",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s04-file-south",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s05-file-north",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s06-update-log",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "s01-start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s02-finish-south",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s03-finish-north",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s04-file-south",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s05-file-north",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s06-update-log",
+        "state": "COMPLETED"
+      }
+    ],
+    "effectExecutions": []
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_CallerOutside",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Update the pickup log",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:22:CallActivity_HandoverA:1",
+              "elementId": "ReceiveTask_Ack",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_Handover",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Acknowledged"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:22:CallActivity_HandoverA:1",
+              "elementId": "ServiceTask_Notify",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_Handover",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "urn:bpmn-lean:effect-operation:probe-v1",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          },
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:22:CallActivity_HandoverA:1",
+              "elementId": "UserTask_Finish",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_Handover",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Finish the handover",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:22:CallActivity_HandoverA:1",
+              "elementId": "UserTask_Other",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_Handover",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Count the parcels",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:22:CallActivity_HandoverB:1",
+              "elementId": "ReceiveTask_Ack",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_Handover",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Acknowledged"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:22:CallActivity_HandoverB:1",
+              "elementId": "ServiceTask_Notify",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_Handover",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "urn:bpmn-lean:effect-operation:probe-v1",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          },
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:22:CallActivity_HandoverB:1",
+              "elementId": "UserTask_Finish",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_Handover",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Finish the handover",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:22:CallActivity_HandoverB:1",
+              "elementId": "UserTask_Other",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_Handover",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Count the parcels",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s02-finish-south",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "receiptB",
+            "value": {
+              "kind": "string",
+              "value": "R-south"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_AfterB",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "File the south receipt",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_CallerOutside",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Update the pickup log",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:22:CallActivity_HandoverA:1",
+              "elementId": "ReceiveTask_Ack",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_Handover",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Acknowledged"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:22:CallActivity_HandoverA:1",
+              "elementId": "ServiceTask_Notify",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_Handover",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "urn:bpmn-lean:effect-operation:probe-v1",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          },
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:22:CallActivity_HandoverA:1",
+              "elementId": "UserTask_Finish",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_Handover",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Finish the handover",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:22:CallActivity_HandoverA:1",
+              "elementId": "UserTask_Other",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_Handover",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Count the parcels",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s03-finish-north",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "receiptA",
+            "value": {
+              "kind": "string",
+              "value": "R-north"
+            }
+          },
+          {
+            "name": "receiptB",
+            "value": {
+              "kind": "string",
+              "value": "R-south"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_AfterA",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "File the north receipt",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_AfterB",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "File the south receipt",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_CallerOutside",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Update the pickup log",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s04-file-south",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "receiptA",
+            "value": {
+              "kind": "string",
+              "value": "R-north"
+            }
+          },
+          {
+            "name": "receiptB",
+            "value": {
+              "kind": "string",
+              "value": "R-south"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_AfterA",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "File the north receipt",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_CallerOutside",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Update the pickup log",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s05-file-north",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "receiptA",
+            "value": {
+              "kind": "string",
+              "value": "R-north"
+            }
+          },
+          {
+            "name": "receiptB",
+            "value": {
+              "kind": "string",
+              "value": "R-south"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_CallerOutside",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Update the pickup log",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s06-update-log",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "receiptA",
+            "value": {
+              "kind": "string",
+              "value": "R-north"
+            }
+          },
+          {
+            "name": "receiptB",
+            "value": {
+              "kind": "string",
+              "value": "R-south"
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}

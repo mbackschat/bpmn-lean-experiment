@@ -1,0 +1,171 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "activity-data-input-output-present",
+    "sha256": "1fc2dba860586e0d766c3cc519c2060169796a1a623560be30e023bc6121c406"
+  },
+  "profile": {
+    "id": "bpmn-2.0.2",
+    "sha256": "2a1e548c9f7d2dbf5a04e34279aab75bded1192883aae5cbd49f9df972d491a0"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start-activity-data-input-output-present",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "Property_ClaimSummary",
+            "value": "claim-4711"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "assess-claim-present",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "DataOutput_ClaimDecision",
+            "value": "approve"
+          },
+          {
+            "name": "Property_ClaimSummary",
+            "value": "claim-4711"
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start-activity-data-input-output-present",
+        "tasks": [
+          {
+            "elementId": "UserTask_AssessClaim",
+            "name": "Assess claim"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "assess-claim-present",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start-activity-data-input-output-present",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "assess-claim-present",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start-activity-data-input-output-present",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "assess-claim-present",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start-activity-data-input-output-present",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "ActivityDataInputOutputPresent",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "Property_ClaimSummary",
+            "value": {
+              "kind": "string",
+              "value": "claim-4711"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "ActivityDataInputOutputPresent",
+              "elementId": "UserTask_AssessClaim",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Assess claim",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "assess-claim-present",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "ActivityDataInputOutputPresent",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "DataOutput_ClaimDecision",
+            "value": {
+              "kind": "string",
+              "value": "approve"
+            }
+          },
+          {
+            "name": "Property_ClaimSummary",
+            "value": {
+              "kind": "string",
+              "value": "claim-4711"
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}

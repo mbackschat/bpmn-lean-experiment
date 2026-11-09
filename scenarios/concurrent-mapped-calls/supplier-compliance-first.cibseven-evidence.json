@@ -1,0 +1,1399 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "concurrent-mapped-calls-supplier-compliance-first",
+    "sha256": "e7631d7625367871ed3739225bab67d9ed8fb5ea77b011de810f769d4322f229"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start-process",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "file",
+            "value": "Acme"
+          },
+          {
+            "name": "file",
+            "value": "sanctions screening"
+          },
+          {
+            "name": "supplierName",
+            "value": "Acme"
+          },
+          {
+            "name": "verdict",
+            "value": "pending"
+          },
+          {
+            "name": "verdict",
+            "value": "pending"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-prepare-financial-file",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "file",
+            "value": "Acme"
+          },
+          {
+            "name": "file",
+            "value": "sanctions screening"
+          },
+          {
+            "name": "supplierName",
+            "value": "Acme"
+          },
+          {
+            "name": "verdict",
+            "value": "pending"
+          },
+          {
+            "name": "verdict",
+            "value": "pending"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-prepare-compliance-file",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "file",
+            "value": "Acme"
+          },
+          {
+            "name": "file",
+            "value": "sanctions screening"
+          },
+          {
+            "name": "supplierName",
+            "value": "Acme"
+          },
+          {
+            "name": "verdict",
+            "value": "pending"
+          },
+          {
+            "name": "verdict",
+            "value": "pending"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "refuse-financial-patch-of-the-compliance-output",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "file",
+            "value": "Acme"
+          },
+          {
+            "name": "file",
+            "value": "sanctions screening"
+          },
+          {
+            "name": "financialVerdict",
+            "value": null
+          },
+          {
+            "name": "supplierName",
+            "value": "Acme"
+          },
+          {
+            "name": "verdict",
+            "value": null
+          },
+          {
+            "name": "verdict",
+            "value": "pending"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "refuse-compliance-patch-of-the-financial-output",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "complianceVerdict",
+            "value": null
+          },
+          {
+            "name": "file",
+            "value": "Acme"
+          },
+          {
+            "name": "file",
+            "value": "sanctions screening"
+          },
+          {
+            "name": "financialVerdict",
+            "value": null
+          },
+          {
+            "name": "supplierName",
+            "value": "Acme"
+          },
+          {
+            "name": "verdict",
+            "value": null
+          },
+          {
+            "name": "verdict",
+            "value": null
+          }
+        ]
+      },
+      {
+        "afterCommandId": "refuse-compliance-addressed-financial-task",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "complianceVerdict",
+            "value": null
+          },
+          {
+            "name": "file",
+            "value": "Acme"
+          },
+          {
+            "name": "file",
+            "value": "sanctions screening"
+          },
+          {
+            "name": "financialVerdict",
+            "value": null
+          },
+          {
+            "name": "supplierName",
+            "value": "Acme"
+          },
+          {
+            "name": "verdict",
+            "value": null
+          },
+          {
+            "name": "verdict",
+            "value": null
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-compliance-expert-opinion",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "complianceVerdict",
+            "value": null
+          },
+          {
+            "name": "file",
+            "value": "Acme"
+          },
+          {
+            "name": "file",
+            "value": "sanctions screening"
+          },
+          {
+            "name": "financialVerdict",
+            "value": null
+          },
+          {
+            "name": "supplierName",
+            "value": "Acme"
+          },
+          {
+            "name": "verdict",
+            "value": null
+          },
+          {
+            "name": "verdict",
+            "value": null
+          }
+        ]
+      },
+      {
+        "afterCommandId": "refuse-stale-compliance-expert-opinion",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "complianceVerdict",
+            "value": null
+          },
+          {
+            "name": "file",
+            "value": "Acme"
+          },
+          {
+            "name": "file",
+            "value": "sanctions screening"
+          },
+          {
+            "name": "financialVerdict",
+            "value": null
+          },
+          {
+            "name": "supplierName",
+            "value": "Acme"
+          },
+          {
+            "name": "verdict",
+            "value": null
+          },
+          {
+            "name": "verdict",
+            "value": null
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-financial-expert-opinion",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "complianceVerdict",
+            "value": null
+          },
+          {
+            "name": "file",
+            "value": "Acme"
+          },
+          {
+            "name": "file",
+            "value": "sanctions screening"
+          },
+          {
+            "name": "financialVerdict",
+            "value": null
+          },
+          {
+            "name": "supplierName",
+            "value": "Acme"
+          },
+          {
+            "name": "verdict",
+            "value": null
+          },
+          {
+            "name": "verdict",
+            "value": null
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-approve-supplier",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "complianceVerdict",
+            "value": null
+          },
+          {
+            "name": "file",
+            "value": "Acme"
+          },
+          {
+            "name": "file",
+            "value": "sanctions screening"
+          },
+          {
+            "name": "financialVerdict",
+            "value": null
+          },
+          {
+            "name": "supplierName",
+            "value": "Acme"
+          },
+          {
+            "name": "verdict",
+            "value": null
+          },
+          {
+            "name": "verdict",
+            "value": null
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start-process",
+        "tasks": [
+          {
+            "elementId": "PrepareFinancialFile",
+            "name": "Prepare financial file"
+          },
+          {
+            "elementId": "PrepareComplianceFile",
+            "name": "Prepare compliance file"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-prepare-financial-file",
+        "tasks": [
+          {
+            "elementId": "PrepareComplianceFile",
+            "name": "Prepare compliance file"
+          },
+          {
+            "elementId": "GiveExpertOpinion",
+            "name": "Give expert opinion"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-prepare-compliance-file",
+        "tasks": [
+          {
+            "elementId": "GiveExpertOpinion",
+            "name": "Give expert opinion"
+          },
+          {
+            "elementId": "GiveExpertOpinion",
+            "name": "Give expert opinion"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "refuse-financial-patch-of-the-compliance-output",
+        "tasks": [
+          {
+            "elementId": "GiveExpertOpinion",
+            "name": "Give expert opinion"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "refuse-compliance-patch-of-the-financial-output",
+        "tasks": [
+          {
+            "elementId": "ApproveSupplier",
+            "name": "Approve supplier"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "refuse-compliance-addressed-financial-task",
+        "tasks": [
+          {
+            "elementId": "ApproveSupplier",
+            "name": "Approve supplier"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-compliance-expert-opinion",
+        "tasks": [
+          {
+            "elementId": "ApproveSupplier",
+            "name": "Approve supplier"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "refuse-stale-compliance-expert-opinion",
+        "tasks": [
+          {
+            "elementId": "ApproveSupplier",
+            "name": "Approve supplier"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-financial-expert-opinion",
+        "tasks": [
+          {
+            "elementId": "ApproveSupplier",
+            "name": "Approve supplier"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-approve-supplier",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start-process",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-prepare-financial-file",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-prepare-compliance-file",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "refuse-financial-patch-of-the-compliance-output",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "refuse-compliance-patch-of-the-financial-output",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "refuse-compliance-addressed-financial-task",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-compliance-expert-opinion",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "refuse-stale-compliance-expert-opinion",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-financial-expert-opinion",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-approve-supplier",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start-process",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-prepare-financial-file",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-prepare-compliance-file",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "refuse-financial-patch-of-the-compliance-output",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "refuse-compliance-patch-of-the-financial-output",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "refuse-compliance-addressed-financial-task",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-compliance-expert-opinion",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "refuse-stale-compliance-expert-opinion",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-financial-expert-opinion",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-approve-supplier",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start-process",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "file",
+            "value": {
+              "kind": "string",
+              "value": "Acme"
+            }
+          },
+          {
+            "name": "file",
+            "value": {
+              "kind": "string",
+              "value": "sanctions screening"
+            }
+          },
+          {
+            "name": "supplierName",
+            "value": {
+              "kind": "string",
+              "value": "Acme"
+            }
+          },
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "pending"
+            }
+          },
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "pending"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "PrepareComplianceFile",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Prepare compliance file",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "PrepareFinancialFile",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Prepare financial file",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-prepare-financial-file",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "file",
+            "value": {
+              "kind": "string",
+              "value": "Acme"
+            }
+          },
+          {
+            "name": "file",
+            "value": {
+              "kind": "string",
+              "value": "sanctions screening"
+            }
+          },
+          {
+            "name": "supplierName",
+            "value": {
+              "kind": "string",
+              "value": "Acme"
+            }
+          },
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "pending"
+            }
+          },
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "pending"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "PrepareComplianceFile",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Prepare compliance file",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:22:FinancialExpertOpinion:1",
+              "elementId": "GiveExpertOpinion",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_ExpertOpinion",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Give expert opinion",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-prepare-compliance-file",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "file",
+            "value": {
+              "kind": "string",
+              "value": "Acme"
+            }
+          },
+          {
+            "name": "file",
+            "value": {
+              "kind": "string",
+              "value": "sanctions screening"
+            }
+          },
+          {
+            "name": "supplierName",
+            "value": {
+              "kind": "string",
+              "value": "Acme"
+            }
+          },
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "pending"
+            }
+          },
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "pending"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:22:FinancialExpertOpinion:1",
+              "elementId": "GiveExpertOpinion",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_ExpertOpinion",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Give expert opinion",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:23:ComplianceExpertOpinion:1",
+              "elementId": "GiveExpertOpinion",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_ExpertOpinion",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Give expert opinion",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "refuse-financial-patch-of-the-compliance-output",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "file",
+            "value": {
+              "kind": "string",
+              "value": "Acme"
+            }
+          },
+          {
+            "name": "file",
+            "value": {
+              "kind": "string",
+              "value": "sanctions screening"
+            }
+          },
+          {
+            "name": "financialVerdict",
+            "value": {
+              "kind": "null"
+            }
+          },
+          {
+            "name": "supplierName",
+            "value": {
+              "kind": "string",
+              "value": "Acme"
+            }
+          },
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "null"
+            }
+          },
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "pending"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:23:ComplianceExpertOpinion:1",
+              "elementId": "GiveExpertOpinion",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_ExpertOpinion",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Give expert opinion",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "refuse-compliance-patch-of-the-financial-output",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "complianceVerdict",
+            "value": {
+              "kind": "null"
+            }
+          },
+          {
+            "name": "file",
+            "value": {
+              "kind": "string",
+              "value": "Acme"
+            }
+          },
+          {
+            "name": "file",
+            "value": {
+              "kind": "string",
+              "value": "sanctions screening"
+            }
+          },
+          {
+            "name": "financialVerdict",
+            "value": {
+              "kind": "null"
+            }
+          },
+          {
+            "name": "supplierName",
+            "value": {
+              "kind": "string",
+              "value": "Acme"
+            }
+          },
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "null"
+            }
+          },
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "null"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ApproveSupplier",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Approve supplier",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "refuse-compliance-addressed-financial-task",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "complianceVerdict",
+            "value": {
+              "kind": "null"
+            }
+          },
+          {
+            "name": "file",
+            "value": {
+              "kind": "string",
+              "value": "Acme"
+            }
+          },
+          {
+            "name": "file",
+            "value": {
+              "kind": "string",
+              "value": "sanctions screening"
+            }
+          },
+          {
+            "name": "financialVerdict",
+            "value": {
+              "kind": "null"
+            }
+          },
+          {
+            "name": "supplierName",
+            "value": {
+              "kind": "string",
+              "value": "Acme"
+            }
+          },
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "null"
+            }
+          },
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "null"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ApproveSupplier",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Approve supplier",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-compliance-expert-opinion",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "complianceVerdict",
+            "value": {
+              "kind": "null"
+            }
+          },
+          {
+            "name": "file",
+            "value": {
+              "kind": "string",
+              "value": "Acme"
+            }
+          },
+          {
+            "name": "file",
+            "value": {
+              "kind": "string",
+              "value": "sanctions screening"
+            }
+          },
+          {
+            "name": "financialVerdict",
+            "value": {
+              "kind": "null"
+            }
+          },
+          {
+            "name": "supplierName",
+            "value": {
+              "kind": "string",
+              "value": "Acme"
+            }
+          },
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "null"
+            }
+          },
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "null"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ApproveSupplier",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Approve supplier",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "refuse-stale-compliance-expert-opinion",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "complianceVerdict",
+            "value": {
+              "kind": "null"
+            }
+          },
+          {
+            "name": "file",
+            "value": {
+              "kind": "string",
+              "value": "Acme"
+            }
+          },
+          {
+            "name": "file",
+            "value": {
+              "kind": "string",
+              "value": "sanctions screening"
+            }
+          },
+          {
+            "name": "financialVerdict",
+            "value": {
+              "kind": "null"
+            }
+          },
+          {
+            "name": "supplierName",
+            "value": {
+              "kind": "string",
+              "value": "Acme"
+            }
+          },
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "null"
+            }
+          },
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "null"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ApproveSupplier",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Approve supplier",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-financial-expert-opinion",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "complianceVerdict",
+            "value": {
+              "kind": "null"
+            }
+          },
+          {
+            "name": "file",
+            "value": {
+              "kind": "string",
+              "value": "Acme"
+            }
+          },
+          {
+            "name": "file",
+            "value": {
+              "kind": "string",
+              "value": "sanctions screening"
+            }
+          },
+          {
+            "name": "financialVerdict",
+            "value": {
+              "kind": "null"
+            }
+          },
+          {
+            "name": "supplierName",
+            "value": {
+              "kind": "string",
+              "value": "Acme"
+            }
+          },
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "null"
+            }
+          },
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "null"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ApproveSupplier",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Approve supplier",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-approve-supplier",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "complianceVerdict",
+            "value": {
+              "kind": "null"
+            }
+          },
+          {
+            "name": "file",
+            "value": {
+              "kind": "string",
+              "value": "Acme"
+            }
+          },
+          {
+            "name": "file",
+            "value": {
+              "kind": "string",
+              "value": "sanctions screening"
+            }
+          },
+          {
+            "name": "financialVerdict",
+            "value": {
+              "kind": "null"
+            }
+          },
+          {
+            "name": "supplierName",
+            "value": {
+              "kind": "string",
+              "value": "Acme"
+            }
+          },
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "null"
+            }
+          },
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "null"
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}

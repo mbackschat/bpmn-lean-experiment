@@ -1,0 +1,213 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "non-interrupting-boundary-timer-completion-before-the-deadline",
+    "sha256": "d143df9b68b8739382ea0f39045f5fb544cdd9dbeab586f01b9c92ab687409d3"
+  },
+  "profile": {
+    "id": "bpmn-2.0.2",
+    "sha256": "2a1e548c9f7d2dbf5a04e34279aab75bded1192883aae5cbd49f9df972d491a0"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start-completion-before-the-deadline",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-monitored-task-before-its-deadline",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-normal-follow-on",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": []
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start-completion-before-the-deadline",
+        "tasks": [
+          {
+            "elementId": "MonitoredTask",
+            "name": "Monitored work"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-monitored-task-before-its-deadline",
+        "tasks": [
+          {
+            "elementId": "NormalTask",
+            "name": "Monitored work finished"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-normal-follow-on",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start-completion-before-the-deadline",
+        "jobs": [
+          {
+            "elementId": "Reminder",
+            "dueDateDeltaMs": 1000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-monitored-task-before-its-deadline",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-normal-follow-on",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start-completion-before-the-deadline",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-monitored-task-before-its-deadline",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-normal-follow-on",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start-completion-before-the-deadline",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "MonitoredInstance_CompletionFirst",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "MonitoredInstance_CompletionFirst",
+              "elementId": "MonitoredTask",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Monitored work",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "MonitoredInstance_CompletionFirst",
+              "elementId": "Reminder",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 1000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-monitored-task-before-its-deadline",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "MonitoredInstance_CompletionFirst",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "MonitoredInstance_CompletionFirst",
+              "elementId": "NormalTask",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Monitored work finished",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-normal-follow-on",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "MonitoredInstance_CompletionFirst",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": []
+      }
+    ]
+  }
+}

@@ -1,0 +1,226 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "exclusive-choice-compositions-claim-routing-reversed-large-and-severe-true",
+    "sha256": "8b648962ac47a69b3bb192d431f8f489cfad0689cc3325d14239969ef7e95e6d"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "amount",
+            "value": 5000
+          },
+          {
+            "name": "claimId",
+            "value": "c-1"
+          },
+          {
+            "name": "fraud",
+            "value": false
+          },
+          {
+            "name": "severity",
+            "value": "severe"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-complete-CloseClaim-1",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "amount",
+            "value": 5000
+          },
+          {
+            "name": "claimId",
+            "value": "c-1"
+          },
+          {
+            "name": "fraud",
+            "value": false
+          },
+          {
+            "name": "severity",
+            "value": "severe"
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "tasks": [
+          {
+            "elementId": "CloseClaim",
+            "name": "Close claim"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-complete-CloseClaim-1",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s02-complete-CloseClaim-1",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "s01-start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s02-complete-CloseClaim-1",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "amount",
+            "value": {
+              "kind": "integer",
+              "value": 5000
+            }
+          },
+          {
+            "name": "claimId",
+            "value": {
+              "kind": "string",
+              "value": "c-1"
+            }
+          },
+          {
+            "name": "fraud",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "severity",
+            "value": {
+              "kind": "string",
+              "value": "severe"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "CloseClaim",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Close claim",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s02-complete-CloseClaim-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "amount",
+            "value": {
+              "kind": "integer",
+              "value": 5000
+            }
+          },
+          {
+            "name": "claimId",
+            "value": {
+              "kind": "string",
+              "value": "c-1"
+            }
+          },
+          {
+            "name": "fraud",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "severity",
+            "value": {
+              "kind": "string",
+              "value": "severe"
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}

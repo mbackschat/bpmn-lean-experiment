@@ -1,0 +1,1169 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "repeated-nested-calls-reverse-order-stale-and-cross-addressed",
+    "sha256": "484587d16ae943a625280ef16241dea50487ee7dae412770a7d5805b87428336"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start-process",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-register-supplier",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-collect-tax-documents",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-collect-bank-details",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-bank-prepare-approval",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-bank-approve-under-tax-identity",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-bank-approve-under-supplier-identity",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-bank-approve",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-tax-prepare-approval",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-tax-approve",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-tax-approve-again",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-assess-risk",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-screen-sanctions",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-final-prepare-approval",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-final-approve",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": []
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start-process",
+        "tasks": [
+          {
+            "elementId": "UserTask_RegisterSupplier",
+            "name": "Register supplier"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-register-supplier",
+        "tasks": [
+          {
+            "elementId": "UserTask_CollectTaxDocuments",
+            "name": "Collect tax documents"
+          },
+          {
+            "elementId": "UserTask_CollectBankDetails",
+            "name": "Collect bank details"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-collect-tax-documents",
+        "tasks": [
+          {
+            "elementId": "UserTask_CollectBankDetails",
+            "name": "Collect bank details"
+          },
+          {
+            "elementId": "UserTask_PrepareApproval",
+            "name": "Prepare approval"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-collect-bank-details",
+        "tasks": [
+          {
+            "elementId": "UserTask_PrepareApproval",
+            "name": "Prepare approval"
+          },
+          {
+            "elementId": "UserTask_PrepareApproval",
+            "name": "Prepare approval"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-bank-prepare-approval",
+        "tasks": [
+          {
+            "elementId": "UserTask_PrepareApproval",
+            "name": "Prepare approval"
+          },
+          {
+            "elementId": "UserTask_Approve",
+            "name": "Approve"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-bank-approve-under-tax-identity",
+        "tasks": [
+          {
+            "elementId": "UserTask_PrepareApproval",
+            "name": "Prepare approval"
+          },
+          {
+            "elementId": "UserTask_Approve",
+            "name": "Approve"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-bank-approve-under-supplier-identity",
+        "tasks": [
+          {
+            "elementId": "UserTask_PrepareApproval",
+            "name": "Prepare approval"
+          },
+          {
+            "elementId": "UserTask_Approve",
+            "name": "Approve"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-bank-approve",
+        "tasks": [
+          {
+            "elementId": "UserTask_PrepareApproval",
+            "name": "Prepare approval"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-tax-prepare-approval",
+        "tasks": [
+          {
+            "elementId": "UserTask_Approve",
+            "name": "Approve"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-tax-approve",
+        "tasks": [
+          {
+            "elementId": "UserTask_AssessRisk",
+            "name": "Assess risk"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-tax-approve-again",
+        "tasks": [
+          {
+            "elementId": "UserTask_AssessRisk",
+            "name": "Assess risk"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-assess-risk",
+        "tasks": [
+          {
+            "elementId": "UserTask_ScreenSanctions",
+            "name": "Screen sanctions"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-screen-sanctions",
+        "tasks": [
+          {
+            "elementId": "UserTask_PrepareApproval",
+            "name": "Prepare approval"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-final-prepare-approval",
+        "tasks": [
+          {
+            "elementId": "UserTask_Approve",
+            "name": "Approve"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-final-approve",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start-process",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-register-supplier",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-collect-tax-documents",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-collect-bank-details",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-bank-prepare-approval",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-bank-approve-under-tax-identity",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-bank-approve-under-supplier-identity",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-bank-approve",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-tax-prepare-approval",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-tax-approve",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-tax-approve-again",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-assess-risk",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-screen-sanctions",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-final-prepare-approval",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-final-approve",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start-process",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-register-supplier",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-collect-tax-documents",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-collect-bank-details",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-bank-prepare-approval",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-bank-approve-under-tax-identity",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-bank-approve-under-supplier-identity",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-bank-approve",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-tax-prepare-approval",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-tax-approve",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-tax-approve-again",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-assess-risk",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-screen-sanctions",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-final-prepare-approval",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-final-approve",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start-process",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_RegisterSupplier",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Register supplier",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-register-supplier",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_CollectBankDetails",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Collect bank details",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_CollectTaxDocuments",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Collect tax documents",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-collect-tax-documents",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_CollectBankDetails",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Collect bank details",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:24:CallActivity_TaxApproval:1",
+              "elementId": "UserTask_PrepareApproval",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_FourEyesApproval",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Prepare approval",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-collect-bank-details",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:24:CallActivity_TaxApproval:1",
+              "elementId": "UserTask_PrepareApproval",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_FourEyesApproval",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Prepare approval",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:25:CallActivity_BankApproval:1",
+              "elementId": "UserTask_PrepareApproval",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_FourEyesApproval",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Prepare approval",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-bank-prepare-approval",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:24:CallActivity_TaxApproval:1",
+              "elementId": "UserTask_PrepareApproval",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_FourEyesApproval",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Prepare approval",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:25:CallActivity_BankApproval:1",
+              "elementId": "UserTask_Approve",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_FourEyesApproval",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Approve",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-bank-approve-under-tax-identity",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:24:CallActivity_TaxApproval:1",
+              "elementId": "UserTask_PrepareApproval",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_FourEyesApproval",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Prepare approval",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:25:CallActivity_BankApproval:1",
+              "elementId": "UserTask_Approve",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_FourEyesApproval",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Approve",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-bank-approve-under-supplier-identity",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:24:CallActivity_TaxApproval:1",
+              "elementId": "UserTask_PrepareApproval",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_FourEyesApproval",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Prepare approval",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:25:CallActivity_BankApproval:1",
+              "elementId": "UserTask_Approve",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_FourEyesApproval",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Approve",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-bank-approve",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:24:CallActivity_TaxApproval:1",
+              "elementId": "UserTask_PrepareApproval",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_FourEyesApproval",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Prepare approval",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-tax-prepare-approval",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:24:CallActivity_TaxApproval:1",
+              "elementId": "UserTask_Approve",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_FourEyesApproval",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Approve",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-tax-approve",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:23:CallActivity_ReviewRisk:1",
+              "elementId": "UserTask_AssessRisk",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_SupplierRiskReview",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Assess risk",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-tax-approve-again",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:23:CallActivity_ReviewRisk:1",
+              "elementId": "UserTask_AssessRisk",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_SupplierRiskReview",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Assess risk",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-assess-risk",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "call:47:call:10:Instance_1:23:CallActivity_ReviewRisk:1:28:CallActivity_CheckCompliance:1",
+              "elementId": "UserTask_ScreenSanctions",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_ComplianceCheck",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Screen sanctions",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-screen-sanctions",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:26:CallActivity_FinalApproval:1",
+              "elementId": "UserTask_PrepareApproval",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_FourEyesApproval",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Prepare approval",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-final-prepare-approval",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:26:CallActivity_FinalApproval:1",
+              "elementId": "UserTask_Approve",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_FourEyesApproval",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Approve",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-final-approve",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": []
+      }
+    ]
+  }
+}

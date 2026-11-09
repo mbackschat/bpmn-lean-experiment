@@ -1,0 +1,957 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "subscription-boundary-timer-repeat",
+    "sha256": "b410ee88ae456885950fcf912166804bcfc3666a6a89f338d53b7cc2f65bff29"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start-subscription",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "fire-timer-sha256:7a3f0604d7aaaa853c640700b6473ad9fa82d0bea166fa56bbbd3e9eb4ad9a32",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 1000,
+        "variables": []
+      },
+      {
+        "afterCommandId": "fire-timer-sha256:b4f0037064c330bc3cc767590b2f4e15e055c7c8aa873aa77f71489eff45bbbc",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 1000,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-UserTask_Sibling-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 1000,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-HandleReminder-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 1000,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-HandleReminder-2",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 1000,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-UserTask_Trigger-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 1000,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-UserTask_Outer-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 1000,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-IndependentAudit-1",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 1000,
+        "variables": []
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start-subscription",
+        "tasks": [
+          {
+            "elementId": "UserTask_Trigger",
+            "name": "Cancel review region"
+          },
+          {
+            "elementId": "UserTask_Sibling",
+            "name": "Review application"
+          },
+          {
+            "elementId": "IndependentAudit",
+            "name": "Complete independent audit"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "fire-timer-sha256:7a3f0604d7aaaa853c640700b6473ad9fa82d0bea166fa56bbbd3e9eb4ad9a32",
+        "tasks": [
+          {
+            "elementId": "UserTask_Trigger",
+            "name": "Cancel review region"
+          },
+          {
+            "elementId": "UserTask_Sibling",
+            "name": "Review application"
+          },
+          {
+            "elementId": "IndependentAudit",
+            "name": "Complete independent audit"
+          },
+          {
+            "elementId": "HandleReminder",
+            "name": "Respond to application reminder"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "fire-timer-sha256:b4f0037064c330bc3cc767590b2f4e15e055c7c8aa873aa77f71489eff45bbbc",
+        "tasks": [
+          {
+            "elementId": "UserTask_Trigger",
+            "name": "Cancel review region"
+          },
+          {
+            "elementId": "UserTask_Sibling",
+            "name": "Review application"
+          },
+          {
+            "elementId": "IndependentAudit",
+            "name": "Complete independent audit"
+          },
+          {
+            "elementId": "HandleReminder",
+            "name": "Respond to application reminder"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-UserTask_Sibling-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_Trigger",
+            "name": "Cancel review region"
+          },
+          {
+            "elementId": "IndependentAudit",
+            "name": "Complete independent audit"
+          },
+          {
+            "elementId": "HandleReminder",
+            "name": "Respond to application reminder"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-HandleReminder-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_Trigger",
+            "name": "Cancel review region"
+          },
+          {
+            "elementId": "IndependentAudit",
+            "name": "Complete independent audit"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-HandleReminder-2",
+        "tasks": [
+          {
+            "elementId": "UserTask_Trigger",
+            "name": "Cancel review region"
+          },
+          {
+            "elementId": "IndependentAudit",
+            "name": "Complete independent audit"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-UserTask_Trigger-1",
+        "tasks": [
+          {
+            "elementId": "IndependentAudit",
+            "name": "Complete independent audit"
+          },
+          {
+            "elementId": "UserTask_Outer",
+            "name": "Archive review outcome"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-UserTask_Outer-1",
+        "tasks": [
+          {
+            "elementId": "IndependentAudit",
+            "name": "Complete independent audit"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-IndependentAudit-1",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start-subscription",
+        "jobs": [
+          {
+            "elementId": "Reminder",
+            "dueDateDeltaMs": 1000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "fire-timer-sha256:7a3f0604d7aaaa853c640700b6473ad9fa82d0bea166fa56bbbd3e9eb4ad9a32",
+        "jobs": [
+          {
+            "elementId": "Reminder",
+            "dueDateDeltaMs": 2000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "fire-timer-sha256:b4f0037064c330bc3cc767590b2f4e15e055c7c8aa873aa77f71489eff45bbbc",
+        "jobs": [
+          {
+            "elementId": "Reminder",
+            "dueDateDeltaMs": 2000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-UserTask_Sibling-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-HandleReminder-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-HandleReminder-2",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-UserTask_Trigger-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-UserTask_Outer-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-IndependentAudit-1",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start-subscription",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "fire-timer-sha256:7a3f0604d7aaaa853c640700b6473ad9fa82d0bea166fa56bbbd3e9eb4ad9a32",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "fire-timer-sha256:b4f0037064c330bc3cc767590b2f4e15e055c7c8aa873aa77f71489eff45bbbc",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-UserTask_Sibling-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-HandleReminder-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-HandleReminder-2",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-UserTask_Trigger-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-UserTask_Outer-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-IndependentAudit-1",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start-subscription",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_boundary-timer_repeat",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_boundary-timer_repeat",
+              "elementId": "IndependentAudit",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Complete independent audit",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_boundary-timer_repeat",
+              "elementId": "Reminder",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 1000,
+              "recurrence": {
+                "periodMs": 1000,
+                "cron": null,
+                "remaining": null
+              }
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_boundary-timer_repeat",
+              "elementId": "UserTask_Sibling",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review application",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_boundary-timer_repeat",
+              "elementId": "UserTask_Trigger",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Cancel review region",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "fire-timer-sha256:7a3f0604d7aaaa853c640700b6473ad9fa82d0bea166fa56bbbd3e9eb4ad9a32",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_boundary-timer_repeat",
+        "status": "running",
+        "logicalTimeMs": 1000,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_boundary-timer_repeat",
+              "elementId": "HandleReminder",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Respond to application reminder",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_boundary-timer_repeat",
+              "elementId": "IndependentAudit",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Complete independent audit",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_boundary-timer_repeat",
+              "elementId": "Reminder",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 2000,
+              "recurrence": {
+                "periodMs": 1000,
+                "cron": null,
+                "remaining": null
+              }
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_boundary-timer_repeat",
+              "elementId": "UserTask_Sibling",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review application",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_boundary-timer_repeat",
+              "elementId": "UserTask_Trigger",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Cancel review region",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "fire-timer-sha256:b4f0037064c330bc3cc767590b2f4e15e055c7c8aa873aa77f71489eff45bbbc",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_boundary-timer_repeat",
+        "status": "running",
+        "logicalTimeMs": 1000,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_boundary-timer_repeat",
+              "elementId": "HandleReminder",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Respond to application reminder",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_boundary-timer_repeat",
+              "elementId": "IndependentAudit",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Complete independent audit",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_boundary-timer_repeat",
+              "elementId": "Reminder",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 2000,
+              "recurrence": {
+                "periodMs": 1000,
+                "cron": null,
+                "remaining": null
+              }
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_boundary-timer_repeat",
+              "elementId": "UserTask_Sibling",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review application",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_boundary-timer_repeat",
+              "elementId": "UserTask_Trigger",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Cancel review region",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-UserTask_Sibling-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_boundary-timer_repeat",
+        "status": "running",
+        "logicalTimeMs": 1000,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_boundary-timer_repeat",
+              "elementId": "HandleReminder",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Respond to application reminder",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_boundary-timer_repeat",
+              "elementId": "IndependentAudit",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Complete independent audit",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_boundary-timer_repeat",
+              "elementId": "UserTask_Trigger",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Cancel review region",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-HandleReminder-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_boundary-timer_repeat",
+        "status": "running",
+        "logicalTimeMs": 1000,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_boundary-timer_repeat",
+              "elementId": "IndependentAudit",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Complete independent audit",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_boundary-timer_repeat",
+              "elementId": "UserTask_Trigger",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Cancel review region",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-HandleReminder-2",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_boundary-timer_repeat",
+        "status": "running",
+        "logicalTimeMs": 1000,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_boundary-timer_repeat",
+              "elementId": "IndependentAudit",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Complete independent audit",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_boundary-timer_repeat",
+              "elementId": "UserTask_Trigger",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Cancel review region",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-UserTask_Trigger-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_boundary-timer_repeat",
+        "status": "running",
+        "logicalTimeMs": 1000,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_boundary-timer_repeat",
+              "elementId": "IndependentAudit",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Complete independent audit",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_boundary-timer_repeat",
+              "elementId": "UserTask_Outer",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Archive review outcome",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-UserTask_Outer-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_boundary-timer_repeat",
+        "status": "running",
+        "logicalTimeMs": 1000,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_boundary-timer_repeat",
+              "elementId": "IndependentAudit",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Complete independent audit",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-IndependentAudit-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_boundary-timer_repeat",
+        "status": "completed",
+        "logicalTimeMs": 1000,
+        "variables": [],
+        "openWaits": []
+      }
+    ]
+  }
+}

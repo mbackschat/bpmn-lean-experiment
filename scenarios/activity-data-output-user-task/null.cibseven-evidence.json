@@ -1,0 +1,146 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "activity-data-output-null",
+    "sha256": "07abfb6604f5b08ea064087e11a5fee594f6797af7160224332bbd04cb407385"
+  },
+  "profile": {
+    "id": "bpmn-2.0.2",
+    "sha256": "2a1e548c9f7d2dbf5a04e34279aab75bded1192883aae5cbd49f9df972d491a0"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start-activity-data-output-null",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "decide-null",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "DataOutput_Decision",
+            "value": null
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start-activity-data-output-null",
+        "tasks": [
+          {
+            "elementId": "UserTask_Decide",
+            "name": "Decide credit application"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "decide-null",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start-activity-data-output-null",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "decide-null",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start-activity-data-output-null",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "decide-null",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start-activity-data-output-null",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "ActivityDataOutputNull",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "ActivityDataOutputNull",
+              "elementId": "UserTask_Decide",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Decide credit application",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "decide-null",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "ActivityDataOutputNull",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "DataOutput_Decision",
+            "value": {
+              "kind": "null"
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}

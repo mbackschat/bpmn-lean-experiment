@@ -1,0 +1,582 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "automation-incident-composition-fulfilment-scoped-incident-cancel",
+    "sha256": "fd945925ca4bb2657c7166d00732fafbaa37bd820f2b615dcb8a05f7c11902e0"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "orderId",
+            "value": "O-7"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "take-order",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "orderId",
+            "value": "O-7"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-charge",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "charged",
+            "value": "paid"
+          },
+          {
+            "name": "orderId",
+            "value": "O-7"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "fail-reserve",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "charged",
+            "value": "paid"
+          },
+          {
+            "name": "orderId",
+            "value": "O-7"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "cancel-process",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "charged",
+            "value": "paid"
+          },
+          {
+            "name": "orderId",
+            "value": "O-7"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "result-after-cancel",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "charged",
+            "value": "paid"
+          },
+          {
+            "name": "orderId",
+            "value": "O-7"
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start",
+        "tasks": [
+          {
+            "elementId": "Intake",
+            "name": "Take order"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "take-order",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "complete-charge",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "fail-reserve",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "cancel-process",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "result-after-cancel",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "take-order",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-charge",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "fail-reserve",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "cancel-process",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "result-after-cancel",
+        "jobs": []
+      }
+    ],
+    "effectJobs": [
+      {
+        "afterCommandId": "start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "take-order",
+        "jobs": [
+          {
+            "elementId": "Charge",
+            "activation": 1,
+            "protocol": "urn:bpmn-lean:effect:probe-v1",
+            "handler": "bpmnLeanEffectHandler",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-charge",
+        "jobs": [
+          {
+            "elementId": "Reserve",
+            "activation": 1,
+            "protocol": "urn:bpmn-lean:effect:probe-v1",
+            "handler": "bpmnLeanEffectHandler",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "fail-reserve",
+        "jobs": [
+          {
+            "elementId": "Reserve",
+            "activation": 1,
+            "protocol": "urn:bpmn-lean:effect:probe-v1",
+            "handler": "bpmnLeanEffectHandler",
+            "retries": 0,
+            "executable": false,
+            "dueDatePresent": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "cancel-process",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "result-after-cancel",
+        "jobs": []
+      }
+    ],
+    "incidentJobs": [
+      {
+        "afterCommandId": "start",
+        "createIncidentOnFailedJobEnabled": true,
+        "jobs": []
+      },
+      {
+        "afterCommandId": "take-order",
+        "createIncidentOnFailedJobEnabled": true,
+        "jobs": [
+          {
+            "publicJobId": "42",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false,
+            "processInstanceId": "36",
+            "elementId": "Charge",
+            "incident": null
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-charge",
+        "createIncidentOnFailedJobEnabled": true,
+        "jobs": [
+          {
+            "publicJobId": "51",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false,
+            "processInstanceId": "36",
+            "elementId": "Reserve",
+            "incident": null
+          }
+        ]
+      },
+      {
+        "afterCommandId": "fail-reserve",
+        "createIncidentOnFailedJobEnabled": true,
+        "jobs": [
+          {
+            "publicJobId": "51",
+            "retries": 0,
+            "executable": false,
+            "dueDatePresent": false,
+            "processInstanceId": "36",
+            "elementId": "Reserve",
+            "incident": {
+              "publicIncidentId": "62",
+              "type": "failedJob",
+              "configurationJobId": "51",
+              "processInstanceId": "36",
+              "elementId": "Reserve",
+              "causeIncidentId": "62",
+              "rootCauseIncidentId": "62"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "cancel-process",
+        "createIncidentOnFailedJobEnabled": true,
+        "jobs": []
+      },
+      {
+        "afterCommandId": "result-after-cancel",
+        "createIncidentOnFailedJobEnabled": true,
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "take-order",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-charge",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "fail-reserve",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "cancel-process",
+        "state": "EXTERNALLY_TERMINATED"
+      },
+      {
+        "afterCommandId": "result-after-cancel",
+        "state": "EXTERNALLY_TERMINATED"
+      }
+    ],
+    "effectExecutions": [
+      {
+        "afterCommandId": "complete-charge",
+        "schedule": "incidentReportCancel",
+        "invocations": 1,
+        "mutations": 1,
+        "initialRetries": 3,
+        "retriesAfterFirstFailure": null
+      },
+      {
+        "afterCommandId": "fail-reserve",
+        "schedule": "incidentReportCancel",
+        "invocations": 4,
+        "mutations": 1,
+        "initialRetries": 3,
+        "retriesAfterFirstFailure": 2
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "rejected"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Order_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "O-7"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Order_1",
+              "elementId": "Intake",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Take order",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "take-order",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Order_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "O-7"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Order_1",
+              "elementId": "Charge",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "urn:bpmn-lean:effect-operation:probe-v1",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-charge",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Order_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "charged",
+            "value": {
+              "kind": "string",
+              "value": "paid"
+            }
+          },
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "O-7"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Order_1",
+              "elementId": "Reserve",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "urn:bpmn-lean:effect-operation:probe-v1",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "fail-reserve",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Order_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "charged",
+            "value": {
+              "kind": "string",
+              "value": "paid"
+            }
+          },
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "O-7"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Order_1",
+              "elementId": "Reserve",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "incident",
+              "effect": {
+                "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+                "operation": "urn:bpmn-lean:effect-operation:probe-v1",
+                "arguments": [],
+                "failures": 1,
+                "send": null
+              },
+              "generation": 1,
+              "cancellable": true
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "cancel-process",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Order_1",
+        "status": "cancelled",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "charged",
+            "value": {
+              "kind": "string",
+              "value": "paid"
+            }
+          },
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "O-7"
+            }
+          }
+        ],
+        "openWaits": []
+      },
+      {
+        "kind": "command",
+        "commandId": "result-after-cancel",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Order_1",
+        "status": "cancelled",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "charged",
+            "value": {
+              "kind": "string",
+              "value": "paid"
+            }
+          },
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "O-7"
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}

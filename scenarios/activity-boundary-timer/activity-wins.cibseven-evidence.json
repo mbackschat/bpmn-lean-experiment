@@ -1,0 +1,213 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "activity-boundary-timer-activity-wins",
+    "sha256": "a0c5305b8a5245a118e6a9940007da06388fa0cf125c6c2a77a381eb232cb107"
+  },
+  "profile": {
+    "id": "bpmn-2.0.2",
+    "sha256": "2a1e548c9f7d2dbf5a04e34279aab75bded1192883aae5cbd49f9df972d491a0"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start-activity-wins",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-bounded-task",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-normal-follow-on",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": []
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start-activity-wins",
+        "tasks": [
+          {
+            "elementId": "BoundedTask",
+            "name": "Bounded work"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-bounded-task",
+        "tasks": [
+          {
+            "elementId": "NormalTask",
+            "name": "Completed in time"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-normal-follow-on",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start-activity-wins",
+        "jobs": [
+          {
+            "elementId": "Deadline",
+            "dueDateDeltaMs": 1000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-bounded-task",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-normal-follow-on",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start-activity-wins",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-bounded-task",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-normal-follow-on",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start-activity-wins",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "BoundedInstance_ActivityWins",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "BoundedInstance_ActivityWins",
+              "elementId": "BoundedTask",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Bounded work",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "BoundedInstance_ActivityWins",
+              "elementId": "Deadline",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 1000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-bounded-task",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "BoundedInstance_ActivityWins",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "BoundedInstance_ActivityWins",
+              "elementId": "NormalTask",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Completed in time",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-normal-follow-on",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "BoundedInstance_ActivityWins",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": []
+      }
+    ]
+  }
+}

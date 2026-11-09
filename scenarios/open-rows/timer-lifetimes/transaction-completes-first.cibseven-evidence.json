@@ -1,0 +1,746 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "timer-lifetimes-transaction-completes-first",
+    "sha256": "101e3697b63be626ceb292b13b9498091679d2e9e1b26d166f4b75f80b9e788e"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "s02-complete-Reserve",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "s03-complete-Pay",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "s04-fire-Tx_Deadline",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "s05-complete-After_Tx",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "tasks": [
+          {
+            "elementId": "Reserve",
+            "name": "Reserve the slot"
+          },
+          {
+            "elementId": "Child_Task",
+            "name": "Carry out the check"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-complete-Reserve",
+        "tasks": [
+          {
+            "elementId": "Pay",
+            "name": "Take the payment"
+          },
+          {
+            "elementId": "Child_Task",
+            "name": "Carry out the check"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-complete-Pay",
+        "tasks": [
+          {
+            "elementId": "After_Tx",
+            "name": "Confirm the booking"
+          },
+          {
+            "elementId": "Child_Task",
+            "name": "Carry out the check"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-fire-Tx_Deadline",
+        "tasks": [
+          {
+            "elementId": "After_Tx",
+            "name": "Confirm the booking"
+          },
+          {
+            "elementId": "Child_Task",
+            "name": "Carry out the check"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-complete-After_Tx",
+        "tasks": [
+          {
+            "elementId": "Child_Task",
+            "name": "Carry out the check"
+          }
+        ]
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": [
+          {
+            "elementId": "Call_Deadline",
+            "dueDateDeltaMs": 40000,
+            "executable": false
+          },
+          {
+            "elementId": "Child_Boundary",
+            "dueDateDeltaMs": 6000,
+            "executable": false
+          },
+          {
+            "elementId": "Tx_Deadline",
+            "dueDateDeltaMs": 30000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-complete-Reserve",
+        "jobs": [
+          {
+            "elementId": "Call_Deadline",
+            "dueDateDeltaMs": 40000,
+            "executable": false
+          },
+          {
+            "elementId": "Child_Boundary",
+            "dueDateDeltaMs": 6000,
+            "executable": false
+          },
+          {
+            "elementId": "Tx_Deadline",
+            "dueDateDeltaMs": 30000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-complete-Pay",
+        "jobs": [
+          {
+            "elementId": "Call_Deadline",
+            "dueDateDeltaMs": 40000,
+            "executable": false
+          },
+          {
+            "elementId": "Child_Boundary",
+            "dueDateDeltaMs": 6000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-fire-Tx_Deadline",
+        "jobs": [
+          {
+            "elementId": "Call_Deadline",
+            "dueDateDeltaMs": 40000,
+            "executable": false
+          },
+          {
+            "elementId": "Child_Boundary",
+            "dueDateDeltaMs": 6000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-complete-After_Tx",
+        "jobs": [
+          {
+            "elementId": "Call_Deadline",
+            "dueDateDeltaMs": 40000,
+            "executable": false
+          },
+          {
+            "elementId": "Child_Boundary",
+            "dueDateDeltaMs": 6000,
+            "executable": false
+          }
+        ]
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "s01-start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s02-complete-Reserve",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s03-complete-Pay",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s04-fire-Tx_Deadline",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s05-complete-After_Tx",
+        "state": "ACTIVE"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Call_Deadline",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 40000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Reserve",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Reserve the slot",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Tx_Deadline",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 30000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:10:Call_Child:1",
+              "elementId": "Child_Boundary",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_TimedChild",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 6000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:10:Call_Child:1",
+              "elementId": "Child_Task",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_TimedChild",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Carry out the check",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s02-complete-Reserve",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Call_Deadline",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 40000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Pay",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Take the payment",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Tx_Deadline",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 30000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:10:Call_Child:1",
+              "elementId": "Child_Boundary",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_TimedChild",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 6000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:10:Call_Child:1",
+              "elementId": "Child_Task",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_TimedChild",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Carry out the check",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s03-complete-Pay",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "After_Tx",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Confirm the booking",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Call_Deadline",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 40000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:10:Call_Child:1",
+              "elementId": "Child_Boundary",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_TimedChild",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 6000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:10:Call_Child:1",
+              "elementId": "Child_Task",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_TimedChild",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Carry out the check",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s04-fire-Tx_Deadline",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "After_Tx",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Confirm the booking",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Call_Deadline",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 40000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:10:Call_Child:1",
+              "elementId": "Child_Boundary",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_TimedChild",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 6000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:10:Call_Child:1",
+              "elementId": "Child_Task",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_TimedChild",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Carry out the check",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s05-complete-After_Tx",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Call_Deadline",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 40000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:10:Call_Child:1",
+              "elementId": "Child_Boundary",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_TimedChild",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 6000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:10:Call_Child:1",
+              "elementId": "Child_Task",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_TimedChild",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Carry out the check",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      }
+    ]
+  }
+}

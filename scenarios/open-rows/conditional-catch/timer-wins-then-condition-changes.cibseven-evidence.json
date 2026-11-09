@@ -1,0 +1,432 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "conditional-catch-timer-wins-then-condition-changes",
+    "sha256": "d081034a033898114e244c01826adc0c7a5defd25dc11afc0517651a1e231480"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "approved",
+            "value": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-complete-Prepare",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "approved",
+            "value": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-fire-Catch_Expired",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 30000,
+        "variables": [
+          {
+            "name": "approved",
+            "value": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-set-approved",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 30000,
+        "variables": [
+          {
+            "name": "approved",
+            "value": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-complete-Expired",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 30000,
+        "variables": [
+          {
+            "name": "approved",
+            "value": true
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "tasks": [
+          {
+            "elementId": "Prepare",
+            "name": "Prepare the decision"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-complete-Prepare",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "s03-fire-Catch_Expired",
+        "tasks": [
+          {
+            "elementId": "Expired",
+            "name": "Expire"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-set-approved",
+        "tasks": [
+          {
+            "elementId": "Expired",
+            "name": "Expire"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-complete-Expired",
+        "tasks": []
+      }
+    ],
+    "messageSubscriptions": [
+      {
+        "afterCommandId": "s01-start",
+        "subscriptions": []
+      },
+      {
+        "afterCommandId": "s02-complete-Prepare",
+        "subscriptions": [
+          {
+            "elementId": "Catch_Rejected",
+            "eventName": "reject",
+            "messageId": "Message_Reject",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-fire-Catch_Expired",
+        "subscriptions": []
+      },
+      {
+        "afterCommandId": "s04-set-approved",
+        "subscriptions": []
+      },
+      {
+        "afterCommandId": "s05-complete-Expired",
+        "subscriptions": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s02-complete-Prepare",
+        "jobs": [
+          {
+            "elementId": "Catch_Expired",
+            "dueDateDeltaMs": 30000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-fire-Catch_Expired",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s04-set-approved",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s05-complete-Expired",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "s01-start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s02-complete-Prepare",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s03-fire-Catch_Expired",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s04-set-approved",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s05-complete-Expired",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "approved",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Prepare",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Prepare the decision",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s02-complete-Prepare",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "approved",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Catch_Approved",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "conditional",
+              "variableName": "approved",
+              "variableEvents": [],
+              "lastValue": null
+            },
+            "input": null
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Catch_Expired",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 30000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Catch_Rejected",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Reject"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s03-fire-Catch_Expired",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 30000,
+        "variables": [
+          {
+            "name": "approved",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Expired",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Expire",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s04-set-approved",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 30000,
+        "variables": [
+          {
+            "name": "approved",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Expired",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Expire",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s05-complete-Expired",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "completed",
+        "logicalTimeMs": 30000,
+        "variables": [
+          {
+            "name": "approved",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}

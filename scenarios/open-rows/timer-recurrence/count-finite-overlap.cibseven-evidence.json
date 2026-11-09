@@ -1,0 +1,986 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "timer-recurrence-count-finite-overlap",
+    "sha256": "1fe298ab5c8b5095cee75ffb4609b18f12a3c75ab6ac9f59c2be7ef4b1ec554a"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "form",
+            "value": "count"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-fire-Cycle_Count",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 10000,
+        "variables": [
+          {
+            "name": "form",
+            "value": "count"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-fire-Cycle_Count",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 10000,
+        "variables": [
+          {
+            "name": "form",
+            "value": "count"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-fire-Cycle_Count",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 10000,
+        "variables": [
+          {
+            "name": "form",
+            "value": "count"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-fire-Cycle_Count",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 10000,
+        "variables": [
+          {
+            "name": "form",
+            "value": "count"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s06-complete-Handler_Count",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 10000,
+        "variables": [
+          {
+            "name": "form",
+            "value": "count"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s07-complete-Handler_Count",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 10000,
+        "variables": [
+          {
+            "name": "form",
+            "value": "count"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s08-complete-Handler_Count",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 10000,
+        "variables": [
+          {
+            "name": "form",
+            "value": "count"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s09-complete-Host_Count",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 10000,
+        "variables": [
+          {
+            "name": "form",
+            "value": "count"
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "tasks": [
+          {
+            "elementId": "Host_Count",
+            "name": "Review (count)"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-fire-Cycle_Count",
+        "tasks": [
+          {
+            "elementId": "Host_Count",
+            "name": "Review (count)"
+          },
+          {
+            "elementId": "Handler_Count",
+            "name": "Respond to the reminder (count)"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-fire-Cycle_Count",
+        "tasks": [
+          {
+            "elementId": "Host_Count",
+            "name": "Review (count)"
+          },
+          {
+            "elementId": "Handler_Count",
+            "name": "Respond to the reminder (count)"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-fire-Cycle_Count",
+        "tasks": [
+          {
+            "elementId": "Host_Count",
+            "name": "Review (count)"
+          },
+          {
+            "elementId": "Handler_Count",
+            "name": "Respond to the reminder (count)"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-fire-Cycle_Count",
+        "tasks": [
+          {
+            "elementId": "Host_Count",
+            "name": "Review (count)"
+          },
+          {
+            "elementId": "Handler_Count",
+            "name": "Respond to the reminder (count)"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s06-complete-Handler_Count",
+        "tasks": [
+          {
+            "elementId": "Host_Count",
+            "name": "Review (count)"
+          },
+          {
+            "elementId": "Handler_Count",
+            "name": "Respond to the reminder (count)"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s07-complete-Handler_Count",
+        "tasks": [
+          {
+            "elementId": "Host_Count",
+            "name": "Review (count)"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s08-complete-Handler_Count",
+        "tasks": [
+          {
+            "elementId": "Host_Count",
+            "name": "Review (count)"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s09-complete-Host_Count",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": [
+          {
+            "elementId": "Cycle_Count",
+            "dueDateDeltaMs": 10000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-fire-Cycle_Count",
+        "jobs": [
+          {
+            "elementId": "Cycle_Count",
+            "dueDateDeltaMs": 20000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-fire-Cycle_Count",
+        "jobs": [
+          {
+            "elementId": "Cycle_Count",
+            "dueDateDeltaMs": 20000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-fire-Cycle_Count",
+        "jobs": [
+          {
+            "elementId": "Cycle_Count",
+            "dueDateDeltaMs": 20000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-fire-Cycle_Count",
+        "jobs": [
+          {
+            "elementId": "Cycle_Count",
+            "dueDateDeltaMs": 20000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s06-complete-Handler_Count",
+        "jobs": [
+          {
+            "elementId": "Cycle_Count",
+            "dueDateDeltaMs": 20000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s07-complete-Handler_Count",
+        "jobs": [
+          {
+            "elementId": "Cycle_Count",
+            "dueDateDeltaMs": 20000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s08-complete-Handler_Count",
+        "jobs": [
+          {
+            "elementId": "Cycle_Count",
+            "dueDateDeltaMs": 20000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s09-complete-Host_Count",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "s01-start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s02-fire-Cycle_Count",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s03-fire-Cycle_Count",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s04-fire-Cycle_Count",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s05-fire-Cycle_Count",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s06-complete-Handler_Count",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s07-complete-Handler_Count",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s08-complete-Handler_Count",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s09-complete-Host_Count",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "form",
+            "value": {
+              "kind": "string",
+              "value": "count"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Cycle_Count",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 10000,
+              "recurrence": {
+                "periodMs": 10000,
+                "cron": null,
+                "remaining": 3
+              }
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Host_Count",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review (count)",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s02-fire-Cycle_Count",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 10000,
+        "variables": [
+          {
+            "name": "form",
+            "value": {
+              "kind": "string",
+              "value": "count"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Cycle_Count",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 20000,
+              "recurrence": {
+                "periodMs": 10000,
+                "cron": null,
+                "remaining": 3
+              }
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Handler_Count",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Respond to the reminder (count)",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Host_Count",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review (count)",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s03-fire-Cycle_Count",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 10000,
+        "variables": [
+          {
+            "name": "form",
+            "value": {
+              "kind": "string",
+              "value": "count"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Cycle_Count",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 20000,
+              "recurrence": {
+                "periodMs": 10000,
+                "cron": null,
+                "remaining": 3
+              }
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Handler_Count",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Respond to the reminder (count)",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Host_Count",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review (count)",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s04-fire-Cycle_Count",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 10000,
+        "variables": [
+          {
+            "name": "form",
+            "value": {
+              "kind": "string",
+              "value": "count"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Cycle_Count",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 20000,
+              "recurrence": {
+                "periodMs": 10000,
+                "cron": null,
+                "remaining": 3
+              }
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Handler_Count",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Respond to the reminder (count)",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Host_Count",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review (count)",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s05-fire-Cycle_Count",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 10000,
+        "variables": [
+          {
+            "name": "form",
+            "value": {
+              "kind": "string",
+              "value": "count"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Cycle_Count",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 20000,
+              "recurrence": {
+                "periodMs": 10000,
+                "cron": null,
+                "remaining": 3
+              }
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Handler_Count",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Respond to the reminder (count)",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Host_Count",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review (count)",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s06-complete-Handler_Count",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 10000,
+        "variables": [
+          {
+            "name": "form",
+            "value": {
+              "kind": "string",
+              "value": "count"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Cycle_Count",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 20000,
+              "recurrence": {
+                "periodMs": 10000,
+                "cron": null,
+                "remaining": 3
+              }
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Handler_Count",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Respond to the reminder (count)",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Host_Count",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review (count)",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s07-complete-Handler_Count",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 10000,
+        "variables": [
+          {
+            "name": "form",
+            "value": {
+              "kind": "string",
+              "value": "count"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Cycle_Count",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 20000,
+              "recurrence": {
+                "periodMs": 10000,
+                "cron": null,
+                "remaining": 3
+              }
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Host_Count",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review (count)",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s08-complete-Handler_Count",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 10000,
+        "variables": [
+          {
+            "name": "form",
+            "value": {
+              "kind": "string",
+              "value": "count"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Cycle_Count",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 20000,
+              "recurrence": {
+                "periodMs": 10000,
+                "cron": null,
+                "remaining": 3
+              }
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Host_Count",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review (count)",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s09-complete-Host_Count",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "completed",
+        "logicalTimeMs": 10000,
+        "variables": [
+          {
+            "name": "form",
+            "value": {
+              "kind": "string",
+              "value": "count"
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}

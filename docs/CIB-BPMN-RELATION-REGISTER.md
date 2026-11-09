@@ -28,7 +28,7 @@ The counts below cover only entries recorded by this project, including the sepa
 | CIB interpretations of BPMN gaps or inconsistencies | 11 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
 | CIB extension records | 27 | 3 | Project profile deliberately includes behavior beyond bare BPMN execution; candidates remain unselected |
 | Configuration-specific realizations | 9 | 1 | Behavior is permitted or meaningful only under a declared CIB environment |
-| Known CIB limitations within reviewed scope | 3 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
+| Known CIB limitations within reviewed scope | 5 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
 
 The sequential User Task account has no recorded CIB deviation. That statement is bounded to its clauses, pinned environment, witnesses, and observation surface; it is not a general CIB conformance result.
 
@@ -519,6 +519,26 @@ CIB accepts `timeDuration` text that the [Timer exact durations](kernel/semantic
 **Evidence:** `DurationHelper` at `834a9874`; the shared refused-lexeme list in [`timer-duration-lexeme.test.ts`](https://github.com/mbackschat/bpmn-lean-experiment/blob/404a39d7/packages/semantic-core/test/timer-duration-lexeme.test.ts) and [`SemanticProcessAdmissionConformance`](https://github.com/mbackschat/bpmn-lean-experiment/blob/404a39d7/BpmnSemantics/SemanticProcessAdmissionConformance.lean).
 
 **Boundary:** the Intermediate Catch Timer of the two profiles that select `CIB-AGR-0021`.
+
+### CIB-LIM-0004: a Call output targeting a Multi-Instance counter is refused
+
+**Status:** Profile limitation; not a deviation
+
+CIB deploys a Call Activity whose `camunda:out` targets `nrOfInstances`, `nrOfActiveInstances` or `nrOfCompletedInstances` and silently drops that output at return, while the profile refuses the model with `work.call.multiInstanceCounterOutput` ([work semantics](kernel/semantics/WORK-SEMANTICS-SPEC.md)). Dropping a declared output has no BPMN account, so the profile refuses the form instead of reproducing the drop.
+
+**Evidence:** Pinned `CallableElementActivityBehavior#variablesFilter` at `834a9874` names the three counters; the retained [counter-output witness](../scenarios/open-rows/call-counter-output/README.md) commits in CIB Seven `2.2.0` (2026-11-09).
+
+**Boundary:** Call outputs whose target is one of the three counter names, under every profile; `CIB-EXT-0021` admits no reserved output target.
+
+### CIB-LIM-0005: a Boundary Event on an Event Sub-Process is refused
+
+**Status:** Profile limitation; not a deviation
+
+CIB attaches a Boundary Event to an Event Sub-Process like any Activity and runs it, while the profile refuses the model with `scope.eventSubProcess.boundary` ([scopes semantics](kernel/semantics/SCOPES-SEMANTICS-SPEC.md)): an Event Sub-Process is outside normal flow (§10.3.5), so the boundary's exception flow has no meaning BPMN defines (§13.5.4), and no row lifts the refusal.
+
+**Evidence:** Pinned `BpmnParse#parseBoundaryEvents` at `834a9874` attaches by `attachedToRef` without excluding a triggered-by-event Sub-Process; the retained [Event Sub-Process boundary witness](../scenarios/open-rows/event-subprocess-boundary/README.md) deploys and commits in CIB Seven `2.2.0` (2026-11-09).
+
+**Boundary:** any Boundary Event whose `attachedToRef` names an Event Sub-Process, under every profile.
 
 ## Extension register
 

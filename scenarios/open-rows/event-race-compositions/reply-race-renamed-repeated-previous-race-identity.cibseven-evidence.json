@@ -1,0 +1,738 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "event-race-compositions-reply-race-renamed-repeated-previous-race-identity",
+    "sha256": "45f408bee10d179c42739d4f2a4e6da2c510ec01b5741e4decf02d3625e1dc32"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "s02-deliver-N07-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "s03-complete-N11-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "again",
+            "value": "yes"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-deliver-N07-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "again",
+            "value": "yes"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-fire-N09-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "again",
+            "value": "yes"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s06-fire-N09-2",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "again",
+            "value": "yes"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s07-deliver-N07-2",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "again",
+            "value": "yes"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s08-complete-N14-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "again",
+            "value": "yes"
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "s02-deliver-N07-1",
+        "tasks": [
+          {
+            "elementId": "N11",
+            "name": "Process reply",
+            "identityLinks": [],
+            "formFields": [
+              {
+                "id": "again",
+                "typeName": "string"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-complete-N11-1",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "s04-deliver-N07-1",
+        "tasks": [
+          {
+            "elementId": "N11",
+            "name": "Process reply",
+            "identityLinks": [],
+            "formFields": [
+              {
+                "id": "again",
+                "typeName": "string"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-fire-N09-1",
+        "tasks": [
+          {
+            "elementId": "N11",
+            "name": "Process reply",
+            "identityLinks": [],
+            "formFields": [
+              {
+                "id": "again",
+                "typeName": "string"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s06-fire-N09-2",
+        "tasks": [
+          {
+            "elementId": "N11",
+            "name": "Process reply",
+            "identityLinks": [],
+            "formFields": [
+              {
+                "id": "again",
+                "typeName": "string"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s07-deliver-N07-2",
+        "tasks": [
+          {
+            "elementId": "N11",
+            "name": "Process reply",
+            "identityLinks": [],
+            "formFields": [
+              {
+                "id": "again",
+                "typeName": "string"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s08-complete-N14-1",
+        "tasks": [
+          {
+            "elementId": "N11",
+            "name": "Process reply",
+            "identityLinks": [],
+            "formFields": [
+              {
+                "id": "again",
+                "typeName": "string"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "messageSubscriptions": [
+      {
+        "afterCommandId": "s01-start",
+        "subscriptions": [
+          {
+            "elementId": "N07",
+            "eventName": "reply",
+            "messageId": "N02",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-deliver-N07-1",
+        "subscriptions": []
+      },
+      {
+        "afterCommandId": "s03-complete-N11-1",
+        "subscriptions": [
+          {
+            "elementId": "N07",
+            "eventName": "reply",
+            "messageId": "N02",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-deliver-N07-1",
+        "subscriptions": []
+      },
+      {
+        "afterCommandId": "s05-fire-N09-1",
+        "subscriptions": []
+      },
+      {
+        "afterCommandId": "s06-fire-N09-2",
+        "subscriptions": []
+      },
+      {
+        "afterCommandId": "s07-deliver-N07-2",
+        "subscriptions": []
+      },
+      {
+        "afterCommandId": "s08-complete-N14-1",
+        "subscriptions": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": [
+          {
+            "elementId": "N09",
+            "dueDateDeltaMs": 10000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-deliver-N07-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s03-complete-N11-1",
+        "jobs": [
+          {
+            "elementId": "N09",
+            "dueDateDeltaMs": 10000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-deliver-N07-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s05-fire-N09-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s06-fire-N09-2",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s07-deliver-N07-2",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s08-complete-N14-1",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "s01-start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s02-deliver-N07-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s03-complete-N11-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s04-deliver-N07-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s05-fire-N09-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s06-fire-N09-2",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s07-deliver-N07-2",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s08-complete-N14-1",
+        "state": "ACTIVE"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "rejected"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "N07",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "N02"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "N09",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 10000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s02-deliver-N07-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "N11",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Process reply",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "again",
+                  "type": "string"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s03-complete-N11-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "again",
+            "value": {
+              "kind": "string",
+              "value": "yes"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "N07",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "N02"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "N09",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 10000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s04-deliver-N07-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "again",
+            "value": {
+              "kind": "string",
+              "value": "yes"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "N11",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Process reply",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "again",
+                  "type": "string"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s05-fire-N09-1",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "again",
+            "value": {
+              "kind": "string",
+              "value": "yes"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "N11",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Process reply",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "again",
+                  "type": "string"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s06-fire-N09-2",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "again",
+            "value": {
+              "kind": "string",
+              "value": "yes"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "N11",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Process reply",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "again",
+                  "type": "string"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s07-deliver-N07-2",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "again",
+            "value": {
+              "kind": "string",
+              "value": "yes"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "N11",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Process reply",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "again",
+                  "type": "string"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s08-complete-N14-1",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "again",
+            "value": {
+              "kind": "string",
+              "value": "yes"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "N11",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Process reply",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "again",
+                  "type": "string"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      }
+    ]
+  }
+}

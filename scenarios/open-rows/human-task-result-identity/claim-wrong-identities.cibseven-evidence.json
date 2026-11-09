@@ -1,0 +1,792 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "human-task-result-identity-claim-wrong-identities",
+    "sha256": "a60143857e8927ac3b2a9d8ff6bffa7b65fef5624ea93aa78d3bc4f25a6ff7c2"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "claim",
+            "value": "C-1"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "wrong-instance",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "claim",
+            "value": "C-1"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "wrong-task",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "claim",
+            "value": "C-1"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "wrong-activation",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "claim",
+            "value": "C-1"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "review-1-rework",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "claim",
+            "value": "C-1"
+          },
+          {
+            "name": "decision",
+            "value": "rework"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "review-1-preceding-loop",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "claim",
+            "value": "C-1"
+          },
+          {
+            "name": "decision",
+            "value": "rework"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "review-2-approve",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "claim",
+            "value": "C-1"
+          },
+          {
+            "name": "decision",
+            "value": "approve"
+          },
+          {
+            "name": "notes",
+            "value": "C-1"
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start",
+        "tasks": [
+          {
+            "elementId": "Review",
+            "name": "Review claim",
+            "identityLinks": [],
+            "formFields": [
+              {
+                "id": "verdict",
+                "typeName": "string"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "afterCommandId": "wrong-instance",
+        "tasks": [
+          {
+            "elementId": "Review",
+            "name": "Review claim",
+            "identityLinks": [],
+            "formFields": [
+              {
+                "id": "verdict",
+                "typeName": "string"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "afterCommandId": "wrong-task",
+        "tasks": [
+          {
+            "elementId": "Review",
+            "name": "Review claim",
+            "identityLinks": [],
+            "formFields": [
+              {
+                "id": "verdict",
+                "typeName": "string"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "afterCommandId": "wrong-activation",
+        "tasks": [
+          {
+            "elementId": "Review",
+            "name": "Review claim",
+            "identityLinks": [],
+            "formFields": [
+              {
+                "id": "verdict",
+                "typeName": "string"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "afterCommandId": "review-1-rework",
+        "tasks": [
+          {
+            "elementId": "Review",
+            "name": "Review claim",
+            "identityLinks": [],
+            "formFields": [
+              {
+                "id": "verdict",
+                "typeName": "string"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "afterCommandId": "review-1-preceding-loop",
+        "tasks": [
+          {
+            "elementId": "Review",
+            "name": "Review claim",
+            "identityLinks": [],
+            "formFields": [
+              {
+                "id": "verdict",
+                "typeName": "string"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "afterCommandId": "review-2-approve",
+        "tasks": [
+          {
+            "elementId": "Sign",
+            "name": "Sign claim"
+          },
+          {
+            "elementId": "Collect",
+            "name": "Collect notes",
+            "identityLinks": [],
+            "formFields": [
+              {
+                "id": "notes",
+                "typeName": "string"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "wrong-instance",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "wrong-task",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "wrong-activation",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "review-1-rework",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "review-1-preceding-loop",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "review-2-approve",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "wrong-instance",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "wrong-task",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "wrong-activation",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "review-1-rework",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "review-1-preceding-loop",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "review-2-approve",
+        "state": "ACTIVE"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Claim_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "claim",
+            "value": {
+              "kind": "string",
+              "value": "C-1"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Claim_1",
+              "elementId": "Review",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review claim",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "verdict",
+                  "type": "string"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "summary",
+                  "value": {
+                    "kind": "string",
+                    "value": "C-1"
+                  }
+                },
+                {
+                  "name": "verdict",
+                  "value": {
+                    "kind": "string",
+                    "value": "pending"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "wrong-instance",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Claim_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "claim",
+            "value": {
+              "kind": "string",
+              "value": "C-1"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Claim_1",
+              "elementId": "Review",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review claim",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "verdict",
+                  "type": "string"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "summary",
+                  "value": {
+                    "kind": "string",
+                    "value": "C-1"
+                  }
+                },
+                {
+                  "name": "verdict",
+                  "value": {
+                    "kind": "string",
+                    "value": "pending"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "wrong-task",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Claim_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "claim",
+            "value": {
+              "kind": "string",
+              "value": "C-1"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Claim_1",
+              "elementId": "Review",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review claim",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "verdict",
+                  "type": "string"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "summary",
+                  "value": {
+                    "kind": "string",
+                    "value": "C-1"
+                  }
+                },
+                {
+                  "name": "verdict",
+                  "value": {
+                    "kind": "string",
+                    "value": "pending"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "wrong-activation",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Claim_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "claim",
+            "value": {
+              "kind": "string",
+              "value": "C-1"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Claim_1",
+              "elementId": "Review",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review claim",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "verdict",
+                  "type": "string"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "summary",
+                  "value": {
+                    "kind": "string",
+                    "value": "C-1"
+                  }
+                },
+                {
+                  "name": "verdict",
+                  "value": {
+                    "kind": "string",
+                    "value": "pending"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "review-1-rework",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Claim_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "claim",
+            "value": {
+              "kind": "string",
+              "value": "C-1"
+            }
+          },
+          {
+            "name": "decision",
+            "value": {
+              "kind": "string",
+              "value": "rework"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Claim_1",
+              "elementId": "Review",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review claim",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "verdict",
+                  "type": "string"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "summary",
+                  "value": {
+                    "kind": "string",
+                    "value": "C-1"
+                  }
+                },
+                {
+                  "name": "verdict",
+                  "value": {
+                    "kind": "string",
+                    "value": "pending"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "review-1-preceding-loop",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Claim_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "claim",
+            "value": {
+              "kind": "string",
+              "value": "C-1"
+            }
+          },
+          {
+            "name": "decision",
+            "value": {
+              "kind": "string",
+              "value": "rework"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Claim_1",
+              "elementId": "Review",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review claim",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "verdict",
+                  "type": "string"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "summary",
+                  "value": {
+                    "kind": "string",
+                    "value": "C-1"
+                  }
+                },
+                {
+                  "name": "verdict",
+                  "value": {
+                    "kind": "string",
+                    "value": "pending"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "review-2-approve",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Claim_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "claim",
+            "value": {
+              "kind": "string",
+              "value": "C-1"
+            }
+          },
+          {
+            "name": "decision",
+            "value": {
+              "kind": "string",
+              "value": "approve"
+            }
+          },
+          {
+            "name": "notes",
+            "value": {
+              "kind": "string",
+              "value": "C-1"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Claim_1",
+              "elementId": "Collect",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Collect notes",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "notes",
+                  "type": "string"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Claim_1",
+              "elementId": "Sign",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Sign claim",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      }
+    ]
+  }
+}

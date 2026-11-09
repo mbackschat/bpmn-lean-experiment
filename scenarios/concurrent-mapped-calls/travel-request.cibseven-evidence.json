@@ -1,0 +1,469 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "concurrent-mapped-calls-travel-request",
+    "sha256": "6a011179066ea980e8e7b2fefb8fe4e5ccef510ce33bd5812890a009ca9493dd"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start-process",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "approvedBudget",
+            "value": "1200"
+          },
+          {
+            "name": "budget",
+            "value": "1200"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-check-budget",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "approvedBudget",
+            "value": "1100"
+          },
+          {
+            "name": "budget",
+            "value": "1200"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-check-visa",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "approvedBudget",
+            "value": "1100"
+          },
+          {
+            "name": "budget",
+            "value": "1200"
+          },
+          {
+            "name": "visaStatus",
+            "value": "granted"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-book-travel",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "approvedBudget",
+            "value": "1100"
+          },
+          {
+            "name": "budget",
+            "value": "1200"
+          },
+          {
+            "name": "visaStatus",
+            "value": "granted"
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start-process",
+        "tasks": [
+          {
+            "elementId": "BookTravel",
+            "name": "Book travel"
+          },
+          {
+            "elementId": "CheckBudget",
+            "name": "Check budget"
+          },
+          {
+            "elementId": "CheckVisa",
+            "name": "Check visa"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-check-budget",
+        "tasks": [
+          {
+            "elementId": "BookTravel",
+            "name": "Book travel"
+          },
+          {
+            "elementId": "CheckVisa",
+            "name": "Check visa"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-check-visa",
+        "tasks": [
+          {
+            "elementId": "BookTravel",
+            "name": "Book travel"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-book-travel",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start-process",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-check-budget",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-check-visa",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-book-travel",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start-process",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-check-budget",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-check-visa",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-book-travel",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start-process",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "approvedBudget",
+            "value": {
+              "kind": "string",
+              "value": "1200"
+            }
+          },
+          {
+            "name": "budget",
+            "value": {
+              "kind": "string",
+              "value": "1200"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "BookTravel",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Book travel",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:11:BudgetCheck:1",
+              "elementId": "CheckBudget",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_BudgetCheck",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Check budget",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:9:VisaCheck:1",
+              "elementId": "CheckVisa",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_VisaCheck",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Check visa",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-check-budget",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "approvedBudget",
+            "value": {
+              "kind": "string",
+              "value": "1100"
+            }
+          },
+          {
+            "name": "budget",
+            "value": {
+              "kind": "string",
+              "value": "1200"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "BookTravel",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Book travel",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:9:VisaCheck:1",
+              "elementId": "CheckVisa",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_VisaCheck",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Check visa",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-check-visa",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "approvedBudget",
+            "value": {
+              "kind": "string",
+              "value": "1100"
+            }
+          },
+          {
+            "name": "budget",
+            "value": {
+              "kind": "string",
+              "value": "1200"
+            }
+          },
+          {
+            "name": "visaStatus",
+            "value": {
+              "kind": "string",
+              "value": "granted"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "BookTravel",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Book travel",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-book-travel",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "approvedBudget",
+            "value": {
+              "kind": "string",
+              "value": "1100"
+            }
+          },
+          {
+            "name": "budget",
+            "value": {
+              "kind": "string",
+              "value": "1200"
+            }
+          },
+          {
+            "name": "visaStatus",
+            "value": {
+              "kind": "string",
+              "value": "granted"
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}

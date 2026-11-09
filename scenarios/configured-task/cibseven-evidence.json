@@ -1,0 +1,193 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "configured-task",
+    "sha256": "397999c22a1959885a65af52bb91565ef06ff7c874803a269c2ed5d02a7fc2f6"
+  },
+  "profile": {
+    "id": "bpmn-2.0.2",
+    "sha256": "2a1e548c9f7d2dbf5a04e34279aab75bded1192883aae5cbd49f9df972d491a0"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start-process",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:ea8ffb5947131d1289b96a098bee60775443ea303c36824fb464dc7a76a8fc7a",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-review",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": []
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start-process",
+        "tasks": [
+          {
+            "elementId": "UserTask_Review",
+            "name": "Review"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:ea8ffb5947131d1289b96a098bee60775443ea303c36824fb464dc7a76a8fc7a",
+        "tasks": [
+          {
+            "elementId": "UserTask_Review",
+            "name": "Review"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-review",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start-process",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:ea8ffb5947131d1289b96a098bee60775443ea303c36824fb464dc7a76a8fc7a",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-review",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start-process",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:ea8ffb5947131d1289b96a098bee60775443ea303c36824fb464dc7a76a8fc7a",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-review",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start-process",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "ConfiguredTaskInstance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "ConfiguredTaskInstance_1",
+              "elementId": "UserTask_Review",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-effect-sha256:ea8ffb5947131d1289b96a098bee60775443ea303c36824fb464dc7a76a8fc7a",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "ConfiguredTaskInstance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "ConfiguredTaskInstance_1",
+              "elementId": "UserTask_Review",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-review",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "ConfiguredTaskInstance_1",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": []
+      }
+    ]
+  }
+}

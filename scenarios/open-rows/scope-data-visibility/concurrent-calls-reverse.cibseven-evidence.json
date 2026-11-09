@@ -1,0 +1,551 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "scope-data-visibility-concurrent-calls-reverse",
+    "sha256": "a756e3926de58eb217d971292d495307cb0ef025085e98b2a6f246b49299526d"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "seed",
+            "value": "s0"
+          },
+          {
+            "name": "slot",
+            "value": null
+          },
+          {
+            "name": "slot",
+            "value": null
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-opine-b",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "resultB",
+            "value": "beta-opinion"
+          },
+          {
+            "name": "seed",
+            "value": "s0"
+          },
+          {
+            "name": "slot",
+            "value": null
+          },
+          {
+            "name": "slot",
+            "value": "beta-opinion"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-opine-a",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "resultA",
+            "value": "alpha-opinion"
+          },
+          {
+            "name": "resultB",
+            "value": "beta-opinion"
+          },
+          {
+            "name": "seed",
+            "value": "s0"
+          },
+          {
+            "name": "slot",
+            "value": "alpha-opinion"
+          },
+          {
+            "name": "slot",
+            "value": "beta-opinion"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-merged",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "resultA",
+            "value": "alpha-opinion"
+          },
+          {
+            "name": "resultB",
+            "value": "beta-opinion"
+          },
+          {
+            "name": "seed",
+            "value": "s0"
+          },
+          {
+            "name": "slot",
+            "value": "alpha-opinion"
+          },
+          {
+            "name": "slot",
+            "value": "beta-opinion"
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start",
+        "tasks": [
+          {
+            "elementId": "UserTask_Opine",
+            "name": "Opine"
+          },
+          {
+            "elementId": "UserTask_Opine",
+            "name": "Opine"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-opine-b",
+        "tasks": [
+          {
+            "elementId": "UserTask_Opine",
+            "name": "Opine"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-opine-a",
+        "tasks": [
+          {
+            "elementId": "UserTask_Merged",
+            "name": "Merged"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-merged",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-opine-b",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-opine-a",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-merged",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-opine-b",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-opine-a",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-merged",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Trip_01",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "seed",
+            "value": {
+              "kind": "string",
+              "value": "s0"
+            }
+          },
+          {
+            "name": "slot",
+            "value": {
+              "kind": "null"
+            }
+          },
+          {
+            "name": "slot",
+            "value": {
+              "kind": "null"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "call:7:Trip_01:18:CallActivity_CallA:1",
+              "elementId": "UserTask_Opine",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_Expert",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Opine",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "seenSeed",
+                  "value": {
+                    "kind": "string",
+                    "value": "s0"
+                  }
+                },
+                {
+                  "name": "seenTopic",
+                  "value": {
+                    "kind": "string",
+                    "value": "alpha"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "call:7:Trip_01:18:CallActivity_CallB:1",
+              "elementId": "UserTask_Opine",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_Expert",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Opine",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "seenSeed",
+                  "value": {
+                    "kind": "string",
+                    "value": "s0"
+                  }
+                },
+                {
+                  "name": "seenTopic",
+                  "value": {
+                    "kind": "string",
+                    "value": "beta"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-opine-b",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Trip_01",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "resultB",
+            "value": {
+              "kind": "string",
+              "value": "beta-opinion"
+            }
+          },
+          {
+            "name": "seed",
+            "value": {
+              "kind": "string",
+              "value": "s0"
+            }
+          },
+          {
+            "name": "slot",
+            "value": {
+              "kind": "null"
+            }
+          },
+          {
+            "name": "slot",
+            "value": {
+              "kind": "string",
+              "value": "beta-opinion"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "call:7:Trip_01:18:CallActivity_CallA:1",
+              "elementId": "UserTask_Opine",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_Expert",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Opine",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "seenSeed",
+                  "value": {
+                    "kind": "string",
+                    "value": "s0"
+                  }
+                },
+                {
+                  "name": "seenTopic",
+                  "value": {
+                    "kind": "string",
+                    "value": "alpha"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-opine-a",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Trip_01",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "resultA",
+            "value": {
+              "kind": "string",
+              "value": "alpha-opinion"
+            }
+          },
+          {
+            "name": "resultB",
+            "value": {
+              "kind": "string",
+              "value": "beta-opinion"
+            }
+          },
+          {
+            "name": "seed",
+            "value": {
+              "kind": "string",
+              "value": "s0"
+            }
+          },
+          {
+            "name": "slot",
+            "value": {
+              "kind": "string",
+              "value": "alpha-opinion"
+            }
+          },
+          {
+            "name": "slot",
+            "value": {
+              "kind": "string",
+              "value": "beta-opinion"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Trip_01",
+              "elementId": "UserTask_Merged",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Merged",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "seenA",
+                  "value": {
+                    "kind": "string",
+                    "value": "alpha-opinion"
+                  }
+                },
+                {
+                  "name": "seenB",
+                  "value": {
+                    "kind": "string",
+                    "value": "beta-opinion"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-merged",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Trip_01",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "resultA",
+            "value": {
+              "kind": "string",
+              "value": "alpha-opinion"
+            }
+          },
+          {
+            "name": "resultB",
+            "value": {
+              "kind": "string",
+              "value": "beta-opinion"
+            }
+          },
+          {
+            "name": "seed",
+            "value": {
+              "kind": "string",
+              "value": "s0"
+            }
+          },
+          {
+            "name": "slot",
+            "value": {
+              "kind": "string",
+              "value": "alpha-opinion"
+            }
+          },
+          {
+            "name": "slot",
+            "value": {
+              "kind": "string",
+              "value": "beta-opinion"
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}

@@ -1,0 +1,213 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "subprocess-boundary-timer-scope-completes",
+    "sha256": "0c612ff5f4d33f2545e327be0e0fa0de8190ba65d182ca320102fd1a7cb45f7f"
+  },
+  "profile": {
+    "id": "bpmn-2.0.2",
+    "sha256": "2a1e548c9f7d2dbf5a04e34279aab75bded1192883aae5cbd49f9df972d491a0"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start-scope-completes",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-child-task",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-after-scope",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": []
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start-scope-completes",
+        "tasks": [
+          {
+            "elementId": "ChildTask",
+            "name": "Work inside the scope"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-child-task",
+        "tasks": [
+          {
+            "elementId": "AfterScope",
+            "name": "Scope completed in time"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-after-scope",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start-scope-completes",
+        "jobs": [
+          {
+            "elementId": "Deadline",
+            "dueDateDeltaMs": 1000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-child-task",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-after-scope",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start-scope-completes",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-child-task",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-after-scope",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start-scope-completes",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "BoundedScopeInstance_ScopeCompletes",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "BoundedScopeInstance_ScopeCompletes",
+              "elementId": "ChildTask",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Work inside the scope",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "BoundedScopeInstance_ScopeCompletes",
+              "elementId": "Deadline",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 1000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-child-task",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "BoundedScopeInstance_ScopeCompletes",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "BoundedScopeInstance_ScopeCompletes",
+              "elementId": "AfterScope",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Scope completed in time",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-after-scope",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "BoundedScopeInstance_ScopeCompletes",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": []
+      }
+    ]
+  }
+}

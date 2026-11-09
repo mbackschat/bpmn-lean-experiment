@@ -1,0 +1,160 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "activity-data-input-present",
+    "sha256": "a8cc964d1dd9b30e001ee9b5fb308f9079eb9684810a69b7deda5472a02e2151"
+  },
+  "profile": {
+    "id": "bpmn-2.0.2",
+    "sha256": "2a1e548c9f7d2dbf5a04e34279aab75bded1192883aae5cbd49f9df972d491a0"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start-activity-data-input-present",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "Property_ReviewContext",
+            "value": "invoice-4711"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-review-present",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "Property_ReviewContext",
+            "value": "invoice-4711"
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start-activity-data-input-present",
+        "tasks": [
+          {
+            "elementId": "UserTask_Review",
+            "name": "Review invoice"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-review-present",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start-activity-data-input-present",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-review-present",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start-activity-data-input-present",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-review-present",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start-activity-data-input-present",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "ActivityDataInputPresent",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "Property_ReviewContext",
+            "value": {
+              "kind": "string",
+              "value": "invoice-4711"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "ActivityDataInputPresent",
+              "elementId": "UserTask_Review",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review invoice",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-review-present",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "ActivityDataInputPresent",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "Property_ReviewContext",
+            "value": {
+              "kind": "string",
+              "value": "invoice-4711"
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}

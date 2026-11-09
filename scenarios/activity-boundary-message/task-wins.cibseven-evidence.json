@@ -1,0 +1,298 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "activity-boundary-message-task-wins",
+    "sha256": "5b60d821a5f89f8d131e2a5b3cf7b7906aa3d8a2ab65978cf28bc0a0d97f2920"
+  },
+  "profile": {
+    "id": "bpmn-2.0.2",
+    "sha256": "2a1e548c9f7d2dbf5a04e34279aab75bded1192883aae5cbd49f9df972d491a0"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start-activity-boundary-message-task-wins",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-review-application",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "deliver-stale-application-withdrawal",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-record-review",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": []
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start-activity-boundary-message-task-wins",
+        "tasks": [
+          {
+            "elementId": "ReviewApplication",
+            "name": "Review application"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-review-application",
+        "tasks": [
+          {
+            "elementId": "RecordReviewCompletion",
+            "name": "Record review completion"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "deliver-stale-application-withdrawal",
+        "tasks": [
+          {
+            "elementId": "RecordReviewCompletion",
+            "name": "Record review completion"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-record-review",
+        "tasks": []
+      }
+    ],
+    "messageSubscriptions": [
+      {
+        "afterCommandId": "start-activity-boundary-message-task-wins",
+        "subscriptions": [
+          {
+            "elementId": "Withdrawal",
+            "eventName": "Application withdrawal",
+            "messageId": "Message_ApplicationWithdrawal",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-review-application",
+        "subscriptions": []
+      },
+      {
+        "afterCommandId": "deliver-stale-application-withdrawal",
+        "subscriptions": []
+      },
+      {
+        "afterCommandId": "complete-record-review",
+        "subscriptions": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start-activity-boundary-message-task-wins",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-review-application",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "deliver-stale-application-withdrawal",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-record-review",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start-activity-boundary-message-task-wins",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-review-application",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "deliver-stale-application-withdrawal",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-record-review",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start-activity-boundary-message-task-wins",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "ActivityBoundaryMessageTaskWins",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "ActivityBoundaryMessageTaskWins",
+              "elementId": "ReviewApplication",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review application",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "ActivityBoundaryMessageTaskWins",
+              "elementId": "Withdrawal",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "operationMessage",
+                "interfaceId": "Interface_ApplicationMessages",
+                "interfaceOperationId": "Operation_ReceiveApplicationWithdrawal",
+                "messageId": "Message_ApplicationWithdrawal"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-review-application",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "ActivityBoundaryMessageTaskWins",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "ActivityBoundaryMessageTaskWins",
+              "elementId": "RecordReviewCompletion",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Record review completion",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "deliver-stale-application-withdrawal",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "ActivityBoundaryMessageTaskWins",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "ActivityBoundaryMessageTaskWins",
+              "elementId": "RecordReviewCompletion",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Record review completion",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-record-review",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "ActivityBoundaryMessageTaskWins",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": []
+      }
+    ]
+  }
+}

@@ -1,0 +1,437 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "subscription-receive-task-cancel",
+    "sha256": "b317482ced67b410d872568853452d99188227561c07f7a2dfe58d269351b79f"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start-subscription",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-UserTask_Trigger-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "stale-response",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-UserTask_Outer-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-IndependentAudit-1",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": []
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start-subscription",
+        "tasks": [
+          {
+            "elementId": "UserTask_Trigger",
+            "name": "Cancel review region"
+          },
+          {
+            "elementId": "IndependentAudit",
+            "name": "Complete independent audit"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-UserTask_Trigger-1",
+        "tasks": [
+          {
+            "elementId": "IndependentAudit",
+            "name": "Complete independent audit"
+          },
+          {
+            "elementId": "UserTask_Outer",
+            "name": "Archive review outcome"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "stale-response",
+        "tasks": [
+          {
+            "elementId": "IndependentAudit",
+            "name": "Complete independent audit"
+          },
+          {
+            "elementId": "UserTask_Outer",
+            "name": "Archive review outcome"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-UserTask_Outer-1",
+        "tasks": [
+          {
+            "elementId": "IndependentAudit",
+            "name": "Complete independent audit"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-IndependentAudit-1",
+        "tasks": []
+      }
+    ],
+    "messageSubscriptions": [
+      {
+        "afterCommandId": "start-subscription",
+        "subscriptions": [
+          {
+            "elementId": "UserTask_Sibling",
+            "eventName": "Application reminder",
+            "messageId": "ApplicationReminder",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-UserTask_Trigger-1",
+        "subscriptions": []
+      },
+      {
+        "afterCommandId": "stale-response",
+        "subscriptions": []
+      },
+      {
+        "afterCommandId": "complete-UserTask_Outer-1",
+        "subscriptions": []
+      },
+      {
+        "afterCommandId": "complete-IndependentAudit-1",
+        "subscriptions": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start-subscription",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-UserTask_Trigger-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "stale-response",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-UserTask_Outer-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-IndependentAudit-1",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start-subscription",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-UserTask_Trigger-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "stale-response",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-UserTask_Outer-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-IndependentAudit-1",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start-subscription",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_receive-task_cancel",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_receive-task_cancel",
+              "elementId": "IndependentAudit",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Complete independent audit",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_receive-task_cancel",
+              "elementId": "UserTask_Sibling",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "ApplicationReminder"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_receive-task_cancel",
+              "elementId": "UserTask_Trigger",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Cancel review region",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-UserTask_Trigger-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_receive-task_cancel",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_receive-task_cancel",
+              "elementId": "IndependentAudit",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Complete independent audit",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_receive-task_cancel",
+              "elementId": "UserTask_Outer",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Archive review outcome",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "stale-response",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_receive-task_cancel",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_receive-task_cancel",
+              "elementId": "IndependentAudit",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Complete independent audit",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_receive-task_cancel",
+              "elementId": "UserTask_Outer",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Archive review outcome",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-UserTask_Outer-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_receive-task_cancel",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_receive-task_cancel",
+              "elementId": "IndependentAudit",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Complete independent audit",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-IndependentAudit-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_receive-task_cancel",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": []
+      }
+    ]
+  }
+}

@@ -1,0 +1,278 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "automation-business-error-routing-route-rejected-with-payload",
+    "sha256": "9b8387e9aeea4ffa28a27d34d827683d81f72ef58057021f0b56054e9b89de36"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "request",
+            "value": "inv-1"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "reject-validate",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "request",
+            "value": "inv-1"
+          },
+          {
+            "name": "verdict",
+            "value": "missing-tax-id"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-fix",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "request",
+            "value": "inv-1"
+          },
+          {
+            "name": "verdict",
+            "value": "missing-tax-id"
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "reject-validate",
+        "tasks": [
+          {
+            "elementId": "FixInvoice",
+            "name": "Fix invoice"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-fix",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "reject-validate",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-fix",
+        "jobs": []
+      }
+    ],
+    "effectJobs": [
+      {
+        "afterCommandId": "start",
+        "jobs": [
+          {
+            "elementId": "Validate",
+            "activation": 1,
+            "protocol": "urn:bpmn-lean:effect:probe-v1",
+            "handler": "bpmnLeanEffectHandler",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "reject-validate",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-fix",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "reject-validate",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-fix",
+        "state": "COMPLETED"
+      }
+    ],
+    "effectExecutions": [
+      {
+        "afterCommandId": "reject-validate",
+        "schedule": "plainSuccess",
+        "invocations": 1,
+        "mutations": 1,
+        "initialRetries": 3,
+        "retriesAfterFirstFailure": null
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Invoice_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "request",
+            "value": {
+              "kind": "string",
+              "value": "inv-1"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Invoice_1",
+              "elementId": "Validate",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "urn:bpmn-lean:effect-operation:probe-v1",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "reject-validate",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Invoice_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "request",
+            "value": {
+              "kind": "string",
+              "value": "inv-1"
+            }
+          },
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "missing-tax-id"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Invoice_1",
+              "elementId": "FixInvoice",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Fix invoice",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-fix",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Invoice_1",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "request",
+            "value": {
+              "kind": "string",
+              "value": "inv-1"
+            }
+          },
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "missing-tax-id"
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}

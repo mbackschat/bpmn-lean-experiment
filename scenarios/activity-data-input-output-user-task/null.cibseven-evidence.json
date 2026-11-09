@@ -1,0 +1,168 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "activity-data-input-output-null",
+    "sha256": "bfb71c8d6ecc3b11af224919e9300a5877114af4555662e5e57e4f82afc6b558"
+  },
+  "profile": {
+    "id": "bpmn-2.0.2",
+    "sha256": "2a1e548c9f7d2dbf5a04e34279aab75bded1192883aae5cbd49f9df972d491a0"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start-activity-data-input-output-null",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "Property_ClaimSummary",
+            "value": null
+          }
+        ]
+      },
+      {
+        "afterCommandId": "assess-claim-null",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "DataOutput_ClaimDecision",
+            "value": null
+          },
+          {
+            "name": "Property_ClaimSummary",
+            "value": null
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start-activity-data-input-output-null",
+        "tasks": [
+          {
+            "elementId": "UserTask_AssessClaim",
+            "name": "Assess claim"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "assess-claim-null",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start-activity-data-input-output-null",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "assess-claim-null",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start-activity-data-input-output-null",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "assess-claim-null",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start-activity-data-input-output-null",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "ActivityDataInputOutputNull",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "Property_ClaimSummary",
+            "value": {
+              "kind": "null"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "ActivityDataInputOutputNull",
+              "elementId": "UserTask_AssessClaim",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Assess claim",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "assess-claim-null",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "ActivityDataInputOutputNull",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "DataOutput_ClaimDecision",
+            "value": {
+              "kind": "null"
+            }
+          },
+          {
+            "name": "Property_ClaimSummary",
+            "value": {
+              "kind": "null"
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}

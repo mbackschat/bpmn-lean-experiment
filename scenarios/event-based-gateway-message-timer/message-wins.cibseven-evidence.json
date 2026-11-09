@@ -1,0 +1,228 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "event-based-gateway-message-wins",
+    "sha256": "a90e7f17fe5d493fa2a1adf6ffc8b517be9c12bf85a5c7bb5c3a86aadbe6f7ad"
+  },
+  "profile": {
+    "id": "bpmn-2.0.2",
+    "sha256": "2a1e548c9f7d2dbf5a04e34279aab75bded1192883aae5cbd49f9df972d491a0"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start-event-race-message-wins",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "deliver-event-race-message-first",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-event-race-message-task",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": []
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start-event-race-message-wins",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "deliver-event-race-message-first",
+        "tasks": [
+          {
+            "elementId": "MessageTask",
+            "name": "Message selected"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-event-race-message-task",
+        "tasks": []
+      }
+    ],
+    "messageSubscriptions": [
+      {
+        "afterCommandId": "start-event-race-message-wins",
+        "subscriptions": [
+          {
+            "elementId": "MessageCatch",
+            "eventName": "Approval",
+            "messageId": "Message_Approval",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "deliver-event-race-message-first",
+        "subscriptions": []
+      },
+      {
+        "afterCommandId": "complete-event-race-message-task",
+        "subscriptions": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start-event-race-message-wins",
+        "jobs": [
+          {
+            "elementId": "TimerCatch",
+            "dueDateDeltaMs": 1000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "deliver-event-race-message-first",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-event-race-message-task",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start-event-race-message-wins",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "deliver-event-race-message-first",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-event-race-message-task",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start-event-race-message-wins",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "EventRaceInstance_MessageWins",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "EventRaceInstance_MessageWins",
+              "elementId": "MessageCatch",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "operationMessage",
+                "interfaceId": "Interface_ProcessMessages",
+                "interfaceOperationId": "Operation_ReceiveApproval",
+                "messageId": "Message_Approval"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "EventRaceInstance_MessageWins",
+              "elementId": "TimerCatch",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 1000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "deliver-event-race-message-first",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "EventRaceInstance_MessageWins",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "EventRaceInstance_MessageWins",
+              "elementId": "MessageTask",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Message selected",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-event-race-message-task",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "EventRaceInstance_MessageWins",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": []
+      }
+    ]
+  }
+}

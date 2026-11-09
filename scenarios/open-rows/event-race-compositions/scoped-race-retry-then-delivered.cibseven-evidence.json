@@ -1,0 +1,571 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "event-race-compositions-scoped-race-retry-then-delivered",
+    "sha256": "660c005706e403210ee67e8c93450d4f081972597234736b6fd3596728b5fd06"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "retry",
+            "value": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-fire-DeliveryOverdue-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 5000,
+        "variables": [
+          {
+            "name": "retry",
+            "value": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-complete-RecordFailure-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 5000,
+        "variables": [
+          {
+            "name": "retry",
+            "value": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-deliver-Delivered-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 5000,
+        "variables": [
+          {
+            "name": "retry",
+            "value": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-deliver-Delivered-2",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 5000,
+        "variables": [
+          {
+            "name": "retry",
+            "value": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s06-complete-ConfirmDelivery-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 5000,
+        "variables": [
+          {
+            "name": "retry",
+            "value": true
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "s02-fire-DeliveryOverdue-1",
+        "tasks": [
+          {
+            "elementId": "RecordFailure",
+            "name": "Record failure",
+            "identityLinks": [],
+            "formFields": [
+              {
+                "id": "retry",
+                "typeName": "boolean"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-complete-RecordFailure-1",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "s04-deliver-Delivered-1",
+        "tasks": [
+          {
+            "elementId": "ConfirmDelivery",
+            "name": "Confirm delivery"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-deliver-Delivered-2",
+        "tasks": [
+          {
+            "elementId": "ConfirmDelivery",
+            "name": "Confirm delivery"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s06-complete-ConfirmDelivery-1",
+        "tasks": []
+      }
+    ],
+    "messageSubscriptions": [
+      {
+        "afterCommandId": "s01-start",
+        "subscriptions": [
+          {
+            "elementId": "Delivered",
+            "eventName": "delivered",
+            "messageId": "Message_Delivered",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-fire-DeliveryOverdue-1",
+        "subscriptions": []
+      },
+      {
+        "afterCommandId": "s03-complete-RecordFailure-1",
+        "subscriptions": [
+          {
+            "elementId": "Delivered",
+            "eventName": "delivered",
+            "messageId": "Message_Delivered",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-deliver-Delivered-1",
+        "subscriptions": []
+      },
+      {
+        "afterCommandId": "s05-deliver-Delivered-2",
+        "subscriptions": []
+      },
+      {
+        "afterCommandId": "s06-complete-ConfirmDelivery-1",
+        "subscriptions": [
+          {
+            "elementId": "Delivered",
+            "eventName": "delivered",
+            "messageId": "Message_Delivered",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": [
+          {
+            "elementId": "DeliveryOverdue",
+            "dueDateDeltaMs": 5000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-fire-DeliveryOverdue-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s03-complete-RecordFailure-1",
+        "jobs": [
+          {
+            "elementId": "DeliveryOverdue",
+            "dueDateDeltaMs": 10000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-deliver-Delivered-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s05-deliver-Delivered-2",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s06-complete-ConfirmDelivery-1",
+        "jobs": [
+          {
+            "elementId": "DeliveryOverdue",
+            "dueDateDeltaMs": 10000,
+            "executable": false
+          }
+        ]
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "s01-start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s02-fire-DeliveryOverdue-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s03-complete-RecordFailure-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s04-deliver-Delivered-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s05-deliver-Delivered-2",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s06-complete-ConfirmDelivery-1",
+        "state": "ACTIVE"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "retry",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Delivered",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Delivered"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "DeliveryOverdue",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 5000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s02-fire-DeliveryOverdue-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 5000,
+        "variables": [
+          {
+            "name": "retry",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "RecordFailure",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Record failure",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "retry",
+                  "type": "boolean"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s03-complete-RecordFailure-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 5000,
+        "variables": [
+          {
+            "name": "retry",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Delivered",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Delivered"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "DeliveryOverdue",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 10000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s04-deliver-Delivered-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 5000,
+        "variables": [
+          {
+            "name": "retry",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ConfirmDelivery",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Confirm delivery",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s05-deliver-Delivered-2",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 5000,
+        "variables": [
+          {
+            "name": "retry",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ConfirmDelivery",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Confirm delivery",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s06-complete-ConfirmDelivery-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 5000,
+        "variables": [
+          {
+            "name": "retry",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Delivered",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Delivered"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "DeliveryOverdue",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 10000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          }
+        ]
+      }
+    ]
+  }
+}

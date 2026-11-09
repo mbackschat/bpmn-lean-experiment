@@ -1,0 +1,324 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "timer-recurrence-cycle-on-interrupting-boundary",
+    "sha256": "f97654650f90f25c854b49cc273093f9f9564b725afa66ab13bd0795c0da9f7c"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "form",
+            "value": "interrupting"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-fire-Cycle_Interrupting",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 10000,
+        "variables": [
+          {
+            "name": "form",
+            "value": "interrupting"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-fire-Cycle_Interrupting",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 10000,
+        "variables": [
+          {
+            "name": "form",
+            "value": "interrupting"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-complete-Handler_Interrupting",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 10000,
+        "variables": [
+          {
+            "name": "form",
+            "value": "interrupting"
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "tasks": [
+          {
+            "elementId": "Host_Interrupting",
+            "name": "Review (interrupting cycle)"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-fire-Cycle_Interrupting",
+        "tasks": [
+          {
+            "elementId": "Handler_Interrupting",
+            "name": "Respond to the deadline"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-fire-Cycle_Interrupting",
+        "tasks": [
+          {
+            "elementId": "Handler_Interrupting",
+            "name": "Respond to the deadline"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-complete-Handler_Interrupting",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": [
+          {
+            "elementId": "Cycle_Interrupting",
+            "dueDateDeltaMs": 10000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-fire-Cycle_Interrupting",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s03-fire-Cycle_Interrupting",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s04-complete-Handler_Interrupting",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "s01-start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s02-fire-Cycle_Interrupting",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s03-fire-Cycle_Interrupting",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s04-complete-Handler_Interrupting",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "form",
+            "value": {
+              "kind": "string",
+              "value": "interrupting"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Cycle_Interrupting",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 10000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Host_Interrupting",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review (interrupting cycle)",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s02-fire-Cycle_Interrupting",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 10000,
+        "variables": [
+          {
+            "name": "form",
+            "value": {
+              "kind": "string",
+              "value": "interrupting"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Handler_Interrupting",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Respond to the deadline",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s03-fire-Cycle_Interrupting",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 10000,
+        "variables": [
+          {
+            "name": "form",
+            "value": {
+              "kind": "string",
+              "value": "interrupting"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Handler_Interrupting",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Respond to the deadline",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s04-complete-Handler_Interrupting",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "completed",
+        "logicalTimeMs": 10000,
+        "variables": [
+          {
+            "name": "form",
+            "value": {
+              "kind": "string",
+              "value": "interrupting"
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}

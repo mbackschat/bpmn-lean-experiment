@@ -1,1 +1,3378 @@
-[]
+[
+  {
+    "evidence": "scenarios/activity-data-input-output-user-task/absent.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-05",
+      "PC-DATA-06"
+    ]
+  },
+  {
+    "evidence": "scenarios/activity-data-input-output-user-task/null.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-05",
+      "PC-DATA-06"
+    ]
+  },
+  {
+    "evidence": "scenarios/activity-data-input-output-user-task/omitted.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-05",
+      "PC-DATA-06"
+    ]
+  },
+  {
+    "evidence": "scenarios/activity-data-input-output-user-task/present.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-05",
+      "PC-DATA-06"
+    ]
+  },
+  {
+    "evidence": "scenarios/activity-data-input-user-task/absent.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-05"
+    ]
+  },
+  {
+    "evidence": "scenarios/activity-data-input-user-task/null.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-05"
+    ]
+  },
+  {
+    "evidence": "scenarios/activity-data-input-user-task/present.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-05"
+    ]
+  },
+  {
+    "evidence": "scenarios/activity-data-output-user-task/null.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-06"
+    ]
+  },
+  {
+    "evidence": "scenarios/activity-data-output-user-task/omitted.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-06"
+    ]
+  },
+  {
+    "evidence": "scenarios/activity-data-output-user-task/supplied.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-06"
+    ]
+  },
+  {
+    "evidence": "scenarios/called-process-call-activity/cibseven-evidence.json",
+    "owners": [
+      "PC-SCOPE-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/compensation/failure-a.cibseven-evidence.json",
+    "owners": [
+      "PC-COMPENSATION-02",
+      "PC-COMPENSATION-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/compensation/failure-b.cibseven-evidence.json",
+    "owners": [
+      "PC-COMPENSATION-02",
+      "PC-COMPENSATION-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/compensation/failure-c.cibseven-evidence.json",
+    "owners": [
+      "PC-COMPENSATION-02",
+      "PC-COMPENSATION-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/compensation/success-b-a-c.cibseven-evidence.json",
+    "owners": [
+      "PC-COMPENSATION-02",
+      "PC-COMPENSATION-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/compensation/success-b-c-a.cibseven-evidence.json",
+    "owners": [
+      "PC-COMPENSATION-02",
+      "PC-COMPENSATION-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/compensation/success-c-b-a.cibseven-evidence.json",
+    "owners": [
+      "PC-COMPENSATION-02",
+      "PC-COMPENSATION-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/concurrent-mapped-calls/supplier-compliance-first.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-04",
+      "PC-DATA-05",
+      "PC-DATA-06"
+    ]
+  },
+  {
+    "evidence": "scenarios/concurrent-mapped-calls/supplier-financial-first.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-04",
+      "PC-DATA-05",
+      "PC-DATA-06"
+    ]
+  },
+  {
+    "evidence": "scenarios/concurrent-mapped-calls/travel-request.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-04",
+      "PC-DATA-05",
+      "PC-DATA-06"
+    ]
+  },
+  {
+    "evidence": "scenarios/configured-task/cibseven-evidence.json",
+    "owners": [
+      "PC-AUTO-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/exclusive-gateway-simple-boolean/cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-07"
+    ]
+  },
+  {
+    "evidence": "scenarios/expense-exception-review/abort.cibseven-evidence.json",
+    "owners": [
+      "PC-JOURNEY-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/expense-exception-review/approve.cibseven-evidence.json",
+    "owners": [
+      "PC-JOURNEY-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/expense-exception-review/request-changes.cibseven-evidence.json",
+    "owners": [
+      "PC-JOURNEY-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/inclusive-gateway-selected-branches/both-true-a-then-b.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-07"
+    ]
+  },
+  {
+    "evidence": "scenarios/inclusive-gateway-selected-branches/both-true-b-then-a.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-07"
+    ]
+  },
+  {
+    "evidence": "scenarios/inclusive-gateway-selected-branches/default.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-07"
+    ]
+  },
+  {
+    "evidence": "scenarios/inclusive-gateway-selected-branches/one-true.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-07"
+    ]
+  },
+  {
+    "evidence": "scenarios/message-payload-catch/absent-payload.cibseven-evidence.json",
+    "owners": [
+      "PC-MESSAGE-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/activity-split-merge/called-split-both-flows.cibseven-evidence.json",
+    "owners": [
+      "PC-CF-07"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/activity-split-merge/embedded-split-both-flows.cibseven-evidence.json",
+    "owners": [
+      "PC-CF-07"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/activity-split-merge/mi-body-split-one-body-two-outputs.cibseven-evidence.json",
+    "owners": [
+      "PC-CF-07"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/activity-split-merge/review-output-order-mapped-output-and-condition.cibseven-evidence.json",
+    "owners": [
+      "PC-CF-07"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/activity-split-merge/review-split-both-flows.cibseven-evidence.json",
+    "owners": [
+      "PC-CF-07"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/activity-split-merge/review-split-completion-values-read.cibseven-evidence.json",
+    "owners": [
+      "PC-CF-07"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/activity-split-merge/review-split-default-flow.cibseven-evidence.json",
+    "owners": [
+      "PC-CF-07"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/activity-split-merge/review-split-no-default-no-flow-true.cibseven-evidence.json",
+    "owners": [
+      "PC-CF-07"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/activity-split-merge/review-split-one-flow.cibseven-evidence.json",
+    "owners": [
+      "PC-CF-07"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/addressless-receive-compositions/items-parallel-out-of-order.cibseven-evidence.json",
+    "owners": [
+      "PC-HUM-06"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/addressless-receive-compositions/items-sequential-turnover.cibseven-evidence.json",
+    "owners": [
+      "PC-HUM-06"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/addressless-receive-compositions/scan-repeated-and-embedded.cibseven-evidence.json",
+    "owners": [
+      "PC-HUM-06"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/addressless-receive-compositions/scan-stale-and-wrong-occurrence.cibseven-evidence.json",
+    "owners": [
+      "PC-HUM-06"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/automation-business-error-routing/route-rejected-unmatched-code.cibseven-evidence.json",
+    "owners": [
+      "PC-AUTO-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/automation-business-error-routing/route-rejected-with-payload.cibseven-evidence.json",
+    "owners": [
+      "PC-AUTO-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/automation-business-error-routing/route-rejected-without-payload.cibseven-evidence.json",
+    "owners": [
+      "PC-AUTO-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/automation-business-error-routing/route-success.cibseven-evidence.json",
+    "owners": [
+      "PC-AUTO-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/automation-business-error-routing/scope-ancestor-handler.cibseven-evidence.json",
+    "owners": [
+      "PC-AUTO-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/automation-business-error-routing/scope-inner-handler.cibseven-evidence.json",
+    "owners": [
+      "PC-AUTO-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/automation-business-error-routing/scope-non-ancestor-after-completion.cibseven-evidence.json",
+    "owners": [
+      "PC-AUTO-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/automation-business-error-routing/scope-unmatched-code.cibseven-evidence.json",
+    "owners": [
+      "PC-AUTO-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/automation-handler-reuse/called-effect.cibseven-evidence.json",
+    "owners": [
+      "PC-AUTO-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/automation-handler-reuse/captured-inputs-after-change.cibseven-evidence.json",
+    "owners": [
+      "PC-AUTO-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/automation-handler-reuse/sequential-body-effects.cibseven-evidence.json",
+    "owners": [
+      "PC-AUTO-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/automation-handler-reuse/typed-inputs-and-results.cibseven-evidence.json",
+    "owners": [
+      "PC-AUTO-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/automation-incident-composition/batch-sequential-body-incidents.cibseven-evidence.json",
+    "owners": [
+      "PC-AUTO-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/automation-incident-composition/called-incident-cancel.cibseven-evidence.json",
+    "owners": [
+      "PC-AUTO-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/automation-incident-composition/called-incident-retry.cibseven-evidence.json",
+    "owners": [
+      "PC-AUTO-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/automation-incident-composition/fulfilment-later-activation-incident.cibseven-evidence.json",
+    "owners": [
+      "PC-AUTO-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/automation-incident-composition/fulfilment-mixed-retry-then-success.cibseven-evidence.json",
+    "owners": [
+      "PC-AUTO-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/automation-incident-composition/fulfilment-repeated-incident.cibseven-evidence.json",
+    "owners": [
+      "PC-AUTO-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/automation-incident-composition/fulfilment-results-and-retries-during-incident.cibseven-evidence.json",
+    "owners": [
+      "PC-AUTO-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/automation-incident-composition/fulfilment-scoped-incident-cancel.cibseven-evidence.json",
+    "owners": [
+      "PC-AUTO-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/call-binding-time/call-deployment.cibseven-evidence.json",
+    "owners": [
+      "PC-SCOPE-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/call-binding-time/call-latest.cibseven-evidence.json",
+    "owners": [
+      "PC-SCOPE-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/call-binding-time/call-missing.cibseven-evidence.json",
+    "owners": [
+      "PC-SCOPE-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/call-binding-time/call-other-namespace.cibseven-evidence.json",
+    "owners": [
+      "PC-SCOPE-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/call-binding-time/call-tag-unknown.cibseven-evidence.json",
+    "owners": [
+      "PC-SCOPE-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/call-binding-time/call-tag.cibseven-evidence.json",
+    "owners": [
+      "PC-SCOPE-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/call-binding-time/call-tenant-selector.cibseven-evidence.json",
+    "owners": [
+      "PC-SCOPE-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/call-binding-time/call-version-absent.cibseven-evidence.json",
+    "owners": [
+      "PC-SCOPE-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/call-binding-time/call-version.cibseven-evidence.json",
+    "owners": [
+      "PC-SCOPE-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/call-counter-output/counter-outputs-dropped.cibseven-evidence.json",
+    "owners": [
+      "CIB-LIM-0004"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/call-exceptional-return/item-booked-normally.cibseven-evidence.json",
+    "owners": [
+      "PC-SCOPE-06"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/call-exceptional-return/no-carrier-skips-nested-boundary.cibseven-evidence.json",
+    "owners": [
+      "PC-SCOPE-06"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/call-exceptional-return/no-slot-caught-by-nearest-boundary.cibseven-evidence.json",
+    "owners": [
+      "PC-SCOPE-06"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/call-exceptional-return/no-stock-handled-inside-child.cibseven-evidence.json",
+    "owners": [
+      "PC-SCOPE-06"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/call-exceptional-return/normal-return-baseline.cibseven-evidence.json",
+    "owners": [
+      "PC-SCOPE-06"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/call-exceptional-return/slow-booking-escalation-two-levels.cibseven-evidence.json",
+    "owners": [
+      "PC-SCOPE-06"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/call-exceptional-return/timer-interrupts-after-book-returned.cibseven-evidence.json",
+    "owners": [
+      "PC-SCOPE-06"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/call-exceptional-return/timer-interrupts-while-book-called.cibseven-evidence.json",
+    "owners": [
+      "PC-SCOPE-06"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/compensation-activity-ref-refusals/throw-names-a-start-event.cibseven-evidence.json",
+    "owners": [
+      "PC-COMPENSATION-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/compensation-effect-and-call-records/call-completed-then-throw.cibseven-evidence.json",
+    "owners": [
+      "PC-COMPENSATION-03",
+      "PC-COMPENSATION-04"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/compensation-effect-and-call-records/success-then-throw.cibseven-evidence.json",
+    "owners": [
+      "PC-COMPENSATION-03",
+      "PC-COMPENSATION-04"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/compensation-eligibility/late-third-second-throw.cibseven-evidence.json",
+    "owners": [
+      "PC-COMPENSATION-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/compensation-eligibility/two-records-live-data.cibseven-evidence.json",
+    "owners": [
+      "PC-COMPENSATION-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/compensation-eligibility/unfinished-third-ineligible.cibseven-evidence.json",
+    "owners": [
+      "PC-COMPENSATION-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/compensation-handler-bodies/abandoned-while-handlers-wait.cibseven-evidence.json",
+    "owners": [
+      "PC-COMPENSATION-04"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/compensation-handler-bodies/all-forms-complete.cibseven-evidence.json",
+    "owners": [
+      "PC-COMPENSATION-04"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/compensation-handler-bodies/premature-and-stale-handler-results.cibseven-evidence.json",
+    "owners": [
+      "PC-COMPENSATION-04"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/compensation-handler-failures/both-succeed-reversed.cibseven-evidence.json",
+    "owners": [
+      "PC-COMPENSATION-01",
+      "PC-COMPENSATION-04"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/compensation-handler-failures/duplicate-results.cibseven-evidence.json",
+    "owners": [
+      "PC-COMPENSATION-01",
+      "PC-COMPENSATION-04"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/compensation-handler-failures/late-failure-after-success.cibseven-evidence.json",
+    "owners": [
+      "PC-COMPENSATION-01",
+      "PC-COMPENSATION-04"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/compensation-handler-failures/one-fails-caught.cibseven-evidence.json",
+    "owners": [
+      "PC-COMPENSATION-01",
+      "PC-COMPENSATION-04"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/compensation-handler-failures/one-fails-uncaught.cibseven-evidence.json",
+    "owners": [
+      "PC-COMPENSATION-01",
+      "PC-COMPENSATION-04"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/compensation-handler-failures/technical-failure-cancelled.cibseven-evidence.json",
+    "owners": [
+      "PC-COMPENSATION-01",
+      "PC-COMPENSATION-04"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/compensation-handler-failures/technical-failure-retried.cibseven-evidence.json",
+    "owners": [
+      "PC-COMPENSATION-01",
+      "PC-COMPENSATION-04"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/compensation-handler-form-refusals/association-to-ordinary-activity.cibseven-evidence.json",
+    "owners": [
+      "PC-COMPENSATION-04",
+      "PC-COMPENSATION-05"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/compensation-handler-form-refusals/esp-and-boundary-same-scope.cibseven-evidence.json",
+    "owners": [
+      "PC-COMPENSATION-04",
+      "PC-COMPENSATION-05"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/compensation-handler-form-refusals/esp-at-process-level.cibseven-evidence.json",
+    "owners": [
+      "PC-COMPENSATION-04",
+      "PC-COMPENSATION-05"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/compensation-handler-form-refusals/handler-with-sequence-flow.cibseven-evidence.json",
+    "owners": [
+      "PC-COMPENSATION-04",
+      "PC-COMPENSATION-05"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/compensation-handler-form-refusals/two-compensation-boundaries.cibseven-evidence.json",
+    "owners": [
+      "PC-COMPENSATION-04",
+      "PC-COMPENSATION-05"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/compensation-handler-form-refusals/two-esps-same-scope.cibseven-evidence.json",
+    "owners": [
+      "PC-COMPENSATION-04",
+      "PC-COMPENSATION-05"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/compensation-multi-instance-bodies/regions-parallel-out-of-order.cibseven-evidence.json",
+    "owners": [
+      "PC-COMPENSATION-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/compensation-multi-instance-bodies/regions-sequential-in-turn.cibseven-evidence.json",
+    "owners": [
+      "PC-COMPENSATION-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/compensation-multi-instance-bodies/tasks-parallel-out-of-order.cibseven-evidence.json",
+    "owners": [
+      "PC-COMPENSATION-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/compensation-multi-instance-bodies/tasks-sequential-in-turn.cibseven-evidence.json",
+    "owners": [
+      "PC-COMPENSATION-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/compensation-order-chronology/advancing-clock-a-b-c.cibseven-evidence.json",
+    "owners": [
+      "PC-COMPENSATION-01",
+      "PC-COMPENSATION-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/compensation-order-chronology/advancing-clock-a-c-b.cibseven-evidence.json",
+    "owners": [
+      "PC-COMPENSATION-01",
+      "PC-COMPENSATION-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/compensation-order-chronology/advancing-clock-c-a-b.cibseven-evidence.json",
+    "owners": [
+      "PC-COMPENSATION-01",
+      "PC-COMPENSATION-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/compensation-order-chronology/frozen-clock-a-b-c.cibseven-evidence.json",
+    "owners": [
+      "PC-COMPENSATION-01",
+      "PC-COMPENSATION-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/compensation-order-chronology/frozen-clock-c-a-b.cibseven-evidence.json",
+    "owners": [
+      "PC-COMPENSATION-01",
+      "PC-COMPENSATION-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/compensation-targeting/chain-handlers-forward.cibseven-evidence.json",
+    "owners": [
+      "PC-COMPENSATION-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/compensation-targeting/chain-handlers-reversed.cibseven-evidence.json",
+    "owners": [
+      "PC-COMPENSATION-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/compensation-targeting/empty-then-targeted.cibseven-evidence.json",
+    "owners": [
+      "PC-COMPENSATION-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/compensation-targeting/end-targeted-only.cibseven-evidence.json",
+    "owners": [
+      "PC-COMPENSATION-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/compensation-targeting/end-untargeted.cibseven-evidence.json",
+    "owners": [
+      "PC-COMPENSATION-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/compensation-targeting/unwaited-handler-open.cibseven-evidence.json",
+    "owners": [
+      "PC-COMPENSATION-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/condition-expression-routing/boolean-flag.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-08",
+      "PC-DATA-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/condition-expression-routing/context-below-limit.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-07"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/condition-expression-routing/context-written-after-start.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-07"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/condition-expression-routing/false-reaches-broken.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-08",
+      "PC-DATA-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/condition-expression-routing/first-match-all-true.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-07",
+      "PC-DATA-08"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/condition-expression-routing/first-match-none-true.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-08"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/condition-expression-routing/first-match-second-and-third-true.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-08"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/condition-expression-routing/first-match-third-only.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-08"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/condition-expression-routing/flag-absent.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-08",
+      "PC-DATA-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/condition-expression-routing/flag-boolean-false.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-08",
+      "PC-DATA-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/condition-expression-routing/flag-boolean-true.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-08",
+      "PC-DATA-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/condition-expression-routing/flag-integer.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-08",
+      "PC-DATA-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/condition-expression-routing/flag-present-null.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-08",
+      "PC-DATA-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/condition-expression-routing/flag-text-other.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-08",
+      "PC-DATA-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/condition-expression-routing/flag-text-true.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-08",
+      "PC-DATA-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/condition-expression-routing/text-flag.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-08",
+      "PC-DATA-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/condition-expression-routing/true-before-broken.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-08",
+      "PC-DATA-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/condition-language-declarations/definitions-xpath-default.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-07"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/condition-language-declarations/formal-no-language.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-07"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/condition-language-declarations/named-juel.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-07"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/condition-language-declarations/plain-no-language.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-07"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/conditional-catch/absent-then-false-then-true.cibseven-evidence.json",
+    "owners": [
+      "PC-CONDITION-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/conditional-catch/change-before-arrival.cibseven-evidence.json",
+    "owners": [
+      "PC-CONDITION-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/conditional-catch/changes-after-consumption.cibseven-evidence.json",
+    "owners": [
+      "PC-CONDITION-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/conditional-catch/condition-wins.cibseven-evidence.json",
+    "owners": [
+      "PC-CONDITION-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/conditional-catch/immediate-true.cibseven-evidence.json",
+    "owners": [
+      "PC-CONDITION-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/conditional-catch/message-wins-then-condition-changes.cibseven-evidence.json",
+    "owners": [
+      "PC-CONDITION-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/conditional-catch/passive-false.cibseven-evidence.json",
+    "owners": [
+      "PC-CONDITION-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/conditional-catch/timer-wins-then-condition-changes.cibseven-evidence.json",
+    "owners": [
+      "PC-CONDITION-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/conditional-catch/true-at-the-gateway.cibseven-evidence.json",
+    "owners": [
+      "PC-CONDITION-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/conditional-esp/called-instance-has-its-own-scope.cibseven-evidence.json",
+    "owners": [
+      "PC-CONDITION-05"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/conditional-esp/handler-writes-bounded-chain.cibseven-evidence.json",
+    "owners": [
+      "PC-CONDITION-05"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/conditional-esp/handler-writes-through-effect-result.cibseven-evidence.json",
+    "owners": [
+      "PC-CONDITION-05"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/conditional-esp/one-command-two-scopes.cibseven-evidence.json",
+    "owners": [
+      "PC-CONDITION-05"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/conditional-esp/process-alert-repeats.cibseven-evidence.json",
+    "owners": [
+      "PC-CONDITION-05"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/conditional-esp/process-stop-interrupts.cibseven-evidence.json",
+    "owners": [
+      "PC-CONDITION-05"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/conditional-esp/region-ended-before-write.cibseven-evidence.json",
+    "owners": [
+      "PC-CONDITION-05"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/conditional-evaluation/create-false-then-update-true.cibseven-evidence.json",
+    "owners": [
+      "PC-CONDITION-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/conditional-evaluation/create-true.cibseven-evidence.json",
+    "owners": [
+      "PC-CONDITION-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/conditional-evaluation/delete-and-recreate.cibseven-evidence.json",
+    "owners": [
+      "PC-CONDITION-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/conditional-evaluation/nearest-visible-scope.cibseven-evidence.json",
+    "owners": [
+      "PC-CONDITION-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/conditional-evaluation/non-boolean-result.cibseven-evidence.json",
+    "owners": [
+      "PC-CONDITION-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/conditional-evaluation/null-and-false-values.cibseven-evidence.json",
+    "owners": [
+      "PC-CONDITION-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/conditional-evaluation/unrelated-write-with-absent-variables.cibseven-evidence.json",
+    "owners": [
+      "PC-CONDITION-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/conditional-start-compositions/expedited-order-absent.cibseven-evidence.json",
+    "owners": [
+      "PC-CONDITION-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/conditional-start-compositions/expedited-order-false.cibseven-evidence.json",
+    "owners": [
+      "PC-CONDITION-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/conditional-start-compositions/expedited-order-null.cibseven-evidence.json",
+    "owners": [
+      "PC-CONDITION-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/conditional-start-compositions/expedited-order-true.cibseven-evidence.json",
+    "owners": [
+      "PC-CONDITION-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/conditional-start-compositions/large-order-absent.cibseven-evidence.json",
+    "owners": [
+      "PC-CONDITION-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/conditional-start-compositions/large-order-below-threshold.cibseven-evidence.json",
+    "owners": [
+      "PC-CONDITION-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/conditional-start-compositions/large-order-integer-true.cibseven-evidence.json",
+    "owners": [
+      "PC-CONDITION-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/conditional-start-compositions/large-order-text-true.cibseven-evidence.json",
+    "owners": [
+      "PC-CONDITION-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/cycle-compositions/automatic-loop-long-burst.cibseven-evidence.json",
+    "owners": [
+      "PC-CF-06"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/cycle-compositions/automatic-loop-short-burst.cibseven-evidence.json",
+    "owners": [
+      "PC-CF-06"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/cycle-compositions/rework-loop-two-reworks-with-stale-commands.cibseven-evidence.json",
+    "owners": [
+      "PC-CF-06"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/error-ancestor-search/unrelated-sibling-catch-all.cibseven-evidence.json",
+    "owners": [
+      "PC-ERROR-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/error-called-child-error-data/child-failure-code-and-message.cibseven-evidence.json",
+    "owners": [
+      "PC-ERROR-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/error-catch-variables/effect-code-and-message.cibseven-evidence.json",
+    "owners": [
+      "PC-ERROR-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/error-catch-variables/error-end-code-and-message.cibseven-evidence.json",
+    "owners": [
+      "PC-ERROR-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/error-event-subprocess-recovery/recover-and-continue.cibseven-evidence.json",
+    "owners": [
+      "PC-ERROR-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/error-event-subprocess-recovery/stale-ordinary-after-recovery.cibseven-evidence.json",
+    "owners": [
+      "PC-ERROR-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/error-event-subprocess-rethrow/same-code-rethrow.cibseven-evidence.json",
+    "owners": [
+      "PC-ERROR-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/error-multi-instance/sequential-second-instance-fails.cibseven-evidence.json",
+    "owners": [
+      "PC-ERROR-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/error-non-interrupting-declarations/boundary-failure.cibseven-evidence.json",
+    "owners": [
+      "PC-ERROR-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/error-unhandled/effect-wrong-code.cibseven-evidence.json",
+    "owners": [
+      "PC-ERROR-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/error-unhandled/error-end-no-catcher.cibseven-evidence.json",
+    "owners": [
+      "PC-ERROR-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/escalation-boundary-conflicts/boundary-catch-all-with-exact-deployment.cibseven-evidence.json",
+    "owners": [
+      "PC-ESCALATION-02",
+      "PC-ESCALATION-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/escalation-boundary-conflicts/boundary-duplicate-code-deployment.cibseven-evidence.json",
+    "owners": [
+      "PC-ESCALATION-02",
+      "PC-ESCALATION-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/escalation-boundary-conflicts/boundary-two-catch-alls-deployment.cibseven-evidence.json",
+    "owners": [
+      "PC-ESCALATION-02",
+      "PC-ESCALATION-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/escalation-boundary-conflicts/event-subprocess-catch-all-with-exact-deployment.cibseven-evidence.json",
+    "owners": [
+      "PC-ESCALATION-02",
+      "PC-ESCALATION-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/escalation-boundary-conflicts/event-subprocess-duplicate-code-deployment.cibseven-evidence.json",
+    "owners": [
+      "PC-ESCALATION-02",
+      "PC-ESCALATION-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/escalation-call-propagation/interrupting-call.cibseven-evidence.json",
+    "owners": [
+      "PC-ESCALATION-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/escalation-call-propagation/non-interrupting-call-handler-first.cibseven-evidence.json",
+    "owners": [
+      "PC-ESCALATION-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/escalation-call-propagation/non-interrupting-call-ordinary-first.cibseven-evidence.json",
+    "owners": [
+      "PC-ESCALATION-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/escalation-call-relay/relayed-through-callee-handler.cibseven-evidence.json",
+    "owners": [
+      "PC-ESCALATION-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/escalation-code-variable/catch-all-code-variable.cibseven-evidence.json",
+    "owners": [
+      "PC-ESCALATION-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/escalation-code-variable/exact-code-variable.cibseven-evidence.json",
+    "owners": [
+      "PC-ESCALATION-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/escalation-multi-instance/instances-throw-to-enclosing-handler.cibseven-evidence.json",
+    "owners": [
+      "PC-ESCALATION-02",
+      "PC-ESCALATION-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/escalation-multi-instance/parallel-interrupting.cibseven-evidence.json",
+    "owners": [
+      "PC-ESCALATION-02",
+      "PC-ESCALATION-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/escalation-multi-instance/parallel-subprocess-interrupting.cibseven-evidence.json",
+    "owners": [
+      "PC-ESCALATION-02",
+      "PC-ESCALATION-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/escalation-multi-instance/sequential-non-interrupting.cibseven-evidence.json",
+    "owners": [
+      "PC-ESCALATION-02",
+      "PC-ESCALATION-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/escalation-multi-instance/sequential-subprocess-non-interrupting.cibseven-evidence.json",
+    "owners": [
+      "PC-ESCALATION-02",
+      "PC-ESCALATION-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/escalation-multi-instance/user-task-wrapper-declared.cibseven-evidence.json",
+    "owners": [
+      "PC-ESCALATION-02",
+      "PC-ESCALATION-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/escalation-uncaught/end-uncaught-then-ordinary-path.cibseven-evidence.json",
+    "owners": [
+      "PC-ESCALATION-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/escalation-uncaught/intermediate-uncaught.cibseven-evidence.json",
+    "owners": [
+      "PC-ESCALATION-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/event-race-compositions/instantiating-with-start-message-wins.cibseven-evidence.json",
+    "owners": [
+      "PC-BASIC-03",
+      "PC-CF-05",
+      "PC-CF-08"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/event-race-compositions/parallel-with-start-both-messages.cibseven-evidence.json",
+    "owners": [
+      "PC-BASIC-03",
+      "PC-CF-05",
+      "PC-CF-08"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/event-race-compositions/reply-race-message-wins-late-timer.cibseven-evidence.json",
+    "owners": [
+      "PC-BASIC-03",
+      "PC-CF-05",
+      "PC-CF-08"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/event-race-compositions/reply-race-renamed-repeated-previous-race-identity.cibseven-evidence.json",
+    "owners": [
+      "PC-BASIC-03",
+      "PC-CF-05",
+      "PC-CF-08"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/event-race-compositions/reply-race-repeated-previous-race-identity.cibseven-evidence.json",
+    "owners": [
+      "PC-BASIC-03",
+      "PC-CF-05",
+      "PC-CF-08"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/event-race-compositions/reply-race-timer-wins-late-message.cibseven-evidence.json",
+    "owners": [
+      "PC-BASIC-03",
+      "PC-CF-05",
+      "PC-CF-08"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/event-race-compositions/scoped-race-delivered-then-late-timer.cibseven-evidence.json",
+    "owners": [
+      "PC-BASIC-03",
+      "PC-CF-05",
+      "PC-CF-08"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/event-race-compositions/scoped-race-retry-then-delivered.cibseven-evidence.json",
+    "owners": [
+      "PC-BASIC-03",
+      "PC-CF-05",
+      "PC-CF-08"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/event-reference-forms/message-ref-qname-message-delivered.cibseven-evidence.json",
+    "owners": [
+      "PC-BASIC-04"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/event-reference-forms/multiple-event-definitions-message-then-timer.cibseven-evidence.json",
+    "owners": [
+      "PC-BASIC-04"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/event-reference-forms/parallel-multiple-message-then-timer.cibseven-evidence.json",
+    "owners": [
+      "PC-BASIC-04"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/event-subprocess-boundary/deployment-and-ordinary-work.cibseven-evidence.json",
+    "owners": [
+      "CIB-LIM-0005"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/event-subprocess-boundary/handler-then-boundary-timer.cibseven-evidence.json",
+    "owners": [
+      "CIB-LIM-0005"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/exclusive-choice-compositions/claim-routing-default-only.cibseven-evidence.json",
+    "owners": [
+      "PC-BASIC-03",
+      "PC-CF-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/exclusive-choice-compositions/claim-routing-fraud-and-large-true.cibseven-evidence.json",
+    "owners": [
+      "PC-BASIC-03",
+      "PC-CF-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/exclusive-choice-compositions/claim-routing-large-and-severe-true.cibseven-evidence.json",
+    "owners": [
+      "PC-BASIC-03",
+      "PC-CF-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/exclusive-choice-compositions/claim-routing-renamed-large-and-severe-true.cibseven-evidence.json",
+    "owners": [
+      "PC-BASIC-03",
+      "PC-CF-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/exclusive-choice-compositions/claim-routing-reversed-fraud-and-large-true.cibseven-evidence.json",
+    "owners": [
+      "PC-BASIC-03",
+      "PC-CF-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/exclusive-choice-compositions/claim-routing-reversed-large-and-severe-true.cibseven-evidence.json",
+    "owners": [
+      "PC-BASIC-03",
+      "PC-CF-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/exclusive-choice-compositions/claim-routing-severe-only.cibseven-evidence.json",
+    "owners": [
+      "PC-BASIC-03",
+      "PC-CF-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/exclusive-choice-compositions/no-default-split-no-candidate-true.cibseven-evidence.json",
+    "owners": [
+      "PC-BASIC-03",
+      "PC-CF-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/exclusive-choice-compositions/no-default-split-one-candidate-true.cibseven-evidence.json",
+    "owners": [
+      "PC-BASIC-03",
+      "PC-CF-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/exclusive-choice-compositions/unconditioned-flows-condition-false.cibseven-evidence.json",
+    "owners": [
+      "PC-BASIC-03",
+      "PC-CF-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/exclusive-choice-compositions/unconditioned-flows-condition-true.cibseven-evidence.json",
+    "owners": [
+      "PC-BASIC-03",
+      "PC-CF-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/expression-cardinality-and-collections/boolean-count.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-08",
+      "PC-DATA-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/expression-cardinality-and-collections/fractional-computed-count.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-08",
+      "PC-DATA-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/expression-cardinality-and-collections/negative-computed-count.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-08",
+      "PC-DATA-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/expression-cardinality-and-collections/null-collection.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-08",
+      "PC-DATA-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/expression-cardinality-and-collections/null-count.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-08",
+      "PC-DATA-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/expression-cardinality-and-collections/numeric-text-count.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-08",
+      "PC-DATA-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/gateway-composition-matrix/exclusive-in-parallel-express-pack-first.cibseven-evidence.json",
+    "owners": [
+      "PC-CF-08"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/gateway-composition-matrix/exclusive-in-parallel-standard-print-first.cibseven-evidence.json",
+    "owners": [
+      "PC-CF-08"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/gateway-composition-matrix/parallel-in-inclusive-gift-and-insured.cibseven-evidence.json",
+    "owners": [
+      "PC-CF-08"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/gateway-composition-matrix/parallel-in-inclusive-gift-only.cibseven-evidence.json",
+    "owners": [
+      "PC-CF-08"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/human-task-metadata-composition/body-metadata.cibseven-evidence.json",
+    "owners": [
+      "PC-HUM-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/human-task-metadata-composition/called-task-metadata.cibseven-evidence.json",
+    "owners": [
+      "PC-HUM-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/human-task-metadata-composition/task-metadata-condition.cibseven-evidence.json",
+    "owners": [
+      "PC-HUM-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/human-task-metadata-composition/triage-rollover-scope-and-free.cibseven-evidence.json",
+    "owners": [
+      "PC-HUM-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/human-task-metadata-composition/untyped-form-field.cibseven-evidence.json",
+    "owners": [
+      "PC-HUM-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/human-task-metadata-composition/writable-handler-key.cibseven-evidence.json",
+    "owners": [
+      "PC-HUM-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/human-task-result-identity/claim-extra-result.cibseven-evidence.json",
+    "owners": [
+      "PC-HUM-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/human-task-result-identity/claim-mapped-result.cibseven-evidence.json",
+    "owners": [
+      "PC-HUM-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/human-task-result-identity/claim-missing-result.cibseven-evidence.json",
+    "owners": [
+      "PC-HUM-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/human-task-result-identity/claim-scoped-stale-body.cibseven-evidence.json",
+    "owners": [
+      "PC-HUM-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/human-task-result-identity/claim-type-invalid-result.cibseven-evidence.json",
+    "owners": [
+      "PC-HUM-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/human-task-result-identity/claim-wrong-identities.cibseven-evidence.json",
+    "owners": [
+      "PC-HUM-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/inclusive-join-compositions/loop-reentry-a-only-then-both.cibseven-evidence.json",
+    "owners": [
+      "PC-BASIC-03",
+      "PC-CF-04",
+      "PC-CF-08"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/inclusive-join-compositions/loop-reentry-both-then-a-only.cibseven-evidence.json",
+    "owners": [
+      "PC-BASIC-03",
+      "PC-CF-04",
+      "PC-CF-08"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/inclusive-join-compositions/no-default-split-none-selected.cibseven-evidence.json",
+    "owners": [
+      "PC-BASIC-03",
+      "PC-CF-04",
+      "PC-CF-08"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/inclusive-join-compositions/no-default-split-one-selected.cibseven-evidence.json",
+    "owners": [
+      "PC-BASIC-03",
+      "PC-CF-04",
+      "PC-CF-08"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/inclusive-join-compositions/parallel-fed-join-a-then-b.cibseven-evidence.json",
+    "owners": [
+      "PC-BASIC-03",
+      "PC-CF-04",
+      "PC-CF-08"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/inclusive-join-compositions/parallel-fed-join-b-then-a.cibseven-evidence.json",
+    "owners": [
+      "PC-BASIC-03",
+      "PC-CF-04",
+      "PC-CF-08"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/inclusive-join-compositions/scoped-join-all-selected.cibseven-evidence.json",
+    "owners": [
+      "PC-BASIC-03",
+      "PC-CF-04",
+      "PC-CF-08"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/inclusive-join-compositions/scoped-join-call-and-batch-reversed.cibseven-evidence.json",
+    "owners": [
+      "PC-BASIC-03",
+      "PC-CF-04",
+      "PC-CF-08"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/inclusive-join-compositions/scoped-join-scope-only.cibseven-evidence.json",
+    "owners": [
+      "PC-BASIC-03",
+      "PC-CF-04",
+      "PC-CF-08"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/inclusive-join-compositions/structured-regions-none-selected-default.cibseven-evidence.json",
+    "owners": [
+      "PC-BASIC-03",
+      "PC-CF-04",
+      "PC-CF-08"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/inclusive-join-compositions/structured-regions-one-selected.cibseven-evidence.json",
+    "owners": [
+      "PC-BASIC-03",
+      "PC-CF-04",
+      "PC-CF-08"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/inclusive-join-compositions/structured-regions-permuted-two-selected-credit-first.cibseven-evidence.json",
+    "owners": [
+      "PC-BASIC-03",
+      "PC-CF-04",
+      "PC-CF-08"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/inclusive-join-compositions/structured-regions-two-selected-credit-first.cibseven-evidence.json",
+    "owners": [
+      "PC-BASIC-03",
+      "PC-CF-04",
+      "PC-CF-08"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/inclusive-join-compositions/structured-regions-two-selected-fraud-first.cibseven-evidence.json",
+    "owners": [
+      "PC-BASIC-03",
+      "PC-CF-04",
+      "PC-CF-08"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/inclusive-join-compositions/unpaired-merge-routine.cibseven-evidence.json",
+    "owners": [
+      "PC-BASIC-03",
+      "PC-CF-04",
+      "PC-CF-08"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/inclusive-join-compositions/unpaired-merge-urgent.cibseven-evidence.json",
+    "owners": [
+      "PC-BASIC-03",
+      "PC-CF-04",
+      "PC-CF-08"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/inclusive-join-compositions/unselected-path-parked-then-unselected.cibseven-evidence.json",
+    "owners": [
+      "PC-BASIC-03",
+      "PC-CF-04",
+      "PC-CF-08"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/inclusive-join-compositions/unselected-path-selected-path.cibseven-evidence.json",
+    "owners": [
+      "PC-BASIC-03",
+      "PC-CF-04",
+      "PC-CF-08"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/inclusive-join-compositions/unselected-path-unselected-then-parked.cibseven-evidence.json",
+    "owners": [
+      "PC-BASIC-03",
+      "PC-CF-04",
+      "PC-CF-08"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/juel-core-forms/arithmetic.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-05",
+      "PC-DATA-07"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/juel-core-forms/coercion.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-05",
+      "PC-DATA-07"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/juel-core-forms/functions.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-05",
+      "PC-DATA-07"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/juel-core-forms/lazy-operands.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-05",
+      "PC-DATA-07"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/juel-core-forms/literals-and-text.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-05",
+      "PC-DATA-07"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/juel-core-forms/logical.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-05",
+      "PC-DATA-07"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/juel-core-forms/relational.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-05",
+      "PC-DATA-07"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/juel-core-forms/string-methods.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-05",
+      "PC-DATA-07"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/juel-core-forms/ternary-operator.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-05",
+      "PC-DATA-07"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/juel-evaluation-failures/authenticated-user-name.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-07"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/juel-evaluation-failures/bean-reference.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-07"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/juel-evaluation-failures/empty-of-missing.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-07",
+      "PC-DATA-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/juel-evaluation-failures/execution-mutation.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-07"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/juel-evaluation-failures/execution-read.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-07"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/juel-evaluation-failures/index-on-text.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-07",
+      "PC-DATA-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/juel-evaluation-failures/integer-as-boolean.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/juel-evaluation-failures/missing-variable.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-07",
+      "PC-DATA-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/juel-evaluation-failures/modulo-by-zero.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/juel-evaluation-failures/reflection-through-method.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-07"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/juel-evaluation-failures/text-in-arithmetic.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/juel-evaluation-failures/unknown-method.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-07",
+      "PC-DATA-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/juel-evaluation-failures/unknown-property.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-07",
+      "PC-DATA-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/link-event-compositions/catch-with-incoming-both-arrivals.cibseven-evidence.json",
+    "owners": [
+      "PC-BASIC-02",
+      "PC-BASIC-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/link-event-compositions/go-to-flows-billing-then-other-reopened.cibseven-evidence.json",
+    "owners": [
+      "PC-BASIC-02",
+      "PC-BASIC-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/link-event-compositions/go-to-links-billing-then-other-reopened.cibseven-evidence.json",
+    "owners": [
+      "PC-BASIC-02",
+      "PC-BASIC-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/link-event-compositions/go-to-links-renamed-billing-then-other-reopened.cibseven-evidence.json",
+    "owners": [
+      "PC-BASIC-02",
+      "PC-BASIC-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/mapping-failure-sites/call-in-absent.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-05",
+      "PC-DATA-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/mapping-failure-sites/call-out-absent.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-04",
+      "PC-DATA-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/mapping-failure-sites/entry-missing.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-05",
+      "PC-DATA-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/mapping-failure-sites/entry-null.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-05",
+      "PC-DATA-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/mapping-failure-sites/entry-throws.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-05",
+      "PC-DATA-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/mapping-failure-sites/exit-missing.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-04",
+      "PC-DATA-06",
+      "PC-DATA-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/mapping-failure-sites/exit-null.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-06",
+      "PC-DATA-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/mapping-failure-sites/exit-throws.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-06",
+      "PC-DATA-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/mapping-failure-sites/scope-exit-missing.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-04",
+      "PC-DATA-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/message-esp-repeatable/parallel-bodies-own-listeners.cibseven-evidence.json",
+    "owners": [
+      "PC-MESSAGE-07"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/message-esp-repeatable/process-notices-overlap-with-nested-wait.cibseven-evidence.json",
+    "owners": [
+      "PC-MESSAGE-07"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/message-esp-repeatable/region-notice-after-ordinary-work.cibseven-evidence.json",
+    "owners": [
+      "PC-MESSAGE-07"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/message-esp-repeatable/sequential-body-listener-before-replacement.cibseven-evidence.json",
+    "owners": [
+      "PC-MESSAGE-07"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/message-name-addressing/expression-name-unresolved.cibseven-evidence.json",
+    "owners": [
+      "PC-MESSAGE-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/message-name-addressing/start-expression-name.cibseven-evidence.json",
+    "owners": [
+      "PC-MESSAGE-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/message-name-addressing/unnamed-message.cibseven-evidence.json",
+    "owners": [
+      "PC-MESSAGE-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/message-start-compositions/duplicate-message-starts-start.cibseven-evidence.json",
+    "owners": [
+      "PC-MESSAGE-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/message-start-compositions/shipment-payload-absent.cibseven-evidence.json",
+    "owners": [
+      "PC-MESSAGE-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/message-throw-bound/both-sends-succeed.cibseven-evidence.json",
+    "owners": [
+      "PC-MESSAGE-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/message-throw-bound/end-send-refused.cibseven-evidence.json",
+    "owners": [
+      "PC-MESSAGE-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/message-throw-bound/intermediate-send-refused.cibseven-evidence.json",
+    "owners": [
+      "PC-MESSAGE-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/message-throw-unbound/unbound-throws-pass-through.cibseven-evidence.json",
+    "owners": [
+      "PC-MESSAGE-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-call-activity/parallel-cardinality-reversed.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-call-activity/parallel-equal-reviewers-reversed.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-call-activity/parallel-quorum-reached-early.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-call-activity/sequential-cardinality.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-call-activity/sequential-child-error.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-03",
+      "PC-MI-12"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-call-activity/sequential-completion-then-timer.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-12"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-call-activity/sequential-equal-reviewers.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-call-activity/sequential-quorum-reached-early.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-call-activity/sequential-timer-while-work-remains.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-12"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-expressions/parallel-forms.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-07"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-expressions/sequential-forms.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-07"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-nesting/parallel-parallel-equal-items.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-11"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-nesting/parallel-sequential-equal-items.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-11"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-nesting/parallel-sequential-inner-early.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-09",
+      "PC-MI-11"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-nesting/parallel-sequential-reentry.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-11"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-nesting/sequential-parallel-equal-items.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-11"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-nesting/sequential-parallel-inner-early.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-09",
+      "PC-MI-11"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-nesting/sequential-sequential-equal-items.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-11"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-service-task/sequential-business-error.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-12"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-service-task/sequential-cardinality.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-service-task/sequential-collection-shrunk-then-restored.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-08"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-service-task/sequential-equal-items.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-service-task/sequential-missing-result.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-service-task/sequential-premature-and-stale-effects.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-service-task/sequential-quorum-initially-true.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-service-task/sequential-quorum-lowered-between-bodies.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-service-task/sequential-quorum-reached-early.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-service-task/sequential-technical-failure-retry.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-sub-process/parallel-cardinality-changed-after-entry.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-06"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-sub-process/parallel-cardinality-two-reversed.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-06"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-sub-process/parallel-cardinality-zero.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-06"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-sub-process/parallel-early-cancel-keeps-sibling-write.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-05",
+      "PC-MI-09",
+      "PC-MI-12"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-sub-process/parallel-early-cancel-of-fourteen.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-05",
+      "PC-MI-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-sub-process/parallel-seventeen-bodies.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-05"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-sub-process/parallel-sixteen-bodies-natural.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-05"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-sub-process/parallel-sixteen-bodies-reversed.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-05"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-sub-process/parallel-two-bodies-natural.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-05",
+      "PC-MI-10"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-sub-process/parallel-two-bodies-reversed.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-05",
+      "PC-MI-10"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-sub-process/sequential-cardinality-changed-after-entry.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-06"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-sub-process/sequential-cardinality-two.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-06"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-sub-process/sequential-cardinality-zero.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-06"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-sub-process/sequential-completion-then-timer.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-12"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-sub-process/sequential-computed-malformed.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-06",
+      "PC-MI-07"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-sub-process/sequential-computed-negative.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-06"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-sub-process/sequential-computed-noninteger.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-06"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-sub-process/sequential-computed-numeric-text.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-06",
+      "PC-MI-07"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-sub-process/sequential-computed-two.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-06",
+      "PC-MI-07"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-sub-process/sequential-early-after-quiescence.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-04",
+      "PC-MI-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-sub-process/sequential-first-end-mutation.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-04"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-sub-process/sequential-multi-output-and-stale.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-04"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-sub-process/sequential-null-note-and-result.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-04",
+      "PC-MI-10"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-sub-process/sequential-timer-while-work-remains.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-12"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-sub-process/sequential-two-bodies.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-04",
+      "PC-MI-10"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-sub-process/sequential-zero-items-timer.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-12"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-user-task/parallel-body-locals-isolated.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-10"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-user-task/parallel-both-count-below-items.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-user-task/parallel-cardinality-zero.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-user-task/parallel-cardinality.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-user-task/parallel-collection-replaced-after-entry.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-08"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-user-task/parallel-completion-then-timer.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-12"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-user-task/parallel-equal-items.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-01",
+      "PC-MI-10"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-user-task/parallel-halting-data-flips.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-user-task/parallel-halting-final-body-non-boolean.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-user-task/parallel-halting-final-body-unresolvable.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-user-task/parallel-halting-initially-true.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-user-task/parallel-one-item.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-user-task/parallel-timer-while-work-remains.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-12"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-user-task/parallel-zero-items.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-user-task/sequential-body-locals-reset.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-10"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-user-task/sequential-both-count-below-items.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-user-task/sequential-cardinality-zero.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-user-task/sequential-cardinality.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-user-task/sequential-collection-grown.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-08"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-user-task/sequential-collection-removed.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-08"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-user-task/sequential-collection-shrunk-then-restored.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-08"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-user-task/sequential-completion-then-timer.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-12"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-user-task/sequential-equal-items.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-user-task/sequential-halting-data-flips.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-user-task/sequential-halting-final-body-non-boolean.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-user-task/sequential-halting-final-body-unresolvable.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-user-task/sequential-halting-initially-true.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-user-task/sequential-halting-nonfinal-non-boolean.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-user-task/sequential-one-item.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-user-task/sequential-timer-while-work-remains.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-12"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-user-task/sequential-zero-items-timer.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-12"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-user-task/sequential-zero-items.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-01",
+      "PC-MI-12"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/nested-scope-quiescence/default-branch-and-stale.cibseven-evidence.json",
+    "owners": [
+      "PC-SCOPE-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/nested-scope-quiescence/inclusive-join-both-and-waiver.cibseven-evidence.json",
+    "owners": [
+      "PC-SCOPE-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/nested-scope-quiescence/stock-end-first.cibseven-evidence.json",
+    "owners": [
+      "PC-SCOPE-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/nested-scope-quiescence/verification-last-reverse.cibseven-evidence.json",
+    "owners": [
+      "PC-SCOPE-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/none-event-compositions/subprocess-two-starts-start.cibseven-evidence.json",
+    "owners": [
+      "PC-BASIC-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/none-event-compositions/two-none-starts-start.cibseven-evidence.json",
+    "owners": [
+      "PC-BASIC-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/output-mapping-fanout/captured-input-fallback.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-06"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/output-mapping-fanout/completion-captured-fallback.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-06"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/output-mapping-fanout/completion-fanout.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-06"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/output-mapping-fanout/extra-completion-value.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-06"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/output-mapping-fanout/late-invalid-output.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-06"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/parallel-region-compositions/duplicate-arrival-join-left-pair-first.cibseven-evidence.json",
+    "owners": [
+      "PC-CF-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/parallel-region-compositions/order-fulfilment-checks-first-reversed.cibseven-evidence.json",
+    "owners": [
+      "PC-CF-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/parallel-region-compositions/order-fulfilment-pick-between-checks.cibseven-evidence.json",
+    "owners": [
+      "PC-CF-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/parallel-region-compositions/order-fulfilment-pick-first.cibseven-evidence.json",
+    "owners": [
+      "PC-CF-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/region-interruption-subtree/abort-both-regions-in-turn.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-12",
+      "PC-SCOPE-07"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/region-interruption-subtree/abort-one-region-mid-work.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-12",
+      "PC-SCOPE-07"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/region-interruption-subtree/call-timeout-inside-region.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-12",
+      "PC-SCOPE-07"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/scalar-types-in-multi-instance/boolean-service-result.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/scalar-types-in-multi-instance/integer-human-completion.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/scalar-types-in-multi-instance/integer-service-boolean-human.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/scalar-types-in-multi-instance/strings-only.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/scope-data-visibility/called-owner.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-04"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/scope-data-visibility/completion-without-writes.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-04"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/scope-data-visibility/concurrent-calls-reverse.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-04"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/scope-data-visibility/left-completed-first.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-04"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/scope-data-visibility/right-completed-first.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-04"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/scope-data-visibility/second-lifetime.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-04"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/scope-data-visibility/shadowing-lifecycle.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-04"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/send-task-configured-send/send-completes.cibseven-evidence.json",
+    "owners": [
+      "PC-AUTO-04"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/send-task-configured-send/send-duplicate-result.cibseven-evidence.json",
+    "owners": [
+      "PC-AUTO-04"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/send-task-configured-send/send-rejected.cibseven-evidence.json",
+    "owners": [
+      "PC-AUTO-04"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/send-task-configured-send/send-result-with-output.cibseven-evidence.json",
+    "owners": [
+      "PC-AUTO-04"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/send-task-configured-send/send-snapshot-after-change.cibseven-evidence.json",
+    "owners": [
+      "PC-AUTO-04"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/send-task-configured-send/send-transport-failure.cibseven-evidence.json",
+    "owners": [
+      "PC-AUTO-04"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/send-task-configured-send/send-wrong-occurrence-result.cibseven-evidence.json",
+    "owners": [
+      "PC-AUTO-04"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/signal-start-compositions/failing-signal-start-start.cibseven-evidence.json",
+    "owners": [
+      "PC-SIGNAL-02",
+      "PC-SIGNAL-04"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/signal-start-compositions/handover-catch-other-signal.cibseven-evidence.json",
+    "owners": [
+      "PC-SIGNAL-02",
+      "PC-SIGNAL-04"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/signal-start-compositions/handover-start-then-catch.cibseven-evidence.json",
+    "owners": [
+      "PC-SIGNAL-02",
+      "PC-SIGNAL-04"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/signal-start-compositions/race-approved-then-late-rejected.cibseven-evidence.json",
+    "owners": [
+      "PC-SIGNAL-02",
+      "PC-SIGNAL-04"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/signal-start-compositions/race-rejected-then-late-timer.cibseven-evidence.json",
+    "owners": [
+      "PC-SIGNAL-02",
+      "PC-SIGNAL-04"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/signal-start-compositions/race-timer-then-late-signal.cibseven-evidence.json",
+    "owners": [
+      "PC-SIGNAL-02",
+      "PC-SIGNAL-04"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/signal-subscriptions/bodies-ping-isolation.cibseven-evidence.json",
+    "owners": [
+      "PC-SIGNAL-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/signal-subscriptions/call-child-completes-first.cibseven-evidence.json",
+    "owners": [
+      "PC-SIGNAL-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/signal-subscriptions/call-quit-while-child-open.cibseven-evidence.json",
+    "owners": [
+      "PC-SIGNAL-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/signal-subscriptions/emitter-region-cancelled-by-its-own-throw.cibseven-evidence.json",
+    "owners": [
+      "PC-SIGNAL-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/signal-subscriptions/event-subprocess-alert-then-completion.cibseven-evidence.json",
+    "owners": [
+      "PC-SIGNAL-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/signal-subscriptions/event-subprocess-modes.cibseven-evidence.json",
+    "owners": [
+      "PC-SIGNAL-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/signal-subscriptions/region-delivery-and-throw-in-turn.cibseven-evidence.json",
+    "owners": [
+      "PC-SIGNAL-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/signal-subscriptions/task-cancel-first.cibseven-evidence.json",
+    "owners": [
+      "PC-SIGNAL-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/signal-subscriptions/task-note-repeated-then-cancel.cibseven-evidence.json",
+    "owners": [
+      "PC-SIGNAL-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/signal-subscriptions/task-wrong-signal-name.cibseven-evidence.json",
+    "owners": [
+      "PC-SIGNAL-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/signal-throw-expression/derived-name-differs.cibseven-evidence.json",
+    "owners": [
+      "PC-SIGNAL-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/signal-throw-expression/derived-name-matches.cibseven-evidence.json",
+    "owners": [
+      "PC-SIGNAL-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/signal-throw-expression/name-changes-before-throw.cibseven-evidence.json",
+    "owners": [
+      "PC-SIGNAL-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/signal-throw-expression/unbound-name.cibseven-evidence.json",
+    "owners": [
+      "PC-SIGNAL-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/signal-throw-literal/intermediate-throw.cibseven-evidence.json",
+    "owners": [
+      "PC-SIGNAL-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/signal-throw-literal/signal-end.cibseven-evidence.json",
+    "owners": [
+      "PC-SIGNAL-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/terminate-containing-region/region-terminate-with-incident.cibseven-evidence.json",
+    "owners": [
+      "PC-TERMINATE-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/terminate-containing-region/root-terminate.cibseven-evidence.json",
+    "owners": [
+      "PC-TERMINATE-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/timer-boundary-hosts/call-child-completes-first.cibseven-evidence.json",
+    "owners": [
+      "PC-TIMER-06"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/timer-boundary-hosts/call-reminders-then-late.cibseven-evidence.json",
+    "owners": [
+      "PC-TIMER-06"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/timer-boundary-hosts/effect-result-first.cibseven-evidence.json",
+    "owners": [
+      "PC-TIMER-06"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/timer-boundary-hosts/effect-timer-before-result.cibseven-evidence.json",
+    "owners": [
+      "PC-TIMER-06"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/timer-boundary-hosts/loop-stale-deadline.cibseven-evidence.json",
+    "owners": [
+      "PC-TIMER-06"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/timer-boundary-hosts/receive-message-first.cibseven-evidence.json",
+    "owners": [
+      "PC-TIMER-06"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/timer-boundary-hosts/receive-remind-then-late.cibseven-evidence.json",
+    "owners": [
+      "PC-TIMER-06"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/timer-boundary-hosts/scope-hard-while-work-open.cibseven-evidence.json",
+    "owners": [
+      "PC-TIMER-06"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/timer-boundary-hosts/scope-soft-then-work-completes.cibseven-evidence.json",
+    "owners": [
+      "PC-TIMER-06"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/timer-boundary-hosts/user-completes-first.cibseven-evidence.json",
+    "owners": [
+      "PC-TIMER-06"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/timer-boundary-hosts/user-hard-first.cibseven-evidence.json",
+    "owners": [
+      "PC-TIMER-06"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/timer-boundary-hosts/user-soft-then-hard.cibseven-evidence.json",
+    "owners": [
+      "PC-TIMER-06"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/timer-catch-cycles/single-round.cibseven-evidence.json",
+    "owners": [
+      "PC-TIMER-05"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/timer-catch-cycles/two-rounds-with-stale-deadlines.cibseven-evidence.json",
+    "owners": [
+      "PC-TIMER-05"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/timer-data-derived/catch-absent-variable.cibseven-evidence.json",
+    "owners": [
+      "PC-TIMER-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/timer-data-derived/catch-value-written-by-completion.cibseven-evidence.json",
+    "owners": [
+      "PC-TIMER-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/timer-date-forms/far-future.cibseven-evidence.json",
+    "owners": [
+      "PC-TIMER-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/timer-date-forms/fraction.cibseven-evidence.json",
+    "owners": [
+      "PC-TIMER-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/timer-date-forms/future-early-then-exact.cibseven-evidence.json",
+    "owners": [
+      "PC-TIMER-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/timer-date-forms/future.cibseven-evidence.json",
+    "owners": [
+      "PC-TIMER-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/timer-date-forms/lowercase-designators.cibseven-evidence.json",
+    "owners": [
+      "PC-TIMER-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/timer-date-forms/malformed-date.cibseven-evidence.json",
+    "owners": [
+      "PC-TIMER-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/timer-date-forms/utc-offset-notation.cibseven-evidence.json",
+    "owners": [
+      "PC-TIMER-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/timer-duration-forms/baseline-early-then-exact.cibseven-evidence.json",
+    "owners": [
+      "PC-TIMER-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/timer-duration-forms/form-above-bound.cibseven-evidence.json",
+    "owners": [
+      "PC-TIMER-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/timer-duration-forms/form-bare-number.cibseven-evidence.json",
+    "owners": [
+      "PC-TIMER-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/timer-duration-forms/form-fraction.cibseven-evidence.json",
+    "owners": [
+      "PC-TIMER-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/timer-duration-forms/form-lowercase.cibseven-evidence.json",
+    "owners": [
+      "PC-TIMER-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/timer-duration-forms/form-mixed-nominal.cibseven-evidence.json",
+    "owners": [
+      "PC-TIMER-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/timer-duration-forms/form-negative.cibseven-evidence.json",
+    "owners": [
+      "PC-TIMER-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/timer-duration-forms/form-nominal-day.cibseven-evidence.json",
+    "owners": [
+      "PC-TIMER-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/timer-duration-forms/form-nominal-month.cibseven-evidence.json",
+    "owners": [
+      "PC-TIMER-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/timer-duration-forms/form-nominal-week.cibseven-evidence.json",
+    "owners": [
+      "PC-TIMER-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/timer-event-subprocess/cycle-handlers-overlap-past-the-ordinary-path.cibseven-evidence.json",
+    "owners": [
+      "PC-TIMER-07"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/timer-event-subprocess/dated-start-beside-ordinary-work.cibseven-evidence.json",
+    "owners": [
+      "PC-TIMER-07"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/timer-event-subprocess/interrupting-start-cancels-work.cibseven-evidence.json",
+    "owners": [
+      "PC-TIMER-07"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/timer-event-subprocess/nested-listener-ends-with-its-region.cibseven-evidence.json",
+    "owners": [
+      "PC-TIMER-07"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/timer-lifetimes/sequential-first-body-deadline-arms-second.cibseven-evidence.json",
+    "owners": [
+      "PC-TIMER-08"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/timer-lifetimes/sequential-outer-deadline-after-first-body.cibseven-evidence.json",
+    "owners": [
+      "PC-TIMER-08"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/timer-recurrence/count-finite-overlap.cibseven-evidence.json",
+    "owners": [
+      "PC-TIMER-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/timer-recurrence/count-host-expires.cibseven-evidence.json",
+    "owners": [
+      "PC-TIMER-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/timer-recurrence/cron-on-catch.cibseven-evidence.json",
+    "owners": [
+      "PC-TIMER-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/timer-recurrence/cron-seconds-field.cibseven-evidence.json",
+    "owners": [
+      "PC-TIMER-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/timer-recurrence/cycle-on-catch.cibseven-evidence.json",
+    "owners": [
+      "PC-TIMER-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/timer-recurrence/cycle-on-interrupting-boundary.cibseven-evidence.json",
+    "owners": [
+      "PC-TIMER-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/timer-recurrence/dated-start-and-period.cibseven-evidence.json",
+    "owners": [
+      "PC-TIMER-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/timer-start-forms/cycle-start-fires.cibseven-evidence.json",
+    "owners": [
+      "PC-TIMER-04"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/timer-start-forms/date-start-fires.cibseven-evidence.json",
+    "owners": [
+      "PC-TIMER-04"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/timer-start-forms/duration-start-before-deadline.cibseven-evidence.json",
+    "owners": [
+      "PC-TIMER-04"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/timer-start-forms/two-timer-starts-first.cibseven-evidence.json",
+    "owners": [
+      "PC-TIMER-04"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/transaction-cancel-refusals/cancel-end-without-boundary.cibseven-evidence.json",
+    "owners": [
+      "PC-TX-02",
+      "PC-TX-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/transaction-cancel-refusals/non-interrupting-cancel-boundary.cibseven-evidence.json",
+    "owners": [
+      "PC-TX-02",
+      "PC-TX-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/transaction-cancel-refusals/two-cancel-boundaries.cibseven-evidence.json",
+    "owners": [
+      "PC-TX-02",
+      "PC-TX-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/transaction-methods/image-method.cibseven-evidence.json",
+    "owners": [
+      "PC-TX-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/transaction-methods/store-method.cibseven-evidence.json",
+    "owners": [
+      "PC-TX-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/transaction-nested/inner-cancel-preserves-outer-work.cibseven-evidence.json",
+    "owners": [
+      "PC-TX-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/transaction-nested/inner-cancel-then-outer-cancel.cibseven-evidence.json",
+    "owners": [
+      "PC-TX-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/transaction-nested/outer-cancel-after-inner-completed.cibseven-evidence.json",
+    "owners": [
+      "PC-TX-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/transaction-nested/outer-cancel-with-unfinished-inner.cibseven-evidence.json",
+    "owners": [
+      "PC-TX-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/parallel-multi-instance/all.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-01",
+      "PC-MI-12"
+    ]
+  },
+  {
+    "evidence": "scenarios/parallel-multi-instance/first.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-01",
+      "PC-MI-12"
+    ]
+  },
+  {
+    "evidence": "scenarios/parallel-multi-instance/interrupted.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-01",
+      "PC-MI-12"
+    ]
+  },
+  {
+    "evidence": "scenarios/repeatable-event-subscriptions/boundary-timer-repeat.cibseven-evidence.json",
+    "owners": [
+      "PC-MESSAGE-05",
+      "PC-TIMER-06"
+    ]
+  },
+  {
+    "evidence": "scenarios/repeatable-event-subscriptions/subprocess-boundary-timer-repeat.cibseven-evidence.json",
+    "owners": [
+      "PC-MESSAGE-05",
+      "PC-TIMER-06"
+    ]
+  },
+  {
+    "evidence": "scenarios/sequential-multi-instance/interrupted.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-01",
+      "PC-MI-09",
+      "PC-MI-12"
+    ]
+  },
+  {
+    "evidence": "scenarios/sequential-multi-instance/natural.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-01",
+      "PC-MI-09",
+      "PC-MI-12"
+    ]
+  },
+  {
+    "evidence": "scenarios/timer-start-event/cibseven-evidence.json",
+    "owners": [
+      "PC-TIMER-04"
+    ]
+  },
+  {
+    "evidence": "scenarios/user-task-cycle/cibseven-evidence.json",
+    "owners": [
+      "PC-CF-06",
+      "PC-HUM-01"
+    ]
+  }
+]

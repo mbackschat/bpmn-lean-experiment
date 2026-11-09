@@ -1,0 +1,334 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "timer-date-forms-future-early-then-exact",
+    "sha256": "59b5d9da6bf5429d5c73335205c3bb626d461b720eaf877d3e3dbbf3670cd4b6"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "delayed",
+            "value": false
+          },
+          {
+            "name": "form",
+            "value": "future"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-fire-Catch_Future",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "delayed",
+            "value": false
+          },
+          {
+            "name": "form",
+            "value": "future"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-fire-Catch_Future",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 3600000,
+        "variables": [
+          {
+            "name": "delayed",
+            "value": false
+          },
+          {
+            "name": "form",
+            "value": "future"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-complete-Proceed",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 3600000,
+        "variables": [
+          {
+            "name": "delayed",
+            "value": false
+          },
+          {
+            "name": "form",
+            "value": "future"
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "s02-fire-Catch_Future",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "s03-fire-Catch_Future",
+        "tasks": [
+          {
+            "elementId": "Proceed",
+            "name": "Proceed after the date"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-complete-Proceed",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": [
+          {
+            "elementId": "Catch_Future",
+            "dueDateDeltaMs": 3600000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-fire-Catch_Future",
+        "jobs": [
+          {
+            "elementId": "Catch_Future",
+            "dueDateDeltaMs": 3600000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-fire-Catch_Future",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s04-complete-Proceed",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "s01-start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s02-fire-Catch_Future",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s03-fire-Catch_Future",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s04-complete-Proceed",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "delayed",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "form",
+            "value": {
+              "kind": "string",
+              "value": "future"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Catch_Future",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 3600000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s02-fire-Catch_Future",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "delayed",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "form",
+            "value": {
+              "kind": "string",
+              "value": "future"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Catch_Future",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 3600000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s03-fire-Catch_Future",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 3600000,
+        "variables": [
+          {
+            "name": "delayed",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "form",
+            "value": {
+              "kind": "string",
+              "value": "future"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Proceed",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Proceed after the date",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s04-complete-Proceed",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "completed",
+        "logicalTimeMs": 3600000,
+        "variables": [
+          {
+            "name": "delayed",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "form",
+            "value": {
+              "kind": "string",
+              "value": "future"
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}

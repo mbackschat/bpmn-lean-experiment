@@ -1,0 +1,978 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "compensation-targeting-chain-handlers-reversed",
+    "sha256": "c54bfdffa35508dfa3a4bc516f81de92f8f2d62bdf20219dd7f58cea8c9eb7c0"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "mode",
+            "value": "chain"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s01-complete-UserTask_Reserve-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "mode",
+            "value": "chain"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-complete-UserTask_Ship-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "mode",
+            "value": "chain"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-complete-UserTask_Bill-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "mode",
+            "value": "chain"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_CheckpointOne-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "mode",
+            "value": "chain"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-complete-UserTask_UndoShip-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "mode",
+            "value": "chain"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s06-complete-UserTask_UndoShip-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "mode",
+            "value": "chain"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s07-complete-UserTask_CheckpointOne-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "mode",
+            "value": "chain"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s08-complete-UserTask_UndoBill-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "mode",
+            "value": "chain"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s09-complete-UserTask_CheckpointTwo-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "mode",
+            "value": "chain"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s10-complete-UserTask_UndoReserve-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "mode",
+            "value": "chain"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s11-complete-UserTask_CheckpointTwo-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "mode",
+            "value": "chain"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s12-complete-UserTask_CheckpointThree-1",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "mode",
+            "value": "chain"
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "tasks": [
+          {
+            "elementId": "UserTask_Reserve",
+            "name": "Reserve"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s01-complete-UserTask_Reserve-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_Ship",
+            "name": "Ship"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-complete-UserTask_Ship-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_Bill",
+            "name": "Bill"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-complete-UserTask_Bill-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_UndoShip",
+            "name": "Undo ship"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_CheckpointOne-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_UndoShip",
+            "name": "Undo ship"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-complete-UserTask_UndoShip-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_CheckpointOne",
+            "name": "Checkpoint one"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s06-complete-UserTask_UndoShip-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_CheckpointOne",
+            "name": "Checkpoint one"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s07-complete-UserTask_CheckpointOne-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_UndoReserve",
+            "name": "Undo reserve"
+          },
+          {
+            "elementId": "UserTask_UndoBill",
+            "name": "Undo bill"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s08-complete-UserTask_UndoBill-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_UndoReserve",
+            "name": "Undo reserve"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s09-complete-UserTask_CheckpointTwo-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_UndoReserve",
+            "name": "Undo reserve"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s10-complete-UserTask_UndoReserve-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_CheckpointTwo",
+            "name": "Checkpoint two"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s11-complete-UserTask_CheckpointTwo-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_CheckpointThree",
+            "name": "Checkpoint three"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s12-complete-UserTask_CheckpointThree-1",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s01-complete-UserTask_Reserve-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s02-complete-UserTask_Ship-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s03-complete-UserTask_Bill-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_CheckpointOne-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s05-complete-UserTask_UndoShip-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s06-complete-UserTask_UndoShip-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s07-complete-UserTask_CheckpointOne-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s08-complete-UserTask_UndoBill-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s09-complete-UserTask_CheckpointTwo-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s10-complete-UserTask_UndoReserve-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s11-complete-UserTask_CheckpointTwo-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s12-complete-UserTask_CheckpointThree-1",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "s01-start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s01-complete-UserTask_Reserve-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s02-complete-UserTask_Ship-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s03-complete-UserTask_Bill-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_CheckpointOne-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s05-complete-UserTask_UndoShip-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s06-complete-UserTask_UndoShip-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s07-complete-UserTask_CheckpointOne-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s08-complete-UserTask_UndoBill-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s09-complete-UserTask_CheckpointTwo-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s10-complete-UserTask_UndoReserve-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s11-complete-UserTask_CheckpointTwo-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s12-complete-UserTask_CheckpointThree-1",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "mode",
+            "value": {
+              "kind": "string",
+              "value": "chain"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Reserve",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Reserve",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-complete-UserTask_Reserve-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "mode",
+            "value": {
+              "kind": "string",
+              "value": "chain"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Ship",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Ship",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s02-complete-UserTask_Ship-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "mode",
+            "value": {
+              "kind": "string",
+              "value": "chain"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Bill",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Bill",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s03-complete-UserTask_Bill-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "mode",
+            "value": {
+              "kind": "string",
+              "value": "chain"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_UndoShip",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Undo ship",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s04-complete-UserTask_CheckpointOne-1",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "mode",
+            "value": {
+              "kind": "string",
+              "value": "chain"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_UndoShip",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Undo ship",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s05-complete-UserTask_UndoShip-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "mode",
+            "value": {
+              "kind": "string",
+              "value": "chain"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_CheckpointOne",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Checkpoint one",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s06-complete-UserTask_UndoShip-1",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "mode",
+            "value": {
+              "kind": "string",
+              "value": "chain"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_CheckpointOne",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Checkpoint one",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s07-complete-UserTask_CheckpointOne-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "mode",
+            "value": {
+              "kind": "string",
+              "value": "chain"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_UndoBill",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Undo bill",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_UndoReserve",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Undo reserve",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s08-complete-UserTask_UndoBill-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "mode",
+            "value": {
+              "kind": "string",
+              "value": "chain"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_UndoReserve",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Undo reserve",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s09-complete-UserTask_CheckpointTwo-1",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "mode",
+            "value": {
+              "kind": "string",
+              "value": "chain"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_UndoReserve",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Undo reserve",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s10-complete-UserTask_UndoReserve-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "mode",
+            "value": {
+              "kind": "string",
+              "value": "chain"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_CheckpointTwo",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Checkpoint two",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s11-complete-UserTask_CheckpointTwo-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "mode",
+            "value": {
+              "kind": "string",
+              "value": "chain"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_CheckpointThree",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Checkpoint three",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s12-complete-UserTask_CheckpointThree-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "mode",
+            "value": {
+              "kind": "string",
+              "value": "chain"
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}

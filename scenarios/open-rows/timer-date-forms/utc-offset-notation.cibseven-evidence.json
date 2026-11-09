@@ -1,0 +1,258 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "timer-date-forms-utc-offset-notation",
+    "sha256": "f4a4d9fdcac5afbf5a19cd1e346c3c2c58f0396c627b81f7091e63162d65c79e"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "delayed",
+            "value": false
+          },
+          {
+            "name": "form",
+            "value": "utc-offset"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-fire-Catch_UtcOffset",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 3600000,
+        "variables": [
+          {
+            "name": "delayed",
+            "value": false
+          },
+          {
+            "name": "form",
+            "value": "utc-offset"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-complete-Proceed",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 3600000,
+        "variables": [
+          {
+            "name": "delayed",
+            "value": false
+          },
+          {
+            "name": "form",
+            "value": "utc-offset"
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "s02-fire-Catch_UtcOffset",
+        "tasks": [
+          {
+            "elementId": "Proceed",
+            "name": "Proceed after the date"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-complete-Proceed",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": [
+          {
+            "elementId": "Catch_UtcOffset",
+            "dueDateDeltaMs": 3600000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-fire-Catch_UtcOffset",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s03-complete-Proceed",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "s01-start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s02-fire-Catch_UtcOffset",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s03-complete-Proceed",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "delayed",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "form",
+            "value": {
+              "kind": "string",
+              "value": "utc-offset"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Catch_UtcOffset",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 3600000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s02-fire-Catch_UtcOffset",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 3600000,
+        "variables": [
+          {
+            "name": "delayed",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "form",
+            "value": {
+              "kind": "string",
+              "value": "utc-offset"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Proceed",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Proceed after the date",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s03-complete-Proceed",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "completed",
+        "logicalTimeMs": 3600000,
+        "variables": [
+          {
+            "name": "delayed",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "form",
+            "value": {
+              "kind": "string",
+              "value": "utc-offset"
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}

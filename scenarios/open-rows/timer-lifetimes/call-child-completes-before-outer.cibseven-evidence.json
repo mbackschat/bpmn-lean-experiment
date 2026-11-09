@@ -1,0 +1,738 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "timer-lifetimes-call-child-completes-before-outer",
+    "sha256": "f56e3f1977e18eee7e495a6daaeee82eaa804fddc874cec56323bb6511f88c9f"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "s02-complete-Child_Task",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "s03-fire-Child_Boundary",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "s04-fire-Child_Wait",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 20000,
+        "variables": []
+      },
+      {
+        "afterCommandId": "s05-fire-Call_Deadline",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 20000,
+        "variables": []
+      },
+      {
+        "afterCommandId": "s06-complete-After_Call",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 20000,
+        "variables": []
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "tasks": [
+          {
+            "elementId": "Reserve",
+            "name": "Reserve the slot"
+          },
+          {
+            "elementId": "Child_Task",
+            "name": "Carry out the check"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-complete-Child_Task",
+        "tasks": [
+          {
+            "elementId": "Reserve",
+            "name": "Reserve the slot"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-fire-Child_Boundary",
+        "tasks": [
+          {
+            "elementId": "Reserve",
+            "name": "Reserve the slot"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-fire-Child_Wait",
+        "tasks": [
+          {
+            "elementId": "Reserve",
+            "name": "Reserve the slot"
+          },
+          {
+            "elementId": "After_Call",
+            "name": "File the check"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-fire-Call_Deadline",
+        "tasks": [
+          {
+            "elementId": "Reserve",
+            "name": "Reserve the slot"
+          },
+          {
+            "elementId": "After_Call",
+            "name": "File the check"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s06-complete-After_Call",
+        "tasks": [
+          {
+            "elementId": "Reserve",
+            "name": "Reserve the slot"
+          }
+        ]
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": [
+          {
+            "elementId": "Call_Deadline",
+            "dueDateDeltaMs": 40000,
+            "executable": false
+          },
+          {
+            "elementId": "Child_Boundary",
+            "dueDateDeltaMs": 6000,
+            "executable": false
+          },
+          {
+            "elementId": "Tx_Deadline",
+            "dueDateDeltaMs": 30000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-complete-Child_Task",
+        "jobs": [
+          {
+            "elementId": "Call_Deadline",
+            "dueDateDeltaMs": 40000,
+            "executable": false
+          },
+          {
+            "elementId": "Child_Wait",
+            "dueDateDeltaMs": 20000,
+            "executable": false
+          },
+          {
+            "elementId": "Tx_Deadline",
+            "dueDateDeltaMs": 30000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-fire-Child_Boundary",
+        "jobs": [
+          {
+            "elementId": "Call_Deadline",
+            "dueDateDeltaMs": 40000,
+            "executable": false
+          },
+          {
+            "elementId": "Child_Wait",
+            "dueDateDeltaMs": 20000,
+            "executable": false
+          },
+          {
+            "elementId": "Tx_Deadline",
+            "dueDateDeltaMs": 30000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-fire-Child_Wait",
+        "jobs": [
+          {
+            "elementId": "Tx_Deadline",
+            "dueDateDeltaMs": 30000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-fire-Call_Deadline",
+        "jobs": [
+          {
+            "elementId": "Tx_Deadline",
+            "dueDateDeltaMs": 30000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s06-complete-After_Call",
+        "jobs": [
+          {
+            "elementId": "Tx_Deadline",
+            "dueDateDeltaMs": 30000,
+            "executable": false
+          }
+        ]
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "s01-start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s02-complete-Child_Task",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s03-fire-Child_Boundary",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s04-fire-Child_Wait",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s05-fire-Call_Deadline",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s06-complete-After_Call",
+        "state": "ACTIVE"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Call_Deadline",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 40000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Reserve",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Reserve the slot",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Tx_Deadline",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 30000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:10:Call_Child:1",
+              "elementId": "Child_Boundary",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_TimedChild",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 6000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:10:Call_Child:1",
+              "elementId": "Child_Task",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_TimedChild",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Carry out the check",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s02-complete-Child_Task",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Call_Deadline",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 40000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Reserve",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Reserve the slot",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Tx_Deadline",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 30000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:10:Call_Child:1",
+              "elementId": "Child_Wait",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_TimedChild",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 20000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s03-fire-Child_Boundary",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Call_Deadline",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 40000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Reserve",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Reserve the slot",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Tx_Deadline",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 30000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:10:Call_Child:1",
+              "elementId": "Child_Wait",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_TimedChild",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 20000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s04-fire-Child_Wait",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 20000,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "After_Call",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "File the check",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Reserve",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Reserve the slot",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Tx_Deadline",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 30000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s05-fire-Call_Deadline",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 20000,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "After_Call",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "File the check",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Reserve",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Reserve the slot",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Tx_Deadline",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 30000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s06-complete-After_Call",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 20000,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Reserve",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Reserve the slot",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Tx_Deadline",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 30000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          }
+        ]
+      }
+    ]
+  }
+}

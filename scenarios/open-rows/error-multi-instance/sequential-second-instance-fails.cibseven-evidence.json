@@ -1,0 +1,251 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "error-multi-instance-sequential-second-instance-fails",
+    "sha256": "49e16b7311c43bba546b702e24732c9bb3eaced8bc16ef821bf14ee6bb377585"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start-process",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start-process",
+        "tasks": [
+          {
+            "elementId": "ResolveNotify",
+            "name": "Resolve failed notification"
+          }
+        ]
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start-process",
+        "jobs": []
+      }
+    ],
+    "effectJobs": [
+      {
+        "afterCommandId": "start-process",
+        "jobs": [
+          {
+            "elementId": "Assess",
+            "activation": 1,
+            "protocol": "urn:bpmn-lean:effect:probe-v1",
+            "handler": "bpmnLeanEffectHandler",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          },
+          {
+            "elementId": "Assess",
+            "activation": 1,
+            "protocol": "urn:bpmn-lean:effect:probe-v1",
+            "handler": "bpmnLeanEffectHandler",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          }
+        ]
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start-process",
+        "state": "ACTIVE"
+      }
+    ],
+    "effectExecutions": [],
+    "mappingExecutions": [
+      {
+        "afterCommandId": "start-process",
+        "handler": "bpmnLeanEffectHandler",
+        "arguments": [
+          {
+            "name": "loopCounter",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "nrOfActiveInstances",
+            "value": {
+              "kind": "integer",
+              "value": 1
+            }
+          },
+          {
+            "name": "nrOfCompletedInstances",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "nrOfInstances",
+            "value": {
+              "kind": "integer",
+              "value": 3
+            }
+          }
+        ],
+        "localPatch": [],
+        "invocations": 1
+      },
+      {
+        "afterCommandId": "start-process",
+        "handler": "bpmnLeanEffectHandler",
+        "arguments": [
+          {
+            "name": "loopCounter",
+            "value": {
+              "kind": "integer",
+              "value": 1
+            }
+          },
+          {
+            "name": "nrOfActiveInstances",
+            "value": {
+              "kind": "integer",
+              "value": 1
+            }
+          },
+          {
+            "name": "nrOfCompletedInstances",
+            "value": {
+              "kind": "integer",
+              "value": 1
+            }
+          },
+          {
+            "name": "nrOfInstances",
+            "value": {
+              "kind": "integer",
+              "value": 3
+            }
+          }
+        ],
+        "localPatch": [],
+        "invocations": 2
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start-process",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ResolveNotify",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Resolve failed notification",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:10:ReviewEach:1",
+              "elementId": "Assess",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_ReviewBatch",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "urn:bpmn-lean:effect-operation:probe-v1",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          },
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:10:ReviewEach:2",
+              "elementId": "Assess",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_ReviewBatch",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "urn:bpmn-lean:effect-operation:probe-v1",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          }
+        ]
+      }
+    ]
+  }
+}

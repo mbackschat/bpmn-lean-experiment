@@ -1,0 +1,553 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "human-task-metadata-composition-triage-rollover-scope-and-free",
+    "sha256": "272821abb496eb05958907bb820bdc7dcfab0c9e7a515d7b0915aed6131d91c3"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "triage-1-rework",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "route",
+            "value": "rework"
+          },
+          {
+            "name": "urgent",
+            "value": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "triage-2-proceed",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "route",
+            "value": "proceed"
+          },
+          {
+            "name": "urgent",
+            "value": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "collect-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "notes",
+            "value": "n-1"
+          },
+          {
+            "name": "route",
+            "value": "proceed"
+          },
+          {
+            "name": "urgent",
+            "value": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "confirm-1",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "notes",
+            "value": "n-1"
+          },
+          {
+            "name": "route",
+            "value": "proceed"
+          },
+          {
+            "name": "urgent",
+            "value": true
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start",
+        "tasks": [
+          {
+            "elementId": "Triage",
+            "name": "Triage case",
+            "identityLinks": [
+              {
+                "type": "candidate",
+                "userId": "bob",
+                "groupId": null
+              },
+              {
+                "type": "candidate",
+                "userId": "carol",
+                "groupId": null
+              },
+              {
+                "type": "candidate",
+                "userId": null,
+                "groupId": "triagers"
+              },
+              {
+                "type": "candidate",
+                "userId": null,
+                "groupId": "leads"
+              },
+              {
+                "type": "assignee",
+                "userId": "alice",
+                "groupId": null
+              }
+            ],
+            "formFields": [
+              {
+                "id": "route",
+                "typeName": "string"
+              },
+              {
+                "id": "urgent",
+                "typeName": "boolean"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "afterCommandId": "triage-1-rework",
+        "tasks": [
+          {
+            "elementId": "Triage",
+            "name": "Triage case",
+            "identityLinks": [
+              {
+                "type": "candidate",
+                "userId": "bob",
+                "groupId": null
+              },
+              {
+                "type": "candidate",
+                "userId": "carol",
+                "groupId": null
+              },
+              {
+                "type": "candidate",
+                "userId": null,
+                "groupId": "triagers"
+              },
+              {
+                "type": "candidate",
+                "userId": null,
+                "groupId": "leads"
+              },
+              {
+                "type": "assignee",
+                "userId": "alice",
+                "groupId": null
+              }
+            ],
+            "formFields": [
+              {
+                "id": "route",
+                "typeName": "string"
+              },
+              {
+                "id": "urgent",
+                "typeName": "boolean"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "afterCommandId": "triage-2-proceed",
+        "tasks": [
+          {
+            "elementId": "Collect",
+            "name": "Collect notes",
+            "identityLinks": [
+              {
+                "type": "candidate",
+                "userId": null,
+                "groupId": "clerks"
+              }
+            ],
+            "formFields": [
+              {
+                "id": "notes",
+                "typeName": "string"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "afterCommandId": "collect-1",
+        "tasks": [
+          {
+            "elementId": "Confirm",
+            "name": "Confirm case"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "confirm-1",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "triage-1-rework",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "triage-2-proceed",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "collect-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "confirm-1",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "triage-1-rework",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "triage-2-proceed",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "collect-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "confirm-1",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Case_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Case_1",
+              "elementId": "Triage",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Triage case",
+              "assignee": "alice",
+              "candidateUsers": [
+                "bob",
+                "carol"
+              ],
+              "candidateGroups": [
+                "triagers",
+                "leads"
+              ],
+              "formKey": "embedded:app:forms/triage.html",
+              "formFields": [
+                {
+                  "key": "route",
+                  "type": "string"
+                },
+                {
+                  "key": "urgent",
+                  "type": "boolean"
+                }
+              ],
+              "dueDate": "2026-12-31T00:00:00Z",
+              "followUpDate": "2026-12-24T00:00:00Z",
+              "priority": 70,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "triage-1-rework",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Case_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "route",
+            "value": {
+              "kind": "string",
+              "value": "rework"
+            }
+          },
+          {
+            "name": "urgent",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Case_1",
+              "elementId": "Triage",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Triage case",
+              "assignee": "alice",
+              "candidateUsers": [
+                "bob",
+                "carol"
+              ],
+              "candidateGroups": [
+                "triagers",
+                "leads"
+              ],
+              "formKey": "embedded:app:forms/triage.html",
+              "formFields": [
+                {
+                  "key": "route",
+                  "type": "string"
+                },
+                {
+                  "key": "urgent",
+                  "type": "boolean"
+                }
+              ],
+              "dueDate": "2026-12-31T00:00:00Z",
+              "followUpDate": "2026-12-24T00:00:00Z",
+              "priority": 70,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "triage-2-proceed",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Case_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "route",
+            "value": {
+              "kind": "string",
+              "value": "proceed"
+            }
+          },
+          {
+            "name": "urgent",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Case_1",
+              "elementId": "Collect",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Collect notes",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [
+                "clerks"
+              ],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "notes",
+                  "type": "string"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": 10,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "collect-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Case_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "notes",
+            "value": {
+              "kind": "string",
+              "value": "n-1"
+            }
+          },
+          {
+            "name": "route",
+            "value": {
+              "kind": "string",
+              "value": "proceed"
+            }
+          },
+          {
+            "name": "urgent",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Case_1",
+              "elementId": "Confirm",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Confirm case",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "confirm-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Case_1",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "notes",
+            "value": {
+              "kind": "string",
+              "value": "n-1"
+            }
+          },
+          {
+            "name": "route",
+            "value": {
+              "kind": "string",
+              "value": "proceed"
+            }
+          },
+          {
+            "name": "urgent",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}

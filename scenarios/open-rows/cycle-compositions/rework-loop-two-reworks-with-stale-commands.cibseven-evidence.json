@@ -1,0 +1,1491 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "cycle-compositions-rework-loop-two-reworks-with-stale-commands",
+    "sha256": "fdb309651f86b520088380343dc41253887b9e297e6e98078283c40972cc6472"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "claimId",
+            "value": "c-1"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-complete-Inspect-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "claimId",
+            "value": "c-1"
+          },
+          {
+            "name": "notes",
+            "value": "n1"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-effect-PriceRepair-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "claimId",
+            "value": "c-1"
+          },
+          {
+            "name": "notes",
+            "value": "n1"
+          },
+          {
+            "name": "quote",
+            "value": "q1"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-complete-ReviewQuote-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "claimId",
+            "value": "c-1"
+          },
+          {
+            "name": "decision",
+            "value": "rework"
+          },
+          {
+            "name": "notes",
+            "value": "n1"
+          },
+          {
+            "name": "quote",
+            "value": "q1"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-complete-Inspect-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "claimId",
+            "value": "c-1"
+          },
+          {
+            "name": "decision",
+            "value": "rework"
+          },
+          {
+            "name": "notes",
+            "value": "n1"
+          },
+          {
+            "name": "quote",
+            "value": "q1"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s06-complete-Inspect-2",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "claimId",
+            "value": "c-1"
+          },
+          {
+            "name": "decision",
+            "value": "rework"
+          },
+          {
+            "name": "notes",
+            "value": "n2"
+          },
+          {
+            "name": "quote",
+            "value": "q1"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s07-effect-PriceRepair-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "claimId",
+            "value": "c-1"
+          },
+          {
+            "name": "decision",
+            "value": "rework"
+          },
+          {
+            "name": "notes",
+            "value": "n2"
+          },
+          {
+            "name": "quote",
+            "value": "q1"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s08-effect-PriceRepair-2",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "claimId",
+            "value": "c-1"
+          },
+          {
+            "name": "decision",
+            "value": "rework"
+          },
+          {
+            "name": "notes",
+            "value": "n2"
+          },
+          {
+            "name": "quote",
+            "value": "q2"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s09-complete-ReviewQuote-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "claimId",
+            "value": "c-1"
+          },
+          {
+            "name": "decision",
+            "value": "rework"
+          },
+          {
+            "name": "notes",
+            "value": "n2"
+          },
+          {
+            "name": "quote",
+            "value": "q2"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s10-complete-ReviewQuote-2",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "claimId",
+            "value": "c-1"
+          },
+          {
+            "name": "decision",
+            "value": "rework"
+          },
+          {
+            "name": "notes",
+            "value": "n2"
+          },
+          {
+            "name": "quote",
+            "value": "q2"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s11-complete-Inspect-3",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "claimId",
+            "value": "c-1"
+          },
+          {
+            "name": "decision",
+            "value": "rework"
+          },
+          {
+            "name": "notes",
+            "value": "n3"
+          },
+          {
+            "name": "quote",
+            "value": "q2"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s12-effect-PriceRepair-3",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "claimId",
+            "value": "c-1"
+          },
+          {
+            "name": "decision",
+            "value": "rework"
+          },
+          {
+            "name": "notes",
+            "value": "n3"
+          },
+          {
+            "name": "quote",
+            "value": "q3"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s13-complete-ReviewQuote-3",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "claimId",
+            "value": "c-1"
+          },
+          {
+            "name": "decision",
+            "value": "approve"
+          },
+          {
+            "name": "notes",
+            "value": "n3"
+          },
+          {
+            "name": "quote",
+            "value": "q3"
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "tasks": [
+          {
+            "elementId": "Inspect",
+            "name": "Inspect damage",
+            "identityLinks": [],
+            "formFields": [
+              {
+                "id": "notes",
+                "typeName": "string"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-complete-Inspect-1",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "s03-effect-PriceRepair-1",
+        "tasks": [
+          {
+            "elementId": "ReviewQuote",
+            "name": "Review quote",
+            "identityLinks": [],
+            "formFields": [
+              {
+                "id": "decision",
+                "typeName": "string"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-complete-ReviewQuote-1",
+        "tasks": [
+          {
+            "elementId": "Inspect",
+            "name": "Inspect damage",
+            "identityLinks": [],
+            "formFields": [
+              {
+                "id": "notes",
+                "typeName": "string"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-complete-Inspect-1",
+        "tasks": [
+          {
+            "elementId": "Inspect",
+            "name": "Inspect damage",
+            "identityLinks": [],
+            "formFields": [
+              {
+                "id": "notes",
+                "typeName": "string"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s06-complete-Inspect-2",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "s07-effect-PriceRepair-1",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "s08-effect-PriceRepair-2",
+        "tasks": [
+          {
+            "elementId": "ReviewQuote",
+            "name": "Review quote",
+            "identityLinks": [],
+            "formFields": [
+              {
+                "id": "decision",
+                "typeName": "string"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s09-complete-ReviewQuote-1",
+        "tasks": [
+          {
+            "elementId": "ReviewQuote",
+            "name": "Review quote",
+            "identityLinks": [],
+            "formFields": [
+              {
+                "id": "decision",
+                "typeName": "string"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s10-complete-ReviewQuote-2",
+        "tasks": [
+          {
+            "elementId": "Inspect",
+            "name": "Inspect damage",
+            "identityLinks": [],
+            "formFields": [
+              {
+                "id": "notes",
+                "typeName": "string"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s11-complete-Inspect-3",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "s12-effect-PriceRepair-3",
+        "tasks": [
+          {
+            "elementId": "ReviewQuote",
+            "name": "Review quote",
+            "identityLinks": [],
+            "formFields": [
+              {
+                "id": "decision",
+                "typeName": "string"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s13-complete-ReviewQuote-3",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s02-complete-Inspect-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s03-effect-PriceRepair-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s04-complete-ReviewQuote-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s05-complete-Inspect-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s06-complete-Inspect-2",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s07-effect-PriceRepair-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s08-effect-PriceRepair-2",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s09-complete-ReviewQuote-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s10-complete-ReviewQuote-2",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s11-complete-Inspect-3",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s12-effect-PriceRepair-3",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s13-complete-ReviewQuote-3",
+        "jobs": []
+      }
+    ],
+    "effectJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s02-complete-Inspect-1",
+        "jobs": [
+          {
+            "elementId": "PriceRepair",
+            "activation": 1,
+            "protocol": "urn:bpmn-lean:effect:probe-v1",
+            "handler": "bpmnLeanEffectHandler",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-effect-PriceRepair-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s04-complete-ReviewQuote-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s05-complete-Inspect-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s06-complete-Inspect-2",
+        "jobs": [
+          {
+            "elementId": "PriceRepair",
+            "activation": 2,
+            "protocol": "urn:bpmn-lean:effect:probe-v1",
+            "handler": "bpmnLeanEffectHandler",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s07-effect-PriceRepair-1",
+        "jobs": [
+          {
+            "elementId": "PriceRepair",
+            "activation": 2,
+            "protocol": "urn:bpmn-lean:effect:probe-v1",
+            "handler": "bpmnLeanEffectHandler",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s08-effect-PriceRepair-2",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s09-complete-ReviewQuote-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s10-complete-ReviewQuote-2",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s11-complete-Inspect-3",
+        "jobs": [
+          {
+            "elementId": "PriceRepair",
+            "activation": 3,
+            "protocol": "urn:bpmn-lean:effect:probe-v1",
+            "handler": "bpmnLeanEffectHandler",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s12-effect-PriceRepair-3",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s13-complete-ReviewQuote-3",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "s01-start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s02-complete-Inspect-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s03-effect-PriceRepair-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s04-complete-ReviewQuote-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s05-complete-Inspect-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s06-complete-Inspect-2",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s07-effect-PriceRepair-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s08-effect-PriceRepair-2",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s09-complete-ReviewQuote-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s10-complete-ReviewQuote-2",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s11-complete-Inspect-3",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s12-effect-PriceRepair-3",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s13-complete-ReviewQuote-3",
+        "state": "COMPLETED"
+      }
+    ],
+    "effectExecutions": [
+      {
+        "afterCommandId": "s03-effect-PriceRepair-1",
+        "schedule": "plainSuccess",
+        "invocations": 1,
+        "mutations": 1,
+        "initialRetries": 3,
+        "retriesAfterFirstFailure": null
+      },
+      {
+        "afterCommandId": "s08-effect-PriceRepair-2",
+        "schedule": "plainSuccess",
+        "invocations": 2,
+        "mutations": 1,
+        "initialRetries": 3,
+        "retriesAfterFirstFailure": null
+      },
+      {
+        "afterCommandId": "s12-effect-PriceRepair-3",
+        "schedule": "plainSuccess",
+        "invocations": 3,
+        "mutations": 1,
+        "initialRetries": 3,
+        "retriesAfterFirstFailure": null
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "claimId",
+            "value": {
+              "kind": "string",
+              "value": "c-1"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Inspect",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Inspect damage",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "notes",
+                  "type": "string"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s02-complete-Inspect-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "claimId",
+            "value": {
+              "kind": "string",
+              "value": "c-1"
+            }
+          },
+          {
+            "name": "notes",
+            "value": {
+              "kind": "string",
+              "value": "n1"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "PriceRepair",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "urn:bpmn-lean:effect-operation:probe-v1",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s03-effect-PriceRepair-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "claimId",
+            "value": {
+              "kind": "string",
+              "value": "c-1"
+            }
+          },
+          {
+            "name": "notes",
+            "value": {
+              "kind": "string",
+              "value": "n1"
+            }
+          },
+          {
+            "name": "quote",
+            "value": {
+              "kind": "string",
+              "value": "q1"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ReviewQuote",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review quote",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "decision",
+                  "type": "string"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s04-complete-ReviewQuote-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "claimId",
+            "value": {
+              "kind": "string",
+              "value": "c-1"
+            }
+          },
+          {
+            "name": "decision",
+            "value": {
+              "kind": "string",
+              "value": "rework"
+            }
+          },
+          {
+            "name": "notes",
+            "value": {
+              "kind": "string",
+              "value": "n1"
+            }
+          },
+          {
+            "name": "quote",
+            "value": {
+              "kind": "string",
+              "value": "q1"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Inspect",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Inspect damage",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "notes",
+                  "type": "string"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s05-complete-Inspect-1",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "claimId",
+            "value": {
+              "kind": "string",
+              "value": "c-1"
+            }
+          },
+          {
+            "name": "decision",
+            "value": {
+              "kind": "string",
+              "value": "rework"
+            }
+          },
+          {
+            "name": "notes",
+            "value": {
+              "kind": "string",
+              "value": "n1"
+            }
+          },
+          {
+            "name": "quote",
+            "value": {
+              "kind": "string",
+              "value": "q1"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Inspect",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Inspect damage",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "notes",
+                  "type": "string"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s06-complete-Inspect-2",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "claimId",
+            "value": {
+              "kind": "string",
+              "value": "c-1"
+            }
+          },
+          {
+            "name": "decision",
+            "value": {
+              "kind": "string",
+              "value": "rework"
+            }
+          },
+          {
+            "name": "notes",
+            "value": {
+              "kind": "string",
+              "value": "n2"
+            }
+          },
+          {
+            "name": "quote",
+            "value": {
+              "kind": "string",
+              "value": "q1"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "PriceRepair",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "urn:bpmn-lean:effect-operation:probe-v1",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s07-effect-PriceRepair-1",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "claimId",
+            "value": {
+              "kind": "string",
+              "value": "c-1"
+            }
+          },
+          {
+            "name": "decision",
+            "value": {
+              "kind": "string",
+              "value": "rework"
+            }
+          },
+          {
+            "name": "notes",
+            "value": {
+              "kind": "string",
+              "value": "n2"
+            }
+          },
+          {
+            "name": "quote",
+            "value": {
+              "kind": "string",
+              "value": "q1"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "PriceRepair",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "urn:bpmn-lean:effect-operation:probe-v1",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s08-effect-PriceRepair-2",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "claimId",
+            "value": {
+              "kind": "string",
+              "value": "c-1"
+            }
+          },
+          {
+            "name": "decision",
+            "value": {
+              "kind": "string",
+              "value": "rework"
+            }
+          },
+          {
+            "name": "notes",
+            "value": {
+              "kind": "string",
+              "value": "n2"
+            }
+          },
+          {
+            "name": "quote",
+            "value": {
+              "kind": "string",
+              "value": "q2"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ReviewQuote",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review quote",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "decision",
+                  "type": "string"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s09-complete-ReviewQuote-1",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "claimId",
+            "value": {
+              "kind": "string",
+              "value": "c-1"
+            }
+          },
+          {
+            "name": "decision",
+            "value": {
+              "kind": "string",
+              "value": "rework"
+            }
+          },
+          {
+            "name": "notes",
+            "value": {
+              "kind": "string",
+              "value": "n2"
+            }
+          },
+          {
+            "name": "quote",
+            "value": {
+              "kind": "string",
+              "value": "q2"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ReviewQuote",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review quote",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "decision",
+                  "type": "string"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s10-complete-ReviewQuote-2",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "claimId",
+            "value": {
+              "kind": "string",
+              "value": "c-1"
+            }
+          },
+          {
+            "name": "decision",
+            "value": {
+              "kind": "string",
+              "value": "rework"
+            }
+          },
+          {
+            "name": "notes",
+            "value": {
+              "kind": "string",
+              "value": "n2"
+            }
+          },
+          {
+            "name": "quote",
+            "value": {
+              "kind": "string",
+              "value": "q2"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Inspect",
+              "activation": 3
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Inspect damage",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "notes",
+                  "type": "string"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s11-complete-Inspect-3",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "claimId",
+            "value": {
+              "kind": "string",
+              "value": "c-1"
+            }
+          },
+          {
+            "name": "decision",
+            "value": {
+              "kind": "string",
+              "value": "rework"
+            }
+          },
+          {
+            "name": "notes",
+            "value": {
+              "kind": "string",
+              "value": "n3"
+            }
+          },
+          {
+            "name": "quote",
+            "value": {
+              "kind": "string",
+              "value": "q2"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "PriceRepair",
+              "activation": 3
+            },
+            "definition": null,
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "urn:bpmn-lean:effect-operation:probe-v1",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s12-effect-PriceRepair-3",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "claimId",
+            "value": {
+              "kind": "string",
+              "value": "c-1"
+            }
+          },
+          {
+            "name": "decision",
+            "value": {
+              "kind": "string",
+              "value": "rework"
+            }
+          },
+          {
+            "name": "notes",
+            "value": {
+              "kind": "string",
+              "value": "n3"
+            }
+          },
+          {
+            "name": "quote",
+            "value": {
+              "kind": "string",
+              "value": "q3"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ReviewQuote",
+              "activation": 3
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review quote",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "decision",
+                  "type": "string"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s13-complete-ReviewQuote-3",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "claimId",
+            "value": {
+              "kind": "string",
+              "value": "c-1"
+            }
+          },
+          {
+            "name": "decision",
+            "value": {
+              "kind": "string",
+              "value": "approve"
+            }
+          },
+          {
+            "name": "notes",
+            "value": {
+              "kind": "string",
+              "value": "n3"
+            }
+          },
+          {
+            "name": "quote",
+            "value": {
+              "kind": "string",
+              "value": "q3"
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}

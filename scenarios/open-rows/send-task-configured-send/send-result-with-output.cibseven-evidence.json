@@ -1,0 +1,389 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "send-task-configured-send-send-result-with-output",
+    "sha256": "8fe257d2028087dd012c92bf5d11b0294fd3640e6a1224b256b785b67be7847d"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "copies",
+            "value": "2"
+          },
+          {
+            "name": "customerEmail",
+            "value": "ada@example.org"
+          },
+          {
+            "name": "order",
+            "value": "A-17"
+          },
+          {
+            "name": "urgent",
+            "value": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "pack-order",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "copies",
+            "value": "2"
+          },
+          {
+            "name": "customerEmail",
+            "value": "ada@example.org"
+          },
+          {
+            "name": "notice",
+            "value": "Your order ships tomorrow"
+          },
+          {
+            "name": "order",
+            "value": "A-17"
+          },
+          {
+            "name": "urgent",
+            "value": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-send-with-receipt",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "copies",
+            "value": "2"
+          },
+          {
+            "name": "customerEmail",
+            "value": "ada@example.org"
+          },
+          {
+            "name": "notice",
+            "value": "Your order ships tomorrow"
+          },
+          {
+            "name": "order",
+            "value": "A-17"
+          },
+          {
+            "name": "urgent",
+            "value": false
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start",
+        "tasks": [
+          {
+            "elementId": "Pack",
+            "name": "Pack order",
+            "identityLinks": [],
+            "formFields": [
+              {
+                "id": "notice",
+                "typeName": "string"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "afterCommandId": "pack-order",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "complete-send-with-receipt",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "pack-order",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-send-with-receipt",
+        "jobs": []
+      }
+    ],
+    "effectJobs": [
+      {
+        "afterCommandId": "start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "pack-order",
+        "jobs": [
+          {
+            "elementId": "SendNotice",
+            "activation": 1,
+            "protocol": "urn:bpmn-lean:effect:probe-v1",
+            "handler": "bpmnLeanEffectHandler",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-send-with-receipt",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "pack-order",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-send-with-receipt",
+        "state": "COMPLETED"
+      }
+    ],
+    "effectExecutions": [
+      {
+        "afterCommandId": "complete-send-with-receipt",
+        "schedule": "plainSuccess",
+        "invocations": 1,
+        "mutations": 1,
+        "initialRetries": 3,
+        "retriesAfterFirstFailure": null
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Order_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "copies",
+            "value": {
+              "kind": "string",
+              "value": "2"
+            }
+          },
+          {
+            "name": "customerEmail",
+            "value": {
+              "kind": "string",
+              "value": "ada@example.org"
+            }
+          },
+          {
+            "name": "order",
+            "value": {
+              "kind": "string",
+              "value": "A-17"
+            }
+          },
+          {
+            "name": "urgent",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Order_1",
+              "elementId": "Pack",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Pack order",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "notice",
+                  "type": "string"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "pack-order",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Order_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "copies",
+            "value": {
+              "kind": "string",
+              "value": "2"
+            }
+          },
+          {
+            "name": "customerEmail",
+            "value": {
+              "kind": "string",
+              "value": "ada@example.org"
+            }
+          },
+          {
+            "name": "notice",
+            "value": {
+              "kind": "string",
+              "value": "Your order ships tomorrow"
+            }
+          },
+          {
+            "name": "order",
+            "value": {
+              "kind": "string",
+              "value": "A-17"
+            }
+          },
+          {
+            "name": "urgent",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Order_1",
+              "elementId": "SendNotice",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "urn:bpmn-lean:effect-operation:probe-v1",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-send-with-receipt",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Order_1",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "copies",
+            "value": {
+              "kind": "string",
+              "value": "2"
+            }
+          },
+          {
+            "name": "customerEmail",
+            "value": {
+              "kind": "string",
+              "value": "ada@example.org"
+            }
+          },
+          {
+            "name": "notice",
+            "value": {
+              "kind": "string",
+              "value": "Your order ships tomorrow"
+            }
+          },
+          {
+            "name": "order",
+            "value": {
+              "kind": "string",
+              "value": "A-17"
+            }
+          },
+          {
+            "name": "urgent",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}

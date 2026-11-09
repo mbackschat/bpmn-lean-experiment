@@ -1,0 +1,255 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "addressless-receive-compositions-items-sequential-turnover",
+    "sha256": "b1a7c608ac289e88d397964d97823a2349e948c7598ae1f51299409e2c37cfae"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "scan-item-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "scan-item-1-again",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "scan-item-2",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": []
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "scan-item-1",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "scan-item-1-again",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "scan-item-2",
+        "tasks": []
+      }
+    ],
+    "messageSubscriptions": [
+      {
+        "afterCommandId": "start",
+        "subscriptions": [],
+        "addresslessReceiveWaits": [
+          {
+            "elementId": "AwaitItemScan"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "scan-item-1",
+        "subscriptions": [],
+        "addresslessReceiveWaits": [
+          {
+            "elementId": "AwaitItemScan"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "scan-item-1-again",
+        "subscriptions": [],
+        "addresslessReceiveWaits": [
+          {
+            "elementId": "AwaitItemScan"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "scan-item-2",
+        "subscriptions": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "scan-item-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "scan-item-1-again",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "scan-item-2",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "scan-item-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "scan-item-1-again",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "scan-item-2",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Items_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Items_1",
+              "elementId": "AwaitItemScan",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "unspecifiedMessage"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "scan-item-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Items_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Items_1",
+              "elementId": "AwaitItemScan",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "unspecifiedMessage"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "scan-item-1-again",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Items_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Items_1",
+              "elementId": "AwaitItemScan",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "unspecifiedMessage"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "scan-item-2",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Items_1",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": []
+      }
+    ]
+  }
+}

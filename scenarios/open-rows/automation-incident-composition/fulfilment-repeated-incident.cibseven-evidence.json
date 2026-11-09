@@ -1,0 +1,736 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "automation-incident-composition-fulfilment-repeated-incident",
+    "sha256": "e0bb230de7c34850e504ab65d957581b6926dee98040208db075355a56262e0d"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "orderId",
+            "value": "O-7"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "take-order",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "orderId",
+            "value": "O-7"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "fail-charge-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "orderId",
+            "value": "O-7"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "retry-charge-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "orderId",
+            "value": "O-7"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "fail-charge-2",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "orderId",
+            "value": "O-7"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "retry-charge-2",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "orderId",
+            "value": "O-7"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-charge",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "charged",
+            "value": "paid"
+          },
+          {
+            "name": "orderId",
+            "value": "O-7"
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start",
+        "tasks": [
+          {
+            "elementId": "Intake",
+            "name": "Take order"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "take-order",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "fail-charge-1",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "retry-charge-1",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "fail-charge-2",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "retry-charge-2",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "complete-charge",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "take-order",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "fail-charge-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "retry-charge-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "fail-charge-2",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "retry-charge-2",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-charge",
+        "jobs": []
+      }
+    ],
+    "effectJobs": [
+      {
+        "afterCommandId": "start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "take-order",
+        "jobs": [
+          {
+            "elementId": "Charge",
+            "activation": 1,
+            "protocol": "urn:bpmn-lean:effect:probe-v1",
+            "handler": "bpmnLeanEffectHandler",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "fail-charge-1",
+        "jobs": [
+          {
+            "elementId": "Charge",
+            "activation": 1,
+            "protocol": "urn:bpmn-lean:effect:probe-v1",
+            "handler": "bpmnLeanEffectHandler",
+            "retries": 0,
+            "executable": false,
+            "dueDatePresent": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "retry-charge-1",
+        "jobs": [
+          {
+            "elementId": "Charge",
+            "activation": 1,
+            "protocol": "urn:bpmn-lean:effect:probe-v1",
+            "handler": "bpmnLeanEffectHandler",
+            "retries": 1,
+            "executable": true,
+            "dueDatePresent": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "fail-charge-2",
+        "jobs": [
+          {
+            "elementId": "Charge",
+            "activation": 1,
+            "protocol": "urn:bpmn-lean:effect:probe-v1",
+            "handler": "bpmnLeanEffectHandler",
+            "retries": 0,
+            "executable": false,
+            "dueDatePresent": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "retry-charge-2",
+        "jobs": [
+          {
+            "elementId": "Charge",
+            "activation": 1,
+            "protocol": "urn:bpmn-lean:effect:probe-v1",
+            "handler": "bpmnLeanEffectHandler",
+            "retries": 1,
+            "executable": true,
+            "dueDatePresent": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-charge",
+        "jobs": [
+          {
+            "elementId": "Reserve",
+            "activation": 1,
+            "protocol": "urn:bpmn-lean:effect:probe-v1",
+            "handler": "bpmnLeanEffectHandler",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          }
+        ]
+      }
+    ],
+    "incidentJobs": [
+      {
+        "afterCommandId": "start",
+        "createIncidentOnFailedJobEnabled": true,
+        "jobs": []
+      },
+      {
+        "afterCommandId": "take-order",
+        "createIncidentOnFailedJobEnabled": true,
+        "jobs": [
+          {
+            "publicJobId": "217",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false,
+            "processInstanceId": "211",
+            "elementId": "Charge",
+            "incident": null
+          }
+        ]
+      },
+      {
+        "afterCommandId": "fail-charge-1",
+        "createIncidentOnFailedJobEnabled": true,
+        "jobs": [
+          {
+            "publicJobId": "217",
+            "retries": 0,
+            "executable": false,
+            "dueDatePresent": false,
+            "processInstanceId": "211",
+            "elementId": "Charge",
+            "incident": {
+              "publicIncidentId": "228",
+              "type": "failedJob",
+              "configurationJobId": "217",
+              "processInstanceId": "211",
+              "elementId": "Charge",
+              "causeIncidentId": "228",
+              "rootCauseIncidentId": "228"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "retry-charge-1",
+        "createIncidentOnFailedJobEnabled": true,
+        "jobs": [
+          {
+            "publicJobId": "217",
+            "retries": 1,
+            "executable": true,
+            "dueDatePresent": false,
+            "processInstanceId": "211",
+            "elementId": "Charge",
+            "incident": null
+          }
+        ]
+      },
+      {
+        "afterCommandId": "fail-charge-2",
+        "createIncidentOnFailedJobEnabled": true,
+        "jobs": [
+          {
+            "publicJobId": "217",
+            "retries": 0,
+            "executable": false,
+            "dueDatePresent": false,
+            "processInstanceId": "211",
+            "elementId": "Charge",
+            "incident": {
+              "publicIncidentId": "232",
+              "type": "failedJob",
+              "configurationJobId": "217",
+              "processInstanceId": "211",
+              "elementId": "Charge",
+              "causeIncidentId": "232",
+              "rootCauseIncidentId": "232"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "retry-charge-2",
+        "createIncidentOnFailedJobEnabled": true,
+        "jobs": [
+          {
+            "publicJobId": "217",
+            "retries": 1,
+            "executable": true,
+            "dueDatePresent": false,
+            "processInstanceId": "211",
+            "elementId": "Charge",
+            "incident": null
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-charge",
+        "createIncidentOnFailedJobEnabled": true,
+        "jobs": [
+          {
+            "publicJobId": "241",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false,
+            "processInstanceId": "211",
+            "elementId": "Reserve",
+            "incident": null
+          }
+        ]
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "take-order",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "fail-charge-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "retry-charge-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "fail-charge-2",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "retry-charge-2",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-charge",
+        "state": "ACTIVE"
+      }
+    ],
+    "effectExecutions": [
+      {
+        "afterCommandId": "fail-charge-1",
+        "schedule": "incidentReportRetrySuccess",
+        "invocations": 3,
+        "mutations": 1,
+        "initialRetries": 3,
+        "retriesAfterFirstFailure": 2
+      },
+      {
+        "afterCommandId": "fail-charge-2",
+        "schedule": "incidentReportRetrySuccess",
+        "invocations": 4,
+        "mutations": 1,
+        "initialRetries": 1,
+        "retriesAfterFirstFailure": 0
+      },
+      {
+        "afterCommandId": "complete-charge",
+        "schedule": "incidentReportRetrySuccess",
+        "invocations": 5,
+        "mutations": 1,
+        "initialRetries": 1,
+        "retriesAfterFirstFailure": null
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Order_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "O-7"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Order_1",
+              "elementId": "Intake",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Take order",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "take-order",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Order_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "O-7"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Order_1",
+              "elementId": "Charge",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "urn:bpmn-lean:effect-operation:probe-v1",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "fail-charge-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Order_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "O-7"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Order_1",
+              "elementId": "Charge",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "incident",
+              "effect": {
+                "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+                "operation": "urn:bpmn-lean:effect-operation:probe-v1",
+                "arguments": [],
+                "failures": 1,
+                "send": null
+              },
+              "generation": 1,
+              "cancellable": true
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "retry-charge-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Order_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "O-7"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Order_1",
+              "elementId": "Charge",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "urn:bpmn-lean:effect-operation:probe-v1",
+              "arguments": [],
+              "failures": 1,
+              "send": null
+            },
+            "input": "effectResult"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "fail-charge-2",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Order_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "O-7"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Order_1",
+              "elementId": "Charge",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "incident",
+              "effect": {
+                "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+                "operation": "urn:bpmn-lean:effect-operation:probe-v1",
+                "arguments": [],
+                "failures": 2,
+                "send": null
+              },
+              "generation": 2,
+              "cancellable": true
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "retry-charge-2",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Order_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "O-7"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Order_1",
+              "elementId": "Charge",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "urn:bpmn-lean:effect-operation:probe-v1",
+              "arguments": [],
+              "failures": 2,
+              "send": null
+            },
+            "input": "effectResult"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-charge",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Order_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "charged",
+            "value": {
+              "kind": "string",
+              "value": "paid"
+            }
+          },
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "O-7"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Order_1",
+              "elementId": "Reserve",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "urn:bpmn-lean:effect-operation:probe-v1",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,278 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "terminate-end-event-sibling-first",
+    "sha256": "e5a7fda7e63750e886487d6c78ea71d7f53a7641a604c1dc8d4745273dcfa63c"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start-process",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-sibling",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-trigger",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-outer",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": []
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start-process",
+        "tasks": [
+          {
+            "elementId": "UserTask_Trigger",
+            "name": "Trigger"
+          },
+          {
+            "elementId": "UserTask_Sibling",
+            "name": "Sibling"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-sibling",
+        "tasks": [
+          {
+            "elementId": "UserTask_Trigger",
+            "name": "Trigger"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-trigger",
+        "tasks": [
+          {
+            "elementId": "UserTask_Outer",
+            "name": "Outer"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-outer",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start-process",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-sibling",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-trigger",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-outer",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start-process",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-sibling",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-trigger",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-outer",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start-process",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "TerminateEndInstance_SiblingFirst",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "TerminateEndInstance_SiblingFirst",
+              "elementId": "UserTask_Sibling",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Sibling",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "TerminateEndInstance_SiblingFirst",
+              "elementId": "UserTask_Trigger",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Trigger",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-sibling",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "TerminateEndInstance_SiblingFirst",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "TerminateEndInstance_SiblingFirst",
+              "elementId": "UserTask_Trigger",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Trigger",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-trigger",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "TerminateEndInstance_SiblingFirst",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "TerminateEndInstance_SiblingFirst",
+              "elementId": "UserTask_Outer",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Outer",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-outer",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "TerminateEndInstance_SiblingFirst",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": []
+      }
+    ]
+  }
+}

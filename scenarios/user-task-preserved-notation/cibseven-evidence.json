@@ -1,0 +1,134 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "user-task-preserved-notation",
+    "sha256": "d08b8c6fadda4e54c41570066018c9eb98bb2a1cfcf8c9521a9a21b1b3154ce0"
+  },
+  "profile": {
+    "id": "bpmn-2.0.2",
+    "sha256": "2a1e548c9f7d2dbf5a04e34279aab75bded1192883aae5cbd49f9df972d491a0"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start-preserved-notation",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-preserved-notation-user-task",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": []
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start-preserved-notation",
+        "tasks": [
+          {
+            "elementId": "UserTask_Approve",
+            "name": "Approve"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-preserved-notation-user-task",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start-preserved-notation",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-preserved-notation-user-task",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start-preserved-notation",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-preserved-notation-user-task",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start-preserved-notation",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "PreservedNotationInstance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "PreservedNotationInstance_1",
+              "elementId": "UserTask_Approve",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Approve",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-preserved-notation-user-task",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "PreservedNotationInstance_1",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": []
+      }
+    ]
+  }
+}

@@ -53,7 +53,7 @@ Adopted kernel owner document (W0 extraction, 2026-11-09). The kernel modules it
 | `profile.abnormalScopeEnd.withoutOutflow` | under the standards reading, a program with a Terminate End inside a Sub-Process or any interrupting Event Sub-Process | the kernel has only the normal continuation of CIB-INT-0007; see the Terminate reading above |
 | `scope.eventSubProcess.interruptingMessage` | an interrupting Message Event Sub-Process | the kernel treats its meaning for the interrupted Scope as unselected; adopting the reviewed account above is PC-MESSAGE-06 |
 | `timer.interruptingCycle` | an interrupting Event Sub-Process or boundary started by a cycle Timer | it has no second firing to give |
-| `scope.eventSubProcess.boundary` | a boundary on an Event Sub-Process | it is outside normal flow (§10.3.5), so a boundary's exception flow has nowhere to lead (§13.5.4); no row lifts it |
+| `scope.eventSubProcess.boundary` | a boundary on an Event Sub-Process | it is outside normal flow (§10.3.5), so a boundary's exception flow has nowhere to lead (§13.5.4); no row lifts it ([CIB-LIM-0005](../../CIB-BPMN-RELATION-REGISTER.md#cib-lim-0005-a-boundary-event-on-an-event-sub-process-is-refused)) |
 | `compensation.implicit`, `compensation.recursive` | records a completed Sub-Process would hand on | stated in [compensation](COMPENSATION-SEMANTICS-SPEC.md) |
 | `scope.multiInstance` | a Multi-Instance Sub-Process | PC-MI-04, PC-MI-05, PC-MI-06 |
 | `scope.localVariableWithoutInput` | a declared Scope local without an input mapping | no initial value the kernel could choose |

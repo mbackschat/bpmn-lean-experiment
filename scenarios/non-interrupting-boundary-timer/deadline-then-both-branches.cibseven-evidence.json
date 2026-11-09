@@ -1,0 +1,357 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "non-interrupting-boundary-timer-deadline-then-both-branches",
+    "sha256": "bc28fbe861725fc03a79e0133b76ad859904e92e76b6d0961ae96fa130350b31"
+  },
+  "profile": {
+    "id": "bpmn-2.0.2",
+    "sha256": "2a1e548c9f7d2dbf5a04e34279aab75bded1192883aae5cbd49f9df972d491a0"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start-deadline-then-both-branches",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "fire-timer-sha256:efac82c65e7a4148fd35cd27adbdd192a6a346f4cf7d04d4131e67188ffe4212",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 1000,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-handler-branch-first",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 1000,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-monitored-task-after-its-handler",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 1000,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-normal-follow-on-last",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 1000,
+        "variables": []
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start-deadline-then-both-branches",
+        "tasks": [
+          {
+            "elementId": "MonitoredTask",
+            "name": "Monitored work"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "fire-timer-sha256:efac82c65e7a4148fd35cd27adbdd192a6a346f4cf7d04d4131e67188ffe4212",
+        "tasks": [
+          {
+            "elementId": "MonitoredTask",
+            "name": "Monitored work"
+          },
+          {
+            "elementId": "HandlerTask",
+            "name": "Reminder handled"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-handler-branch-first",
+        "tasks": [
+          {
+            "elementId": "MonitoredTask",
+            "name": "Monitored work"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-monitored-task-after-its-handler",
+        "tasks": [
+          {
+            "elementId": "NormalTask",
+            "name": "Monitored work finished"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-normal-follow-on-last",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start-deadline-then-both-branches",
+        "jobs": [
+          {
+            "elementId": "Reminder",
+            "dueDateDeltaMs": 1000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "fire-timer-sha256:efac82c65e7a4148fd35cd27adbdd192a6a346f4cf7d04d4131e67188ffe4212",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-handler-branch-first",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-monitored-task-after-its-handler",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-normal-follow-on-last",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start-deadline-then-both-branches",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "fire-timer-sha256:efac82c65e7a4148fd35cd27adbdd192a6a346f4cf7d04d4131e67188ffe4212",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-handler-branch-first",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-monitored-task-after-its-handler",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-normal-follow-on-last",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start-deadline-then-both-branches",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "MonitoredInstance_DeadlineFirst",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "MonitoredInstance_DeadlineFirst",
+              "elementId": "MonitoredTask",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Monitored work",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "MonitoredInstance_DeadlineFirst",
+              "elementId": "Reminder",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 1000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "fire-timer-sha256:efac82c65e7a4148fd35cd27adbdd192a6a346f4cf7d04d4131e67188ffe4212",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "MonitoredInstance_DeadlineFirst",
+        "status": "running",
+        "logicalTimeMs": 1000,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "MonitoredInstance_DeadlineFirst",
+              "elementId": "HandlerTask",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Reminder handled",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "MonitoredInstance_DeadlineFirst",
+              "elementId": "MonitoredTask",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Monitored work",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-handler-branch-first",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "MonitoredInstance_DeadlineFirst",
+        "status": "running",
+        "logicalTimeMs": 1000,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "MonitoredInstance_DeadlineFirst",
+              "elementId": "MonitoredTask",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Monitored work",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-monitored-task-after-its-handler",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "MonitoredInstance_DeadlineFirst",
+        "status": "running",
+        "logicalTimeMs": 1000,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "MonitoredInstance_DeadlineFirst",
+              "elementId": "NormalTask",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Monitored work finished",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-normal-follow-on-last",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "MonitoredInstance_DeadlineFirst",
+        "status": "completed",
+        "logicalTimeMs": 1000,
+        "variables": [],
+        "openWaits": []
+      }
+    ]
+  }
+}

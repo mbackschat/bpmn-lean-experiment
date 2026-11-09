@@ -1,0 +1,213 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "subprocess-boundary-timer-deadline-wins",
+    "sha256": "045176fbcee2c2c59c8f1cec140e32625117a5a7e93820f2cbb036e32702affa"
+  },
+  "profile": {
+    "id": "bpmn-2.0.2",
+    "sha256": "2a1e548c9f7d2dbf5a04e34279aab75bded1192883aae5cbd49f9df972d491a0"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start-deadline-wins",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "fire-timer-sha256:a7b8f10fd91bb2796d7e0a33227ea7689a7f4ca157fca5f156569a4781909b8f",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 1000,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-escalation-task",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 1000,
+        "variables": []
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start-deadline-wins",
+        "tasks": [
+          {
+            "elementId": "ChildTask",
+            "name": "Work inside the scope"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "fire-timer-sha256:a7b8f10fd91bb2796d7e0a33227ea7689a7f4ca157fca5f156569a4781909b8f",
+        "tasks": [
+          {
+            "elementId": "EscalationTask",
+            "name": "Deadline reached"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-escalation-task",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start-deadline-wins",
+        "jobs": [
+          {
+            "elementId": "Deadline",
+            "dueDateDeltaMs": 1000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "fire-timer-sha256:a7b8f10fd91bb2796d7e0a33227ea7689a7f4ca157fca5f156569a4781909b8f",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-escalation-task",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start-deadline-wins",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "fire-timer-sha256:a7b8f10fd91bb2796d7e0a33227ea7689a7f4ca157fca5f156569a4781909b8f",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-escalation-task",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start-deadline-wins",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "BoundedScopeInstance_DeadlineWins",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "BoundedScopeInstance_DeadlineWins",
+              "elementId": "ChildTask",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Work inside the scope",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "BoundedScopeInstance_DeadlineWins",
+              "elementId": "Deadline",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 1000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "fire-timer-sha256:a7b8f10fd91bb2796d7e0a33227ea7689a7f4ca157fca5f156569a4781909b8f",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "BoundedScopeInstance_DeadlineWins",
+        "status": "running",
+        "logicalTimeMs": 1000,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "BoundedScopeInstance_DeadlineWins",
+              "elementId": "EscalationTask",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Deadline reached",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-escalation-task",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "BoundedScopeInstance_DeadlineWins",
+        "status": "completed",
+        "logicalTimeMs": 1000,
+        "variables": [],
+        "openWaits": []
+      }
+    ]
+  }
+}

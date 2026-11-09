@@ -1,0 +1,228 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "event-based-gateway-timer-wins",
+    "sha256": "b2d76f9ef81b8c4feafed8d6922ec15a6438af76d39ef75a7902c4fa69ee2a2a"
+  },
+  "profile": {
+    "id": "bpmn-2.0.2",
+    "sha256": "2a1e548c9f7d2dbf5a04e34279aab75bded1192883aae5cbd49f9df972d491a0"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start-event-race-timer-wins",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "fire-timer-sha256:5e7c945d928d9cd4f4fc11f6d4bfe1eb966501c5de2f4c0f3f4ebe2bb6ffded1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 1000,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-event-race-timer-task",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 1000,
+        "variables": []
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start-event-race-timer-wins",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "fire-timer-sha256:5e7c945d928d9cd4f4fc11f6d4bfe1eb966501c5de2f4c0f3f4ebe2bb6ffded1",
+        "tasks": [
+          {
+            "elementId": "TimerTask",
+            "name": "Timer selected"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-event-race-timer-task",
+        "tasks": []
+      }
+    ],
+    "messageSubscriptions": [
+      {
+        "afterCommandId": "start-event-race-timer-wins",
+        "subscriptions": [
+          {
+            "elementId": "MessageCatch",
+            "eventName": "Approval",
+            "messageId": "Message_Approval",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "fire-timer-sha256:5e7c945d928d9cd4f4fc11f6d4bfe1eb966501c5de2f4c0f3f4ebe2bb6ffded1",
+        "subscriptions": []
+      },
+      {
+        "afterCommandId": "complete-event-race-timer-task",
+        "subscriptions": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start-event-race-timer-wins",
+        "jobs": [
+          {
+            "elementId": "TimerCatch",
+            "dueDateDeltaMs": 1000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "fire-timer-sha256:5e7c945d928d9cd4f4fc11f6d4bfe1eb966501c5de2f4c0f3f4ebe2bb6ffded1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-event-race-timer-task",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start-event-race-timer-wins",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "fire-timer-sha256:5e7c945d928d9cd4f4fc11f6d4bfe1eb966501c5de2f4c0f3f4ebe2bb6ffded1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-event-race-timer-task",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start-event-race-timer-wins",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "EventRaceInstance_TimerWins",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "EventRaceInstance_TimerWins",
+              "elementId": "MessageCatch",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "operationMessage",
+                "interfaceId": "Interface_ProcessMessages",
+                "interfaceOperationId": "Operation_ReceiveApproval",
+                "messageId": "Message_Approval"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "EventRaceInstance_TimerWins",
+              "elementId": "TimerCatch",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 1000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "fire-timer-sha256:5e7c945d928d9cd4f4fc11f6d4bfe1eb966501c5de2f4c0f3f4ebe2bb6ffded1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "EventRaceInstance_TimerWins",
+        "status": "running",
+        "logicalTimeMs": 1000,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "EventRaceInstance_TimerWins",
+              "elementId": "TimerTask",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Timer selected",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-event-race-timer-task",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "EventRaceInstance_TimerWins",
+        "status": "completed",
+        "logicalTimeMs": 1000,
+        "variables": [],
+        "openWaits": []
+      }
+    ]
+  }
+}

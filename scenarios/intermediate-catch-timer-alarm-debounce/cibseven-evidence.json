@@ -1,0 +1,186 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "intermediate-catch-timer-alarm-debounce",
+    "sha256": "ca85efdb3685c4e277b66821ef61a4a19abb21d40d8f111cbb285b78d1534156"
+  },
+  "profile": {
+    "id": "bpmn-2.0.2",
+    "sha256": "2a1e548c9f7d2dbf5a04e34279aab75bded1192883aae5cbd49f9df972d491a0"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start-intermediate-catch-timer-alarm-debounce",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "fire-timer-sha256:6faf3af6d55045250e2039c59dbe7ab7c489378928a93c5eae9512eeae23aee2",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 2000,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-UserTask_AcknowledgeAlarm",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 2000,
+        "variables": []
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start-intermediate-catch-timer-alarm-debounce",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "fire-timer-sha256:6faf3af6d55045250e2039c59dbe7ab7c489378928a93c5eae9512eeae23aee2",
+        "tasks": [
+          {
+            "elementId": "UserTask_AcknowledgeAlarm",
+            "name": "Acknowledge alarm"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-UserTask_AcknowledgeAlarm",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start-intermediate-catch-timer-alarm-debounce",
+        "jobs": [
+          {
+            "elementId": "TimerCatch_Debounce",
+            "dueDateDeltaMs": 2000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "fire-timer-sha256:6faf3af6d55045250e2039c59dbe7ab7c489378928a93c5eae9512eeae23aee2",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-UserTask_AcknowledgeAlarm",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start-intermediate-catch-timer-alarm-debounce",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "fire-timer-sha256:6faf3af6d55045250e2039c59dbe7ab7c489378928a93c5eae9512eeae23aee2",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-UserTask_AcknowledgeAlarm",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start-intermediate-catch-timer-alarm-debounce",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "DebounceInstance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "DebounceInstance_1",
+              "elementId": "TimerCatch_Debounce",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 2000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "fire-timer-sha256:6faf3af6d55045250e2039c59dbe7ab7c489378928a93c5eae9512eeae23aee2",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "DebounceInstance_1",
+        "status": "running",
+        "logicalTimeMs": 2000,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "DebounceInstance_1",
+              "elementId": "UserTask_AcknowledgeAlarm",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Acknowledge alarm",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-UserTask_AcknowledgeAlarm",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "DebounceInstance_1",
+        "status": "completed",
+        "logicalTimeMs": 2000,
+        "variables": [],
+        "openWaits": []
+      }
+    ]
+  }
+}

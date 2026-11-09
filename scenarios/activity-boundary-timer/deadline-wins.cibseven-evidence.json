@@ -1,0 +1,213 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "activity-boundary-timer-deadline-wins",
+    "sha256": "07539ef4d4f163f433f82a6f0678a7add4838fa111047d42f38b520fd5ba75c0"
+  },
+  "profile": {
+    "id": "bpmn-2.0.2",
+    "sha256": "2a1e548c9f7d2dbf5a04e34279aab75bded1192883aae5cbd49f9df972d491a0"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start-deadline-wins",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "fire-timer-sha256:1117b14fa96cbdf549ef3b94a2cb8ed8f7c4a302a1023e78246c6b7d0bcc0394",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 1000,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-boundary-follow-on",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 1000,
+        "variables": []
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start-deadline-wins",
+        "tasks": [
+          {
+            "elementId": "BoundedTask",
+            "name": "Bounded work"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "fire-timer-sha256:1117b14fa96cbdf549ef3b94a2cb8ed8f7c4a302a1023e78246c6b7d0bcc0394",
+        "tasks": [
+          {
+            "elementId": "BoundaryTask",
+            "name": "Deadline reached"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-boundary-follow-on",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start-deadline-wins",
+        "jobs": [
+          {
+            "elementId": "Deadline",
+            "dueDateDeltaMs": 1000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "fire-timer-sha256:1117b14fa96cbdf549ef3b94a2cb8ed8f7c4a302a1023e78246c6b7d0bcc0394",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-boundary-follow-on",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start-deadline-wins",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "fire-timer-sha256:1117b14fa96cbdf549ef3b94a2cb8ed8f7c4a302a1023e78246c6b7d0bcc0394",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-boundary-follow-on",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start-deadline-wins",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "BoundedInstance_DeadlineWins",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "BoundedInstance_DeadlineWins",
+              "elementId": "BoundedTask",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Bounded work",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "BoundedInstance_DeadlineWins",
+              "elementId": "Deadline",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 1000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "fire-timer-sha256:1117b14fa96cbdf549ef3b94a2cb8ed8f7c4a302a1023e78246c6b7d0bcc0394",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "BoundedInstance_DeadlineWins",
+        "status": "running",
+        "logicalTimeMs": 1000,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "BoundedInstance_DeadlineWins",
+              "elementId": "BoundaryTask",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Deadline reached",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-boundary-follow-on",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "BoundedInstance_DeadlineWins",
+        "status": "completed",
+        "logicalTimeMs": 1000,
+        "variables": [],
+        "openWaits": []
+      }
+    ]
+  }
+}

@@ -1,0 +1,1336 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "timer-catch-cycles-two-rounds-with-stale-deadlines",
+    "sha256": "6754a2f5b7eb86a86d1af27053c3d0066597a6a4741379f52f626dfac7d3cc97"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "s02-complete-Draft",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "s03-fire-Catch_Wait",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 10000,
+        "variables": []
+      },
+      {
+        "afterCommandId": "s04-complete-Review",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 10000,
+        "variables": []
+      },
+      {
+        "afterCommandId": "s05-fire-Catch_Cycle",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 20000,
+        "variables": []
+      },
+      {
+        "afterCommandId": "s06-complete-Approve",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 20000,
+        "variables": [
+          {
+            "name": "again",
+            "value": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s07-complete-Draft",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 20000,
+        "variables": [
+          {
+            "name": "again",
+            "value": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s08-fire-Catch_Branch",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 25000,
+        "variables": [
+          {
+            "name": "again",
+            "value": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s09-fire-Catch_Wait",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 25000,
+        "variables": [
+          {
+            "name": "again",
+            "value": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s10-fire-Catch_Wait",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 25000,
+        "variables": [
+          {
+            "name": "again",
+            "value": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s11-fire-Catch_Wait",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 30000,
+        "variables": [
+          {
+            "name": "again",
+            "value": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s12-complete-Review",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 30000,
+        "variables": [
+          {
+            "name": "again",
+            "value": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s13-fire-Catch_Cycle",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 40000,
+        "variables": [
+          {
+            "name": "again",
+            "value": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s14-complete-Approve",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 40000,
+        "variables": [
+          {
+            "name": "again",
+            "value": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s15-deliver-Await_Docs",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 40000,
+        "variables": [
+          {
+            "name": "again",
+            "value": false
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "tasks": [
+          {
+            "elementId": "Draft",
+            "name": "Draft the report"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-complete-Draft",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "s03-fire-Catch_Wait",
+        "tasks": [
+          {
+            "elementId": "Review",
+            "name": "Review the draft"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-complete-Review",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "s05-fire-Catch_Cycle",
+        "tasks": [
+          {
+            "elementId": "Approve",
+            "name": "Approve or send back"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s06-complete-Approve",
+        "tasks": [
+          {
+            "elementId": "Draft",
+            "name": "Draft the report"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s07-complete-Draft",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "s08-fire-Catch_Branch",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "s09-fire-Catch_Wait",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "s10-fire-Catch_Wait",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "s11-fire-Catch_Wait",
+        "tasks": [
+          {
+            "elementId": "Review",
+            "name": "Review the draft"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s12-complete-Review",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "s13-fire-Catch_Cycle",
+        "tasks": [
+          {
+            "elementId": "Approve",
+            "name": "Approve or send back"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s14-complete-Approve",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "s15-deliver-Await_Docs",
+        "tasks": []
+      }
+    ],
+    "messageSubscriptions": [
+      {
+        "afterCommandId": "s01-start",
+        "subscriptions": []
+      },
+      {
+        "afterCommandId": "s02-complete-Draft",
+        "subscriptions": []
+      },
+      {
+        "afterCommandId": "s03-fire-Catch_Wait",
+        "subscriptions": []
+      },
+      {
+        "afterCommandId": "s04-complete-Review",
+        "subscriptions": []
+      },
+      {
+        "afterCommandId": "s05-fire-Catch_Cycle",
+        "subscriptions": []
+      },
+      {
+        "afterCommandId": "s06-complete-Approve",
+        "subscriptions": []
+      },
+      {
+        "afterCommandId": "s07-complete-Draft",
+        "subscriptions": []
+      },
+      {
+        "afterCommandId": "s08-fire-Catch_Branch",
+        "subscriptions": [
+          {
+            "elementId": "Await_Docs",
+            "eventName": "documents",
+            "messageId": "Message_Docs",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s09-fire-Catch_Wait",
+        "subscriptions": [
+          {
+            "elementId": "Await_Docs",
+            "eventName": "documents",
+            "messageId": "Message_Docs",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s10-fire-Catch_Wait",
+        "subscriptions": [
+          {
+            "elementId": "Await_Docs",
+            "eventName": "documents",
+            "messageId": "Message_Docs",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s11-fire-Catch_Wait",
+        "subscriptions": [
+          {
+            "elementId": "Await_Docs",
+            "eventName": "documents",
+            "messageId": "Message_Docs",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s12-complete-Review",
+        "subscriptions": [
+          {
+            "elementId": "Await_Docs",
+            "eventName": "documents",
+            "messageId": "Message_Docs",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s13-fire-Catch_Cycle",
+        "subscriptions": [
+          {
+            "elementId": "Await_Docs",
+            "eventName": "documents",
+            "messageId": "Message_Docs",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s14-complete-Approve",
+        "subscriptions": [
+          {
+            "elementId": "Await_Docs",
+            "eventName": "documents",
+            "messageId": "Message_Docs",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s15-deliver-Await_Docs",
+        "subscriptions": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": [
+          {
+            "elementId": "Catch_Branch",
+            "dueDateDeltaMs": 25000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-complete-Draft",
+        "jobs": [
+          {
+            "elementId": "Catch_Branch",
+            "dueDateDeltaMs": 25000,
+            "executable": false
+          },
+          {
+            "elementId": "Catch_Wait",
+            "dueDateDeltaMs": 10000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-fire-Catch_Wait",
+        "jobs": [
+          {
+            "elementId": "Catch_Branch",
+            "dueDateDeltaMs": 25000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-complete-Review",
+        "jobs": [
+          {
+            "elementId": "Catch_Branch",
+            "dueDateDeltaMs": 25000,
+            "executable": false
+          },
+          {
+            "elementId": "Catch_Cycle",
+            "dueDateDeltaMs": 20000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-fire-Catch_Cycle",
+        "jobs": [
+          {
+            "elementId": "Catch_Branch",
+            "dueDateDeltaMs": 25000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s06-complete-Approve",
+        "jobs": [
+          {
+            "elementId": "Catch_Branch",
+            "dueDateDeltaMs": 25000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s07-complete-Draft",
+        "jobs": [
+          {
+            "elementId": "Catch_Branch",
+            "dueDateDeltaMs": 25000,
+            "executable": false
+          },
+          {
+            "elementId": "Catch_Wait",
+            "dueDateDeltaMs": 30000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s08-fire-Catch_Branch",
+        "jobs": [
+          {
+            "elementId": "Catch_Wait",
+            "dueDateDeltaMs": 30000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s09-fire-Catch_Wait",
+        "jobs": [
+          {
+            "elementId": "Catch_Wait",
+            "dueDateDeltaMs": 30000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s10-fire-Catch_Wait",
+        "jobs": [
+          {
+            "elementId": "Catch_Wait",
+            "dueDateDeltaMs": 30000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s11-fire-Catch_Wait",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s12-complete-Review",
+        "jobs": [
+          {
+            "elementId": "Catch_Cycle",
+            "dueDateDeltaMs": 40000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s13-fire-Catch_Cycle",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s14-complete-Approve",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s15-deliver-Await_Docs",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "s01-start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s02-complete-Draft",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s03-fire-Catch_Wait",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s04-complete-Review",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s05-fire-Catch_Cycle",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s06-complete-Approve",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s07-complete-Draft",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s08-fire-Catch_Branch",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s09-fire-Catch_Wait",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s10-fire-Catch_Wait",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s11-fire-Catch_Wait",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s12-complete-Review",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s13-fire-Catch_Cycle",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s14-complete-Approve",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s15-deliver-Await_Docs",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Catch_Branch",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 25000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Draft",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Draft the report",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s02-complete-Draft",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Catch_Branch",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 25000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Catch_Wait",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 10000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s03-fire-Catch_Wait",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 10000,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Catch_Branch",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 25000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Review",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review the draft",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s04-complete-Review",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 10000,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Catch_Branch",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 25000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Catch_Cycle",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 20000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s05-fire-Catch_Cycle",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 20000,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Approve",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Approve or send back",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Catch_Branch",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 25000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s06-complete-Approve",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 20000,
+        "variables": [
+          {
+            "name": "again",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Catch_Branch",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 25000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Draft",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Draft the report",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s07-complete-Draft",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 20000,
+        "variables": [
+          {
+            "name": "again",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Catch_Branch",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 25000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Catch_Wait",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 30000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s08-fire-Catch_Branch",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 25000,
+        "variables": [
+          {
+            "name": "again",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Await_Docs",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Docs"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Catch_Wait",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 30000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s09-fire-Catch_Wait",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 25000,
+        "variables": [
+          {
+            "name": "again",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Await_Docs",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Docs"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Catch_Wait",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 30000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s10-fire-Catch_Wait",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 25000,
+        "variables": [
+          {
+            "name": "again",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Await_Docs",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Docs"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Catch_Wait",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 30000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s11-fire-Catch_Wait",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 30000,
+        "variables": [
+          {
+            "name": "again",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Await_Docs",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Docs"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Review",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review the draft",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s12-complete-Review",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 30000,
+        "variables": [
+          {
+            "name": "again",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Await_Docs",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Docs"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Catch_Cycle",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 40000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s13-fire-Catch_Cycle",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 40000,
+        "variables": [
+          {
+            "name": "again",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Approve",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Approve or send back",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Await_Docs",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Docs"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s14-complete-Approve",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 40000,
+        "variables": [
+          {
+            "name": "again",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Await_Docs",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Docs"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s15-deliver-Await_Docs",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "completed",
+        "logicalTimeMs": 40000,
+        "variables": [
+          {
+            "name": "again",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}

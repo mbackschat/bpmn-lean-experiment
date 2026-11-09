@@ -1,0 +1,173 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "message-payload-catch-absent-payload",
+    "sha256": "503bc254fd6aee85811b29d91398325dfd8bfe88db3665e2eb6506f1ec8cd41f"
+  },
+  "profile": {
+    "id": "bpmn-2.0.2",
+    "sha256": "2a1e548c9f7d2dbf5a04e34279aab75bded1192883aae5cbd49f9df972d491a0"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start-message-payload-catch-absent-payload",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "deliver-message-payload-catch-absent-payload",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start-message-payload-catch-absent-payload",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "deliver-message-payload-catch-absent-payload",
+        "tasks": [
+          {
+            "elementId": "UserTask_ReviewSettlement",
+            "name": "Review settlement"
+          }
+        ]
+      }
+    ],
+    "messageSubscriptions": [
+      {
+        "afterCommandId": "start-message-payload-catch-absent-payload",
+        "subscriptions": [
+          {
+            "elementId": "MessageCatch_SettlementConfirmed",
+            "eventName": "Settlement confirmed",
+            "messageId": "Message_SettlementConfirmed",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "deliver-message-payload-catch-absent-payload",
+        "subscriptions": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start-message-payload-catch-absent-payload",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "deliver-message-payload-catch-absent-payload",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start-message-payload-catch-absent-payload",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "deliver-message-payload-catch-absent-payload",
+        "state": "ACTIVE"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start-message-payload-catch-absent-payload",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "MessagePayloadCatchAbsentPayload",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "MessagePayloadCatchAbsentPayload",
+              "elementId": "MessageCatch_SettlementConfirmed",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "operationMessage",
+                "interfaceId": "Interface_ClearingHouse",
+                "interfaceOperationId": "Operation_ConfirmSettlement",
+                "messageId": "Message_SettlementConfirmed"
+              },
+              "payload": true,
+              "criteria": []
+            },
+            "input": "deliver"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "deliver-message-payload-catch-absent-payload",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "MessagePayloadCatchAbsentPayload",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "MessagePayloadCatchAbsentPayload",
+              "elementId": "UserTask_ReviewSettlement",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review settlement",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      }
+    ]
+  }
+}

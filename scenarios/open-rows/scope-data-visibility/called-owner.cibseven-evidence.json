@@ -1,0 +1,331 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "scope-data-visibility-called-owner",
+    "sha256": "036befee5278740463377801c53594f872719db9e11d628885408561d52d1f47"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "outerOnly",
+            "value": "o"
+          },
+          {
+            "name": "subject",
+            "value": "S-1"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-decide",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "checkVerdict",
+            "value": "ok"
+          },
+          {
+            "name": "outerOnly",
+            "value": "o"
+          },
+          {
+            "name": "subject",
+            "value": "S-1"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-after",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "checkVerdict",
+            "value": "ok"
+          },
+          {
+            "name": "outerOnly",
+            "value": "o"
+          },
+          {
+            "name": "subject",
+            "value": "S-1"
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start",
+        "tasks": [
+          {
+            "elementId": "UserTask_Decide",
+            "name": "Decide"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-decide",
+        "tasks": [
+          {
+            "elementId": "UserTask_After",
+            "name": "After the check"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-after",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-decide",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-after",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-decide",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-after",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Owner_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "outerOnly",
+            "value": {
+              "kind": "string",
+              "value": "o"
+            }
+          },
+          {
+            "name": "subject",
+            "value": {
+              "kind": "string",
+              "value": "S-1"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "call:7:Owner_1:18:CallActivity_Check:1",
+              "elementId": "UserTask_Decide",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_Check",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Decide",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "seenMode",
+                  "value": {
+                    "kind": "string",
+                    "value": "fixed"
+                  }
+                },
+                {
+                  "name": "seenSubject",
+                  "value": {
+                    "kind": "string",
+                    "value": "S-1"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-decide",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Owner_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "checkVerdict",
+            "value": {
+              "kind": "string",
+              "value": "ok"
+            }
+          },
+          {
+            "name": "outerOnly",
+            "value": {
+              "kind": "string",
+              "value": "o"
+            }
+          },
+          {
+            "name": "subject",
+            "value": {
+              "kind": "string",
+              "value": "S-1"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Owner_1",
+              "elementId": "UserTask_After",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "After the check",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "afterOuterOnly",
+                  "value": {
+                    "kind": "string",
+                    "value": "o"
+                  }
+                },
+                {
+                  "name": "afterSubject",
+                  "value": {
+                    "kind": "string",
+                    "value": "S-1"
+                  }
+                },
+                {
+                  "name": "afterVerdict",
+                  "value": {
+                    "kind": "string",
+                    "value": "ok"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-after",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Owner_1",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "checkVerdict",
+            "value": {
+              "kind": "string",
+              "value": "ok"
+            }
+          },
+          {
+            "name": "outerOnly",
+            "value": {
+              "kind": "string",
+              "value": "o"
+            }
+          },
+          {
+            "name": "subject",
+            "value": {
+              "kind": "string",
+              "value": "S-1"
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}

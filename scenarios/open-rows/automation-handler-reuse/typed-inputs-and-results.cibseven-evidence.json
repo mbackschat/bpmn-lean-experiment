@@ -1,0 +1,517 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "automation-handler-reuse-typed-inputs-and-results",
+    "sha256": "119d82ebec1824a54bc28415edee58f1373af0940be5bcb8417ca3e0dd4c697a"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "express",
+            "value": true
+          },
+          {
+            "name": "note",
+            "value": null
+          },
+          {
+            "name": "orderId",
+            "value": "O-7"
+          },
+          {
+            "name": "quantity",
+            "value": "3"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-price",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "express",
+            "value": true
+          },
+          {
+            "name": "note",
+            "value": null
+          },
+          {
+            "name": "orderId",
+            "value": "O-7"
+          },
+          {
+            "name": "quantity",
+            "value": "3"
+          },
+          {
+            "name": "total",
+            "value": "120"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-label",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "express",
+            "value": true
+          },
+          {
+            "name": "note",
+            "value": null
+          },
+          {
+            "name": "orderId",
+            "value": "O-7"
+          },
+          {
+            "name": "packed",
+            "value": "BOX-7"
+          },
+          {
+            "name": "quantity",
+            "value": "3"
+          },
+          {
+            "name": "sealed",
+            "value": "BOX-7"
+          },
+          {
+            "name": "total",
+            "value": "120"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-seal",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "express",
+            "value": true
+          },
+          {
+            "name": "note",
+            "value": null
+          },
+          {
+            "name": "orderId",
+            "value": "O-7"
+          },
+          {
+            "name": "packed",
+            "value": "BOX-7"
+          },
+          {
+            "name": "quantity",
+            "value": "3"
+          },
+          {
+            "name": "sealed",
+            "value": "BOX-7"
+          },
+          {
+            "name": "total",
+            "value": "120"
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "complete-price",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "complete-label",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "complete-seal",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-price",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-label",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-seal",
+        "jobs": []
+      }
+    ],
+    "effectJobs": [
+      {
+        "afterCommandId": "start",
+        "jobs": [
+          {
+            "elementId": "Price",
+            "activation": 1,
+            "protocol": "urn:bpmn-lean:effect:probe-v1",
+            "handler": "bpmnLeanEffectHandler",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-price",
+        "jobs": [
+          {
+            "elementId": "Label",
+            "activation": 1,
+            "protocol": "urn:bpmn-lean:effect:probe-v1",
+            "handler": "bpmnLeanEffectHandler",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-label",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-seal",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-price",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-label",
+        "state": "COMPLETED"
+      },
+      {
+        "afterCommandId": "complete-seal",
+        "state": "COMPLETED"
+      }
+    ],
+    "effectExecutions": [
+      {
+        "afterCommandId": "complete-price",
+        "schedule": "plainSuccess",
+        "invocations": 1,
+        "mutations": 1,
+        "initialRetries": 3,
+        "retriesAfterFirstFailure": null
+      },
+      {
+        "afterCommandId": "complete-label",
+        "schedule": "plainSuccess",
+        "invocations": 3,
+        "mutations": 1,
+        "initialRetries": 3,
+        "retriesAfterFirstFailure": null
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "rejected"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Order_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "express",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          },
+          {
+            "name": "note",
+            "value": {
+              "kind": "null"
+            }
+          },
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "O-7"
+            }
+          },
+          {
+            "name": "quantity",
+            "value": {
+              "kind": "string",
+              "value": "3"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Order_1",
+              "elementId": "Price",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "urn:bpmn-lean:effect-operation:probe-v1",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-price",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Order_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "express",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          },
+          {
+            "name": "note",
+            "value": {
+              "kind": "null"
+            }
+          },
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "O-7"
+            }
+          },
+          {
+            "name": "quantity",
+            "value": {
+              "kind": "string",
+              "value": "3"
+            }
+          },
+          {
+            "name": "total",
+            "value": {
+              "kind": "string",
+              "value": "120"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Order_1",
+              "elementId": "Label",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "urn:bpmn-lean:effect-operation:probe-v1",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-label",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Order_1",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "express",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          },
+          {
+            "name": "note",
+            "value": {
+              "kind": "null"
+            }
+          },
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "O-7"
+            }
+          },
+          {
+            "name": "packed",
+            "value": {
+              "kind": "string",
+              "value": "BOX-7"
+            }
+          },
+          {
+            "name": "quantity",
+            "value": {
+              "kind": "string",
+              "value": "3"
+            }
+          },
+          {
+            "name": "sealed",
+            "value": {
+              "kind": "string",
+              "value": "BOX-7"
+            }
+          },
+          {
+            "name": "total",
+            "value": {
+              "kind": "string",
+              "value": "120"
+            }
+          }
+        ],
+        "openWaits": []
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-seal",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Order_1",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "express",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          },
+          {
+            "name": "note",
+            "value": {
+              "kind": "null"
+            }
+          },
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "O-7"
+            }
+          },
+          {
+            "name": "packed",
+            "value": {
+              "kind": "string",
+              "value": "BOX-7"
+            }
+          },
+          {
+            "name": "quantity",
+            "value": {
+              "kind": "string",
+              "value": "3"
+            }
+          },
+          {
+            "name": "sealed",
+            "value": {
+              "kind": "string",
+              "value": "BOX-7"
+            }
+          },
+          {
+            "name": "total",
+            "value": {
+              "kind": "string",
+              "value": "120"
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}

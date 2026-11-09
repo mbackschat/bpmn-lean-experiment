@@ -1,0 +1,1087 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "subscription-message-host-with-child-entry-repeat",
+    "sha256": "ff2fc5accd21a8bc8a5520610c525af26f030a23ab64058dc8c174777fdd6097"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start-subscription",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "remind-first",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-UserTask_Trigger-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "remind-after-child-termination",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-IndependentAudit-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "stale-reminder",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-HandleReminder-2",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-HandleReminder-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-UserTask_Outer-1",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": []
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start-subscription",
+        "tasks": [
+          {
+            "elementId": "UserTask_Trigger",
+            "name": "Cancel review region"
+          },
+          {
+            "elementId": "UserTask_Sibling",
+            "name": "Review application"
+          },
+          {
+            "elementId": "IndependentAudit",
+            "name": "Complete independent audit"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "remind-first",
+        "tasks": [
+          {
+            "elementId": "UserTask_Trigger",
+            "name": "Cancel review region"
+          },
+          {
+            "elementId": "UserTask_Sibling",
+            "name": "Review application"
+          },
+          {
+            "elementId": "IndependentAudit",
+            "name": "Complete independent audit"
+          },
+          {
+            "elementId": "HandleReminder",
+            "name": "Respond to application reminder"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-UserTask_Trigger-1",
+        "tasks": [
+          {
+            "elementId": "IndependentAudit",
+            "name": "Complete independent audit"
+          },
+          {
+            "elementId": "HandleReminder",
+            "name": "Respond to application reminder"
+          },
+          {
+            "elementId": "UserTask_Outer",
+            "name": "Archive review outcome"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "remind-after-child-termination",
+        "tasks": [
+          {
+            "elementId": "IndependentAudit",
+            "name": "Complete independent audit"
+          },
+          {
+            "elementId": "HandleReminder",
+            "name": "Respond to application reminder"
+          },
+          {
+            "elementId": "UserTask_Outer",
+            "name": "Archive review outcome"
+          },
+          {
+            "elementId": "HandleReminder",
+            "name": "Respond to application reminder"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-IndependentAudit-1",
+        "tasks": [
+          {
+            "elementId": "HandleReminder",
+            "name": "Respond to application reminder"
+          },
+          {
+            "elementId": "UserTask_Outer",
+            "name": "Archive review outcome"
+          },
+          {
+            "elementId": "HandleReminder",
+            "name": "Respond to application reminder"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "stale-reminder",
+        "tasks": [
+          {
+            "elementId": "HandleReminder",
+            "name": "Respond to application reminder"
+          },
+          {
+            "elementId": "UserTask_Outer",
+            "name": "Archive review outcome"
+          },
+          {
+            "elementId": "HandleReminder",
+            "name": "Respond to application reminder"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-HandleReminder-2",
+        "tasks": [
+          {
+            "elementId": "HandleReminder",
+            "name": "Respond to application reminder"
+          },
+          {
+            "elementId": "UserTask_Outer",
+            "name": "Archive review outcome"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-HandleReminder-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_Outer",
+            "name": "Archive review outcome"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-UserTask_Outer-1",
+        "tasks": []
+      }
+    ],
+    "messageSubscriptions": [
+      {
+        "afterCommandId": "start-subscription",
+        "subscriptions": [
+          {
+            "elementId": "Reminder",
+            "eventName": "Application reminder",
+            "messageId": "ApplicationReminder",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "remind-first",
+        "subscriptions": [
+          {
+            "elementId": "Reminder",
+            "eventName": "Application reminder",
+            "messageId": "ApplicationReminder",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-UserTask_Trigger-1",
+        "subscriptions": [
+          {
+            "elementId": "Reminder",
+            "eventName": "Application reminder",
+            "messageId": "ApplicationReminder",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "remind-after-child-termination",
+        "subscriptions": [
+          {
+            "elementId": "Reminder",
+            "eventName": "Application reminder",
+            "messageId": "ApplicationReminder",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-IndependentAudit-1",
+        "subscriptions": []
+      },
+      {
+        "afterCommandId": "stale-reminder",
+        "subscriptions": []
+      },
+      {
+        "afterCommandId": "complete-HandleReminder-2",
+        "subscriptions": []
+      },
+      {
+        "afterCommandId": "complete-HandleReminder-1",
+        "subscriptions": []
+      },
+      {
+        "afterCommandId": "complete-UserTask_Outer-1",
+        "subscriptions": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start-subscription",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "remind-first",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-UserTask_Trigger-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "remind-after-child-termination",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-IndependentAudit-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "stale-reminder",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-HandleReminder-2",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-HandleReminder-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-UserTask_Outer-1",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start-subscription",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "remind-first",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-UserTask_Trigger-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "remind-after-child-termination",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-IndependentAudit-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "stale-reminder",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-HandleReminder-2",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-HandleReminder-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-UserTask_Outer-1",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start-subscription",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_message-host-with-child-entry_repeat",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_message-host-with-child-entry_repeat",
+              "elementId": "IndependentAudit",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Complete independent audit",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_message-host-with-child-entry_repeat",
+              "elementId": "Reminder",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "operationMessage",
+                "interfaceId": "ApplicationMessages",
+                "interfaceOperationId": "ReceiveReminder",
+                "messageId": "ApplicationReminder"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_message-host-with-child-entry_repeat",
+              "elementId": "UserTask_Sibling",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review application",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_message-host-with-child-entry_repeat",
+              "elementId": "UserTask_Trigger",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Cancel review region",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "remind-first",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_message-host-with-child-entry_repeat",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_message-host-with-child-entry_repeat",
+              "elementId": "HandleReminder",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Respond to application reminder",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_message-host-with-child-entry_repeat",
+              "elementId": "IndependentAudit",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Complete independent audit",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_message-host-with-child-entry_repeat",
+              "elementId": "Reminder",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "operationMessage",
+                "interfaceId": "ApplicationMessages",
+                "interfaceOperationId": "ReceiveReminder",
+                "messageId": "ApplicationReminder"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_message-host-with-child-entry_repeat",
+              "elementId": "UserTask_Sibling",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review application",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_message-host-with-child-entry_repeat",
+              "elementId": "UserTask_Trigger",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Cancel review region",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-UserTask_Trigger-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_message-host-with-child-entry_repeat",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_message-host-with-child-entry_repeat",
+              "elementId": "HandleReminder",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Respond to application reminder",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_message-host-with-child-entry_repeat",
+              "elementId": "IndependentAudit",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Complete independent audit",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_message-host-with-child-entry_repeat",
+              "elementId": "Reminder",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "operationMessage",
+                "interfaceId": "ApplicationMessages",
+                "interfaceOperationId": "ReceiveReminder",
+                "messageId": "ApplicationReminder"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_message-host-with-child-entry_repeat",
+              "elementId": "UserTask_Outer",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Archive review outcome",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "remind-after-child-termination",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_message-host-with-child-entry_repeat",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_message-host-with-child-entry_repeat",
+              "elementId": "HandleReminder",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Respond to application reminder",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_message-host-with-child-entry_repeat",
+              "elementId": "HandleReminder",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Respond to application reminder",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_message-host-with-child-entry_repeat",
+              "elementId": "IndependentAudit",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Complete independent audit",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_message-host-with-child-entry_repeat",
+              "elementId": "Reminder",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "operationMessage",
+                "interfaceId": "ApplicationMessages",
+                "interfaceOperationId": "ReceiveReminder",
+                "messageId": "ApplicationReminder"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_message-host-with-child-entry_repeat",
+              "elementId": "UserTask_Outer",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Archive review outcome",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-IndependentAudit-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_message-host-with-child-entry_repeat",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_message-host-with-child-entry_repeat",
+              "elementId": "HandleReminder",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Respond to application reminder",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_message-host-with-child-entry_repeat",
+              "elementId": "HandleReminder",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Respond to application reminder",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_message-host-with-child-entry_repeat",
+              "elementId": "UserTask_Outer",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Archive review outcome",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "stale-reminder",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_message-host-with-child-entry_repeat",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_message-host-with-child-entry_repeat",
+              "elementId": "HandleReminder",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Respond to application reminder",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_message-host-with-child-entry_repeat",
+              "elementId": "HandleReminder",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Respond to application reminder",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_message-host-with-child-entry_repeat",
+              "elementId": "UserTask_Outer",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Archive review outcome",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-HandleReminder-2",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_message-host-with-child-entry_repeat",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_message-host-with-child-entry_repeat",
+              "elementId": "HandleReminder",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Respond to application reminder",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_message-host-with-child-entry_repeat",
+              "elementId": "UserTask_Outer",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Archive review outcome",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-HandleReminder-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_message-host-with-child-entry_repeat",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_message-host-with-child-entry_repeat",
+              "elementId": "UserTask_Outer",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Archive review outcome",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-UserTask_Outer-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_message-host-with-child-entry_repeat",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": []
+      }
+    ]
+  }
+}

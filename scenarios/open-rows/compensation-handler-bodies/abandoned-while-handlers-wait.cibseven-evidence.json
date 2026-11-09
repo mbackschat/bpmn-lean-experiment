@@ -1,0 +1,894 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "compensation-handler-bodies-abandoned-while-handlers-wait",
+    "sha256": "b72deb7bd1b7e9bc47e35cea152159d1fb17134db3761dd9d61906df97eedd9b"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "s01-complete-UserTask_Plan-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "s02-complete-UserTask_Quote-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "s03-complete-UserTask_Ship-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_UndoPlanReview-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "s05-fire-timer-Boundary_Abandon-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 60000,
+        "variables": []
+      },
+      {
+        "afterCommandId": "s06-effect-success-ServiceTask_UndoPlanNotify-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 60000,
+        "variables": []
+      },
+      {
+        "afterCommandId": "s07-deliver-message-ReceiveTask_UndoQuote-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 60000,
+        "variables": []
+      },
+      {
+        "afterCommandId": "s08-complete-UserTask_Reverse-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 60000,
+        "variables": []
+      },
+      {
+        "afterCommandId": "s09-complete-UserTask_Abandoned-1",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 60000,
+        "variables": []
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "tasks": [
+          {
+            "elementId": "UserTask_Plan",
+            "name": "Plan"
+          },
+          {
+            "elementId": "UserTask_Quote",
+            "name": "Quote"
+          },
+          {
+            "elementId": "UserTask_Ship",
+            "name": "Ship"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s01-complete-UserTask_Plan-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_Quote",
+            "name": "Quote"
+          },
+          {
+            "elementId": "UserTask_Ship",
+            "name": "Ship"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-complete-UserTask_Quote-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_Ship",
+            "name": "Ship"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-complete-UserTask_Ship-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_UndoPlanReview",
+            "name": "Review the undo of the plan"
+          },
+          {
+            "elementId": "UserTask_Reverse",
+            "name": "Reverse the shipment"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_UndoPlanReview-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_Reverse",
+            "name": "Reverse the shipment"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-fire-timer-Boundary_Abandon-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_Abandoned",
+            "name": "Abandoned"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s06-effect-success-ServiceTask_UndoPlanNotify-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_Abandoned",
+            "name": "Abandoned"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s07-deliver-message-ReceiveTask_UndoQuote-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_Abandoned",
+            "name": "Abandoned"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s08-complete-UserTask_Reverse-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_Abandoned",
+            "name": "Abandoned"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s09-complete-UserTask_Abandoned-1",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": [
+          {
+            "elementId": "Boundary_Abandon",
+            "dueDateDeltaMs": 60000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s01-complete-UserTask_Plan-1",
+        "jobs": [
+          {
+            "elementId": "Boundary_Abandon",
+            "dueDateDeltaMs": 60000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-complete-UserTask_Quote-1",
+        "jobs": [
+          {
+            "elementId": "Boundary_Abandon",
+            "dueDateDeltaMs": 60000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-complete-UserTask_Ship-1",
+        "jobs": [
+          {
+            "elementId": "Boundary_Abandon",
+            "dueDateDeltaMs": 60000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_UndoPlanReview-1",
+        "jobs": [
+          {
+            "elementId": "Boundary_Abandon",
+            "dueDateDeltaMs": 60000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-fire-timer-Boundary_Abandon-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s06-effect-success-ServiceTask_UndoPlanNotify-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s07-deliver-message-ReceiveTask_UndoQuote-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s08-complete-UserTask_Reverse-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s09-complete-UserTask_Abandoned-1",
+        "jobs": []
+      }
+    ],
+    "effectJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s01-complete-UserTask_Plan-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s02-complete-UserTask_Quote-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s03-complete-UserTask_Ship-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_UndoPlanReview-1",
+        "jobs": [
+          {
+            "elementId": "ServiceTask_UndoPlanNotify",
+            "activation": 1,
+            "protocol": "urn:bpmn-lean:effect:probe-v1",
+            "handler": "bpmnLeanEffectHandler",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-fire-timer-Boundary_Abandon-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s06-effect-success-ServiceTask_UndoPlanNotify-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s07-deliver-message-ReceiveTask_UndoQuote-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s08-complete-UserTask_Reverse-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s09-complete-UserTask_Abandoned-1",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "s01-start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s01-complete-UserTask_Plan-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s02-complete-UserTask_Quote-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s03-complete-UserTask_Ship-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_UndoPlanReview-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s05-fire-timer-Boundary_Abandon-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s06-effect-success-ServiceTask_UndoPlanNotify-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s07-deliver-message-ReceiveTask_UndoQuote-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s08-complete-UserTask_Reverse-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s09-complete-UserTask_Abandoned-1",
+        "state": "COMPLETED"
+      }
+    ],
+    "effectExecutions": []
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Boundary_Abandon",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 60000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Plan",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Plan",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Quote",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Quote",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Ship",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Ship",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-complete-UserTask_Plan-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Boundary_Abandon",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 60000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Quote",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Quote",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Ship",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Ship",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s02-complete-UserTask_Quote-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Boundary_Abandon",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 60000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Ship",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Ship",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s03-complete-UserTask_Ship-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Boundary_Abandon",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 60000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_UndoPlanReview",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review the undo of the plan",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:21:CallActivity_UndoShip:1",
+              "elementId": "UserTask_Reverse",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_UndoShip",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Reverse the shipment",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s04-complete-UserTask_UndoPlanReview-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Boundary_Abandon",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 60000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ServiceTask_UndoPlanNotify",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "urn:bpmn-lean:effect-operation:probe-v1",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          },
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:21:CallActivity_UndoShip:1",
+              "elementId": "UserTask_Reverse",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_UndoShip",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Reverse the shipment",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s05-fire-timer-Boundary_Abandon-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 60000,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Abandoned",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Abandoned",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s06-effect-success-ServiceTask_UndoPlanNotify-1",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 60000,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Abandoned",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Abandoned",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s07-deliver-message-ReceiveTask_UndoQuote-1",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 60000,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Abandoned",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Abandoned",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s08-complete-UserTask_Reverse-1",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 60000,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Abandoned",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Abandoned",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s09-complete-UserTask_Abandoned-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "completed",
+        "logicalTimeMs": 60000,
+        "variables": [],
+        "openWaits": []
+      }
+    ]
+  }
+}

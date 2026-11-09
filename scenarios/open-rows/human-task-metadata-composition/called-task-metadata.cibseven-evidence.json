@@ -1,0 +1,264 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "human-task-metadata-composition-called-task-metadata",
+    "sha256": "6d014b1cabfd3d2e1718c556f9192d88f25c50e44455e895a961551540dea57e"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "claim",
+            "value": "C-1"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "verify-called",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "claim",
+            "value": "C-1"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "wrap-up",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "claim",
+            "value": "C-1"
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start",
+        "tasks": [
+          {
+            "elementId": "Verify",
+            "name": "Verify the case",
+            "identityLinks": [
+              {
+                "type": "candidate",
+                "userId": null,
+                "groupId": "verifiers"
+              },
+              {
+                "type": "assignee",
+                "userId": "dana",
+                "groupId": null
+              }
+            ],
+            "formFields": [
+              {
+                "id": "verified",
+                "typeName": "boolean"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "afterCommandId": "verify-called",
+        "tasks": [
+          {
+            "elementId": "WrapUp",
+            "name": "Wrap up"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "wrap-up",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "verify-called",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "wrap-up",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "verify-called",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "wrap-up",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Handover_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "claim",
+            "value": {
+              "kind": "string",
+              "value": "C-1"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "call:10:Handover_1:10:VerifyCase:1",
+              "elementId": "Verify",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_CaseVerification",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Verify the case",
+              "assignee": "dana",
+              "candidateUsers": [],
+              "candidateGroups": [
+                "verifiers"
+              ],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "verified",
+                  "type": "boolean"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": 40,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "verify-called",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Handover_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "claim",
+            "value": {
+              "kind": "string",
+              "value": "C-1"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Handover_1",
+              "elementId": "WrapUp",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Wrap up",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "wrap-up",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Handover_1",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "claim",
+            "value": {
+              "kind": "string",
+              "value": "C-1"
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}

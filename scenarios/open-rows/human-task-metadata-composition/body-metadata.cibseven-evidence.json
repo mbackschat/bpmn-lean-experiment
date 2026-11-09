@@ -1,0 +1,320 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "human-task-metadata-composition-body-metadata",
+    "sha256": "17972523177ac4bcb30db8074a75792b1e7119516fa7c5fe93f6323c876170f3"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "assess-item-2",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "grade",
+            "value": "A"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "assess-item-1",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "grade",
+            "value": "B"
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start",
+        "tasks": [
+          {
+            "elementId": "AssessItem",
+            "name": "Assess item",
+            "identityLinks": [
+              {
+                "type": "candidate",
+                "userId": null,
+                "groupId": "assessors"
+              },
+              {
+                "type": "assignee",
+                "userId": "erin",
+                "groupId": null
+              }
+            ],
+            "formFields": [
+              {
+                "id": "grade",
+                "typeName": "string"
+              }
+            ]
+          },
+          {
+            "elementId": "AssessItem",
+            "name": "Assess item",
+            "identityLinks": [
+              {
+                "type": "candidate",
+                "userId": null,
+                "groupId": "assessors"
+              },
+              {
+                "type": "assignee",
+                "userId": "erin",
+                "groupId": null
+              }
+            ],
+            "formFields": [
+              {
+                "id": "grade",
+                "typeName": "string"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "afterCommandId": "assess-item-2",
+        "tasks": [
+          {
+            "elementId": "AssessItem",
+            "name": "Assess item",
+            "identityLinks": [
+              {
+                "type": "candidate",
+                "userId": null,
+                "groupId": "assessors"
+              },
+              {
+                "type": "assignee",
+                "userId": "erin",
+                "groupId": null
+              }
+            ],
+            "formFields": [
+              {
+                "id": "grade",
+                "typeName": "string"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "afterCommandId": "assess-item-1",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "assess-item-2",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "assess-item-1",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "assess-item-2",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "assess-item-1",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Items_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Items_1",
+              "elementId": "AssessItem",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Assess item",
+              "assignee": "erin",
+              "candidateUsers": [],
+              "candidateGroups": [
+                "assessors"
+              ],
+              "formKey": "embedded:app:forms/item.html",
+              "formFields": [
+                {
+                  "key": "grade",
+                  "type": "string"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": 30,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Items_1",
+              "elementId": "AssessItem",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Assess item",
+              "assignee": "erin",
+              "candidateUsers": [],
+              "candidateGroups": [
+                "assessors"
+              ],
+              "formKey": "embedded:app:forms/item.html",
+              "formFields": [
+                {
+                  "key": "grade",
+                  "type": "string"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": 30,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "assess-item-2",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Items_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "grade",
+            "value": {
+              "kind": "string",
+              "value": "A"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Items_1",
+              "elementId": "AssessItem",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Assess item",
+              "assignee": "erin",
+              "candidateUsers": [],
+              "candidateGroups": [
+                "assessors"
+              ],
+              "formKey": "embedded:app:forms/item.html",
+              "formFields": [
+                {
+                  "key": "grade",
+                  "type": "string"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": 30,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "assess-item-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Items_1",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "grade",
+            "value": {
+              "kind": "string",
+              "value": "B"
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}

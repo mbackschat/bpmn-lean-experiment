@@ -1,0 +1,160 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "activity-data-input-output-omitted",
+    "sha256": "10f3e3bca593e42f6baf1921f8a3793428b7da556f9dfb233aa4100b15514fdd"
+  },
+  "profile": {
+    "id": "bpmn-2.0.2",
+    "sha256": "2a1e548c9f7d2dbf5a04e34279aab75bded1192883aae5cbd49f9df972d491a0"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start-activity-data-input-output-omitted",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "Property_ClaimSummary",
+            "value": "claim-4711"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "assess-claim-omitted",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "Property_ClaimSummary",
+            "value": "claim-4711"
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start-activity-data-input-output-omitted",
+        "tasks": [
+          {
+            "elementId": "UserTask_AssessClaim",
+            "name": "Assess claim"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "assess-claim-omitted",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start-activity-data-input-output-omitted",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "assess-claim-omitted",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start-activity-data-input-output-omitted",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "assess-claim-omitted",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start-activity-data-input-output-omitted",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "ActivityDataInputOutputOmitted",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "Property_ClaimSummary",
+            "value": {
+              "kind": "string",
+              "value": "claim-4711"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "ActivityDataInputOutputOmitted",
+              "elementId": "UserTask_AssessClaim",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Assess claim",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "assess-claim-omitted",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "ActivityDataInputOutputOmitted",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "Property_ClaimSummary",
+            "value": {
+              "kind": "string",
+              "value": "claim-4711"
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}

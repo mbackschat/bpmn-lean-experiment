@@ -127,7 +127,7 @@ The deleted implementation admitted each work kind only in exact first-profile t
 | `work.call.calledElementExpression`, `work.call.rootProcess`, `work.call.calledProcessMissing` | called element not a literal carried Process other than the root | PC-SCOPE-03 for dynamic and deployed binding |
 | `work.call.binding`, `work.call.businessKey`, `work.call.tenant`, `process.definition.binding` | version, deployment and tag binding, business key, tenant | PC-SCOPE-03 |
 | `work.call.propagateAll` | `variables="all"` in either direction | no reviewed account |
-| `work.call.multiInstanceCounterOutput` | a Call output targeting `nrOfInstances`, `nrOfActiveInstances` or `nrOfCompletedInstances` | CIB drops it (`CallableElementActivityBehavior`); PC-SCOPE-04 |
+| `work.call.multiInstanceCounterOutput` | a Call output targeting `nrOfInstances`, `nrOfActiveInstances` or `nrOfCompletedInstances` | CIB drops it (`CallableElementActivityBehavior`, [CIB-LIM-0004](../../CIB-BPMN-RELATION-REGISTER.md#cib-lim-0004-a-call-output-targeting-a-multi-instance-counter-is-refused)); PC-SCOPE-04 |
 | `work.call.dataCorrespondence` | standard Call data other than one input and one output Data Association | §10.3.6 correspondence the kernel can read |
 | `call.calledEventSubProcess` | called Process with an Event Sub-Process | the raise search and `armScope` read the Call's children for a called root |
 | `activity.inputMappings`, `activity.outputMappings` | mappings on work other than User and Service Tasks | nothing would carry or submit them |

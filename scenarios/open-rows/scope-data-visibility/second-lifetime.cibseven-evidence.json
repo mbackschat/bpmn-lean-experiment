@@ -1,0 +1,615 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "scope-data-visibility-second-lifetime",
+    "sha256": "131d66d112f4a6e595cc108e743d19b87369df25827d4e62112b4b9505066bd8"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "attempt",
+            "value": "fresh"
+          },
+          {
+            "name": "carried",
+            "value": "none"
+          },
+          {
+            "name": "carry",
+            "value": "none"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-work-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "attempt",
+            "value": "first-written"
+          },
+          {
+            "name": "carried",
+            "value": "first-written"
+          },
+          {
+            "name": "carry",
+            "value": "none"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-decide-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "again",
+            "value": "yes"
+          },
+          {
+            "name": "attempt",
+            "value": "first-written"
+          },
+          {
+            "name": "attempt",
+            "value": "fresh"
+          },
+          {
+            "name": "carried",
+            "value": "first-written"
+          },
+          {
+            "name": "carry",
+            "value": "none"
+          },
+          {
+            "name": "carry",
+            "value": "first-written"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-work-2",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "again",
+            "value": "yes"
+          },
+          {
+            "name": "attempt",
+            "value": "first-written"
+          },
+          {
+            "name": "attempt",
+            "value": "fresh"
+          },
+          {
+            "name": "carried",
+            "value": "fresh"
+          },
+          {
+            "name": "carry",
+            "value": "none"
+          },
+          {
+            "name": "carry",
+            "value": "first-written"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-decide-2",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "again",
+            "value": "no"
+          },
+          {
+            "name": "attempt",
+            "value": "first-written"
+          },
+          {
+            "name": "attempt",
+            "value": "fresh"
+          },
+          {
+            "name": "carried",
+            "value": "fresh"
+          },
+          {
+            "name": "carry",
+            "value": "none"
+          },
+          {
+            "name": "carry",
+            "value": "first-written"
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start",
+        "tasks": [
+          {
+            "elementId": "UserTask_Work",
+            "name": "Work"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-work-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_Decide",
+            "name": "Decide whether to go again"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-decide-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_Work",
+            "name": "Work"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-work-2",
+        "tasks": [
+          {
+            "elementId": "UserTask_Decide",
+            "name": "Decide whether to go again"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-decide-2",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-work-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-decide-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-work-2",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-decide-2",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-work-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-decide-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-work-2",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-decide-2",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Run_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "attempt",
+            "value": {
+              "kind": "string",
+              "value": "fresh"
+            }
+          },
+          {
+            "name": "carried",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "carry",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Run_1",
+              "elementId": "UserTask_Work",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Work",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "seen",
+                  "value": {
+                    "kind": "string",
+                    "value": "fresh"
+                  }
+                },
+                {
+                  "name": "seenCarry",
+                  "value": {
+                    "kind": "string",
+                    "value": "none"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-work-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Run_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "attempt",
+            "value": {
+              "kind": "string",
+              "value": "first-written"
+            }
+          },
+          {
+            "name": "carried",
+            "value": {
+              "kind": "string",
+              "value": "first-written"
+            }
+          },
+          {
+            "name": "carry",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Run_1",
+              "elementId": "UserTask_Decide",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Decide whether to go again",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-decide-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Run_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "again",
+            "value": {
+              "kind": "string",
+              "value": "yes"
+            }
+          },
+          {
+            "name": "attempt",
+            "value": {
+              "kind": "string",
+              "value": "first-written"
+            }
+          },
+          {
+            "name": "attempt",
+            "value": {
+              "kind": "string",
+              "value": "fresh"
+            }
+          },
+          {
+            "name": "carried",
+            "value": {
+              "kind": "string",
+              "value": "first-written"
+            }
+          },
+          {
+            "name": "carry",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "carry",
+            "value": {
+              "kind": "string",
+              "value": "first-written"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Run_1",
+              "elementId": "UserTask_Work",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Work",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "seen",
+                  "value": {
+                    "kind": "string",
+                    "value": "fresh"
+                  }
+                },
+                {
+                  "name": "seenCarry",
+                  "value": {
+                    "kind": "string",
+                    "value": "first-written"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-work-2",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Run_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "again",
+            "value": {
+              "kind": "string",
+              "value": "yes"
+            }
+          },
+          {
+            "name": "attempt",
+            "value": {
+              "kind": "string",
+              "value": "first-written"
+            }
+          },
+          {
+            "name": "attempt",
+            "value": {
+              "kind": "string",
+              "value": "fresh"
+            }
+          },
+          {
+            "name": "carried",
+            "value": {
+              "kind": "string",
+              "value": "fresh"
+            }
+          },
+          {
+            "name": "carry",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "carry",
+            "value": {
+              "kind": "string",
+              "value": "first-written"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Run_1",
+              "elementId": "UserTask_Decide",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Decide whether to go again",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-decide-2",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Run_1",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "again",
+            "value": {
+              "kind": "string",
+              "value": "no"
+            }
+          },
+          {
+            "name": "attempt",
+            "value": {
+              "kind": "string",
+              "value": "first-written"
+            }
+          },
+          {
+            "name": "attempt",
+            "value": {
+              "kind": "string",
+              "value": "fresh"
+            }
+          },
+          {
+            "name": "carried",
+            "value": {
+              "kind": "string",
+              "value": "fresh"
+            }
+          },
+          {
+            "name": "carry",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "carry",
+            "value": {
+              "kind": "string",
+              "value": "first-written"
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}

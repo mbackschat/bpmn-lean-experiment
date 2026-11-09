@@ -1,0 +1,225 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "timer-duration-forms-form-mixed-nominal",
+    "sha256": "c5707439c37ce80047a566885a63538cdc6dfafc878b4a56c2cda855bc70719a"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "form",
+            "value": "mixed-nominal"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-fire-Catch_MixedNominal",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 129600000,
+        "variables": [
+          {
+            "name": "form",
+            "value": "mixed-nominal"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-complete-Proceed",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 129600000,
+        "variables": [
+          {
+            "name": "form",
+            "value": "mixed-nominal"
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "s02-fire-Catch_MixedNominal",
+        "tasks": [
+          {
+            "elementId": "Proceed",
+            "name": "Proceed after the wait"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-complete-Proceed",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": [
+          {
+            "elementId": "Catch_MixedNominal",
+            "dueDateDeltaMs": 129600000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-fire-Catch_MixedNominal",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s03-complete-Proceed",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "s01-start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s02-fire-Catch_MixedNominal",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s03-complete-Proceed",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "form",
+            "value": {
+              "kind": "string",
+              "value": "mixed-nominal"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Catch_MixedNominal",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 129600000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s02-fire-Catch_MixedNominal",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 129600000,
+        "variables": [
+          {
+            "name": "form",
+            "value": {
+              "kind": "string",
+              "value": "mixed-nominal"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Proceed",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Proceed after the wait",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s03-complete-Proceed",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "completed",
+        "logicalTimeMs": 129600000,
+        "variables": [
+          {
+            "name": "form",
+            "value": {
+              "kind": "string",
+              "value": "mixed-nominal"
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}

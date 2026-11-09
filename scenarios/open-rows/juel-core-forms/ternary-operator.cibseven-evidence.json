@@ -1,0 +1,226 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "juel-core-forms-ternary-operator",
+    "sha256": "c6fe18ac7fbfb522534051f5ee825790c980f8a5f476e2d27d1b5af562b8eb16"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "count",
+            "value": 0
+          },
+          {
+            "name": "flag",
+            "value": true
+          },
+          {
+            "name": "off",
+            "value": false
+          },
+          {
+            "name": "small",
+            "value": 3
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start",
+        "tasks": [
+          {
+            "elementId": "UserTask_Observe",
+            "name": "Observe the evaluated inputs"
+          }
+        ]
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start",
+        "state": "ACTIVE"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Run_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "count",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          },
+          {
+            "name": "flag",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          },
+          {
+            "name": "off",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "small",
+            "value": {
+              "kind": "integer",
+              "value": 3
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Run_1",
+              "elementId": "UserTask_Observe",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Observe the evaluated inputs",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "comparisonCondition",
+                  "value": {
+                    "kind": "string",
+                    "value": "zero"
+                  }
+                },
+                {
+                  "name": "falseBranch",
+                  "value": {
+                    "kind": "string",
+                    "value": "no"
+                  }
+                },
+                {
+                  "name": "groupedNested",
+                  "value": {
+                    "kind": "integer",
+                    "value": 12
+                  }
+                },
+                {
+                  "name": "mixedBranchTypes",
+                  "value": {
+                    "kind": "integer",
+                    "value": 1
+                  }
+                },
+                {
+                  "name": "negatedCondition",
+                  "value": {
+                    "kind": "string",
+                    "value": "b"
+                  }
+                },
+                {
+                  "name": "nestedRight",
+                  "value": {
+                    "kind": "string",
+                    "value": "some"
+                  }
+                },
+                {
+                  "name": "nullBranch",
+                  "value": {
+                    "kind": "null"
+                  }
+                },
+                {
+                  "name": "numericBranches",
+                  "value": {
+                    "kind": "integer",
+                    "value": 1
+                  }
+                },
+                {
+                  "name": "ternaryOperand",
+                  "value": {
+                    "kind": "integer",
+                    "value": 4
+                  }
+                },
+                {
+                  "name": "trueBranch",
+                  "value": {
+                    "kind": "string",
+                    "value": "yes"
+                  }
+                },
+                {
+                  "name": "variableBranches",
+                  "value": {
+                    "kind": "integer",
+                    "value": 3
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      }
+    ]
+  }
+}

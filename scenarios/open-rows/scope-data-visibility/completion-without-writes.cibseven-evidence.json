@@ -1,0 +1,366 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "scope-data-visibility-completion-without-writes",
+    "sha256": "874083293e29f4b23e3211703815afb72a390f341ccc68dca0a0d34042212b1e"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "memo",
+            "value": "root-memo"
+          },
+          {
+            "name": "memo",
+            "value": "sub-memo"
+          },
+          {
+            "name": "status",
+            "value": "open"
+          },
+          {
+            "name": "status",
+            "value": null
+          },
+          {
+            "name": "subOnly",
+            "value": "sub-only"
+          },
+          {
+            "name": "ticket",
+            "value": "T-1"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-inspect",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "memo",
+            "value": "root-memo"
+          },
+          {
+            "name": "memo",
+            "value": "sub-memo"
+          },
+          {
+            "name": "status",
+            "value": "open"
+          },
+          {
+            "name": "status",
+            "value": null
+          },
+          {
+            "name": "subOnly",
+            "value": "sub-only"
+          },
+          {
+            "name": "ticket",
+            "value": "T-1"
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start",
+        "tasks": [
+          {
+            "elementId": "UserTask_Inspect",
+            "name": "Inspect"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-inspect",
+        "tasks": [
+          {
+            "elementId": "UserTask_Inspect",
+            "name": "Inspect"
+          }
+        ]
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-inspect",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-inspect",
+        "state": "ACTIVE"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "rolledBack"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Run_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "memo",
+            "value": {
+              "kind": "string",
+              "value": "root-memo"
+            }
+          },
+          {
+            "name": "memo",
+            "value": {
+              "kind": "string",
+              "value": "sub-memo"
+            }
+          },
+          {
+            "name": "status",
+            "value": {
+              "kind": "string",
+              "value": "open"
+            }
+          },
+          {
+            "name": "status",
+            "value": {
+              "kind": "null"
+            }
+          },
+          {
+            "name": "subOnly",
+            "value": {
+              "kind": "string",
+              "value": "sub-only"
+            }
+          },
+          {
+            "name": "ticket",
+            "value": {
+              "kind": "string",
+              "value": "T-1"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Run_1",
+              "elementId": "UserTask_Inspect",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Inspect",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "memo",
+                  "value": {
+                    "kind": "string",
+                    "value": "task-memo"
+                  }
+                },
+                {
+                  "name": "seenMemo",
+                  "value": {
+                    "kind": "string",
+                    "value": "sub-memo"
+                  }
+                },
+                {
+                  "name": "seenStatus",
+                  "value": {
+                    "kind": "null"
+                  }
+                },
+                {
+                  "name": "seenSubOnly",
+                  "value": {
+                    "kind": "string",
+                    "value": "sub-only"
+                  }
+                },
+                {
+                  "name": "seenTicket",
+                  "value": {
+                    "kind": "string",
+                    "value": "T-1"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-inspect",
+        "outcome": "rolledBack"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Run_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "memo",
+            "value": {
+              "kind": "string",
+              "value": "root-memo"
+            }
+          },
+          {
+            "name": "memo",
+            "value": {
+              "kind": "string",
+              "value": "sub-memo"
+            }
+          },
+          {
+            "name": "status",
+            "value": {
+              "kind": "string",
+              "value": "open"
+            }
+          },
+          {
+            "name": "status",
+            "value": {
+              "kind": "null"
+            }
+          },
+          {
+            "name": "subOnly",
+            "value": {
+              "kind": "string",
+              "value": "sub-only"
+            }
+          },
+          {
+            "name": "ticket",
+            "value": {
+              "kind": "string",
+              "value": "T-1"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Run_1",
+              "elementId": "UserTask_Inspect",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Inspect",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "memo",
+                  "value": {
+                    "kind": "string",
+                    "value": "task-memo"
+                  }
+                },
+                {
+                  "name": "seenMemo",
+                  "value": {
+                    "kind": "string",
+                    "value": "sub-memo"
+                  }
+                },
+                {
+                  "name": "seenStatus",
+                  "value": {
+                    "kind": "null"
+                  }
+                },
+                {
+                  "name": "seenSubOnly",
+                  "value": {
+                    "kind": "string",
+                    "value": "sub-only"
+                  }
+                },
+                {
+                  "name": "seenTicket",
+                  "value": {
+                    "kind": "string",
+                    "value": "T-1"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      }
+    ]
+  }
+}

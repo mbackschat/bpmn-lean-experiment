@@ -1,0 +1,3038 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "region-interruption-subtree-abort-one-region-mid-work",
+    "sha256": "9da0bdd1e764b9534b52ce0d05b193d3786f5990fe9a28db2645827f00bb6721"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "priority",
+            "value": "normal"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-open-north",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "priority",
+            "value": "normal"
+          },
+          {
+            "name": "scratch",
+            "value": "none"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-open-south",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "priority",
+            "value": "normal"
+          },
+          {
+            "name": "scratch",
+            "value": "none"
+          },
+          {
+            "name": "scratch",
+            "value": "none"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-draft-first",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "draftNote",
+            "value": "d1"
+          },
+          {
+            "name": "priority",
+            "value": "normal"
+          },
+          {
+            "name": "scratch",
+            "value": "draft-1"
+          },
+          {
+            "name": "scratch",
+            "value": "none"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-review-first",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "draftNote",
+            "value": "d1"
+          },
+          {
+            "name": "priority",
+            "value": "normal"
+          },
+          {
+            "name": "scratch",
+            "value": "draft-1"
+          },
+          {
+            "name": "scratch",
+            "value": "none"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s06-abort-first",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "draftNote",
+            "value": "d1"
+          },
+          {
+            "name": "priority",
+            "value": "normal"
+          },
+          {
+            "name": "scratch",
+            "value": "draft-1"
+          },
+          {
+            "name": "scratch",
+            "value": "none"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s07-late-publish-first",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "draftNote",
+            "value": "d1"
+          },
+          {
+            "name": "priority",
+            "value": "normal"
+          },
+          {
+            "name": "scratch",
+            "value": "draft-1"
+          },
+          {
+            "name": "scratch",
+            "value": "none"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s08-late-sign-first",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "draftNote",
+            "value": "d1"
+          },
+          {
+            "name": "priority",
+            "value": "normal"
+          },
+          {
+            "name": "scratch",
+            "value": "draft-1"
+          },
+          {
+            "name": "scratch",
+            "value": "none"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s09-late-quote-first",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "draftNote",
+            "value": "d1"
+          },
+          {
+            "name": "priority",
+            "value": "normal"
+          },
+          {
+            "name": "scratch",
+            "value": "draft-1"
+          },
+          {
+            "name": "scratch",
+            "value": "none"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s10-review-second",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "draftNote",
+            "value": "d1"
+          },
+          {
+            "name": "priority",
+            "value": "normal"
+          },
+          {
+            "name": "scratch",
+            "value": "draft-1"
+          },
+          {
+            "name": "scratch",
+            "value": "none"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s11-sign-second",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "approval",
+            "value": "approved"
+          },
+          {
+            "name": "draftNote",
+            "value": "d1"
+          },
+          {
+            "name": "priority",
+            "value": "normal"
+          },
+          {
+            "name": "scratch",
+            "value": "draft-1"
+          },
+          {
+            "name": "scratch",
+            "value": "none"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s12-record-aborted",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "approval",
+            "value": "approved"
+          },
+          {
+            "name": "draftNote",
+            "value": "d1"
+          },
+          {
+            "name": "priority",
+            "value": "normal"
+          },
+          {
+            "name": "scratch",
+            "value": "draft-1"
+          },
+          {
+            "name": "scratch",
+            "value": "none"
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "tasks": [
+          {
+            "elementId": "UserTask_IntakeNorth",
+            "name": "Open the north region"
+          },
+          {
+            "elementId": "UserTask_IntakeSouth",
+            "name": "Open the south region"
+          },
+          {
+            "elementId": "UserTask_Outside",
+            "name": "Run the unrelated audit"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-open-north",
+        "tasks": [
+          {
+            "elementId": "UserTask_IntakeSouth",
+            "name": "Open the south region"
+          },
+          {
+            "elementId": "UserTask_Outside",
+            "name": "Run the unrelated audit"
+          },
+          {
+            "elementId": "UserTask_Draft",
+            "name": "Draft the offer"
+          },
+          {
+            "elementId": "UserTask_Review",
+            "name": "Review the offer"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-open-south",
+        "tasks": [
+          {
+            "elementId": "UserTask_Outside",
+            "name": "Run the unrelated audit"
+          },
+          {
+            "elementId": "UserTask_Draft",
+            "name": "Draft the offer"
+          },
+          {
+            "elementId": "UserTask_Review",
+            "name": "Review the offer"
+          },
+          {
+            "elementId": "UserTask_Draft",
+            "name": "Draft the offer"
+          },
+          {
+            "elementId": "UserTask_Review",
+            "name": "Review the offer"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-draft-first",
+        "tasks": [
+          {
+            "elementId": "UserTask_Outside",
+            "name": "Run the unrelated audit"
+          },
+          {
+            "elementId": "UserTask_Review",
+            "name": "Review the offer"
+          },
+          {
+            "elementId": "UserTask_Draft",
+            "name": "Draft the offer"
+          },
+          {
+            "elementId": "UserTask_Review",
+            "name": "Review the offer"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-review-first",
+        "tasks": [
+          {
+            "elementId": "UserTask_Outside",
+            "name": "Run the unrelated audit"
+          },
+          {
+            "elementId": "UserTask_Draft",
+            "name": "Draft the offer"
+          },
+          {
+            "elementId": "UserTask_Review",
+            "name": "Review the offer"
+          },
+          {
+            "elementId": "UserTask_Sign",
+            "name": "Sign the approval"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s06-abort-first",
+        "tasks": [
+          {
+            "elementId": "UserTask_Outside",
+            "name": "Run the unrelated audit"
+          },
+          {
+            "elementId": "UserTask_Draft",
+            "name": "Draft the offer"
+          },
+          {
+            "elementId": "UserTask_Review",
+            "name": "Review the offer"
+          },
+          {
+            "elementId": "UserTask_Aborted",
+            "name": "Record the aborted region"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s07-late-publish-first",
+        "tasks": [
+          {
+            "elementId": "UserTask_Outside",
+            "name": "Run the unrelated audit"
+          },
+          {
+            "elementId": "UserTask_Draft",
+            "name": "Draft the offer"
+          },
+          {
+            "elementId": "UserTask_Review",
+            "name": "Review the offer"
+          },
+          {
+            "elementId": "UserTask_Aborted",
+            "name": "Record the aborted region"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s08-late-sign-first",
+        "tasks": [
+          {
+            "elementId": "UserTask_Outside",
+            "name": "Run the unrelated audit"
+          },
+          {
+            "elementId": "UserTask_Draft",
+            "name": "Draft the offer"
+          },
+          {
+            "elementId": "UserTask_Review",
+            "name": "Review the offer"
+          },
+          {
+            "elementId": "UserTask_Aborted",
+            "name": "Record the aborted region"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s09-late-quote-first",
+        "tasks": [
+          {
+            "elementId": "UserTask_Outside",
+            "name": "Run the unrelated audit"
+          },
+          {
+            "elementId": "UserTask_Draft",
+            "name": "Draft the offer"
+          },
+          {
+            "elementId": "UserTask_Review",
+            "name": "Review the offer"
+          },
+          {
+            "elementId": "UserTask_Aborted",
+            "name": "Record the aborted region"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s10-review-second",
+        "tasks": [
+          {
+            "elementId": "UserTask_Outside",
+            "name": "Run the unrelated audit"
+          },
+          {
+            "elementId": "UserTask_Draft",
+            "name": "Draft the offer"
+          },
+          {
+            "elementId": "UserTask_Aborted",
+            "name": "Record the aborted region"
+          },
+          {
+            "elementId": "UserTask_Sign",
+            "name": "Sign the approval"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s11-sign-second",
+        "tasks": [
+          {
+            "elementId": "UserTask_Outside",
+            "name": "Run the unrelated audit"
+          },
+          {
+            "elementId": "UserTask_Draft",
+            "name": "Draft the offer"
+          },
+          {
+            "elementId": "UserTask_Aborted",
+            "name": "Record the aborted region"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s12-record-aborted",
+        "tasks": [
+          {
+            "elementId": "UserTask_Outside",
+            "name": "Run the unrelated audit"
+          },
+          {
+            "elementId": "UserTask_Draft",
+            "name": "Draft the offer"
+          }
+        ]
+      }
+    ],
+    "messageSubscriptions": [
+      {
+        "afterCommandId": "s01-start",
+        "subscriptions": []
+      },
+      {
+        "afterCommandId": "s02-open-north",
+        "subscriptions": [
+          {
+            "elementId": "Boundary_Region_Abort",
+            "eventName": "abortRegion",
+            "messageId": "Message_Abort",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          },
+          {
+            "elementId": "ReceiveTask_Quote",
+            "eventName": "quoteReceived",
+            "messageId": "Message_Quote",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-open-south",
+        "subscriptions": [
+          {
+            "elementId": "Boundary_Region_Abort",
+            "eventName": "abortRegion",
+            "messageId": "Message_Abort",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          },
+          {
+            "elementId": "ReceiveTask_Quote",
+            "eventName": "quoteReceived",
+            "messageId": "Message_Quote",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          },
+          {
+            "elementId": "Boundary_Region_Abort",
+            "eventName": "abortRegion",
+            "messageId": "Message_Abort",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          },
+          {
+            "elementId": "ReceiveTask_Quote",
+            "eventName": "quoteReceived",
+            "messageId": "Message_Quote",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-draft-first",
+        "subscriptions": [
+          {
+            "elementId": "Boundary_Region_Abort",
+            "eventName": "abortRegion",
+            "messageId": "Message_Abort",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          },
+          {
+            "elementId": "ReceiveTask_Quote",
+            "eventName": "quoteReceived",
+            "messageId": "Message_Quote",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          },
+          {
+            "elementId": "Boundary_Region_Abort",
+            "eventName": "abortRegion",
+            "messageId": "Message_Abort",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          },
+          {
+            "elementId": "ReceiveTask_Quote",
+            "eventName": "quoteReceived",
+            "messageId": "Message_Quote",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-review-first",
+        "subscriptions": [
+          {
+            "elementId": "Boundary_Region_Abort",
+            "eventName": "abortRegion",
+            "messageId": "Message_Abort",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          },
+          {
+            "elementId": "ReceiveTask_Quote",
+            "eventName": "quoteReceived",
+            "messageId": "Message_Quote",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          },
+          {
+            "elementId": "Boundary_Region_Abort",
+            "eventName": "abortRegion",
+            "messageId": "Message_Abort",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          },
+          {
+            "elementId": "ReceiveTask_Quote",
+            "eventName": "quoteReceived",
+            "messageId": "Message_Quote",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s06-abort-first",
+        "subscriptions": [
+          {
+            "elementId": "Boundary_Region_Abort",
+            "eventName": "abortRegion",
+            "messageId": "Message_Abort",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          },
+          {
+            "elementId": "ReceiveTask_Quote",
+            "eventName": "quoteReceived",
+            "messageId": "Message_Quote",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s07-late-publish-first",
+        "subscriptions": [
+          {
+            "elementId": "Boundary_Region_Abort",
+            "eventName": "abortRegion",
+            "messageId": "Message_Abort",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          },
+          {
+            "elementId": "ReceiveTask_Quote",
+            "eventName": "quoteReceived",
+            "messageId": "Message_Quote",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s08-late-sign-first",
+        "subscriptions": [
+          {
+            "elementId": "Boundary_Region_Abort",
+            "eventName": "abortRegion",
+            "messageId": "Message_Abort",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          },
+          {
+            "elementId": "ReceiveTask_Quote",
+            "eventName": "quoteReceived",
+            "messageId": "Message_Quote",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s09-late-quote-first",
+        "subscriptions": [
+          {
+            "elementId": "Boundary_Region_Abort",
+            "eventName": "abortRegion",
+            "messageId": "Message_Abort",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          },
+          {
+            "elementId": "ReceiveTask_Quote",
+            "eventName": "quoteReceived",
+            "messageId": "Message_Quote",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s10-review-second",
+        "subscriptions": [
+          {
+            "elementId": "Boundary_Region_Abort",
+            "eventName": "abortRegion",
+            "messageId": "Message_Abort",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          },
+          {
+            "elementId": "ReceiveTask_Quote",
+            "eventName": "quoteReceived",
+            "messageId": "Message_Quote",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s11-sign-second",
+        "subscriptions": [
+          {
+            "elementId": "Boundary_Region_Abort",
+            "eventName": "abortRegion",
+            "messageId": "Message_Abort",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          },
+          {
+            "elementId": "ReceiveTask_Quote",
+            "eventName": "quoteReceived",
+            "messageId": "Message_Quote",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s12-record-aborted",
+        "subscriptions": [
+          {
+            "elementId": "Boundary_Region_Abort",
+            "eventName": "abortRegion",
+            "messageId": "Message_Abort",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          },
+          {
+            "elementId": "ReceiveTask_Quote",
+            "eventName": "quoteReceived",
+            "messageId": "Message_Quote",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s02-open-north",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s03-open-south",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s04-draft-first",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s05-review-first",
+        "jobs": [
+          {
+            "elementId": "Boundary_Approve_Timeout",
+            "dueDateDeltaMs": 30000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s06-abort-first",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s07-late-publish-first",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s08-late-sign-first",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s09-late-quote-first",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s10-review-second",
+        "jobs": [
+          {
+            "elementId": "Boundary_Approve_Timeout",
+            "dueDateDeltaMs": 30000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s11-sign-second",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s12-record-aborted",
+        "jobs": []
+      }
+    ],
+    "effectJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s02-open-north",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s03-open-south",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s04-draft-first",
+        "jobs": [
+          {
+            "elementId": "ServiceTask_Publish",
+            "activation": 1,
+            "protocol": "urn:bpmn-lean:effect:probe-v1",
+            "handler": "bpmnLeanEffectHandler",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-review-first",
+        "jobs": [
+          {
+            "elementId": "ServiceTask_Publish",
+            "activation": 1,
+            "protocol": "urn:bpmn-lean:effect:probe-v1",
+            "handler": "bpmnLeanEffectHandler",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s06-abort-first",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s07-late-publish-first",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s08-late-sign-first",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s09-late-quote-first",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s10-review-second",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s11-sign-second",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s12-record-aborted",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "s01-start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s02-open-north",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s03-open-south",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s04-draft-first",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s05-review-first",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s06-abort-first",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s07-late-publish-first",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s08-late-sign-first",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s09-late-quote-first",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s10-review-second",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s11-sign-second",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s12-record-aborted",
+        "state": "ACTIVE"
+      }
+    ],
+    "effectExecutions": []
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "priority",
+            "value": {
+              "kind": "string",
+              "value": "normal"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_IntakeNorth",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Open the north region",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_IntakeSouth",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Open the south region",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Outside",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Run the unrelated audit",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s02-open-north",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "priority",
+            "value": {
+              "kind": "string",
+              "value": "normal"
+            }
+          },
+          {
+            "name": "scratch",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Boundary_Region_Abort",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Abort"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ReceiveTask_Quote",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Quote"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Draft",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Draft the offer",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_IntakeSouth",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Open the south region",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Outside",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Run the unrelated audit",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Review",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review the offer",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s03-open-south",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "priority",
+            "value": {
+              "kind": "string",
+              "value": "normal"
+            }
+          },
+          {
+            "name": "scratch",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          },
+          {
+            "name": "scratch",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Boundary_Region_Abort",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Abort"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Boundary_Region_Abort",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Abort"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ReceiveTask_Quote",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Quote"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ReceiveTask_Quote",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Quote"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Draft",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Draft the offer",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Draft",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Draft the offer",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Outside",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Run the unrelated audit",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Review",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review the offer",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Review",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review the offer",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s04-draft-first",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "draftNote",
+            "value": {
+              "kind": "string",
+              "value": "d1"
+            }
+          },
+          {
+            "name": "priority",
+            "value": {
+              "kind": "string",
+              "value": "normal"
+            }
+          },
+          {
+            "name": "scratch",
+            "value": {
+              "kind": "string",
+              "value": "draft-1"
+            }
+          },
+          {
+            "name": "scratch",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Boundary_Region_Abort",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Abort"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Boundary_Region_Abort",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Abort"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ReceiveTask_Quote",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Quote"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ReceiveTask_Quote",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Quote"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ServiceTask_Publish",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "urn:bpmn-lean:effect-operation:probe-v1",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Draft",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Draft the offer",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Outside",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Run the unrelated audit",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Review",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review the offer",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Review",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review the offer",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s05-review-first",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "draftNote",
+            "value": {
+              "kind": "string",
+              "value": "d1"
+            }
+          },
+          {
+            "name": "priority",
+            "value": {
+              "kind": "string",
+              "value": "normal"
+            }
+          },
+          {
+            "name": "scratch",
+            "value": {
+              "kind": "string",
+              "value": "draft-1"
+            }
+          },
+          {
+            "name": "scratch",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Boundary_Approve_Timeout",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 30000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Boundary_Region_Abort",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Abort"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Boundary_Region_Abort",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Abort"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ReceiveTask_Quote",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Quote"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ReceiveTask_Quote",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Quote"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ServiceTask_Publish",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "urn:bpmn-lean:effect-operation:probe-v1",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Draft",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Draft the offer",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Outside",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Run the unrelated audit",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Review",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review the offer",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:20:CallActivity_Approve:1",
+              "elementId": "UserTask_Sign",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_Approve",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Sign the approval",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s06-abort-first",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "draftNote",
+            "value": {
+              "kind": "string",
+              "value": "d1"
+            }
+          },
+          {
+            "name": "priority",
+            "value": {
+              "kind": "string",
+              "value": "normal"
+            }
+          },
+          {
+            "name": "scratch",
+            "value": {
+              "kind": "string",
+              "value": "draft-1"
+            }
+          },
+          {
+            "name": "scratch",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Boundary_Region_Abort",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Abort"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ReceiveTask_Quote",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Quote"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Aborted",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Record the aborted region",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Draft",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Draft the offer",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Outside",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Run the unrelated audit",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Review",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review the offer",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s07-late-publish-first",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "draftNote",
+            "value": {
+              "kind": "string",
+              "value": "d1"
+            }
+          },
+          {
+            "name": "priority",
+            "value": {
+              "kind": "string",
+              "value": "normal"
+            }
+          },
+          {
+            "name": "scratch",
+            "value": {
+              "kind": "string",
+              "value": "draft-1"
+            }
+          },
+          {
+            "name": "scratch",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Boundary_Region_Abort",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Abort"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ReceiveTask_Quote",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Quote"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Aborted",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Record the aborted region",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Draft",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Draft the offer",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Outside",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Run the unrelated audit",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Review",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review the offer",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s08-late-sign-first",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "draftNote",
+            "value": {
+              "kind": "string",
+              "value": "d1"
+            }
+          },
+          {
+            "name": "priority",
+            "value": {
+              "kind": "string",
+              "value": "normal"
+            }
+          },
+          {
+            "name": "scratch",
+            "value": {
+              "kind": "string",
+              "value": "draft-1"
+            }
+          },
+          {
+            "name": "scratch",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Boundary_Region_Abort",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Abort"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ReceiveTask_Quote",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Quote"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Aborted",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Record the aborted region",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Draft",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Draft the offer",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Outside",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Run the unrelated audit",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Review",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review the offer",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s09-late-quote-first",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "draftNote",
+            "value": {
+              "kind": "string",
+              "value": "d1"
+            }
+          },
+          {
+            "name": "priority",
+            "value": {
+              "kind": "string",
+              "value": "normal"
+            }
+          },
+          {
+            "name": "scratch",
+            "value": {
+              "kind": "string",
+              "value": "draft-1"
+            }
+          },
+          {
+            "name": "scratch",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Boundary_Region_Abort",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Abort"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ReceiveTask_Quote",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Quote"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Aborted",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Record the aborted region",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Draft",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Draft the offer",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Outside",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Run the unrelated audit",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Review",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review the offer",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s10-review-second",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "draftNote",
+            "value": {
+              "kind": "string",
+              "value": "d1"
+            }
+          },
+          {
+            "name": "priority",
+            "value": {
+              "kind": "string",
+              "value": "normal"
+            }
+          },
+          {
+            "name": "scratch",
+            "value": {
+              "kind": "string",
+              "value": "draft-1"
+            }
+          },
+          {
+            "name": "scratch",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Boundary_Approve_Timeout",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 30000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Boundary_Region_Abort",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Abort"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ReceiveTask_Quote",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Quote"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Aborted",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Record the aborted region",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Draft",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Draft the offer",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Outside",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Run the unrelated audit",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:20:CallActivity_Approve:2",
+              "elementId": "UserTask_Sign",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_Approve",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Sign the approval",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s11-sign-second",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "approval",
+            "value": {
+              "kind": "string",
+              "value": "approved"
+            }
+          },
+          {
+            "name": "draftNote",
+            "value": {
+              "kind": "string",
+              "value": "d1"
+            }
+          },
+          {
+            "name": "priority",
+            "value": {
+              "kind": "string",
+              "value": "normal"
+            }
+          },
+          {
+            "name": "scratch",
+            "value": {
+              "kind": "string",
+              "value": "draft-1"
+            }
+          },
+          {
+            "name": "scratch",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Boundary_Region_Abort",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Abort"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ReceiveTask_Quote",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Quote"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Aborted",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Record the aborted region",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Draft",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Draft the offer",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Outside",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Run the unrelated audit",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s12-record-aborted",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "approval",
+            "value": {
+              "kind": "string",
+              "value": "approved"
+            }
+          },
+          {
+            "name": "draftNote",
+            "value": {
+              "kind": "string",
+              "value": "d1"
+            }
+          },
+          {
+            "name": "priority",
+            "value": {
+              "kind": "string",
+              "value": "normal"
+            }
+          },
+          {
+            "name": "scratch",
+            "value": {
+              "kind": "string",
+              "value": "draft-1"
+            }
+          },
+          {
+            "name": "scratch",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Boundary_Region_Abort",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Abort"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ReceiveTask_Quote",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Quote"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Draft",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Draft the offer",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Outside",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Run the unrelated audit",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      }
+    ]
+  }
+}

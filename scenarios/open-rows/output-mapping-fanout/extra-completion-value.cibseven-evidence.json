@@ -1,0 +1,438 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "output-mapping-fanout-extra-completion-value",
+    "sha256": "1b2fb89059e0c02614d2d593dd16fcce934b3fcc304c3b57f53601876f5f7336"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "claim",
+            "value": "C-1"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-decide-extra",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "claim",
+            "value": "C-1"
+          },
+          {
+            "name": "decision",
+            "value": "approve"
+          },
+          {
+            "name": "decisionCopy",
+            "value": "approve"
+          },
+          {
+            "name": "extra",
+            "value": "x"
+          },
+          {
+            "name": "finalDecision",
+            "value": "approve"
+          },
+          {
+            "name": "finalNote",
+            "value": null
+          },
+          {
+            "name": "note",
+            "value": null
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-decide",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "claim",
+            "value": "C-1"
+          },
+          {
+            "name": "decision",
+            "value": "approve"
+          },
+          {
+            "name": "decisionCopy",
+            "value": "approve"
+          },
+          {
+            "name": "extra",
+            "value": "x"
+          },
+          {
+            "name": "finalDecision",
+            "value": "approve"
+          },
+          {
+            "name": "finalNote",
+            "value": null
+          },
+          {
+            "name": "note",
+            "value": null
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start",
+        "tasks": [
+          {
+            "elementId": "UserTask_Decide",
+            "name": "Decide"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-decide-extra",
+        "tasks": [
+          {
+            "elementId": "UserTask_Observe",
+            "name": "Observe"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-decide",
+        "tasks": [
+          {
+            "elementId": "UserTask_Observe",
+            "name": "Observe"
+          }
+        ]
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-decide-extra",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-decide",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-decide-extra",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-decide",
+        "state": "ACTIVE"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "rejected"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Run_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "claim",
+            "value": {
+              "kind": "string",
+              "value": "C-1"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Run_1",
+              "elementId": "UserTask_Decide",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Decide",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "claimCopy",
+                  "value": {
+                    "kind": "string",
+                    "value": "C-1"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-decide-extra",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Run_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "claim",
+            "value": {
+              "kind": "string",
+              "value": "C-1"
+            }
+          },
+          {
+            "name": "decision",
+            "value": {
+              "kind": "string",
+              "value": "approve"
+            }
+          },
+          {
+            "name": "decisionCopy",
+            "value": {
+              "kind": "string",
+              "value": "approve"
+            }
+          },
+          {
+            "name": "extra",
+            "value": {
+              "kind": "string",
+              "value": "x"
+            }
+          },
+          {
+            "name": "finalDecision",
+            "value": {
+              "kind": "string",
+              "value": "approve"
+            }
+          },
+          {
+            "name": "finalNote",
+            "value": {
+              "kind": "null"
+            }
+          },
+          {
+            "name": "note",
+            "value": {
+              "kind": "null"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Run_1",
+              "elementId": "UserTask_Observe",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Observe",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "seenCopy",
+                  "value": {
+                    "kind": "string",
+                    "value": "approve"
+                  }
+                },
+                {
+                  "name": "seenDecision",
+                  "value": {
+                    "kind": "string",
+                    "value": "approve"
+                  }
+                },
+                {
+                  "name": "seenNote",
+                  "value": {
+                    "kind": "null"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-decide",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Run_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "claim",
+            "value": {
+              "kind": "string",
+              "value": "C-1"
+            }
+          },
+          {
+            "name": "decision",
+            "value": {
+              "kind": "string",
+              "value": "approve"
+            }
+          },
+          {
+            "name": "decisionCopy",
+            "value": {
+              "kind": "string",
+              "value": "approve"
+            }
+          },
+          {
+            "name": "extra",
+            "value": {
+              "kind": "string",
+              "value": "x"
+            }
+          },
+          {
+            "name": "finalDecision",
+            "value": {
+              "kind": "string",
+              "value": "approve"
+            }
+          },
+          {
+            "name": "finalNote",
+            "value": {
+              "kind": "null"
+            }
+          },
+          {
+            "name": "note",
+            "value": {
+              "kind": "null"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Run_1",
+              "elementId": "UserTask_Observe",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Observe",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "seenCopy",
+                  "value": {
+                    "kind": "string",
+                    "value": "approve"
+                  }
+                },
+                {
+                  "name": "seenDecision",
+                  "value": {
+                    "kind": "string",
+                    "value": "approve"
+                  }
+                },
+                {
+                  "name": "seenNote",
+                  "value": {
+                    "kind": "null"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      }
+    ]
+  }
+}

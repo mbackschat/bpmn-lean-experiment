@@ -1,0 +1,207 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "mapping-failure-sites-call-out-absent",
+    "sha256": "cddb7d6b45f64bd6b4e5f18463269c412c32bec1fb1bfaf5a919724fb8a98417"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "probe",
+            "value": "call-out-absent"
+          },
+          {
+            "name": "seed",
+            "value": "s"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-peek",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "back",
+            "value": null
+          },
+          {
+            "name": "probe",
+            "value": "call-out-absent"
+          },
+          {
+            "name": "seed",
+            "value": "s"
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start",
+        "tasks": [
+          {
+            "elementId": "UserTask_Peek",
+            "name": "Peek"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-peek",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-peek",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-peek",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Probe_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "probe",
+            "value": {
+              "kind": "string",
+              "value": "call-out-absent"
+            }
+          },
+          {
+            "name": "seed",
+            "value": {
+              "kind": "string",
+              "value": "s"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "call:7:Probe_1:26:CallActivity_CallOutAbsent:1",
+              "elementId": "UserTask_Peek",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_Peek",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Peek",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "seenX",
+                  "value": {
+                    "kind": "string",
+                    "value": "s"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-peek",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Probe_1",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "back",
+            "value": {
+              "kind": "null"
+            }
+          },
+          {
+            "name": "probe",
+            "value": {
+              "kind": "string",
+              "value": "call-out-absent"
+            }
+          },
+          {
+            "name": "seed",
+            "value": {
+              "kind": "string",
+              "value": "s"
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}

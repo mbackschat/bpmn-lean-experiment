@@ -1,0 +1,305 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "call-exceptional-return-no-stock-handled-inside-child",
+    "sha256": "bffba1593fa97bab491a2981405ad9d3916a22b7cbf0e4b9b2e74813b999fa9a"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "s02-reserve-item-no-stock",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "slot",
+            "value": "S-2"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-substitute",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "slot",
+            "value": "S-2"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-confirm-order",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "slot",
+            "value": "S-2"
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "tasks": [
+          {
+            "elementId": "UserTask_ReserveItem",
+            "name": "Reserve the item"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-reserve-item-no-stock",
+        "tasks": [
+          {
+            "elementId": "UserTask_Substitute",
+            "name": "Substitute the item"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-substitute",
+        "tasks": [
+          {
+            "elementId": "UserTask_AfterBook",
+            "name": "Confirm the order"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-confirm-order",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s02-reserve-item-no-stock",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s03-substitute",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s04-confirm-order",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "s01-start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s02-reserve-item-no-stock",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s03-substitute",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s04-confirm-order",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:21:CallActivity_BookItem:1",
+              "elementId": "UserTask_ReserveItem",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_BookItem",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Reserve the item",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s02-reserve-item-no-stock",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "slot",
+            "value": {
+              "kind": "string",
+              "value": "S-2"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:21:CallActivity_BookItem:1",
+              "elementId": "UserTask_Substitute",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_BookItem",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Substitute the item",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s03-substitute",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "slot",
+            "value": {
+              "kind": "string",
+              "value": "S-2"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_AfterBook",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Confirm the order",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s04-confirm-order",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "slot",
+            "value": {
+              "kind": "string",
+              "value": "S-2"
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}

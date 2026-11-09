@@ -1,0 +1,523 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "addressless-receive-compositions-scan-stale-and-wrong-occurrence",
+    "sha256": "9d54ccdd112246a1a83fd8de558cbfad20b64ed4830e13f19b7adf4f5bf60518"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "scan-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "scan-1-stale",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "sign-not-open",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "scan-other-instance",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "check-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "again",
+            "value": "no"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "sign",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "again",
+            "value": "no"
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "scan-1",
+        "tasks": [
+          {
+            "elementId": "CheckScan",
+            "name": "Check scan",
+            "identityLinks": [],
+            "formFields": [
+              {
+                "id": "again",
+                "typeName": "string"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "afterCommandId": "scan-1-stale",
+        "tasks": [
+          {
+            "elementId": "CheckScan",
+            "name": "Check scan",
+            "identityLinks": [],
+            "formFields": [
+              {
+                "id": "again",
+                "typeName": "string"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "afterCommandId": "sign-not-open",
+        "tasks": [
+          {
+            "elementId": "CheckScan",
+            "name": "Check scan",
+            "identityLinks": [],
+            "formFields": [
+              {
+                "id": "again",
+                "typeName": "string"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "afterCommandId": "scan-other-instance",
+        "tasks": [
+          {
+            "elementId": "CheckScan",
+            "name": "Check scan",
+            "identityLinks": [],
+            "formFields": [
+              {
+                "id": "again",
+                "typeName": "string"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "afterCommandId": "check-1",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "sign",
+        "tasks": []
+      }
+    ],
+    "messageSubscriptions": [
+      {
+        "afterCommandId": "start",
+        "subscriptions": [],
+        "addresslessReceiveWaits": [
+          {
+            "elementId": "AwaitScan"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "scan-1",
+        "subscriptions": []
+      },
+      {
+        "afterCommandId": "scan-1-stale",
+        "subscriptions": []
+      },
+      {
+        "afterCommandId": "sign-not-open",
+        "subscriptions": []
+      },
+      {
+        "afterCommandId": "scan-other-instance",
+        "subscriptions": []
+      },
+      {
+        "afterCommandId": "check-1",
+        "subscriptions": [],
+        "addresslessReceiveWaits": [
+          {
+            "elementId": "AwaitSignature"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "sign",
+        "subscriptions": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "scan-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "scan-1-stale",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "sign-not-open",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "scan-other-instance",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "check-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "sign",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "scan-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "scan-1-stale",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "sign-not-open",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "scan-other-instance",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "check-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "sign",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Parcel_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Parcel_1",
+              "elementId": "AwaitScan",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "unspecifiedMessage"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "scan-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Parcel_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Parcel_1",
+              "elementId": "CheckScan",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Check scan",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "again",
+                  "type": "string"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "scan-1-stale",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Parcel_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Parcel_1",
+              "elementId": "CheckScan",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Check scan",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "again",
+                  "type": "string"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "sign-not-open",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Parcel_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Parcel_1",
+              "elementId": "CheckScan",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Check scan",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "again",
+                  "type": "string"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "scan-other-instance",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Parcel_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Parcel_1",
+              "elementId": "CheckScan",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Check scan",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "again",
+                  "type": "string"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "check-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Parcel_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "again",
+            "value": {
+              "kind": "string",
+              "value": "no"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Parcel_1",
+              "elementId": "AwaitSignature",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "unspecifiedMessage"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "sign",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Parcel_1",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "again",
+            "value": {
+              "kind": "string",
+              "value": "no"
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}

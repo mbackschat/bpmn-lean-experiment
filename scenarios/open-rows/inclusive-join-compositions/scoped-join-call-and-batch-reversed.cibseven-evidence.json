@@ -1,0 +1,670 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "inclusive-join-compositions-scoped-join-call-and-batch-reversed",
+    "sha256": "29f10d941012591c07f18cc63635d02181c77a2bbaa8a5a22f930ab0ef0ef34b"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "batched",
+            "value": true
+          },
+          {
+            "name": "called",
+            "value": true
+          },
+          {
+            "name": "items",
+            "value": [
+              "x",
+              "y"
+            ]
+          },
+          {
+            "name": "scoped",
+            "value": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-complete-ApproveItem-2",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "batched",
+            "value": true
+          },
+          {
+            "name": "called",
+            "value": true
+          },
+          {
+            "name": "items",
+            "value": [
+              "x",
+              "y"
+            ]
+          },
+          {
+            "name": "scoped",
+            "value": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-complete-ApproveItem-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "batched",
+            "value": true
+          },
+          {
+            "name": "called",
+            "value": true
+          },
+          {
+            "name": "items",
+            "value": [
+              "x",
+              "y"
+            ]
+          },
+          {
+            "name": "scoped",
+            "value": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-complete-Audit-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "batched",
+            "value": true
+          },
+          {
+            "name": "called",
+            "value": true
+          },
+          {
+            "name": "items",
+            "value": [
+              "x",
+              "y"
+            ]
+          },
+          {
+            "name": "scoped",
+            "value": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-complete-Decide-1",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "batched",
+            "value": true
+          },
+          {
+            "name": "called",
+            "value": true
+          },
+          {
+            "name": "items",
+            "value": [
+              "x",
+              "y"
+            ]
+          },
+          {
+            "name": "scoped",
+            "value": false
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "tasks": [
+          {
+            "elementId": "ApproveItem",
+            "name": "Approve item"
+          },
+          {
+            "elementId": "ApproveItem",
+            "name": "Approve item"
+          },
+          {
+            "elementId": "Audit",
+            "name": "Audit"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-complete-ApproveItem-2",
+        "tasks": [
+          {
+            "elementId": "ApproveItem",
+            "name": "Approve item"
+          },
+          {
+            "elementId": "Audit",
+            "name": "Audit"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-complete-ApproveItem-1",
+        "tasks": [
+          {
+            "elementId": "Audit",
+            "name": "Audit"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-complete-Audit-1",
+        "tasks": [
+          {
+            "elementId": "Decide",
+            "name": "Decide"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-complete-Decide-1",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s02-complete-ApproveItem-2",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s03-complete-ApproveItem-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s04-complete-Audit-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s05-complete-Decide-1",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "s01-start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s02-complete-ApproveItem-2",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s03-complete-ApproveItem-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s04-complete-Audit-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s05-complete-Decide-1",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "batched",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          },
+          {
+            "name": "called",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          },
+          {
+            "name": "items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "x",
+                "y"
+              ]
+            }
+          },
+          {
+            "name": "scoped",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ApproveItem",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Approve item",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ApproveItem",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Approve item",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:9:AuditCall:1",
+              "elementId": "Audit",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_Audit",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Audit",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s02-complete-ApproveItem-2",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "batched",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          },
+          {
+            "name": "called",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          },
+          {
+            "name": "items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "x",
+                "y"
+              ]
+            }
+          },
+          {
+            "name": "scoped",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ApproveItem",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Approve item",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:9:AuditCall:1",
+              "elementId": "Audit",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_Audit",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Audit",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s03-complete-ApproveItem-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "batched",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          },
+          {
+            "name": "called",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          },
+          {
+            "name": "items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "x",
+                "y"
+              ]
+            }
+          },
+          {
+            "name": "scoped",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:9:AuditCall:1",
+              "elementId": "Audit",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_Audit",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Audit",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s04-complete-Audit-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "batched",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          },
+          {
+            "name": "called",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          },
+          {
+            "name": "items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "x",
+                "y"
+              ]
+            }
+          },
+          {
+            "name": "scoped",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Decide",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Decide",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s05-complete-Decide-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "batched",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          },
+          {
+            "name": "called",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          },
+          {
+            "name": "items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "x",
+                "y"
+              ]
+            }
+          },
+          {
+            "name": "scoped",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}
