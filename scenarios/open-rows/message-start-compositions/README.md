@@ -9,7 +9,6 @@ A Message start stimulus names its Start Event and the Message it triggers; a Me
 | Model | What it holds |
 |---|---|
 | [order-intake](order-intake.bpmn) | One process with two Message Starts, *Order placed* (`order-placed`) leading to *Pick the order* and *Order amended* (`order-amended`) leading to *Revise the order*, each to its own End. |
-| [order-intake-v2](order-intake-v2.bpmn) | The same process identifier `Process_OrderIntake` with *Pick the order* renamed `PickAndPackOrder`: a second version of one process key. |
 | [request-intake](request-intake.bpmn) | One process with a None Start *Request entered by hand* leading to *Handle the manual request* and a Message Start *Request received* (`request-received`) leading to *Handle the message request*. |
 | [shipment-start](shipment-start.bpmn) | A Message Start *Shipment announced* (`shipment-announced`, through the Interface *Carrier*) with one Data Output associated to the Process Property `Property_ManifestReference`, leading to *Check the manifest*. |
 | [duplicate-message-starts](duplicate-message-starts.bpmn) | One process whose two Message Starts, *Order placed online* and *Order placed by phone*, reference the one Message `order-placed`. |
@@ -28,12 +27,6 @@ A Message start stimulus names its Start Event and the Message it triggers; a Me
 | [shipment-payload-absent](shipment-payload-absent.scenario.json) | shipment-start | The trigger carries no payload. |
 | [duplicate-message-starts-start](duplicate-message-starts-start.scenario.json) | duplicate-message-starts | The shared Message triggers the first of the two starts. |
 
-## Population schedule
-
-A closed [engine population scenario](../../../contracts/schemas/engine-population-scenario.schema.json): definitions deployed in the order listed, then the steps in order.
-
-| Schedule | Definitions | Case it separates |
-|---|---|---|
-| [order-intake-two-versions](order-intake-two-versions.population-scenario.json) | order-intake, order-intake-v2 | *Order placed* is triggered for the first version, then for the second. |
+The population witnesses of this directory are held outside the repository with the M8 track: the CIB runner realizes no population scenario and the kernel's population runner refuses an inadmissible definition, so they have no comparable result yet.
 
 The schedules carry no expected instance, task or variable; the retained CIB evidence is the answer.

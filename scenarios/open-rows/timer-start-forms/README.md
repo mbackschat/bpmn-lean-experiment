@@ -9,7 +9,6 @@ Logical time zero is the Unix epoch `1970-01-01T00:00:00Z`, and every model is d
 | Model | What it holds |
 |---|---|
 | [duration-start](duration-start.bpmn) | The Timer Start *An hour after deployment* (`timeDuration` `PT1H`) leading to the User Task *Review the batch* and an End. |
-| [duration-start-v2](duration-start-v2.bpmn) | The same process identifier `Process_DurationBatch` with the duration changed to `PT2H` and the task renamed `ReviewBatchRevised`: a second version of one process key. |
 | [date-start](date-start.bpmn) | The Timer Start *On the batch date* (`timeDate` `1970-01-01T02:00:00Z`, UTC) leading to *Review the batch*. |
 | [cycle-start](cycle-start.bpmn) | The Timer Start *Every hour* (`timeCycle` `R/PT1H`) leading to *Review the batch*. |
 | [timer-and-message-start](timer-and-message-start.bpmn) | One process with the Timer Start *An hour after deployment* (`PT1H`) leading to *Handle the timed batch* and the Message Start *Batch announced* (message `batch-ready`) leading to *Handle the announced batch*. |
@@ -28,14 +27,6 @@ Logical time zero is the Unix epoch `1970-01-01T00:00:00Z`, and every model is d
 | [timer-trigger-names-message-start](timer-trigger-names-message-start.scenario.json) | timer-and-message-start | A timer trigger at the Timer Start's due time names the Message Start. |
 | [two-timer-starts-first](two-timer-starts-first.scenario.json) | two-timer-starts | The first of two Timer Starts fires at its due time and its task completes. |
 
-## Population schedules
-
-Each is a closed [engine population scenario](../../../contracts/schemas/engine-population-scenario.schema.json): definitions deployed in the order listed, then the steps in order.
-
-| Schedule | Definitions | Case it separates |
-|---|---|---|
-| [duration-start-replayed-occurrence](duration-start-replayed-occurrence.population-scenario.json) | duration-start | The Timer Start fires for `Batch_1` and the same due time fires again for `Batch_2`. |
-| [cycle-start-two-occurrences](cycle-start-two-occurrences.population-scenario.json) | cycle-start | The cycle Start fires at its first occurrence for `Batch_1` and at the second, 7,200,000 ms, for `Batch_2`. |
-| [duration-start-two-versions](duration-start-two-versions.population-scenario.json) | duration-start, duration-start-v2 | The Timer Start fires for each version of `Process_DurationBatch` at that version's own due time, the first version first. |
+The population witnesses of this directory are held outside the repository with the M8 track: the CIB runner realizes no population scenario and the kernel's population runner refuses an inadmissible definition, so they have no comparable result yet.
 
 The schedules carry no expected instance, task or version; the retained CIB evidence is the answer.

@@ -9,8 +9,6 @@ A Signal start stimulus names its Start Event and carries the Signal name with t
 | Model | What it holds |
 |---|---|
 | [shift-signals](shift-signals.bpmn) | One process with two Signal Starts, *Shift opened* (`shift-opened`) leading to *Open the register* and *Shift closed* (`shift-closed`) leading to *Close the register*, each to its own End. |
-| [shift-signals-v2](shift-signals-v2.bpmn) | The same process identifier `Process_ShiftSignals` with *Close the register* renamed `CloseTill`: a second version of one process key. |
-| [shift-awaiting](shift-awaiting.bpmn) | A None Start *Till opened*, the Intermediate Signal catch *Shift closed* (`shift-closed`) and the User Task *Reconcile the till*. |
 | [handover-relay](handover-relay.bpmn) | A Signal Start *Handover requested* (`handover-requested`) leading to the Intermediate Signal catch *Handover accepted* (`handover-accepted`) and the User Task *Confirm the handover*. |
 | [approval-race](approval-race.bpmn) | A None Start leading to the Event-Based Gateway *Await decision* over the Signal catches *Approved* (`approved`) and *Rejected* (`rejected`) and the Timer catch *Deadline passed* (`PT1H`), each arm to its own User Task. |
 | [duplicate-signal-starts](duplicate-signal-starts.bpmn) | One process whose two Signal Starts, *Shift opened at the front* and *Shift opened at the back*, reference the one Signal `shift-opened`. |
@@ -31,15 +29,6 @@ A Signal start stimulus names its Start Event and carries the Signal name with t
 | [duplicate-signal-starts-start](duplicate-signal-starts-start.scenario.json) | duplicate-signal-starts | The shared Signal fires the first of the two starts. |
 | [failing-signal-start-start](failing-signal-start-start.scenario.json) | failing-signal-start | The Signal Start fires. |
 
-## Population schedules
-
-Each is a closed [engine population scenario](../../../contracts/schemas/engine-population-scenario.schema.json): definitions deployed in the order listed, then the steps in order. A `broadcast` step names a Signal and reaches every eligible Signal Start and every waiting Signal catch; the instances it starts are named by no step.
-
-| Schedule | Definitions | Case it separates |
-|---|---|---|
-| [broadcast-reaches-waiting-instances](broadcast-reaches-waiting-instances.population-scenario.json) | shift-awaiting | Two instances wait at the catch; `shift-opened` is broadcast, then `shift-closed` twice, then each task completes. |
-| [broadcast-starts-and-catches](broadcast-starts-and-catches.population-scenario.json) | shift-awaiting, shift-signals | One instance waits at the catch while `shift-closed` is broadcast to a definition that also starts on it. |
-| [broadcast-two-versions](broadcast-two-versions.population-scenario.json) | shift-signals, shift-signals-v2 | `shift-closed` is broadcast with two versions of one process deployed. |
-| [broadcast-start-fails](broadcast-start-fails.population-scenario.json) | shift-awaiting, failing-signal-start | One instance waits at the catch while `shift-closed` is broadcast to a definition whose start reads an unset variable. |
+The population witnesses of this directory are held outside the repository with the M8 track: the CIB runner realizes no population scenario and the kernel's population runner refuses an inadmissible definition, so they have no comparable result yet.
 
 The schedules carry no expected instance, task or variable; the retained CIB evidence is the answer.

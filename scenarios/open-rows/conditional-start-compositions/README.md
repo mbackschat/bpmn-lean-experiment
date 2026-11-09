@@ -9,7 +9,6 @@ A Condition start stimulus carries the context as its start variables and names 
 | Model | What it holds |
 |---|---|
 | [large-order](large-order.bpmn) | The Conditional Start *Large order* with the condition `${amount >= 1000}` and no variable filter, leading to *Review the order*. |
-| [large-order-v2](large-order-v2.bpmn) | The same process identifier `Process_LargeOrder` with the condition `${amount >= 500}` and the task renamed `ReviewOrderRevised`: a second version of one process key. |
 | [expedited-order](expedited-order.bpmn) | The Conditional Start *Order flagged* with the condition `${expedite}` and no variable filter, leading to *Ship the order fast*. |
 | [routed-orders](routed-orders.bpmn) | Two Conditional Starts, *Large order* (`${amount >= 1000}` filtered on the variable `amount`) leading to *Review the large order* and *Urgent order* (`${urgent}` filtered on the variable `urgent`) leading to *Rush the urgent order*. |
 | [duplicate-conditions](duplicate-conditions.bpmn) | One process whose two Conditional Starts, *Large online order* and *Large phone order*, carry the one condition `${amount >= 1000}`. |
@@ -35,12 +34,6 @@ A Condition start stimulus carries the context as its start variables and names 
 | [routed-both](routed-both.scenario.json) | routed-orders | `amount` 2500 and `urgent` true, naming no start. |
 | [duplicate-conditions-start](duplicate-conditions-start.scenario.json) | duplicate-conditions | `amount` 2500, naming *Large online order*. |
 
-## Population schedule
-
-A closed [engine population scenario](../../../contracts/schemas/engine-population-scenario.schema.json): definitions deployed in the order listed, then the steps in order.
-
-| Schedule | Definitions | Case it separates |
-|---|---|---|
-| [large-order-two-versions](large-order-two-versions.population-scenario.json) | large-order, large-order-v2 | `amount` 700 is submitted to the first version, then to the second. |
+The population witnesses of this directory are held outside the repository with the M8 track: the CIB runner realizes no population scenario and the kernel's population runner refuses an inadmissible definition, so they have no comparable result yet.
 
 The schedules carry no expected instance, task or variable; the retained CIB evidence is the answer.

@@ -11,9 +11,6 @@ The called instance of a Call is addressed by the derived identity `call:<byte l
 | [binding-forms](binding-forms.bpmn) | `Process_BindingCaller` takes the Process variable `route` at an Exclusive Gateway into one of seven Call Activities that all merge into the User Task *Confirm the request*: *Call the latest version* (`Process_Callee`, the default flow), *Call the deployed version* (binding `deployment`), *Call version 1* (binding `version`, version `1`), *Call version 2* (binding `version`, version `2`), *Call the key in a variable* (`${calleeKey}`), *Call an undeployed process* (`Process_Undeployed`) and *Call in another namespace* (`other:Process_Callee`, the prefix bound to a namespace the document does not use for its processes). The same document holds `Process_Callee`, whose only work is the User Task *Assess the request*. |
 | [tag-binding](tag-binding.bpmn) | `Process_TagCaller` takes `route` into *Call the stable version* (binding `versionTag`, tag `stable`, the default flow) or *Call the beta version* (binding `versionTag`, tag `beta`), merging into *Confirm the request*. The same document holds `Process_Callee` with version tag `stable`. It is a model of its own because `camunda:versionTag` is a process attribute the kernel reader does not yet carry. |
 | [tenant-binding](tenant-binding.bpmn) | `Process_TenantCaller` with one Call Activity *Call the callee of tenant A* (`Process_Callee`, `camunda:calledElementTenantId` `tenant-a`) leading to *Confirm the request*. The same document holds `Process_Callee` with no tenant. |
-| [callee-v1](callee-v1.bpmn) | `Process_Callee` with version tag `stable` and the User Task `AssessRequest`. |
-| [callee-v2](callee-v2.bpmn) | `Process_Callee` with version tag `next` and the User Task renamed `AssessRequestRevised`: a second version of one process key. |
-| [versioned-caller](versioned-caller.bpmn) | `Process_VersionedCaller` takes `route` into four Call Activities of `Process_Callee`: *Call the latest version* (the default flow), *Call version 1* (binding `version`, version `1`), *Call the stable version* (binding `versionTag`, tag `stable`) and *Call the deployed version* (binding `deployment`), merging into *Confirm the request*. It holds no callee. |
 
 ## Single-instance schedules
 
@@ -32,12 +29,6 @@ Every schedule but the last starts a caller with the Process variable `route` se
 | [call-tag-unknown](call-tag-unknown.scenario.json) | tag-binding | `unknown-tag` | *Call the beta version*. |
 | [call-tenant-selector](call-tenant-selector.scenario.json) | tenant-binding | none | *Call the callee of tenant A*. |
 
-## Population schedule
-
-A closed [engine population scenario](../../../contracts/schemas/engine-population-scenario.schema.json): definitions deployed in the order listed, then the steps in order.
-
-| Schedule | Definitions | Case it separates |
-|---|---|---|
-| [callee-two-versions](callee-two-versions.population-scenario.json) | callee-v1, callee-v2, versioned-caller | Four callers start with `route` `latest`, `version-one`, `tag-stable` and `deployment` while two versions of `Process_Callee` are deployed and the caller's own document holds none. |
+The population witness of two deployed callee versions is held outside the repository until the kernel reader carries `camunda:versionTag`, because a population definition the reader refuses has no comparable result.
 
 The schedules carry no expected called definition, task or variable; the retained CIB evidence is the answer.
