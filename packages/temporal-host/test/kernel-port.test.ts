@@ -14,8 +14,7 @@ const { EffectResultKind } = await import(new URL("../dist/port.js", import.meta
 const occurrence = { processInstanceId: "I", elementId: "T", activation: 1 };
 
 test("a stimulus's stated time reaches the kernel as its atMs", () => {
-  const decoded = kernelPort.decodeStimulus({ kind: "startProcess", commandId: "start", instanceId: "I", initialVariables: [], at: 1_700_000_000_000 });
-  assert.ok(decoded.input !== null);
+  const decoded = kernelPort.decodeStimulus({ kind: "start", commandId: "start", instanceId: "I", variables: [], at: 1_700_000_000_000 });
   assert.equal(decoded.input.payload.atMs, 1_700_000_000_000);
 });
 

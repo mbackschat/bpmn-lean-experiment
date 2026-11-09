@@ -11,17 +11,55 @@
       "sha256": "5a06e2118339668149b72502459a98f7cebb08a74be9b54207d0156dc338f550"
     }
   },
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start-process",
+      "instanceId": "ExpenseClaim_1",
+      "variables": [
+        {
+          "name": "claim",
+          "value": {
+            "kind": "string",
+            "value": "Taxi to client, EUR 42"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "complete-effect-sha256:2ea09fe71d0e8f8afa501c479000abc43742c030be9cff18e2c506faa41e6601",
+      "occurrence": {
+        "processInstanceId": "ExpenseClaim_1",
+        "elementId": "CheckClaimPolicy",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": [
+          {
+            "name": "limit",
+            "value": {
+              "kind": "string",
+              "value": "EUR 500"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-approve-claim",
+      "occurrence": {
+        "processInstanceId": "ExpenseClaim_1",
+        "elementId": "ApproveClaim",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
   ],
   "provenance": {
     "normativeRefs": [
@@ -37,53 +75,5 @@
       "CIB-EXT-0020",
       "CIB-EXT-0022"
     ]
-  },
-  "stimuli": [
-    {
-      "kind": "startProcess",
-      "commandId": "start-process",
-      "processId": "Process_ExpenseClaim",
-      "instanceId": "ExpenseClaim_1",
-      "initialVariables": [
-        {
-          "name": "claim",
-          "value": {
-            "kind": "string",
-            "value": "Taxi to client, EUR 42"
-          }
-        }
-      ]
-    },
-    {
-      "kind": "completeEffect",
-      "commandId": "complete-effect-sha256:2ea09fe71d0e8f8afa501c479000abc43742c030be9cff18e2c506faa41e6601",
-      "effectId": {
-        "processInstanceId": "ExpenseClaim_1",
-        "elementId": "CheckClaimPolicy",
-        "activation": 1
-      },
-      "result": {
-        "kind": "success",
-        "localPatch": [
-          {
-            "name": "limit",
-            "value": {
-              "kind": "string",
-              "value": "EUR 500"
-            }
-          }
-        ]
-      }
-    },
-    {
-      "kind": "completeUserTaskInstance",
-      "commandId": "complete-approve-claim",
-      "taskId": {
-        "processInstanceId": "ExpenseClaim_1",
-        "elementId": "ApproveClaim",
-        "activation": 1
-      },
-      "submittedValues": []
-    }
-  ]
+  }
 }

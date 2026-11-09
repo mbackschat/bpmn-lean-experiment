@@ -10,34 +10,24 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-simple-boolean-choice",
-      "processId": "Process_SimpleBooleanChoice",
       "instanceId": "SimpleBooleanInstance_1",
-      "initialVariables": []
+      "variables": []
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-first-branch",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "SimpleBooleanInstance_1",
         "elementId": "Task_First",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

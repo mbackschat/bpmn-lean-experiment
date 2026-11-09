@@ -22,7 +22,7 @@ test("admits only exact triggered Start checked, IL, and stimulus wire shapes", 
   ]);
   const checkedNode = compileDefinition(checkedSchema, "node");
   const operation = compileDefinition(programSchema, "operation");
-  const stimulus = compileStimulus(scenarioSchema);
+  const stimulus = compileDefinition(scenarioSchema, "start");
 
   const values = [
     {
@@ -62,19 +62,20 @@ test("admits only exact triggered Start checked, IL, and stimulus wire shapes", 
     {
       validate: stimulus,
       exact: {
-        kind: "triggerMessageStart",
+        kind: "start",
         commandId: "command-start",
-        processId: "Process_MessageStart",
         instanceId: "instance-message-start",
-        startEventId: "Start_Message",
-        channel,
+        variables: [],
+        startEvent: "Start_Message",
+        trigger: { kind: "message", channel },
       },
       missing: {
-        kind: "triggerMessageStart",
+        kind: "start",
         commandId: "command-start",
-        processId: "Process_MessageStart",
         instanceId: "instance-message-start",
-        startEventId: "Start_Message",
+        variables: [],
+        startEvent: "Start_Message",
+        trigger: { kind: "message" },
       },
     },
     {
@@ -116,17 +117,20 @@ test("admits only exact triggered Start checked, IL, and stimulus wire shapes", 
     {
       validate: stimulus,
       exact: {
-        kind: "triggerTimerStart",
+        kind: "start",
         commandId: "command-timer-start",
-        processId: "Process_TimerStart",
         instanceId: "instance-timer-start",
-        startEventId: "Start_Timer",
+        variables: [],
+        startEvent: "Start_Timer",
+        trigger: { kind: "timer", logicalTimeMs: 1000 },
       },
       missing: {
-        kind: "triggerTimerStart",
+        kind: "start",
         commandId: "command-timer-start",
-        processId: "Process_TimerStart",
         instanceId: "instance-timer-start",
+        variables: [],
+        startEvent: "Start_Timer",
+        trigger: { kind: "timer" },
       },
     },
   ] as const;
@@ -144,12 +148,12 @@ test("requires one exact Process-start variant first and forbids every later sta
     scenarioSchema,
   );
   const start = {
-    kind: "triggerMessageStart",
+    kind: "start",
     commandId: "command-start",
-    processId: "Process_MessageStart",
     instanceId: "instance-message-start",
-    startEventId: "Start_Message",
-    channel,
+    variables: [],
+    startEvent: "Start_Message",
+    trigger: { kind: "message", channel },
   } as const;
   const scenario = {
     kind: "scenario",
@@ -162,23 +166,25 @@ test("requires one exact Process-start variant first and forbids every later sta
       sourceOverlay: null,
     },
     stimuli: [start],
-    observations: [
-      "deployment",
-      "commandResults",
-      "processStatus",
-      "activeWaits",
-      "openUserTasks",
-      "openTimers",
-      "openEffects",
-      "variables",
-      "enabledInteractions",
-      "logicalTime",
-    ],
     provenance: {
       normativeRefs: ["BPMN 2.0.2 Clause 10.5.2"],
       cibRevision: "b".repeat(40),
       cibRefs: ["not-used-as-semantic-evidence"],
     },
+  } as const;
+  const timerStart = {
+    kind: "start",
+    commandId: "command-timer-start",
+    instanceId: "instance-timer-start",
+    variables: [],
+    startEvent: "Start_Timer",
+    trigger: { kind: "timer", logicalTimeMs: 1000 },
+  } as const;
+  const completion = {
+    kind: "command",
+    commandId: "command-complete",
+    occurrence: { processInstanceId: "instance-message-start", elementId: "UserTask_1", activation: 1 },
+    action: { kind: "completeUserTask", values: [] },
   } as const;
 
   assert.equal(validate(scenario), true, JSON.stringify(validate.errors));
@@ -187,24 +193,18 @@ test("requires one exact Process-start variant first and forbids every later sta
       ...scenario,
       id: "timer-start-event",
       profile: "bpmn-2.0.2-timer-start-event-draft",
-      stimuli: [
-        {
-          kind: "triggerTimerStart",
-          commandId: "command-timer-start",
-          processId: "Process_TimerStart",
-          instanceId: "instance-timer-start",
-          startEventId: "Start_Timer",
-        },
-      ],
+      stimuli: [timerStart],
     }),
     true,
     JSON.stringify(validate.errors),
   );
-  assert.equal(
-    validate({ ...scenario, stimuli: [start, start] }),
-    false,
-  );
+  assert.equal(validate({ ...scenario, stimuli: [start, completion] }), true, JSON.stringify(validate.errors));
+  assert.equal(validate({ ...scenario, stimuli: [start, start] }), false);
+  assert.equal(validate({ ...scenario, stimuli: [start, completion, timerStart] }), false);
+  assert.equal(validate({ ...scenario, stimuli: [completion] }), false);
   assert.equal(validate({ ...scenario, stimuli: [] }), false);
+  // The removed request list is closed out, so a scenario cannot ask a target for observations.
+  assert.equal(validate({ ...scenario, observations: ["deployment"] }), false);
 });
 
 async function readSchema(name: string): Promise<Record<string, unknown>> {
@@ -221,17 +221,5 @@ function compileDefinition(
     $schema: "https://json-schema.org/draft/2020-12/schema",
     $defs: schema.$defs,
     $ref: `#/$defs/${definition}`,
-  });
-}
-
-function compileStimulus(schema: Record<string, unknown>) {
-  return new Ajv2020({ strict: true }).compile({
-    $schema: "https://json-schema.org/draft/2020-12/schema",
-    $defs: schema.$defs,
-    oneOf: [
-      { $ref: "#/$defs/startProcess" },
-      { $ref: "#/$defs/triggerMessageStart" },
-      { $ref: "#/$defs/triggerTimerStart" },
-    ],
   });
 }

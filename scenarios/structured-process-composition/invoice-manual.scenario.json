@@ -10,11 +10,10 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start",
-      "processId": "Invoice",
       "instanceId": "Structured_invoice_manual",
-      "initialVariables": [
+      "variables": [
         {
           "name": "summary",
           "value": {
@@ -25,141 +24,153 @@
       ]
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "refuse-property-name",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Structured_invoice_manual",
         "elementId": "assess",
         "activation": 1
       },
-      "submittedValues": [
-        {
-          "name": "decision",
-          "value": {
-            "kind": "null"
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "decision",
+            "value": {
+              "kind": "null"
+            }
           }
-        }
-      ]
+        ]
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "refuse-omitted-output",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Structured_invoice_manual",
         "elementId": "assess",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "refuse-activation",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Structured_invoice_manual",
         "elementId": "assess",
         "activation": 2
       },
-      "submittedValues": [
-        {
-          "name": "assess_out",
-          "value": {
-            "kind": "null"
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "assess_out",
+            "value": {
+              "kind": "null"
+            }
           }
-        }
-      ]
+        ]
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-assess",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Structured_invoice_manual",
         "elementId": "assess",
         "activation": 1
       },
-      "submittedValues": [
-        {
-          "name": "assess_out",
-          "value": {
-            "kind": "null"
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "assess_out",
+            "value": {
+              "kind": "null"
+            }
           }
-        }
-      ]
+        ]
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "refuse-stale-task",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Structured_invoice_manual",
         "elementId": "assess",
         "activation": 1
       },
-      "submittedValues": [
-        {
-          "name": "assess_out",
-          "value": {
-            "kind": "null"
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "assess_out",
+            "value": {
+              "kind": "null"
+            }
           }
-        }
-      ]
+        ]
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "refuse-ordinary-write",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Structured_invoice_manual",
         "elementId": "manual",
         "activation": 1
       },
-      "submittedValues": [
-        {
-          "name": "decision",
-          "value": {
-            "kind": "string",
-            "value": "changed"
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "decision",
+            "value": {
+              "kind": "string",
+              "value": "changed"
+            }
           }
-        }
-      ]
+        ]
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-manual",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Structured_invoice_manual",
         "elementId": "manual",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-archive",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Structured_invoice_manual",
         "elementId": "archive",
         "activation": 1
       },
-      "submittedValues": [
-        {
-          "name": "archive_out",
-          "value": {
-            "kind": "string",
-            "value": "saved"
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "archive_out",
+            "value": {
+              "kind": "string",
+              "value": "saved"
+            }
           }
-        }
-      ]
+        ]
+      }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

@@ -13,41 +13,60 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-process",
-      "processId": "Process_ComplaintHandling",
       "instanceId": "Instance_1",
-      "initialVariables": [
-        { "name": "orderNumber", "value": { "kind": "string", "value": "ORD-7" } }
+      "variables": [
+        {
+          "name": "orderNumber",
+          "value": {
+            "kind": "string",
+            "value": "ORD-7"
+          }
+        }
       ]
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-classify-complaint",
-      "taskId": { "processInstanceId": "Instance_1", "elementId": "ClassifyComplaint", "activation": 1 },
-      "submittedValues": [
-        { "name": "category", "value": { "kind": "string", "value": "product" } },
-        { "name": "priority", "value": { "kind": "string", "value": "normal" } }
-      ]
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "ClassifyComplaint",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "category",
+            "value": {
+              "kind": "string",
+              "value": "product"
+            }
+          },
+          {
+            "name": "priority",
+            "value": {
+              "kind": "string",
+              "value": "normal"
+            }
+          }
+        ]
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-answer-customer",
-      "taskId": { "processInstanceId": "Instance_1", "elementId": "AnswerCustomer", "activation": 1 },
-      "submittedValues": []
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "AnswerCustomer",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

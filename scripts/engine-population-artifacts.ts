@@ -46,63 +46,54 @@ export type EnginePopulationBpmnResource = Readonly<{
 
 type OperationMessageChannel = typeof channel;
 
-type StartProcess = Readonly<{
-  kind: "startProcess";
+type OccurrenceId = Readonly<{
+  processInstanceId: string;
+  elementId: string;
+  activation: number;
+}>;
+
+type PopulationStimulus = Readonly<{
+  kind: string;
   commandId: string;
-  processId: string;
+  instanceId?: string;
+  startEvent?: string;
+  trigger?: Readonly<{ kind: string; channel?: OperationMessageChannel }>;
+  variables?: ReadonlyArray<unknown>;
+  occurrence?: OccurrenceId;
+  correlation?: ReadonlyArray<unknown>;
+  payload?: Readonly<{ kind: string; value?: unknown }>;
+}>;
+
+type InstanceStep = Readonly<{
+  kind: "instance";
+  definitionRef: string;
   instanceId: string;
-  initialVariables: ReadonlyArray<never>;
+  stimulus: PopulationStimulus;
 }>;
 
-type DeliverPayloadMessage = Readonly<{
-  kind: "deliverPayloadMessage";
-  commandId: string;
-  subscriptionId: Readonly<{
-    processInstanceId: string;
-    elementId: string;
-    activation: number;
-  }>;
-  channel: OperationMessageChannel;
-  payload: Readonly<{ kind: "string"; value: string }>;
-}>;
-
-type EnginePopulationInstance = Readonly<{
-  definitionId: string;
-  stimuli: readonly [StartProcess, DeliverPayloadMessage];
-}>;
-
-type EnginePopulationPublication = Readonly<{
-  kind: "publishCorrelatedPayloadMessage";
+type PublishStep = Readonly<{
+  kind: "publish";
   commandId: string;
   address: Readonly<{
-    definition: Readonly<{
-      compiler: "bpmn-source-semantic-process";
-      semanticProfile: typeof profileId;
-      sourceOverlay: SourceOverlayIdentity | null;
-      sourceId: string;
-      sourceSha256: string;
-    }>;
+    definitionRef: string;
     processId: string;
     channel: OperationMessageChannel;
     correlationKeyId: string;
   }>;
-  payload: Readonly<{ kind: "string"; value: string }>;
+  payload: Readonly<{ kind: string; value?: unknown }>;
 }>;
 
+type BroadcastStep = Readonly<{ kind: "broadcast"; commandId: string }>;
+
 export type EnginePopulationScenario = Readonly<{
-  kind: "enginePopulationScenario";
+  kind: "populationScenario";
   id: string;
   profile: typeof profileId;
-  definitions: ReadonlyArray<EnginePopulationBpmnResource>;
-  instances: readonly [EnginePopulationInstance, EnginePopulationInstance];
-  publications: readonly [EnginePopulationPublication];
-  observations: readonly ["publicationResults", "processStates", "ingressOrdinals"];
-  executionTargets: Readonly<{
-    lean: true;
-    typeScriptCore: true;
-    temporal: true;
-    cib: null;
-  }>;
+  definitions: ReadonlyArray<Readonly<{
+    definitionRef: string;
+    bpmn: EnginePopulationBpmnResource;
+  }>>;
+  steps: ReadonlyArray<InstanceStep | PublishStep | BroadcastStep>;
   provenance: Readonly<{
     normativeRefs: ReadonlyArray<string>;
     cibRevision: string;
@@ -246,54 +237,90 @@ async function verifyScenarioWithValidators(projectRoot: string, value: unknown,
   }
   assertNoAnswerKeys(value);
   const scenario = value as EnginePopulationScenario;
-  assertNoDuplicate("definition ids", scenario.definitions.map(({ id }) => id));
-  assertNoDuplicate("definition paths", scenario.definitions.map(({ relativePath }) => relativePath));
-  assertNoDuplicate("definition source digests", scenario.definitions.map(({ sha256 }) => sha256));
-  await Promise.all(scenario.definitions.map((definition) => assertSourceBinding(projectRoot, definition)));
+  assertNoDuplicate("definition refs", scenario.definitions.map(({ definitionRef }) => definitionRef));
+  assertNoDuplicate("definition ids", scenario.definitions.map(({ bpmn }) => bpmn.id));
+  assertNoDuplicate("definition paths", scenario.definitions.map(({ bpmn }) => bpmn.relativePath));
+  assertNoDuplicate("definition source digests", scenario.definitions.map(({ bpmn }) => bpmn.sha256));
+  await Promise.all(scenario.definitions.map(({ bpmn }) => assertSourceBinding(projectRoot, bpmn)));
 
-  const definitions = new Map(scenario.definitions.map((definition) => [definition.id, definition] as const));
-  const usedDefinitionIds: Array<string> = [];
-  const processInstanceIds: Array<string> = [];
+  const definitions = new Map(scenario.definitions.map((definition) => [definition.definitionRef, definition] as const));
   const commandIds: Array<string> = [];
-  for (const instance of scenario.instances) {
-    const definition = definitions.get(instance.definitionId);
-    if (definition === undefined) {
-      throw new Error(`engine population scenario instance references unknown definition ${instance.definitionId}`);
+  const stepsByInstance = new Map<string, Array<InstanceStep>>();
+  const publishes: Array<{ readonly step: PublishStep; readonly index: number }> = [];
+  scenario.steps.forEach((step, index) => {
+    if (step.kind === "broadcast") {
+      throw new Error(`engine population scenario broadcast ${step.commandId} is outside the bounded Message-correlation schedule`);
     }
-    usedDefinitionIds.push(instance.definitionId);
-    const [start, delivery] = instance.stimuli;
-    processInstanceIds.push(start.instanceId);
-    commandIds.push(start.commandId, delivery.commandId);
-    if (start.processId !== processId || start.initialVariables.length !== 0) {
-      throw new Error(`engine population scenario start ${start.commandId} is inconsistent with the bounded Process`);
+    if (step.kind === "publish") {
+      publishes.push({ step, index });
+      commandIds.push(step.commandId);
+      return;
     }
-    if (delivery.subscriptionId.processInstanceId !== start.instanceId) {
-      throw new Error(`engine population scenario delivery ${delivery.commandId} crosses Process-instance identity`);
+    if (!definitions.has(step.definitionRef)) {
+      throw new Error(`engine population scenario instance references unknown definition ${step.definitionRef}`);
     }
-    if (delivery.subscriptionId.elementId !== initialCatchId || delivery.subscriptionId.activation !== 1) {
-      throw new Error(`engine population scenario delivery ${delivery.commandId} does not address the initial catch`);
+    commandIds.push(step.stimulus.commandId);
+    stepsByInstance.set(step.instanceId, [...(stepsByInstance.get(step.instanceId) ?? []), step]);
+  });
+  for (const [instanceId, steps] of stepsByInstance) {
+    const [first, second, ...rest] = steps;
+    if (first === undefined || second === undefined || rest.length > 0) {
+      throw new Error(`engine population scenario instance ${instanceId} must be one start followed by one delivery`);
     }
-    assertEqual(`engine population scenario delivery ${delivery.commandId} channel`, delivery.channel, channel);
-    assertNonemptyStringPayload(`engine population scenario delivery ${delivery.commandId} payload`, delivery.payload);
+    if (first.definitionRef !== second.definitionRef) {
+      throw new Error(`engine population scenario instance ${instanceId} crosses definition identity`);
+    }
+    verifyStart(first.stimulus, instanceId);
+    verifyDelivery(second.stimulus, instanceId);
   }
-  assertNoDuplicate("Process instance ids", processInstanceIds);
-  if (new Set(usedDefinitionIds).size !== definitions.size) {
+  const usedDefinitionRefs = new Set([...stepsByInstance.values()].map(([step]) => step?.definitionRef));
+  if (usedDefinitionRefs.size !== definitions.size) {
     throw new Error("engine population scenario leaves a declared definition outside the population");
   }
 
-  const [publication] = scenario.publications;
-  commandIds.push(publication.commandId);
+  const [publication, ...laterPublications] = publishes;
+  if (publication === undefined || laterPublications.length > 0) {
+    throw new Error("engine population scenario must carry exactly one publication");
+  }
+  if (publication.index !== scenario.steps.length - 1) {
+    throw new Error("engine population scenario publication must follow every instance step");
+  }
+  const { step: publish } = publication;
   assertNoDuplicate("command ids", commandIds);
-  assertNonemptyStringPayload(`engine population scenario publication ${publication.commandId} payload`, publication.payload);
-  if (publication.address.processId !== processId || publication.address.correlationKeyId !== correlationKeyId) {
+  assertNonemptyStringPayload(`engine population scenario publication ${publish.commandId} payload`, publish.payload);
+  if (publish.address.processId !== processId || publish.address.correlationKeyId !== correlationKeyId) {
     throw new Error("engine population scenario publication address is inconsistent with the bounded Process");
   }
-  assertEqual("engine population scenario publication channel", publication.address.channel, channel);
-  const selectedDefinition = definitions.get(publication.address.definition.sourceId);
-  if (selectedDefinition === undefined || publication.address.definition.compiler !== "bpmn-source-semantic-process" || publication.address.definition.semanticProfile !== scenario.profile || publication.address.definition.sourceSha256 !== selectedDefinition.sha256 || JSON.stringify(publication.address.definition.sourceOverlay) !== JSON.stringify(selectedDefinition.sourceOverlay)) {
+  assertEqual("engine population scenario publication channel", publish.address.channel, channel);
+  if (!definitions.has(publish.address.definitionRef)) {
     throw new Error("engine population scenario publication definition identity is inconsistent");
   }
   return scenario;
+}
+
+function verifyStart(start: PopulationStimulus, instanceId: string): void {
+  if (
+    start.kind !== "start" || start.instanceId !== instanceId || start.startEvent !== undefined ||
+    start.trigger !== undefined || start.variables?.length !== 0
+  ) {
+    throw new Error(`engine population scenario start ${start.commandId} is inconsistent with the bounded Process`);
+  }
+}
+
+function verifyDelivery(delivery: PopulationStimulus, instanceId: string): void {
+  const label = `engine population scenario delivery ${delivery.commandId}`;
+  const occurrence = delivery.occurrence;
+  if (delivery.kind !== "deliver" || occurrence === undefined || delivery.payload === undefined || delivery.correlation !== undefined) {
+    throw new Error(`${label} is not a payload-bearing delivery addressed by occurrence`);
+  }
+  if (occurrence.processInstanceId !== instanceId) {
+    throw new Error(`${label} crosses Process-instance identity`);
+  }
+  if (occurrence.elementId !== initialCatchId || occurrence.activation !== 1) {
+    throw new Error(`${label} does not address the initial catch`);
+  }
+  assertEqual(`${label} trigger`, delivery.trigger, { kind: "message", channel });
+  assertNonemptyStringPayload(`${label} payload`, delivery.payload);
 }
 
 /** Validates one population input without registering it in the ordinary single-instance pipeline. */

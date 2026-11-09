@@ -25,37 +25,22 @@ import type {
   ArtifactCase,
   NormativeArtifactCase,
 } from "./contract-artifact-cases.ts";
-import {
-  verifyProducerProjection,
-} from "./contract-cib-evidence-projection.ts";
 import { Ajv2020 } from "ajv/dist/2020.js";
 import type {
   AnySchema,
 } from "ajv/dist/2020.js";
 
+// `Scenario` stays the frozen semantic-core type only because the frozen differential tests read artifact sets through
+// it; every value read here is a new-shape scenario, whose structure `scenario.schema.json` alone owns.
 import type {
   CheckedProcess,
-  ProcessStartStimulus,
   Scenario,
   SemanticProcessProgram,
-  Stimulus,
 } from "../packages/semantic-core/src/index.ts";
 import type {
   CibSevenEvidence,
 } from "./contract-cib-evidence.ts";
-export type {
-  AddresslessReceiveWaitEvidence,
-  CibSevenEvidence,
-  EffectJob,
-  EffectJobSnapshot,
-  IncidentJob,
-  IncidentJobSnapshot,
-  MappingExecutionSnapshot,
-  MessageSubscriptionEvidence,
-  ProcessVariableSnapshot,
-  TaskQueryTask,
-  TimerJob,
-} from "./contract-cib-evidence.ts";
+export type { CibSevenEvidence } from "./contract-cib-evidence.ts";
 
 import {
   parseWireJsonBytes,
@@ -324,11 +309,6 @@ export function verifyArtifactSet(artifactSet: ArtifactSet): ArtifactSet {
   ) {
     throw new Error("CIB revision does not match across artifacts");
   }
-  const start = scenario.stimuli[0];
-  if (start?.kind !== "startProcess") {
-    throw new Error("verified scenario omitted its start Process stimulus");
-  }
-  verifyProducerProjection(evidence, start.instanceId);
   return artifactSet;
 }
 
@@ -375,48 +355,8 @@ function verifyScenarioSourceBinding(
   }
   verifyServiceTaskIncidentArtifactBinding(profile, scenario);
   verifyServiceTaskIncidentCancellationArtifactBinding(profile, scenario);
-  if (
-    !scenario.observations.every((observation) =>
-      profile.observations.includes(observation),
-    )
-  ) {
-    throw new Error("scenario requests an observation outside its profile");
-  }
   if (scenario.bpmn.sha256 !== sha256(bpmnBytes)) {
     throw new Error("BPMN resource digest does not match scenario");
-  }
-  const startStimuli = scenario.stimuli.filter(isProcessStartStimulus);
-  if (startStimuli.length !== 1) {
-    throw new Error(
-      "scenario must contain exactly one Process start stimulus",
-    );
-  }
-}
-
-function isProcessStartStimulus(
-  stimulus: Stimulus,
-): stimulus is ProcessStartStimulus {
-  switch (stimulus.kind) {
-    case "startProcess":
-    case "triggerMessageStart":
-    case "triggerTimerStart":
-      return true;
-    case "completeUserTaskInstance":
-    case "deliverMessage":
-    case "deliverPayloadMessage":
-    case "deliverCorrelatedPayloadMessage":
-    case "fireTimer":
-    case "completeEffect":
-    case "reportEffectFailure":
-    case "retryIncident":
-    case "cancelIncidentProcess":
-      return false;
-    default: {
-      const unsupported: never = stimulus;
-      throw new TypeError(
-        `unsupported scenario stimulus: ${JSON.stringify(unsupported)}`,
-      );
-    }
   }
 }
 

@@ -36,6 +36,7 @@ type MutableCancellationScenario = {
     sourceOverlay: unknown;
   };
   stimuli: Array<Record<string, unknown>>;
+  options: { incidents: { cancellable: boolean } };
 };
 
 test("preserves the exact Stage 1 profile, scenario, evidence, and source bytes", async () => {
@@ -46,11 +47,11 @@ test("preserves the exact Stage 1 profile, scenario, evidence, and source bytes"
     ],
     [
       "scenarios/service-task-incident/scenario.json",
-      "94d1b8afc5c84973430ce55b4cd6ee6bc4cc7ba6c8de09acff6ce8edb55b12e6",
+      "c4438b5d427259f5a58805afd6548960037d5c04dfb9f6dec143f19ab83aafd0",
     ],
     [
       "scenarios/service-task-incident/cibseven-evidence.json",
-      "424d15e7a98519805892cd2212eab429e9e6b4ae98b64d1fd630a9bd60de4d19",
+      "85c7fadfe3315282868a149ab872b7da0643198cc549e2f9dfe423aadb765f6c",
     ],
     [
       "scenarios/service-task-effect/process.bpmn",
@@ -110,18 +111,20 @@ test("rejects missing or changed Process data and incident addressing", async ()
       value.bpmn.sha256 = "0".repeat(64);
     },
     (value: MutableCancellationScenario) => {
-      value.stimuli[0]!.initialVariables = [];
+      value.stimuli[0]!.variables = [];
     },
     (value: MutableCancellationScenario) => {
-      const start = value.stimuli[0]!.initialVariables as Array<Record<string, unknown>>;
+      const start = value.stimuli[0]!.variables as Array<Record<string, unknown>>;
       start[0]!.value = { kind: "string", value: "changed" };
     },
     (value: MutableCancellationScenario) => {
-      value.stimuli[2]!.processInstanceId = "Nested_1";
+      (value.stimuli[2]!.occurrence as Record<string, unknown>).processInstanceId = "Nested_1";
     },
     (value: MutableCancellationScenario) => {
-      const incidentId = value.stimuli[2]!.incidentId as Record<string, unknown>;
-      incidentId.generation = 2;
+      (value.stimuli[2]!.occurrence as Record<string, unknown>).activation = 2;
+    },
+    (value: MutableCancellationScenario) => {
+      value.options.incidents.cancellable = false;
     },
     (value: MutableCancellationScenario) => {
       value.stimuli[2]!.scopeOccurrenceId = "Nested_1";

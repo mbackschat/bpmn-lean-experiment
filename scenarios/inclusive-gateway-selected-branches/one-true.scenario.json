@@ -10,11 +10,10 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-inclusive-one-true",
-      "processId": "Process_Inclusive",
       "instanceId": "InclusiveInstance_OneTrue",
-      "initialVariables": [
+      "variables": [
         {
           "name": "takeA",
           "value": {
@@ -25,27 +24,18 @@
       ]
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-inclusive-a",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "InclusiveInstance_OneTrue",
         "elementId": "Task_A",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

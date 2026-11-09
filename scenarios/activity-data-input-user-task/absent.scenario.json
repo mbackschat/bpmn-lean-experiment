@@ -10,24 +10,11 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-activity-data-input-absent",
-      "processId": "Process_ActivityDataInputReview",
       "instanceId": "ActivityDataInputAbsent",
-      "initialVariables": []
+      "variables": []
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

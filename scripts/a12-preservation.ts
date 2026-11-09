@@ -97,8 +97,6 @@ export async function verifyPayloadFreeServiceTaskPreservation(
   const profilePath =
     "profiles/cibseven-2.2.0-service-task-effect-draft/profile.json";
   const bpmnPath = "scenarios/service-task-effect/process.bpmn";
-  const scenarioPath = "scenarios/service-task-effect/scenario.json";
-  const evidencePath = "scenarios/service-task-effect/cibseven-evidence.json";
   const [baselineProfile, currentProfile, baselineBpmn, currentBpmn] =
     await Promise.all([
       Promise.resolve(readLegacyBytes(projectRoot, profilePath)),
@@ -108,80 +106,6 @@ export async function verifyPayloadFreeServiceTaskPreservation(
     ]);
   assert.ok(currentProfile.equals(baselineProfile), `${profilePath} changed`);
   assert.ok(currentBpmn.equals(baselineBpmn), `${bpmnPath} changed`);
-
-  const baselineScenario = readLegacyBytes(projectRoot, scenarioPath);
-  const scenarioValue = JSON.parse(baselineScenario.toString("utf8")) as {
-    readonly bpmn: { readonly sha256: string };
-  };
-  const sourceIdentityEnd =
-    `    "sha256": "${scenarioValue.bpmn.sha256}"\n  }`;
-  const expectedScenario = Buffer.from(replaceExactlyOnce(
-    baselineScenario.toString("utf8"),
-    sourceIdentityEnd,
-    `    "sha256": "${scenarioValue.bpmn.sha256}",\n` +
-      "    \"sourceOverlay\": null\n  }",
-    scenarioPath,
-  ));
-  const currentScenario = await readFile(path.join(projectRoot, scenarioPath));
-  assert.ok(
-    currentScenario.equals(expectedScenario),
-    `${scenarioPath} changed outside the approved sourceOverlay field`,
-  );
-
-  const baselineEvidence = readLegacyBytes(projectRoot, evidencePath);
-  const baselineScenarioSha256 = sha256(baselineScenario);
-  const expectedScenarioSha256 = sha256(expectedScenario);
-  const expectedEvidence = Buffer.from(replaceExactlyOnce(
-    baselineEvidence.toString("utf8"),
-    baselineScenarioSha256,
-    expectedScenarioSha256,
-    evidencePath,
-  ));
-  const expectedEvidenceValue = JSON.parse(
-    expectedEvidence.toString("utf8"),
-  ) as unknown;
-  addRequiredEmptyIncidentCollections(expectedEvidenceValue);
-  const expectedCurrentEvidence = Buffer.from(
-    `${JSON.stringify(expectedEvidenceValue, null, 2)}\n`,
-  );
-  const currentEvidence = await readFile(path.join(projectRoot, evidencePath));
-  assert.ok(
-    currentEvidence.equals(expectedCurrentEvidence),
-    `${evidencePath} changed outside the approved scenario digest rebinding and required empty incident collections`,
-  );
-}
-
-function addRequiredEmptyIncidentCollections(value: unknown): void {
-  if (Array.isArray(value)) {
-    for (const item of value) {
-      addRequiredEmptyIncidentCollections(item);
-    }
-    return;
-  }
-  if (value === null || typeof value !== "object") {
-    return;
-  }
-  const record = value as Record<string, unknown>;
-  for (const nested of Object.values(record)) {
-    addRequiredEmptyIncidentCollections(nested);
-  }
-  if (
-    record.kind === "state" &&
-    Array.isArray(record.openEffects) &&
-    !("openIncidents" in record)
-  ) {
-    const reordered: Record<string, unknown> = {};
-    for (const [key, nested] of Object.entries(record)) {
-      reordered[key] = nested;
-      if (key === "openEffects") {
-        reordered.openIncidents = [];
-      }
-    }
-    for (const key of Object.keys(record)) {
-      delete record[key];
-    }
-    Object.assign(record, reordered);
-  }
 }
 
 async function verifyLegacyDependencyClosure(
@@ -389,19 +313,6 @@ async function recursiveFiles(
   }
   await visit(root);
   return found.sort();
-}
-
-function replaceExactlyOnce(
-  source: string,
-  target: string,
-  replacement: string,
-  ownerPath: string,
-): string {
-  const first = source.indexOf(target);
-  if (first < 0 || source.indexOf(target, first + target.length) >= 0) {
-    throw new Error(`${ownerPath} does not contain exactly one approved replacement`);
-  }
-  return source.slice(0, first) + replacement + source.slice(first + target.length);
 }
 
 function sha256(bytes: Uint8Array): string {

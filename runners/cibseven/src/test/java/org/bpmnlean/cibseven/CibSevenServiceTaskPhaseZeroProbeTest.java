@@ -30,12 +30,12 @@ public final class CibSevenServiceTaskPhaseZeroProbeTest {
       PROJECT_ROOT.resolve("scenarios/service-task-effect/process.bpmn");
   private static final String PROCESS_ID = "Process_ServiceTaskEffectProbe";
   private static final String SERVICE_TASK_ID = "ServiceTask_Record";
-  private static final String BPMN_NAMESPACE = CibSevenEffectProjector.BPMN_NAMESPACE;
-  private static final String CAMUNDA_NAMESPACE = CibSevenEffectProjector.CAMUNDA_NAMESPACE;
+  private static final String BPMN_NAMESPACE = "http://www.omg.org/spec/BPMN/20100524/MODEL";
+  private static final String CAMUNDA_NAMESPACE = "http://camunda.org/schema/1.0/bpmn";
   private static final String HANDLER_BEAN =
-      CibSevenEffectProjector.SOURCE_HANDLER_BEAN;
+      "bpmnLeanEffectHandler";
   private static final String HANDLER_EXPRESSION = "${" + HANDLER_BEAN + "}";
-  private static final String EFFECT_PROTOCOL = CibSevenEffectProjector.SOURCE_PROTOCOL;
+  private static final String EFFECT_PROTOCOL = CibSevenScriptedEffect.SOURCE_PROTOCOL;
 
   @Test
   public void decrementsRetriesAndReexecutesWithOneTestLocalMutation()
@@ -248,19 +248,28 @@ public final class CibSevenServiceTaskPhaseZeroProbeTest {
 
   private static EffectWaitProjection projectEffectWait(
       ProcessEngine engine, String processInstanceId) throws Exception {
-    var waits =
-        new CibSevenEffectProjector()
-            .project(engine, processInstanceId, "PhaseZero_Instance");
-    if (waits.size() != 1) {
+    var management = engine.getManagementService();
+    var jobs = management.createJobQuery().processInstanceId(processInstanceId).list();
+    if (jobs.size() != 1) {
       throw new IllegalStateException(
           "Expected exactly one async-before Service Task job");
     }
-    var job = waits.getFirst().evidence();
+    var elementId =
+        management.createJobDefinitionQuery()
+            .jobDefinitionId(jobs.getFirst().getJobDefinitionId())
+            .singleResult()
+            .getActivityId();
+    var task =
+        (org.cibseven.bpm.model.bpmn.instance.ServiceTask)
+            engine.getRepositoryService()
+                .getBpmnModelInstance(jobs.getFirst().getProcessDefinitionId())
+                .getModelElementById(elementId);
+    var expression = task.getCamundaDelegateExpression();
     return new EffectWaitProjection(
-        job.elementId(),
-        Math.toIntExact(job.activation()),
-        job.protocol(),
-        job.handler());
+        elementId,
+        1,
+        task.getImplementation(),
+        expression.substring(2, expression.length() - 1));
   }
 
   private static void requireExactEffectWait(EffectWaitProjection actual) {

@@ -10,37 +10,27 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-receive-task",
-      "processId": "Process_MessageAddressedReceiveTaskProbe",
       "instanceId": "ReceiveTaskInstance_1",
-      "initialVariables": []
+      "variables": []
     },
     {
-      "kind": "deliverMessage",
+      "kind": "deliver",
       "commandId": "deliver-receive-task-message",
-      "subscriptionId": {
+      "occurrence": {
         "processInstanceId": "ReceiveTaskInstance_1",
         "elementId": "ReceiveTask_WaitForInvoice",
         "activation": 1
       },
-      "channel": {
-        "kind": "directMessage",
-        "messageId": "Message_NewInvoice"
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "directMessage",
+          "messageId": "Message_NewInvoice"
+        }
       }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

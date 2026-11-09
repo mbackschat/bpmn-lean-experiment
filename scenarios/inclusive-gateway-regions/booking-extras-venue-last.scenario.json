@@ -11,39 +11,12 @@
       "sha256": "1dee28624390cbbbbb7ba5345593628664dc095f11806935dd134ccfc43bdc8c"
     }
   },
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
-  ],
-  "provenance": {
-    "normativeRefs": [
-      "BPMN 2.0.2 Clause 10.6.3",
-      "BPMN 2.0.2 Clause 10.6.4",
-      "BPMN 2.0.2 Clause 13.4.3"
-    ],
-    "cibRevision": "5a45b47ea22688d774de97277c3ff7013f54fdd2",
-    "cibRefs": [
-      "CIB-AGR-0017",
-      "CIB-CFG-0005",
-      "CIB-EXT-0020",
-      "CIB-INT-0005"
-    ]
-  },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-process",
-      "processId": "Process_EventBooking",
       "instanceId": "EventBooking_2",
-      "initialVariables": [
+      "variables": [
         {
           "name": "catering",
           "value": {
@@ -68,16 +41,16 @@
       ]
     },
     {
-      "kind": "completeEffect",
+      "kind": "effectResult",
       "commandId": "complete-effect-sha256:6cf8b172959274b3df27332ab4a8fa141fe84d75f03a5d855bfacdb721972ed9",
-      "effectId": {
+      "occurrence": {
         "processInstanceId": "EventBooking_2",
         "elementId": "QuoteEvent",
         "activation": 1
       },
-      "result": {
+      "outcome": {
         "kind": "success",
-        "localPatch": [
+        "outputs": [
           {
             "name": "quote",
             "value": {
@@ -89,64 +62,96 @@
       }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-order-catering",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "EventBooking_2",
         "elementId": "OrderCatering",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-rent-projector",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "EventBooking_2",
         "elementId": "RentProjector",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-book-technician",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "EventBooking_2",
         "elementId": "BookTechnician",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-confirm-attendee-list",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "EventBooking_2",
         "elementId": "ConfirmAttendeeList",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-book-venue",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "EventBooking_2",
         "elementId": "BookVenue",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-send-confirmation",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "EventBooking_2",
         "elementId": "SendConfirmation",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     }
-  ]
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.6.3",
+      "BPMN 2.0.2 Clause 10.6.4",
+      "BPMN 2.0.2 Clause 13.4.3"
+    ],
+    "cibRevision": "5a45b47ea22688d774de97277c3ff7013f54fdd2",
+    "cibRefs": [
+      "CIB-AGR-0017",
+      "CIB-CFG-0005",
+      "CIB-EXT-0020",
+      "CIB-INT-0005"
+    ]
+  }
 }

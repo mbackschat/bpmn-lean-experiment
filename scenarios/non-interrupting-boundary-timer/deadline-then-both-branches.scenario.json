@@ -10,16 +10,15 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-deadline-then-both-branches",
-      "processId": "Process_NonInterruptingBoundaryTimer",
       "instanceId": "MonitoredInstance_DeadlineFirst",
-      "initialVariables": []
+      "variables": []
     },
     {
-      "kind": "fireTimer",
+      "kind": "timerFire",
       "commandId": "fire-timer-sha256:efac82c65e7a4148fd35cd27adbdd192a6a346f4cf7d04d4131e67188ffe4212",
-      "timerId": {
+      "occurrence": {
         "processInstanceId": "MonitoredInstance_DeadlineFirst",
         "elementId": "Reminder",
         "activation": 1
@@ -27,47 +26,44 @@
       "logicalTimeMs": 1000
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-handler-branch-first",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "MonitoredInstance_DeadlineFirst",
         "elementId": "HandlerTask",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-monitored-task-after-its-handler",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "MonitoredInstance_DeadlineFirst",
         "elementId": "MonitoredTask",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-normal-follow-on-last",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "MonitoredInstance_DeadlineFirst",
         "elementId": "NormalTask",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

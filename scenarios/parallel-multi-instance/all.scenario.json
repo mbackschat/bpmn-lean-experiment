@@ -10,11 +10,10 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-parallel-risk-review-all",
-      "processId": "Process_ParallelMultiInstanceReview",
       "instanceId": "ParallelRiskReview_All",
-      "initialVariables": [
+      "variables": [
         {
           "name": "DataObjectReference_InputItems",
           "value": {
@@ -36,72 +35,68 @@
       ]
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-privacy-review",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "ParallelRiskReview_All",
         "elementId": "UserTask_Review",
         "activation": 2
       },
-      "submittedValues": [
-        {
-          "name": "DataOutput_CurrentResult",
-          "value": {
-            "kind": "string",
-            "value": "privacy-low"
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "DataOutput_CurrentResult",
+            "value": {
+              "kind": "string",
+              "value": "privacy-low"
+            }
           }
-        }
-      ]
+        ]
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-security-review",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "ParallelRiskReview_All",
         "elementId": "UserTask_Review",
         "activation": 1
       },
-      "submittedValues": [
-        {
-          "name": "DataOutput_CurrentResult",
-          "value": {
-            "kind": "string",
-            "value": "security-high"
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "DataOutput_CurrentResult",
+            "value": {
+              "kind": "string",
+              "value": "security-high"
+            }
           }
-        }
-      ]
+        ]
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-financial-review",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "ParallelRiskReview_All",
         "elementId": "UserTask_Review",
         "activation": 3
       },
-      "submittedValues": [
-        {
-          "name": "DataOutput_CurrentResult",
-          "value": {
-            "kind": "string",
-            "value": "financial-medium"
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "DataOutput_CurrentResult",
+            "value": {
+              "kind": "string",
+              "value": "financial-medium"
+            }
           }
-        }
-      ]
+        ]
+      }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "openMultiInstances",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

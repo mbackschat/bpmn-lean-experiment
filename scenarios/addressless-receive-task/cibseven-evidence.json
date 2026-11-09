@@ -2,7 +2,7 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "addressless-receive-task",
-    "sha256": "4f715a37886a1c5a6710fcd555bd32649ee37c88c277c9bcafdb84509c60a633"
+    "sha256": "abd288c60947031c9c069d56895eb132be36aa8840e0d8065fd90e6fad2dbe26"
   },
   "profile": {
     "id": "cibseven-2.2.0-addressless-receive-task-draft",
@@ -89,44 +89,27 @@
         "kind": "state",
         "instanceId": "Handover_1",
         "status": "running",
-        "activeWaits": [
-          {
-            "elementId": "ReceiveTask_AwaitCourierPickup",
-            "kind": "message",
-            "multiplicity": 1
-          }
-        ],
-        "openUserTasks": [],
-        "openMessageSubscriptions": [
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
           {
             "id": {
               "processInstanceId": "Handover_1",
               "elementId": "ReceiveTask_AwaitCourierPickup",
               "activation": 1
             },
-            "channel": {
-              "kind": "unspecifiedMessage"
+            "definition": null,
+            "input": "deliver",
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "unspecifiedMessage"
+              },
+              "payload": false,
+              "criteria": []
             }
           }
-        ],
-        "openTimers": [],
-        "openEffects": [],
-        "openIncidents": [],
-        "variables": [],
-        "enabledInteractions": [
-          {
-            "kind": "deliverMessage",
-            "subscriptionId": {
-              "processInstanceId": "Handover_1",
-              "elementId": "ReceiveTask_AwaitCourierPickup",
-              "activation": 1
-            },
-            "channel": {
-              "kind": "unspecifiedMessage"
-            }
-          }
-        ],
-        "logicalTimeMs": 0
+        ]
       },
       {
         "kind": "command",
@@ -137,15 +120,9 @@
         "kind": "state",
         "instanceId": "Handover_1",
         "status": "completed",
-        "activeWaits": [],
-        "openUserTasks": [],
-        "openMessageSubscriptions": [],
-        "openTimers": [],
-        "openEffects": [],
-        "openIncidents": [],
+        "logicalTimeMs": 0,
         "variables": [],
-        "enabledInteractions": [],
-        "logicalTimeMs": 0
+        "openWaits": []
       }
     ]
   }

@@ -10,34 +10,24 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-preserved-notation",
-      "processId": "Process_SequentialUserTask",
       "instanceId": "PreservedNotationInstance_1",
-      "initialVariables": []
+      "variables": []
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-preserved-notation-user-task",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "PreservedNotationInstance_1",
         "elementId": "UserTask_Approve",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

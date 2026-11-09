@@ -114,14 +114,6 @@ export interface ScriptSource {
   readonly resultVariable: string | null;
 }
 
-/** The deployment a scenario binds, which the canonical observation names in correlated addresses. */
-export interface DefinitionRef {
-  readonly sourceId: string;
-  readonly sourceSha256: string;
-  readonly sourceOverlay: { readonly id: string; readonly sha256: string } | null;
-  readonly profile: string;
-}
-
 /** The update an input travels on, one per kernel input kind; `start` travels as the Workflow start. */
 export enum Route {
   Start = "start",
@@ -152,10 +144,10 @@ export type EffectResult =
     }
   | { readonly kind: EffectResultKind.TechnicalFailure };
 
-/** One decoded stimulus: its command identifier and the kernel input, `null` for a kind the kernel does not accept. */
+/** One decoded stimulus: its command identifier and the kernel input. */
 export interface DecodedStimulus<I> {
   readonly commandId: string;
-  readonly input: I | null;
+  readonly input: I;
 }
 
 /** The kernel's verdict on one input. A rejected input never changes state; `outcome` is the canonical name. */
@@ -178,7 +170,7 @@ export interface KernelPort<P, S, I> {
   readonly step: (program: P, before: S | null, input: I) => StepResult<S>;
   readonly hostView: (program: P, state: S) => HostView;
   /** The canonical state observation (`Kernel.Run.observationJson`). */
-  readonly observation: (program: P, definition: DefinitionRef, state: S) => JsonValue;
+  readonly observation: (program: P, state: S) => JsonValue;
   readonly encodeState: (state: S) => JsonValue;
   readonly decodeState: (json: JsonValue) => S;
   /** The Script Task an effect wait runs, `null` for any other effect. */

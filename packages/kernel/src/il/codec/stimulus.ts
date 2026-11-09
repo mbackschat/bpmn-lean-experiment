@@ -1,53 +1,86 @@
 /**
- * Scenario stimulus codecs, transcribed from `Kernel/IL/Codec/Stimulus.lean`: Message channels, occurrence
- * identities, effect outcomes and stimuli, decoded into kernel inputs, and the name of each failure outcome.
+ * Scenario stimulus codecs, transcribed from `Kernel/IL/Codec/Stimulus.lean`: the scenario contract's input side
+ * (`contracts/schemas/scenario.schema.json`), Message channels, occurrence identities and the five stimulus forms,
+ * each decoded into the kernel input of the same name, and the name of each failure outcome. A stimulus outside these
+ * forms refuses the scenario. Every object is read strictly: a key outside its form, a missing required key or a `null`
+ * member refuses it with a strict-decoding code (`CodecRefusalCode`).
  */
 import {
+  CodecRefusalCode,
   accept,
   bindingsFromJson,
+  bindingsToJson,
+  coded,
+  isObject,
   mapDecoded,
   nat,
   objVal,
   objValD,
   refuse,
+  strictly,
   string,
   valueCodec,
   type Decoded,
   type JsonValue,
 } from "../codec.js";
-import { assertNever, type Value } from "../types.js";
 import {
   CommandActionTag,
+  CriterionTargetTag,
   DeliveryTriggerTag,
   EffectOutcomeTag,
   FailureTag,
   InputTag,
+  StartTriggerTag,
   noStartTrigger,
   type Binding,
   type CommandAction,
+  type CorrelationMatch,
+  type CriterionTarget,
+  type DeliveryTrigger,
   type EffectOutcome,
   type Failure,
   type Input,
   type MessageChannel,
   type OccurrenceRef,
+  type StartTrigger,
 } from "../../state.js";
-
-/** `json[key]` when present, else an empty binding list: `(json.getObjVal? key).toOption.getD (Json.arr #[])`. */
-function bindingsField(json: unknown, key: string): Decoded<readonly Binding[]> {
-  const raw = objVal(json, key);
-  return bindingsFromJson(raw.ok ? raw.value : []);
-}
+import { assertNever, compareStrings, type Value } from "../types.js";
 
 /** A string field read through `getObjValAs?`, which reads an absent key as `null`. */
 function stringField(json: unknown, key: string): Decoded<string> {
   return string.decode(objValD(json, key));
 }
 
+/** Refuse `json` unless it is an object whose keys are all of `required` and some of `optional`. */
+function fieldsRefusal(json: unknown, required: readonly string[], optional: readonly string[] = []): string | null {
+  if (!isObject(json)) return `${CodecRefusalCode.Malformed}: object expected`;
+  const unknown = Object.keys(json).sort(compareStrings).find((key) => !required.includes(key) && !optional.includes(key));
+  if (unknown !== undefined) return `${CodecRefusalCode.UnknownField}: ${unknown}`;
+  const missing = required.find((key) => !Object.hasOwn(json, key));
+  return missing === undefined ? null : `${CodecRefusalCode.MissingField}: ${missing}`;
+}
+
+/** The `kind` of a tagged object, after checking it has its form's keys. */
+function kindOf(json: unknown): Decoded<string> {
+  if (!isObject(json)) return refuse(`${CodecRefusalCode.Malformed}: object expected`);
+  return Object.hasOwn(json, "kind") ? string.decode(json["kind"]) : refuse(`${CodecRefusalCode.MissingField}: kind`);
+}
+
 /** The scenario contract's `messageChannel`: an operation, a direct or an unspecified Message. */
 export function channelFromJson(json: unknown): Decoded<MessageChannel> {
-  const kind = stringField(json, "kind");
+  const kind = kindOf(json);
   if (!kind.ok) {
     return kind;
+  }
+  const form: Readonly<Record<string, readonly string[]>> = {
+    operationMessage: ["kind", "messageId", "interfaceId", "interfaceOperationId"],
+    directMessage: ["kind", "messageId"],
+    unspecifiedMessage: ["kind"],
+  };
+  const required = Object.hasOwn(form, kind.value) ? form[kind.value] : undefined;
+  const refusal = required === undefined ? null : fieldsRefusal(json, required);
+  if (refusal !== null) {
+    return refuse(refusal);
   }
   if (kind.value === "operationMessage") {
     const messageId = stringField(json, "messageId");
@@ -95,6 +128,10 @@ export function channelToJson(channel: MessageChannel): JsonValue {
 
 /** An `occurrenceId` object, by process instance, element and activation. */
 export function occurrenceFromJson(json: unknown): Decoded<OccurrenceRef> {
+  const refusal = fieldsRefusal(json, ["processInstanceId", "elementId", "activation"]);
+  if (refusal !== null) {
+    return refuse(refusal);
+  }
   const processInstanceId = stringField(json, "processInstanceId");
   if (!processInstanceId.ok) {
     return processInstanceId;
@@ -110,193 +147,230 @@ export function occurrenceFromJson(json: unknown): Decoded<OccurrenceRef> {
   }));
 }
 
-/** `field`, which must be present, read as an occurrence. */
-function occurrenceField(json: unknown, field: string): Decoded<OccurrenceRef> {
+/** A refusal raised inside a decoder and returned by `decoding`: Lean's `Except` early exit. */
+class Refusal {
+  constructor(readonly refusal: string) {}
+}
+
+function get<T>(decoded: Decoded<T>): T {
+  if (!decoded.ok) throw new Refusal(decoded.refusal);
+  return decoded.value;
+}
+
+function decoding<T>(decode: () => T): Decoded<T> {
+  try {
+    return accept(decode());
+  } catch (error) {
+    if (error instanceof Refusal) return refuse(error.refusal);
+    throw error;
+  }
+}
+
+/** `field`, which must be present (`getObjVal?`). */
+function present(json: unknown, field: string): unknown {
+  return get(objVal(json, field));
+}
+
+/** `field` when present, else `undefined`; the contract's optional members, which are never `null`. */
+function optionalField(json: unknown, field: string): unknown {
   const raw = objVal(json, field);
-  return raw.ok ? occurrenceFromJson(raw.value) : raw;
+  return raw.ok ? raw.value : undefined;
 }
 
-export function effectOutcomeFromJson(json: unknown): Decoded<EffectOutcome> {
-  const patch = bindingsField(json, "localPatch");
-  if (!patch.ok) {
-    return patch;
-  }
-  const kind = stringField(json, "kind");
-  if (!kind.ok) {
-    return kind;
-  }
-  if (kind.value === "success") {
-    return accept({ tag: EffectOutcomeTag.Success, outputs: patch.value });
-  }
-  if (kind.value === "bpmnError") {
-    const message = stringField(json, "message");
-    return mapDecoded(stringField(json, "code"), (code) => ({
-      tag: EffectOutcomeTag.BusinessFailure,
-      code,
-      message: message.ok ? message.value : null,
-      outputs: patch.value,
-    }));
-  }
-  return refuse(`unknown effect result kind ${kind.value}`);
+function optionalString(json: unknown, field: string): string | null {
+  const raw = optionalField(json, field);
+  return raw === undefined ? null : get(string.decode(raw));
 }
 
-function startStimulus(json: unknown, atMs: number | null): Decoded<Input> {
-  const instanceId = stringField(json, "instanceId");
-  if (!instanceId.ok) {
-    return instanceId;
-  }
-  return mapDecoded(bindingsField(json, "initialVariables"), (variables) => ({
-    tag: InputTag.Start,
-    payload: { instanceId: instanceId.value, startEvent: null, variables, trigger: noStartTrigger, businessKey: null, atMs },
-  }));
+function fields(json: unknown, required: readonly string[], optional: readonly string[] = []): void {
+  const refusal = fieldsRefusal(json, required, optional);
+  if (refusal !== null) throw new Refusal(refusal);
 }
 
-function triggeredStartStimulus(json: unknown, atMs: number | null): Decoded<Input> {
-  const instanceId = stringField(json, "instanceId");
-  if (!instanceId.ok) {
-    return instanceId;
-  }
-  return mapDecoded(stringField(json, "startEventId"), (startEvent) => ({
-    tag: InputTag.Start,
-    payload: { instanceId: instanceId.value, startEvent, variables: [], trigger: noStartTrigger, businessKey: null, atMs },
-  }));
+function valueAt(json: unknown): Value {
+  return get(strictly(valueCodec.decode, valueCodec.encode, json));
 }
 
-function deliveryStimulus(json: unknown, withPayload: boolean, atMs: number | null): Decoded<Input> {
-  const occurrence = occurrenceField(json, "subscriptionId");
-  if (!occurrence.ok) {
-    return occurrence;
-  }
-  const rawChannel = objVal(json, "channel");
-  const channel = rawChannel.ok ? channelFromJson(rawChannel.value) : rawChannel;
-  if (!channel.ok) {
-    return channel;
-  }
-  let payload: Value | null = null;
-  if (withPayload) {
-    const raw = objVal(json, "payload");
-    const decoded = raw.ok ? valueCodec.decode(raw.value) : raw;
-    if (!decoded.ok) {
-      return decoded;
+function bindingsAt(json: unknown, field: string): readonly Binding[] {
+  return get(strictly(bindingsFromJson, bindingsToJson, present(json, field)));
+}
+
+function stringList(json: unknown): readonly string[] {
+  if (!Array.isArray(json)) throw new Refusal("expected JSON array");
+  return json.map((item: unknown) => get(string.decode(item)));
+}
+
+function startTriggerFromJson(json: unknown): StartTrigger {
+  const kind = get(kindOf(json));
+  switch (kind) {
+    case "none":
+      fields(json, ["kind"]);
+      return noStartTrigger;
+    case "timer":
+      fields(json, ["kind", "logicalTimeMs"]);
+      return { tag: StartTriggerTag.Timer, logicalTimeMs: get(nat.decode(objValD(json, "logicalTimeMs"))) };
+    case "message": {
+      fields(json, ["kind", "channel"], ["payload"]);
+      const channel = get(channelFromJson(present(json, "channel")));
+      const payload = optionalField(json, "payload");
+      return { tag: StartTriggerTag.Message, channel, payload: payload === undefined ? null : valueAt(payload) };
     }
-    payload = decoded.value;
+    case "signal": {
+      fields(json, ["kind", "name", "variables"]);
+      const name = get(stringField(json, "name"));
+      return { tag: StartTriggerTag.Signal, name, variables: bindingsAt(json, "variables") };
+    }
+    case "condition":
+      fields(json, ["kind"]);
+      return { tag: StartTriggerTag.Condition };
   }
-  return accept({
-    tag: InputTag.Deliver,
-    payload: {
-      occurrence: occurrence.value,
-      trigger: { tag: DeliveryTriggerTag.Message, channel: channel.value },
-      correlation: [],
-      payload,
-      atMs,
-    },
+  throw new Refusal(`unknown start trigger kind ${kind}`);
+}
+
+function commandActionFromJson(json: unknown): CommandAction {
+  const kind = get(kindOf(json));
+  switch (kind) {
+    case "completeUserTask":
+      fields(json, ["kind", "values"]);
+      return { tag: CommandActionTag.CompleteUserTask, values: bindingsAt(json, "values") };
+    case "retryIncident":
+      fields(json, ["kind"]);
+      return { tag: CommandActionTag.RetryIncident };
+    case "cancelIncidentProcess":
+      fields(json, ["kind"]);
+      return { tag: CommandActionTag.CancelIncidentProcess };
+    case "setVariables":
+      fields(json, ["kind", "values"]);
+      return { tag: CommandActionTag.SetVariables, values: bindingsAt(json, "values") };
+    case "removeVariables":
+      fields(json, ["kind", "names"]);
+      return { tag: CommandActionTag.RemoveVariables, names: stringList(objValD(json, "names")) };
+  }
+  throw new Refusal(`unknown command action kind ${kind}`);
+}
+
+function deliveryTriggerFromJson(json: unknown): DeliveryTrigger {
+  const kind = get(kindOf(json));
+  switch (kind) {
+    case "message":
+      fields(json, ["kind", "channel"]);
+      return { tag: DeliveryTriggerTag.Message, channel: get(channelFromJson(present(json, "channel"))) };
+    case "signal":
+      fields(json, ["kind", "name"]);
+      return { tag: DeliveryTriggerTag.Signal, name: get(stringField(json, "name")) };
+  }
+  throw new Refusal(`unknown delivery trigger kind ${kind}`);
+}
+
+function criterionTargetFromJson(json: unknown): CriterionTarget {
+  const kind = get(kindOf(json));
+  switch (kind) {
+    case "processVariable":
+      fields(json, ["kind", "name"]);
+      return { tag: CriterionTargetTag.ProcessVariable, name: get(stringField(json, "name")) };
+    case "localVariable":
+      fields(json, ["kind", "name"]);
+      return { tag: CriterionTargetTag.LocalVariable, name: get(stringField(json, "name")) };
+    case "businessKey":
+      fields(json, ["kind"]);
+      return { tag: CriterionTargetTag.BusinessKey };
+    case "processInstance":
+      fields(json, ["kind"]);
+      return { tag: CriterionTargetTag.ProcessInstance };
+  }
+  throw new Refusal(`unknown correlation target kind ${kind}`);
+}
+
+function correlationFromJson(json: unknown): CorrelationMatch {
+  fields(json, ["target", "expected"]);
+  const target = criterionTargetFromJson(present(json, "target"));
+  return { target, expected: valueAt(present(json, "expected")) };
+}
+
+function effectOutcomeFromJson(json: unknown): EffectOutcome {
+  const kind = get(kindOf(json));
+  switch (kind) {
+    case "success":
+      fields(json, ["kind", "outputs"]);
+      return { tag: EffectOutcomeTag.Success, outputs: bindingsAt(json, "outputs") };
+    case "businessFailure": {
+      fields(json, ["kind", "code", "outputs"], ["message"]);
+      const code = get(stringField(json, "code"));
+      const message = optionalString(json, "message");
+      return { tag: EffectOutcomeTag.BusinessFailure, code, message, outputs: bindingsAt(json, "outputs") };
+    }
+    case "technicalFailure":
+      fields(json, ["kind"]);
+      return { tag: EffectOutcomeTag.TechnicalFailure };
+  }
+  throw new Refusal(`unknown effect outcome kind ${kind}`);
+}
+
+function inputFromJson(json: unknown, kind: string, atMs: number | null): Input {
+  const occurrence = (): OccurrenceRef => get(occurrenceFromJson(present(json, "occurrence")));
+  switch (kind) {
+    case "start": {
+      const rawTrigger = optionalField(json, "trigger");
+      const trigger = rawTrigger === undefined ? noStartTrigger : startTriggerFromJson(rawTrigger);
+      const instanceId = get(stringField(json, "instanceId"));
+      const startEvent = optionalString(json, "startEvent");
+      const variables = bindingsAt(json, "variables");
+      return {
+        tag: InputTag.Start,
+        payload: { instanceId, startEvent, variables, trigger, businessKey: optionalString(json, "businessKey"), atMs },
+      };
+    }
+    case "command": {
+      const ref = occurrence();
+      return { tag: InputTag.Command, payload: { occurrence: ref, action: commandActionFromJson(present(json, "action")), atMs } };
+    }
+    case "deliver": {
+      const rawCorrelation = optionalField(json, "correlation");
+      if (rawCorrelation !== undefined && !Array.isArray(rawCorrelation)) throw new Refusal("expected JSON array");
+      const entries: readonly unknown[] = rawCorrelation ?? [];
+      const ref = occurrence();
+      const trigger = deliveryTriggerFromJson(present(json, "trigger"));
+      const correlation = entries.map(correlationFromJson);
+      const payload = optionalField(json, "payload");
+      return {
+        tag: InputTag.Deliver,
+        payload: { occurrence: ref, trigger, correlation, payload: payload === undefined ? null : valueAt(payload), atMs },
+      };
+    }
+    case "timerFire": {
+      const ref = occurrence();
+      return { tag: InputTag.TimerFire, payload: { occurrence: ref, logicalTimeMs: get(nat.decode(objValD(json, "logicalTimeMs"))), atMs } };
+    }
+    case "effectResult": {
+      const ref = occurrence();
+      return { tag: InputTag.EffectResult, payload: { occurrence: ref, outcome: effectOutcomeFromJson(present(json, "outcome")), atMs } };
+    }
+  }
+  throw new Refusal(`unknown stimulus kind ${kind}`);
+}
+
+const stimulusForms: Readonly<Record<string, readonly [readonly string[], readonly string[]]>> = {
+  start: [["instanceId", "variables"], ["startEvent", "trigger", "businessKey", "at"]],
+  command: [["occurrence", "action"], ["at"]],
+  deliver: [["occurrence", "trigger"], ["correlation", "payload", "at"]],
+  timerFire: [["occurrence", "logicalTimeMs"], ["at"]],
+  effectResult: [["occurrence", "outcome"], ["at"]],
+};
+
+/** One scenario stimulus: its command identifier and the kernel input, every refusal carrying its strict-decoding
+ * code. */
+export function stimulusFromJson(json: unknown): Decoded<readonly [string, Input]> {
+  const decoded = decoding(() => {
+    const kind = get(kindOf(json));
+    const form = Object.hasOwn(stimulusForms, kind) ? stimulusForms[kind] : undefined;
+    if (form !== undefined) fields(json, ["kind", "commandId", ...form[0]], form[1]);
+    const commandId = get(stringField(json, "commandId"));
+    // `at`, the input's logical time in milliseconds, is optional; absent leaves the clock unchanged.
+    const at = optionalField(json, "at");
+    const atMs = at === undefined ? null : get(nat.decode(at));
+    return [commandId, inputFromJson(json, kind, atMs)] as const;
   });
-}
-
-function incidentStimulus(json: unknown, action: CommandAction, atMs: number | null): Decoded<Input> {
-  const incident = objVal(json, "incidentId");
-  if (!incident.ok) {
-    return incident;
-  }
-  return mapDecoded(occurrenceField(incident.value, "effectId"), (occurrence) => ({
-    tag: InputTag.Command,
-    payload: { occurrence, action, atMs },
-  }));
-}
-
-const stimulusKinds: ReadonlyMap<string, (json: unknown, atMs: number | null) => Decoded<Input>> = new Map([
-  ["startProcess", startStimulus],
-  ["triggerTimerStart", triggeredStartStimulus],
-  ["triggerMessageStart", triggeredStartStimulus],
-  [
-    "completeUserTaskInstance",
-    (json: unknown, atMs: number | null): Decoded<Input> => {
-      const occurrence = occurrenceField(json, "taskId");
-      if (!occurrence.ok) {
-        return occurrence;
-      }
-      return mapDecoded(bindingsField(json, "submittedValues"), (values) => ({
-        tag: InputTag.Command,
-        payload: { occurrence: occurrence.value, action: { tag: CommandActionTag.CompleteUserTask, values }, atMs },
-      }));
-    },
-  ],
-  ["deliverMessage", (json: unknown, atMs: number | null) => deliveryStimulus(json, false, atMs)],
-  ["deliverPayloadMessage", (json: unknown, atMs: number | null) => deliveryStimulus(json, true, atMs)],
-  [
-    "fireTimer",
-    (json: unknown, atMs: number | null): Decoded<Input> => {
-      const occurrence = occurrenceField(json, "timerId");
-      if (!occurrence.ok) {
-        return occurrence;
-      }
-      return mapDecoded(nat.decode(objValD(json, "logicalTimeMs")), (logicalTimeMs) => ({
-        tag: InputTag.TimerFire,
-        payload: { occurrence: occurrence.value, logicalTimeMs, atMs },
-      }));
-    },
-  ],
-  [
-    "completeEffect",
-    (json: unknown, atMs: number | null): Decoded<Input> => {
-      const occurrence = occurrenceField(json, "effectId");
-      if (!occurrence.ok) {
-        return occurrence;
-      }
-      const raw = objVal(json, "result");
-      const outcome = raw.ok ? effectOutcomeFromJson(raw.value) : raw;
-      return mapDecoded(outcome, (decoded) => ({
-        tag: InputTag.EffectResult,
-        payload: { occurrence: occurrence.value, outcome: decoded, atMs },
-      }));
-    },
-  ],
-  [
-    "reportEffectFailure",
-    (json: unknown, atMs: number | null): Decoded<Input> =>
-      mapDecoded(occurrenceField(json, "effectId"), (occurrence) => ({
-        tag: InputTag.EffectResult,
-        payload: { occurrence, outcome: { tag: EffectOutcomeTag.TechnicalFailure }, atMs },
-      })),
-  ],
-  ["retryIncident", (json: unknown, atMs: number | null) => incidentStimulus(json, { tag: CommandActionTag.RetryIncident }, atMs)],
-  [
-    "cancelIncidentProcess",
-    (json: unknown, atMs: number | null) => incidentStimulus(json, { tag: CommandActionTag.CancelIncidentProcess }, atMs),
-  ],
-]);
-
-/**
- * One scenario stimulus: its command identifier and the kernel input, or `null` for a stimulus kind the kernel
- * does not accept yet.
- */
-export function stimulusFromJson(json: unknown): Decoded<readonly [string, Input | null]> {
-  const commandId = stringField(json, "commandId");
-  if (!commandId.ok) {
-    return commandId;
-  }
-  const kind = stringField(json, "kind");
-  if (!kind.ok) {
-    return kind;
-  }
-  const decoder = stimulusKinds.get(kind.value);
-  if (decoder === undefined) {
-    return accept([commandId.value, null] as const);
-  }
-  const atMs = logicalTime(json);
-  if (!atMs.ok) {
-    return atMs;
-  }
-  return mapDecoded(decoder(json, atMs.value), (input) => [commandId.value, input] as const);
-}
-
-/** `at`, the input's logical time in milliseconds, is optional; absent or null leaves the clock unchanged. */
-function logicalTime(json: unknown): Decoded<number | null> {
-  const raw = objVal(json, "at");
-  if (!raw.ok || raw.value === null) {
-    return accept(null);
-  }
-  return nat.decode(raw.value);
+  return decoded.ok ? decoded : refuse(coded(decoded.refusal));
 }
 
 /** The refusal or failure code a failure carries. */

@@ -5,40 +5,7 @@ import { fileURLToPath } from "node:url";
 
 import { Ajv2020 } from "ajv/dist/2020.js";
 
-import { projectCibProcessVariable } from "./contract-cib-evidence-projection.ts";
-
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
-
-test("projects every selected raw CIB variable kind without coercion", () => {
-  assert.deepEqual(
-    projectCibProcessVariable({ name: "approved", value: true }),
-    { name: "approved", value: { kind: "boolean", value: true } },
-  );
-  assert.deepEqual(
-    projectCibProcessVariable({ name: "approved", value: false }),
-    { name: "approved", value: { kind: "boolean", value: false } },
-  );
-  assert.notDeepEqual(
-    projectCibProcessVariable({ name: "approved", value: "true" }),
-    projectCibProcessVariable({ name: "approved", value: true }),
-  );
-  assert.deepEqual(
-    projectCibProcessVariable({ name: "cleared", value: null }),
-    { name: "cleared", value: { kind: "null" } },
-  );
-  assert.deepEqual(
-    projectCibProcessVariable({ name: "amount", value: 1 }),
-    { name: "amount", value: { kind: "integer", value: 1 } },
-  );
-  assert.deepEqual(
-    projectCibProcessVariable({ name: "flags", value: ["a", "a"] }),
-    { name: "flags", value: { kind: "stringList", value: ["a", "a"] } },
-  );
-  assert.throws(
-    () => projectCibProcessVariable({ name: "unsupported", value: -1 }),
-    /unsupported raw CIB integer/u,
-  );
-});
 
 test("admits the exact raw CIB scalar and flat string-list value domain", async () => {
   const schema = JSON.parse(await readFile(

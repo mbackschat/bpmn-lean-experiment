@@ -2,7 +2,7 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "addressless-receive-task-named-delivery-first",
-    "sha256": "c935195aad2f4cf7290bd40ca2f4771c626f1dd52fe4bcb503a5df4b01c159e9"
+    "sha256": "cad177b2d22d0308ba1053b73a5f8177e286f1d013ce111cbfd97c5ceee5a3e5"
   },
   "profile": {
     "id": "cibseven-2.2.0-addressless-receive-task-draft",
@@ -94,44 +94,27 @@
         "kind": "state",
         "instanceId": "Handover_1",
         "status": "running",
-        "activeWaits": [
-          {
-            "elementId": "ReceiveTask_AwaitCourierPickup",
-            "kind": "message",
-            "multiplicity": 1
-          }
-        ],
-        "openUserTasks": [],
-        "openMessageSubscriptions": [
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
           {
             "id": {
               "processInstanceId": "Handover_1",
               "elementId": "ReceiveTask_AwaitCourierPickup",
               "activation": 1
             },
-            "channel": {
-              "kind": "unspecifiedMessage"
+            "definition": null,
+            "input": "deliver",
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "unspecifiedMessage"
+              },
+              "payload": false,
+              "criteria": []
             }
           }
-        ],
-        "openTimers": [],
-        "openEffects": [],
-        "openIncidents": [],
-        "variables": [],
-        "enabledInteractions": [
-          {
-            "kind": "deliverMessage",
-            "subscriptionId": {
-              "processInstanceId": "Handover_1",
-              "elementId": "ReceiveTask_AwaitCourierPickup",
-              "activation": 1
-            },
-            "channel": {
-              "kind": "unspecifiedMessage"
-            }
-          }
-        ],
-        "logicalTimeMs": 0
+        ]
       },
       {
         "kind": "command",
@@ -142,44 +125,27 @@
         "kind": "state",
         "instanceId": "Handover_1",
         "status": "running",
-        "activeWaits": [
-          {
-            "elementId": "ReceiveTask_AwaitCourierPickup",
-            "kind": "message",
-            "multiplicity": 1
-          }
-        ],
-        "openUserTasks": [],
-        "openMessageSubscriptions": [
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
           {
             "id": {
               "processInstanceId": "Handover_1",
               "elementId": "ReceiveTask_AwaitCourierPickup",
               "activation": 1
             },
-            "channel": {
-              "kind": "unspecifiedMessage"
+            "definition": null,
+            "input": "deliver",
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "unspecifiedMessage"
+              },
+              "payload": false,
+              "criteria": []
             }
           }
-        ],
-        "openTimers": [],
-        "openEffects": [],
-        "openIncidents": [],
-        "variables": [],
-        "enabledInteractions": [
-          {
-            "kind": "deliverMessage",
-            "subscriptionId": {
-              "processInstanceId": "Handover_1",
-              "elementId": "ReceiveTask_AwaitCourierPickup",
-              "activation": 1
-            },
-            "channel": {
-              "kind": "unspecifiedMessage"
-            }
-          }
-        ],
-        "logicalTimeMs": 0
+        ]
       }
     ]
   }

@@ -10,34 +10,29 @@
   },
   "stimuli": [
     {
-      "kind": "triggerTimerStart",
+      "kind": "start",
       "commandId": "trigger-timer-start",
-      "processId": "Process_TimerStart",
       "instanceId": "TimerStartInstance_1",
-      "startEventId": "TimerStart_PT1S"
+      "startEvent": "TimerStart_PT1S",
+      "trigger": {
+        "kind": "timer",
+        "logicalTimeMs": 0
+      },
+      "variables": []
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-timer-start-user-task",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "TimerStartInstance_1",
         "elementId": "UserTask_AfterTimer",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

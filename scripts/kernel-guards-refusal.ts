@@ -25,11 +25,11 @@ function isAdmissionModule(file: string): boolean {
   return /^Kernel\/Admission\//u.test(file) || /^packages\/kernel\/src\/admission\//u.test(file);
 }
 
-/** Every stable code a Lean or TypeScript admission module can return. */
-export function admissionCodes(tree: KernelTree): RefusalCode[] {
+/** Every stable code a Lean or TypeScript admission module, or the modules `scanned` selects, can return. */
+export function admissionCodes(tree: KernelTree, scanned: (file: string) => boolean = isAdmissionModule): RefusalCode[] {
   const codes: RefusalCode[] = [];
   for (const source of [...tree.lean, ...tree.typeScript]) {
-    if (!isAdmissionModule(source.file)) continue;
+    if (!scanned(source.file)) continue;
     const { tokens } = source;
     for (let i = 0; i < tokens.length; i += 1) {
       const token = tokens[i];
@@ -40,7 +40,7 @@ export function admissionCodes(tree: KernelTree): RefusalCode[] {
   return codes;
 }
 
-function readerCodes(tree: KernelTree): RefusalCode[] {
+export function readerCodes(tree: KernelTree): RefusalCode[] {
   const refusal = typeScriptEnums(tree.reader).get("ReadRefusalCode");
   if (refusal === undefined) return [];
   const source = tree.reader.find((candidate) => candidate.file === refusal.file);
@@ -48,9 +48,18 @@ function readerCodes(tree: KernelTree): RefusalCode[] {
   return [...refusal.members.values()].map((code) => ({ code, source, line: refusal.line }));
 }
 
-/** Guard 12: every admission and reader refusal code appears, quoted, in a test or test fixture. */
+export const codecFiles: ReadonlyArray<string> = ["Kernel/IL/Codec.lean", "packages/kernel/src/il/codec.ts"];
+
+/** The strict-decoding codes (`codec.*`) the Lean and TypeScript IL codecs declare. */
+export function codecCodes(tree: KernelTree): RefusalCode[] {
+  return [...tree.lean, ...tree.typeScript].filter((source) => codecFiles.includes(source.file)).flatMap((source) =>
+    source.tokens.flatMap((token) =>
+      token.kind === TokenKind.String && /^codec\.[A-Za-z]+$/u.test(token.text) ? [{ code: token.text, source, line: token.line }] : []));
+}
+
+/** Guard 12: every admission, reader and strict-decoding refusal code appears, quoted, in a test or test fixture. */
 export function refusalTestFindings(tree: KernelTree): string[] {
-  const codes = [...admissionCodes(tree), ...readerCodes(tree)];
+  const codes = [...admissionCodes(tree), ...readerCodes(tree), ...codecCodes(tree)];
   if (codes.length === 0) return [emptyInputFinding(12, "admission or reader refusal codes")];
   if (tree.testFiles.length === 0) return [emptyInputFinding(12, "test files")];
   const corpus = tree.testFiles.map(({ text }) => text).join("\n");

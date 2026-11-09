@@ -10,78 +10,74 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-user-task-cycle",
-      "processId": "Process_CyclicControlFlow",
       "instanceId": "CyclicControlFlowInstance_1",
-      "initialVariables": []
+      "variables": []
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-cycle-repeat",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "CyclicControlFlowInstance_1",
         "elementId": "Review",
         "activation": 1
       },
-      "submittedValues": [
-        {
-          "name": "route",
-          "value": {
-            "kind": "string",
-            "value": "repeat"
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "route",
+            "value": {
+              "kind": "string",
+              "value": "repeat"
+            }
           }
-        }
-      ]
+        ]
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-cycle-rework",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "CyclicControlFlowInstance_1",
         "elementId": "Review",
         "activation": 2
       },
-      "submittedValues": [
-        {
-          "name": "route",
-          "value": {
-            "kind": "string",
-            "value": "rework"
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "route",
+            "value": {
+              "kind": "string",
+              "value": "rework"
+            }
           }
-        }
-      ]
+        ]
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-cycle-exit",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "CyclicControlFlowInstance_1",
         "elementId": "Review",
         "activation": 3
       },
-      "submittedValues": [
-        {
-          "name": "route",
-          "value": {
-            "kind": "string",
-            "value": "exit"
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "route",
+            "value": {
+              "kind": "string",
+              "value": "exit"
+            }
           }
-        }
-      ]
+        ]
+      }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

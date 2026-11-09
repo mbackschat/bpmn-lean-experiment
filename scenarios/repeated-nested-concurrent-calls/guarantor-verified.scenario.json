@@ -11,36 +11,12 @@
       "sha256": "d5523873a4bff4351b14dcdb873967d6e243532c6b2622bfaab2c38cc2b993db"
     }
   },
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
-  ],
-  "provenance": {
-    "normativeRefs": [
-      "BPMN 2.0.2 Clause 10.3.6",
-      "BPMN 2.0.2 Clause 13.3.4"
-    ],
-    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
-    "cibRefs": [
-      "CIB-EXT-0020",
-      "CIB-EXT-0021"
-    ]
-  },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start",
-      "processId": "Process_GuarantorLoan",
       "instanceId": "Loan_guaranteed",
-      "initialVariables": [
+      "variables": [
         {
           "name": "amount",
           "value": {
@@ -65,147 +41,185 @@
       ]
     },
     {
-      "kind": "completeEffect",
+      "kind": "effectResult",
       "commandId": "complete-effect-sha256:110f83b8f2fbe3ee5930705f65b1fc398a7b117479b74e56330a12f0d01b3d2a",
-      "effectId": {
+      "occurrence": {
         "processInstanceId": "Loan_guaranteed",
         "elementId": "RegisterApplication",
         "activation": 1
       },
-      "result": {
+      "outcome": {
         "kind": "success",
-        "localPatch": []
+        "outputs": []
       }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-applicant-collect-document",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "call:15:Loan_guaranteed:15:VerifyApplicant:1",
         "elementId": "CollectDocument",
         "activation": 1
       },
-      "submittedValues": [
-        {
-          "name": "amount",
-          "value": {
-            "kind": "string",
-            "value": "20000"
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "amount",
+            "value": {
+              "kind": "string",
+              "value": "20000"
+            }
           }
-        }
-      ]
+        ]
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-applicant-record-verdict",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "call:15:Loan_guaranteed:15:VerifyApplicant:1",
         "elementId": "RecordVerdict",
         "activation": 1
       },
-      "submittedValues": [
-        {
-          "name": "verdict",
-          "value": {
-            "kind": "string",
-            "value": "approved"
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "approved"
+            }
           }
-        }
-      ]
+        ]
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "refuse-stale-applicant-record-verdict",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "call:15:Loan_guaranteed:15:VerifyApplicant:1",
         "elementId": "RecordVerdict",
         "activation": 1
       },
-      "submittedValues": [
-        {
-          "name": "verdict",
-          "value": {
-            "kind": "string",
-            "value": "late"
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "late"
+            }
           }
-        }
-      ]
+        ]
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "refuse-applicant-addressed-completion",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "call:15:Loan_guaranteed:15:VerifyApplicant:1",
         "elementId": "CollectDocument",
         "activation": 4
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "refuse-caller-addressed-completion",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Loan_guaranteed",
         "elementId": "CollectDocument",
         "activation": 2
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "refuse-guarantor-patch-of-an-applicant-only-name",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "call:15:Loan_guaranteed:15:VerifyGuarantor:1",
         "elementId": "CollectDocument",
         "activation": 1
       },
-      "submittedValues": [
-        {
-          "name": "amount",
-          "value": {
-            "kind": "string",
-            "value": "1"
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "amount",
+            "value": {
+              "kind": "string",
+              "value": "1"
+            }
           }
-        }
-      ]
+        ]
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-guarantor-collect-document",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "call:15:Loan_guaranteed:15:VerifyGuarantor:1",
         "elementId": "CollectDocument",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-guarantor-record-verdict",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "call:15:Loan_guaranteed:15:VerifyGuarantor:1",
         "elementId": "RecordVerdict",
         "activation": 1
       },
-      "submittedValues": [
-        {
-          "name": "verdict",
-          "value": {
-            "kind": "string",
-            "value": "rejected"
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "rejected"
+            }
           }
-        }
-      ]
+        ]
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-confirm-guarantor",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Loan_guaranteed",
         "elementId": "ConfirmGuarantor",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     }
-  ]
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.3.6",
+      "BPMN 2.0.2 Clause 13.3.4"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "CIB-EXT-0020",
+      "CIB-EXT-0021"
+    ]
+  }
 }

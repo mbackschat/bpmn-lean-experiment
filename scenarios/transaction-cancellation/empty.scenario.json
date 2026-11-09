@@ -10,54 +10,50 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-empty",
-      "processId": "Process_Withdrawal",
       "instanceId": "withdrawal-empty",
-      "initialVariables": []
+      "variables": []
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete:Task_Withdraw",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "withdrawal-empty",
         "elementId": "Task_Withdraw",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "stale-task",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "withdrawal-empty",
         "elementId": "Task_Reserve",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete:Task_Acknowledge",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "withdrawal-empty",
         "elementId": "Task_Acknowledge",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

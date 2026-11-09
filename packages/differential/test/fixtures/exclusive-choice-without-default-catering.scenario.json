@@ -13,11 +13,10 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-process",
-      "processId": "Process_ExpenseRouting",
       "instanceId": "Expense_1",
-      "initialVariables": [
+      "variables": [
         {
           "name": "category",
           "value": {
@@ -48,18 +47,6 @@
         }
       ]
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

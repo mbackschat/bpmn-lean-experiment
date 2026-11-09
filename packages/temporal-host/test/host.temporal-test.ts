@@ -70,7 +70,6 @@ function stimulus(scenario: ScenarioDocument, index: number): JsonValue {
 function durable(scenario: ScenarioDocument, historyEventBudget: number | null = null): HostConfig {
   return {
     scheduling: Scheduling.Durable,
-    definition: { sourceId: scenario.bpmn.id, sourceSha256: scenario.bpmn.sha256, sourceOverlay: null, profile: scenario.profile },
     effectStartToCloseMs: 10_000,
     historyEventBudget,
   };
@@ -135,8 +134,8 @@ test("start, effect and command: the host runs the effect as one Activity and a 
   assert.ok(page.kind === PageKind.Available &&
     page.execution.some((batch) => batch.commandId.startsWith("host:effect:")));
 
-  const complete = stimulus(scenario, 2) as Readonly<{ taskId: Readonly<Record<string, JsonValue>> }>;
-  const stale = await client.command(id, wire({ ...complete, taskId: { ...complete.taskId, activation: 2 } }));
+  const complete = stimulus(scenario, 2) as Readonly<{ occurrence: Readonly<Record<string, JsonValue>> }>;
+  const stale = await client.command(id, wire({ ...complete, occurrence: { ...complete.occurrence, activation: 2 } }));
   assert.equal(stale.outcome, "rejected");
   assert.equal((await client.hostView(id)).revision, review.revision);
 

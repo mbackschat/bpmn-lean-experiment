@@ -10,11 +10,10 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-parallel-risk-review-first",
-      "processId": "Process_ParallelMultiInstanceReview",
       "instanceId": "ParallelRiskReview_First",
-      "initialVariables": [
+      "variables": [
         {
           "name": "DataObjectReference_InputItems",
           "value": {
@@ -36,36 +35,26 @@
       ]
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-first-material-risk-review",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "ParallelRiskReview_First",
         "elementId": "UserTask_Review",
         "activation": 3
       },
-      "submittedValues": [
-        {
-          "name": "DataOutput_CurrentResult",
-          "value": {
-            "kind": "string",
-            "value": "material-risk-found"
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "DataOutput_CurrentResult",
+            "value": {
+              "kind": "string",
+              "value": "material-risk-found"
+            }
           }
-        }
-      ]
+        ]
+      }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "openMultiInstances",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

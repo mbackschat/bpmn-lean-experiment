@@ -10,84 +10,89 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-process",
-      "processId": "Process_EmployeeOnboarding",
       "instanceId": "Instance_1",
-      "initialVariables": []
+      "variables": []
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-confirm-start-date",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Instance_1",
         "elementId": "UserTask_ConfirmStartDate",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-create-mailbox",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Instance_1",
         "elementId": "UserTask_CreateMailbox",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-assign-desk",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Instance_1",
         "elementId": "UserTask_AssignDesk",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-order-equipment",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Instance_1",
         "elementId": "UserTask_OrderEquipment",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-grant-vpn",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Instance_1",
         "elementId": "UserTask_GrantVpn",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-welcome-meeting",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Instance_1",
         "elementId": "UserTask_WelcomeMeeting",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

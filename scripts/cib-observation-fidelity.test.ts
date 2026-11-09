@@ -10,9 +10,13 @@ type JsonSchema = Readonly<{
   items?: JsonSchema;
 }>;
 
-type ScenarioSchema = JsonSchema & Readonly<{
+type SchemaDocument = JsonSchema & Readonly<{
+  $id: string;
   $defs: Readonly<Record<string, JsonSchema>>;
 }>;
+
+/** The schema files a state field can reference, keyed by `$id`; a reference stays within one of them. */
+type SchemaSet = ReadonlyMap<string, SchemaDocument>;
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 const fidelityHeading = "## Canonical CIB observation fidelity";
@@ -23,16 +27,23 @@ const fidelityHeading = "## Canonical CIB observation fidelity";
 const recursiveMemberDefinition = "businessValue";
 
 test("classifies every canonical CIB state field at schema depth", async () => {
-  const [schemaSource, testingSpec] = await Promise.all([
+  const [resultSource, scenarioSource, testingSpec] = await Promise.all([
+    readFile(
+      `${projectRoot}/contracts/schemas/canonical-result.schema.json`,
+      "utf8",
+    ),
     readFile(
       `${projectRoot}/contracts/schemas/scenario.schema.json`,
       "utf8",
     ),
     readFile(`${projectRoot}/docs/CIB-OBSERVATION-POLICY.md`, "utf8"),
   ]);
-  const schema = JSON.parse(schemaSource) as ScenarioSchema;
-  const stateObservation = requiredDefinition(schema, "stateObservation");
-  const expectedPaths = collectFieldPaths(schema, stateObservation);
+  const result = JSON.parse(resultSource) as SchemaDocument;
+  const schemas: SchemaSet = new Map(
+    [result, JSON.parse(scenarioSource) as SchemaDocument].map((document) => [document.$id, document]),
+  );
+  const state = requiredDefinition(result, "state");
+  const expectedPaths = collectFieldPaths(schemas, result, state);
   const sectionStart = testingSpec.indexOf(fidelityHeading);
   assert.notEqual(
     sectionStart,
@@ -63,50 +74,63 @@ test("classifies every canonical CIB state field at schema depth", async () => {
 });
 
 function requiredDefinition(
-  schema: ScenarioSchema,
+  schema: SchemaDocument,
   name: string,
 ): JsonSchema {
   const definition = schema.$defs[name];
   if (definition === undefined) {
-    throw new Error(`scenario schema omits definition ${name}`);
+    throw new Error(`schema ${schema.$id} omits definition ${name}`);
   }
   return definition;
 }
 
+/** Resolves a `#/$defs/<name>` or `<schema id>#/$defs/<name>` reference to its schema file and definition. */
+function resolveReference(
+  schemas: SchemaSet,
+  owner: SchemaDocument,
+  reference: string,
+): Readonly<{ document: SchemaDocument; name: string }> {
+  const [id, fragment] = reference.split("#") as [string, string];
+  const prefix = "/$defs/";
+  const document = id === "" ? owner : schemas.get(id);
+  if (document === undefined || !fragment.startsWith(prefix)) {
+    throw new Error(`unsupported schema reference ${reference}`);
+  }
+  return { document, name: fragment.slice(prefix.length) };
+}
+
 function collectFieldPaths(
-  schema: ScenarioSchema,
+  schemas: SchemaSet,
+  owner: SchemaDocument,
   node: JsonSchema,
   path = "",
   paths = new Set<string>(),
 ): ReadonlySet<string> {
   if (node.$ref !== undefined) {
-    const prefix = "#/$defs/";
-    if (!node.$ref.startsWith(prefix)) {
-      throw new Error(`unsupported schema reference ${node.$ref}`);
-    }
-    const definition = node.$ref.slice(prefix.length);
-    if (definition === recursiveMemberDefinition) {
+    const { document, name } = resolveReference(schemas, owner, node.$ref);
+    if (name === recursiveMemberDefinition) {
       return paths;
     }
     return collectFieldPaths(
-      schema,
-      requiredDefinition(schema, definition),
+      schemas,
+      document,
+      requiredDefinition(document, name),
       path,
       paths,
     );
   }
   for (const variant of node.oneOf ?? []) {
-    collectFieldPaths(schema, variant, path, paths);
+    collectFieldPaths(schemas, owner, variant, path, paths);
   }
   if (node.items !== undefined) {
-    collectFieldPaths(schema, node.items, `${path}[]`, paths);
+    collectFieldPaths(schemas, owner, node.items, `${path}[]`, paths);
   }
   for (const [name, property] of Object.entries(
     node.properties ?? {},
   )) {
     const propertyPath = path.length === 0 ? name : `${path}.${name}`;
     paths.add(propertyPath);
-    collectFieldPaths(schema, property, propertyPath, paths);
+    collectFieldPaths(schemas, owner, property, propertyPath, paths);
   }
   return paths;
 }

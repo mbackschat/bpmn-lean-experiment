@@ -285,7 +285,7 @@ Closure gates, 2026-10-31:
 Apply the [pre-release wire policy](../../contracts/README.md#evolution-policy). The profile identity, the Program and checked shapes and the schemas stay unchanged. Admission accepts the existing `scopeLocalData` table and effect mappings under one more profile, the value policy gains one arm, and the footprint of nested arming changes. No legacy reader or migration is added.
 
 The decisive binding guards are:
-- **Commutation and IL:** the [internal commutation census](../../scripts/internal-commutation-census.test.ts) and the [operation consumer census](../../scripts/semantic-operation-consumer-census.test.ts).
+- **Commutation and IL:** the [internal commutation census](../../scripts/internal-commutation-census.test.ts) and the `operation consumer census`.
 - **Hosting:** [host admission](../../packages/temporal-adapter/testkit/test/host-admission.test.ts).
 - **Values:** the cross-target domain matrix.
 - **Registration:** the [executable model corpus](../../model-corpus/test/executable-model-corpus.test.ts) and the [contract artifact projections](../../scripts/contract-artifact-projections.test.ts) for `CIB-EXT-0020`.

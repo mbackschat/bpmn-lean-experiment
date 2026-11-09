@@ -10,129 +10,143 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-subscription",
-      "processId": "Process_TerminateEnd",
       "instanceId": "Instance_boundary-message_repeat",
-      "initialVariables": []
+      "variables": []
     },
     {
-      "kind": "deliverMessage",
+      "kind": "deliver",
       "commandId": "remind-1",
-      "subscriptionId": {
+      "occurrence": {
         "processInstanceId": "Instance_boundary-message_repeat",
         "elementId": "Reminder",
         "activation": 1
       },
-      "channel": {
-        "kind": "operationMessage",
-        "interfaceId": "ApplicationMessages",
-        "interfaceOperationId": "ReceiveReminder",
-        "messageId": "ApplicationReminder"
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "operationMessage",
+          "interfaceId": "ApplicationMessages",
+          "interfaceOperationId": "ReceiveReminder",
+          "messageId": "ApplicationReminder"
+        }
       }
     },
     {
-      "kind": "deliverMessage",
+      "kind": "deliver",
       "commandId": "remind-2",
-      "subscriptionId": {
+      "occurrence": {
         "processInstanceId": "Instance_boundary-message_repeat",
         "elementId": "Reminder",
         "activation": 1
       },
-      "channel": {
-        "kind": "operationMessage",
-        "interfaceId": "ApplicationMessages",
-        "interfaceOperationId": "ReceiveReminder",
-        "messageId": "ApplicationReminder"
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "operationMessage",
+          "interfaceId": "ApplicationMessages",
+          "interfaceOperationId": "ReceiveReminder",
+          "messageId": "ApplicationReminder"
+        }
       }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-UserTask_Sibling-1",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Instance_boundary-message_repeat",
         "elementId": "UserTask_Sibling",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "deliverMessage",
+      "kind": "deliver",
       "commandId": "stale-reminder",
-      "subscriptionId": {
+      "occurrence": {
         "processInstanceId": "Instance_boundary-message_repeat",
         "elementId": "Reminder",
         "activation": 1
       },
-      "channel": {
-        "kind": "operationMessage",
-        "interfaceId": "ApplicationMessages",
-        "interfaceOperationId": "ReceiveReminder",
-        "messageId": "ApplicationReminder"
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "operationMessage",
+          "interfaceId": "ApplicationMessages",
+          "interfaceOperationId": "ReceiveReminder",
+          "messageId": "ApplicationReminder"
+        }
       }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-HandleReminder-1",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Instance_boundary-message_repeat",
         "elementId": "HandleReminder",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-HandleReminder-2",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Instance_boundary-message_repeat",
         "elementId": "HandleReminder",
         "activation": 2
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-UserTask_Trigger-1",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Instance_boundary-message_repeat",
         "elementId": "UserTask_Trigger",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-UserTask_Outer-1",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Instance_boundary-message_repeat",
         "elementId": "UserTask_Outer",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-IndependentAudit-1",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Instance_boundary-message_repeat",
         "elementId": "IndependentAudit",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

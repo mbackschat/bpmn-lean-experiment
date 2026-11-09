@@ -13,103 +13,102 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-process",
-      "processId": "Process_ClaimIntake",
       "instanceId": "Instance_1",
-      "initialVariables": []
+      "variables": []
     },
     {
-      "kind": "completeEffect",
+      "kind": "effectResult",
       "commandId": "complete-effect-sha256:c571e923aa00fbb8918834fba98201579ba50b638e248193d4afdd409cc189e7",
-      "effectId": {
+      "occurrence": {
         "processInstanceId": "Instance_1",
         "elementId": "ServiceTask_FetchPolicy",
         "activation": 1
       },
-      "result": {
+      "outcome": {
         "kind": "success",
-        "localPatch": []
+        "outputs": []
       }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-collect-police-report",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Instance_1",
         "elementId": "UserTask_CollectPoliceReport",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeEffect",
+      "kind": "effectResult",
       "commandId": "complete-effect-sha256:cc98368792abe73e5d4157fb3ec5b2ba8694025c8371a012f0c4b39936e283b0",
-      "effectId": {
+      "occurrence": {
         "processInstanceId": "Instance_1",
         "elementId": "ServiceTask_PriceDamage",
         "activation": 1
       },
-      "result": {
+      "outcome": {
         "kind": "success",
-        "localPatch": []
+        "outputs": []
       }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-confirm-assessment",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Instance_1",
         "elementId": "UserTask_ConfirmAssessment",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeEffect",
+      "kind": "effectResult",
       "commandId": "complete-effect-sha256:5e282af7c4844baa3674b816119329ff7feb108503d68cd01a98f53fce3f295f",
-      "effectId": {
+      "occurrence": {
         "processInstanceId": "Instance_1",
         "elementId": "ServiceTask_PriceDamage",
         "activation": 2
       },
-      "result": {
+      "outcome": {
         "kind": "success",
-        "localPatch": []
+        "outputs": []
       }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-confirm-assessment-2",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Instance_1",
         "elementId": "UserTask_ConfirmAssessment",
         "activation": 2
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-settle-claim",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Instance_1",
         "elementId": "UserTask_SettleClaim",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

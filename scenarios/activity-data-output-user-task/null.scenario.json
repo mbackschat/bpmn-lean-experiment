@@ -10,41 +10,31 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-activity-data-output-null",
-      "processId": "Process_ActivityDataOutputUnderwriting",
       "instanceId": "ActivityDataOutputNull",
-      "initialVariables": []
+      "variables": []
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "decide-null",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "ActivityDataOutputNull",
         "elementId": "UserTask_Decide",
         "activation": 1
       },
-      "submittedValues": [
-        {
-          "name": "DataOutput_Decision",
-          "value": {
-            "kind": "null"
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "DataOutput_Decision",
+            "value": {
+              "kind": "null"
+            }
           }
-        }
-      ]
+        ]
+      }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

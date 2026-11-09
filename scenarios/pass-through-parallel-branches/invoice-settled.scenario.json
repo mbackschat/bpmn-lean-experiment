@@ -13,11 +13,10 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-process",
-      "processId": "Process_InvoiceSettlement",
       "instanceId": "Invoice_1",
-      "initialVariables": [
+      "variables": [
         {
           "name": "invoice",
           "value": {
@@ -28,26 +27,29 @@
       ]
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-check-invoice",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Invoice_1",
         "elementId": "CheckInvoice",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeEffect",
+      "kind": "effectResult",
       "commandId": "complete-effect-sha256:c1902e6ff96a49279cfce19975af2476170ff510fb166c687e3eea1c4d9ae9b3",
-      "effectId": {
+      "occurrence": {
         "processInstanceId": "Invoice_1",
         "elementId": "PayInvoice",
         "activation": 1
       },
-      "result": {
+      "outcome": {
         "kind": "success",
-        "localPatch": [
+        "outputs": [
           {
             "name": "reference",
             "value": {
@@ -58,18 +60,6 @@
         ]
       }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

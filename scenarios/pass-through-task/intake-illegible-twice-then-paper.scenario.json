@@ -13,91 +13,87 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-process",
-      "processId": "Process_DocumentIntake",
       "instanceId": "Instance_1",
-      "initialVariables": []
+      "variables": []
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-record-document-format",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Instance_1",
         "elementId": "RecordDocumentFormat",
         "activation": 1
       },
-      "submittedValues": [
-        {
-          "name": "format",
-          "value": {
-            "kind": "string",
-            "value": "illegible"
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "format",
+            "value": {
+              "kind": "string",
+              "value": "illegible"
+            }
           }
-        }
-      ]
+        ]
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-record-document-format-2",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Instance_1",
         "elementId": "RecordDocumentFormat",
         "activation": 2
       },
-      "submittedValues": [
-        {
-          "name": "format",
-          "value": {
-            "kind": "string",
-            "value": "illegible"
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "format",
+            "value": {
+              "kind": "string",
+              "value": "illegible"
+            }
           }
-        }
-      ]
+        ]
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-record-document-format-3",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Instance_1",
         "elementId": "RecordDocumentFormat",
         "activation": 3
       },
-      "submittedValues": [
-        {
-          "name": "format",
-          "value": {
-            "kind": "string",
-            "value": "paper"
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "format",
+            "value": {
+              "kind": "string",
+              "value": "paper"
+            }
           }
-        }
-      ]
+        ]
+      }
     },
     {
-      "kind": "completeEffect",
+      "kind": "effectResult",
       "commandId": "complete-effect-sha256:624b3ee6a4444536cf70ea261018149b64369eab695380770fe213b2bc3fd739",
-      "effectId": {
+      "occurrence": {
         "processInstanceId": "Instance_1",
         "elementId": "IndexArchiveLocation",
         "activation": 1
       },
-      "result": {
+      "outcome": {
         "kind": "success",
-        "localPatch": []
+        "outputs": []
       }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

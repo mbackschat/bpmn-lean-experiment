@@ -13,11 +13,10 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-process",
-      "processId": "Process_LoanAssessment",
       "instanceId": "Instance_1",
-      "initialVariables": [
+      "variables": [
         {
           "name": "application",
           "value": {
@@ -90,220 +89,223 @@
       ]
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-prepare-valuation",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Instance_1",
         "elementId": "PrepareValuation",
         "activation": 1
       },
-      "submittedValues": [
-        {
-          "name": "dossier",
-          "value": {
-            "kind": "map",
-            "value": [
-              {
-                "name": "amount",
-                "value": {
-                  "kind": "decimal",
-                  "coefficient": "2500075",
-                  "scale": 2
-                }
-              },
-              {
-                "name": "applicant",
-                "value": {
-                  "kind": "map",
-                  "value": [
-                    {
-                      "name": "employer",
-                      "value": {
-                        "kind": "null"
-                      }
-                    },
-                    {
-                      "name": "name",
-                      "value": {
-                        "kind": "string",
-                        "value": "Ada"
-                      }
-                    }
-                  ]
-                }
-              },
-              {
-                "name": "collateral",
-                "value": {
-                  "kind": "list",
-                  "value": [
-                    {
-                      "kind": "map",
-                      "value": [
-                        {
-                          "name": "kind",
-                          "value": {
-                            "kind": "string",
-                            "value": "flat"
-                          }
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "dossier",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "amount",
+                  "value": {
+                    "kind": "decimal",
+                    "coefficient": "2500075",
+                    "scale": 2
+                  }
+                },
+                {
+                  "name": "applicant",
+                  "value": {
+                    "kind": "map",
+                    "value": [
+                      {
+                        "name": "employer",
+                        "value": {
+                          "kind": "null"
                         }
-                      ]
-                    },
-                    {
-                      "kind": "map",
-                      "value": [
-                        {
-                          "name": "kind",
-                          "value": {
-                            "kind": "string",
-                            "value": "flat"
-                          }
+                      },
+                      {
+                        "name": "name",
+                        "value": {
+                          "kind": "string",
+                          "value": "Ada"
                         }
-                      ]
-                    }
-                  ]
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "collateral",
+                  "value": {
+                    "kind": "list",
+                    "value": [
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "kind",
+                            "value": {
+                              "kind": "string",
+                              "value": "flat"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "kind",
+                            "value": {
+                              "kind": "string",
+                              "value": "flat"
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "survey",
+                  "value": {
+                    "kind": "string",
+                    "value": "done"
+                  }
                 }
-              },
-              {
-                "name": "survey",
-                "value": {
-                  "kind": "string",
-                  "value": "done"
-                }
-              }
-            ]
+              ]
+            }
           }
-        }
-      ]
+        ]
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-prepare-credit-file",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Instance_1",
         "elementId": "PrepareCreditFile",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-valuation-opinion",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "call:10:Instance_1:21:ValuationExpertReview:1",
         "elementId": "GiveOpinion",
         "activation": 1
       },
-      "submittedValues": [
-        {
-          "name": "opinion",
-          "value": {
-            "kind": "map",
-            "value": [
-              {
-                "name": "conditions",
-                "value": {
-                  "kind": "list",
-                  "value": [
-                    {
-                      "kind": "string",
-                      "value": "insured"
-                    },
-                    {
-                      "kind": "string",
-                      "value": "insured"
-                    }
-                  ]
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "opinion",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "conditions",
+                  "value": {
+                    "kind": "list",
+                    "value": [
+                      {
+                        "kind": "string",
+                        "value": "insured"
+                      },
+                      {
+                        "kind": "string",
+                        "value": "insured"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "notes",
+                  "value": {
+                    "kind": "null"
+                  }
+                },
+                {
+                  "name": "verdict",
+                  "value": {
+                    "kind": "string",
+                    "value": "sound"
+                  }
                 }
-              },
-              {
-                "name": "notes",
-                "value": {
-                  "kind": "null"
-                }
-              },
-              {
-                "name": "verdict",
-                "value": {
-                  "kind": "string",
-                  "value": "sound"
-                }
-              }
-            ]
+              ]
+            }
           }
-        }
-      ]
+        ]
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-credit-opinion",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "call:10:Instance_1:18:CreditExpertReview:1",
         "elementId": "GiveOpinion",
         "activation": 1
       },
-      "submittedValues": [
-        {
-          "name": "opinion",
-          "value": {
-            "kind": "map",
-            "value": [
-              {
-                "name": "conditions",
-                "value": {
-                  "kind": "list",
-                  "value": [
-                    {
-                      "kind": "string",
-                      "value": "insured"
-                    },
-                    {
-                      "kind": "string",
-                      "value": "insured"
-                    }
-                  ]
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "opinion",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "conditions",
+                  "value": {
+                    "kind": "list",
+                    "value": [
+                      {
+                        "kind": "string",
+                        "value": "insured"
+                      },
+                      {
+                        "kind": "string",
+                        "value": "insured"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "notes",
+                  "value": {
+                    "kind": "null"
+                  }
+                },
+                {
+                  "name": "verdict",
+                  "value": {
+                    "kind": "string",
+                    "value": "good"
+                  }
                 }
-              },
-              {
-                "name": "notes",
-                "value": {
-                  "kind": "null"
-                }
-              },
-              {
-                "name": "verdict",
-                "value": {
-                  "kind": "string",
-                  "value": "good"
-                }
-              }
-            ]
+              ]
+            }
           }
-        }
-      ]
+        ]
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-decide-loan",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Instance_1",
         "elementId": "DecideLoan",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

@@ -7,9 +7,27 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.file.Files;
 import java.util.List;
+import org.bpmnlean.cibseven.ScenarioProtocol.ConditionalDetail;
+import org.bpmnlean.cibseven.ScenarioProtocol.DefinitionRef;
+import org.bpmnlean.cibseven.ScenarioProtocol.DirectMessageChannel;
+import org.bpmnlean.cibseven.ScenarioProtocol.Effect;
+import org.bpmnlean.cibseven.ScenarioProtocol.EffectDetail;
+import org.bpmnlean.cibseven.ScenarioProtocol.FormField;
+import org.bpmnlean.cibseven.ScenarioProtocol.IncidentDetail;
+import org.bpmnlean.cibseven.ScenarioProtocol.MessageDetail;
+import org.bpmnlean.cibseven.ScenarioProtocol.OccurrenceId;
+import org.bpmnlean.cibseven.ScenarioProtocol.OpenWait;
+import org.bpmnlean.cibseven.ScenarioProtocol.OperationMessageChannel;
+import org.bpmnlean.cibseven.ScenarioProtocol.Recurrence;
+import org.bpmnlean.cibseven.ScenarioProtocol.SignalDetail;
+import org.bpmnlean.cibseven.ScenarioProtocol.StringValue;
+import org.bpmnlean.cibseven.ScenarioProtocol.TimerDetail;
+import org.bpmnlean.cibseven.ScenarioProtocol.UnspecifiedMessageChannel;
+import org.bpmnlean.cibseven.ScenarioProtocol.UserTaskDetail;
+import org.bpmnlean.cibseven.ScenarioProtocol.VariableBinding;
 import org.junit.Test;
 
-/** Wire-decoder guards that must survive before typed scenario construction. */
+/** Wire-decoder guards that must hold before typed scenario construction, and the result codec's round trip. */
 public class ScenarioJsonTest {
 
   private static String scenarioWithInitialValue(String value) {
@@ -20,24 +38,24 @@ public class ScenarioJsonTest {
           "profile": "profile",
           "bpmn": {"id": "bpmn", "relativePath": "process.bpmn", "sha256": "x"},
           "stimuli": [{
-            "kind": "startProcess",
+            "kind": "start",
             "commandId": "start",
-            "processId": "Process_1",
             "instanceId": "Instance_1",
-            "initialVariables": [{"name": "decision", "value": %s}]
+            "variables": [{"name": "decision", "value": %s}]
           }],
-          "observations": [],
           "provenance": {"normativeRefs": [], "cibRevision": "r", "cibRefs": []}
         }
         """.formatted(value);
   }
 
+  private static ScenarioProtocol.StateObservation state(List<OpenWait> waits) {
+    return new ScenarioProtocol.StateObservation(
+        "Instance_1", ScenarioProtocol.ProcessStatus.RUNNING, 0, List.of(), null, waits);
+  }
+
   @Test
   public void rejectsNoncanonicalNumbersAtResultAndEvidenceIngress() throws Exception {
-    var state = new ScenarioProtocol.StateObservation(
-        "Instance_1", ScenarioProtocol.ProcessStatus.RUNNING,
-        List.of(), List.of(), List.of(), List.of(), List.of(), List.of(),
-        List.of(), List.of(), 0);
+    var state = state(List.of());
     var outcome = new ScenarioProtocol.SemanticOutcome(ScenarioProtocol.CommandOutcome.COMMITTED);
     var result = new ScenarioProtocol.ScenarioResult(
         ScenarioProtocol.SCENARIO_RESULT_KIND, "raw-wire", outcome, List.of(state), null);
@@ -89,128 +107,50 @@ public class ScenarioJsonTest {
           "profile": "profile",
           "bpmn": {"id": "bpmn", "relativePath": "process.bpmn", "sha256": "x"},
           "stimuli": [],
-          "observations": [],
           "provenance": {"normativeRefs": [], "cibRevision": "r", "cibRefs": []}
         }
         """;
 
-    assertThrows(
-        JsonProcessingException.class,
-        () -> ScenarioJson.read(duplicateKind));
+    assertThrows(JsonProcessingException.class, () -> ScenarioJson.read(duplicateKind));
   }
 
   @Test
   public void rejectsMissingAndNullBooleanPayloads() {
-    for (var malformed : List.of(
-        "{\"kind\":\"boolean\"}",
-        "{\"kind\":\"boolean\",\"value\":null}")) {
-      assertThrows(
-          JsonProcessingException.class,
-          () -> ScenarioJson.read(scenarioWithInitialValue(malformed)));
+    for (var malformed : List.of("{\"kind\":\"boolean\"}", "{\"kind\":\"boolean\",\"value\":null}")) {
+      assertThrows(JsonProcessingException.class, () -> ScenarioJson.read(scenarioWithInitialValue(malformed)));
     }
   }
 
+  /** Codec truth for this runner: every wait detail kind and every channel arm survives write and read. */
   @Test
-  public void roundTripsBothCurrentMessageChannelArms() throws Exception {
-    var channels =
-        List.<ScenarioMessageProtocol.MessageChannel>of(
-            new ScenarioMessageProtocol.OperationMessageChannel(
-                "Interface_1", "Operation_1", "Message_1"),
-            new ScenarioMessageProtocol.DirectMessageChannel("Message_1"));
+  public void roundTripsEveryOpenWaitKind() throws Exception {
+    var id = new OccurrenceId("Instance_1", "Element_1", 1);
+    var effect = new Effect("protocol", "operation", List.of(), 1, null);
+    var details = List.of(
+        new UserTaskDetail(
+            "Approve", null, List.of(), List.of("reviewers"), null, List.of(new FormField("approved", "boolean")),
+            null, null, null, List.of(new VariableBinding("input", new StringValue("value")))),
+        new MessageDetail(new OperationMessageChannel("Interface_1", "Operation_1", "Message_1"), false, List.of()),
+        new MessageDetail(new DirectMessageChannel("Message_1"), true, List.of()),
+        new MessageDetail(new UnspecifiedMessageChannel(), false, List.of()),
+        new SignalDetail("Signal_1", false),
+        new ConditionalDetail("amount", List.of("update"), null),
+        new TimerDetail(1000, new Recurrence(60000L, null, 3L)),
+        new EffectDetail(effect),
+        new IncidentDetail(effect, 1, true));
+    var waits = details.stream()
+        .map(detail -> new OpenWait(id, new DefinitionRef("Called", null, null, null, null, null), detail))
+        .toList();
+    var result = new ScenarioProtocol.ScenarioResult(
+        ScenarioProtocol.SCENARIO_RESULT_KIND, "wait-roundtrip",
+        new ScenarioProtocol.SemanticOutcome(ScenarioProtocol.CommandOutcome.COMMITTED),
+        List.of(state(waits)), null);
 
-    for (var channel : channels) {
-      var result =
-          new ScenarioProtocol.ScenarioResult(
-              ScenarioProtocol.SCENARIO_RESULT_KIND,
-              "message-channel-roundtrip",
-              new ScenarioProtocol.SemanticOutcome(
-                  ScenarioProtocol.CommandOutcome.COMMITTED),
-              List.of(
-                  new ScenarioProtocol.StateObservation(
-                      "Instance_1",
-                      ScenarioProtocol.ProcessStatus.RUNNING,
-                      List.of(),
-                      List.of(),
-                      List.of(
-                          new ScenarioMessageProtocol.OpenMessageSubscription(
-                              new ScenarioMessageProtocol.MessageSubscriptionId(
-                                  "Instance_1", "MessageWait_1", 1),
-                              channel)),
-                      List.of(),
-                      List.of(),
-                      List.of(),
-                      List.of(),
-                      List.of(),
-                      0)),
-              null);
-
-      assertEquals(result, ScenarioJson.readResult(ScenarioJson.write(result)));
-    }
-  }
-
-  @Test
-  public void roundTripsLiteralIncidentWireAndRejectsOtherGenerations() throws Exception {
-    var effectId =
-        new ScenarioProtocol.EffectOccurrenceId(
-            "Instance_1", "ServiceTask_Record", 1);
-    var incidentId = new ScenarioProtocol.EffectIncidentId(effectId, 1);
-    var effect =
-        new ScenarioProtocol.OpenEffect(
-            effectId,
-            new ScenarioProtocol.EffectDescriptor("protocol", "operation"),
-            List.of());
-    var result =
-        new ScenarioProtocol.ScenarioResult(
-            ScenarioProtocol.SCENARIO_RESULT_KIND,
-            "incident-roundtrip",
-            new ScenarioProtocol.SemanticOutcome(
-                ScenarioProtocol.CommandOutcome.COMMITTED),
-            List.of(
-                new ScenarioProtocol.StateObservation(
-                    "Instance_1",
-                    ScenarioProtocol.ProcessStatus.RUNNING,
-                    List.of(
-                        new ScenarioProtocol.ActiveWait(
-                            "ServiceTask_Record", ScenarioProtocol.WaitKind.INCIDENT, 1)),
-                    List.of(),
-                    List.of(),
-                    List.of(),
-                    List.of(),
-                    List.of(
-                        new ScenarioProtocol.OpenEffectIncident(
-                            "effectExecutionFailed", incidentId, effect)),
-                    List.of(),
-                    List.of(
-                        new ScenarioInteractionProtocol.RetryIncidentInteraction(incidentId)),
-                    0)),
-            null);
-
-    assertEquals(result, ScenarioJson.readResult(ScenarioJson.write(result)));
-    assertThrows(
-        IllegalArgumentException.class,
-        () ->
-            new ScenarioProtocol.OpenEffectIncident(
-                "effectExecutionFailed",
-                incidentId,
-                new ScenarioProtocol.OpenEffect(
-                    new ScenarioProtocol.EffectOccurrenceId(
-                        "Instance_1", "ServiceTask_Record", 2),
-                    effect.descriptor(),
-                    effect.arguments())));
-    assertThrows(
-        JsonProcessingException.class,
-        () -> ScenarioJson.read(
-            """
-            {
-              "kind":"scenario","id":"bad-generation","profile":"profile",
-              "bpmn":{"id":"bpmn","relativePath":"process.bpmn","sha256":"x"},
-              "stimuli":[
-                {"kind":"startProcess","commandId":"start","processId":"Process_1","instanceId":"Instance_1","initialVariables":[]},
-                {"kind":"retryIncident","commandId":"retry","incidentId":{"effectId":{"processInstanceId":"Instance_1","elementId":"ServiceTask_Record","activation":1},"generation":2}}
-              ],
-              "observations":[],"provenance":{"normativeRefs":[],"cibRevision":"r","cibRefs":[]}
-            }
-            """));
+    var json = ScenarioJson.write(result);
+    assertEquals(result, ScenarioJson.readResult(json));
+    var tree = new ObjectMapper().readTree(json).at("/trace/0/openWaits");
+    assertEquals("command", tree.get(0).get("input").asText());
+    assertEquals(true, tree.get(5).get("input").isNull());
   }
 
   @Test

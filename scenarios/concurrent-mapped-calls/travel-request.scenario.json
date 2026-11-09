@@ -10,11 +10,10 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-process",
-      "processId": "Process_TravelRequest",
       "instanceId": "Instance_1",
-      "initialVariables": [
+      "variables": [
         {
           "name": "approvedBudget",
           "value": {
@@ -25,63 +24,60 @@
       ]
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-check-budget",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "call:10:Instance_1:11:BudgetCheck:1",
         "elementId": "CheckBudget",
         "activation": 1
       },
-      "submittedValues": [
-        {
-          "name": "confirmedBudget",
-          "value": {
-            "kind": "string",
-            "value": "1100"
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "confirmedBudget",
+            "value": {
+              "kind": "string",
+              "value": "1100"
+            }
           }
-        }
-      ]
+        ]
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-check-visa",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "call:10:Instance_1:9:VisaCheck:1",
         "elementId": "CheckVisa",
         "activation": 1
       },
-      "submittedValues": [
-        {
-          "name": "visaDecision",
-          "value": {
-            "kind": "string",
-            "value": "granted"
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "visaDecision",
+            "value": {
+              "kind": "string",
+              "value": "granted"
+            }
           }
-        }
-      ]
+        ]
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-book-travel",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Instance_1",
         "elementId": "BookTravel",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

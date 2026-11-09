@@ -138,10 +138,10 @@ test("scenario verification refuses the recursive arms on every surface of every
     for (const value of [order, decimal("1", 0), list(), map()]) {
       const binding = { name: "candidate", value };
       for (const stimulus of [
-        { kind: "startProcess", initialVariables: [binding] },
-        { kind: "completeUserTaskInstance", submittedValues: [binding] },
-        { kind: "completeEffect", result: { kind: "success", localPatch: [binding] } },
-        { kind: "deliverPayloadMessage", payload: value },
+        { kind: "start", variables: [binding] },
+        { kind: "command", action: { kind: "completeUserTask", values: [binding] } },
+        { kind: "effectResult", outcome: { kind: "success", outputs: [binding] } },
+        { kind: "deliver", payload: value },
       ]) {
         assert.throws(
           () => verifyScenarioVariableValueContract({ profile, stimuli: [stimulus] }),

@@ -10,11 +10,10 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-sequential-review-natural",
-      "processId": "Process_SequentialMultiInstanceReview",
       "instanceId": "SequentialMultiInstance_Natural",
-      "initialVariables": [
+      "variables": [
         {
           "name": "DataObjectReference_InputItems",
           "value": {
@@ -29,72 +28,68 @@
       ]
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-review-contract",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "SequentialMultiInstance_Natural",
         "elementId": "UserTask_Review",
         "activation": 1
       },
-      "submittedValues": [
-        {
-          "name": "DataOutput_CurrentResult",
-          "value": {
-            "kind": "string",
-            "value": "accepted"
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "DataOutput_CurrentResult",
+            "value": {
+              "kind": "string",
+              "value": "accepted"
+            }
           }
-        }
-      ]
+        ]
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-review-invoice",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "SequentialMultiInstance_Natural",
         "elementId": "UserTask_Review",
         "activation": 2
       },
-      "submittedValues": [
-        {
-          "name": "DataOutput_CurrentResult",
-          "value": {
-            "kind": "string",
-            "value": "flagged"
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "DataOutput_CurrentResult",
+            "value": {
+              "kind": "string",
+              "value": "flagged"
+            }
           }
-        }
-      ]
+        ]
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-review-receipt",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "SequentialMultiInstance_Natural",
         "elementId": "UserTask_Review",
         "activation": 3
       },
-      "submittedValues": [
-        {
-          "name": "DataOutput_CurrentResult",
-          "value": {
-            "kind": "string",
-            "value": "archived"
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "DataOutput_CurrentResult",
+            "value": {
+              "kind": "string",
+              "value": "archived"
+            }
           }
-        }
-      ]
+        ]
+      }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "openMultiInstances",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

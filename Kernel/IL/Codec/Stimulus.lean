@@ -4,8 +4,10 @@ public import Kernel.IL.Codec
 
 /-! # Scenario stimulus codecs
 
-The scenario contract's input side: Message channels, occurrence identities, effect outcomes and stimuli, decoded
-into kernel inputs, and the name of each failure outcome.
+The scenario contract's input side ([schema](../../../contracts/schemas/scenario.schema.json)): Message channels,
+occurrence identities and the five stimulus forms, each decoded into the kernel input of the same name, and the name
+of each failure outcome. A stimulus outside these forms refuses the scenario. Every object is read strictly: a key
+outside its form, a missing required key or a `null` member refuses it with a `Kernel.Codec` strict-decoding code.
 -/
 
 public section
@@ -14,15 +16,35 @@ namespace Kernel.Codec
 
 open Lean (Json)
 
+/-- Refuse `json` unless it is an object whose keys are all of `required` and some of `optional`. -/
+def fields (json : Json) (required : List String) (optional : List String := []) : Except String Unit := do
+  let .obj members := json | throw s!"{malformed}: object expected"
+  if let some key := members.keys.find? (fun key => !(required.contains key || optional.contains key)) then
+    throw s!"{unknownField}: {key}"
+  if let some key := required.find? (fun key => !(members.keys.contains key)) then
+    throw s!"{missingField}: {key}"
+
+/-- The `kind` of a tagged object, after checking it has its form's keys. -/
+def kindOf (json : Json) : Except String String := do
+  let .obj _ := json | throw s!"{malformed}: object expected"
+  match json.getObjVal? "kind" with
+  | .ok kind => kind.getStr?
+  | .error _ => throw s!"{missingField}: kind"
+
 /-- The scenario contract's `messageChannel`: an operation, a direct or an unspecified Message. -/
 def channelFromJson (json : Json) : Except String MessageChannel := do
-  match ← json.getObjValAs? String "kind" with
+  match ← kindOf json with
   | "operationMessage" =>
+    fields json ["kind", "messageId", "interfaceId", "interfaceOperationId"]
     pure { messageId := some (← json.getObjValAs? String "messageId")
            interfaceRef := some (← json.getObjValAs? String "interfaceId")
            operationRef := some (← json.getObjValAs? String "interfaceOperationId") }
-  | "directMessage" => pure { messageId := some (← json.getObjValAs? String "messageId") }
-  | "unspecifiedMessage" => pure { messageId := none }
+  | "directMessage" =>
+    fields json ["kind", "messageId"]
+    pure { messageId := some (← json.getObjValAs? String "messageId") }
+  | "unspecifiedMessage" =>
+    fields json ["kind"]
+    pure { messageId := none }
   | other => throw s!"unknown message channel kind {other}"
 
 /-- An operation channel needs all three identifiers; otherwise a Message identifier makes a direct channel. -/
@@ -36,66 +58,118 @@ def channelToJson (channel : MessageChannel) : Json :=
 
 /-- An `occurrenceId` object, by process instance, element and activation. -/
 def occurrenceFromJson (json : Json) : Except String OccurrenceRef := do
+  fields json ["processInstanceId", "elementId", "activation"]
   pure { processInstanceId := ← json.getObjValAs? String "processInstanceId"
          element := ⟨← json.getObjValAs? String "elementId"⟩, activation := ← json.getObjValAs? Nat "activation" }
 
-def bindingsField (json : Json) (field : String) : Except String (List (String × Value)) :=
-  bindingsFromJson ((json.getObjVal? field).toOption.getD (Json.arr #[]))
+/-- `field` when present; the contract's optional members, which are never `null`. -/
+def optionalField (json : Json) (field : String) : Option Json :=
+  (json.getObjVal? field).toOption
+
+def optionalString (json : Json) (field : String) : Except String (Option String) :=
+  (optionalField json field).mapM (·.getStr?)
+
+def valueAt (json : Json) : Except String Value :=
+  strictly valueFromJson valueToJson json
+
+def bindingsAt (json : Json) (field : String) : Except String (List (String × Value)) := do
+  strictly bindingsFromJson bindingsToJson (← json.getObjVal? field)
+
+def startTriggerFromJson (json : Json) : Except String StartTrigger := do
+  match ← kindOf json with
+  | "none" => fields json ["kind"]; pure .none
+  | "timer" => fields json ["kind", "logicalTimeMs"]; pure (.timer (← json.getObjValAs? Nat "logicalTimeMs"))
+  | "message" =>
+    fields json ["kind", "channel"] ["payload"]
+    pure (.message (← channelFromJson (← json.getObjVal? "channel")) (← (optionalField json "payload").mapM valueAt))
+  | "signal" =>
+    fields json ["kind", "name", "variables"]
+    pure (.signal (← json.getObjValAs? String "name") (← bindingsAt json "variables"))
+  | "condition" => fields json ["kind"]; pure .condition
+  | other => throw s!"unknown start trigger kind {other}"
+
+def commandActionFromJson (json : Json) : Except String CommandAction := do
+  match ← kindOf json with
+  | "completeUserTask" => fields json ["kind", "values"]; pure (.completeUserTask (← bindingsAt json "values"))
+  | "retryIncident" => fields json ["kind"]; pure .retryIncident
+  | "cancelIncidentProcess" => fields json ["kind"]; pure .cancelIncidentProcess
+  | "setVariables" => fields json ["kind", "values"]; pure (.setVariables (← bindingsAt json "values"))
+  | "removeVariables" =>
+    fields json ["kind", "names"]
+    pure (.removeVariables (← json.getObjValAs? (List String) "names"))
+  | other => throw s!"unknown command action kind {other}"
+
+def deliveryTriggerFromJson (json : Json) : Except String DeliveryTrigger := do
+  match ← kindOf json with
+  | "message" => fields json ["kind", "channel"]; pure (.message (← channelFromJson (← json.getObjVal? "channel")))
+  | "signal" => fields json ["kind", "name"]; pure (.signal (← json.getObjValAs? String "name"))
+  | other => throw s!"unknown delivery trigger kind {other}"
+
+def criterionTargetFromJson (json : Json) : Except String CriterionTarget := do
+  match ← kindOf json with
+  | "processVariable" => fields json ["kind", "name"]; pure (.processVariable (← json.getObjValAs? String "name"))
+  | "localVariable" => fields json ["kind", "name"]; pure (.localVariable (← json.getObjValAs? String "name"))
+  | "businessKey" => fields json ["kind"]; pure .businessKey
+  | "processInstance" => fields json ["kind"]; pure .processInstance
+  | other => throw s!"unknown correlation target kind {other}"
+
+def correlationFromJson (json : Json) : Except String CorrelationMatch := do
+  fields json ["target", "expected"]
+  pure { target := ← criterionTargetFromJson (← json.getObjVal? "target")
+         expected := ← valueAt (← json.getObjVal? "expected") }
 
 def effectOutcomeFromJson (json : Json) : Except String EffectOutcome := do
-  let patch ← bindingsField json "localPatch"
-  match ← json.getObjValAs? String "kind" with
-  | "success" => pure (.success patch)
-  | "bpmnError" =>
-    let message := (json.getObjValAs? String "message").toOption
-    pure (.businessFailure (← json.getObjValAs? String "code") message patch)
-  | other => throw s!"unknown effect result kind {other}"
+  match ← kindOf json with
+  | "success" => fields json ["kind", "outputs"]; pure (.success (← bindingsAt json "outputs"))
+  | "businessFailure" =>
+    fields json ["kind", "code", "outputs"] ["message"]
+    pure (.businessFailure (← json.getObjValAs? String "code") (← optionalString json "message")
+      (← bindingsAt json "outputs"))
+  | "technicalFailure" => fields json ["kind"]; pure .technicalFailure
+  | other => throw s!"unknown effect outcome kind {other}"
 
-/-- One scenario stimulus: its command identifier and the kernel input, or `none` for a stimulus kind the kernel
-does not accept yet. -/
-def stimulusFromJson (json : Json) : Except String (String × Option Input) := do
+/-- One scenario stimulus: its command identifier and the kernel input. -/
+def decodeStimulus (json : Json) : Except String (String × Input) := do
+  let kind ← kindOf json
+  let common := ["kind", "commandId"]
+  match kind with
+  | "start" => fields json (common ++ ["instanceId", "variables"]) ["startEvent", "trigger", "businessKey", "at"]
+  | "command" => fields json (common ++ ["occurrence", "action"]) ["at"]
+  | "deliver" => fields json (common ++ ["occurrence", "trigger"]) ["correlation", "payload", "at"]
+  | "timerFire" => fields json (common ++ ["occurrence", "logicalTimeMs"]) ["at"]
+  | "effectResult" => fields json (common ++ ["occurrence", "outcome"]) ["at"]
+  | _ => pure ()
   let commandId ← json.getObjValAs? String "commandId"
   -- `at`, the input's logical time in milliseconds, is optional; absent or null leaves the clock unchanged.
-  let atMs ← match json.getObjVal? "at" with
-    | .error _ => pure none
-    | .ok Json.null => pure none
-    | .ok _ => some <$> json.getObjValAs? Nat "at"
-  let input : Option Input ← match ← json.getObjValAs? String "kind" with
-    | "startProcess" =>
-      pure (some (.start { instanceId := ← json.getObjValAs? String "instanceId"
-                           variables := ← bindingsField json "initialVariables", atMs }))
-    | "triggerTimerStart" | "triggerMessageStart" =>
-      pure (some (.start { instanceId := ← json.getObjValAs? String "instanceId"
-                           startEvent := some ⟨← json.getObjValAs? String "startEventId"⟩, atMs }))
-    | "completeUserTaskInstance" =>
-      let occurrence ← occurrenceFromJson (← json.getObjVal? "taskId")
-      pure (some (.command { occurrence, action := .completeUserTask (← bindingsField json "submittedValues"), atMs }))
-    | "deliverMessage" =>
-      pure (some (.deliver { occurrence := ← occurrenceFromJson (← json.getObjVal? "subscriptionId")
-                             trigger := .message (← channelFromJson (← json.getObjVal? "channel")), atMs }))
-    | "deliverPayloadMessage" =>
-      pure (some (.deliver { occurrence := ← occurrenceFromJson (← json.getObjVal? "subscriptionId")
-                             trigger := .message (← channelFromJson (← json.getObjVal? "channel"))
-                             payload := some (← valueFromJson (← json.getObjVal? "payload")), atMs }))
-    | "fireTimer" =>
-      pure (some (.timerFire { occurrence := ← occurrenceFromJson (← json.getObjVal? "timerId")
-                               logicalTimeMs := ← json.getObjValAs? Nat "logicalTimeMs", atMs }))
-    | "completeEffect" =>
-      pure (some (.effectResult { occurrence := ← occurrenceFromJson (← json.getObjVal? "effectId")
-                                  outcome := ← effectOutcomeFromJson (← json.getObjVal? "result"), atMs }))
-    | "reportEffectFailure" =>
-      pure (some (.effectResult { occurrence := ← occurrenceFromJson (← json.getObjVal? "effectId")
-                                  outcome := .technicalFailure, atMs }))
-    | "retryIncident" =>
-      let incident ← json.getObjVal? "incidentId"
-      pure (some (.command { occurrence := ← occurrenceFromJson (← incident.getObjVal? "effectId")
-                             action := .retryIncident, atMs }))
-    | "cancelIncidentProcess" =>
-      let incident ← json.getObjVal? "incidentId"
-      pure (some (.command { occurrence := ← occurrenceFromJson (← incident.getObjVal? "effectId")
-                             action := .cancelIncidentProcess, atMs }))
-    | _ => pure none
+  let atMs ← (optionalField json "at").mapM fun value => Lean.fromJson? (α := Nat) value
+  let occurrence : Unit → Except String OccurrenceRef := fun _ => do occurrenceFromJson (← json.getObjVal? "occurrence")
+  let input : Input ← match kind with
+    | "start" =>
+      let trigger ← (optionalField json "trigger").mapM startTriggerFromJson
+      pure (.start { instanceId := ← json.getObjValAs? String "instanceId"
+                     startEvent := (← optionalString json "startEvent").map (⟨·⟩)
+                     variables := ← bindingsAt json "variables", trigger := trigger.getD .none
+                     businessKey := ← optionalString json "businessKey", atMs })
+    | "command" =>
+      pure (.command { occurrence := ← occurrence (), action := ← commandActionFromJson (← json.getObjVal? "action")
+                       atMs })
+    | "deliver" =>
+      let entries ← ((optionalField json "correlation").getD (Json.arr #[])).getArr?
+      pure (.deliver { occurrence := ← occurrence (), trigger := ← deliveryTriggerFromJson (← json.getObjVal? "trigger")
+                       correlation := ← entries.toList.mapM correlationFromJson
+                       payload := ← (optionalField json "payload").mapM valueAt, atMs })
+    | "timerFire" =>
+      pure (.timerFire { occurrence := ← occurrence (), logicalTimeMs := ← json.getObjValAs? Nat "logicalTimeMs"
+                         atMs })
+    | "effectResult" =>
+      pure (.effectResult { occurrence := ← occurrence ()
+                            outcome := ← effectOutcomeFromJson (← json.getObjVal? "outcome"), atMs })
+    | other => throw s!"unknown stimulus kind {other}"
   pure (commandId, input)
+
+/-- One scenario stimulus, every refusal carrying its strict-decoding code. -/
+def stimulusFromJson (json : Json) : Except String (String × Input) :=
+  (decodeStimulus json).mapError coded
 
 /-- The refusal or failure code a failure carries. -/
 def failureCode : Failure → String

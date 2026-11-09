@@ -10,60 +10,54 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-process",
-      "processId": "Process_ServiceTaskEffectProbe",
       "instanceId": "Instance_1",
-      "initialVariables": []
+      "variables": []
     },
     {
-      "kind": "reportEffectFailure",
+      "kind": "effectResult",
       "commandId": "report-effect-failure-sha256:b6b5077e469b9421ed4a598e4c08fae7c3ce3e31c941fae9733b4c7206a2b345",
-      "effectId": {
+      "occurrence": {
         "processInstanceId": "Instance_1",
         "elementId": "ServiceTask_Record",
         "activation": 1
       },
-      "generation": 1
-    },
-    {
-      "kind": "retryIncident",
-      "commandId": "retry-service-task-effect-incident",
-      "incidentId": {
-        "effectId": {
-          "processInstanceId": "Instance_1",
-          "elementId": "ServiceTask_Record",
-          "activation": 1
-        },
-        "generation": 1
+      "outcome": {
+        "kind": "technicalFailure"
       }
     },
     {
-      "kind": "completeEffect",
-      "commandId": "complete-effect-sha256:64b75e53c74d30141f8c4e05db4cea269453a6cecdd09e190d1943f029797e5e",
-      "effectId": {
+      "kind": "command",
+      "commandId": "retry-service-task-effect-incident",
+      "occurrence": {
         "processInstanceId": "Instance_1",
         "elementId": "ServiceTask_Record",
         "activation": 1
       },
-      "result": {
+      "action": {
+        "kind": "retryIncident"
+      }
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "complete-effect-sha256:64b75e53c74d30141f8c4e05db4cea269453a6cecdd09e190d1943f029797e5e",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "ServiceTask_Record",
+        "activation": 1
+      },
+      "outcome": {
         "kind": "success",
-        "localPatch": []
+        "outputs": []
       }
     }
   ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
-  ],
+  "options": {
+    "incidents": {
+      "cancellable": false
+    }
+  },
   "provenance": {
     "normativeRefs": [
       "BPMN 2.0.2 §10.3.3.1",

@@ -10,11 +10,10 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-process",
-      "processId": "Process_SequentialUserTask",
       "instanceId": "Instance_1",
-      "initialVariables": [
+      "variables": [
         {
           "name": "requestTitle",
           "value": {
@@ -25,59 +24,53 @@
       ]
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-user-task-instance",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Instance_1",
         "elementId": "UserTask_Approve",
         "activation": 1
       },
-      "submittedValues": [
-        {
-          "name": "decision",
-          "value": {
-            "kind": "string",
-            "value": "approved"
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "decision",
+            "value": {
+              "kind": "string",
+              "value": "approved"
+            }
+          },
+          {
+            "name": "reviewNote",
+            "value": {
+              "kind": "null"
+            }
           }
-        },
-        {
-          "name": "reviewNote",
-          "value": {
-            "kind": "null"
-          }
-        }
-      ]
+        ]
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-stale-user-task-instance",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Instance_1",
         "elementId": "UserTask_Approve",
         "activation": 1
       },
-      "submittedValues": [
-        {
-          "name": "decision",
-          "value": {
-            "kind": "string",
-            "value": "denied"
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "decision",
+            "value": {
+              "kind": "string",
+              "value": "denied"
+            }
           }
-        }
-      ]
+        ]
+      }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

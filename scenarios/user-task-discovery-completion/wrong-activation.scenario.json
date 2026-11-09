@@ -10,11 +10,10 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-process",
-      "processId": "Process_SequentialUserTask",
       "instanceId": "Instance_1",
-      "initialVariables": [
+      "variables": [
         {
           "name": "requestTitle",
           "value": {
@@ -25,35 +24,26 @@
       ]
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "wrong-activation",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Instance_1",
         "elementId": "UserTask_Approve",
         "activation": 2
       },
-      "submittedValues": [
-        {
-          "name": "decision",
-          "value": {
-            "kind": "string",
-            "value": "approved"
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "decision",
+            "value": {
+              "kind": "string",
+              "value": "approved"
+            }
           }
-        }
-      ]
+        ]
+      }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

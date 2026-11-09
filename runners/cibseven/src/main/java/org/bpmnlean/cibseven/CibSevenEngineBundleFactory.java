@@ -1,12 +1,12 @@
 package org.bpmnlean.cibseven;
 
-import java.util.Map;
+import java.util.HashMap;
 import java.util.UUID;
 import org.cibseven.bpm.engine.ProcessEngine;
 import org.cibseven.bpm.engine.ProcessEngineConfiguration;
 import org.cibseven.bpm.engine.impl.cfg.ProcessEngineConfigurationImpl;
 
-/** Builds one immutable-profile engine bundle for the streaming oracle facade. */
+/** Builds one engine bundle per environment for the streaming oracle facade. */
 final class CibSevenEngineBundleFactory {
 
   private CibSevenEngineBundleFactory() {}
@@ -30,24 +30,17 @@ final class CibSevenEngineBundleFactory {
     if (incidentCreationEnabled) {
       configuration.setCreateIncidentOnFailedJobEnabled(true);
     }
-    var effectProbe = new CibSevenEffectProbe();
-    var mappedSuccessProbe = new CibSevenMappedSuccessProbe();
-    var mappedBoundaryErrorProbe = new CibSevenMappedBoundaryErrorProbe();
-    configuration.setBeans(
-        Map.of(
-            CibSevenEffectProjector.SOURCE_HANDLER_BEAN,
-            effectProbe,
-            CibSevenMappedSuccessProbe.HANDLER_BEAN,
-            mappedSuccessProbe,
-            CibSevenMappedBoundaryErrorProbe.HANDLER_BEAN,
-            mappedBoundaryErrorProbe));
+    var effects = new CibSevenScriptedEffect();
+    var beans = new HashMap<Object, Object>();
+    for (var handler : CibSevenScriptedEffect.HANDLER_BEANS) {
+      beans.put(handler, effects.delegate(handler));
+    }
+    configuration.setBeans(beans);
     var engine = configuration.buildProcessEngine();
     return new EngineBundle(
         engine,
         configuration,
-        effectProbe,
-        mappedSuccessProbe,
-        mappedBoundaryErrorProbe,
+        effects,
         incidentCreationEnabled,
         Math.max(1, System.nanoTime() - startedAt));
   }
@@ -55,9 +48,7 @@ final class CibSevenEngineBundleFactory {
   record EngineBundle(
       ProcessEngine engine,
       ProcessEngineConfigurationImpl configuration,
-      CibSevenEffectProbe effectProbe,
-      CibSevenMappedSuccessProbe mappedSuccessProbe,
-      CibSevenMappedBoundaryErrorProbe mappedBoundaryErrorProbe,
+      CibSevenScriptedEffect effects,
       boolean incidentCreationEnabled,
       long startupNanos) {}
 }

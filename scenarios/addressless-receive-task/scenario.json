@@ -10,36 +10,26 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "request-handover",
-      "processId": "Process_ParcelHandover",
       "instanceId": "Handover_1",
-      "initialVariables": []
+      "variables": []
     },
     {
-      "kind": "deliverMessage",
+      "kind": "deliver",
       "commandId": "courier-scanned",
-      "subscriptionId": {
+      "occurrence": {
         "processInstanceId": "Handover_1",
         "elementId": "ReceiveTask_AwaitCourierPickup",
         "activation": 1
       },
-      "channel": {
-        "kind": "unspecifiedMessage"
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "unspecifiedMessage"
+        }
       }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

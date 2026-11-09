@@ -10,11 +10,10 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-activity-data-input-null",
-      "processId": "Process_ActivityDataInputReview",
       "instanceId": "ActivityDataInputNull",
-      "initialVariables": [
+      "variables": [
         {
           "name": "Property_ReviewContext",
           "value": {
@@ -24,27 +23,18 @@
       ]
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-review-null",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "ActivityDataInputNull",
         "elementId": "UserTask_Review",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

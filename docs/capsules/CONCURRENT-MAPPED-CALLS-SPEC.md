@@ -173,7 +173,7 @@ Derived with `node scripts/what-binds.ts` on 2026-11-01; `what-binds` owns every
 Guards the implementation changed or satisfied:
 
 - [`call-forest-selection-census`](../../scripts/call-forest-selection-census.test.ts): every helper on the invoke, return and called-body paths selects by owner, by a live record or by a called root identity, now with two live called-root frames;
-- [`semantic-operation-consumer-census`](../../scripts/semantic-operation-consumer-census.test.ts): every consumer of `invokeProcess` handles the mapped arm under this profile;
+- `semantic-operation-consumer-census`: every consumer of `invokeProcess` handles the mapped arm under this profile;
 - the [concurrent scope data runtime test](../../packages/bpmn-source/test/concurrent-scope-data-runtime.test.ts), which locks the declared-entry batch premise and gains the mapped invocation as a permitted member;
 - [`lean-fanout`](../../scripts/lean-fanout.test.ts) and [`source-hygiene`](../../scripts/source-hygiene.test.ts), which bound the new Lean module's fan-out and every grown owner's size;
 - [`interruption-invocation-premise`](../../packages/differential/test/interruption-invocation-premise.test.ts), which Sub-Process-placed callers satisfy because the profile excludes Error and Terminate;

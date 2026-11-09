@@ -13,11 +13,10 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-process",
-      "processId": "Process_WarrantyRepair",
       "instanceId": "Repair_1",
-      "initialVariables": [
+      "variables": [
         {
           "name": "device",
           "value": {
@@ -28,109 +27,112 @@
       ]
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-diagnose-fault",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Repair_1",
         "elementId": "DiagnoseFault",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-replace-part",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Repair_1",
         "elementId": "ReplacePart",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeEffect",
+      "kind": "effectResult",
       "commandId": "complete-effect-sha256:fe9faff13a9c2cd2f31324499a8bbe9d4924f1657c3feee745a50497bae36822",
-      "effectId": {
+      "occurrence": {
         "processInstanceId": "Repair_1",
         "elementId": "OrderSparePart",
         "activation": 1
       },
-      "result": {
+      "outcome": {
         "kind": "success",
-        "localPatch": []
+        "outputs": []
       }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-test-device",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Repair_1",
         "elementId": "TestDevice",
         "activation": 1
       },
-      "submittedValues": [
-        {
-          "name": "result",
-          "value": {
-            "kind": "string",
-            "value": "failed"
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "result",
+            "value": {
+              "kind": "string",
+              "value": "failed"
+            }
           }
-        }
-      ]
+        ]
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-replace-part-2",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Repair_1",
         "elementId": "ReplacePart",
         "activation": 2
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeEffect",
+      "kind": "effectResult",
       "commandId": "complete-effect-sha256:a278341661f829d5e67e9312d3a9eee0e36e719172c929f474c2d22d8b1f5b21",
-      "effectId": {
+      "occurrence": {
         "processInstanceId": "Repair_1",
         "elementId": "OrderSparePart",
         "activation": 2
       },
-      "result": {
+      "outcome": {
         "kind": "success",
-        "localPatch": []
+        "outputs": []
       }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-test-device-2",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Repair_1",
         "elementId": "TestDevice",
         "activation": 2
       },
-      "submittedValues": [
-        {
-          "name": "result",
-          "value": {
-            "kind": "string",
-            "value": "passed"
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "result",
+            "value": {
+              "kind": "string",
+              "value": "passed"
+            }
           }
-        }
-      ]
+        ]
+      }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

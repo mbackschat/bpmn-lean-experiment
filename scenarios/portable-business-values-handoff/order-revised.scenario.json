@@ -10,11 +10,10 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start",
-      "processId": "OrderHandoff",
       "instanceId": "Handoff_order_revised",
-      "initialVariables": [
+      "variables": [
         {
           "name": "receivedOrder",
           "value": {
@@ -101,537 +100,546 @@
       ]
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "refuse-property-name",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Handoff_order_revised",
         "elementId": "ReviewOrder",
         "activation": 1
       },
-      "submittedValues": [
-        {
-          "name": "reviewedOrder",
-          "value": {
-            "kind": "map",
-            "value": [
-              {
-                "name": "address",
-                "value": {
-                  "kind": "map",
-                  "value": [
-                    {
-                      "name": "city",
-                      "value": {
-                        "kind": "string",
-                        "value": "Berlin"
-                      }
-                    },
-                    {
-                      "name": "line2",
-                      "value": {
-                        "kind": "null"
-                      }
-                    }
-                  ]
-                }
-              },
-              {
-                "name": "items",
-                "value": {
-                  "kind": "list",
-                  "value": [
-                    {
-                      "kind": "map",
-                      "value": [
-                        {
-                          "name": "quantity",
-                          "value": {
-                            "kind": "integer",
-                            "value": 2
-                          }
-                        },
-                        {
-                          "name": "sku",
-                          "value": {
-                            "kind": "string",
-                            "value": "B"
-                          }
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "reviewedOrder",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "address",
+                  "value": {
+                    "kind": "map",
+                    "value": [
+                      {
+                        "name": "city",
+                        "value": {
+                          "kind": "string",
+                          "value": "Berlin"
                         }
-                      ]
-                    },
-                    {
-                      "kind": "map",
-                      "value": [
-                        {
-                          "name": "quantity",
-                          "value": {
-                            "kind": "integer",
-                            "value": 1
-                          }
-                        },
-                        {
-                          "name": "sku",
-                          "value": {
-                            "kind": "string",
-                            "value": "A"
-                          }
+                      },
+                      {
+                        "name": "line2",
+                        "value": {
+                          "kind": "null"
                         }
-                      ]
-                    }
-                  ]
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "items",
+                  "value": {
+                    "kind": "list",
+                    "value": [
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "quantity",
+                            "value": {
+                              "kind": "integer",
+                              "value": 2
+                            }
+                          },
+                          {
+                            "name": "sku",
+                            "value": {
+                              "kind": "string",
+                              "value": "B"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "quantity",
+                            "value": {
+                              "kind": "integer",
+                              "value": 1
+                            }
+                          },
+                          {
+                            "name": "sku",
+                            "value": {
+                              "kind": "string",
+                              "value": "A"
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "total",
+                  "value": {
+                    "kind": "decimal",
+                    "coefficient": "-125",
+                    "scale": 2
+                  }
                 }
-              },
-              {
-                "name": "total",
-                "value": {
-                  "kind": "decimal",
-                  "coefficient": "-125",
-                  "scale": 2
-                }
-              }
-            ]
+              ]
+            }
           }
-        }
-      ]
+        ]
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "refuse-omitted-output",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Handoff_order_revised",
         "elementId": "ReviewOrder",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "refuse-extra-output",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Handoff_order_revised",
         "elementId": "ReviewOrder",
         "activation": 1
       },
-      "submittedValues": [
-        {
-          "name": "ReviewOrder_out",
-          "value": {
-            "kind": "map",
-            "value": [
-              {
-                "name": "address",
-                "value": {
-                  "kind": "map",
-                  "value": [
-                    {
-                      "name": "city",
-                      "value": {
-                        "kind": "string",
-                        "value": "Berlin"
-                      }
-                    },
-                    {
-                      "name": "line2",
-                      "value": {
-                        "kind": "null"
-                      }
-                    }
-                  ]
-                }
-              },
-              {
-                "name": "items",
-                "value": {
-                  "kind": "list",
-                  "value": [
-                    {
-                      "kind": "map",
-                      "value": [
-                        {
-                          "name": "quantity",
-                          "value": {
-                            "kind": "integer",
-                            "value": 2
-                          }
-                        },
-                        {
-                          "name": "sku",
-                          "value": {
-                            "kind": "string",
-                            "value": "B"
-                          }
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "ReviewOrder_out",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "address",
+                  "value": {
+                    "kind": "map",
+                    "value": [
+                      {
+                        "name": "city",
+                        "value": {
+                          "kind": "string",
+                          "value": "Berlin"
                         }
-                      ]
-                    },
-                    {
-                      "kind": "map",
-                      "value": [
-                        {
-                          "name": "quantity",
-                          "value": {
-                            "kind": "integer",
-                            "value": 1
-                          }
-                        },
-                        {
-                          "name": "sku",
-                          "value": {
-                            "kind": "string",
-                            "value": "A"
-                          }
+                      },
+                      {
+                        "name": "line2",
+                        "value": {
+                          "kind": "null"
                         }
-                      ]
-                    }
-                  ]
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "items",
+                  "value": {
+                    "kind": "list",
+                    "value": [
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "quantity",
+                            "value": {
+                              "kind": "integer",
+                              "value": 2
+                            }
+                          },
+                          {
+                            "name": "sku",
+                            "value": {
+                              "kind": "string",
+                              "value": "B"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "quantity",
+                            "value": {
+                              "kind": "integer",
+                              "value": 1
+                            }
+                          },
+                          {
+                            "name": "sku",
+                            "value": {
+                              "kind": "string",
+                              "value": "A"
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "total",
+                  "value": {
+                    "kind": "decimal",
+                    "coefficient": "-125",
+                    "scale": 2
+                  }
                 }
-              },
-              {
-                "name": "total",
-                "value": {
-                  "kind": "decimal",
-                  "coefficient": "-125",
-                  "scale": 2
-                }
-              }
-            ]
+              ]
+            }
+          },
+          {
+            "name": "zzExtra",
+            "value": {
+              "kind": "string",
+              "value": "x"
+            }
           }
-        },
-        {
-          "name": "zzExtra",
-          "value": {
-            "kind": "string",
-            "value": "x"
-          }
-        }
-      ]
+        ]
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "refuse-activation",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Handoff_order_revised",
         "elementId": "ReviewOrder",
         "activation": 2
       },
-      "submittedValues": [
-        {
-          "name": "ReviewOrder_out",
-          "value": {
-            "kind": "map",
-            "value": [
-              {
-                "name": "address",
-                "value": {
-                  "kind": "map",
-                  "value": [
-                    {
-                      "name": "city",
-                      "value": {
-                        "kind": "string",
-                        "value": "Berlin"
-                      }
-                    },
-                    {
-                      "name": "line2",
-                      "value": {
-                        "kind": "null"
-                      }
-                    }
-                  ]
-                }
-              },
-              {
-                "name": "items",
-                "value": {
-                  "kind": "list",
-                  "value": [
-                    {
-                      "kind": "map",
-                      "value": [
-                        {
-                          "name": "quantity",
-                          "value": {
-                            "kind": "integer",
-                            "value": 2
-                          }
-                        },
-                        {
-                          "name": "sku",
-                          "value": {
-                            "kind": "string",
-                            "value": "B"
-                          }
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "ReviewOrder_out",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "address",
+                  "value": {
+                    "kind": "map",
+                    "value": [
+                      {
+                        "name": "city",
+                        "value": {
+                          "kind": "string",
+                          "value": "Berlin"
                         }
-                      ]
-                    },
-                    {
-                      "kind": "map",
-                      "value": [
-                        {
-                          "name": "quantity",
-                          "value": {
-                            "kind": "integer",
-                            "value": 1
-                          }
-                        },
-                        {
-                          "name": "sku",
-                          "value": {
-                            "kind": "string",
-                            "value": "A"
-                          }
+                      },
+                      {
+                        "name": "line2",
+                        "value": {
+                          "kind": "null"
                         }
-                      ]
-                    }
-                  ]
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "items",
+                  "value": {
+                    "kind": "list",
+                    "value": [
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "quantity",
+                            "value": {
+                              "kind": "integer",
+                              "value": 2
+                            }
+                          },
+                          {
+                            "name": "sku",
+                            "value": {
+                              "kind": "string",
+                              "value": "B"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "quantity",
+                            "value": {
+                              "kind": "integer",
+                              "value": 1
+                            }
+                          },
+                          {
+                            "name": "sku",
+                            "value": {
+                              "kind": "string",
+                              "value": "A"
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "total",
+                  "value": {
+                    "kind": "decimal",
+                    "coefficient": "-125",
+                    "scale": 2
+                  }
                 }
-              },
-              {
-                "name": "total",
-                "value": {
-                  "kind": "decimal",
-                  "coefficient": "-125",
-                  "scale": 2
-                }
-              }
-            ]
+              ]
+            }
           }
-        }
-      ]
+        ]
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-review",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Handoff_order_revised",
         "elementId": "ReviewOrder",
         "activation": 1
       },
-      "submittedValues": [
-        {
-          "name": "ReviewOrder_out",
-          "value": {
-            "kind": "map",
-            "value": [
-              {
-                "name": "address",
-                "value": {
-                  "kind": "map",
-                  "value": [
-                    {
-                      "name": "city",
-                      "value": {
-                        "kind": "string",
-                        "value": "Berlin"
-                      }
-                    },
-                    {
-                      "name": "line2",
-                      "value": {
-                        "kind": "null"
-                      }
-                    }
-                  ]
-                }
-              },
-              {
-                "name": "items",
-                "value": {
-                  "kind": "list",
-                  "value": [
-                    {
-                      "kind": "map",
-                      "value": [
-                        {
-                          "name": "quantity",
-                          "value": {
-                            "kind": "integer",
-                            "value": 2
-                          }
-                        },
-                        {
-                          "name": "sku",
-                          "value": {
-                            "kind": "string",
-                            "value": "B"
-                          }
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "ReviewOrder_out",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "address",
+                  "value": {
+                    "kind": "map",
+                    "value": [
+                      {
+                        "name": "city",
+                        "value": {
+                          "kind": "string",
+                          "value": "Berlin"
                         }
-                      ]
-                    },
-                    {
-                      "kind": "map",
-                      "value": [
-                        {
-                          "name": "quantity",
-                          "value": {
-                            "kind": "integer",
-                            "value": 1
-                          }
-                        },
-                        {
-                          "name": "sku",
-                          "value": {
-                            "kind": "string",
-                            "value": "A"
-                          }
+                      },
+                      {
+                        "name": "line2",
+                        "value": {
+                          "kind": "null"
                         }
-                      ]
-                    }
-                  ]
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "items",
+                  "value": {
+                    "kind": "list",
+                    "value": [
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "quantity",
+                            "value": {
+                              "kind": "integer",
+                              "value": 2
+                            }
+                          },
+                          {
+                            "name": "sku",
+                            "value": {
+                              "kind": "string",
+                              "value": "B"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "quantity",
+                            "value": {
+                              "kind": "integer",
+                              "value": 1
+                            }
+                          },
+                          {
+                            "name": "sku",
+                            "value": {
+                              "kind": "string",
+                              "value": "A"
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "total",
+                  "value": {
+                    "kind": "decimal",
+                    "coefficient": "-125",
+                    "scale": 2
+                  }
                 }
-              },
-              {
-                "name": "total",
-                "value": {
-                  "kind": "decimal",
-                  "coefficient": "-125",
-                  "scale": 2
-                }
-              }
-            ]
+              ]
+            }
           }
-        }
-      ]
+        ]
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "refuse-stale-task",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Handoff_order_revised",
         "elementId": "ReviewOrder",
         "activation": 1
       },
-      "submittedValues": [
-        {
-          "name": "ReviewOrder_out",
-          "value": {
-            "kind": "map",
-            "value": [
-              {
-                "name": "address",
-                "value": {
-                  "kind": "map",
-                  "value": [
-                    {
-                      "name": "city",
-                      "value": {
-                        "kind": "string",
-                        "value": "Berlin"
-                      }
-                    },
-                    {
-                      "name": "line2",
-                      "value": {
-                        "kind": "null"
-                      }
-                    }
-                  ]
-                }
-              },
-              {
-                "name": "items",
-                "value": {
-                  "kind": "list",
-                  "value": [
-                    {
-                      "kind": "map",
-                      "value": [
-                        {
-                          "name": "quantity",
-                          "value": {
-                            "kind": "integer",
-                            "value": 2
-                          }
-                        },
-                        {
-                          "name": "sku",
-                          "value": {
-                            "kind": "string",
-                            "value": "B"
-                          }
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "ReviewOrder_out",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "address",
+                  "value": {
+                    "kind": "map",
+                    "value": [
+                      {
+                        "name": "city",
+                        "value": {
+                          "kind": "string",
+                          "value": "Berlin"
                         }
-                      ]
-                    },
-                    {
-                      "kind": "map",
-                      "value": [
-                        {
-                          "name": "quantity",
-                          "value": {
-                            "kind": "integer",
-                            "value": 1
-                          }
-                        },
-                        {
-                          "name": "sku",
-                          "value": {
-                            "kind": "string",
-                            "value": "A"
-                          }
+                      },
+                      {
+                        "name": "line2",
+                        "value": {
+                          "kind": "null"
                         }
-                      ]
-                    }
-                  ]
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "items",
+                  "value": {
+                    "kind": "list",
+                    "value": [
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "quantity",
+                            "value": {
+                              "kind": "integer",
+                              "value": 2
+                            }
+                          },
+                          {
+                            "name": "sku",
+                            "value": {
+                              "kind": "string",
+                              "value": "B"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "quantity",
+                            "value": {
+                              "kind": "integer",
+                              "value": 1
+                            }
+                          },
+                          {
+                            "name": "sku",
+                            "value": {
+                              "kind": "string",
+                              "value": "A"
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "total",
+                  "value": {
+                    "kind": "decimal",
+                    "coefficient": "-125",
+                    "scale": 2
+                  }
                 }
-              },
-              {
-                "name": "total",
-                "value": {
-                  "kind": "decimal",
-                  "coefficient": "-125",
-                  "scale": 2
-                }
-              }
-            ]
+              ]
+            }
           }
-        }
-      ]
+        ]
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-archive",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Handoff_order_revised",
         "elementId": "ArchiveOrder",
         "activation": 1
       },
-      "submittedValues": [
-        {
-          "name": "ArchiveOrder_out",
-          "value": {
-            "kind": "map",
-            "value": [
-              {
-                "name": "archivedItems",
-                "value": {
-                  "kind": "integer",
-                  "value": 2
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "ArchiveOrder_out",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "archivedItems",
+                  "value": {
+                    "kind": "integer",
+                    "value": 2
+                  }
+                },
+                {
+                  "name": "status",
+                  "value": {
+                    "kind": "string",
+                    "value": "archived"
+                  }
                 }
-              },
-              {
-                "name": "status",
-                "value": {
-                  "kind": "string",
-                  "value": "archived"
-                }
-              }
-            ]
+              ]
+            }
           }
-        }
-      ]
+        ]
+      }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

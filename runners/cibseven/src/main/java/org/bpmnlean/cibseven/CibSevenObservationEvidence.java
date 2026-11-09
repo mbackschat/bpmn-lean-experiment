@@ -21,7 +21,7 @@ final class CibSevenObservationEvidence {
   private final List<IncidentJobSnapshot> incidentJobs = new ArrayList<>();
   private final List<HistoricProcessStateSnapshot> historicProcessStates = new ArrayList<>();
 
-  void add(CibSevenScenarioStateProjector.ObservedState observed) {
+  void add(CibSevenStateProjector.ObservedState observed) {
     stateQueries.add(observed.stateQuery());
     taskQueries.add(observed.taskQuery());
     messageSubscriptions.add(observed.messageSubscriptions());

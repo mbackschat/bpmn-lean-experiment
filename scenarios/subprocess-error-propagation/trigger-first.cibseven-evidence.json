@@ -2,7 +2,7 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "subprocess-error-propagation-trigger-first",
-    "sha256": "1c6c9dd75c3a0fccc7c5903c150ba09ef0011fc08f05b9aeec55071f712e256f"
+    "sha256": "aa8ef296d7c4920c5f10e9b757071943d257289683579b8d85d450f081435f0d"
   },
   "profile": {
     "id": "cibseven-2.2.0-subprocess-error-propagation-draft",
@@ -102,62 +102,54 @@
         "kind": "state",
         "instanceId": "Instance_1",
         "status": "running",
-        "activeWaits": [
-          {
-            "elementId": "UserTask_SiblingWork",
-            "kind": "userTask",
-            "multiplicity": 1
-          },
-          {
-            "elementId": "UserTask_TriggerError",
-            "kind": "userTask",
-            "multiplicity": 1
-          }
-        ],
-        "openUserTasks": [
-          {
-            "id": {
-              "processInstanceId": "Instance_1",
-              "elementId": "UserTask_SiblingWork",
-              "activation": 1
-            },
-            "name": "Sibling Work",
-            "state": "active"
-          },
-          {
-            "id": {
-              "processInstanceId": "Instance_1",
-              "elementId": "UserTask_TriggerError",
-              "activation": 1
-            },
-            "name": "Trigger Error",
-            "state": "active"
-          }
-        ],
-        "openMessageSubscriptions": [],
-        "openTimers": [],
-        "openEffects": [],
-        "openIncidents": [],
+        "logicalTimeMs": 0,
         "variables": [],
-        "enabledInteractions": [
+        "openWaits": [
           {
-            "kind": "completeUserTaskInstance",
-            "taskId": {
+            "id": {
               "processInstanceId": "Instance_1",
               "elementId": "UserTask_SiblingWork",
               "activation": 1
+            },
+            "definition": null,
+            "input": "command",
+            "detail": {
+              "kind": "userTask",
+              "name": "Sibling Work",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
             }
           },
           {
-            "kind": "completeUserTaskInstance",
-            "taskId": {
+            "id": {
               "processInstanceId": "Instance_1",
               "elementId": "UserTask_TriggerError",
               "activation": 1
+            },
+            "definition": null,
+            "input": "command",
+            "detail": {
+              "kind": "userTask",
+              "name": "Trigger Error",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
             }
           }
-        ],
-        "logicalTimeMs": 0
+        ]
       },
       {
         "kind": "command",
@@ -168,40 +160,32 @@
         "kind": "state",
         "instanceId": "Instance_1",
         "status": "running",
-        "activeWaits": [
-          {
-            "elementId": "UserTask_Recover",
-            "kind": "userTask",
-            "multiplicity": 1
-          }
-        ],
-        "openUserTasks": [
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
           {
             "id": {
               "processInstanceId": "Instance_1",
               "elementId": "UserTask_Recover",
               "activation": 1
             },
-            "name": "Recover",
-            "state": "active"
-          }
-        ],
-        "openMessageSubscriptions": [],
-        "openTimers": [],
-        "openEffects": [],
-        "openIncidents": [],
-        "variables": [],
-        "enabledInteractions": [
-          {
-            "kind": "completeUserTaskInstance",
-            "taskId": {
-              "processInstanceId": "Instance_1",
-              "elementId": "UserTask_Recover",
-              "activation": 1
+            "definition": null,
+            "input": "command",
+            "detail": {
+              "kind": "userTask",
+              "name": "Recover",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
             }
           }
-        ],
-        "logicalTimeMs": 0
+        ]
       },
       {
         "kind": "command",
@@ -212,15 +196,9 @@
         "kind": "state",
         "instanceId": "Instance_1",
         "status": "completed",
-        "activeWaits": [],
-        "openUserTasks": [],
-        "openMessageSubscriptions": [],
-        "openTimers": [],
-        "openEffects": [],
-        "openIncidents": [],
+        "logicalTimeMs": 0,
         "variables": [],
-        "enabledInteractions": [],
-        "logicalTimeMs": 0
+        "openWaits": []
       }
     ]
   }

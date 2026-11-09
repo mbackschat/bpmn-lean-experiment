@@ -10,16 +10,15 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-event-race-timer-wins",
-      "processId": "Process_EventRace",
       "instanceId": "EventRaceInstance_TimerWins",
-      "initialVariables": []
+      "variables": []
     },
     {
-      "kind": "fireTimer",
+      "kind": "timerFire",
       "commandId": "fire-timer-sha256:5e7c945d928d9cd4f4fc11f6d4bfe1eb966501c5de2f4c0f3f4ebe2bb6ffded1",
-      "timerId": {
+      "occurrence": {
         "processInstanceId": "EventRaceInstance_TimerWins",
         "elementId": "TimerCatch",
         "activation": 1
@@ -27,27 +26,18 @@
       "logicalTimeMs": 1000
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-event-race-timer-task",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "EventRaceInstance_TimerWins",
         "elementId": "TimerTask",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

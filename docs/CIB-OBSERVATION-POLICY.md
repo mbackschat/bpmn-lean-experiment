@@ -6,224 +6,153 @@ Implemented procedure. This policy owns canonical CIB observation fidelity and i
 
 ## Canonical CIB observation fidelity
 
-This table classifies every current top-level and recursively reachable field of `scenario.schema.json#/$defs/stateObservation`, whether required or optional. `engine-observed` means the raw producer value comes from pinned CIB deployment/runtime/history state; `adapter-derived` means a deterministic projection transforms retained engine facts; `adapter-decided` means project/profile policy supplies the value without a corresponding CIB semantic fact; and `not-claimed` means the field belongs to the project wire contract but the CIB lane makes no fidelity claim for it. A parent and child may differ because a composite collection or identity can mix observed, derived, decided, and unclaimed components. Incident projection consumes the retained public job plus its exact public `failedJob` incident partner; semantic occurrence, descriptor, arguments, and literal generation remain profile decisions rather than CIB semantic identity. The standards-only sequential Multi-Instance profile owns `openMultiInstances`, and the standards-only Activity data-input profile owns `openUserTasks[].inputs`, so every path below either optional field is deliberately `not-claimed` by CIB fidelity. Rule-level fidelity remains in the owning CIB-backed capsules rather than this canonical field table. The recursive portable value members (`businessValue`) are not expanded: the `value[].value` row of each value carrier classifies every nested List or Map member, and the guard stops descending at that definition.
+This table classifies every field of `canonical-result.schema.json#/$defs/state` at schema depth, whether required or optional: each `$ref` is followed and each `oneOf` arm is expanded, so one path covers every wait kind that carries it. `engine-observed` means the raw producer value comes from pinned CIB deployment/runtime/history state; `adapter-derived` means a deterministic projection transforms retained engine facts; `adapter-decided` means project/profile policy supplies the value without a corresponding CIB semantic fact; and `not-claimed` means the field belongs to the project wire contract but the CIB lane makes no fidelity claim for it. A parent and child may differ because a composite collection or identity can mix observed, derived, decided, and unclaimed components, and a path written by several wait kinds takes the weakest class among them.
+
+The CIB runner fills the state in `CibSevenStateProjector` (status, logical time, root variables) and `CibSevenOpenWaitProjector` (open waits, with `CibSevenOccurrences` supplying occurrence identity), and each basis cell names the method that writes the field. A field the runner writes only at the kernel's default, a fixed empty list or null, is `not-claimed`: CIB exposes no fact for it. The runner projects the root scope's variables only, so `scopes` is `not-claimed` throughout. Rule-level fidelity remains in the owning CIB-backed capsules rather than this canonical field table. The recursive portable value members (`businessValue`) are not expanded: the `value[].value` row of each value carrier classifies every nested List or Map member, and the guard stops descending at that definition.
 
 | Canonical field path | Fidelity | Exact basis |
 |---|---|---|
-| `kind` | `not-claimed` | Canonical wire discriminator |
-| `instanceId` | `not-claimed` | Scenario-supplied semantic identity, never a generated CIB Process-instance ID |
-| `status` | `adapter-derived` | `running` or `completed` comes from retained Process-instance state, while the cancellation successor requires zero live state plus one exact `EXTERNALLY_TERMINATED` historic root before projecting `cancelled` |
-| `failure` | `not-claimed` | Compensation-only terminal detail; no registered CIB profile admits the trigger that could produce it |
-| `failure.kind` | `not-claimed` | Project-owned closed failure discriminator |
-| `failure.triggerId` | `not-claimed` | Project-owned Compensation trigger occurrence identity |
-| `failure.triggerId.processInstanceId` | `not-claimed` | Scenario-supplied semantic identity |
-| `failure.triggerId.elementId` | `not-claimed` | No registered CIB trigger profile supplies this semantic element identity |
-| `failure.triggerId.activation` | `not-claimed` | No registered CIB trigger profile supplies this semantic ordinal |
-| `failure.handlerId` | `not-claimed` | Project-owned Compensation handler occurrence identity |
-| `failure.handlerId.processInstanceId` | `not-claimed` | Scenario-supplied semantic identity |
-| `failure.handlerId.elementId` | `not-claimed` | No registered CIB trigger profile supplies this semantic element identity |
-| `failure.handlerId.activation` | `not-claimed` | No registered CIB trigger profile supplies this semantic ordinal |
-| `failure.effectId` | `not-claimed` | Project-owned Compensation handler effect occurrence identity |
-| `failure.effectId.processInstanceId` | `not-claimed` | Scenario-supplied semantic identity |
-| `failure.effectId.elementId` | `not-claimed` | No registered CIB trigger profile supplies this semantic element identity |
-| `failure.effectId.activation` | `not-claimed` | No registered CIB trigger profile supplies this semantic ordinal |
-| `failure.code` | `not-claimed` | Semantic handler-failure code returned by the future host effect boundary |
-| `failure.message` | `not-claimed` | Semantic handler-failure message returned by the future host effect boundary |
-| `activeWaits` | `adapter-derived` | Merge, semantic-kind rank, and Unicode element-ID sort over retained task/subscription/timer/effect facts |
-| `activeWaits[].elementId` | `engine-observed` | Task definition key, Message-subscription Activity ID, or job-definition Activity ID |
-| `activeWaits[].kind` | `adapter-derived` | Classification by the engine collection and admitted host relation |
-| `activeWaits[].multiplicity` | `adapter-derived` | Count of retained live facts after unsupported repeated timer/effect identities are refused |
-| `openUserTasks` | `adapter-derived` | Canonical projection and sort over retained public task-query rows |
-| `openUserTasks[].id` | `adapter-derived` | Composite semantic occurrence identity |
-| `openUserTasks[].id.processInstanceId` | `not-claimed` | Scenario-supplied semantic identity |
-| `openUserTasks[].id.elementId` | `engine-observed` | Public task definition key |
-| `openUserTasks[].id.activation` | `adapter-decided` | Constant singleton ordinal `1`; repeated live elements are refused |
-| `openUserTasks[].name` | `engine-observed` | Public task name, including `null` |
-| `openUserTasks[].metadata` | `adapter-derived` | Optional neutral projection over retained Task Service identity-link and Form Service field rows |
-| `openUserTasks[].metadata.assignment` | `adapter-derived` | Exact neutral assignment structure over retained public identity-link facts |
-| `openUserTasks[].metadata.assignment.candidates` | `adapter-derived` | Exact one-candidate tuple after refusing missing, extra, or non-group identity links |
-| `openUserTasks[].metadata.assignment.candidates[].kind` | `adapter-derived` | Neutral `group` discriminator selected only from one raw group candidate identity link |
-| `openUserTasks[].metadata.assignment.candidates[].id` | `engine-observed` | Public Task Service candidate-group identity-link `groupId` |
-| `openUserTasks[].metadata.form` | `adapter-derived` | Exact neutral form structure over retained public Form Service facts |
-| `openUserTasks[].metadata.form.fields` | `adapter-derived` | Exact one-field tuple after refusing missing or extra Form Service rows |
-| `openUserTasks[].metadata.form.fields[].key` | `engine-observed` | Public Form Service field `id` |
-| `openUserTasks[].metadata.form.fields[].type` | `adapter-derived` | Neutral `string` or `boolean` selected from the public Form Service `typeName` |
-| `openUserTasks[].inputs` | `not-claimed` | Standards-only Activity data-input collection, published only for a program that fills an Activity data interface |
-| `openUserTasks[].inputs[].name` | `not-claimed` | Exact standards-profile Activity DataInput identity |
-| `openUserTasks[].inputs[].value` | `not-claimed` | Exact value copied from the selected Process Property at activation |
-| `openUserTasks[].inputs[].value.kind` | `not-claimed` | Standards profile admits the `string` and `null` kinds |
-| `openUserTasks[].inputs[].value.value` | `not-claimed` | Project-owned copied String, absent for explicit null |
-| `openUserTasks[].inputs[].value.coefficient` | `not-claimed` | Portable Decimal coefficient text; no CIB profile projects or admits this arm |
-| `openUserTasks[].inputs[].value.scale` | `not-claimed` | Portable Decimal scale; no CIB profile projects or admits this arm |
-| `openUserTasks[].inputs[].value.value[].name` | `not-claimed` | Portable Map entry name; no CIB profile projects or admits this arm |
-| `openUserTasks[].inputs[].value.value[].value` | `not-claimed` | Recursive portable List or Map member; nested members take this field's fidelity |
-| `openUserTasks[].state` | `adapter-decided` | Canonical `active` stamp for rows returned by the live-task query |
-| `openMessageSubscriptions` | `adapter-derived` | Canonical singleton projection over the retained public Receive Task subscription under `CIB-OP-0005`, or over the one execution waiting at an addressless Receive Task under `CIB-OP-0011`; an `unspecifiedMessage` entry is an occurrence-addressed wait, no BPMN or CIB Message subscription; other retained CIB cases are empty |
-| `openMessageSubscriptions[].id` | `adapter-derived` | Composite semantic subscription occurrence identity |
-| `openMessageSubscriptions[].id.processInstanceId` | `not-claimed` | Scenario-supplied semantic identity |
-| `openMessageSubscriptions[].id.elementId` | `engine-observed` | Public Message-subscription Activity ID |
-| `openMessageSubscriptions[].id.activation` | `adapter-decided` | Constant singleton ordinal `1`; repeated or concurrent subscriptions are refused |
-| `openMessageSubscriptions[].channel` | `adapter-decided` | The Message-addressed Receive Task profile selects a direct source Message reference; the addressless profile selects the field-free unspecified arm |
-| `openMessageSubscriptions[].channel.kind` | `adapter-decided` | Profile-owned `directMessage` or `unspecifiedMessage` discriminant |
-| `openMessageSubscriptions[].channel.interfaceId` | `not-claimed` | Structurally absent from the direct-Message arm |
-| `openMessageSubscriptions[].channel.interfaceOperationId` | `not-claimed` | Structurally absent from the direct-Message arm |
-| `openMessageSubscriptions[].channel.messageId` | `adapter-decided` | Deployed Receive Task Message reference; CIB's public subscription API exposes only its Message name |
-| `openTimers` | `adapter-derived` | Canonical projection and sort over retained timer-job rows |
-| `openTimers[].id` | `adapter-derived` | Composite semantic timer occurrence identity |
-| `openTimers[].id.processInstanceId` | `not-claimed` | Scenario-supplied semantic identity |
-| `openTimers[].id.elementId` | `engine-observed` | Public job-definition Activity ID |
-| `openTimers[].id.activation` | `adapter-decided` | Constant singleton ordinal `1`; repeated live elements are refused |
-| `openTimers[].deadlineMs` | `adapter-derived` | Retained job due date relative to the controlled engine epoch |
-| `openEffects` | `adapter-decided` | A CIB async-before job is only a host-realization fact, not an engine semantic effect intent |
-| `openEffects[].id` | `adapter-decided` | Profile-owned projection to a semantic effect occurrence |
-| `openEffects[].id.processInstanceId` | `not-claimed` | Scenario-supplied semantic identity |
-| `openEffects[].id.elementId` | `engine-observed` | Public job-definition Activity ID |
-| `openEffects[].id.activation` | `adapter-decided` | Singleton host-job count projected as ordinal `1` |
-| `openEffects[].descriptor` | `adapter-decided` | Profile registration maps retained raw source binding to neutral identity |
-| `openEffects[].descriptor.protocol` | `adapter-decided` | Profile-registered opaque protocol identity |
-| `openEffects[].descriptor.operation` | `adapter-decided` | Profile-registered opaque operation identity |
-| `openEffects[].arguments` | `adapter-decided` | The only ordinary CIB effect profile stamps the approved payload-free list |
-| `openEffects[].arguments[].name` | `not-claimed` | No retained ordinary CIB effect wait exposes a nonempty semantic argument |
-| `openEffects[].arguments[].value` | `not-claimed` | No retained ordinary CIB effect wait exposes a nonempty semantic argument |
-| `openEffects[].arguments[].value.kind` | `not-claimed` | No retained ordinary CIB effect wait exposes a nonempty semantic argument |
-| `openEffects[].arguments[].value.value` | `not-claimed` | No retained ordinary CIB effect wait exposes a nonempty semantic argument |
-| `openEffects[].arguments[].value.coefficient` | `not-claimed` | Portable Decimal coefficient text; no CIB profile projects or admits this arm |
-| `openEffects[].arguments[].value.scale` | `not-claimed` | Portable Decimal scale; no CIB profile projects or admits this arm |
-| `openEffects[].arguments[].value.value[].name` | `not-claimed` | Portable Map entry name; no CIB profile projects or admits this arm |
-| `openEffects[].arguments[].value.value[].value` | `not-claimed` | Recursive portable List or Map member; nested members take this field's fidelity |
-| `openIncidents` | `adapter-derived` | Exact one configured retries-zero public job plus one exact public `failedJob` incident partner becomes one canonical incident |
-| `openIncidents[].kind` | `adapter-decided` | Successor profile selects the sole `effectExecutionFailed` incident kind |
-| `openIncidents[].id` | `adapter-derived` | Composite of the projected effect occurrence and profile-owned literal generation 1 |
-| `openIncidents[].id.effectId` | `adapter-derived` | Reuses the canonical occurrence projected from the retained public job |
-| `openIncidents[].id.effectId.processInstanceId` | `not-claimed` | Scenario-supplied semantic identity |
-| `openIncidents[].id.effectId.elementId` | `engine-observed` | Public job-definition Activity ID |
-| `openIncidents[].id.effectId.activation` | `adapter-decided` | Singleton host-job count projected as ordinal `1` |
-| `openIncidents[].id.generation` | `adapter-decided` | Successor profile owns the only admitted literal semantic generation `1` |
-| `openIncidents[].effect` | `adapter-decided` | Profile maps the failed public job back to its suspended neutral effect intent |
-| `openIncidents[].effect.id` | `adapter-derived` | Same projected effect occurrence used by the incident identity |
-| `openIncidents[].effect.id.processInstanceId` | `not-claimed` | Scenario-supplied semantic identity |
-| `openIncidents[].effect.id.elementId` | `engine-observed` | Public job-definition Activity ID |
-| `openIncidents[].effect.id.activation` | `adapter-decided` | Singleton host-job count projected as ordinal `1` |
-| `openIncidents[].effect.descriptor` | `adapter-decided` | Profile registration maps retained source binding to neutral identity |
-| `openIncidents[].effect.descriptor.protocol` | `adapter-decided` | Profile-registered opaque protocol identity |
-| `openIncidents[].effect.descriptor.operation` | `adapter-decided` | Profile-registered opaque operation identity |
-| `openIncidents[].effect.arguments` | `adapter-decided` | Successor reuses the approved payload-free effect intent |
-| `openIncidents[].effect.arguments[].name` | `not-claimed` | The retained incident profile exposes no nonempty semantic argument |
-| `openIncidents[].effect.arguments[].value` | `not-claimed` | The retained incident profile exposes no nonempty semantic argument |
-| `openIncidents[].effect.arguments[].value.kind` | `not-claimed` | The retained incident profile exposes no nonempty semantic argument |
-| `openIncidents[].effect.arguments[].value.value` | `not-claimed` | The retained incident profile exposes no nonempty semantic argument |
-| `openIncidents[].effect.arguments[].value.coefficient` | `not-claimed` | Portable Decimal coefficient text; no CIB profile projects or admits this arm |
-| `openIncidents[].effect.arguments[].value.scale` | `not-claimed` | Portable Decimal scale; no CIB profile projects or admits this arm |
-| `openIncidents[].effect.arguments[].value.value[].name` | `not-claimed` | Portable Map entry name; no CIB profile projects or admits this arm |
-| `openIncidents[].effect.arguments[].value.value[].value` | `not-claimed` | Recursive portable List or Map member; nested members take this field's fidelity |
-| `openMultiInstances` | `not-claimed` | Standards-only sequential Multi-Instance progress is absent from every selected CIB profile |
-| `openMultiInstances[].id` | `not-claimed` | Project-owned outer Activity occurrence identity |
-| `openMultiInstances[].id.processInstanceId` | `not-claimed` | Scenario-supplied semantic identity |
-| `openMultiInstances[].id.activityElementId` | `not-claimed` | Project-owned outer Activity element identity |
-| `openMultiInstances[].id.activation` | `not-claimed` | Project-owned Activity occurrence activation |
-| `openMultiInstances[].bodyKind` | `not-claimed` | Selected profile distinguishes a User Task from a repeated Sub-Process body |
-| `openMultiInstances[].activeIterations[].body` | `not-claimed` | Project-owned repeated-body scope occurrence; no selected CIB observation |
-| `openMultiInstances[].activeIterations[].body.processInstanceId` | `not-claimed` | Project-owned repeated-body scope occurrence; no selected CIB observation |
-| `openMultiInstances[].activeIterations[].body.activation` | `not-claimed` | Project-owned repeated-body scope occurrence; no selected CIB observation |
-| `openMultiInstances[].activeIterations[].body.definitionScopeId` | `not-claimed` | Project-owned repeated-body scope occurrence; no selected CIB observation |
-| `openMultiInstances[].activeIterations[].item` | `not-claimed` | Item captured from the private collection snapshot; no selected CIB observation |
-| `openMultiInstances[].activeIterations[].item.name` | `not-claimed` | Item captured from the private collection snapshot; no selected CIB observation |
-| `openMultiInstances[].activeIterations[].item.value` | `not-claimed` | Item captured from the private collection snapshot; no selected CIB observation |
-| `openMultiInstances[].activeIterations[].item.value.kind` | `not-claimed` | Item captured from the private collection snapshot; no selected CIB observation |
-| `openMultiInstances[].activeIterations[].item.value.value` | `not-claimed` | Item captured from the private collection snapshot; no selected CIB observation |
-| `openMultiInstances[].activeIterations[].item.value.coefficient` | `not-claimed` | Portable Decimal coefficient text; no CIB profile projects or admits this arm |
-| `openMultiInstances[].activeIterations[].item.value.scale` | `not-claimed` | Portable Decimal scale; no CIB profile projects or admits this arm |
-| `openMultiInstances[].activeIterations[].item.value.value[].name` | `not-claimed` | Portable Map entry name; no CIB profile projects or admits this arm |
-| `openMultiInstances[].activeIterations[].item.value.value[].value` | `not-claimed` | Recursive portable List or Map member; nested members take this field's fidelity |
-| `openMultiInstances[].activeIterations[].bindings` | `not-claimed` | Project-owned repeated-body local data; no selected CIB observation |
-| `openMultiInstances[].activeIterations[].bindings[].name` | `not-claimed` | Project-owned repeated-body local data; no selected CIB observation |
-| `openMultiInstances[].activeIterations[].bindings[].value` | `not-claimed` | Project-owned repeated-body local data; no selected CIB observation |
-| `openMultiInstances[].activeIterations[].bindings[].value.kind` | `not-claimed` | Project-owned repeated-body local data; no selected CIB observation |
-| `openMultiInstances[].activeIterations[].bindings[].value.value` | `not-claimed` | Project-owned repeated-body local data; no selected CIB observation |
-| `openMultiInstances[].activeIterations[].bindings[].value.coefficient` | `not-claimed` | Portable Decimal coefficient text; no CIB profile projects or admits this arm |
-| `openMultiInstances[].activeIterations[].bindings[].value.scale` | `not-claimed` | Portable Decimal scale; no CIB profile projects or admits this arm |
-| `openMultiInstances[].activeIterations[].bindings[].value.value[].name` | `not-claimed` | Portable Map entry name; no CIB profile projects or admits this arm |
-| `openMultiInstances[].activeIterations[].bindings[].value.value[].value` | `not-claimed` | Recursive portable List or Map member; nested members take this field's fidelity |
-| `openMultiInstances[].activeIterations[].userTaskIds` | `not-claimed` | Project-owned inner work occurrence identity; no selected CIB observation |
-| `openMultiInstances[].activeIterations[].userTaskIds[].processInstanceId` | `not-claimed` | Project-owned inner work occurrence identity; no selected CIB observation |
-| `openMultiInstances[].activeIterations[].userTaskIds[].elementId` | `not-claimed` | Project-owned inner work occurrence identity; no selected CIB observation |
-| `openMultiInstances[].activeIterations[].userTaskIds[].activation` | `not-claimed` | Project-owned inner work occurrence identity; no selected CIB observation |
-| `openMultiInstances[].activeIterations[].effectIds` | `not-claimed` | Project-owned inner work occurrence identity; no selected CIB observation |
-| `openMultiInstances[].activeIterations[].effectIds[].processInstanceId` | `not-claimed` | Project-owned inner work occurrence identity; no selected CIB observation |
-| `openMultiInstances[].activeIterations[].effectIds[].elementId` | `not-claimed` | Project-owned inner work occurrence identity; no selected CIB observation |
-| `openMultiInstances[].activeIterations[].effectIds[].activation` | `not-claimed` | Project-owned inner work occurrence identity; no selected CIB observation |
-| `openMultiInstances[].mode` | `not-claimed` | Standards profile selects the literal `sequential` mode |
-| `openMultiInstances[].plannedInstanceCount` | `not-claimed` | Derived from the private immutable snapshot under the standards profile |
-| `openMultiInstances[].pendingItemCount` | `not-claimed` | Derived from the snapshot and completed slots under the standards profile |
-| `openMultiInstances[].numberOfInstances` | `not-claimed` | Standards-profile arithmetic over active, completed, and terminated counts |
-| `openMultiInstances[].numberOfActiveInstances` | `not-claimed` | Derived from the project-owned Activity occurrence body |
-| `openMultiInstances[].numberOfCompletedInstances` | `not-claimed` | Derived from project-owned dense output slots |
-| `openMultiInstances[].numberOfTerminatedInstances` | `not-claimed` | The bounded standards profile projects zero while the controller remains open |
-| `openMultiInstances[].activeIterations` | `not-claimed` | Project-owned active iteration projection |
-| `openMultiInstances[].activeIterations[].loopCounter` | `not-claimed` | Zero-based project-owned snapshot position |
-| `openMultiInstances[].activeIterations[].taskId` | `not-claimed` | Project-owned inner User Task occurrence identity |
-| `openMultiInstances[].activeIterations[].taskId.processInstanceId` | `not-claimed` | Scenario-supplied semantic identity |
-| `openMultiInstances[].activeIterations[].taskId.elementId` | `not-claimed` | Standards-profile inner User Task identity |
-| `openMultiInstances[].activeIterations[].taskId.activation` | `not-claimed` | Project-owned inner task activation |
-| `openMultiInstances[].activeIterations[].taskInput` | `not-claimed` | Project-owned scalar projection of one private snapshot item |
-| `openMultiInstances[].activeIterations[].taskInput.name` | `not-claimed` | Exact standards-profile task DataInput identity |
-| `openMultiInstances[].activeIterations[].taskInput.value` | `not-claimed` | Exact standards-profile scalar task input value |
-| `openMultiInstances[].activeIterations[].taskInput.value.kind` | `not-claimed` | Standards profile selects the literal `string` kind |
-| `openMultiInstances[].activeIterations[].taskInput.value.value` | `not-claimed` | Project-owned snapshot item value |
-| `openMultiInstances[].activeIterations[].taskInput.value.coefficient` | `not-claimed` | Portable Decimal coefficient text; no CIB profile projects or admits this arm |
-| `openMultiInstances[].activeIterations[].taskInput.value.scale` | `not-claimed` | Portable Decimal scale; no CIB profile projects or admits this arm |
-| `openMultiInstances[].activeIterations[].taskInput.value.value[].name` | `not-claimed` | Portable Map entry name; no CIB profile projects or admits this arm |
-| `openMultiInstances[].activeIterations[].taskInput.value.value[].value` | `not-claimed` | Recursive portable List or Map member; nested members take this field's fidelity |
-| `openMultiInstances[].activeIterations[].completionBindingName` | `not-claimed` | Exact standards-profile task DataOutput identity |
-| `variables` | `adapter-derived` | Canonical type projection and Unicode name sort over retained Process-variable runtime/history rows selected only by names from already committed start or completion commands |
-| `variables[].name` | `engine-observed` | Historic Process-variable name within the adapter-selected committed-name boundary |
-| `variables[].value` | `adapter-derived` | Raw host `String`, `Boolean`, or `null` projected into the canonical discriminated value |
-| `variables[].value.kind` | `adapter-derived` | `string`, `boolean`, or `null` selected from the raw host value without text coercion |
-| `variables[].value.value` | `engine-observed` | Exact host String or Boolean when the value is non-null |
-| `variables[].value.coefficient` | `not-claimed` | Portable Decimal coefficient text; no CIB profile projects or admits this arm |
-| `variables[].value.scale` | `not-claimed` | Portable Decimal scale; no CIB profile projects or admits this arm |
-| `variables[].value.value[].name` | `not-claimed` | Portable Map entry name; no CIB profile projects or admits this arm |
-| `variables[].value.value[].value` | `not-claimed` | Recursive portable List or Map member; nested members take this field's fidelity |
-| `enabledInteractions` | `adapter-derived` | One project command interaction per retained live User Task, Receive Task Message subscription, or exact configured effect incident; the cancellation successor publishes Retry before Cancel from the same validated job/incident partner |
-| `enabledInteractions[].kind` | `adapter-decided` | Project command vocabulary selects task completion, Message delivery, incident retry, or the approved successor cancellation from the retained host collection |
-| `enabledInteractions[].address` | `not-claimed` | Correlated publication is outside the selected CIB compatibility surface; the standards-only semantic account owns this complete address |
-| `enabledInteractions[].address.definition` | `not-claimed` | Project-owned immutable semantic-definition identity, not a CIB runtime fact |
-| `enabledInteractions[].address.definition.compiler` | `not-claimed` | Project-owned compiler identity |
-| `enabledInteractions[].address.definition.semanticProfile` | `not-claimed` | Project-owned semantic-profile identity |
-| `enabledInteractions[].address.definition.sourceOverlay` | `not-claimed` | Project-owned optional source-overlay identity |
-| `enabledInteractions[].address.definition.sourceOverlay.id` | `not-claimed` | Project-owned source-overlay identifier when present |
-| `enabledInteractions[].address.definition.sourceOverlay.sha256` | `not-claimed` | Project-owned exact source-overlay digest when present |
-| `enabledInteractions[].address.definition.sourceId` | `not-claimed` | Project-owned admitted source identity |
-| `enabledInteractions[].address.definition.sourceSha256` | `not-claimed` | Project-owned exact BPMN source digest |
-| `enabledInteractions[].address.processId` | `not-claimed` | Project-owned BPMN Process identity |
-| `enabledInteractions[].address.channel` | `not-claimed` | Standards-only operation-bound Message channel, outside the selected CIB compatibility surface |
-| `enabledInteractions[].address.channel.kind` | `not-claimed` | Standards-only operation-Message discriminant |
-| `enabledInteractions[].address.channel.interfaceId` | `not-claimed` | BPMN Interface identity from the admitted definition |
-| `enabledInteractions[].address.channel.interfaceOperationId` | `not-claimed` | BPMN Interface Operation identity from the admitted definition |
-| `enabledInteractions[].address.channel.messageId` | `not-claimed` | BPMN Message identity from the admitted definition |
-| `enabledInteractions[].address.correlationKeyId` | `not-claimed` | BPMN CorrelationKey identity from the admitted definition |
-| `enabledInteractions[].processInstanceId` | `not-claimed` | Scenario-supplied semantic root identity for the approved cancellation interaction, never a generated CIB Process-instance ID |
-| `enabledInteractions[].subscriptionId` | `adapter-derived` | Reuses the projected Message subscription occurrence |
-| `enabledInteractions[].subscriptionId.processInstanceId` | `not-claimed` | Scenario-supplied semantic identity |
-| `enabledInteractions[].subscriptionId.elementId` | `engine-observed` | Public Message-subscription Activity ID |
-| `enabledInteractions[].subscriptionId.activation` | `adapter-decided` | Same singleton ordinal as the projected subscription |
-| `enabledInteractions[].channel` | `adapter-decided` | Reuses the profile-owned direct Message channel |
-| `enabledInteractions[].channel.kind` | `adapter-decided` | Profile-owned `directMessage` or `unspecifiedMessage` discriminant |
-| `enabledInteractions[].channel.interfaceId` | `not-claimed` | Structurally absent from the direct-Message arm |
-| `enabledInteractions[].channel.interfaceOperationId` | `not-claimed` | Structurally absent from the direct-Message arm |
-| `enabledInteractions[].channel.messageId` | `adapter-decided` | Same deployed Receive Task Message reference as the projected subscription |
-| `enabledInteractions[].taskId` | `adapter-derived` | Reuses the projected User Task occurrence |
-| `enabledInteractions[].taskId.processInstanceId` | `not-claimed` | Scenario-supplied semantic identity |
-| `enabledInteractions[].taskId.elementId` | `engine-observed` | Public task definition key |
-| `enabledInteractions[].taskId.activation` | `adapter-decided` | Same unsupported singleton ordinal as the projected User Task |
-| `enabledInteractions[].incidentId` | `adapter-derived` | Reuses the exact projected open-incident identity while its public failed-job partner exists |
-| `enabledInteractions[].incidentId.effectId` | `adapter-derived` | Reuses the projected failed effect occurrence |
-| `enabledInteractions[].incidentId.effectId.processInstanceId` | `not-claimed` | Scenario-supplied semantic identity |
-| `enabledInteractions[].incidentId.effectId.elementId` | `engine-observed` | Public job-definition Activity ID |
-| `enabledInteractions[].incidentId.effectId.activation` | `adapter-decided` | Same singleton ordinal as the projected incident effect |
-| `enabledInteractions[].incidentId.generation` | `adapter-decided` | Same profile-owned literal generation `1` as the open incident |
-| `logicalTimeMs` | `adapter-derived` | Retained controlled engine-clock reading relative to the fixed logical epoch |
+| `kind` | `not-claimed` | Canonical wire discriminator `state`, written by the `ScenarioProtocol.CanonicalObservation` type info |
+| `instanceId` | `not-claimed` | Scenario-supplied root identity, carried from `start.instanceId()` as `stableRootId` into `CibSevenStateProjector.observe`, never a generated CIB Process-instance ID |
+| `status` | `adapter-derived` | `CibSevenStateProjector.status`: `running` while the root is in the runtime query, `completed` from historic state `COMPLETED` or `INTERNALLY_TERMINATED`, `cancelled` from `EXTERNALLY_TERMINATED`; `failed` is never projected and any other historic state throws |
+| `logicalTimeMs` | `adapter-derived` | `CibSevenStateProjector.observe`: the controlled engine clock (`ClockUtil.getCurrentTime`) minus the fixed logical epoch |
+| `variables` | `adapter-derived` | `CibSevenStateProjector.rootVariables` reads the historic Process-variable instances of the root scope, so they stay observable after the instance ends; `observe` projects each through `ScenarioVariableValueProjection.project` and sorts by name with `WireStrings.compare` |
+| `variables[].name` | `engine-observed` | Historic Process-variable name (`CibSevenStateProjector.rootVariables`) |
+| `variables[].value` | `adapter-derived` | `ScenarioVariableValueProjection.project` tags the raw host value |
+| `variables[].value.kind` | `adapter-derived` | `string`, `boolean`, `integer`, `stringList` or `null` selected from the host carrier by `ScenarioVariableValueProjection.project`, without text coercion |
+| `variables[].value.value` | `engine-observed` | Exact host String, Boolean, integer or String-list members when the value is not null (`ScenarioVariableValueProjection.requireHostStringList` for a list) |
+| `variables[].value.coefficient` | `not-claimed` | Portable Decimal part; `ScenarioVariableValueProjection.project` selects no Decimal arm |
+| `variables[].value.scale` | `not-claimed` | Portable Decimal part; `ScenarioVariableValueProjection.project` selects no Decimal arm |
+| `variables[].value.value[].name` | `not-claimed` | Portable Map entry; `ScenarioVariableValueProjection.project` selects no Map arm |
+| `variables[].value.value[].value` | `not-claimed` | Recursive portable List or Map member; `ScenarioVariableValueProjection.project` selects neither arm, and the members of a String list are classified at `value.value` |
+| `scopes` | `not-claimed` | kernel-only: the CIB runner projects the instance root only; the comparator compares scopes between the kernels |
+| `scopes[].scope` | `not-claimed` | kernel-only: the CIB runner projects the instance root only; the comparator compares scopes between the kernels |
+| `scopes[].scope.processInstanceId` | `not-claimed` | kernel-only: the CIB runner projects the instance root only; the comparator compares scopes between the kernels |
+| `scopes[].scope.role` | `not-claimed` | kernel-only: the CIB runner projects the instance root only; the comparator compares scopes between the kernels |
+| `scopes[].scope.elementId` | `not-claimed` | kernel-only: the CIB runner projects the instance root only; the comparator compares scopes between the kernels |
+| `scopes[].scope.activation` | `not-claimed` | kernel-only: the CIB runner projects the instance root only; the comparator compares scopes between the kernels |
+| `scopes[].variables` | `not-claimed` | kernel-only: the CIB runner projects the instance root only; the comparator compares scopes between the kernels |
+| `scopes[].variables[].name` | `not-claimed` | kernel-only: the CIB runner projects the instance root only; the comparator compares scopes between the kernels |
+| `scopes[].variables[].value` | `not-claimed` | kernel-only: the CIB runner projects the instance root only; the comparator compares scopes between the kernels |
+| `scopes[].variables[].value.kind` | `not-claimed` | kernel-only: the CIB runner projects the instance root only; the comparator compares scopes between the kernels |
+| `scopes[].variables[].value.value` | `not-claimed` | kernel-only: the CIB runner projects the instance root only; the comparator compares scopes between the kernels |
+| `scopes[].variables[].value.coefficient` | `not-claimed` | kernel-only: the CIB runner projects the instance root only; the comparator compares scopes between the kernels |
+| `scopes[].variables[].value.scale` | `not-claimed` | kernel-only: the CIB runner projects the instance root only; the comparator compares scopes between the kernels |
+| `scopes[].variables[].value.value[].name` | `not-claimed` | kernel-only: the CIB runner projects the instance root only; the comparator compares scopes between the kernels |
+| `scopes[].variables[].value.value[].value` | `not-claimed` | kernel-only: the CIB runner projects the instance root only; the comparator compares scopes between the kernels |
+| `openWaits` | `adapter-derived` | `CibSevenOpenWaitProjector.project` merges the tasks, event subscriptions, addressless Receive Tasks and jobs of the running root and of every running called instance (`CibSevenOccurrences.running`) and sorts them by `WAIT_ORDER`; an ended instance has none |
+| `openWaits[].id` | `adapter-derived` | `CibSevenOpenWaitProjector.wait` composes the instance's stable identity, the element ID and the activation |
+| `openWaits[].id.processInstanceId` | `not-claimed` | Root: the scenario-supplied identity, no CIB fact. Called instance: `CibSevenOccurrences.calledInstanceId` over the caller's identity, the historic Call Activity ID found through `getCalledProcessInstanceId` and its activation, which is adapter-derived |
+| `openWaits[].id.elementId` | `engine-observed` | `Task.getTaskDefinitionKey`, `EventSubscription.getActivityId`, `JobDefinition.getActivityId`, or the ID of the addressless Receive Task found in the activity-instance tree |
+| `openWaits[].id.activation` | `adapter-derived` | `CibSevenOccurrences.activation`, `ordinal` and `pendingActivation`: the position among the element's historic activity instances in occurrence order; a subscription without an activity instance takes its host's activation, else 1; a pending asynchronous continuation takes the begun count plus one |
+| `openWaits[].definition` | `adapter-derived` | `CibSevenOccurrences.running` and `collect`: null in the root instance, a `DefinitionRef` for a called instance |
+| `openWaits[].definition.key` | `engine-observed` | `ProcessDefinition.getKey` of the called instance's definition |
+| `openWaits[].definition.version` | `not-claimed` | `CibSevenOccurrences.collect` writes null; the runner publishes only the called definition key |
+| `openWaits[].definition.versionTag` | `not-claimed` | `CibSevenOccurrences.collect` writes null; the runner publishes only the called definition key |
+| `openWaits[].definition.deployment` | `not-claimed` | `CibSevenOccurrences.collect` writes null; the runner publishes only the called definition key |
+| `openWaits[].definition.tenant` | `not-claimed` | `CibSevenOccurrences.collect` writes null; the runner publishes only the called definition key |
+| `openWaits[].definition.sourceSha256` | `not-claimed` | `CibSevenOccurrences.collect` writes null; the runner publishes only the called definition key |
+| `openWaits[].input` | `adapter-decided` | `OpenWait.input` returns the constant of the detail class (command, deliver, timerFire, effectResult; null for a conditional wait): project command vocabulary, no CIB fact |
+| `openWaits[].detail` | `adapter-derived` | The kind-tagged detail built by `CibSevenOpenWaitProjector.projectTasks`, `projectSubscriptions`, `projectAddressless`, `projectJobs` and `projectEffect` from the engine collection that holds the wait |
+| `openWaits[].detail.kind` | `adapter-derived` | Selected by the engine collection: task query to `userTask`; subscription event type to `message`, `signal` or `conditional`; addressless Receive Task to `message`; `TimerEntity` job to `timer`; Service Task job to `effect`, or `incident` when one public incident references the job |
+| `openWaits[].detail.name` | `engine-observed` | `Task.getName` for a User Task, including null; `EventSubscription.getEventName` for a Signal (`CibSevenOpenWaitProjector.userTaskDetail`, `projectSubscriptions`) |
+| `openWaits[].detail.assignee` | `engine-observed` | `Task.getAssignee` (`CibSevenOpenWaitProjector.userTaskDetail`) |
+| `openWaits[].detail.candidateUsers` | `adapter-derived` | `userId` of the task's public identity links of type `candidate`, nulls dropped (`CibSevenOpenWaitProjector.userTaskDetail`) |
+| `openWaits[].detail.candidateGroups` | `adapter-derived` | `groupId` of the task's public identity links of type `candidate`, nulls dropped (`CibSevenOpenWaitProjector.userTaskDetail`) |
+| `openWaits[].detail.formKey` | `engine-observed` | `Task.getFormKey`, loaded by `initializeFormKeys` (`CibSevenOpenWaitProjector.userTaskDetail`) |
+| `openWaits[].detail.formFields` | `adapter-derived` | The fields of `FormService.getTaskFormData` mapped one to one (`CibSevenOpenWaitProjector.projectTasks`, `userTaskDetail`) |
+| `openWaits[].detail.formFields[].key` | `engine-observed` | Public Form Service field `getId` |
+| `openWaits[].detail.formFields[].type` | `engine-observed` | Public Form Service field `getTypeName`, unchanged |
+| `openWaits[].detail.dueDate` | `adapter-derived` | `Task.getDueDate` formatted as an ISO-8601 instant, null when absent (`CibSevenOpenWaitProjector.instant`) |
+| `openWaits[].detail.followUpDate` | `adapter-derived` | `Task.getFollowUpDate` formatted as an ISO-8601 instant, null when absent (`CibSevenOpenWaitProjector.instant`) |
+| `openWaits[].detail.priority` | `adapter-derived` | `Task.getPriority`, published only where the deployed model declares `camunda:priority`, else null (`CibSevenOpenWaitProjector.userTaskDetail`) |
+| `openWaits[].detail.inputs` | `adapter-derived` | The local variables of the task's execution (`RuntimeService.getVariablesLocal`) named by the deployed model's `camunda:inputParameter` declarations, sorted by name (`CibSevenOpenWaitProjector.inputs`) |
+| `openWaits[].detail.inputs[].name` | `engine-observed` | Local-variable name, kept where a declared `CamundaInputParameter` names it |
+| `openWaits[].detail.inputs[].value` | `adapter-derived` | `ScenarioVariableValueProjection.project` tags the raw host value |
+| `openWaits[].detail.inputs[].value.kind` | `adapter-derived` | `string`, `boolean`, `integer`, `stringList` or `null` selected from the host carrier by `ScenarioVariableValueProjection.project`, without text coercion |
+| `openWaits[].detail.inputs[].value.value` | `engine-observed` | Exact host value of the execution's local variable, absent for null |
+| `openWaits[].detail.inputs[].value.coefficient` | `not-claimed` | Portable Decimal part; `ScenarioVariableValueProjection.project` selects no Decimal arm |
+| `openWaits[].detail.inputs[].value.scale` | `not-claimed` | Portable Decimal part; `ScenarioVariableValueProjection.project` selects no Decimal arm |
+| `openWaits[].detail.inputs[].value.value[].name` | `not-claimed` | Portable Map entry; `ScenarioVariableValueProjection.project` selects no Map arm |
+| `openWaits[].detail.inputs[].value.value[].value` | `not-claimed` | Recursive portable List or Map member; `ScenarioVariableValueProjection.project` selects neither arm, and the members of a String list are classified at `value.value` |
+| `openWaits[].detail.channel` | `adapter-decided` | `CibSevenOpenWaitProjector.channel` selects the arm from the Operation or Message reference of the deployed Receive Task or Message Catch Event, and `projectAddressless` stamps the unspecified arm (`CIB-OP-0011`): read from the deployed model; CIB's subscription API exposes only the event name (`CIB-OP-0005`) |
+| `openWaits[].detail.channel.kind` | `adapter-decided` | `CibSevenOpenWaitProjector.channel`: `operationMessage` for an Operation reference, `directMessage` for a Message reference, `unspecifiedMessage` for an addressless Receive Task |
+| `openWaits[].detail.channel.interfaceId` | `adapter-decided` | Interface ID of the referenced Operation, absent from the other arms: read from the deployed model; CIB's subscription API exposes only the event name (`CIB-OP-0005`) |
+| `openWaits[].detail.channel.interfaceOperationId` | `adapter-decided` | ID of the referenced Operation, absent from the other arms: read from the deployed model; CIB's subscription API exposes only the event name (`CIB-OP-0005`) |
+| `openWaits[].detail.channel.messageId` | `adapter-decided` | ID of the referenced Message, else the Operation's in-Message, absent from the unspecified arm: read from the deployed model; CIB's subscription API exposes only the event name (`CIB-OP-0005`) |
+| `openWaits[].detail.payload` | `adapter-decided` | Message: `CibSevenOpenWaitProjector.writesPayload` is true when the catching element declares a data output association in the deployed model; Signal and addressless Receive Task: constant `false`; no CIB fact in any arm |
+| `openWaits[].detail.criteria` | `not-claimed` | The runner writes the empty list; CIB's subscription exposes no correlation criteria |
+| `openWaits[].detail.variableName` | `adapter-derived` | `camunda:variableName` of the deployed model's conditional event definition (`CibSevenOpenWaitProjector.conditionalDetail`) |
+| `openWaits[].detail.variableEvents` | `adapter-derived` | `camunda:variableEvents` list of the deployed model's conditional event definition (`CibSevenOpenWaitProjector.conditionalDetail`) |
+| `openWaits[].detail.lastValue` | `not-claimed` | The runner writes null; CIB exposes no last evaluated condition value |
+| `openWaits[].detail.deadlineMs` | `adapter-derived` | `Job.getDuedate` minus the fixed logical epoch (`CibSevenOpenWaitProjector.projectJobs`) |
+| `openWaits[].detail.recurrence` | `adapter-derived` | `CibSevenOpenWaitProjector.recurrence` over `TimerEntity.getRepeat`; null when the timer does not repeat |
+| `openWaits[].detail.recurrence.periodMs` | `adapter-derived` | Period of an ISO `R[n]/[start/]period` repeat expression parsed to milliseconds, null for cron (`CibSevenOpenWaitProjector.recurrence`) |
+| `openWaits[].detail.recurrence.cron` | `engine-observed` | The raw repeat expression when it is not an ISO repeat (`CibSevenOpenWaitProjector.recurrence`) |
+| `openWaits[].detail.recurrence.remaining` | `adapter-derived` | Count `n` of an ISO `R<n>/...` repeat expression, null when absent or for cron (`CibSevenOpenWaitProjector.recurrence`) |
+| `openWaits[].detail.protocol` | `adapter-decided` | `CibSevenScriptedEffect.EFFECT_PROTOCOL`, written after `CibSevenOpenWaitProjector.projectEffect` checks the Service Task's implementation against `SOURCE_PROTOCOL` and its delegate bean against `HANDLER_BEANS` |
+| `openWaits[].detail.operation` | `adapter-decided` | `CibSevenScriptedEffect.EFFECT_OPERATION`, written by `CibSevenOpenWaitProjector.projectEffect` under the same check |
+| `openWaits[].detail.arguments` | `not-claimed` | The runner writes the empty list: the asynchronous continuation runs its input mappings only when the job executes, so CIB exposes no argument while the effect waits |
+| `openWaits[].detail.arguments[].name` | `not-claimed` | `arguments` is always empty: the asynchronous continuation runs its input mappings only when the job executes, so CIB exposes no argument while the effect waits (`CibSevenOpenWaitProjector.projectEffect`) |
+| `openWaits[].detail.arguments[].value` | `not-claimed` | `arguments` is always empty: the asynchronous continuation runs its input mappings only when the job executes, so CIB exposes no argument while the effect waits (`CibSevenOpenWaitProjector.projectEffect`) |
+| `openWaits[].detail.arguments[].value.kind` | `not-claimed` | `arguments` is always empty: the asynchronous continuation runs its input mappings only when the job executes, so CIB exposes no argument while the effect waits (`CibSevenOpenWaitProjector.projectEffect`) |
+| `openWaits[].detail.arguments[].value.value` | `not-claimed` | `arguments` is always empty: the asynchronous continuation runs its input mappings only when the job executes, so CIB exposes no argument while the effect waits (`CibSevenOpenWaitProjector.projectEffect`) |
+| `openWaits[].detail.arguments[].value.coefficient` | `not-claimed` | `arguments` is always empty: the asynchronous continuation runs its input mappings only when the job executes, so CIB exposes no argument while the effect waits (`CibSevenOpenWaitProjector.projectEffect`) |
+| `openWaits[].detail.arguments[].value.scale` | `not-claimed` | `arguments` is always empty: the asynchronous continuation runs its input mappings only when the job executes, so CIB exposes no argument while the effect waits (`CibSevenOpenWaitProjector.projectEffect`) |
+| `openWaits[].detail.arguments[].value.value[].name` | `not-claimed` | `arguments` is always empty: the asynchronous continuation runs its input mappings only when the job executes, so CIB exposes no argument while the effect waits (`CibSevenOpenWaitProjector.projectEffect`) |
+| `openWaits[].detail.arguments[].value.value[].value` | `not-claimed` | `arguments` is always empty: the asynchronous continuation runs its input mappings only when the job executes, so CIB exposes no argument while the effect waits (`CibSevenOpenWaitProjector.projectEffect`) |
+| `openWaits[].detail.failures` | `adapter-derived` | `CibSevenOpenWaitProjector.projectEffect` counts the distinct public failed-job incidents seen for the job in this scenario (`incidentsByJob`); only an incident present at an observation counts |
+| `openWaits[].detail.send` | `not-claimed` | The runner writes null: a Service Task effect carries no Send descriptor |
+| `openWaits[].detail.send.recipient` | `not-claimed` | `send` is always null: a Service Task effect carries no Send descriptor (`CibSevenOpenWaitProjector.projectEffect`) |
+| `openWaits[].detail.send.correlation` | `not-claimed` | `send` is always null: a Service Task effect carries no Send descriptor (`CibSevenOpenWaitProjector.projectEffect`) |
+| `openWaits[].detail.send.correlation[].name` | `not-claimed` | `send` is always null: a Service Task effect carries no Send descriptor (`CibSevenOpenWaitProjector.projectEffect`) |
+| `openWaits[].detail.send.correlation[].value` | `not-claimed` | `send` is always null: a Service Task effect carries no Send descriptor (`CibSevenOpenWaitProjector.projectEffect`) |
+| `openWaits[].detail.send.correlation[].value.kind` | `not-claimed` | `send` is always null: a Service Task effect carries no Send descriptor (`CibSevenOpenWaitProjector.projectEffect`) |
+| `openWaits[].detail.send.correlation[].value.value` | `not-claimed` | `send` is always null: a Service Task effect carries no Send descriptor (`CibSevenOpenWaitProjector.projectEffect`) |
+| `openWaits[].detail.send.correlation[].value.coefficient` | `not-claimed` | `send` is always null: a Service Task effect carries no Send descriptor (`CibSevenOpenWaitProjector.projectEffect`) |
+| `openWaits[].detail.send.correlation[].value.scale` | `not-claimed` | `send` is always null: a Service Task effect carries no Send descriptor (`CibSevenOpenWaitProjector.projectEffect`) |
+| `openWaits[].detail.send.correlation[].value.value[].name` | `not-claimed` | `send` is always null: a Service Task effect carries no Send descriptor (`CibSevenOpenWaitProjector.projectEffect`) |
+| `openWaits[].detail.send.correlation[].value.value[].value` | `not-claimed` | `send` is always null: a Service Task effect carries no Send descriptor (`CibSevenOpenWaitProjector.projectEffect`) |
+| `openWaits[].detail.effect` | `adapter-decided` | An incident wait nests the same neutral effect intent as the effect wait it replaces (`CibSevenOpenWaitProjector.projectEffect`) |
+| `openWaits[].detail.effect.protocol` | `adapter-decided` | `CibSevenScriptedEffect.EFFECT_PROTOCOL`, written after `CibSevenOpenWaitProjector.projectEffect` checks the Service Task's implementation against `SOURCE_PROTOCOL` and its delegate bean against `HANDLER_BEANS` |
+| `openWaits[].detail.effect.operation` | `adapter-decided` | `CibSevenScriptedEffect.EFFECT_OPERATION`, written by `CibSevenOpenWaitProjector.projectEffect` under the same check |
+| `openWaits[].detail.effect.arguments` | `not-claimed` | The runner writes the empty list: the asynchronous continuation runs its input mappings only when the job executes, so CIB exposes no argument while the effect waits |
+| `openWaits[].detail.effect.arguments[].name` | `not-claimed` | `arguments` is always empty: the asynchronous continuation runs its input mappings only when the job executes, so CIB exposes no argument while the effect waits (`CibSevenOpenWaitProjector.projectEffect`) |
+| `openWaits[].detail.effect.arguments[].value` | `not-claimed` | `arguments` is always empty: the asynchronous continuation runs its input mappings only when the job executes, so CIB exposes no argument while the effect waits (`CibSevenOpenWaitProjector.projectEffect`) |
+| `openWaits[].detail.effect.arguments[].value.kind` | `not-claimed` | `arguments` is always empty: the asynchronous continuation runs its input mappings only when the job executes, so CIB exposes no argument while the effect waits (`CibSevenOpenWaitProjector.projectEffect`) |
+| `openWaits[].detail.effect.arguments[].value.value` | `not-claimed` | `arguments` is always empty: the asynchronous continuation runs its input mappings only when the job executes, so CIB exposes no argument while the effect waits (`CibSevenOpenWaitProjector.projectEffect`) |
+| `openWaits[].detail.effect.arguments[].value.coefficient` | `not-claimed` | `arguments` is always empty: the asynchronous continuation runs its input mappings only when the job executes, so CIB exposes no argument while the effect waits (`CibSevenOpenWaitProjector.projectEffect`) |
+| `openWaits[].detail.effect.arguments[].value.scale` | `not-claimed` | `arguments` is always empty: the asynchronous continuation runs its input mappings only when the job executes, so CIB exposes no argument while the effect waits (`CibSevenOpenWaitProjector.projectEffect`) |
+| `openWaits[].detail.effect.arguments[].value.value[].name` | `not-claimed` | `arguments` is always empty: the asynchronous continuation runs its input mappings only when the job executes, so CIB exposes no argument while the effect waits (`CibSevenOpenWaitProjector.projectEffect`) |
+| `openWaits[].detail.effect.arguments[].value.value[].value` | `not-claimed` | `arguments` is always empty: the asynchronous continuation runs its input mappings only when the job executes, so CIB exposes no argument while the effect waits (`CibSevenOpenWaitProjector.projectEffect`) |
+| `openWaits[].detail.effect.failures` | `adapter-derived` | `CibSevenOpenWaitProjector.projectEffect` counts the distinct public failed-job incidents seen for the job in this scenario (`incidentsByJob`); only an incident present at an observation counts |
+| `openWaits[].detail.effect.send` | `not-claimed` | The runner writes null: a Service Task effect carries no Send descriptor |
+| `openWaits[].detail.effect.send.recipient` | `not-claimed` | `send` is always null: a Service Task effect carries no Send descriptor (`CibSevenOpenWaitProjector.projectEffect`) |
+| `openWaits[].detail.effect.send.correlation` | `not-claimed` | `send` is always null: a Service Task effect carries no Send descriptor (`CibSevenOpenWaitProjector.projectEffect`) |
+| `openWaits[].detail.effect.send.correlation[].name` | `not-claimed` | `send` is always null: a Service Task effect carries no Send descriptor (`CibSevenOpenWaitProjector.projectEffect`) |
+| `openWaits[].detail.effect.send.correlation[].value` | `not-claimed` | `send` is always null: a Service Task effect carries no Send descriptor (`CibSevenOpenWaitProjector.projectEffect`) |
+| `openWaits[].detail.effect.send.correlation[].value.kind` | `not-claimed` | `send` is always null: a Service Task effect carries no Send descriptor (`CibSevenOpenWaitProjector.projectEffect`) |
+| `openWaits[].detail.effect.send.correlation[].value.value` | `not-claimed` | `send` is always null: a Service Task effect carries no Send descriptor (`CibSevenOpenWaitProjector.projectEffect`) |
+| `openWaits[].detail.effect.send.correlation[].value.coefficient` | `not-claimed` | `send` is always null: a Service Task effect carries no Send descriptor (`CibSevenOpenWaitProjector.projectEffect`) |
+| `openWaits[].detail.effect.send.correlation[].value.scale` | `not-claimed` | `send` is always null: a Service Task effect carries no Send descriptor (`CibSevenOpenWaitProjector.projectEffect`) |
+| `openWaits[].detail.effect.send.correlation[].value.value[].name` | `not-claimed` | `send` is always null: a Service Task effect carries no Send descriptor (`CibSevenOpenWaitProjector.projectEffect`) |
+| `openWaits[].detail.effect.send.correlation[].value.value[].value` | `not-claimed` | `send` is always null: a Service Task effect carries no Send descriptor (`CibSevenOpenWaitProjector.projectEffect`) |
+| `openWaits[].detail.generation` | `adapter-derived` | The count of distinct public failed-job incidents seen for the job in this scenario (`CibSevenOpenWaitProjector.projectEffect`), not an engine field |
+| `openWaits[].detail.cancellable` | `adapter-decided` | The scenario's declared `incidents.cancellable` option (`ScenarioProtocol.Options.incidentsCancellable`), passed through by `CibSevenOpenWaitProjector.projectEffect`; no CIB fact |
+| `failure` | `not-claimed` | `CibSevenStateProjector.observe` passes a null failure, and `status` never projects `failed` |
+| `failure.code` | `not-claimed` | Instance-failure code; `CibSevenStateProjector.observe` passes a null failure, and `status` never projects `failed` |
+| `failure.message` | `not-claimed` | Instance-failure message; `CibSevenStateProjector.observe` passes a null failure, and `status` never projects `failed` |
+| `failure.occurrence` | `not-claimed` | Failing occurrence; `CibSevenStateProjector.observe` passes a null failure, and `status` never projects `failed` |
+| `failure.occurrence.processInstanceId` | `not-claimed` | Failing occurrence; `CibSevenStateProjector.observe` passes a null failure, and `status` never projects `failed` |
+| `failure.occurrence.elementId` | `not-claimed` | Failing occurrence; `CibSevenStateProjector.observe` passes a null failure, and `status` never projects `failed` |
+| `failure.occurrence.activation` | `not-claimed` | Failing occurrence; `CibSevenStateProjector.observe` passes a null failure, and `status` never projects `failed` |
+| `failure.related` | `not-claimed` | Related occurrences of the failure; `CibSevenStateProjector.observe` passes a null failure, and `status` never projects `failed` |
+| `failure.related[].name` | `not-claimed` | Related-occurrence name; `CibSevenStateProjector.observe` passes a null failure, and `status` never projects `failed` |
+| `failure.related[].occurrence` | `not-claimed` | Related occurrence; `CibSevenStateProjector.observe` passes a null failure, and `status` never projects `failed` |
+| `failure.related[].occurrence.processInstanceId` | `not-claimed` | Related occurrence; `CibSevenStateProjector.observe` passes a null failure, and `status` never projects `failed` |
+| `failure.related[].occurrence.elementId` | `not-claimed` | Related occurrence; `CibSevenStateProjector.observe` passes a null failure, and `status` never projects `failed` |
+| `failure.related[].occurrence.activation` | `not-claimed` | Related occurrence; `CibSevenStateProjector.observe` passes a null failure, and `status` never projects `failed` |
 
-Retained `stateQueries` bind canonical status, logical time, and the bounded Process-variable projection to raw public runtime/history queries and the controlled engine clock. The projector's set of eligible variable names is derived only from start or completion commands after the runner observes their committed semantic outcome; this prevents scenario look-ahead and rejected-command leakage while leaving each retained name and raw nullable value engine-observed. Task, Message-subscription, timer, and effect snapshots bind the five wait/interaction collections. `kind` remains schema-guarded, while every semantic instance component is checked against the answer-free start stimulus rather than a generated host ID. The verifier deliberately shares the Java projector's projection rules, so it establishes raw-to-canonical consistency and is not a third independent semantic producer.
+Retained `stateQueries` bind canonical status, logical time, and the root scope's Process-variable projection to raw public runtime/history queries and the controlled engine clock; `CibSevenStateProjector.rootVariables` reads every root-scope variable from history rather than a name set derived from commands. The task, Message-subscription, timer, effect and incident job snapshots retain the raw rows from which `CibSevenOpenWaitProjector` projects `openWaits`. No TypeScript consumer reads these snapshots: the runner's projector owns the projection, and the hosted lane reproduces every retained result from them.
 
 Neutral projection does not increase source-binding independence. Lean independently recomputes and checks neutral checked-graph-to-program lowering. The raw Camunda binding to neutral protocol/operation translation is performed by the shared source/profile projection and rechecked by the CIB raw-binding mutation; Lean does not derive that translation from source bytes.

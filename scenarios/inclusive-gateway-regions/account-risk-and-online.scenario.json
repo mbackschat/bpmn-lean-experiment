@@ -11,17 +11,103 @@
       "sha256": "e5207d32461c6821394dc608bd1f70635a737b82bcf340c3babe7d148b081b4e"
     }
   },
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start-process",
+      "instanceId": "AccountOpening_5",
+      "variables": [
+        {
+          "name": "application",
+          "value": {
+            "kind": "string",
+            "value": "ACC-5"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-assess-applicant",
+      "occurrence": {
+        "processInstanceId": "AccountOpening_5",
+        "elementId": "AssessApplicantTask",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "channel",
+            "value": {
+              "kind": "string",
+              "value": "online"
+            }
+          },
+          {
+            "name": "residency",
+            "value": {
+              "kind": "string",
+              "value": "domestic"
+            }
+          },
+          {
+            "name": "riskRating",
+            "value": {
+              "kind": "string",
+              "value": "high"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "complete-effect-sha256:a7b235b0ade21c6042dfe27476d519de5ca2830161f2f570f272d4694bec22a9",
+      "occurrence": {
+        "processInstanceId": "AccountOpening_5",
+        "elementId": "VerifyIdentityDocument",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": [
+          {
+            "name": "identityCheck",
+            "value": {
+              "kind": "string",
+              "value": "passed"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-verify-source-of-funds",
+      "occurrence": {
+        "processInstanceId": "AccountOpening_5",
+        "elementId": "VerifySourceOfFunds",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-open-account",
+      "occurrence": {
+        "processInstanceId": "AccountOpening_5",
+        "elementId": "OpenAccount",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
   ],
   "provenance": {
     "normativeRefs": [
@@ -36,95 +122,5 @@
       "CIB-EXT-0020",
       "CIB-INT-0005"
     ]
-  },
-  "stimuli": [
-    {
-      "kind": "startProcess",
-      "commandId": "start-process",
-      "processId": "Process_AccountOpening",
-      "instanceId": "AccountOpening_5",
-      "initialVariables": [
-        {
-          "name": "application",
-          "value": {
-            "kind": "string",
-            "value": "ACC-5"
-          }
-        }
-      ]
-    },
-    {
-      "kind": "completeUserTaskInstance",
-      "commandId": "complete-assess-applicant",
-      "taskId": {
-        "processInstanceId": "AccountOpening_5",
-        "elementId": "AssessApplicantTask",
-        "activation": 1
-      },
-      "submittedValues": [
-        {
-          "name": "channel",
-          "value": {
-            "kind": "string",
-            "value": "online"
-          }
-        },
-        {
-          "name": "residency",
-          "value": {
-            "kind": "string",
-            "value": "domestic"
-          }
-        },
-        {
-          "name": "riskRating",
-          "value": {
-            "kind": "string",
-            "value": "high"
-          }
-        }
-      ]
-    },
-    {
-      "kind": "completeEffect",
-      "commandId": "complete-effect-sha256:a7b235b0ade21c6042dfe27476d519de5ca2830161f2f570f272d4694bec22a9",
-      "effectId": {
-        "processInstanceId": "AccountOpening_5",
-        "elementId": "VerifyIdentityDocument",
-        "activation": 1
-      },
-      "result": {
-        "kind": "success",
-        "localPatch": [
-          {
-            "name": "identityCheck",
-            "value": {
-              "kind": "string",
-              "value": "passed"
-            }
-          }
-        ]
-      }
-    },
-    {
-      "kind": "completeUserTaskInstance",
-      "commandId": "complete-verify-source-of-funds",
-      "taskId": {
-        "processInstanceId": "AccountOpening_5",
-        "elementId": "VerifySourceOfFunds",
-        "activation": 1
-      },
-      "submittedValues": []
-    },
-    {
-      "kind": "completeUserTaskInstance",
-      "commandId": "complete-open-account",
-      "taskId": {
-        "processInstanceId": "AccountOpening_5",
-        "elementId": "OpenAccount",
-        "activation": 1
-      },
-      "submittedValues": []
-    }
-  ]
+  }
 }

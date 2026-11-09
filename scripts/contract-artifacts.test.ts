@@ -18,24 +18,16 @@ import {
   collectIntegerSchemas,
   collectPropertyNames,
   parallelDefinitionArtifacts,
-  required,
   requiredAt,
-  requireAwaitEffect,
   requireAwaitUserTask,
   requireCheckedUserTask,
-  requireMutableState,
-  requireServiceTask,
-  requireUserTaskCompletion,
+  requireOccurrenceStimulus,
   semanticOperationKind,
-  serviceTaskDefinitionArtifacts,
 } from "./contract-artifact-test-fixtures.ts";
 import {
   artifactCases,
   normativeArtifactCases,
 } from "./contract-artifact-cases.ts";
-import type {
-  MutableDefinitionArtifacts,
-} from "./contract-artifact-test-fixtures.ts";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 
@@ -185,7 +177,7 @@ test("pins every JSON integer to the JavaScript-safe domain", async () => {
     "artifact sets",
   );
   const unsafe = cloneArtifactSet(artifactSet);
-  requireUserTaskCompletion(unsafe.scenario.stimuli[1]).taskId.activation =
+  requireOccurrenceStimulus(unsafe.scenario.stimuli[1]).occurrence.activation =
     Number.MAX_SAFE_INTEGER + 1;
   bindScenarioBytes(
     unsafe,
@@ -197,9 +189,9 @@ test("pins every JSON integer to the JavaScript-safe domain", async () => {
   );
 
   const fractional = cloneArtifactSet(artifactSet);
-  requireUserTaskCompletion(
+  requireOccurrenceStimulus(
     fractional.scenario.stimuli[1],
-  ).taskId.activation = 1.5;
+  ).occurrence.activation = 1.5;
   bindScenarioBytes(
     fractional,
     `${JSON.stringify(fractional.scenario, null, 2)}\n`,
@@ -255,10 +247,10 @@ test("rejects noncanonical integer tokens before exact artifact bytes lose preci
   const artifactSet = requiredAt(await readAndVerifyArtifactSets(projectRoot), 0, "artifact sets");
   for (const token of ["1.0000000000000001", "9007199254740991.1", "1e-400", "1e400", "1.0", "1e1", "-0", "9007199254740992", "9007199254740993"]) {
     const mutated = cloneArtifactSet(artifactSet);
-    const completion = requireUserTaskCompletion(mutated.scenario.stimuli[1]);
-    completion.taskId.activation = Number(token);
+    const completion = requireOccurrenceStimulus(mutated.scenario.stimuli[1]);
+    completion.occurrence.activation = Number(token);
     bindScenarioBytes(mutated, JSON.stringify(mutated.scenario).replace(
-      `"activation":${JSON.stringify(completion.taskId.activation)}`,
+      `"activation":${JSON.stringify(completion.occurrence.activation)}`,
       `"activation":${token}`,
     ));
     assert.throws(() => verifyArtifactSet(mutated), /integer|number|scenario schema/u, token);

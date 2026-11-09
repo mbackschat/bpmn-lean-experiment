@@ -10,59 +10,55 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-activity-boundary-message-message-wins",
-      "processId": "Process_ActivityBoundaryMessage",
       "instanceId": "ActivityBoundaryMessageMessageWins",
-      "initialVariables": []
+      "variables": []
     },
     {
-      "kind": "deliverMessage",
+      "kind": "deliver",
       "commandId": "deliver-application-withdrawal",
-      "subscriptionId": {
+      "occurrence": {
         "processInstanceId": "ActivityBoundaryMessageMessageWins",
         "elementId": "Withdrawal",
         "activation": 1
       },
-      "channel": {
-        "kind": "operationMessage",
-        "interfaceId": "Interface_ApplicationMessages",
-        "interfaceOperationId": "Operation_ReceiveApplicationWithdrawal",
-        "messageId": "Message_ApplicationWithdrawal"
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "operationMessage",
+          "interfaceId": "Interface_ApplicationMessages",
+          "interfaceOperationId": "Operation_ReceiveApplicationWithdrawal",
+          "messageId": "Message_ApplicationWithdrawal"
+        }
       }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-stale-review-application",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "ActivityBoundaryMessageMessageWins",
         "elementId": "ReviewApplication",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-handle-withdrawal",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "ActivityBoundaryMessageMessageWins",
         "elementId": "HandleWithdrawal",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

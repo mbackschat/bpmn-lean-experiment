@@ -10,164 +10,193 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-process",
-      "processId": "Process_SupplierOnboarding",
       "instanceId": "Instance_1",
-      "initialVariables": []
+      "variables": []
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-register-supplier",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Instance_1",
         "elementId": "UserTask_RegisterSupplier",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-collect-tax-documents",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Instance_1",
         "elementId": "UserTask_CollectTaxDocuments",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-collect-bank-details",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Instance_1",
         "elementId": "UserTask_CollectBankDetails",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-bank-prepare-approval",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "call:10:Instance_1:25:CallActivity_BankApproval:1",
         "elementId": "UserTask_PrepareApproval",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-bank-approve-under-tax-identity",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "call:10:Instance_1:24:CallActivity_TaxApproval:1",
         "elementId": "UserTask_Approve",
         "activation": 3
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-bank-approve-under-supplier-identity",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Instance_1",
         "elementId": "UserTask_Approve",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-bank-approve",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "call:10:Instance_1:25:CallActivity_BankApproval:1",
         "elementId": "UserTask_Approve",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-tax-prepare-approval",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "call:10:Instance_1:24:CallActivity_TaxApproval:1",
         "elementId": "UserTask_PrepareApproval",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-tax-approve",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "call:10:Instance_1:24:CallActivity_TaxApproval:1",
         "elementId": "UserTask_Approve",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-tax-approve-again",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "call:10:Instance_1:24:CallActivity_TaxApproval:1",
         "elementId": "UserTask_Approve",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-assess-risk",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "call:10:Instance_1:23:CallActivity_ReviewRisk:1",
         "elementId": "UserTask_AssessRisk",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-screen-sanctions",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "call:47:call:10:Instance_1:23:CallActivity_ReviewRisk:1:28:CallActivity_CheckCompliance:1",
         "elementId": "UserTask_ScreenSanctions",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-final-prepare-approval",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "call:10:Instance_1:26:CallActivity_FinalApproval:1",
         "elementId": "UserTask_PrepareApproval",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-final-approve",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "call:10:Instance_1:26:CallActivity_FinalApproval:1",
         "elementId": "UserTask_Approve",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

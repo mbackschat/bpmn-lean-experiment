@@ -13,42 +13,32 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-process",
-      "processId": "Process_DocumentIntake",
       "instanceId": "Instance_1",
-      "initialVariables": []
+      "variables": []
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-record-document-format",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Instance_1",
         "elementId": "RecordDocumentFormat",
         "activation": 1
       },
-      "submittedValues": [
-        {
-          "name": "format",
-          "value": {
-            "kind": "string",
-            "value": "digital"
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "format",
+            "value": {
+              "kind": "string",
+              "value": "digital"
+            }
           }
-        }
-      ]
+        ]
+      }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

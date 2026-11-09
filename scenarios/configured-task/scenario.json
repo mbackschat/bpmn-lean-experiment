@@ -10,47 +10,37 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-process",
-      "processId": "Process_ConfiguredTask",
       "instanceId": "ConfiguredTaskInstance_1",
-      "initialVariables": []
+      "variables": []
     },
     {
-      "kind": "completeEffect",
+      "kind": "effectResult",
       "commandId": "complete-effect-sha256:ea8ffb5947131d1289b96a098bee60775443ea303c36824fb464dc7a76a8fc7a",
-      "effectId": {
+      "occurrence": {
         "processInstanceId": "ConfiguredTaskInstance_1",
         "elementId": "ConfiguredTask_Probe",
         "activation": 1
       },
-      "result": {
+      "outcome": {
         "kind": "success",
-        "localPatch": []
+        "outputs": []
       }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-review",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "ConfiguredTaskInstance_1",
         "elementId": "UserTask_Review",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

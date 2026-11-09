@@ -13,11 +13,10 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-process",
-      "processId": "Process_ClaimAcknowledgement",
       "instanceId": "Claim_1",
-      "initialVariables": [
+      "variables": [
         {
           "name": "claim",
           "value": {
@@ -28,50 +27,44 @@
       ]
     },
     {
-      "kind": "completeEffect",
+      "kind": "effectResult",
       "commandId": "complete-effect-sha256:620b0a8a4c893941315dd4c599b91cb5d17d9e834e0efef024dab7369de5f7c9",
-      "effectId": {
+      "occurrence": {
         "processInstanceId": "Claim_1",
         "elementId": "AcknowledgeClaim",
         "activation": 1
       },
-      "result": {
+      "outcome": {
         "kind": "success",
-        "localPatch": []
+        "outputs": []
       }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-assess-claim",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Claim_1",
         "elementId": "AssessClaim",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-settle-claim",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Claim_1",
         "elementId": "SettleClaim",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

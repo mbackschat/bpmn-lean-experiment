@@ -6,7 +6,7 @@
  */
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { mkdtemp, readFile, readdir, rm } from "node:fs/promises";
+import { mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { test } from "node:test";
@@ -14,7 +14,7 @@ import { test } from "node:test";
 import type { KernelJson } from "@bpmn-lean/bpmn-source";
 import { firstValueDisagreement } from "@bpmn-lean/differential";
 import type { ValueDisagreement } from "@bpmn-lean/differential";
-import { runPopulation, runScenario } from "@bpmn-lean/kernel";
+import { parseStrict, runPopulation, runScenario } from "@bpmn-lean/kernel";
 import type { Scenario } from "@bpmn-lean/semantic-core";
 
 import { parseWireJsonBytes } from "../../../scripts/strict-json.ts";
@@ -25,10 +25,10 @@ import { projectRoot } from "./pipeline-target-support.ts";
 const discoveryRoots = ["scenarios", "packages/differential/test/fixtures"];
 
 type SourceDefinition = Readonly<{ id: string; relativePath: string; sha256: string }>;
-type PopulationScenario = Readonly<{ id: string; profile: string; definitions: ReadonlyArray<SourceDefinition> }>;
+type PopulationScenario = Readonly<{ id: string; profile: string; definitions: ReadonlyArray<Readonly<{ bpmn: SourceDefinition }>> }>;
 type DiscoveredScenario =
   | Readonly<{ kind: "scenario"; relativePath: string; bytes: Buffer; document: Scenario }>
-  | Readonly<{ kind: "enginePopulationScenario"; relativePath: string; bytes: Buffer; document: PopulationScenario }>;
+  | Readonly<{ kind: "populationScenario"; relativePath: string; bytes: Buffer; document: PopulationScenario }>;
 type OracleDisagreement = Readonly<{ scenario: string } & ValueDisagreement>;
 
 const sha256 = (bytes: Uint8Array): string => createHash("sha256").update(bytes).digest("hex");
@@ -47,7 +47,7 @@ async function discoveredScenarios(files: ReadonlyArray<string>): Promise<Readon
     const bytes = await readFile(path.join(projectRoot, relativePath));
     const document = parseWireJsonBytes<Scenario | PopulationScenario>(bytes, relativePath);
     const kind = (document as Readonly<{ kind?: unknown }>).kind;
-    if (kind !== "scenario" && kind !== "enginePopulationScenario") {
+    if (kind !== "scenario" && kind !== "populationScenario") {
       throw new TypeError(`${relativePath} is named as a scenario but has kind ${String(kind)}`);
     }
     return { kind, relativePath, bytes, document } as DiscoveredScenario;
@@ -99,10 +99,10 @@ test("the Lean and TypeScript kernels agree on every discovered scenario and pop
     for (const [index, scenario] of scenarios.entries()) {
       const label = `${scenario.document.id} (${scenario.relativePath})`;
       const scenarioPath = path.join(projectRoot, scenario.relativePath);
-      if (scenario.kind === "enginePopulationScenario") {
+      if (scenario.kind === "populationScenario") {
         populationCount += 1;
         const programs = await Promise.all(scenario.document.definitions.map((definition) =>
-          kernelProgramFor(definition, scenario.document.profile, null)));
+          kernelProgramFor(definition.bpmn, scenario.document.profile, null)));
         const programPaths = programs.map((_, definition) =>
           path.join(directory, `population-${String(index)}-${String(definition)}.json`));
         await Promise.all(programs.map((program, definition) => writeProgram(programPaths[definition]!, program)));
@@ -141,4 +141,52 @@ test("the oracle comparison reports a changed value and a field only one kernel 
     compared("control", { trace: [{ ...deployment.trace[0], code: "admission.refused" }] }, deployment),
     { scenario: "control", path: "result.trace[0].code", expected: "admission.refused", actual: undefined },
   );
+});
+
+/** The strict-decoding code a refusal names, or `accepted`. */
+function refusalCode(run: () => unknown): Promise<string> {
+  return Promise.resolve().then(run).then(
+    () => "accepted",
+    (error: unknown) => /codec\.[A-Za-z]+/u.exec(String(error))?.[0] ?? `uncoded: ${String(error)}`,
+  );
+}
+
+test("the Lean and TypeScript kernels refuse the same malformed inputs with the same strict-decoding code", async () => {
+  const relativePath = "packages/differential/test/fixtures/serial-classification.scenario.json";
+  const scenarioText = await readFile(path.join(projectRoot, relativePath), "utf8");
+  const scenario = JSON.parse(scenarioText) as Scenario & Readonly<{ stimuli: ReadonlyArray<Record<string, unknown>> }>;
+  const program = await kernelProgramFor(scenario.bpmn, scenario.profile, null) as unknown as Record<string, unknown>;
+  const programText = JSON.stringify(program);
+  const [first, ...rest] = scenario.stimuli;
+  const withFirst = (stimulus: Record<string, unknown>): string => JSON.stringify({ ...scenario, stimuli: [stimulus, ...rest] });
+  const { variables: _variables, ...withoutVariables } = first!;
+  const cases: ReadonlyArray<readonly [string, string, string, string]> = [
+    ["control", programText, scenarioText, "accepted"],
+    ["repeated program key", `{"variables":[],${programText.slice(1)}`, scenarioText, "codec.duplicateField"],
+    ["unknown program key", JSON.stringify({ ...program, extra: true }), scenarioText, "codec.unknownField"],
+    ["mistyped program field", JSON.stringify({ ...program, flows: {} }), scenarioText, "codec.malformed"],
+    ["unknown stimulus key", programText, withFirst({ ...first, extra: true }), "codec.unknownField"],
+    ["missing stimulus key", programText, withFirst(withoutVariables), "codec.missingField"],
+    ["null optional member", programText, withFirst({ ...first, at: null }), "codec.malformed"],
+  ];
+  const directory = await mkdtemp(path.join(tmpdir(), "bpmn-kernel-strict-"));
+  try {
+    for (const [label, programInput, scenarioInput, expected] of cases) {
+      const programPath = path.join(directory, "program.json");
+      const scenarioPath = path.join(directory, "scenario.json");
+      await writeFile(programPath, programInput, "utf8");
+      await writeFile(scenarioPath, scenarioInput, "utf8");
+      const lean = await refusalCode(() => runLeanKernelScenario(programPath, scenarioPath));
+      const typeScript = await refusalCode(() => {
+        const decoded = [parseStrict(programInput), parseStrict(scenarioInput)].map((parsed) => {
+          if (!parsed.ok) throw new Error(parsed.refusal);
+          return parsed.value;
+        });
+        return runScenario(decoded[0], decoded[1]);
+      });
+      assert.deepEqual({ label, lean, typeScript }, { label, lean: expected, typeScript: expected });
+    }
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
 });

@@ -10,59 +10,55 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-activity-boundary-message-task-wins",
-      "processId": "Process_ActivityBoundaryMessage",
       "instanceId": "ActivityBoundaryMessageTaskWins",
-      "initialVariables": []
+      "variables": []
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-review-application",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "ActivityBoundaryMessageTaskWins",
         "elementId": "ReviewApplication",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "deliverMessage",
+      "kind": "deliver",
       "commandId": "deliver-stale-application-withdrawal",
-      "subscriptionId": {
+      "occurrence": {
         "processInstanceId": "ActivityBoundaryMessageTaskWins",
         "elementId": "Withdrawal",
         "activation": 1
       },
-      "channel": {
-        "kind": "operationMessage",
-        "interfaceId": "Interface_ApplicationMessages",
-        "interfaceOperationId": "Operation_ReceiveApplicationWithdrawal",
-        "messageId": "Message_ApplicationWithdrawal"
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "operationMessage",
+          "interfaceId": "Interface_ApplicationMessages",
+          "interfaceOperationId": "Operation_ReceiveApplicationWithdrawal",
+          "messageId": "Message_ApplicationWithdrawal"
+        }
       }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-record-review",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "ActivityBoundaryMessageTaskWins",
         "elementId": "RecordReviewCompletion",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

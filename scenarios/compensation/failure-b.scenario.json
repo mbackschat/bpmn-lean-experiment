@@ -10,11 +10,10 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-compensation-failure-b",
-      "processId": "Process_Compensation",
       "instanceId": "Compensation_failure_b",
-      "initialVariables": [
+      "variables": [
         {
           "name": "Property_TravelDetails",
           "value": {
@@ -25,72 +24,72 @@
       ]
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete:Task_ReserveHotel",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Compensation_failure_b",
         "elementId": "Task_ReserveHotel",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "stale-task",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Compensation_failure_b",
         "elementId": "Task_ReserveHotel",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete:Task_ArrangeGroundTravel",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Compensation_failure_b",
         "elementId": "Task_ArrangeGroundTravel",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete:Task_IssueInsurance",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Compensation_failure_b",
         "elementId": "Task_IssueInsurance",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeEffect",
+      "kind": "effectResult",
       "commandId": "complete-effect-sha256:3f71ab91b40ac56bbdb01aa405c3aa55247f4f36dd38b178a23681c835af36ab",
-      "effectId": {
+      "occurrence": {
         "processInstanceId": "Compensation_failure_b",
         "elementId": "Task_UndoGroundTravel",
         "activation": 1
       },
-      "result": {
-        "kind": "bpmnError",
+      "outcome": {
+        "kind": "businessFailure",
         "code": "undo-failed",
-        "message": "Travel cancellation handler failed",
-        "localPatch": []
+        "outputs": [],
+        "message": "Travel cancellation handler failed"
       }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

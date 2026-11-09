@@ -11,17 +11,62 @@
       "sha256": "a211570d2aed1dff31be9caa8f12227fc308ecf7975c8099a0d96cd838566eba"
     }
   },
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start",
+      "instanceId": "Credit_null",
+      "variables": [
+        {
+          "name": "applicantRef",
+          "value": {
+            "kind": "string",
+            "value": "A-18"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "complete-effect-sha256:e4d76a47a838efc88b7a91d71164ca9c098c269178e1bcc080732cb8f90332b1",
+      "occurrence": {
+        "processInstanceId": "Credit_null",
+        "elementId": "AssessCredit",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": [
+          {
+            "name": "assessment",
+            "value": {
+              "kind": "null"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "complete-effect-sha256:3046e394514b67714b270326cc6e1cca91a152cb94bfb5ca5deda823148d555c",
+      "occurrence": {
+        "processInstanceId": "Credit_null",
+        "elementId": "NotifyApplicant",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": [
+          {
+            "name": "receipt",
+            "value": {
+              "kind": "map",
+              "value": []
+            }
+          }
+        ]
+      }
+    }
   ],
   "provenance": {
     "normativeRefs": [
@@ -34,63 +79,5 @@
       "CIB-EXT-0015",
       "CIB-EXT-0019"
     ]
-  },
-  "stimuli": [
-    {
-      "kind": "startProcess",
-      "commandId": "start",
-      "processId": "Process_CreditDecision",
-      "instanceId": "Credit_null",
-      "initialVariables": [
-        {
-          "name": "applicantRef",
-          "value": {
-            "kind": "string",
-            "value": "A-18"
-          }
-        }
-      ]
-    },
-    {
-      "kind": "completeEffect",
-      "commandId": "complete-effect-sha256:e4d76a47a838efc88b7a91d71164ca9c098c269178e1bcc080732cb8f90332b1",
-      "effectId": {
-        "processInstanceId": "Credit_null",
-        "elementId": "AssessCredit",
-        "activation": 1
-      },
-      "result": {
-        "kind": "success",
-        "localPatch": [
-          {
-            "name": "assessment",
-            "value": {
-              "kind": "null"
-            }
-          }
-        ]
-      }
-    },
-    {
-      "kind": "completeEffect",
-      "commandId": "complete-effect-sha256:3046e394514b67714b270326cc6e1cca91a152cb94bfb5ca5deda823148d555c",
-      "effectId": {
-        "processInstanceId": "Credit_null",
-        "elementId": "NotifyApplicant",
-        "activation": 1
-      },
-      "result": {
-        "kind": "success",
-        "localPatch": [
-          {
-            "name": "receipt",
-            "value": {
-              "kind": "map",
-              "value": []
-            }
-          }
-        ]
-      }
-    }
-  ]
+  }
 }

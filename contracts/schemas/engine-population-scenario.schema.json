@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://bpmn-lean.local/schemas/engine-population-scenario.schema.json",
-  "title": "BPMN Lean engine-population scenario",
+  "title": "BPMN Lean population scenario",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -9,104 +9,55 @@
     "id",
     "profile",
     "definitions",
-    "instances",
-    "publications",
-    "observations",
-    "executionTargets",
+    "steps",
     "provenance"
   ],
   "properties": {
     "kind": {
-      "const": "enginePopulationScenario"
+      "const": "populationScenario"
     },
     "id": {
       "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonEmptyString"
     },
     "profile": {
-      "const": "bpmn-2.0.2-message-key-correlation-draft"
+      "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonEmptyString"
     },
     "definitions": {
       "type": "array",
       "minItems": 1,
-      "maxItems": 2,
-      "items": {
-        "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/bpmnResource"
-      }
-    },
-    "instances": {
-      "type": "array",
-      "minItems": 2,
-      "maxItems": 2,
       "items": {
         "type": "object",
         "additionalProperties": false,
         "required": [
-          "definitionId",
-          "stimuli"
+          "definitionRef",
+          "bpmn"
         ],
         "properties": {
-          "definitionId": {
+          "definitionRef": {
             "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonEmptyString"
           },
-          "stimuli": {
-            "type": "array",
-            "minItems": 2,
-            "maxItems": 2,
-            "prefixItems": [
-              {
-                "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/startProcess"
-              },
-              {
-                "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/deliverPayloadMessage"
-              }
-            ],
-            "items": false
+          "bpmn": {
+            "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/bpmnResource"
           }
         }
       }
     },
-    "publications": {
+    "steps": {
+      "description": "One ordered list: every step runs in this order.",
       "type": "array",
       "minItems": 1,
-      "maxItems": 1,
       "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "kind",
-          "commandId",
-          "address",
-          "payload"
-        ],
-        "properties": {
-          "kind": {
-            "const": "publishCorrelatedPayloadMessage"
+        "oneOf": [
+          {
+            "$ref": "#/$defs/instanceStep"
           },
-          "commandId": {
-            "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/commandId"
+          {
+            "$ref": "#/$defs/publish"
           },
-          "address": {
-            "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/correlatedMessageAddress"
-          },
-          "payload": {
-            "$ref": "#/$defs/nonemptyStringValue"
+          {
+            "$ref": "#/$defs/broadcast"
           }
-        }
-      }
-    },
-    "observations": {
-      "const": [
-        "publicationResults",
-        "processStates",
-        "ingressOrdinals"
-      ]
-    },
-    "executionTargets": {
-      "const": {
-        "lean": true,
-        "typeScriptCore": true,
-        "temporal": true,
-        "cib": null
+        ]
       }
     },
     "provenance": {
@@ -114,18 +65,111 @@
     }
   },
   "$defs": {
-    "nonemptyStringValue": {
+    "instanceStep": {
       "type": "object",
       "additionalProperties": false,
       "required": [
         "kind",
-        "value"
+        "definitionRef",
+        "instanceId",
+        "stimulus"
       ],
       "properties": {
         "kind": {
-          "const": "string"
+          "const": "instance"
         },
-        "value": {
+        "definitionRef": {
+          "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonEmptyString"
+        },
+        "instanceId": {
+          "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonEmptyString"
+        },
+        "stimulus": {
+          "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/stimulus"
+        }
+      }
+    },
+    "publish": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "commandId",
+        "address",
+        "payload"
+      ],
+      "properties": {
+        "kind": {
+          "const": "publish"
+        },
+        "commandId": {
+          "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/commandId"
+        },
+        "address": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "definitionRef",
+            "processId",
+            "channel",
+            "correlationKeyId"
+          ],
+          "properties": {
+            "definitionRef": {
+              "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonEmptyString"
+            },
+            "processId": {
+              "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonEmptyString"
+            },
+            "channel": {
+              "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/messageChannel"
+            },
+            "correlationKeyId": {
+              "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonEmptyString"
+            }
+          }
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "const": "string"
+            },
+            "value": {
+              "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonEmptyString"
+            }
+          }
+        }
+      }
+    },
+    "broadcast": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "commandId",
+        "name",
+        "variables"
+      ],
+      "properties": {
+        "kind": {
+          "const": "broadcast"
+        },
+        "commandId": {
+          "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/commandId"
+        },
+        "name": {
+          "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonEmptyString"
+        },
+        "variables": {
+          "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/bindings"
+        },
+        "businessKey": {
           "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonEmptyString"
         }
       }

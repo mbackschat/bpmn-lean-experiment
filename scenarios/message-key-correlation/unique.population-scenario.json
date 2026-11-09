@@ -1,91 +1,100 @@
 {
-  "kind": "enginePopulationScenario",
+  "kind": "populationScenario",
   "id": "message-key-correlation-unique",
   "profile": "bpmn-2.0.2-message-key-correlation-draft",
   "definitions": [
     {
-      "id": "message-key-correlation-process",
-      "relativePath": "scenarios/message-key-correlation/process.bpmn",
-      "sha256": "8d16faca66b00378d4ab02189cdd3270143076a46086b46dff68729d90dba086",
-      "sourceOverlay": null
+      "definitionRef": "message-key-correlation-process",
+      "bpmn": {
+        "id": "message-key-correlation-process",
+        "relativePath": "scenarios/message-key-correlation/process.bpmn",
+        "sha256": "8d16faca66b00378d4ab02189cdd3270143076a46086b46dff68729d90dba086",
+        "sourceOverlay": null
+      }
     }
   ],
-  "instances": [
+  "steps": [
     {
-      "definitionId": "message-key-correlation-process",
-      "stimuli": [
-        {
-          "kind": "startProcess",
-          "commandId": "start-correlation-unique-a",
-          "processId": "Process_SettlementCorrelation",
-          "instanceId": "CorrelationUniqueA",
-          "initialVariables": []
-        },
-        {
-          "kind": "deliverPayloadMessage",
-          "commandId": "initialize-correlation-unique-a",
-          "subscriptionId": {
-            "processInstanceId": "CorrelationUniqueA",
-            "elementId": "MessageCatch_InitialSettlement",
-            "activation": 1
-          },
-          "channel": {
-            "kind": "operationMessage",
-            "interfaceId": "Interface_ClearingHouse",
-            "interfaceOperationId": "Operation_ConfirmSettlement",
-            "messageId": "Message_SettlementConfirmed"
-          },
-          "payload": {
-            "kind": "string",
-            "value": "settlement-42"
-          }
-        }
-      ]
+      "kind": "instance",
+      "definitionRef": "message-key-correlation-process",
+      "instanceId": "CorrelationUniqueA",
+      "stimulus": {
+        "kind": "start",
+        "commandId": "start-correlation-unique-a",
+        "instanceId": "CorrelationUniqueA",
+        "variables": []
+      }
     },
     {
-      "definitionId": "message-key-correlation-process",
-      "stimuli": [
-        {
-          "kind": "startProcess",
-          "commandId": "start-correlation-unique-b",
-          "processId": "Process_SettlementCorrelation",
-          "instanceId": "CorrelationUniqueB",
-          "initialVariables": []
+      "kind": "instance",
+      "definitionRef": "message-key-correlation-process",
+      "instanceId": "CorrelationUniqueA",
+      "stimulus": {
+        "kind": "deliver",
+        "commandId": "initialize-correlation-unique-a",
+        "occurrence": {
+          "processInstanceId": "CorrelationUniqueA",
+          "elementId": "MessageCatch_InitialSettlement",
+          "activation": 1
         },
-        {
-          "kind": "deliverPayloadMessage",
-          "commandId": "initialize-correlation-unique-b",
-          "subscriptionId": {
-            "processInstanceId": "CorrelationUniqueB",
-            "elementId": "MessageCatch_InitialSettlement",
-            "activation": 1
-          },
+        "trigger": {
+          "kind": "message",
           "channel": {
             "kind": "operationMessage",
             "interfaceId": "Interface_ClearingHouse",
             "interfaceOperationId": "Operation_ConfirmSettlement",
             "messageId": "Message_SettlementConfirmed"
-          },
-          "payload": {
-            "kind": "string",
-            "value": "settlement-99"
           }
+        },
+        "payload": {
+          "kind": "string",
+          "value": "settlement-42"
         }
-      ]
-    }
-  ],
-  "publications": [
+      }
+    },
     {
-      "kind": "publishCorrelatedPayloadMessage",
+      "kind": "instance",
+      "definitionRef": "message-key-correlation-process",
+      "instanceId": "CorrelationUniqueB",
+      "stimulus": {
+        "kind": "start",
+        "commandId": "start-correlation-unique-b",
+        "instanceId": "CorrelationUniqueB",
+        "variables": []
+      }
+    },
+    {
+      "kind": "instance",
+      "definitionRef": "message-key-correlation-process",
+      "instanceId": "CorrelationUniqueB",
+      "stimulus": {
+        "kind": "deliver",
+        "commandId": "initialize-correlation-unique-b",
+        "occurrence": {
+          "processInstanceId": "CorrelationUniqueB",
+          "elementId": "MessageCatch_InitialSettlement",
+          "activation": 1
+        },
+        "trigger": {
+          "kind": "message",
+          "channel": {
+            "kind": "operationMessage",
+            "interfaceId": "Interface_ClearingHouse",
+            "interfaceOperationId": "Operation_ConfirmSettlement",
+            "messageId": "Message_SettlementConfirmed"
+          }
+        },
+        "payload": {
+          "kind": "string",
+          "value": "settlement-99"
+        }
+      }
+    },
+    {
+      "kind": "publish",
       "commandId": "publish-correlation-unique",
       "address": {
-        "definition": {
-          "compiler": "bpmn-source-semantic-process",
-          "semanticProfile": "bpmn-2.0.2-message-key-correlation-draft",
-          "sourceOverlay": null,
-          "sourceId": "message-key-correlation-process",
-          "sourceSha256": "8d16faca66b00378d4ab02189cdd3270143076a46086b46dff68729d90dba086"
-        },
+        "definitionRef": "message-key-correlation-process",
         "processId": "Process_SettlementCorrelation",
         "channel": {
           "kind": "operationMessage",
@@ -101,17 +110,6 @@
       }
     }
   ],
-  "observations": [
-    "publicationResults",
-    "processStates",
-    "ingressOrdinals"
-  ],
-  "executionTargets": {
-    "lean": true,
-    "typeScriptCore": true,
-    "temporal": true,
-    "cib": null
-  },
   "provenance": {
     "normativeRefs": [
       "BPMN 2.0.2 Clause 8.4.2",

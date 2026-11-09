@@ -143,7 +143,7 @@ test("the actual registered source union equals the catalog and remains covered 
   }
   for (const relativePath of enginePopulationScenarioRelativePaths) {
     const scenario = JSON.parse(await readFile(new URL(`../${relativePath}`, import.meta.url), "utf8"));
-    for (const definition of scenario.definitions) registeredSources.add(definition.relativePath);
+    for (const definition of scenario.definitions) registeredSources.add(definition.bpmn.relativePath);
   }
   const detected = new Set<string>();
   for (const relativePath of registeredSources) {

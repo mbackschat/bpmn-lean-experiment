@@ -9,8 +9,8 @@ function startScenario(items: ReadonlyArray<string>) {
   return {
     profile,
     stimuli: [{
-      kind: "startProcess",
-      initialVariables: [{
+      kind: "start",
+      variables: [{
         name: "DataObjectReference_InputItems",
         value: { kind: "stringList", value: items },
       }],
@@ -48,7 +48,7 @@ test("admits only the operation-bound Process input name and cardinality", () =>
       () =>
         verifyScenarioVariableValueContract({
           profile,
-          stimuli: [{ kind: "startProcess", initialVariables }],
+          stimuli: [{ kind: "start", variables: initialVariables }],
         }),
       /exactly one DataObjectReference_InputItems stringList binding/u,
     );
@@ -60,16 +60,16 @@ test("admits only the task-local scalar result and an empty escalation patch", (
     verifyScenarioVariableValueContract({
       profile,
       stimuli: [{
-        kind: "completeUserTaskInstance",
-        taskId: { elementId: "UserTask_Review" },
-        submittedValues: [{
+        kind: "command",
+        occurrence: { elementId: "UserTask_Review" },
+        action: { kind: "completeUserTask", values: [{
           name: "DataOutput_CurrentResult",
           value: { kind: "string", value: "accepted" },
-        }],
+        }] },
       }, {
-        kind: "completeUserTaskInstance",
-        taskId: { elementId: "UserTask_Escalation" },
-        submittedValues: [],
+        kind: "command",
+        occurrence: { elementId: "UserTask_Escalation" },
+        action: { kind: "completeUserTask", values: [] },
       }],
     })
   );
@@ -90,9 +90,9 @@ test("admits only the task-local scalar result and an empty escalation patch", (
         verifyScenarioVariableValueContract({
           profile,
           stimuli: [{
-            kind: "completeUserTaskInstance",
-            taskId: { elementId: "UserTask_Review" },
-            submittedValues,
+            kind: "command",
+            occurrence: { elementId: "UserTask_Review" },
+            action: { kind: "completeUserTask", values: submittedValues },
           }],
         }),
       /exactly one DataOutput_CurrentResult string binding/u,
@@ -104,12 +104,12 @@ test("admits only the task-local scalar result and an empty escalation patch", (
       verifyScenarioVariableValueContract({
         profile,
         stimuli: [{
-          kind: "completeUserTaskInstance",
-          taskId: { elementId: "UserTask_Escalation" },
-          submittedValues: [{
+          kind: "command",
+          occurrence: { elementId: "UserTask_Escalation" },
+          action: { kind: "completeUserTask", values: [{
             name: "DataOutput_CurrentResult",
             value: { kind: "string", value: "must-not-commit" },
-          }],
+          }] },
         }],
       }),
     /non-review User Task completion requires an empty patch/u,
@@ -120,12 +120,12 @@ test("rejects a sequential Multi-Instance list on the completion surface", () =>
   const completion = {
     profile,
     stimuli: [{
-      kind: "completeUserTaskInstance",
-      taskId: { elementId: "UserTask_Review" },
-      submittedValues: [{
+      kind: "command",
+      occurrence: { elementId: "UserTask_Review" },
+      action: { kind: "completeUserTask", values: [{
         name: "DataOutput_CurrentResult",
         value: { kind: "stringList", value: ["wrong-surface"] },
-      }],
+      }] },
     }],
   };
   assert.throws(

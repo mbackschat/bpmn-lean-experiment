@@ -10,34 +10,21 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-process",
-      "processId": "Process_IntermediateCatchTimer",
       "instanceId": "Instance_1",
-      "initialVariables": []
+      "variables": []
     },
     {
-      "kind": "fireTimer",
+      "kind": "timerFire",
       "commandId": "fire-timer-sha256:6abd9ffaf10c2bcefd54580956fd16ca64043ce25367c6f8a5b697033bca5c3b",
-      "timerId": {
+      "occurrence": {
         "processInstanceId": "Instance_1",
         "elementId": "TimerCatch_PT1S",
         "activation": 1
       },
       "logicalTimeMs": 1000
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

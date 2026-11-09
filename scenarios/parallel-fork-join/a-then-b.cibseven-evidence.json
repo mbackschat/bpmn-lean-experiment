@@ -2,7 +2,7 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "parallel-fork-join-a-then-b",
-    "sha256": "84c866d738243de4698db66759e4e35d511a66ed69df69710f2d9c0ea64353a9"
+    "sha256": "ce21b16d544cec8cb44a58737d87fd2f4889897aaa458d98851f5142dbd4bcb9"
   },
   "profile": {
     "id": "parallel-fork-join-draft",
@@ -102,62 +102,54 @@
         "kind": "state",
         "instanceId": "Instance_1",
         "status": "running",
-        "activeWaits": [
-          {
-            "elementId": "UserTask_A",
-            "kind": "userTask",
-            "multiplicity": 1
-          },
-          {
-            "elementId": "UserTask_B",
-            "kind": "userTask",
-            "multiplicity": 1
-          }
-        ],
-        "openUserTasks": [
-          {
-            "id": {
-              "processInstanceId": "Instance_1",
-              "elementId": "UserTask_A",
-              "activation": 1
-            },
-            "name": "A",
-            "state": "active"
-          },
-          {
-            "id": {
-              "processInstanceId": "Instance_1",
-              "elementId": "UserTask_B",
-              "activation": 1
-            },
-            "name": "B",
-            "state": "active"
-          }
-        ],
-        "openMessageSubscriptions": [],
-        "openTimers": [],
-        "openEffects": [],
-        "openIncidents": [],
+        "logicalTimeMs": 0,
         "variables": [],
-        "enabledInteractions": [
+        "openWaits": [
           {
-            "kind": "completeUserTaskInstance",
-            "taskId": {
+            "id": {
               "processInstanceId": "Instance_1",
               "elementId": "UserTask_A",
               "activation": 1
+            },
+            "definition": null,
+            "input": "command",
+            "detail": {
+              "kind": "userTask",
+              "name": "A",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
             }
           },
           {
-            "kind": "completeUserTaskInstance",
-            "taskId": {
+            "id": {
               "processInstanceId": "Instance_1",
               "elementId": "UserTask_B",
               "activation": 1
+            },
+            "definition": null,
+            "input": "command",
+            "detail": {
+              "kind": "userTask",
+              "name": "B",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
             }
           }
-        ],
-        "logicalTimeMs": 0
+        ]
       },
       {
         "kind": "command",
@@ -168,40 +160,32 @@
         "kind": "state",
         "instanceId": "Instance_1",
         "status": "running",
-        "activeWaits": [
-          {
-            "elementId": "UserTask_B",
-            "kind": "userTask",
-            "multiplicity": 1
-          }
-        ],
-        "openUserTasks": [
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
           {
             "id": {
               "processInstanceId": "Instance_1",
               "elementId": "UserTask_B",
               "activation": 1
             },
-            "name": "B",
-            "state": "active"
-          }
-        ],
-        "openMessageSubscriptions": [],
-        "openTimers": [],
-        "openEffects": [],
-        "openIncidents": [],
-        "variables": [],
-        "enabledInteractions": [
-          {
-            "kind": "completeUserTaskInstance",
-            "taskId": {
-              "processInstanceId": "Instance_1",
-              "elementId": "UserTask_B",
-              "activation": 1
+            "definition": null,
+            "input": "command",
+            "detail": {
+              "kind": "userTask",
+              "name": "B",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
             }
           }
-        ],
-        "logicalTimeMs": 0
+        ]
       },
       {
         "kind": "command",
@@ -212,15 +196,9 @@
         "kind": "state",
         "instanceId": "Instance_1",
         "status": "completed",
-        "activeWaits": [],
-        "openUserTasks": [],
-        "openMessageSubscriptions": [],
-        "openTimers": [],
-        "openEffects": [],
-        "openIncidents": [],
+        "logicalTimeMs": 0,
         "variables": [],
-        "enabledInteractions": [],
-        "logicalTimeMs": 0
+        "openWaits": []
       }
     ]
   }

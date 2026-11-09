@@ -11,17 +11,94 @@
       "sha256": "41fe67efbbd42ff15fc8ab74c36e9d5317e790b5377b146a35be9f0bdd7893d0"
     }
   },
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start-process",
+      "instanceId": "EmployeeOnboarding_1",
+      "variables": [
+        {
+          "name": "hireSummary",
+          "value": {
+            "kind": "string",
+            "value": "Dana Ruiz, data engineer, starts 2026-12-01"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-prepare-workstation",
+      "occurrence": {
+        "processInstanceId": "EmployeeOnboarding_1",
+        "elementId": "PrepareWorkstation",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "complete-effect-sha256:2928988dcc73b4fe62b83a781b969dfe6223750ed46b3b882c553590e3e74206",
+      "occurrence": {
+        "processInstanceId": "EmployeeOnboarding_1",
+        "elementId": "RegisterHire",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": [
+          {
+            "name": "employeeNumber",
+            "value": {
+              "kind": "string",
+              "value": "E-20417"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-issue-laptop",
+      "occurrence": {
+        "processInstanceId": "EmployeeOnboarding_1",
+        "elementId": "IssueLaptop",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-issue-badge",
+      "occurrence": {
+        "processInstanceId": "EmployeeOnboarding_1",
+        "elementId": "IssueBadge",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-confirm-it-access",
+      "occurrence": {
+        "processInstanceId": "EmployeeOnboarding_1",
+        "elementId": "ConfirmItAccess",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
   ],
   "provenance": {
     "normativeRefs": [
@@ -34,83 +111,5 @@
     "cibRefs": [
       "CIB-AGR-0022"
     ]
-  },
-  "stimuli": [
-    {
-      "kind": "startProcess",
-      "commandId": "start-process",
-      "processId": "Process_EmployeeOnboarding",
-      "instanceId": "EmployeeOnboarding_1",
-      "initialVariables": [
-        {
-          "name": "hireSummary",
-          "value": {
-            "kind": "string",
-            "value": "Dana Ruiz, data engineer, starts 2026-12-01"
-          }
-        }
-      ]
-    },
-    {
-      "kind": "completeUserTaskInstance",
-      "commandId": "complete-prepare-workstation",
-      "taskId": {
-        "processInstanceId": "EmployeeOnboarding_1",
-        "elementId": "PrepareWorkstation",
-        "activation": 1
-      },
-      "submittedValues": []
-    },
-    {
-      "kind": "completeEffect",
-      "commandId": "complete-effect-sha256:2928988dcc73b4fe62b83a781b969dfe6223750ed46b3b882c553590e3e74206",
-      "effectId": {
-        "processInstanceId": "EmployeeOnboarding_1",
-        "elementId": "RegisterHire",
-        "activation": 1
-      },
-      "result": {
-        "kind": "success",
-        "localPatch": [
-          {
-            "name": "employeeNumber",
-            "value": {
-              "kind": "string",
-              "value": "E-20417"
-            }
-          }
-        ]
-      }
-    },
-    {
-      "kind": "completeUserTaskInstance",
-      "commandId": "complete-issue-laptop",
-      "taskId": {
-        "processInstanceId": "EmployeeOnboarding_1",
-        "elementId": "IssueLaptop",
-        "activation": 1
-      },
-      "submittedValues": []
-    },
-    {
-      "kind": "completeUserTaskInstance",
-      "commandId": "complete-issue-badge",
-      "taskId": {
-        "processInstanceId": "EmployeeOnboarding_1",
-        "elementId": "IssueBadge",
-        "activation": 1
-      },
-      "submittedValues": []
-    },
-    {
-      "kind": "completeUserTaskInstance",
-      "commandId": "complete-confirm-it-access",
-      "taskId": {
-        "processInstanceId": "EmployeeOnboarding_1",
-        "elementId": "ConfirmItAccess",
-        "activation": 1
-      },
-      "submittedValues": []
-    }
-  ]
+  }
 }

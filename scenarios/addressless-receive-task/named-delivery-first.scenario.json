@@ -10,37 +10,27 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "request-handover",
-      "processId": "Process_ParcelHandover",
       "instanceId": "Handover_1",
-      "initialVariables": []
+      "variables": []
     },
     {
-      "kind": "deliverMessage",
+      "kind": "deliver",
       "commandId": "named-message-first",
-      "subscriptionId": {
+      "occurrence": {
         "processInstanceId": "Handover_1",
         "elementId": "ReceiveTask_AwaitCourierPickup",
         "activation": 1
       },
-      "channel": {
-        "kind": "directMessage",
-        "messageId": "Message_CourierPickup"
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "directMessage",
+          "messageId": "Message_CourierPickup"
+        }
       }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

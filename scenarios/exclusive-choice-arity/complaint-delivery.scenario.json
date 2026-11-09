@@ -13,52 +13,81 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-process",
-      "processId": "Process_ComplaintHandling",
       "instanceId": "Instance_1",
-      "initialVariables": [
-        { "name": "orderNumber", "value": { "kind": "string", "value": "ORD-7" } }
+      "variables": [
+        {
+          "name": "orderNumber",
+          "value": {
+            "kind": "string",
+            "value": "ORD-7"
+          }
+        }
       ]
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-classify-complaint",
-      "taskId": { "processInstanceId": "Instance_1", "elementId": "ClassifyComplaint", "activation": 1 },
-      "submittedValues": [
-        { "name": "category", "value": { "kind": "string", "value": "delivery" } },
-        { "name": "priority", "value": { "kind": "string", "value": "normal" } }
-      ]
-    },
-    {
-      "kind": "completeEffect",
-      "commandId": "complete-effect-sha256:5a3ea238f4adca3580db492e13b7cf2e09e721183ca6667a019bd900cd353d03",
-      "effectId": { "processInstanceId": "Instance_1", "elementId": "ReshipOrder", "activation": 1 },
-      "result": {
-        "kind": "success",
-        "localPatch": [
-          { "name": "tracking", "value": { "kind": "string", "value": "TRK-42" } }
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "ClassifyComplaint",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "category",
+            "value": {
+              "kind": "string",
+              "value": "delivery"
+            }
+          },
+          {
+            "name": "priority",
+            "value": {
+              "kind": "string",
+              "value": "normal"
+            }
+          }
         ]
       }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "effectResult",
+      "commandId": "complete-effect-sha256:5a3ea238f4adca3580db492e13b7cf2e09e721183ca6667a019bd900cd353d03",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "ReshipOrder",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": [
+          {
+            "name": "tracking",
+            "value": {
+              "kind": "string",
+              "value": "TRK-42"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
       "commandId": "complete-confirm-delivery",
-      "taskId": { "processInstanceId": "Instance_1", "elementId": "ConfirmDelivery", "activation": 1 },
-      "submittedValues": []
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "ConfirmDelivery",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

@@ -230,7 +230,7 @@ Under the [pre-release wire policy](../../contracts/README.md#evolution-policy) 
   - [requirement ledger consistency](https://github.com/mbackschat/bpmn-lean-experiment/blob/7f85d302750487fa2c30e54597200dadb2568c3d/scripts/requirement-ledger-consistency.test.ts);
   - the [executable model corpus](../../model-corpus/test/executable-model-corpus.test.ts).
 - Runtime invariants: the [non-reissue claim guard](../../scripts/runtime-state-non-reissue-claims.test.ts) and [collection-removal completeness](../../scripts/runtime-collection-removal-completeness.test.ts).
-- Operation consumers: the [semantic operation consumer census](../../scripts/semantic-operation-consumer-census.test.ts) and the [internal commutation census](../../scripts/internal-commutation-census.test.ts).
+- Operation consumers: the `semantic operation consumer census` and the [internal commutation census](../../scripts/internal-commutation-census.test.ts).
 - Hosting: [host admission](../../packages/temporal-adapter/testkit/test/host-admission.test.ts).
 - Structure:
   - [Lean import boundaries](../../scripts/lean-import-boundaries.test.ts);

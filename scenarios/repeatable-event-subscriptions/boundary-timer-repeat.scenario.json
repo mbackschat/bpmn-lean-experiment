@@ -10,16 +10,15 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-subscription",
-      "processId": "Process_TerminateEnd",
       "instanceId": "Instance_boundary-timer_repeat",
-      "initialVariables": []
+      "variables": []
     },
     {
-      "kind": "fireTimer",
+      "kind": "timerFire",
       "commandId": "fire-timer-sha256:7a3f0604d7aaaa853c640700b6473ad9fa82d0bea166fa56bbbd3e9eb4ad9a32",
-      "timerId": {
+      "occurrence": {
         "processInstanceId": "Instance_boundary-timer_repeat",
         "elementId": "Reminder",
         "activation": 1
@@ -27,9 +26,9 @@
       "logicalTimeMs": 1000
     },
     {
-      "kind": "fireTimer",
+      "kind": "timerFire",
       "commandId": "fire-timer-sha256:b4f0037064c330bc3cc767590b2f4e15e055c7c8aa873aa77f71489eff45bbbc",
-      "timerId": {
+      "occurrence": {
         "processInstanceId": "Instance_boundary-timer_repeat",
         "elementId": "Reminder",
         "activation": 2
@@ -37,77 +36,83 @@
       "logicalTimeMs": 2000
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-UserTask_Sibling-1",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Instance_boundary-timer_repeat",
         "elementId": "UserTask_Sibling",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-HandleReminder-1",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Instance_boundary-timer_repeat",
         "elementId": "HandleReminder",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-HandleReminder-2",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Instance_boundary-timer_repeat",
         "elementId": "HandleReminder",
         "activation": 2
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-UserTask_Trigger-1",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Instance_boundary-timer_repeat",
         "elementId": "UserTask_Trigger",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-UserTask_Outer-1",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Instance_boundary-timer_repeat",
         "elementId": "UserTask_Outer",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-IndependentAudit-1",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Instance_boundary-timer_repeat",
         "elementId": "IndependentAudit",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

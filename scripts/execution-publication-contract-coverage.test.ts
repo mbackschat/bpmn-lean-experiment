@@ -6,15 +6,122 @@ import { fileURLToPath } from "node:url";
 import { Ajv2020 } from "ajv/dist/2020.js";
 
 import {
-  canonicalExportFixture,
-  publicationPage,
-} from "../packages/temporal-adapter/protocol/test/semantic-publication-wire-fixture.ts";
-import {
   declaredConstObjectValues,
   declaredEnumMembers,
-  declaredEnumValues,
   isRecord,
 } from "./schema-structure.ts";
+
+const scenarioSchemaId = "https://bpmn-lean.local/schemas/scenario.schema.json";
+
+const definition = {
+  compiler: "bpmn-source-semantic-process",
+  semanticProfile: "profile-publication",
+  sourceId: "source-publication",
+  sourceSha256: "a".repeat(64),
+  sourceOverlay: null,
+} as const;
+
+const rootScope = {
+  processInstanceId: "Instance_1",
+  definitionScopeId: "Scope_Process_1",
+  activation: 1,
+} as const;
+
+const emptyDelta = {
+  consumedTokens: [],
+  producedTokens: [],
+  enteredScopes: [],
+  exitedScopes: [],
+} as const;
+
+const startStimulus = {
+  kind: "start",
+  commandId: "command-start",
+  instanceId: "Instance_1",
+  variables: [],
+} as const;
+
+const state = {
+  kind: "state",
+  instanceId: "Instance_1",
+  status: "running",
+  logicalTimeMs: 0,
+  variables: [],
+  openWaits: [],
+} as const;
+
+function publicationPage() {
+  return {
+    definition,
+    processId: "Process_1",
+    processInstanceId: "Instance_1",
+    requestedAfterRevision: 0,
+    pageThroughRevision: 2,
+    headRevision: 2,
+    batches: [{
+      commandId: "command-start",
+      fromRevision: 0,
+      throughRevision: 2,
+      transitions: [{
+        revision: 1,
+        logicalTimeMs: 0,
+        transition: { kind: "externalStimulus", stimulus: startStimulus },
+        positionDelta: emptyDelta,
+      }, {
+        revision: 2,
+        logicalTimeMs: 0,
+        transition: {
+          kind: "internalOperation",
+          operationId: "Operation_Start",
+          operationKind: "initiate",
+          origin: { kind: "bpmnElement", elementId: "StartEvent_1" },
+          owner: rootScope,
+        },
+        positionDelta: {
+          consumedTokens: [],
+          producedTokens: [{ sequenceFlowId: "Flow_1", owner: rootScope, multiplicity: 1 }],
+          enteredScopes: [{ id: rootScope, parent: null, bpmnElementId: "Process_1" }],
+          exitedScopes: [],
+        },
+      }],
+    }],
+    current: {
+      revision: 2,
+      state,
+      controlTokens: [{ sequenceFlowId: "Flow_1", owner: rootScope, multiplicity: 1 }],
+      scopes: [{ id: rootScope, parent: null, bpmnElementId: "Process_1" }],
+    },
+  } as const;
+}
+
+// Escapes the JSON writer must round-trip: control characters, quote, backslash and an astral scalar.
+const escapedNote = "control:\u0001 short:\b\f\n\r\t quote:\" slash:\\ scalar:\u{1f600}";
+
+function canonicalExportFixture() {
+  const variables = [
+    { name: "note", value: { kind: "string", value: escapedNote } },
+    { name: "truth", value: { kind: "boolean", value: true } },
+  ] as const;
+  return {
+    format: "bpmn-lean.execution-publication.v1",
+    definition,
+    processId: "Process_1",
+    processInstanceId: "Instance_1",
+    headRevision: 1,
+    batches: [{
+      commandId: "command-start",
+      fromRevision: 0,
+      throughRevision: 1,
+      transitions: [{
+        revision: 1,
+        logicalTimeMs: 0,
+        transition: { kind: "externalStimulus", stimulus: { ...startStimulus, variables } },
+        positionDelta: emptyDelta,
+      }],
+    }],
+    current: { revision: 1, state: { ...state, variables }, controlTokens: [], scopes: [] },
+  } as const;
+}
 
 /**
  * Operation kinds the publication contract deliberately cannot carry.
@@ -88,13 +195,15 @@ test("validates the closed page, result, and full-export structures", async () =
 test("covers every stimulus, operation, result, and safe-integer branch", async () => {
   const [
     schema,
-    contractSource,
+    scenarioSchema,
+    vocabulary,
     programSource,
     completenessSource,
     leanPublicationSource,
   ] = await Promise.all([
     readSchema("semantic-publication.schema.json"),
-    readFile(`${projectRoot}/packages/semantic-core/src/contract.ts`, "utf8"),
+    readSchema("scenario.schema.json"),
+    readSchema("vocabulary.schema.json"),
     readFile(`${projectRoot}/packages/semantic-core/src/semantic-process-contract.ts`, "utf8"),
     readFile(
       `${projectRoot}/packages/semantic-core/src/flow-node-occurrence-publication-completeness.ts`,
@@ -106,11 +215,11 @@ test("covers every stimulus, operation, result, and safe-integer branch", async 
     ),
   ]);
   const schemaText = JSON.stringify(schema);
-  const stimuli = declaredEnumValues(contractSource, "StimulusKind");
+  const stimuli = inputKinds(vocabulary);
   const operations = declaredEnumMembers(programSource, "SemanticOperationKind");
   const failClosed = new Set(failClosedOperationNames(completenessSource));
   const leanPublished = leanPublishedOperations(leanPublicationSource);
-  assert.ok(stimuli.length >= 10, "StimulusKind extraction lost current variants");
+  assert.ok(stimuli.length >= 5, "inputKind extraction lost current variants");
   assert.ok(operations.length >= 20, "SemanticOperationKind extraction lost current variants");
   for (const name of failClosed) {
     assert.ok(
@@ -118,8 +227,18 @@ test("covers every stimulus, operation, result, and safe-integer branch", async 
       `${name} fails publication completeness but is not a declared operation kind`,
     );
   }
+  // The publication carries the scenario's one stimulus union by reference, so its coverage is that union's: every
+  // kernel input kind has exactly one arm, and the arm's discriminant is the kind.
+  assert.ok(
+    schemaText.includes(`\"${scenarioSchemaId}#/$defs/stimulus\"`),
+    "publication schema does not reference the scenario stimulus union",
+  );
+  assert.deepEqual(stimulusArmNames(scenarioSchema), [...stimuli].sort());
+  assert.ok(isRecord(scenarioSchema.$defs));
   for (const value of stimuli) {
-    assert.ok(schemaText.includes(`/$defs/${value}\"`), `schema omits ${value}`);
+    const arm: unknown = scenarioSchema.$defs[value];
+    assert.ok(isRecord(arm) && isRecord(arm.properties), `scenario schema omits the ${value} arm`);
+    assert.deepEqual(arm.properties.kind, { const: value });
   }
   // Exactly one of the two directions holds for every kind: publishable kinds must be enumerated, and
   // kinds that commit no transition must stay out so the schema cannot admit a record no producer can
@@ -197,29 +316,32 @@ test("keeps the Product 2 operation-kind copy synchronized in the shared gate", 
 });
 
 async function publicationValidator() {
-  const [scenario, program, publication] = await Promise.all([
+  const [scenario, canonicalResult, program, publication] = await Promise.all([
     readSchema("scenario.schema.json"),
+    readSchema("canonical-result.schema.json"),
     readSchema("semantic-process.schema.json"),
     readSchema("semantic-publication.schema.json"),
   ]);
   const ajv = new Ajv2020({ strict: true, strictTuples: false });
   ajv.addSchema(scenario);
+  ajv.addSchema(canonicalResult);
   ajv.addSchema(program);
   return ajv.compile(publication);
 }
 
 test("keeps the Product 2 committed-status copy synchronized with the producer", async () => {
   const [schema, source] = await Promise.all([
-    readSchema("scenario.schema.json"),
+    readSchema("canonical-result.schema.json"),
     readFile(`${projectRoot}/platform/contracts/src/execution-publications.ts`, "utf8"),
   ]);
   assert.ok(isRecord(schema.$defs));
-  const state = schema.$defs.stateObservation;
-  assert.ok(isRecord(state) && isRecord(state.properties));
-  const status = state.properties.status;
+  const stateSchema = schema.$defs.state;
+  assert.ok(isRecord(stateSchema) && isRecord(stateSchema.properties));
+  const status = stateSchema.properties.status;
   assert.ok(isRecord(status) && Array.isArray(status.enum));
   assert.ok(status.enum.every((value) => typeof value === "string"));
-  const committed = status.enum.filter((value) => value !== "notStarted").toSorted();
+  // A committed publication never carries a not-started instance, so the producer's whole enum is the committed set.
+  const committed = status.enum.toSorted();
   assert.deepEqual(declaredConstObjectValues(source, "ProcessStatus").toSorted(), committed);
   for (const omitted of committed) {
     const changed = source.replace(new RegExp(`^  [A-Za-z]+: "${omitted}",\\n`, "mu"), "");
@@ -232,6 +354,24 @@ async function readSchema(name: string): Promise<Record<string, unknown>> {
   return JSON.parse(
     await readFile(`${projectRoot}/contracts/schemas/${name}`, "utf8"),
   ) as Record<string, unknown>;
+}
+
+function inputKinds(vocabulary: Readonly<Record<string, unknown>>): ReadonlyArray<string> {
+  assert.ok(isRecord(vocabulary.$defs));
+  const inputKind = vocabulary.$defs.inputKind;
+  assert.ok(isRecord(inputKind) && Array.isArray(inputKind.enum));
+  assert.ok(inputKind.enum.every((value) => typeof value === "string"));
+  return inputKind.enum;
+}
+
+function stimulusArmNames(scenarioSchema: Readonly<Record<string, unknown>>): ReadonlyArray<string> {
+  assert.ok(isRecord(scenarioSchema.$defs));
+  const union = scenarioSchema.$defs.stimulus;
+  assert.ok(isRecord(union) && Array.isArray(union.oneOf));
+  return union.oneOf.map((arm) => {
+    assert.ok(isRecord(arm) && typeof arm.$ref === "string");
+    return arm.$ref.slice("#/$defs/".length);
+  }).toSorted();
 }
 
 function internalOperationKindValues(

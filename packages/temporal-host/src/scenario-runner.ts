@@ -4,13 +4,13 @@
  *
  * The chain runs under `Scheduling.External`: timer firings and effect results are the scenario's explicit inputs.
  * Trace rules follow `Kernel.Run.execute`: a committed input, or a rejected one that is not last, adds its command
- * and the state observation and the run continues; any other outcome adds them and ends the run. Each verdict comes
- * from the host, except an input before any instance exists, which the kernel judges with no state, as the host has
- * no Workflow to send it to.
+ * and the state observation and the run continues; any other outcome adds them and ends the run; a command that did
+ * not commit carries its code. Each verdict comes from the host, except an input before any instance exists, which the
+ * kernel judges with no state, as the host has no Workflow to send it to.
  */
 import type { ProcessClient } from "./client.js";
 import { assertNever } from "./host-machine.js";
-import { Route, type DefinitionRef, type JsonValue, type KernelPort } from "./port.js";
+import { Route, type JsonValue, type KernelPort } from "./port.js";
 import { Scheduling, type CommandResult, type HostConfig } from "./protocol.js";
 
 export interface ScenarioHost {
@@ -19,43 +19,19 @@ export interface ScenarioHost {
   readonly workflowIdPrefix: string;
 }
 
-interface Scenario {
-  readonly definition: DefinitionRef;
-  readonly stimuli: readonly JsonValue[];
-}
-
-function field(json: JsonValue, key: string): JsonValue {
-  if (json === null || typeof json !== "object" || Array.isArray(json) || !(key in json)) {
-    throw new TypeError(`scenario: missing ${key}`);
-  }
-  return (json as { readonly [name: string]: JsonValue })[key] ?? null;
-}
-
-function text(json: JsonValue, key: string): string {
-  const value = field(json, key);
-  if (typeof value !== "string") throw new TypeError(`scenario: ${key} is not a string`);
-  return value;
-}
-
-/** The deployment reference `Kernel.Run.definitionRefFromJson` reads from a scenario's BPMN resource. */
-function readScenario(json: JsonValue): Scenario {
-  const bpmn = field(json, "bpmn");
-  const overlay = field(bpmn, "sourceOverlay");
-  const stimuli = field(json, "stimuli");
+/** The scenario's stimuli, which `Kernel.Run.run` reads. */
+function readStimuli(json: JsonValue): readonly JsonValue[] {
+  const stimuli = json !== null && typeof json === "object" && !Array.isArray(json)
+    ? (json as { readonly [name: string]: JsonValue })["stimuli"]
+    : null;
   if (!Array.isArray(stimuli)) throw new TypeError("scenario: stimuli is not an array");
-  return {
-    definition: {
-      sourceId: text(bpmn, "id"),
-      sourceSha256: text(bpmn, "sha256"),
-      sourceOverlay: overlay === null ? null : { id: text(overlay, "id"), sha256: text(overlay, "sha256") },
-      profile: text(json, "profile"),
-    },
-    stimuli,
-  };
+  return stimuli;
 }
 
 const semantic = (outcome: string): JsonValue => ({ kind: "semantic", outcome });
-const command = (commandId: string, outcome: string): JsonValue => ({ kind: "command", commandId, outcome });
+const command = (commandId: string, result: CommandResult): JsonValue => result.code === null
+  ? { kind: "command", commandId, outcome: result.outcome }
+  : { kind: "command", commandId, outcome: result.outcome, code: result.code };
 
 export async function runScenarioThroughHost<P, S, I>(
   port: KernelPort<P, S, I>,
@@ -68,10 +44,9 @@ export async function runScenarioThroughHost<P, S, I>(
   if (refusal !== null) {
     return { outcome: semantic("unsupported"), trace: [{ kind: "deployment", outcome: "unsupported", code: refusal }] };
   }
-  const scenario = readScenario(scenarioJson);
+  const stimuli = readStimuli(scenarioJson);
   const config: HostConfig = {
     scheduling: Scheduling.External,
-    definition: scenario.definition,
     effectStartToCloseMs: 60_000,
     historyEventBudget: null,
   };
@@ -111,14 +86,11 @@ export async function runScenarioThroughHost<P, S, I>(
     return observed === null ? [] : [observed];
   };
 
-  for (const [index, stimulus] of scenario.stimuli.entries()) {
+  for (const [index, stimulus] of stimuli.entries()) {
     const { commandId, input } = port.decodeStimulus(stimulus);
-    const result: CommandResult = input === null
-      // `Kernel.Run.execute` reports a stimulus the kernel does not accept as unsupported.
-      ? { outcome: "unsupported", code: "stimulus", revision: null }
-      : await submit(stimulus, input);
-    trace.push(command(commandId, result.outcome), ...await observation());
-    const last = index === scenario.stimuli.length - 1;
+    const result = await submit(stimulus, input);
+    trace.push(command(commandId, result), ...await observation());
+    const last = index === stimuli.length - 1;
     if (result.outcome === "committed" || (result.outcome === "rejected" && !last)) continue;
     return { outcome: semantic(result.outcome), trace };
   }

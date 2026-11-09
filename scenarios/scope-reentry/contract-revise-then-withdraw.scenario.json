@@ -13,11 +13,10 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-process",
-      "processId": "Process_ContractRevision",
       "instanceId": "Instance_1",
-      "initialVariables": [
+      "variables": [
         {
           "name": "contractText",
           "value": {
@@ -28,99 +27,102 @@
       ]
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-edit-draft",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Instance_1",
         "elementId": "EditDraft",
         "activation": 1
       },
-      "submittedValues": [
-        {
-          "name": "draft",
-          "value": {
-            "kind": "string",
-            "value": "v2"
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "draft",
+            "value": {
+              "kind": "string",
+              "value": "v2"
+            }
           }
-        }
-      ]
+        ]
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-review-clauses",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "call:10:Instance_1:11:LegalReview:1",
         "elementId": "ReviewClauses",
         "activation": 1
       },
-      "submittedValues": [
-        {
-          "name": "verdict",
-          "value": {
-            "kind": "string",
-            "value": "revise"
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "revise"
+            }
           }
-        }
-      ]
+        ]
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-edit-draft-2",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Instance_1",
         "elementId": "EditDraft",
         "activation": 2
       },
-      "submittedValues": [
-        {
-          "name": "draft",
-          "value": {
-            "kind": "string",
-            "value": "v3"
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "draft",
+            "value": {
+              "kind": "string",
+              "value": "v3"
+            }
           }
-        }
-      ]
+        ]
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-review-clauses-2",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "call:10:Instance_1:11:LegalReview:2",
         "elementId": "ReviewClauses",
         "activation": 1
       },
-      "submittedValues": [
-        {
-          "name": "verdict",
-          "value": {
-            "kind": "string",
-            "value": "withdraw"
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "withdraw"
+            }
           }
-        }
-      ]
+        ]
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-close-negotiation",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Instance_1",
         "elementId": "CloseNegotiation",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

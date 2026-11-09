@@ -10,11 +10,10 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start",
-      "processId": "OrderHandoff",
       "instanceId": "Handoff_order_null",
-      "initialVariables": [
+      "variables": [
         {
           "name": "receivedOrder",
           "value": {
@@ -101,62 +100,59 @@
       ]
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "refuse-omitted-output",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Handoff_order_null",
         "elementId": "ReviewOrder",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-review",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Handoff_order_null",
         "elementId": "ReviewOrder",
         "activation": 1
       },
-      "submittedValues": [
-        {
-          "name": "ReviewOrder_out",
-          "value": {
-            "kind": "null"
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "ReviewOrder_out",
+            "value": {
+              "kind": "null"
+            }
           }
-        }
-      ]
+        ]
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-archive",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Handoff_order_null",
         "elementId": "ArchiveOrder",
         "activation": 1
       },
-      "submittedValues": [
-        {
-          "name": "ArchiveOrder_out",
-          "value": {
-            "kind": "map",
-            "value": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "ArchiveOrder_out",
+            "value": {
+              "kind": "map",
+              "value": []
+            }
           }
-        }
-      ]
+        ]
+      }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

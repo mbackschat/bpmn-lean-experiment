@@ -2,5 +2,956 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://bpmn-lean.local/schemas/canonical-result.schema.json",
   "title": "BPMN Lean canonical scenario result",
-  "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/canonicalResult"
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "outcome",
+    "trace"
+  ],
+  "properties": {
+    "outcome": {
+      "$ref": "#/$defs/scenarioOutcome"
+    },
+    "trace": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/observation"
+      }
+    }
+  },
+  "$defs": {
+    "outcome": {
+      "enum": [
+        "committed",
+        "rolledBack",
+        "rejected",
+        "semanticFailure",
+        "unsupported"
+      ]
+    },
+    "scenarioOutcome": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "outcome"
+          ],
+          "properties": {
+            "kind": {
+              "const": "semantic"
+            },
+            "outcome": {
+              "$ref": "#/$defs/outcome"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind"
+          ],
+          "properties": {
+            "kind": {
+              "const": "harnessFailure"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind"
+          ],
+          "properties": {
+            "kind": {
+              "const": "infrastructureFailure"
+            }
+          }
+        }
+      ]
+    },
+    "observation": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/deployment"
+        },
+        {
+          "$ref": "#/$defs/command"
+        },
+        {
+          "$ref": "#/$defs/state"
+        }
+      ]
+    },
+    "deployment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "outcome"
+      ],
+      "properties": {
+        "kind": {
+          "const": "deployment"
+        },
+        "outcome": {
+          "enum": [
+            "committed",
+            "unsupported"
+          ]
+        },
+        "code": {
+          "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonEmptyString"
+        }
+      }
+    },
+    "command": {
+      "description": "code is the kernel's stable refusal or failure code; a target without one omits it, and the CIB comparison never reads it.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "commandId",
+        "outcome"
+      ],
+      "properties": {
+        "kind": {
+          "const": "command"
+        },
+        "commandId": {
+          "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/commandId"
+        },
+        "outcome": {
+          "$ref": "#/$defs/outcome"
+        },
+        "code": {
+          "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonEmptyString"
+        }
+      }
+    },
+    "state": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "instanceId",
+        "status",
+        "logicalTimeMs",
+        "variables",
+        "openWaits"
+      ],
+      "properties": {
+        "kind": {
+          "const": "state"
+        },
+        "instanceId": {
+          "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonEmptyString"
+        },
+        "status": {
+          "enum": [
+            "running",
+            "completed",
+            "cancelled",
+            "failed"
+          ]
+        },
+        "logicalTimeMs": {
+          "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonnegativeSafeInteger"
+        },
+        "variables": {
+          "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/bindings",
+          "description": "The instance root's variables, in name order."
+        },
+        "scopes": {
+          "description": "Every other variable scope of the instance and its called instances that holds a variable, so that variables keep their scope; producers emit them in canonical order: by scope.processInstanceId, scope.elementId (absent first, Unicode scalar order), scope.activation, then scope.role in enumeration order. Optional because an observation boundary may not reach local scopes: the CIB Seven projection publishes the root scope only, and comparisons against it leave scopes out.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/scopeVariables"
+          }
+        },
+        "openWaits": {
+          "description": "Every open wait of the instance and its called instances. Producers emit them in canonical order: by id.processInstanceId, id.elementId (Unicode scalar order), id.activation, then detail.kind; comparisons sort both sides by that key.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/openWait"
+          }
+        },
+        "failure": {
+          "$ref": "#/$defs/instanceFailure"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "status"
+            ],
+            "properties": {
+              "status": {
+                "const": "failed"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "failure"
+            ],
+            "properties": {
+              "failure": {
+                "$ref": "#/$defs/instanceFailure"
+              },
+              "openWaits": {
+                "type": "array",
+                "maxItems": 0
+              }
+            }
+          },
+          "else": {
+            "not": {
+              "required": [
+                "failure"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "instanceFailure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "message",
+        "occurrence",
+        "related"
+      ],
+      "properties": {
+        "code": {
+          "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonEmptyString"
+        },
+        "message": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "occurrence": {
+          "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/occurrenceId"
+        },
+        "related": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "occurrence"
+            ],
+            "properties": {
+              "name": {
+                "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonEmptyString"
+              },
+              "occurrence": {
+                "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/occurrenceId"
+              }
+            }
+          }
+        }
+      }
+    },
+    "definitionRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "key",
+        "version",
+        "versionTag",
+        "deployment",
+        "tenant",
+        "sourceSha256"
+      ],
+      "properties": {
+        "key": {
+          "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonEmptyString"
+        },
+        "version": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/positiveSafeInteger"
+            }
+          ]
+        },
+        "versionTag": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "deployment": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "tenant": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "sourceSha256": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          ]
+        }
+      }
+    },
+    "openWait": {
+      "description": "One open wait: its public occurrence identity, the called definition it runs in (null in the root instance), the input that closes it (null for a wait a variable write closes) and its typed detail.",
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "definition",
+            "input",
+            "detail"
+          ],
+          "properties": {
+            "id": {
+              "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/occurrenceId"
+            },
+            "definition": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "$ref": "#/$defs/definitionRef"
+                }
+              ]
+            },
+            "input": {
+              "const": "command"
+            },
+            "detail": {
+              "$ref": "#/$defs/userTaskDetail"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "definition",
+            "input",
+            "detail"
+          ],
+          "properties": {
+            "id": {
+              "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/occurrenceId"
+            },
+            "definition": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "$ref": "#/$defs/definitionRef"
+                }
+              ]
+            },
+            "input": {
+              "const": "deliver"
+            },
+            "detail": {
+              "$ref": "#/$defs/messageDetail"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "definition",
+            "input",
+            "detail"
+          ],
+          "properties": {
+            "id": {
+              "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/occurrenceId"
+            },
+            "definition": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "$ref": "#/$defs/definitionRef"
+                }
+              ]
+            },
+            "input": {
+              "const": "deliver"
+            },
+            "detail": {
+              "$ref": "#/$defs/signalDetail"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "definition",
+            "input",
+            "detail"
+          ],
+          "properties": {
+            "id": {
+              "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/occurrenceId"
+            },
+            "definition": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "$ref": "#/$defs/definitionRef"
+                }
+              ]
+            },
+            "input": {
+              "const": null
+            },
+            "detail": {
+              "$ref": "#/$defs/conditionalDetail"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "definition",
+            "input",
+            "detail"
+          ],
+          "properties": {
+            "id": {
+              "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/occurrenceId"
+            },
+            "definition": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "$ref": "#/$defs/definitionRef"
+                }
+              ]
+            },
+            "input": {
+              "const": "timerFire"
+            },
+            "detail": {
+              "$ref": "#/$defs/timerDetail"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "definition",
+            "input",
+            "detail"
+          ],
+          "properties": {
+            "id": {
+              "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/occurrenceId"
+            },
+            "definition": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "$ref": "#/$defs/definitionRef"
+                }
+              ]
+            },
+            "input": {
+              "const": "effectResult"
+            },
+            "detail": {
+              "$ref": "#/$defs/effectDetail"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "definition",
+            "input",
+            "detail"
+          ],
+          "properties": {
+            "id": {
+              "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/occurrenceId"
+            },
+            "definition": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "$ref": "#/$defs/definitionRef"
+                }
+              ]
+            },
+            "input": {
+              "const": "command"
+            },
+            "detail": {
+              "$ref": "#/$defs/incidentDetail"
+            }
+          }
+        }
+      ]
+    },
+    "sendDescriptor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "recipient",
+        "correlation"
+      ],
+      "properties": {
+        "recipient": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "correlation": {
+          "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/bindings"
+        }
+      }
+    },
+    "userTaskDetail": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "name",
+        "assignee",
+        "candidateUsers",
+        "candidateGroups",
+        "formKey",
+        "formFields",
+        "dueDate",
+        "followUpDate",
+        "priority",
+        "inputs"
+      ],
+      "properties": {
+        "kind": {
+          "const": "userTask"
+        },
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "assignee": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "candidateUsers": {
+          "type": "array",
+          "items": {
+            "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonEmptyString"
+          }
+        },
+        "candidateGroups": {
+          "type": "array",
+          "items": {
+            "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonEmptyString"
+          }
+        },
+        "formKey": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "formFields": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "key",
+              "type"
+            ],
+            "properties": {
+              "key": {
+                "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonEmptyString"
+              },
+              "type": {
+                "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonEmptyString"
+              }
+            }
+          }
+        },
+        "dueDate": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "followUpDate": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "priority": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "inputs": {
+          "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/bindings"
+        }
+      }
+    },
+    "messageDetail": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "channel",
+        "payload",
+        "criteria"
+      ],
+      "properties": {
+        "kind": {
+          "const": "message"
+        },
+        "channel": {
+          "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/messageChannel"
+        },
+        "payload": {
+          "type": "boolean"
+        },
+        "criteria": {
+          "type": "array",
+          "items": {
+            "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonEmptyString"
+          }
+        }
+      }
+    },
+    "signalDetail": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "name",
+        "payload"
+      ],
+      "properties": {
+        "kind": {
+          "const": "signal"
+        },
+        "name": {
+          "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonEmptyString"
+        },
+        "payload": {
+          "type": "boolean"
+        }
+      }
+    },
+    "conditionalDetail": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "variableName",
+        "variableEvents",
+        "lastValue"
+      ],
+      "properties": {
+        "kind": {
+          "const": "conditional"
+        },
+        "variableName": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "variableEvents": {
+          "type": "array",
+          "items": {
+            "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonEmptyString"
+          }
+        },
+        "lastValue": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        }
+      }
+    },
+    "timerDetail": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "deadlineMs",
+        "recurrence"
+      ],
+      "properties": {
+        "kind": {
+          "const": "timer"
+        },
+        "deadlineMs": {
+          "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonnegativeSafeInteger"
+        },
+        "recurrence": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "periodMs",
+                "cron",
+                "remaining"
+              ],
+              "properties": {
+                "periodMs": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/positiveSafeInteger"
+                    }
+                  ]
+                },
+                "cron": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "remaining": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonnegativeSafeInteger"
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "effectDetail": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "protocol",
+        "operation",
+        "arguments",
+        "failures",
+        "send"
+      ],
+      "properties": {
+        "kind": {
+          "const": "effect"
+        },
+        "protocol": {
+          "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonEmptyString"
+        },
+        "operation": {
+          "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonEmptyString"
+        },
+        "arguments": {
+          "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/bindings"
+        },
+        "failures": {
+          "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonnegativeSafeInteger"
+        },
+        "send": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/sendDescriptor"
+            }
+          ]
+        }
+      }
+    },
+    "incidentDetail": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "effect",
+        "generation",
+        "cancellable"
+      ],
+      "properties": {
+        "kind": {
+          "const": "incident"
+        },
+        "effect": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "protocol",
+            "operation",
+            "arguments",
+            "failures",
+            "send"
+          ],
+          "properties": {
+            "protocol": {
+              "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonEmptyString"
+            },
+            "operation": {
+              "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonEmptyString"
+            },
+            "arguments": {
+              "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/bindings"
+            },
+            "failures": {
+              "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonnegativeSafeInteger"
+            },
+            "send": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "$ref": "#/$defs/sendDescriptor"
+                }
+              ]
+            }
+          }
+        },
+        "generation": {
+          "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/positiveSafeInteger"
+        },
+        "cancellable": {
+          "type": "boolean"
+        }
+      }
+    },
+    "scopeVariables": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scope",
+        "variables"
+      ],
+      "properties": {
+        "scope": {
+          "$ref": "#/$defs/variableScope"
+        },
+        "variables": {
+          "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/bindings"
+        }
+      }
+    },
+    "variableScope": {
+      "description": "A variable scope, named by the occurrence it belongs to: an Activity's own scope (a Sub-Process's or its local variables), a Multi-Instance body's, a Multi-Instance instance or a compensation handler's restored context by the occurrence it hosts; a called process instance's root by that instance alone.",
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "processInstanceId",
+            "role"
+          ],
+          "properties": {
+            "processInstanceId": {
+              "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonEmptyString"
+            },
+            "role": {
+              "const": "processInstance"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "processInstanceId",
+            "role",
+            "elementId",
+            "activation"
+          ],
+          "properties": {
+            "processInstanceId": {
+              "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonEmptyString"
+            },
+            "role": {
+              "enum": [
+                "activity",
+                "multiInstanceBody",
+                "multiInstanceInstance",
+                "compensationContext"
+              ]
+            },
+            "elementId": {
+              "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonEmptyString"
+            },
+            "activation": {
+              "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonnegativeSafeInteger"
+            }
+          }
+        }
+      ]
+    }
+  }
 }

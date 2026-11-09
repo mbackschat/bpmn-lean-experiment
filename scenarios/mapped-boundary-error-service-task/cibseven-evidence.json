@@ -2,7 +2,7 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "mapped-boundary-error-service-task-caught",
-    "sha256": "c89c095aeb3e5be95b7f50f2caab40ec2fd70f981a91e1ef5522582603ebc8ee"
+    "sha256": "2fc7ecef4f5c6c1f93f7a827551f072bf14bf0347ff4d4dd742dcb45d711bf3a"
   },
   "profile": {
     "id": "cibseven-2.0.0-mapped-boundary-error-service-task-draft",
@@ -113,28 +113,7 @@
         "kind": "state",
         "instanceId": "Instance_1",
         "status": "running",
-        "activeWaits": [
-          {
-            "elementId": "ReviewMappedError",
-            "kind": "userTask",
-            "multiplicity": 1
-          }
-        ],
-        "openUserTasks": [
-          {
-            "id": {
-              "processInstanceId": "Instance_1",
-              "elementId": "ReviewMappedError",
-              "activation": 1
-            },
-            "name": "Review Mapped Error",
-            "state": "active"
-          }
-        ],
-        "openMessageSubscriptions": [],
-        "openTimers": [],
-        "openEffects": [],
-        "openIncidents": [],
+        "logicalTimeMs": 0,
         "variables": [
           {
             "name": "resultValue",
@@ -143,17 +122,30 @@
             }
           }
         ],
-        "enabledInteractions": [
+        "openWaits": [
           {
-            "kind": "completeUserTaskInstance",
-            "taskId": {
+            "id": {
               "processInstanceId": "Instance_1",
               "elementId": "ReviewMappedError",
               "activation": 1
+            },
+            "definition": null,
+            "input": "command",
+            "detail": {
+              "kind": "userTask",
+              "name": "Review Mapped Error",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
             }
           }
-        ],
-        "logicalTimeMs": 0
+        ]
       },
       {
         "kind": "command",
@@ -164,12 +156,7 @@
         "kind": "state",
         "instanceId": "Instance_1",
         "status": "completed",
-        "activeWaits": [],
-        "openUserTasks": [],
-        "openMessageSubscriptions": [],
-        "openTimers": [],
-        "openEffects": [],
-        "openIncidents": [],
+        "logicalTimeMs": 0,
         "variables": [
           {
             "name": "resultValue",
@@ -178,8 +165,7 @@
             }
           }
         ],
-        "enabledInteractions": [],
-        "logicalTimeMs": 0
+        "openWaits": []
       }
     ]
   }

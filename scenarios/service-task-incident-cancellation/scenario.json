@@ -10,11 +10,10 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-process",
-      "processId": "Process_ServiceTaskEffectProbe",
       "instanceId": "Instance_1",
-      "initialVariables": [
+      "variables": [
         {
           "name": "preserved",
           "value": {
@@ -25,41 +24,35 @@
       ]
     },
     {
-      "kind": "reportEffectFailure",
+      "kind": "effectResult",
       "commandId": "report-effect-failure-sha256:b6b5077e469b9421ed4a598e4c08fae7c3ce3e31c941fae9733b4c7206a2b345",
-      "effectId": {
+      "occurrence": {
         "processInstanceId": "Instance_1",
         "elementId": "ServiceTask_Record",
         "activation": 1
       },
-      "generation": 1
+      "outcome": {
+        "kind": "technicalFailure"
+      }
     },
     {
-      "kind": "cancelIncidentProcess",
+      "kind": "command",
       "commandId": "cancel-incident-process",
-      "processInstanceId": "Instance_1",
-      "incidentId": {
-        "effectId": {
-          "processInstanceId": "Instance_1",
-          "elementId": "ServiceTask_Record",
-          "activation": 1
-        },
-        "generation": 1
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "ServiceTask_Record",
+        "activation": 1
+      },
+      "action": {
+        "kind": "cancelIncidentProcess"
       }
     }
   ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
-  ],
+  "options": {
+    "incidents": {
+      "cancellable": true
+    }
+  },
   "provenance": {
     "normativeRefs": [
       "BPMN 2.0.2 §10.3.3.1",

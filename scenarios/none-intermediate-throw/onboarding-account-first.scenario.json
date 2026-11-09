@@ -13,11 +13,10 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-process",
-      "processId": "Process_OnboardingMilestones",
       "instanceId": "Onboarding_1",
-      "initialVariables": [
+      "variables": [
         {
           "name": "employee",
           "value": {
@@ -28,36 +27,42 @@
       ]
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-confirm-start-date",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Onboarding_1",
         "elementId": "ConfirmStartDate",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-create-account",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Onboarding_1",
         "elementId": "CreateAccount",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeEffect",
+      "kind": "effectResult",
       "commandId": "complete-effect-sha256:5b2d8b323bedfe327356bb8bc471dfef8d271ae5662c40375026b65641252865",
-      "effectId": {
+      "occurrence": {
         "processInstanceId": "Onboarding_1",
         "elementId": "OrderLaptop",
         "activation": 1
       },
-      "result": {
+      "outcome": {
         "kind": "success",
-        "localPatch": [
+        "outputs": [
           {
             "name": "order",
             "value": {
@@ -68,18 +73,6 @@
         ]
       }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

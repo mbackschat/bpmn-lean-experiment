@@ -13,11 +13,10 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-process",
-      "processId": "Process_ShippingNotice",
       "instanceId": "Order_1",
-      "initialVariables": [
+      "variables": [
         {
           "name": "customerEmail",
           "value": {
@@ -35,40 +34,31 @@
       ]
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-pack-order",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Order_1",
         "elementId": "PackOrder",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeEffect",
+      "kind": "effectResult",
       "commandId": "complete-effect-sha256:81de6026b8c80fa81b6ad75a176918c25594125c54960babade6bb28ae6d4b3a",
-      "effectId": {
+      "occurrence": {
         "processInstanceId": "Order_1",
         "elementId": "SendShippingNotice",
         "activation": 1
       },
-      "result": {
+      "outcome": {
         "kind": "success",
-        "localPatch": []
+        "outputs": []
       }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

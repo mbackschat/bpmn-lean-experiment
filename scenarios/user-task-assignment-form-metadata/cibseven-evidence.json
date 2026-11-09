@@ -2,7 +2,7 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "user-task-assignment-form-metadata",
-    "sha256": "325458f5bbae5ee0f3fab3d7d973a16da1b5cdf90b60e9b430dc993ab99d5e55"
+    "sha256": "b48e6ee74b67cf01d40460a0e50f23b019f2afe6433d1b6b35e4deab8d35bc56"
   },
   "profile": {
     "id": "cibseven-2.2.0-user-task-assignment-form-metadata-draft",
@@ -106,46 +106,7 @@
         "kind": "state",
         "instanceId": "UserTaskMetadataInstance_1",
         "status": "running",
-        "activeWaits": [
-          {
-            "elementId": "UserTask_Approve",
-            "kind": "userTask",
-            "multiplicity": 1
-          }
-        ],
-        "openUserTasks": [
-          {
-            "id": {
-              "processInstanceId": "UserTaskMetadataInstance_1",
-              "elementId": "UserTask_Approve",
-              "activation": 1
-            },
-            "name": "Approve",
-            "state": "active",
-            "metadata": {
-              "assignment": {
-                "candidates": [
-                  {
-                    "kind": "group",
-                    "id": "reviewers"
-                  }
-                ]
-              },
-              "form": {
-                "fields": [
-                  {
-                    "key": "approved",
-                    "type": "boolean"
-                  }
-                ]
-              }
-            }
-          }
-        ],
-        "openMessageSubscriptions": [],
-        "openTimers": [],
-        "openEffects": [],
-        "openIncidents": [],
+        "logicalTimeMs": 0,
         "variables": [
           {
             "name": "requestTitle",
@@ -155,17 +116,37 @@
             }
           }
         ],
-        "enabledInteractions": [
+        "openWaits": [
           {
-            "kind": "completeUserTaskInstance",
-            "taskId": {
+            "id": {
               "processInstanceId": "UserTaskMetadataInstance_1",
               "elementId": "UserTask_Approve",
               "activation": 1
+            },
+            "definition": null,
+            "input": "command",
+            "detail": {
+              "kind": "userTask",
+              "name": "Approve",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [
+                "reviewers"
+              ],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "approved",
+                  "type": "boolean"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
             }
           }
-        ],
-        "logicalTimeMs": 0
+        ]
       },
       {
         "kind": "command",
@@ -176,12 +157,7 @@
         "kind": "state",
         "instanceId": "UserTaskMetadataInstance_1",
         "status": "completed",
-        "activeWaits": [],
-        "openUserTasks": [],
-        "openMessageSubscriptions": [],
-        "openTimers": [],
-        "openEffects": [],
-        "openIncidents": [],
+        "logicalTimeMs": 0,
         "variables": [
           {
             "name": "approved",
@@ -198,8 +174,7 @@
             }
           }
         ],
-        "enabledInteractions": [],
-        "logicalTimeMs": 0
+        "openWaits": []
       }
     ]
   }

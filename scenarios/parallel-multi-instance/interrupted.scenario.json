@@ -10,11 +10,10 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-parallel-risk-review-interrupted",
-      "processId": "Process_ParallelMultiInstanceReview",
       "instanceId": "ParallelRiskReview_Interrupted",
-      "initialVariables": [
+      "variables": [
         {
           "name": "DataObjectReference_InputItems",
           "value": {
@@ -36,27 +35,30 @@
       ]
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-financial-before-deadline",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "ParallelRiskReview_Interrupted",
         "elementId": "UserTask_Review",
         "activation": 3
       },
-      "submittedValues": [
-        {
-          "name": "DataOutput_CurrentResult",
-          "value": {
-            "kind": "string",
-            "value": "financial-medium"
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "DataOutput_CurrentResult",
+            "value": {
+              "kind": "string",
+              "value": "financial-medium"
+            }
           }
-        }
-      ]
+        ]
+      }
     },
     {
-      "kind": "fireTimer",
+      "kind": "timerFire",
       "commandId": "fire-timer-sha256:20fc8593aad44fd72d99da0990a71c4310bfa90bcfd59983efa4a3f47d8c9083",
-      "timerId": {
+      "occurrence": {
         "processInstanceId": "ParallelRiskReview_Interrupted",
         "elementId": "BoundaryTimer_Review",
         "activation": 1
@@ -64,36 +66,26 @@
       "logicalTimeMs": 5000
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "refuse-stale-security-review",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "ParallelRiskReview_Interrupted",
         "elementId": "UserTask_Review",
         "activation": 1
       },
-      "submittedValues": [
-        {
-          "name": "DataOutput_CurrentResult",
-          "value": {
-            "kind": "string",
-            "value": "must-not-publish"
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "DataOutput_CurrentResult",
+            "value": {
+              "kind": "string",
+              "value": "must-not-publish"
+            }
           }
-        }
-      ]
+        ]
+      }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "openMultiInstances",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

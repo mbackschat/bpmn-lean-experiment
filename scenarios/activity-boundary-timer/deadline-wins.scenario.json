@@ -10,16 +10,15 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-deadline-wins",
-      "processId": "Process_ActivityBoundaryTimer",
       "instanceId": "BoundedInstance_DeadlineWins",
-      "initialVariables": []
+      "variables": []
     },
     {
-      "kind": "fireTimer",
+      "kind": "timerFire",
       "commandId": "fire-timer-sha256:1117b14fa96cbdf549ef3b94a2cb8ed8f7c4a302a1023e78246c6b7d0bcc0394",
-      "timerId": {
+      "occurrence": {
         "processInstanceId": "BoundedInstance_DeadlineWins",
         "elementId": "Deadline",
         "activation": 1
@@ -27,27 +26,18 @@
       "logicalTimeMs": 1000
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-boundary-follow-on",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "BoundedInstance_DeadlineWins",
         "elementId": "BoundaryTask",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

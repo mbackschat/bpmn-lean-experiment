@@ -11,17 +11,82 @@
       "sha256": "e5207d32461c6821394dc608bd1f70635a737b82bcf340c3babe7d148b081b4e"
     }
   },
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start-process",
+      "instanceId": "AccountOpening_3",
+      "variables": [
+        {
+          "name": "application",
+          "value": {
+            "kind": "string",
+            "value": "ACC-3"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-assess-applicant",
+      "occurrence": {
+        "processInstanceId": "AccountOpening_3",
+        "elementId": "AssessApplicantTask",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "channel",
+            "value": {
+              "kind": "string",
+              "value": "branch"
+            }
+          },
+          {
+            "name": "residency",
+            "value": {
+              "kind": "string",
+              "value": "foreign"
+            }
+          },
+          {
+            "name": "riskRating",
+            "value": {
+              "kind": "string",
+              "value": "low"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-collect-tax-residency-form",
+      "occurrence": {
+        "processInstanceId": "AccountOpening_3",
+        "elementId": "CollectTaxResidencyForm",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-open-account",
+      "occurrence": {
+        "processInstanceId": "AccountOpening_3",
+        "elementId": "OpenAccount",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
   ],
   "provenance": {
     "normativeRefs": [
@@ -36,74 +101,5 @@
       "CIB-EXT-0020",
       "CIB-INT-0005"
     ]
-  },
-  "stimuli": [
-    {
-      "kind": "startProcess",
-      "commandId": "start-process",
-      "processId": "Process_AccountOpening",
-      "instanceId": "AccountOpening_3",
-      "initialVariables": [
-        {
-          "name": "application",
-          "value": {
-            "kind": "string",
-            "value": "ACC-3"
-          }
-        }
-      ]
-    },
-    {
-      "kind": "completeUserTaskInstance",
-      "commandId": "complete-assess-applicant",
-      "taskId": {
-        "processInstanceId": "AccountOpening_3",
-        "elementId": "AssessApplicantTask",
-        "activation": 1
-      },
-      "submittedValues": [
-        {
-          "name": "channel",
-          "value": {
-            "kind": "string",
-            "value": "branch"
-          }
-        },
-        {
-          "name": "residency",
-          "value": {
-            "kind": "string",
-            "value": "foreign"
-          }
-        },
-        {
-          "name": "riskRating",
-          "value": {
-            "kind": "string",
-            "value": "low"
-          }
-        }
-      ]
-    },
-    {
-      "kind": "completeUserTaskInstance",
-      "commandId": "complete-collect-tax-residency-form",
-      "taskId": {
-        "processInstanceId": "AccountOpening_3",
-        "elementId": "CollectTaxResidencyForm",
-        "activation": 1
-      },
-      "submittedValues": []
-    },
-    {
-      "kind": "completeUserTaskInstance",
-      "commandId": "complete-open-account",
-      "taskId": {
-        "processInstanceId": "AccountOpening_3",
-        "elementId": "OpenAccount",
-        "activation": 1
-      },
-      "submittedValues": []
-    }
-  ]
+  }
 }

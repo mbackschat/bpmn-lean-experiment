@@ -8,124 +8,111 @@ import { Ajv2020 } from "ajv/dist/2020.js";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 
-const effectId = {
+const scenarioId = "https://bpmn-lean.local/schemas/scenario.schema.json";
+const resultId = "https://bpmn-lean.local/schemas/canonical-result.schema.json";
+
+const occurrence = {
   processInstanceId: "Instance_1",
   elementId: "ServiceTask_Record",
   activation: 1,
 } as const;
 
-const incidentId = { effectId, generation: 1 } as const;
-
-test("admits only literal-generation report and retry stimuli", async () => {
-  const schema = await readScenarioSchema();
-  const report = compileDefinition(schema, "reportEffectFailure");
-  const retry = compileDefinition(schema, "retryIncident");
+test("admits only the literal-free incident report and retry stimuli", async () => {
+  const report = await compileDefinition(scenarioId, "effectResult");
+  const command = await compileDefinition(scenarioId, "command");
   const exactReport = {
-    kind: "reportEffectFailure",
+    kind: "effectResult",
     commandId: "report-effect-failure",
-    effectId,
-    generation: 1,
+    occurrence,
+    outcome: { kind: "technicalFailure" },
   } as const;
   const exactRetry = {
-    kind: "retryIncident",
+    kind: "command",
     commandId: "retry-incident",
-    incidentId,
+    occurrence,
+    action: { kind: "retryIncident" },
   } as const;
 
   assert.equal(report(exactReport), true, JSON.stringify(report.errors));
-  assert.equal(retry(exactRetry), true, JSON.stringify(retry.errors));
-  assert.equal(report({ ...exactReport, generation: 2 }), false);
-  assert.equal(retry({ ...exactRetry, incidentId: { ...incidentId, generation: 2 } }), false);
-  assert.equal(report({ ...exactReport, privateCause: "forbidden" }), false);
-  assert.equal(retry({ ...exactRetry, incidentId: { ...incidentId, jobId: "private" } }), false);
+  assert.equal(command(exactRetry), true, JSON.stringify(command.errors));
+  // The incident generation is a wait fact, never an input: no stimulus carries one.
+  assert.equal(report({ ...exactReport, generation: 1 }), false);
+  assert.equal(report({ ...exactReport, outcome: { kind: "technicalFailure", privateCause: "forbidden" } }), false);
+  assert.equal(command({ ...exactRetry, action: { kind: "retryIncident", generation: 1 } }), false);
+  assert.equal(command({ ...exactRetry, occurrence: { ...occurrence, jobId: "private" } }), false);
 });
 
-test("admits only the exact incident-root cancellation stimulus and interaction", async () => {
-  const schema = await readScenarioSchema();
-  const cancel = compileDefinition(schema, "cancelIncidentProcess");
-  const enabledCancel = compileDefinition(
-    schema,
-    "enabledCancelIncidentProcess",
-  );
+test("admits only the exact incident-root cancellation command and its open-wait flag", async () => {
+  const command = await compileDefinition(scenarioId, "command");
+  const incident = await compileDefinition(resultId, "incidentDetail");
   const exactCancel = {
-    kind: "cancelIncidentProcess",
+    kind: "command",
     commandId: "cancel-incident-process",
-    processInstanceId: effectId.processInstanceId,
-    incidentId,
-  } as const;
-  const exactInteraction = {
-    kind: "cancelIncidentProcess",
-    processInstanceId: effectId.processInstanceId,
-    incidentId,
+    occurrence,
+    action: { kind: "cancelIncidentProcess" },
   } as const;
 
-  assert.equal(cancel(exactCancel), true, JSON.stringify(cancel.errors));
-  assert.equal(
-    enabledCancel(exactInteraction),
-    true,
-    JSON.stringify(enabledCancel.errors),
-  );
-  assert.equal(cancel({ ...exactCancel, owner: "caller-selected" }), false);
-  assert.equal(cancel({ ...exactCancel, reason: "private" }), false);
-  assert.equal(cancel({ ...exactCancel, force: true }), false);
-  assert.equal(
-    enabledCancel({ ...exactInteraction, scopeOccurrenceId: "nested" }),
-    false,
-  );
+  assert.equal(command(exactCancel), true, JSON.stringify(command.errors));
+  assert.equal(command({ ...exactCancel, processInstanceId: "caller-selected" }), false);
+  for (const extra of [{ owner: "caller-selected" }, { reason: "private" }, { force: true }]) {
+    assert.equal(command({ ...exactCancel, action: { kind: "cancelIncidentProcess", ...extra } }), false);
+  }
+  assert.equal(command({ ...exactCancel, action: { kind: "cancelAnyProcess" } }), false);
+
+  const detail = incidentDetail(false);
+  assert.equal(incident(detail), true, JSON.stringify(incident.errors));
+  assert.equal(incident(incidentDetail(true)), true, JSON.stringify(incident.errors));
+  assert.equal(incident({ ...detail, cancellable: "true" }), false);
+  assert.equal(incident({ ...detail, scopeOccurrenceId: "nested" }), false);
 });
 
 test("requires the exact public incident and state field shapes", async () => {
-  const schema = await readScenarioSchema();
-  const incident = compileDefinition(schema, "openEffectIncident");
-  const state = compileDefinition(schema, "stateObservation");
+  const wait = await compileDefinition(resultId, "openWait");
+  const state = await compileDefinition(resultId, "state");
   const openIncident = {
-    kind: "effectExecutionFailed",
-    id: incidentId,
-    effect: {
-      id: effectId,
-      descriptor: {
-        protocol: "urn:bpmn-lean:effect-protocol:activity-v1",
-        operation: "urn:bpmn-lean:effect-operation:probe-v1",
-      },
-      arguments: [],
-    },
+    id: occurrence,
+    definition: null,
+    input: "command",
+    detail: incidentDetail(false),
   } as const;
   const exactState = {
     kind: "state",
     instanceId: "Instance_1",
     status: "running",
-    activeWaits: [{ elementId: effectId.elementId, kind: "incident", multiplicity: 1 }],
-    openUserTasks: [],
-    openMessageSubscriptions: [],
-    openTimers: [],
-    openEffects: [],
-    openIncidents: [openIncident],
-    variables: [],
-    enabledInteractions: [{ kind: "retryIncident", incidentId }],
     logicalTimeMs: 0,
+    variables: [],
+    openWaits: [openIncident],
   } as const;
 
-  assert.equal(incident(openIncident), true, JSON.stringify(incident.errors));
+  assert.equal(wait(openIncident), true, JSON.stringify(wait.errors));
   assert.equal(state(exactState), true, JSON.stringify(state.errors));
-  const { openIncidents: _openIncidents, ...withoutIncidents } = exactState;
-  assert.equal(state(withoutIncidents), false);
-  assert.equal(state({ ...exactState, openIncidents: [{ ...openIncident, hostCause: "private" }] }), false);
-  assert.equal(state({ ...exactState, status: "cancelled" }), true);
+  const { openWaits: _openWaits, ...withoutWaits } = exactState;
+  assert.equal(state(withoutWaits), false);
   assert.equal(
-    state({
-      ...exactState,
-      enabledInteractions: [
-        { kind: "retryIncident", incidentId },
-        {
-          kind: "cancelIncidentProcess",
-          processInstanceId: effectId.processInstanceId,
-          incidentId,
-        },
-      ],
-    }),
-    true,
+    state({ ...exactState, openWaits: [{ ...openIncident, detail: { ...incidentDetail(false), hostCause: "private" } }] }),
+    false,
   );
+  // An incident is closed by a command, so another input channel names a different wait.
+  assert.equal(wait({ ...openIncident, input: "effectResult" }), false);
+  assert.equal(wait({ ...openIncident, detail: { ...incidentDetail(false), generation: 0 } }), false);
+  assert.equal(state({ ...exactState, status: "cancelled" }), true);
+  assert.equal(state({ ...exactState, openWaits: [{ ...openIncident, detail: incidentDetail(true) }] }), true);
 });
+
+function incidentDetail(cancellable: boolean) {
+  return {
+    kind: "incident",
+    effect: {
+      protocol: "urn:bpmn-lean:effect-protocol:activity-v1",
+      operation: "urn:bpmn-lean:effect-operation:probe-v1",
+      arguments: [],
+      failures: 1,
+      send: null,
+    },
+    generation: 1,
+    cancellable,
+  } as const;
+}
 
 test("permits only a Boolean incident-creation environment setting", async () => {
   const schema = await readSchema("semantic-profile.schema.json");
@@ -145,22 +132,20 @@ test("permits only a Boolean incident-creation environment setting", async () =>
   assert.equal(environment({ ...base, createIncidentOnFailedJobEnabled: "true" }), false);
 });
 
-async function readScenarioSchema(): Promise<Record<string, unknown>> {
-  return readSchema("scenario.schema.json");
-}
-
 async function readSchema(name: string): Promise<Record<string, unknown>> {
   return JSON.parse(
     await readFile(`${projectRoot}/contracts/schemas/${name}`, "utf8"),
   ) as Record<string, unknown>;
 }
 
-function compileDefinition(schema: Record<string, unknown>, definition: string) {
-  return new Ajv2020({ strict: true, strictTuples: false }).compile({
-    $schema: "https://json-schema.org/draft/2020-12/schema",
-    $defs: schema.$defs,
-    $ref: `#/$defs/${definition}`,
-  });
+/** Both wire schemas are registered together, because a result definition references the scenario's value arms. */
+async function compileDefinition(schemaId: string, definition: string) {
+  const ajv = new Ajv2020({ strict: true, strictTuples: false });
+  ajv.addSchema(await readSchema("scenario.schema.json") as never);
+  ajv.addSchema(await readSchema("canonical-result.schema.json") as never);
+  const validate = ajv.getSchema(`${schemaId}#/$defs/${definition}`);
+  assert.ok(validate !== undefined, `${schemaId} has no definition ${definition}`);
+  return validate;
 }
 
 function compileProperty(schema: Record<string, unknown>, property: string) {

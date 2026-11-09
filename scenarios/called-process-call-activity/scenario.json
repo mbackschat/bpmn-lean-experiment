@@ -10,44 +10,37 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-call-activity",
-      "processId": "CallerProcess",
       "instanceId": "CallActivityInstance_1",
-      "initialVariables": []
+      "variables": []
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-called-task",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "call:22:CallActivityInstance_1:18:Call_CalledProcess:1",
         "elementId": "CalledTask",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-caller-task",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "CallActivityInstance_1",
         "elementId": "CallerTask",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

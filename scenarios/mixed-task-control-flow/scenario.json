@@ -13,11 +13,10 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start",
-      "processId": "Invoice",
       "instanceId": "invoice",
-      "initialVariables": [
+      "variables": [
         {
           "name": "request",
           "value": {
@@ -28,34 +27,37 @@
       ]
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "review-1",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "invoice",
         "elementId": "Review",
         "activation": 1
       },
-      "submittedValues": [
-        {
-          "name": "request",
-          "value": {
-            "kind": "string",
-            "value": "draft"
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "request",
+            "value": {
+              "kind": "string",
+              "value": "draft"
+            }
           }
-        }
-      ]
+        ]
+      }
     },
     {
-      "kind": "completeEffect",
+      "kind": "effectResult",
       "commandId": "complete-effect-sha256:6a6a59099e472c37b1f6c0581b3ed81ac9d0db2c82474839da67af29164a8855",
-      "effectId": {
+      "occurrence": {
         "processInstanceId": "invoice",
         "elementId": "Validate",
         "activation": 1
       },
-      "result": {
+      "outcome": {
         "kind": "success",
-        "localPatch": [
+        "outputs": [
           {
             "name": "result",
             "value": {
@@ -67,34 +69,37 @@
       }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "review-2",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "invoice",
         "elementId": "Review",
         "activation": 2
       },
-      "submittedValues": [
-        {
-          "name": "request",
-          "value": {
-            "kind": "string",
-            "value": "INV-42"
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "request",
+            "value": {
+              "kind": "string",
+              "value": "INV-42"
+            }
           }
-        }
-      ]
+        ]
+      }
     },
     {
-      "kind": "completeEffect",
+      "kind": "effectResult",
       "commandId": "complete-effect-sha256:da3978c5f617bedda4e19dfa7016d344971167a3000865c1d1e95581dca85df8",
-      "effectId": {
+      "occurrence": {
         "processInstanceId": "invoice",
         "elementId": "Validate",
         "activation": 2
       },
-      "result": {
+      "outcome": {
         "kind": "success",
-        "localPatch": [
+        "outputs": [
           {
             "name": "result",
             "value": {
@@ -106,27 +111,18 @@
       }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "finalize",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "invoice",
         "elementId": "Finalize",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

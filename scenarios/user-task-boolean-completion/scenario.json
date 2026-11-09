@@ -10,11 +10,10 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-process",
-      "processId": "Process_SequentialUserTask",
       "instanceId": "BooleanInstance_1",
-      "initialVariables": [
+      "variables": [
         {
           "name": "initialNote",
           "value": {
@@ -31,48 +30,39 @@
       ]
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-user-task-instance",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "BooleanInstance_1",
         "elementId": "UserTask_Approve",
         "activation": 1
       },
-      "submittedValues": [
-        {
-          "name": "approved",
-          "value": {
-            "kind": "boolean",
-            "value": true
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "approved",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          },
+          {
+            "name": "decisionLabel",
+            "value": {
+              "kind": "string",
+              "value": "approved"
+            }
+          },
+          {
+            "name": "reviewNote",
+            "value": {
+              "kind": "null"
+            }
           }
-        },
-        {
-          "name": "decisionLabel",
-          "value": {
-            "kind": "string",
-            "value": "approved"
-          }
-        },
-        {
-          "name": "reviewNote",
-          "value": {
-            "kind": "null"
-          }
-        }
-      ]
+        ]
+      }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

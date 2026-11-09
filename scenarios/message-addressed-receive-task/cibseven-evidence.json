@@ -2,7 +2,7 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "message-addressed-receive-task",
-    "sha256": "a23bb3c311f78c3484d7340303a6b48093c41b76d0e7b4e5a35cf74602c3ed8b"
+    "sha256": "7aca54d1efd8751785df4ecc7265d628297ebbd83cdc94719582289532bec4eb"
   },
   "profile": {
     "id": "cibseven-2.2.0-message-addressed-receive-task-draft",
@@ -92,46 +92,28 @@
         "kind": "state",
         "instanceId": "ReceiveTaskInstance_1",
         "status": "running",
-        "activeWaits": [
-          {
-            "elementId": "ReceiveTask_WaitForInvoice",
-            "kind": "message",
-            "multiplicity": 1
-          }
-        ],
-        "openUserTasks": [],
-        "openMessageSubscriptions": [
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
           {
             "id": {
               "processInstanceId": "ReceiveTaskInstance_1",
               "elementId": "ReceiveTask_WaitForInvoice",
               "activation": 1
             },
-            "channel": {
-              "kind": "directMessage",
-              "messageId": "Message_NewInvoice"
+            "definition": null,
+            "input": "deliver",
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_NewInvoice"
+              },
+              "payload": false,
+              "criteria": []
             }
           }
-        ],
-        "openTimers": [],
-        "openEffects": [],
-        "openIncidents": [],
-        "variables": [],
-        "enabledInteractions": [
-          {
-            "kind": "deliverMessage",
-            "subscriptionId": {
-              "processInstanceId": "ReceiveTaskInstance_1",
-              "elementId": "ReceiveTask_WaitForInvoice",
-              "activation": 1
-            },
-            "channel": {
-              "kind": "directMessage",
-              "messageId": "Message_NewInvoice"
-            }
-          }
-        ],
-        "logicalTimeMs": 0
+        ]
       },
       {
         "kind": "command",
@@ -142,15 +124,9 @@
         "kind": "state",
         "instanceId": "ReceiveTaskInstance_1",
         "status": "completed",
-        "activeWaits": [],
-        "openUserTasks": [],
-        "openMessageSubscriptions": [],
-        "openTimers": [],
-        "openEffects": [],
-        "openIncidents": [],
+        "logicalTimeMs": 0,
         "variables": [],
-        "enabledInteractions": [],
-        "logicalTimeMs": 0
+        "openWaits": []
       }
     ]
   }

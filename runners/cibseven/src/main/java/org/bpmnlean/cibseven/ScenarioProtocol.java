@@ -1,7 +1,9 @@
 package org.bpmnlean.cibseven;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonValue;
@@ -9,10 +11,11 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Current transport types shared by the CIB-seven oracle and its callers.
+ * Transport types of the scenario and canonical-result contracts
+ * (`contracts/schemas/scenario.schema.json`, `canonical-result.schema.json`).
  *
- * <p>The canonical trace deliberately contains only stable, observable semantic facts. Engine-generated
- * identifiers and the PVM projection belong in diagnostics.
+ * <p>The canonical trace contains only stable, observable semantic facts. Engine-generated identifiers and the PVM
+ * projection belong in diagnostics.
  */
 public final class ScenarioProtocol {
 
@@ -48,10 +51,10 @@ public final class ScenarioProtocol {
   }
 
   public enum ProcessStatus implements ScenarioWireValue {
-    NOT_STARTED("notStarted"),
     RUNNING("running"),
     COMPLETED("completed"),
-    CANCELLED("cancelled");
+    CANCELLED("cancelled"),
+    FAILED("failed");
 
     private final String wireValue;
 
@@ -71,16 +74,16 @@ public final class ScenarioProtocol {
     }
   }
 
-  public enum WaitKind implements ScenarioWireValue {
-    USER_TASK("userTask"),
-    MESSAGE("message"),
-    TIMER("timer"),
-    EFFECT("effect"),
-    INCIDENT("incident");
+  /** The input that closes an open wait; a conditional wait has none. */
+  public enum InputKind implements ScenarioWireValue {
+    COMMAND("command"),
+    DELIVER("deliver"),
+    TIMER_FIRE("timerFire"),
+    EFFECT_RESULT("effectResult");
 
     private final String wireValue;
 
-    WaitKind(String wireValue) {
+    InputKind(String wireValue) {
       this.wireValue = wireValue;
     }
 
@@ -91,61 +94,12 @@ public final class ScenarioProtocol {
     }
 
     @JsonCreator
-    public static WaitKind fromWireValue(String value) {
-      return ScenarioWireValue.parse(WaitKind.class, value);
+    public static InputKind fromWireValue(String value) {
+      return ScenarioWireValue.parse(InputKind.class, value);
     }
   }
 
-  public enum UserTaskLifecycleState implements ScenarioWireValue {
-    ACTIVE("active");
-
-    private final String wireValue;
-
-    UserTaskLifecycleState(String wireValue) {
-      this.wireValue = wireValue;
-    }
-
-    @Override
-    @JsonValue
-    public String wireValue() {
-      return wireValue;
-    }
-
-    @JsonCreator
-    public static UserTaskLifecycleState fromWireValue(String value) {
-      return ScenarioWireValue.parse(UserTaskLifecycleState.class, value);
-    }
-  }
-
-  public enum ObservationKind implements ScenarioWireValue {
-    DEPLOYMENT("deployment"),
-    COMMAND_RESULTS("commandResults"),
-    PROCESS_STATUS("processStatus"),
-    ACTIVE_WAITS("activeWaits"),
-    OPEN_USER_TASKS("openUserTasks"),
-    OPEN_TIMERS("openTimers"),
-    OPEN_EFFECTS("openEffects"),
-    VARIABLES("variables"),
-    ENABLED_INTERACTIONS("enabledInteractions"),
-    LOGICAL_TIME("logicalTime");
-
-    private final String wireValue;
-
-    ObservationKind(String wireValue) {
-      this.wireValue = wireValue;
-    }
-
-    @Override
-    @JsonValue
-    public String wireValue() {
-      return wireValue;
-    }
-
-    @JsonCreator
-    public static ObservationKind fromWireValue(String value) {
-      return ScenarioWireValue.parse(ObservationKind.class, value);
-    }
-  }
+  // ---------- scenario ----------
 
   public record ScenarioDefinition(
       String kind,
@@ -153,7 +107,7 @@ public final class ScenarioProtocol {
       String profile,
       BpmnResource bpmn,
       List<Stimulus> stimuli,
-      List<ObservationKind> observations,
+      @JsonInclude(JsonInclude.Include.NON_NULL) Options options,
       Provenance provenance) {
 
     public ScenarioDefinition {
@@ -162,10 +116,26 @@ public final class ScenarioProtocol {
       Objects.requireNonNull(profile, "profile");
       Objects.requireNonNull(bpmn, "bpmn");
       stimuli = List.copyOf(stimuli);
-      observations = List.copyOf(observations);
       Objects.requireNonNull(provenance, "provenance");
     }
+
+    Options declaredOptions() {
+      return options == null ? new Options(null) : options;
+    }
   }
+
+  /** Host-environment options a target runner needs to realize the scenario; never an expected answer. */
+  public record Options(@JsonInclude(JsonInclude.Include.NON_NULL) Incidents incidents) {
+    boolean incidentsEnabled() {
+      return incidents != null;
+    }
+
+    boolean incidentsCancellable() {
+      return incidents != null && incidents.cancellable();
+    }
+  }
+
+  public record Incidents(boolean cancellable) {}
 
   public record BpmnResource(
       String id,
@@ -199,125 +169,253 @@ public final class ScenarioProtocol {
     }
   }
 
+  public record OccurrenceId(String processInstanceId, String elementId, long activation) {
+    public OccurrenceId {
+      Objects.requireNonNull(processInstanceId, "processInstanceId");
+      Objects.requireNonNull(elementId, "elementId");
+      if (activation < 1 || activation > MAX_SAFE_WIRE_INTEGER) {
+        throw new IllegalArgumentException("activation must be a positive safe wire integer");
+      }
+    }
+  }
+
   @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "kind")
   @JsonSubTypes({
-    @JsonSubTypes.Type(value = StartProcessStimulus.class, name = "startProcess"),
-    @JsonSubTypes.Type(
-        value = CompleteUserTaskInstanceStimulus.class,
-        name = "completeUserTaskInstance"),
-    @JsonSubTypes.Type(
-        value = ScenarioMessageProtocol.DeliverMessageStimulus.class,
-        name = "deliverMessage"),
-    @JsonSubTypes.Type(value = FireTimerStimulus.class, name = "fireTimer"),
-    @JsonSubTypes.Type(value = CompleteEffectStimulus.class, name = "completeEffect"),
-    @JsonSubTypes.Type(value = ReportEffectFailureStimulus.class, name = "reportEffectFailure"),
-    @JsonSubTypes.Type(value = RetryIncidentStimulus.class, name = "retryIncident"),
-    @JsonSubTypes.Type(value = CancelIncidentProcessStimulus.class, name = "cancelIncidentProcess")
+    @JsonSubTypes.Type(value = OperationMessageChannel.class, name = "operationMessage"),
+    @JsonSubTypes.Type(value = DirectMessageChannel.class, name = "directMessage"),
+    @JsonSubTypes.Type(value = UnspecifiedMessageChannel.class, name = "unspecifiedMessage")
   })
-  public sealed interface Stimulus
-      permits StartProcessStimulus,
-          CompleteUserTaskInstanceStimulus,
-          ScenarioMessageProtocol.DeliverMessageStimulus,
-          FireTimerStimulus,
-          CompleteEffectStimulus,
-          ReportEffectFailureStimulus,
-          RetryIncidentStimulus,
-          CancelIncidentProcessStimulus {
+  public sealed interface MessageChannel
+      permits OperationMessageChannel, DirectMessageChannel, UnspecifiedMessageChannel {}
+
+  public record OperationMessageChannel(
+      String interfaceId, String interfaceOperationId, String messageId) implements MessageChannel {
+    public OperationMessageChannel {
+      Objects.requireNonNull(interfaceId, "interfaceId");
+      Objects.requireNonNull(interfaceOperationId, "interfaceOperationId");
+      Objects.requireNonNull(messageId, "messageId");
+    }
+  }
+
+  public record DirectMessageChannel(String messageId) implements MessageChannel {
+    public DirectMessageChannel {
+      Objects.requireNonNull(messageId, "messageId");
+    }
+  }
+
+  /** The field-free channel of a Receive Task without a Message (`CIB-INT-0004`). */
+  public record UnspecifiedMessageChannel() implements MessageChannel {}
+
+  @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "kind")
+  @JsonSubTypes({
+    @JsonSubTypes.Type(value = Start.class, name = "start"),
+    @JsonSubTypes.Type(value = Command.class, name = "command"),
+    @JsonSubTypes.Type(value = Deliver.class, name = "deliver"),
+    @JsonSubTypes.Type(value = TimerFire.class, name = "timerFire"),
+    @JsonSubTypes.Type(value = EffectResult.class, name = "effectResult")
+  })
+  public sealed interface Stimulus permits Start, Command, Deliver, TimerFire, EffectResult {
     String commandId();
   }
 
-  public record StartProcessStimulus(
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  public record Start(
       String commandId,
-      String processId,
       String instanceId,
-      List<VariableBinding> initialVariables) implements Stimulus {
-    public StartProcessStimulus {
+      String startEvent,
+      StartTrigger trigger,
+      String businessKey,
+      List<VariableBinding> variables) implements Stimulus {
+    public Start {
       Objects.requireNonNull(commandId, "commandId");
-      Objects.requireNonNull(processId, "processId");
       Objects.requireNonNull(instanceId, "instanceId");
-      initialVariables =
-          ScenarioVariableBindings.requireCanonical(initialVariables, "initialVariables");
+      variables = ScenarioVariableBindings.requireCanonical(variables, "variables");
     }
   }
 
-  public record UserTaskInstanceId(
-      String processInstanceId, String elementId, long activation) {
-    public UserTaskInstanceId {
-      Objects.requireNonNull(processInstanceId, "processInstanceId");
-      Objects.requireNonNull(elementId, "elementId");
-      if (activation < 1 || activation > MAX_SAFE_WIRE_INTEGER) {
-        throw new IllegalArgumentException("activation must be a positive safe wire integer");
-      }
+  @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "kind")
+  @JsonSubTypes({
+    @JsonSubTypes.Type(value = NoneStart.class, name = "none"),
+    @JsonSubTypes.Type(value = TimerStart.class, name = "timer"),
+    @JsonSubTypes.Type(value = MessageStart.class, name = "message"),
+    @JsonSubTypes.Type(value = SignalStart.class, name = "signal"),
+    @JsonSubTypes.Type(value = ConditionStart.class, name = "condition")
+  })
+  public sealed interface StartTrigger
+      permits NoneStart, TimerStart, MessageStart, SignalStart, ConditionStart {}
+
+  public record NoneStart() implements StartTrigger {}
+
+  public record TimerStart(long logicalTimeMs) implements StartTrigger {}
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  public record MessageStart(MessageChannel channel, VariableValue payload) implements StartTrigger {
+    public MessageStart {
+      Objects.requireNonNull(channel, "channel");
     }
   }
 
-  public record CompleteUserTaskInstanceStimulus(
-      String commandId,
-      UserTaskInstanceId taskId,
-      List<VariableBinding> submittedValues) implements Stimulus {
-    public CompleteUserTaskInstanceStimulus {
-      Objects.requireNonNull(commandId, "commandId");
-      Objects.requireNonNull(taskId, "taskId");
-      submittedValues =
-          ScenarioVariableBindings.requireCanonical(submittedValues, "submittedValues");
+  public record SignalStart(String name, List<VariableBinding> variables) implements StartTrigger {
+    public SignalStart {
+      Objects.requireNonNull(name, "name");
+      variables = List.copyOf(variables);
     }
   }
 
-  public record TimerOccurrenceId(
-      String processInstanceId, String elementId, long activation) {
-    public TimerOccurrenceId {
-      Objects.requireNonNull(processInstanceId, "processInstanceId");
-      Objects.requireNonNull(elementId, "elementId");
-      if (activation < 1 || activation > MAX_SAFE_WIRE_INTEGER) {
-        throw new IllegalArgumentException("activation must be a positive safe wire integer");
-      }
-    }
-  }
+  public record ConditionStart() implements StartTrigger {}
 
-  public record FireTimerStimulus(
-      String commandId, TimerOccurrenceId timerId, long logicalTimeMs)
+  public record Command(String commandId, OccurrenceId occurrence, CommandAction action)
       implements Stimulus {
-    public FireTimerStimulus {
+    public Command {
       Objects.requireNonNull(commandId, "commandId");
-      Objects.requireNonNull(timerId, "timerId");
+      Objects.requireNonNull(occurrence, "occurrence");
+      Objects.requireNonNull(action, "action");
+    }
+  }
+
+  @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "kind")
+  @JsonSubTypes({
+    @JsonSubTypes.Type(value = CompleteUserTask.class, name = "completeUserTask"),
+    @JsonSubTypes.Type(value = RetryIncident.class, name = "retryIncident"),
+    @JsonSubTypes.Type(value = CancelIncidentProcess.class, name = "cancelIncidentProcess"),
+    @JsonSubTypes.Type(value = SetVariables.class, name = "setVariables"),
+    @JsonSubTypes.Type(value = RemoveVariables.class, name = "removeVariables")
+  })
+  public sealed interface CommandAction
+      permits CompleteUserTask, RetryIncident, CancelIncidentProcess, SetVariables, RemoveVariables {}
+
+  public record CompleteUserTask(List<VariableBinding> values) implements CommandAction {
+    public CompleteUserTask {
+      values = ScenarioVariableBindings.requireCanonical(values, "values");
+    }
+  }
+
+  public record RetryIncident() implements CommandAction {}
+
+  public record CancelIncidentProcess() implements CommandAction {}
+
+  public record SetVariables(List<VariableBinding> values) implements CommandAction {
+    public SetVariables {
+      values = ScenarioVariableBindings.requireCanonical(values, "values");
+    }
+  }
+
+  public record RemoveVariables(List<String> names) implements CommandAction {
+    public RemoveVariables {
+      names = List.copyOf(names);
+    }
+  }
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  public record Deliver(
+      String commandId,
+      OccurrenceId occurrence,
+      DeliveryTrigger trigger,
+      List<CorrelationMatch> correlation,
+      VariableValue payload) implements Stimulus {
+    public Deliver {
+      Objects.requireNonNull(commandId, "commandId");
+      Objects.requireNonNull(occurrence, "occurrence");
+      Objects.requireNonNull(trigger, "trigger");
+      correlation = correlation == null ? null : List.copyOf(correlation);
+    }
+  }
+
+  @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "kind")
+  @JsonSubTypes({
+    @JsonSubTypes.Type(value = MessageDelivery.class, name = "message"),
+    @JsonSubTypes.Type(value = SignalDelivery.class, name = "signal")
+  })
+  public sealed interface DeliveryTrigger permits MessageDelivery, SignalDelivery {}
+
+  public record MessageDelivery(MessageChannel channel) implements DeliveryTrigger {
+    public MessageDelivery {
+      Objects.requireNonNull(channel, "channel");
+    }
+  }
+
+  public record SignalDelivery(String name) implements DeliveryTrigger {
+    public SignalDelivery {
+      Objects.requireNonNull(name, "name");
+    }
+  }
+
+  public record CorrelationMatch(CorrelationTarget target, VariableValue expected) {
+    public CorrelationMatch {
+      Objects.requireNonNull(target, "target");
+      Objects.requireNonNull(expected, "expected");
+    }
+  }
+
+  @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "kind")
+  @JsonSubTypes({
+    @JsonSubTypes.Type(value = ProcessVariableTarget.class, name = "processVariable"),
+    @JsonSubTypes.Type(value = LocalVariableTarget.class, name = "localVariable"),
+    @JsonSubTypes.Type(value = BusinessKeyTarget.class, name = "businessKey"),
+    @JsonSubTypes.Type(value = ProcessInstanceTarget.class, name = "processInstance")
+  })
+  public sealed interface CorrelationTarget
+      permits ProcessVariableTarget, LocalVariableTarget, BusinessKeyTarget, ProcessInstanceTarget {}
+
+  public record ProcessVariableTarget(String name) implements CorrelationTarget {}
+
+  public record LocalVariableTarget(String name) implements CorrelationTarget {}
+
+  public record BusinessKeyTarget() implements CorrelationTarget {}
+
+  public record ProcessInstanceTarget() implements CorrelationTarget {}
+
+  public record TimerFire(String commandId, OccurrenceId occurrence, long logicalTimeMs)
+      implements Stimulus {
+    public TimerFire {
+      Objects.requireNonNull(commandId, "commandId");
+      Objects.requireNonNull(occurrence, "occurrence");
       if (logicalTimeMs < 0 || logicalTimeMs > MAX_SAFE_WIRE_INTEGER) {
         throw new IllegalArgumentException("logicalTimeMs must be a non-negative safe wire integer");
       }
     }
   }
 
+  public record EffectResult(String commandId, OccurrenceId occurrence, EffectOutcome outcome)
+      implements Stimulus {
+    public EffectResult {
+      Objects.requireNonNull(commandId, "commandId");
+      Objects.requireNonNull(occurrence, "occurrence");
+      Objects.requireNonNull(outcome, "outcome");
+    }
+  }
+
+  @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "kind")
+  @JsonSubTypes({
+    @JsonSubTypes.Type(value = EffectSuccess.class, name = "success"),
+    @JsonSubTypes.Type(value = BusinessFailure.class, name = "businessFailure"),
+    @JsonSubTypes.Type(value = TechnicalFailure.class, name = "technicalFailure")
+  })
+  public sealed interface EffectOutcome permits EffectSuccess, BusinessFailure, TechnicalFailure {}
+
+  public record EffectSuccess(List<VariableBinding> outputs) implements EffectOutcome {
+    public EffectSuccess {
+      outputs = ScenarioVariableBindings.requireCanonical(outputs, "outputs");
+    }
+  }
+
   @JsonInclude(JsonInclude.Include.NON_NULL)
-  public record OpenUserTask(
-      UserTaskInstanceId id,
-      String name,
-      UserTaskLifecycleState state,
-      UserTaskMetadataProtocol.UserTaskMetadata metadata) {
-    public OpenUserTask(
-        UserTaskInstanceId id, String name, UserTaskLifecycleState state) {
-      this(id, name, state, null);
-    }
-
-    public OpenUserTask {
-      Objects.requireNonNull(id, "id");
-      Objects.requireNonNull(state, "state");
-    }
-  }
-
-  public record OpenTimer(TimerOccurrenceId id, long deadlineMs) {
-    public OpenTimer {
-      Objects.requireNonNull(id, "id");
-      if (deadlineMs < 0 || deadlineMs > MAX_SAFE_WIRE_INTEGER) {
-        throw new IllegalArgumentException("deadlineMs must be a non-negative safe wire integer");
+  public record BusinessFailure(String code, String message, List<VariableBinding> outputs)
+      implements EffectOutcome {
+    public BusinessFailure {
+      if (code == null || code.isEmpty()) {
+        throw new IllegalArgumentException("BPMN Error code must be non-empty");
       }
+      if (message != null && message.isEmpty()) {
+        throw new IllegalArgumentException("BPMN Error message must be absent or non-empty");
+      }
+      outputs = ScenarioVariableBindings.requireCanonical(outputs, "outputs");
     }
   }
 
-  public record EffectDescriptor(String protocol, String operation) {
-    public EffectDescriptor {
-      Objects.requireNonNull(protocol, "protocol");
-      Objects.requireNonNull(operation, "operation");
-    }
-  }
+  public record TechnicalFailure() implements EffectOutcome {}
+
+  // ---------- values ----------
 
   @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "kind")
   @JsonSubTypes({
@@ -367,122 +465,7 @@ public final class ScenarioProtocol {
     }
   }
 
-  public record EffectOccurrenceId(
-      String processInstanceId, String elementId, long activation) {
-    public EffectOccurrenceId {
-      Objects.requireNonNull(processInstanceId, "processInstanceId");
-      Objects.requireNonNull(elementId, "elementId");
-      if (activation < 1 || activation > MAX_SAFE_WIRE_INTEGER) {
-        throw new IllegalArgumentException("activation must be a positive safe wire integer");
-      }
-    }
-  }
-
-  public record OpenEffect(
-      EffectOccurrenceId id,
-      EffectDescriptor descriptor,
-      List<VariableBinding> arguments) {
-    public OpenEffect {
-      Objects.requireNonNull(id, "id");
-      Objects.requireNonNull(descriptor, "descriptor");
-      arguments = List.copyOf(arguments);
-    }
-  }
-
-  public record EffectIncidentId(EffectOccurrenceId effectId, long generation) {
-    public EffectIncidentId {
-      Objects.requireNonNull(effectId, "effectId");
-      if (generation != 1) {
-        throw new IllegalArgumentException("effect incident generation must be literal 1");
-      }
-    }
-  }
-
-  public record OpenEffectIncident(
-      String kind, EffectIncidentId id, OpenEffect effect) {
-    public OpenEffectIncident {
-      if (!"effectExecutionFailed".equals(kind)) {
-        throw new IllegalArgumentException("effect incident kind must be effectExecutionFailed");
-      }
-      Objects.requireNonNull(id, "id");
-      Objects.requireNonNull(effect, "effect");
-      if (!id.effectId().equals(effect.id())) {
-        throw new IllegalArgumentException("effect incident identity must match its effect");
-      }
-    }
-  }
-
-  @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "kind")
-  @JsonSubTypes({
-    @JsonSubTypes.Type(value = SuccessfulEffectResult.class, name = "success"),
-    @JsonSubTypes.Type(value = BpmnErrorEffectResult.class, name = "bpmnError")
-  })
-  public sealed interface EffectExecutionResult
-      permits SuccessfulEffectResult, BpmnErrorEffectResult {}
-
-  public record SuccessfulEffectResult(List<VariableBinding> localPatch)
-      implements EffectExecutionResult {
-    public SuccessfulEffectResult {
-      localPatch = List.copyOf(localPatch);
-    }
-  }
-
-  public record BpmnErrorEffectResult(
-      String code,
-      String message,
-      List<VariableBinding> localPatch)
-      implements EffectExecutionResult {
-    public BpmnErrorEffectResult {
-      if (code == null || code.isEmpty()) {
-        throw new IllegalArgumentException("BPMN Error code must be non-empty");
-      }
-      if (message != null && message.isEmpty()) {
-        throw new IllegalArgumentException(
-            "BPMN Error message must be null or non-empty");
-      }
-      localPatch = List.copyOf(localPatch);
-    }
-  }
-
-  public record CompleteEffectStimulus(
-      String commandId,
-      EffectOccurrenceId effectId,
-      EffectExecutionResult result) implements Stimulus {
-    public CompleteEffectStimulus {
-      Objects.requireNonNull(commandId, "commandId");
-      Objects.requireNonNull(effectId, "effectId");
-      Objects.requireNonNull(result, "result");
-    }
-  }
-
-  public record ReportEffectFailureStimulus(
-      String commandId, EffectOccurrenceId effectId, long generation) implements Stimulus {
-    public ReportEffectFailureStimulus {
-      Objects.requireNonNull(commandId, "commandId");
-      Objects.requireNonNull(effectId, "effectId");
-      if (generation != 1) {
-        throw new IllegalArgumentException("effect failure generation must be literal 1");
-      }
-    }
-  }
-
-  public record RetryIncidentStimulus(
-      String commandId, EffectIncidentId incidentId) implements Stimulus {
-    public RetryIncidentStimulus {
-      Objects.requireNonNull(commandId, "commandId");
-      Objects.requireNonNull(incidentId, "incidentId");
-    }
-  }
-
-  public record CancelIncidentProcessStimulus(
-      String commandId, String processInstanceId, EffectIncidentId incidentId)
-      implements Stimulus {
-    public CancelIncidentProcessStimulus {
-      Objects.requireNonNull(commandId, "commandId");
-      Objects.requireNonNull(processInstanceId, "processInstanceId");
-      Objects.requireNonNull(incidentId, "incidentId");
-    }
-  }
+  // ---------- canonical result ----------
 
   @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "kind")
   @JsonSubTypes({
@@ -493,58 +476,262 @@ public final class ScenarioProtocol {
   public sealed interface CanonicalObservation
       permits DeploymentObservation, CommandObservation, StateObservation {}
 
-  public record DeploymentObservation(CommandOutcome outcome) implements CanonicalObservation {
+  public record DeploymentObservation(
+      CommandOutcome outcome, @JsonInclude(JsonInclude.Include.NON_NULL) String code)
+      implements CanonicalObservation {
     public DeploymentObservation {
       Objects.requireNonNull(outcome, "outcome");
     }
   }
 
-  public record CommandObservation(String commandId, CommandOutcome outcome)
+  /** CIB has no stable refusal code, so this runner never writes `code`. */
+  public record CommandObservation(
+      String commandId, CommandOutcome outcome, @JsonInclude(JsonInclude.Include.NON_NULL) String code)
       implements CanonicalObservation {
     public CommandObservation {
       Objects.requireNonNull(commandId, "commandId");
       Objects.requireNonNull(outcome, "outcome");
+    }
+
+    public CommandObservation(String commandId, CommandOutcome outcome) {
+      this(commandId, outcome, null);
     }
   }
 
   public record StateObservation(
       String instanceId,
       ProcessStatus status,
-      List<ActiveWait> activeWaits,
-      List<OpenUserTask> openUserTasks,
-      List<ScenarioMessageProtocol.OpenMessageSubscription> openMessageSubscriptions,
-      List<OpenTimer> openTimers,
-      List<OpenEffect> openEffects,
-      List<OpenEffectIncident> openIncidents,
+      long logicalTimeMs,
       List<VariableBinding> variables,
-      List<ScenarioInteractionProtocol.EnabledInteraction> enabledInteractions,
-      long logicalTimeMs)
+      @JsonInclude(JsonInclude.Include.NON_NULL) InstanceFailure failure,
+      List<OpenWait> openWaits)
       implements CanonicalObservation {
     public StateObservation {
       Objects.requireNonNull(instanceId, "instanceId");
       Objects.requireNonNull(status, "status");
-      activeWaits = List.copyOf(activeWaits);
-      openUserTasks = List.copyOf(openUserTasks);
-      openMessageSubscriptions = List.copyOf(openMessageSubscriptions);
-      openTimers = List.copyOf(openTimers);
-      openEffects = List.copyOf(openEffects);
-      openIncidents = List.copyOf(openIncidents);
-      variables = List.copyOf(variables);
-      enabledInteractions = List.copyOf(enabledInteractions);
       if (logicalTimeMs < 0 || logicalTimeMs > MAX_SAFE_WIRE_INTEGER) {
         throw new IllegalArgumentException("logicalTimeMs must be a non-negative safe wire integer");
       }
+      variables = List.copyOf(variables);
+      openWaits = List.copyOf(openWaits);
     }
-
   }
 
-  public record ActiveWait(String elementId, WaitKind kind, long multiplicity) {
-    public ActiveWait {
-      Objects.requireNonNull(elementId, "elementId");
-      Objects.requireNonNull(kind, "kind");
-      if (multiplicity < 1 || multiplicity > MAX_SAFE_WIRE_INTEGER) {
-        throw new IllegalArgumentException("multiplicity must be a positive safe wire integer");
+  public record InstanceFailure(
+      String code, String message, OccurrenceId occurrence, List<RelatedOccurrence> related) {}
+
+  public record RelatedOccurrence(String name, OccurrenceId occurrence) {}
+
+  public record DefinitionRef(
+      String key,
+      Long version,
+      String versionTag,
+      String deployment,
+      String tenant,
+      String sourceSha256) {
+    public DefinitionRef {
+      Objects.requireNonNull(key, "key");
+    }
+  }
+
+  /** One open wait; `input` is derived from the detail, so it is written but never read back. */
+  @JsonIgnoreProperties(value = "input", allowGetters = true)
+  public record OpenWait(OccurrenceId id, DefinitionRef definition, WaitDetail detail) {
+    public OpenWait {
+      Objects.requireNonNull(id, "id");
+      Objects.requireNonNull(detail, "detail");
+    }
+
+    @JsonProperty("input")
+    public InputKind input() {
+      return detail.input();
+    }
+  }
+
+  @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "kind")
+  @JsonSubTypes({
+    @JsonSubTypes.Type(value = UserTaskDetail.class, name = "userTask"),
+    @JsonSubTypes.Type(value = MessageDetail.class, name = "message"),
+    @JsonSubTypes.Type(value = SignalDetail.class, name = "signal"),
+    @JsonSubTypes.Type(value = ConditionalDetail.class, name = "conditional"),
+    @JsonSubTypes.Type(value = TimerDetail.class, name = "timer"),
+    @JsonSubTypes.Type(value = EffectDetail.class, name = "effect"),
+    @JsonSubTypes.Type(value = IncidentDetail.class, name = "incident")
+  })
+  public sealed interface WaitDetail
+      permits UserTaskDetail,
+          MessageDetail,
+          SignalDetail,
+          ConditionalDetail,
+          TimerDetail,
+          EffectDetail,
+          IncidentDetail {
+    InputKind input();
+
+    /** The `kind` wire name, the last key of the canonical wait order. */
+    String kindName();
+  }
+
+  public record FormField(String key, String type) {}
+
+  public record UserTaskDetail(
+      String name,
+      String assignee,
+      List<String> candidateUsers,
+      List<String> candidateGroups,
+      String formKey,
+      List<FormField> formFields,
+      String dueDate,
+      String followUpDate,
+      Long priority,
+      List<VariableBinding> inputs)
+      implements WaitDetail {
+    public UserTaskDetail {
+      candidateUsers = List.copyOf(candidateUsers);
+      candidateGroups = List.copyOf(candidateGroups);
+      formFields = List.copyOf(formFields);
+      inputs = List.copyOf(inputs);
+    }
+
+    @Override
+    public InputKind input() {
+      return InputKind.COMMAND;
+    }
+
+    @Override
+    public String kindName() {
+      return "userTask";
+    }
+  }
+
+  public record MessageDetail(MessageChannel channel, boolean payload, List<String> criteria)
+      implements WaitDetail {
+    public MessageDetail {
+      Objects.requireNonNull(channel, "channel");
+      criteria = List.copyOf(criteria);
+    }
+
+    @Override
+    public InputKind input() {
+      return InputKind.DELIVER;
+    }
+
+    @Override
+    public String kindName() {
+      return "message";
+    }
+  }
+
+  public record SignalDetail(String name, boolean payload) implements WaitDetail {
+    @Override
+    public InputKind input() {
+      return InputKind.DELIVER;
+    }
+
+    @Override
+    public String kindName() {
+      return "signal";
+    }
+  }
+
+  public record ConditionalDetail(String variableName, List<String> variableEvents, Boolean lastValue)
+      implements WaitDetail {
+    public ConditionalDetail {
+      variableEvents = List.copyOf(variableEvents);
+    }
+
+    @Override
+    public InputKind input() {
+      return null;
+    }
+
+    @Override
+    public String kindName() {
+      return "conditional";
+    }
+  }
+
+  public record Recurrence(Long periodMs, String cron, Long remaining) {}
+
+  public record TimerDetail(long deadlineMs, Recurrence recurrence) implements WaitDetail {
+    public TimerDetail {
+      if (deadlineMs < 0 || deadlineMs > MAX_SAFE_WIRE_INTEGER) {
+        throw new IllegalArgumentException("deadlineMs must be a non-negative safe wire integer");
       }
+    }
+
+    @Override
+    public InputKind input() {
+      return InputKind.TIMER_FIRE;
+    }
+
+    @Override
+    public String kindName() {
+      return "timer";
+    }
+  }
+
+  public record SendDescriptor(String recipient, List<VariableBinding> correlation) {}
+
+  /** An effect's descriptor and arguments; `failures` counts the incidents this occurrence has had. */
+  public record Effect(
+      String protocol,
+      String operation,
+      List<VariableBinding> arguments,
+      long failures,
+      SendDescriptor send) {
+    public Effect {
+      Objects.requireNonNull(protocol, "protocol");
+      Objects.requireNonNull(operation, "operation");
+      arguments = List.copyOf(arguments);
+    }
+  }
+
+  public record EffectDetail(
+      String protocol,
+      String operation,
+      List<VariableBinding> arguments,
+      long failures,
+      SendDescriptor send)
+      implements WaitDetail {
+    public EffectDetail {
+      Objects.requireNonNull(protocol, "protocol");
+      Objects.requireNonNull(operation, "operation");
+      arguments = List.copyOf(arguments);
+    }
+
+    EffectDetail(Effect effect) {
+      this(effect.protocol(), effect.operation(), effect.arguments(), effect.failures(), effect.send());
+    }
+
+    @Override
+    public InputKind input() {
+      return InputKind.EFFECT_RESULT;
+    }
+
+    @Override
+    public String kindName() {
+      return "effect";
+    }
+  }
+
+  public record IncidentDetail(Effect effect, long generation, boolean cancellable)
+      implements WaitDetail {
+    public IncidentDetail {
+      Objects.requireNonNull(effect, "effect");
+      if (generation < 1) {
+        throw new IllegalArgumentException("incident generation must be positive");
+      }
+    }
+
+    @Override
+    public InputKind input() {
+      return InputKind.COMMAND;
+    }
+
+    @Override
+    public String kindName() {
+      return "incident";
     }
   }
 
@@ -567,8 +754,7 @@ public final class ScenarioProtocol {
 
   public record InfrastructureFailure() implements ScenarioOutcome {}
 
-  public record CanonicalResult(
-      ScenarioOutcome outcome, List<CanonicalObservation> trace) {
+  public record CanonicalResult(ScenarioOutcome outcome, List<CanonicalObservation> trace) {
     public CanonicalResult {
       Objects.requireNonNull(outcome, "outcome");
       trace = List.copyOf(trace);
@@ -589,5 +775,4 @@ public final class ScenarioProtocol {
       trace = List.copyOf(trace);
     }
   }
-
 }

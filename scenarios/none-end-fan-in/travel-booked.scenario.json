@@ -13,46 +13,68 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-process",
-      "processId": "Process_TravelRequest",
       "instanceId": "Instance_1",
-      "initialVariables": [
-        { "name": "traveller", "value": { "kind": "string", "value": "Ada" } }
+      "variables": [
+        {
+          "name": "traveller",
+          "value": {
+            "kind": "string",
+            "value": "Ada"
+          }
+        }
       ]
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-check-request",
-      "taskId": { "processInstanceId": "Instance_1", "elementId": "CheckRequest", "activation": 1 },
-      "submittedValues": [
-        { "name": "channel", "value": { "kind": "string", "value": "email" } },
-        { "name": "decision", "value": { "kind": "string", "value": "approve" } }
-      ]
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "CheckRequest",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "channel",
+            "value": {
+              "kind": "string",
+              "value": "email"
+            }
+          },
+          {
+            "name": "decision",
+            "value": {
+              "kind": "string",
+              "value": "approve"
+            }
+          }
+        ]
+      }
     },
     {
-      "kind": "completeEffect",
+      "kind": "effectResult",
       "commandId": "complete-effect-sha256:78a37e89fa42e4ff810b700759002ee40c961786b5c9874a02809467f98e12fd",
-      "effectId": { "processInstanceId": "Instance_1", "elementId": "BookTravel", "activation": 1 },
-      "result": {
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "BookTravel",
+        "activation": 1
+      },
+      "outcome": {
         "kind": "success",
-        "localPatch": [
-          { "name": "booking", "value": { "kind": "string", "value": "BK-9" } }
+        "outputs": [
+          {
+            "name": "booking",
+            "value": {
+              "kind": "string",
+              "value": "BK-9"
+            }
+          }
         ]
       }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

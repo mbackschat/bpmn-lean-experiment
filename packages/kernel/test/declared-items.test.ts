@@ -56,10 +56,10 @@ function program(target: string, declared: readonly string[]): Json {
 }
 
 const completion = {
-  kind: "completeUserTaskInstance",
+  kind: "command",
   commandId: "complete-decide",
-  taskId: { processInstanceId: "SimpleBooleanInstance_1", elementId: "Task", activation: 1 },
-  submittedValues: [{ name: "Output_Decision", value: { kind: "string", value: "recorded" } }],
+  occurrence: { processInstanceId: "SimpleBooleanInstance_1", elementId: "Task", activation: 1 },
+  action: { kind: "completeUserTask", values: [{ name: "Output_Decision", value: { kind: "string", value: "recorded" } }] },
 };
 
 /** The root's variables after the start and the completion, or the completion's failure. */
@@ -69,7 +69,7 @@ function complete(json: Json): unknown {
   let state: State | null = null;
   for (const raw of [scenario.stimuli[0], completion]) {
     const stimulus = stimulusFromJson(raw);
-    assert.ok(stimulus.ok && stimulus.value[1] !== null);
+    assert.ok(stimulus.ok);
     const outcome = step(hooks, decoded.value, state, stimulus.value[1]);
     if (!outcome.ok) return outcome.failure;
     state = outcome.value;

@@ -11,17 +11,68 @@
       "sha256": "98016beb5f7dac49c7eb40f6a05f7bbec44371a2e77dec3bbfad75b13d3a084b"
     }
   },
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start-process",
+      "instanceId": "OfficeMove_1",
+      "variables": [
+        {
+          "name": "office",
+          "value": {
+            "kind": "string",
+            "value": "Building B"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "complete-effect-sha256:3a4aee14e3a8699f6ac56d0c74559a7c08001dc2b838d6b5b4709a33932ef8df",
+      "occurrence": {
+        "processInstanceId": "OfficeMove_1",
+        "elementId": "BookMovers",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": [
+          {
+            "name": "code",
+            "value": {
+              "kind": "string",
+              "value": "MV-12"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-pack-desk",
+      "occurrence": {
+        "processInstanceId": "OfficeMove_1",
+        "elementId": "PackDesk",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-confirm-new-office",
+      "occurrence": {
+        "processInstanceId": "OfficeMove_1",
+        "elementId": "ConfirmNewOffice",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
   ],
   "provenance": {
     "normativeRefs": [
@@ -36,63 +87,5 @@
       "CIB-EXT-0020",
       "CIB-EXT-0022"
     ]
-  },
-  "stimuli": [
-    {
-      "kind": "startProcess",
-      "commandId": "start-process",
-      "processId": "Process_OfficeMove",
-      "instanceId": "OfficeMove_1",
-      "initialVariables": [
-        {
-          "name": "office",
-          "value": {
-            "kind": "string",
-            "value": "Building B"
-          }
-        }
-      ]
-    },
-    {
-      "kind": "completeEffect",
-      "commandId": "complete-effect-sha256:3a4aee14e3a8699f6ac56d0c74559a7c08001dc2b838d6b5b4709a33932ef8df",
-      "effectId": {
-        "processInstanceId": "OfficeMove_1",
-        "elementId": "BookMovers",
-        "activation": 1
-      },
-      "result": {
-        "kind": "success",
-        "localPatch": [
-          {
-            "name": "code",
-            "value": {
-              "kind": "string",
-              "value": "MV-12"
-            }
-          }
-        ]
-      }
-    },
-    {
-      "kind": "completeUserTaskInstance",
-      "commandId": "complete-pack-desk",
-      "taskId": {
-        "processInstanceId": "OfficeMove_1",
-        "elementId": "PackDesk",
-        "activation": 1
-      },
-      "submittedValues": []
-    },
-    {
-      "kind": "completeUserTaskInstance",
-      "commandId": "complete-confirm-new-office",
-      "taskId": {
-        "processInstanceId": "OfficeMove_1",
-        "elementId": "ConfirmNewOffice",
-        "activation": 1
-      },
-      "submittedValues": []
-    }
-  ]
+  }
 }

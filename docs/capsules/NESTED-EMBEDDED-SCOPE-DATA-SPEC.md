@@ -112,7 +112,7 @@ The three models carry the witnesses as answer-free scenarios with registered pi
 
 Apply the [pre-release wire policy](../../contracts/README.md#evolution-policy): the profile identity is additive, the optional `scopeLocalData` declaration is added to the one current checked and Program shapes, their schemas, codecs and lowering, every existing profile omits it and admission rejects it there, and no legacy reader or migration is added. Before the first edit, `node scripts/what-binds.ts` on every grown path names the binding guards. The decisive ones are listed here.
 
-- Schema and IL: [schema coverage](../../scripts/contract-schema-coverage.test.ts), [definition artifacts](../../scripts/contract-definition-artifacts.test.ts), [operation consumer census](../../scripts/semantic-operation-consumer-census.test.ts) and [internal commutation census](../../scripts/internal-commutation-census.test.ts).
+- Schema and IL: [schema coverage](../../scripts/contract-schema-coverage.test.ts), [definition artifacts](../../scripts/contract-definition-artifacts.test.ts), `operation consumer census` and [internal commutation census](../../scripts/internal-commutation-census.test.ts).
 - Hosting: [host admission](../../packages/temporal-adapter/testkit/test/host-admission.test.ts).
 - Values: cross-target domain matrix.
 - Registration: [contract artifact projections](../../scripts/contract-artifact-projections.test.ts) for `CIB-EXT-0020` and the [executable model corpus](../../model-corpus/test/executable-model-corpus.test.ts).

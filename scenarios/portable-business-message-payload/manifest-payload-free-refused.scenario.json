@@ -10,40 +10,45 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start",
-      "processId": "Process_ShipmentManifestIntake",
       "instanceId": "Manifest_payload_free",
-      "initialVariables": []
+      "variables": []
     },
     {
-      "kind": "deliverMessage",
+      "kind": "deliver",
       "commandId": "refuse-payload-free",
-      "subscriptionId": {
+      "occurrence": {
         "processInstanceId": "Manifest_payload_free",
         "elementId": "MessageCatch_ManifestReceived",
         "activation": 1
       },
-      "channel": {
-        "kind": "operationMessage",
-        "interfaceId": "Interface_Carrier",
-        "interfaceOperationId": "Operation_SubmitManifest",
-        "messageId": "Message_ManifestReceived"
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "operationMessage",
+          "interfaceId": "Interface_Carrier",
+          "interfaceOperationId": "Operation_SubmitManifest",
+          "messageId": "Message_ManifestReceived"
+        }
       }
     },
     {
-      "kind": "deliverPayloadMessage",
+      "kind": "deliver",
       "commandId": "deliver-manifest",
-      "subscriptionId": {
+      "occurrence": {
         "processInstanceId": "Manifest_payload_free",
         "elementId": "MessageCatch_ManifestReceived",
         "activation": 1
       },
-      "channel": {
-        "kind": "operationMessage",
-        "interfaceId": "Interface_Carrier",
-        "interfaceOperationId": "Operation_SubmitManifest",
-        "messageId": "Message_ManifestReceived"
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "operationMessage",
+          "interfaceId": "Interface_Carrier",
+          "interfaceOperationId": "Operation_SubmitManifest",
+          "messageId": "Message_ManifestReceived"
+        }
       },
       "payload": {
         "kind": "map",
@@ -153,27 +158,18 @@
       }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-review",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Manifest_payload_free",
         "elementId": "UserTask_ReviewManifest",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

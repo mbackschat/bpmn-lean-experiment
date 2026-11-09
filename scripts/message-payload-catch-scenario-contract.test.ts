@@ -9,18 +9,21 @@ const profile = "bpmn-2.0.2-message-payload-catch-draft";
 
 function payloadStimulus(payload: unknown, commandId = "deliver-payload") {
   return {
-    kind: "deliverPayloadMessage",
+    kind: "deliver",
     commandId,
-    subscriptionId: {
+    occurrence: {
       processInstanceId: "MessagePayloadCatchContract",
       elementId: "MessageCatch_SettlementConfirmed",
       activation: 1,
     },
-    channel: {
-      kind: "operationMessage",
-      interfaceId: "Interface_ClearingHouse",
-      interfaceOperationId: "Operation_ConfirmSettlement",
-      messageId: "Message_SettlementConfirmed",
+    trigger: {
+      kind: "message",
+      channel: {
+        kind: "operationMessage",
+        interfaceId: "Interface_ClearingHouse",
+        interfaceOperationId: "Operation_ConfirmSettlement",
+        messageId: "Message_SettlementConfirmed",
+      },
     },
     payload,
   } as const;

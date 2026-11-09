@@ -10,56 +10,46 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-mapped-boundary-error",
-      "processId": "Process_MappedBoundaryError",
       "instanceId": "Instance_1",
-      "initialVariables": []
+      "variables": []
     },
     {
-      "kind": "completeEffect",
+      "kind": "effectResult",
       "commandId": "complete-effect-sha256:937f7a5c5565cde928afe3526bc64fc80c1ddb34281a0e8a259ae5ac6af2ec2e",
-      "effectId": {
+      "occurrence": {
         "processInstanceId": "Instance_1",
         "elementId": "MappedBoundaryEffectTask",
         "activation": 1
       },
-      "result": {
-        "kind": "bpmnError",
+      "outcome": {
+        "kind": "businessFailure",
         "code": "MappedBusinessError",
-        "message": "mapped business error",
-        "localPatch": [
+        "outputs": [
           {
             "name": "result",
             "value": {
               "kind": "null"
             }
           }
-        ]
+        ],
+        "message": "mapped business error"
       }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-mapped-error-review",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Instance_1",
         "elementId": "ReviewMappedError",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

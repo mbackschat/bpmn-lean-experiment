@@ -61,6 +61,7 @@ export {
   parseSimpleBooleanExpression,
 } from "./simple-boolean-expression.js";
 export {
+  declaredSourceEncoding,
   defaultKernelProfileOptions,
   kernelProfileOptions,
   readKernelProgram,

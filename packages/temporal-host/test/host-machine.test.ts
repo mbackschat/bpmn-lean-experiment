@@ -147,7 +147,9 @@ const fakePort: KernelPort<null, FakeState, FakeInput> = {
   admit: () => null,
   requirements: () => ({ timers: true, messages: true, effects: true, userTasks: true, calls: false, maxConcurrentWaits: null }),
   capabilities: () => null,
-  decodeStimulus: () => ({ commandId: "c", input: null }),
+  decodeStimulus: () => {
+    throw new TypeError("the fake kernel decodes no stimulus");
+  },
   route: (input) => input.route,
   timerInput: (timer, deadlineMs, atMs) => ({
     route: Route.TimerFire,
@@ -200,10 +202,10 @@ test("a host arrival becomes the timer firing at its deadline or the effect's bu
 });
 
 test("a host-clocked stimulus gets the host's time, and one stating its own time is refused, never overridden", () => {
-  assert.deepEqual(machine.clockStimulus({ kind: "deliverMessage", commandId: "d" }, 1_700_000_000_000),
-    { kind: "deliverMessage", commandId: "d", at: 1_700_000_000_000 });
-  assert.equal(machine.clockStimulus({ kind: "deliverMessage", commandId: "d", at: 5 }, 1_700_000_000_000), null);
-  assert.equal(machine.clockStimulus({ kind: "deliverMessage", commandId: "d", at: null }, 1_700_000_000_000), null);
+  assert.deepEqual(machine.clockStimulus({ kind: "deliver", commandId: "d" }, 1_700_000_000_000),
+    { kind: "deliver", commandId: "d", at: 1_700_000_000_000 });
+  assert.equal(machine.clockStimulus({ kind: "deliver", commandId: "d", at: 5 }, 1_700_000_000_000), null);
+  assert.equal(machine.clockStimulus({ kind: "deliver", commandId: "d", at: null }, 1_700_000_000_000), null);
   assert.equal(machine.clockStimulus("not an object", 1), "not an object");
 });
 

@@ -10,11 +10,10 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-activity-data-input-output-null",
-      "processId": "Process_ClaimAssessment",
       "instanceId": "ActivityDataInputOutputNull",
-      "initialVariables": [
+      "variables": [
         {
           "name": "Property_ClaimSummary",
           "value": {
@@ -24,34 +23,25 @@
       ]
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "assess-claim-null",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "ActivityDataInputOutputNull",
         "elementId": "UserTask_AssessClaim",
         "activation": 1
       },
-      "submittedValues": [
-        {
-          "name": "DataOutput_ClaimDecision",
-          "value": {
-            "kind": "null"
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "DataOutput_ClaimDecision",
+            "value": {
+              "kind": "null"
+            }
           }
-        }
-      ]
+        ]
+      }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

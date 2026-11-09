@@ -10,34 +10,24 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-activity-data-output-omitted",
-      "processId": "Process_ActivityDataOutputUnderwriting",
       "instanceId": "ActivityDataOutputOmitted",
-      "initialVariables": []
+      "variables": []
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "decide-omitted",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "ActivityDataOutputOmitted",
         "elementId": "UserTask_Decide",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

@@ -2,7 +2,7 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "parallel-user-task-metadata-risk-then-content",
-    "sha256": "977dbe4bcd560ecd71400efc786695241efe5d71b28c475232b0e3628c8067a0"
+    "sha256": "695fcf3a0db9a4ed465b3b6ddbf1b6bb7db3129bdc0dbe05eef8fc816cb32348"
   },
   "profile": {
     "id": "cibseven-2.2.0-parallel-user-task-assignment-form-metadata-draft",
@@ -155,98 +155,68 @@
         "kind": "state",
         "instanceId": "ParallelUserTaskMetadataInstance_1",
         "status": "running",
-        "activeWaits": [
-          {
-            "elementId": "UserTask_ContentReview",
-            "kind": "userTask",
-            "multiplicity": 1
-          },
-          {
-            "elementId": "UserTask_RiskReview",
-            "kind": "userTask",
-            "multiplicity": 1
-          }
-        ],
-        "openUserTasks": [
-          {
-            "id": {
-              "processInstanceId": "ParallelUserTaskMetadataInstance_1",
-              "elementId": "UserTask_ContentReview",
-              "activation": 1
-            },
-            "name": "Review content",
-            "state": "active",
-            "metadata": {
-              "assignment": {
-                "candidates": [
-                  {
-                    "kind": "group",
-                    "id": "reviewers"
-                  }
-                ]
-              },
-              "form": {
-                "fields": [
-                  {
-                    "key": "contentApproved",
-                    "type": "boolean"
-                  }
-                ]
-              }
-            }
-          },
-          {
-            "id": {
-              "processInstanceId": "ParallelUserTaskMetadataInstance_1",
-              "elementId": "UserTask_RiskReview",
-              "activation": 1
-            },
-            "name": "Review risk",
-            "state": "active",
-            "metadata": {
-              "assignment": {
-                "candidates": [
-                  {
-                    "kind": "group",
-                    "id": "reviewers"
-                  }
-                ]
-              },
-              "form": {
-                "fields": [
-                  {
-                    "key": "riskApproved",
-                    "type": "boolean"
-                  }
-                ]
-              }
-            }
-          }
-        ],
-        "openMessageSubscriptions": [],
-        "openTimers": [],
-        "openEffects": [],
-        "openIncidents": [],
+        "logicalTimeMs": 0,
         "variables": [],
-        "enabledInteractions": [
+        "openWaits": [
           {
-            "kind": "completeUserTaskInstance",
-            "taskId": {
+            "id": {
               "processInstanceId": "ParallelUserTaskMetadataInstance_1",
               "elementId": "UserTask_ContentReview",
               "activation": 1
+            },
+            "definition": null,
+            "input": "command",
+            "detail": {
+              "kind": "userTask",
+              "name": "Review content",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [
+                "reviewers"
+              ],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "contentApproved",
+                  "type": "boolean"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
             }
           },
           {
-            "kind": "completeUserTaskInstance",
-            "taskId": {
+            "id": {
               "processInstanceId": "ParallelUserTaskMetadataInstance_1",
               "elementId": "UserTask_RiskReview",
               "activation": 1
+            },
+            "definition": null,
+            "input": "command",
+            "detail": {
+              "kind": "userTask",
+              "name": "Review risk",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [
+                "reviewers"
+              ],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "riskApproved",
+                  "type": "boolean"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
             }
           }
-        ],
-        "logicalTimeMs": 0
+        ]
       },
       {
         "kind": "command",
@@ -257,46 +227,7 @@
         "kind": "state",
         "instanceId": "ParallelUserTaskMetadataInstance_1",
         "status": "running",
-        "activeWaits": [
-          {
-            "elementId": "UserTask_ContentReview",
-            "kind": "userTask",
-            "multiplicity": 1
-          }
-        ],
-        "openUserTasks": [
-          {
-            "id": {
-              "processInstanceId": "ParallelUserTaskMetadataInstance_1",
-              "elementId": "UserTask_ContentReview",
-              "activation": 1
-            },
-            "name": "Review content",
-            "state": "active",
-            "metadata": {
-              "assignment": {
-                "candidates": [
-                  {
-                    "kind": "group",
-                    "id": "reviewers"
-                  }
-                ]
-              },
-              "form": {
-                "fields": [
-                  {
-                    "key": "contentApproved",
-                    "type": "boolean"
-                  }
-                ]
-              }
-            }
-          }
-        ],
-        "openMessageSubscriptions": [],
-        "openTimers": [],
-        "openEffects": [],
-        "openIncidents": [],
+        "logicalTimeMs": 0,
         "variables": [
           {
             "name": "riskApproved",
@@ -306,17 +237,37 @@
             }
           }
         ],
-        "enabledInteractions": [
+        "openWaits": [
           {
-            "kind": "completeUserTaskInstance",
-            "taskId": {
+            "id": {
               "processInstanceId": "ParallelUserTaskMetadataInstance_1",
               "elementId": "UserTask_ContentReview",
               "activation": 1
+            },
+            "definition": null,
+            "input": "command",
+            "detail": {
+              "kind": "userTask",
+              "name": "Review content",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [
+                "reviewers"
+              ],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "contentApproved",
+                  "type": "boolean"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
             }
           }
-        ],
-        "logicalTimeMs": 0
+        ]
       },
       {
         "kind": "command",
@@ -327,12 +278,7 @@
         "kind": "state",
         "instanceId": "ParallelUserTaskMetadataInstance_1",
         "status": "completed",
-        "activeWaits": [],
-        "openUserTasks": [],
-        "openMessageSubscriptions": [],
-        "openTimers": [],
-        "openEffects": [],
-        "openIncidents": [],
+        "logicalTimeMs": 0,
         "variables": [
           {
             "name": "contentApproved",
@@ -349,8 +295,7 @@
             }
           }
         ],
-        "enabledInteractions": [],
-        "logicalTimeMs": 0
+        "openWaits": []
       }
     ]
   }

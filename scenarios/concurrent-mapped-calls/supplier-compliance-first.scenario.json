@@ -10,11 +10,10 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-process",
-      "processId": "Process_SupplierOnboarding",
       "instanceId": "Instance_1",
-      "initialVariables": [
+      "variables": [
         {
           "name": "supplierName",
           "value": {
@@ -25,147 +24,162 @@
       ]
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-prepare-financial-file",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Instance_1",
         "elementId": "PrepareFinancialFile",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-prepare-compliance-file",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Instance_1",
         "elementId": "PrepareComplianceFile",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "refuse-financial-patch-of-the-compliance-output",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "call:10:Instance_1:22:FinancialExpertOpinion:1",
         "elementId": "GiveExpertOpinion",
         "activation": 1
       },
-      "submittedValues": [
-        {
-          "name": "finding",
-          "value": {
-            "kind": "string",
-            "value": "clear"
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "finding",
+            "value": {
+              "kind": "string",
+              "value": "clear"
+            }
           }
-        }
-      ]
+        ]
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "refuse-compliance-patch-of-the-financial-output",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "call:10:Instance_1:23:ComplianceExpertOpinion:1",
         "elementId": "GiveExpertOpinion",
         "activation": 1
       },
-      "submittedValues": [
-        {
-          "name": "opinion",
-          "value": {
-            "kind": "string",
-            "value": "solvent"
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "opinion",
+            "value": {
+              "kind": "string",
+              "value": "solvent"
+            }
           }
-        }
-      ]
+        ]
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "refuse-compliance-addressed-financial-task",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "call:10:Instance_1:23:ComplianceExpertOpinion:1",
         "elementId": "GiveExpertOpinion",
         "activation": 3
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-compliance-expert-opinion",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "call:10:Instance_1:23:ComplianceExpertOpinion:1",
         "elementId": "GiveExpertOpinion",
         "activation": 1
       },
-      "submittedValues": [
-        {
-          "name": "finding",
-          "value": {
-            "kind": "string",
-            "value": "clear"
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "finding",
+            "value": {
+              "kind": "string",
+              "value": "clear"
+            }
           }
-        }
-      ]
+        ]
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "refuse-stale-compliance-expert-opinion",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "call:10:Instance_1:23:ComplianceExpertOpinion:1",
         "elementId": "GiveExpertOpinion",
         "activation": 1
       },
-      "submittedValues": [
-        {
-          "name": "finding",
-          "value": {
-            "kind": "string",
-            "value": "late"
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "finding",
+            "value": {
+              "kind": "string",
+              "value": "late"
+            }
           }
-        }
-      ]
+        ]
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-financial-expert-opinion",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "call:10:Instance_1:22:FinancialExpertOpinion:1",
         "elementId": "GiveExpertOpinion",
         "activation": 1
       },
-      "submittedValues": [
-        {
-          "name": "opinion",
-          "value": {
-            "kind": "string",
-            "value": "solvent"
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "opinion",
+            "value": {
+              "kind": "string",
+              "value": "solvent"
+            }
           }
-        }
-      ]
+        ]
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-approve-supplier",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Instance_1",
         "elementId": "ApproveSupplier",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

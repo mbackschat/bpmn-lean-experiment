@@ -10,11 +10,10 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-process-data-preserved-notation",
-      "processId": "Process_SequentialUserTask",
       "instanceId": "ProcessDataPreservedNotationInstance_1",
-      "initialVariables": [
+      "variables": [
         {
           "name": "decision",
           "value": {
@@ -32,41 +31,32 @@
       ]
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-process-data-preserved-notation",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "ProcessDataPreservedNotationInstance_1",
         "elementId": "UserTask_Approve",
         "activation": 1
       },
-      "submittedValues": [
-        {
-          "name": "decision",
-          "value": {
-            "kind": "string",
-            "value": "approved"
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "decision",
+            "value": {
+              "kind": "string",
+              "value": "approved"
+            }
+          },
+          {
+            "name": "reviewNote",
+            "value": {
+              "kind": "null"
+            }
           }
-        },
-        {
-          "name": "reviewNote",
-          "value": {
-            "kind": "null"
-          }
-        }
-      ]
+        ]
+      }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

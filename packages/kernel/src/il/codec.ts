@@ -52,6 +52,7 @@ import {
   ValueTag,
   WorkTag,
   assertNever,
+  compareStrings,
   type Boundary,
   type CallBinding,
   type CompensationHandlerFailure,
@@ -693,8 +694,9 @@ const program = struct<Program>("Program", {
   processes: list(struct("CalledProcess", { definition: definitionRef, children: list(string), variables: list(string) })),
 });
 
+/** A kernel IL program, strictly (`Kernel.Codec.programFromJson`). */
 export function decodeProgram(json: unknown): Decoded<Program> {
-  return program.decode(json);
+  return strictly(program.decode, program.encode, json);
 }
 
 export function encodeProgram(value: Program): JsonValue {
@@ -723,4 +725,90 @@ export function bindingsFromJson(json: unknown): Decoded<readonly Binding[]> {
 
 export function bindingsToJson(bindings: readonly Binding[]): JsonValue {
   return bindings.map(entryToJson);
+}
+
+/*
+ * Strict decoding (`Kernel.Codec`): a codec input is accepted only when its text repeats no key and its JSON is exactly
+ * the canonical encoding of the value it decodes to; every refusal begins with one of these stable codes.
+ */
+
+export enum CodecRefusalCode {
+  DuplicateField = "codec.duplicateField",
+  UnknownField = "codec.unknownField",
+  MissingField = "codec.missingField",
+  Malformed = "codec.malformed",
+}
+
+/** Prefix a refusal that carries no code with `codec.malformed`. */
+export function coded(refusal: string): string {
+  return refusal.startsWith("codec.") ? refusal : `${CodecRefusalCode.Malformed}: ${refusal}`;
+}
+
+/** Object members in `text`: each member has the one `:` outside a string. */
+function textMembers(text: string): number {
+  let count = 0;
+  let inString = false;
+  let escaped = false;
+  for (const char of text) {
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (char === "\\") escaped = true;
+      else inString = char !== '"';
+    } else if (char === '"') inString = true;
+    else if (char === ":") count += 1;
+  }
+  return count;
+}
+
+function jsonMembers(json: unknown): number {
+  if (Array.isArray(json)) return json.reduce((count: number, item: unknown) => count + jsonMembers(item), 0);
+  if (!isObject(json)) return 0;
+  return Object.values(json).reduce((count: number, value) => count + jsonMembers(value), Object.keys(json).length);
+}
+
+/** `JSON.parse`, refusing a text whose objects repeat a key: parsing keeps one member per key, so the text then has
+ * more members than the parsed JSON. */
+export function parseStrict(text: string): Decoded<unknown> {
+  let json: unknown;
+  try {
+    json = JSON.parse(text);
+  } catch (error) {
+    return refuse(coded(error instanceof Error ? error.message : String(error)));
+  }
+  return textMembers(text) === jsonMembers(json) ? accept(json) : refuse(`${CodecRefusalCode.DuplicateField}: an object repeats a key`);
+}
+
+const sortedKeys = (json: Readonly<Record<string, unknown>>): string[] => Object.keys(json).sort(compareStrings);
+
+/** The first place `input` departs from the key structure of `canonical`, in key order, else `null`. */
+export function shapeRefusal(path: string, input: unknown, canonical: unknown): string | null {
+  if (isObject(input) && isObject(canonical)) {
+    const given = sortedKeys(input);
+    const expected = sortedKeys(canonical);
+    const unknown = given.find((key) => !Object.hasOwn(canonical, key));
+    if (unknown !== undefined) return `${CodecRefusalCode.UnknownField}: ${path}.${unknown}`;
+    const missing = expected.find((key) => !Object.hasOwn(input, key));
+    if (missing !== undefined) return `${CodecRefusalCode.MissingField}: ${path}.${missing}`;
+    for (const key of expected) {
+      const refusal = shapeRefusal(`${path}.${key}`, input[key], canonical[key]);
+      if (refusal !== null) return refusal;
+    }
+    return null;
+  }
+  if (Array.isArray(input) && Array.isArray(canonical)) {
+    for (let index = 0; index < Math.min(input.length, canonical.length); index += 1) {
+      const refusal = shapeRefusal(`${path}[${index}]`, input[index], canonical[index]);
+      if (refusal !== null) return refusal;
+    }
+    return null;
+  }
+  return isObject(input) ? `${CodecRefusalCode.Malformed}: ${path} is an object` : null;
+}
+
+/** Decode `json` through `decode` and accept it only in the canonical encoding `encode` gives. */
+export function strictly<T>(decode: (json: unknown) => Decoded<T>, encode: (value: T) => JsonValue, json: unknown): Decoded<T> {
+  const decoded = decode(json);
+  if (!decoded.ok) return refuse(coded(decoded.refusal));
+  const refusal = shapeRefusal("$", json, encode(decoded.value));
+  return refusal === null ? decoded : refuse(refusal);
 }

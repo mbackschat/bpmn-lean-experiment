@@ -13,11 +13,10 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start",
-      "processId": "Process_InvoiceValidation",
       "instanceId": "invoice",
-      "initialVariables": [
+      "variables": [
         {
           "name": "payload",
           "value": {
@@ -42,34 +41,37 @@
       ]
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "review",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "invoice",
         "elementId": "Review",
         "activation": 1
       },
-      "submittedValues": [
-        {
-          "name": "request",
-          "value": {
-            "kind": "string",
-            "value": "INV-42"
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "request",
+            "value": {
+              "kind": "string",
+              "value": "INV-42"
+            }
           }
-        }
-      ]
+        ]
+      }
     },
     {
-      "kind": "completeEffect",
+      "kind": "effectResult",
       "commandId": "complete-effect-sha256:88873c2dd48feb536e28a259dc6df22497ed6546063ef71f0a3b91b1bf549230",
-      "effectId": {
+      "occurrence": {
         "processInstanceId": "invoice",
         "elementId": "Validate",
         "activation": 1
       },
-      "result": {
+      "outcome": {
         "kind": "success",
-        "localPatch": [
+        "outputs": [
           {
             "name": "result",
             "value": {
@@ -81,16 +83,16 @@
       }
     },
     {
-      "kind": "completeEffect",
+      "kind": "effectResult",
       "commandId": "complete-effect-sha256:a701f25ee7c4a345c21d681ce12fc7fe9f6787938f28a78bfed54c0da15ca15e",
-      "effectId": {
+      "occurrence": {
         "processInstanceId": "invoice",
         "elementId": "Classify",
         "activation": 1
       },
-      "result": {
+      "outcome": {
         "kind": "success",
-        "localPatch": [
+        "outputs": [
           {
             "name": "result",
             "value": {
@@ -102,27 +104,18 @@
       }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "finalize",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "invoice",
         "elementId": "Finalize",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

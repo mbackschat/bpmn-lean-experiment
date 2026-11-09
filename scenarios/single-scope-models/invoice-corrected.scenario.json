@@ -11,17 +11,102 @@
       "sha256": "820bff563c6ed1edca4fcc37ac9f0b81e1d9f2b253d96af7201599d7638ee688"
     }
   },
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start-process",
+      "instanceId": "Invoice_1",
+      "variables": [
+        {
+          "name": "invoice",
+          "value": {
+            "kind": "string",
+            "value": "INV-204"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-review-invoice",
+      "occurrence": {
+        "processInstanceId": "Invoice_1",
+        "elementId": "ReviewInvoice",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "complete-effect-sha256:fe8b370e58de002840071058cd1ba385cc88d94246c00da28c2e49e497cfe883",
+      "occurrence": {
+        "processInstanceId": "Invoice_1",
+        "elementId": "ValidateInvoice",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": [
+          {
+            "name": "result",
+            "value": {
+              "kind": "string",
+              "value": "invalid"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-review-invoice-2",
+      "occurrence": {
+        "processInstanceId": "Invoice_1",
+        "elementId": "ReviewInvoice",
+        "activation": 2
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "complete-effect-sha256:718efceb6d23589faf98c22e12f236916b8d315462dd8778347ddb9b4ac40cb8",
+      "occurrence": {
+        "processInstanceId": "Invoice_1",
+        "elementId": "ValidateInvoice",
+        "activation": 2
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": [
+          {
+            "name": "result",
+            "value": {
+              "kind": "string",
+              "value": "valid"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-pay-invoice",
+      "occurrence": {
+        "processInstanceId": "Invoice_1",
+        "elementId": "PayInvoice",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
   ],
   "provenance": {
     "normativeRefs": [
@@ -37,94 +122,5 @@
       "CIB-EXT-0020",
       "CIB-EXT-0022"
     ]
-  },
-  "stimuli": [
-    {
-      "kind": "startProcess",
-      "commandId": "start-process",
-      "processId": "Process_InvoiceClearing",
-      "instanceId": "Invoice_1",
-      "initialVariables": [
-        {
-          "name": "invoice",
-          "value": {
-            "kind": "string",
-            "value": "INV-204"
-          }
-        }
-      ]
-    },
-    {
-      "kind": "completeUserTaskInstance",
-      "commandId": "complete-review-invoice",
-      "taskId": {
-        "processInstanceId": "Invoice_1",
-        "elementId": "ReviewInvoice",
-        "activation": 1
-      },
-      "submittedValues": []
-    },
-    {
-      "kind": "completeEffect",
-      "commandId": "complete-effect-sha256:fe8b370e58de002840071058cd1ba385cc88d94246c00da28c2e49e497cfe883",
-      "effectId": {
-        "processInstanceId": "Invoice_1",
-        "elementId": "ValidateInvoice",
-        "activation": 1
-      },
-      "result": {
-        "kind": "success",
-        "localPatch": [
-          {
-            "name": "result",
-            "value": {
-              "kind": "string",
-              "value": "invalid"
-            }
-          }
-        ]
-      }
-    },
-    {
-      "kind": "completeUserTaskInstance",
-      "commandId": "complete-review-invoice-2",
-      "taskId": {
-        "processInstanceId": "Invoice_1",
-        "elementId": "ReviewInvoice",
-        "activation": 2
-      },
-      "submittedValues": []
-    },
-    {
-      "kind": "completeEffect",
-      "commandId": "complete-effect-sha256:718efceb6d23589faf98c22e12f236916b8d315462dd8778347ddb9b4ac40cb8",
-      "effectId": {
-        "processInstanceId": "Invoice_1",
-        "elementId": "ValidateInvoice",
-        "activation": 2
-      },
-      "result": {
-        "kind": "success",
-        "localPatch": [
-          {
-            "name": "result",
-            "value": {
-              "kind": "string",
-              "value": "valid"
-            }
-          }
-        ]
-      }
-    },
-    {
-      "kind": "completeUserTaskInstance",
-      "commandId": "complete-pay-invoice",
-      "taskId": {
-        "processInstanceId": "Invoice_1",
-        "elementId": "PayInvoice",
-        "activation": 1
-      },
-      "submittedValues": []
-    }
-  ]
+  }
 }

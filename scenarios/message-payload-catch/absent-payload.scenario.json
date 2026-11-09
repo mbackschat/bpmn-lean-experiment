@@ -10,39 +10,29 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-message-payload-catch-absent-payload",
-      "processId": "Process_MessagePayloadSettlement",
       "instanceId": "MessagePayloadCatchAbsentPayload",
-      "initialVariables": []
+      "variables": []
     },
     {
-      "kind": "deliverMessage",
+      "kind": "deliver",
       "commandId": "deliver-message-payload-catch-absent-payload",
-      "subscriptionId": {
+      "occurrence": {
         "processInstanceId": "MessagePayloadCatchAbsentPayload",
         "elementId": "MessageCatch_SettlementConfirmed",
         "activation": 1
       },
-      "channel": {
-        "kind": "operationMessage",
-        "interfaceId": "Interface_ClearingHouse",
-        "interfaceOperationId": "Operation_ConfirmSettlement",
-        "messageId": "Message_SettlementConfirmed"
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "operationMessage",
+          "interfaceId": "Interface_ClearingHouse",
+          "interfaceOperationId": "Operation_ConfirmSettlement",
+          "messageId": "Message_SettlementConfirmed"
+        }
       }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

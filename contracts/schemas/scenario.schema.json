@@ -10,39 +10,7 @@
     "profile",
     "bpmn",
     "stimuli",
-    "observations",
     "provenance"
-  ],
-  "allOf": [
-    {
-      "if": {
-        "required": [
-          "profile"
-        ],
-        "properties": {
-          "profile": {
-            "enum": [
-              "bpmn-2.0.2-sequential-multi-instance-user-task-draft",
-              "bpmn-2.0.2-parallel-multi-instance-user-task-draft"
-            ]
-          }
-        }
-      },
-      "then": {
-        "properties": {
-          "observations": {
-            "$ref": "#/$defs/multiInstanceObservationRequests"
-          }
-        }
-      },
-      "else": {
-        "properties": {
-          "observations": {
-            "$ref": "#/$defs/baselineObservationRequests"
-          }
-        }
-      }
-    }
   ],
   "properties": {
     "kind": {
@@ -59,94 +27,37 @@
     },
     "stimuli": {
       "type": "array",
+      "minItems": 1,
       "prefixItems": [
         {
-          "oneOf": [
-            {
-              "$ref": "#/$defs/startProcess"
-            },
-            {
-              "$ref": "#/$defs/triggerMessageStart"
-            },
-            {
-              "$ref": "#/$defs/triggerTimerStart"
-            }
-          ]
+          "$ref": "#/$defs/start"
         }
       ],
       "items": {
         "oneOf": [
           {
-            "$ref": "#/$defs/completeUserTaskInstance"
+            "$ref": "#/$defs/command"
           },
           {
-            "$ref": "#/$defs/deliverMessage"
+            "$ref": "#/$defs/deliver"
           },
           {
-            "$ref": "#/$defs/deliverPayloadMessage"
+            "$ref": "#/$defs/timerFire"
           },
           {
-            "$ref": "#/$defs/deliverCorrelatedPayloadMessage"
-          },
-          {
-            "$ref": "#/$defs/fireTimer"
-          },
-          {
-            "$ref": "#/$defs/completeEffect"
-          },
-          {
-            "$ref": "#/$defs/reportEffectFailure"
-          },
-          {
-            "$ref": "#/$defs/retryIncident"
-          },
-          {
-            "$ref": "#/$defs/cancelIncidentProcess"
+            "$ref": "#/$defs/effectResult"
           }
         ]
-      },
-      "minItems": 1
-    },
-    "observations": {
-      "type": "array",
-      "items": {
-        "type": "string"
       }
     },
     "provenance": {
       "$ref": "#/$defs/provenance"
+    },
+    "options": {
+      "$ref": "#/$defs/options"
     }
   },
   "$defs": {
-    "baselineObservationRequests": {
-      "const": [
-        "deployment",
-        "commandResults",
-        "processStatus",
-        "activeWaits",
-        "openUserTasks",
-        "openTimers",
-        "openEffects",
-        "variables",
-        "enabledInteractions",
-        "logicalTime"
-      ]
-    },
-    "multiInstanceObservationRequests": {
-      "const": [
-        "deployment",
-        "commandResults",
-        "processStatus",
-        "activeWaits",
-        "openUserTasks",
-        "openTimers",
-        "openEffects",
-        "openMultiInstances",
-        "variables",
-        "enabledInteractions",
-        "logicalTime"
-      ]
-    },
     "nonEmptyString": {
       "type": "string",
       "minLength": 1
@@ -160,94 +71,6 @@
       "type": "integer",
       "minimum": 1,
       "maximum": 9007199254740991
-    },
-    "userTaskMetadataIdentity": {
-      "type": "string",
-      "minLength": 1,
-      "pattern": "^(?![\\u0009-\\u000D\\u0020\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])[^\\uD800-\\uDFFF]+(?<![\\u0009-\\u000D\\u0020\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF])$"
-    },
-    "userTaskMetadataCandidateId": {
-      "allOf": [
-        {
-          "$ref": "#/$defs/userTaskMetadataIdentity"
-        },
-        {
-          "type": "string",
-          "pattern": "^(?![\\s\\S]*(?:,|\\$\\{|#\\{))[\\s\\S]+$"
-        }
-      ]
-    },
-    "userTaskMetadata": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "assignment"
-      ],
-      "properties": {
-        "assignment": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": [
-            "candidates"
-          ],
-          "properties": {
-            "candidates": {
-              "type": "array",
-              "minItems": 1,
-              "maxItems": 1,
-              "items": {
-                "type": "object",
-                "additionalProperties": false,
-                "required": [
-                  "kind",
-                  "id"
-                ],
-                "properties": {
-                  "kind": {
-                    "const": "group"
-                  },
-                  "id": {
-                    "$ref": "#/$defs/userTaskMetadataCandidateId"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "form": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": [
-            "fields"
-          ],
-          "properties": {
-            "fields": {
-              "type": "array",
-              "minItems": 1,
-              "maxItems": 1,
-              "items": {
-                "type": "object",
-                "additionalProperties": false,
-                "required": [
-                  "key",
-                  "type"
-                ],
-                "properties": {
-                  "key": {
-                    "$ref": "#/$defs/userTaskMetadataIdentity"
-                  },
-                  "type": {
-                    "enum": [
-                      "string",
-                      "boolean"
-                    ]
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
     },
     "commandId": {
       "type": "string",
@@ -297,42 +120,6 @@
           "$ref": "#/$defs/nonEmptyString"
         },
         "sha256": {
-          "type": "string",
-          "pattern": "^[0-9a-f]{64}$"
-        }
-      }
-    },
-    "programIdentity": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "compiler",
-        "semanticProfile",
-        "sourceOverlay",
-        "sourceId",
-        "sourceSha256"
-      ],
-      "properties": {
-        "compiler": {
-          "const": "bpmn-source-semantic-process"
-        },
-        "semanticProfile": {
-          "$ref": "#/$defs/nonEmptyString"
-        },
-        "sourceOverlay": {
-          "oneOf": [
-            {
-              "$ref": "#/$defs/sourceOverlayIdentity"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "sourceId": {
-          "$ref": "#/$defs/nonEmptyString"
-        },
-        "sourceSha256": {
           "type": "string",
           "pattern": "^[0-9a-f]{64}$"
         }
@@ -393,150 +180,6 @@
         }
       ]
     },
-    "semanticOutcome": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "kind",
-        "outcome"
-      ],
-      "properties": {
-        "kind": {
-          "const": "semantic"
-        },
-        "outcome": {
-          "enum": [
-            "committed",
-            "rolledBack",
-            "rejected",
-            "semanticFailure",
-            "unsupported"
-          ]
-        }
-      }
-    },
-    "scenarioOutcome": {
-      "oneOf": [
-        {
-          "$ref": "#/$defs/semanticOutcome"
-        },
-        {
-          "type": "object",
-          "additionalProperties": false,
-          "required": [
-            "kind"
-          ],
-          "properties": {
-            "kind": {
-              "const": "harnessFailure"
-            }
-          }
-        },
-        {
-          "type": "object",
-          "additionalProperties": false,
-          "required": [
-            "kind"
-          ],
-          "properties": {
-            "kind": {
-              "const": "infrastructureFailure"
-            }
-          }
-        }
-      ]
-    },
-    "startProcess": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "kind",
-        "commandId",
-        "processId",
-        "instanceId",
-        "initialVariables"
-      ],
-      "properties": {
-        "kind": {
-          "const": "startProcess"
-        },
-        "commandId": {
-          "$ref": "#/$defs/commandId"
-        },
-        "processId": {
-          "$ref": "#/$defs/nonEmptyString"
-        },
-        "instanceId": {
-          "$ref": "#/$defs/nonEmptyString"
-        },
-        "initialVariables": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/variableBinding"
-          }
-        }
-      }
-    },
-    "triggerMessageStart": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "kind",
-        "commandId",
-        "processId",
-        "instanceId",
-        "startEventId",
-        "channel"
-      ],
-      "properties": {
-        "kind": {
-          "const": "triggerMessageStart"
-        },
-        "commandId": {
-          "$ref": "#/$defs/commandId"
-        },
-        "processId": {
-          "$ref": "#/$defs/nonEmptyString"
-        },
-        "instanceId": {
-          "$ref": "#/$defs/nonEmptyString"
-        },
-        "startEventId": {
-          "$ref": "#/$defs/nonEmptyString"
-        },
-        "channel": {
-          "$ref": "#/$defs/operationMessageChannel"
-        }
-      }
-    },
-    "triggerTimerStart": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "kind",
-        "commandId",
-        "processId",
-        "instanceId",
-        "startEventId"
-      ],
-      "properties": {
-        "kind": {
-          "const": "triggerTimerStart"
-        },
-        "commandId": {
-          "$ref": "#/$defs/commandId"
-        },
-        "processId": {
-          "$ref": "#/$defs/nonEmptyString"
-        },
-        "instanceId": {
-          "$ref": "#/$defs/nonEmptyString"
-        },
-        "startEventId": {
-          "$ref": "#/$defs/nonEmptyString"
-        }
-      }
-    },
     "occurrenceId": {
       "type": "object",
       "additionalProperties": false,
@@ -558,32 +201,6 @@
           "maximum": 9007199254740991
         }
       }
-    },
-    "activityOccurrenceId": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "processInstanceId",
-        "activityElementId",
-        "activation"
-      ],
-      "properties": {
-        "processInstanceId": {
-          "$ref": "#/$defs/nonEmptyString"
-        },
-        "activityElementId": {
-          "$ref": "#/$defs/nonEmptyString"
-        },
-        "activation": {
-          "$ref": "#/$defs/positiveSafeInteger"
-        }
-      }
-    },
-    "userTaskInstanceId": {
-      "$ref": "#/$defs/occurrenceId"
-    },
-    "messageSubscriptionId": {
-      "$ref": "#/$defs/occurrenceId"
     },
     "operationMessageChannel": {
       "type": "object",
@@ -643,311 +260,6 @@
           }
         }
       ]
-    },
-    "correlatedMessageAddress": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "definition",
-        "processId",
-        "channel",
-        "correlationKeyId"
-      ],
-      "properties": {
-        "definition": {
-          "$ref": "#/$defs/programIdentity"
-        },
-        "processId": {
-          "$ref": "#/$defs/nonEmptyString"
-        },
-        "channel": {
-          "$ref": "#/$defs/operationMessageChannel"
-        },
-        "correlationKeyId": {
-          "$ref": "#/$defs/nonEmptyString"
-        }
-      }
-    },
-    "completeUserTaskInstance": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "kind",
-        "commandId",
-        "taskId",
-        "submittedValues"
-      ],
-      "properties": {
-        "kind": {
-          "const": "completeUserTaskInstance"
-        },
-        "commandId": {
-          "$ref": "#/$defs/commandId"
-        },
-        "taskId": {
-          "$ref": "#/$defs/userTaskInstanceId"
-        },
-        "submittedValues": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/variableBinding"
-          }
-        }
-      }
-    },
-    "deliverMessage": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "kind",
-        "commandId",
-        "subscriptionId",
-        "channel"
-      ],
-      "properties": {
-        "kind": {
-          "const": "deliverMessage"
-        },
-        "commandId": {
-          "$ref": "#/$defs/commandId"
-        },
-        "subscriptionId": {
-          "$ref": "#/$defs/messageSubscriptionId"
-        },
-        "channel": {
-          "$ref": "#/$defs/messageChannel"
-        }
-      }
-    },
-    "deliverPayloadMessage": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "kind",
-        "commandId",
-        "subscriptionId",
-        "channel",
-        "payload"
-      ],
-      "properties": {
-        "kind": {
-          "const": "deliverPayloadMessage"
-        },
-        "commandId": {
-          "$ref": "#/$defs/commandId"
-        },
-        "subscriptionId": {
-          "$ref": "#/$defs/messageSubscriptionId"
-        },
-        "channel": {
-          "$ref": "#/$defs/messageChannel"
-        },
-        "payload": {
-          "$ref": "#/$defs/variableValue"
-        }
-      }
-    },
-    "deliverCorrelatedPayloadMessage": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "kind",
-        "commandId",
-        "address",
-        "ingressOrdinal",
-        "subscriptionId",
-        "correlationPropertyId",
-        "processPropertyId",
-        "payload"
-      ],
-      "properties": {
-        "kind": {
-          "const": "deliverCorrelatedPayloadMessage"
-        },
-        "commandId": {
-          "$ref": "#/$defs/commandId"
-        },
-        "address": {
-          "$ref": "#/$defs/correlatedMessageAddress"
-        },
-        "ingressOrdinal": {
-          "$ref": "#/$defs/positiveSafeInteger"
-        },
-        "subscriptionId": {
-          "$ref": "#/$defs/messageSubscriptionId"
-        },
-        "correlationPropertyId": {
-          "$ref": "#/$defs/nonEmptyString"
-        },
-        "processPropertyId": {
-          "$ref": "#/$defs/nonEmptyString"
-        },
-        "payload": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": [
-            "kind",
-            "value"
-          ],
-          "properties": {
-            "kind": {
-              "const": "string"
-            },
-            "value": {
-              "$ref": "#/$defs/nonEmptyString"
-            }
-          }
-        }
-      }
-    },
-    "timerOccurrenceId": {
-      "$ref": "#/$defs/occurrenceId"
-    },
-    "effectOccurrenceId": {
-      "$ref": "#/$defs/occurrenceId"
-    },
-    "compensationHandlerFailure": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "kind",
-        "triggerId",
-        "handlerId",
-        "effectId",
-        "code",
-        "message"
-      ],
-      "properties": {
-        "kind": {
-          "const": "compensationHandlerFailure"
-        },
-        "triggerId": {
-          "$ref": "#/$defs/occurrenceId"
-        },
-        "handlerId": {
-          "$ref": "#/$defs/occurrenceId"
-        },
-        "effectId": {
-          "$ref": "#/$defs/effectOccurrenceId"
-        },
-        "code": {
-          "$ref": "#/$defs/nonEmptyString"
-        },
-        "message": {
-          "type": [
-            "string",
-            "null"
-          ]
-        }
-      }
-    },
-    "effectIncidentId": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "effectId",
-        "generation"
-      ],
-      "properties": {
-        "effectId": {
-          "$ref": "#/$defs/effectOccurrenceId"
-        },
-        "generation": {
-          "const": 1
-        }
-      }
-    },
-    "completeEffect": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "kind",
-        "commandId",
-        "effectId",
-        "result"
-      ],
-      "properties": {
-        "kind": {
-          "const": "completeEffect"
-        },
-        "commandId": {
-          "$ref": "#/$defs/commandId"
-        },
-        "effectId": {
-          "$ref": "#/$defs/effectOccurrenceId"
-        },
-        "result": {
-          "$ref": "#/$defs/effectExecutionResult"
-        }
-      }
-    },
-    "reportEffectFailure": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "kind",
-        "commandId",
-        "effectId",
-        "generation"
-      ],
-      "properties": {
-        "kind": {
-          "const": "reportEffectFailure"
-        },
-        "commandId": {
-          "$ref": "#/$defs/commandId"
-        },
-        "effectId": {
-          "$ref": "#/$defs/effectOccurrenceId"
-        },
-        "generation": {
-          "const": 1
-        }
-      }
-    },
-    "retryIncident": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "kind",
-        "commandId",
-        "incidentId"
-      ],
-      "properties": {
-        "kind": {
-          "const": "retryIncident"
-        },
-        "commandId": {
-          "$ref": "#/$defs/commandId"
-        },
-        "incidentId": {
-          "$ref": "#/$defs/effectIncidentId"
-        }
-      }
-    },
-    "cancelIncidentProcess": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "kind",
-        "commandId",
-        "processInstanceId",
-        "incidentId"
-      ],
-      "properties": {
-        "kind": {
-          "const": "cancelIncidentProcess"
-        },
-        "commandId": {
-          "$ref": "#/$defs/commandId"
-        },
-        "processInstanceId": {
-          "$ref": "#/$defs/nonEmptyString"
-        },
-        "incidentId": {
-          "$ref": "#/$defs/effectIncidentId"
-        }
-      }
     },
     "integerValue": {
       "type": "object",
@@ -1190,150 +502,470 @@
         }
       }
     },
-    "openSequentialMultiInstanceIteration": {
+    "bindings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/variableBinding"
+      }
+    },
+    "stimulus": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/start"
+        },
+        {
+          "$ref": "#/$defs/command"
+        },
+        {
+          "$ref": "#/$defs/deliver"
+        },
+        {
+          "$ref": "#/$defs/timerFire"
+        },
+        {
+          "$ref": "#/$defs/effectResult"
+        }
+      ]
+    },
+    "start": {
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "loopCounter",
-        "taskId",
-        "taskInput",
-        "completionBindingName"
+        "kind",
+        "commandId",
+        "instanceId",
+        "variables"
       ],
       "properties": {
-        "loopCounter": {
-          "$ref": "#/$defs/nonnegativeSafeInteger"
+        "kind": {
+          "const": "start"
         },
-        "taskId": {
-          "$ref": "#/$defs/userTaskInstanceId"
+        "commandId": {
+          "$ref": "#/$defs/commandId"
         },
-        "taskInput": {
-          "$ref": "#/$defs/variableBinding"
-        },
-        "completionBindingName": {
+        "instanceId": {
           "$ref": "#/$defs/nonEmptyString"
+        },
+        "variables": {
+          "$ref": "#/$defs/bindings"
+        },
+        "startEvent": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "trigger": {
+          "$ref": "#/$defs/startTrigger"
+        },
+        "businessKey": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "at": {
+          "$ref": "#/$defs/logicalTime"
         }
       }
     },
-    "openSequentialMultiInstance": {
+    "startTrigger": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind"
+          ],
+          "properties": {
+            "kind": {
+              "const": "none"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "logicalTimeMs"
+          ],
+          "properties": {
+            "kind": {
+              "const": "timer"
+            },
+            "logicalTimeMs": {
+              "$ref": "#/$defs/nonnegativeSafeInteger"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "channel"
+          ],
+          "properties": {
+            "kind": {
+              "const": "message"
+            },
+            "channel": {
+              "$ref": "#/$defs/messageChannel"
+            },
+            "payload": {
+              "$ref": "#/$defs/variableValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "name",
+            "variables"
+          ],
+          "properties": {
+            "kind": {
+              "const": "signal"
+            },
+            "name": {
+              "$ref": "#/$defs/nonEmptyString"
+            },
+            "variables": {
+              "$ref": "#/$defs/bindings"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind"
+          ],
+          "properties": {
+            "kind": {
+              "const": "condition"
+            }
+          }
+        }
+      ]
+    },
+    "command": {
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "id",
-        "mode",
-        "bodyKind",
-        "plannedInstanceCount",
-        "pendingItemCount",
-        "numberOfInstances",
-        "numberOfActiveInstances",
-        "numberOfCompletedInstances",
-        "numberOfTerminatedInstances",
-        "activeIterations"
+        "kind",
+        "commandId",
+        "occurrence",
+        "action"
       ],
       "properties": {
-        "id": {
-          "$ref": "#/$defs/activityOccurrenceId"
+        "kind": {
+          "const": "command"
         },
-        "mode": {
-          "const": "sequential"
+        "commandId": {
+          "$ref": "#/$defs/commandId"
         },
-        "plannedInstanceCount": {
-          "$ref": "#/$defs/nonnegativeSafeInteger"
+        "occurrence": {
+          "$ref": "#/$defs/occurrenceId"
         },
-        "pendingItemCount": {
-          "$ref": "#/$defs/nonnegativeSafeInteger"
+        "action": {
+          "$ref": "#/$defs/commandAction"
         },
-        "numberOfInstances": {
-          "$ref": "#/$defs/nonnegativeSafeInteger"
-        },
-        "numberOfActiveInstances": {
-          "$ref": "#/$defs/nonnegativeSafeInteger"
-        },
-        "numberOfCompletedInstances": {
-          "$ref": "#/$defs/nonnegativeSafeInteger"
-        },
-        "numberOfTerminatedInstances": {
-          "$ref": "#/$defs/nonnegativeSafeInteger"
-        },
-        "activeIterations": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/openSequentialMultiInstanceIteration"
-          }
-        },
-        "bodyKind": {
-          "const": "userTask"
+        "at": {
+          "$ref": "#/$defs/logicalTime"
         }
       }
     },
-    "openParallelMultiInstance": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "id",
-        "mode",
-        "bodyKind",
-        "plannedInstanceCount",
-        "pendingItemCount",
-        "numberOfInstances",
-        "numberOfActiveInstances",
-        "numberOfCompletedInstances",
-        "numberOfTerminatedInstances",
-        "activeIterations"
-      ],
-      "properties": {
-        "id": {
-          "$ref": "#/$defs/activityOccurrenceId"
-        },
-        "mode": {
-          "const": "parallel"
-        },
-        "plannedInstanceCount": {
-          "$ref": "#/$defs/nonnegativeSafeInteger"
-        },
-        "pendingItemCount": {
-          "const": 0
-        },
-        "numberOfInstances": {
-          "$ref": "#/$defs/nonnegativeSafeInteger"
-        },
-        "numberOfActiveInstances": {
-          "$ref": "#/$defs/nonnegativeSafeInteger"
-        },
-        "numberOfCompletedInstances": {
-          "$ref": "#/$defs/nonnegativeSafeInteger"
-        },
-        "numberOfTerminatedInstances": {
-          "const": 0
-        },
-        "activeIterations": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/openSequentialMultiInstanceIteration"
-          }
-        },
-        "bodyKind": {
-          "const": "userTask"
-        }
-      }
-    },
-    "effectExecutionResult": {
+    "commandAction": {
       "oneOf": [
         {
           "type": "object",
           "additionalProperties": false,
           "required": [
             "kind",
-            "localPatch"
+            "values"
+          ],
+          "properties": {
+            "kind": {
+              "const": "completeUserTask"
+            },
+            "values": {
+              "$ref": "#/$defs/bindings"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind"
+          ],
+          "properties": {
+            "kind": {
+              "const": "retryIncident"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind"
+          ],
+          "properties": {
+            "kind": {
+              "const": "cancelIncidentProcess"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "values"
+          ],
+          "properties": {
+            "kind": {
+              "const": "setVariables"
+            },
+            "values": {
+              "$ref": "#/$defs/bindings"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "names"
+          ],
+          "properties": {
+            "kind": {
+              "const": "removeVariables"
+            },
+            "names": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/nonEmptyString"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "deliver": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "commandId",
+        "occurrence",
+        "trigger"
+      ],
+      "properties": {
+        "kind": {
+          "const": "deliver"
+        },
+        "commandId": {
+          "$ref": "#/$defs/commandId"
+        },
+        "occurrence": {
+          "$ref": "#/$defs/occurrenceId"
+        },
+        "trigger": {
+          "$ref": "#/$defs/deliveryTrigger"
+        },
+        "correlation": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/correlationMatch"
+          }
+        },
+        "payload": {
+          "$ref": "#/$defs/variableValue"
+        },
+        "at": {
+          "$ref": "#/$defs/logicalTime"
+        }
+      }
+    },
+    "deliveryTrigger": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "channel"
+          ],
+          "properties": {
+            "kind": {
+              "const": "message"
+            },
+            "channel": {
+              "$ref": "#/$defs/messageChannel"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "name"
+          ],
+          "properties": {
+            "kind": {
+              "const": "signal"
+            },
+            "name": {
+              "$ref": "#/$defs/nonEmptyString"
+            }
+          }
+        }
+      ]
+    },
+    "correlationMatch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "target",
+        "expected"
+      ],
+      "properties": {
+        "target": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind",
+                "name"
+              ],
+              "properties": {
+                "kind": {
+                  "const": "processVariable"
+                },
+                "name": {
+                  "$ref": "#/$defs/nonEmptyString"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind",
+                "name"
+              ],
+              "properties": {
+                "kind": {
+                  "const": "localVariable"
+                },
+                "name": {
+                  "$ref": "#/$defs/nonEmptyString"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind"
+              ],
+              "properties": {
+                "kind": {
+                  "const": "businessKey"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind"
+              ],
+              "properties": {
+                "kind": {
+                  "const": "processInstance"
+                }
+              }
+            }
+          ]
+        },
+        "expected": {
+          "$ref": "#/$defs/variableValue"
+        }
+      }
+    },
+    "timerFire": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "commandId",
+        "occurrence",
+        "logicalTimeMs"
+      ],
+      "properties": {
+        "kind": {
+          "const": "timerFire"
+        },
+        "commandId": {
+          "$ref": "#/$defs/commandId"
+        },
+        "occurrence": {
+          "$ref": "#/$defs/occurrenceId"
+        },
+        "logicalTimeMs": {
+          "$ref": "#/$defs/nonnegativeSafeInteger"
+        },
+        "at": {
+          "$ref": "#/$defs/logicalTime"
+        }
+      }
+    },
+    "effectResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "commandId",
+        "occurrence",
+        "outcome"
+      ],
+      "properties": {
+        "kind": {
+          "const": "effectResult"
+        },
+        "commandId": {
+          "$ref": "#/$defs/commandId"
+        },
+        "occurrence": {
+          "$ref": "#/$defs/occurrenceId"
+        },
+        "outcome": {
+          "$ref": "#/$defs/effectOutcome"
+        },
+        "at": {
+          "$ref": "#/$defs/logicalTime"
+        }
+      }
+    },
+    "effectOutcome": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "outputs"
           ],
           "properties": {
             "kind": {
               "const": "success"
             },
-            "localPatch": {
-              "type": "array",
-              "items": {
-                "$ref": "#/$defs/variableBinding"
-              }
+            "outputs": {
+              "$ref": "#/$defs/bindings"
             }
           }
         },
@@ -1343,700 +975,61 @@
           "required": [
             "kind",
             "code",
-            "message",
-            "localPatch"
+            "outputs"
           ],
           "properties": {
             "kind": {
-              "const": "bpmnError"
+              "const": "businessFailure"
             },
             "code": {
               "$ref": "#/$defs/nonEmptyString"
             },
+            "outputs": {
+              "$ref": "#/$defs/bindings"
+            },
             "message": {
-              "type": [
-                "string",
-                "null"
-              ]
-            },
-            "localPatch": {
-              "type": "array",
-              "items": {
-                "$ref": "#/$defs/variableBinding"
-              }
+              "$ref": "#/$defs/nonEmptyString"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind"
+          ],
+          "properties": {
+            "kind": {
+              "const": "technicalFailure"
             }
           }
         }
       ]
     },
-    "fireTimer": {
+    "options": {
+      "description": "Host-environment options a target runner needs to realize the scenario; inputs only, never an expected answer. The kernels ignore them.",
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "kind",
-        "commandId",
-        "timerId",
-        "logicalTimeMs"
-      ],
+      "required": [],
       "properties": {
-        "kind": {
-          "const": "fireTimer"
-        },
-        "commandId": {
-          "$ref": "#/$defs/commandId"
-        },
-        "timerId": {
-          "$ref": "#/$defs/timerOccurrenceId"
-        },
-        "logicalTimeMs": {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 9007199254740991
-        }
-      }
-    },
-    "enabledCompleteUserTaskInstance": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "kind",
-        "taskId"
-      ],
-      "properties": {
-        "kind": {
-          "const": "completeUserTaskInstance"
-        },
-        "taskId": {
-          "$ref": "#/$defs/userTaskInstanceId"
-        }
-      }
-    },
-    "enabledDeliverMessage": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "kind",
-        "subscriptionId",
-        "channel"
-      ],
-      "properties": {
-        "kind": {
-          "const": "deliverMessage"
-        },
-        "subscriptionId": {
-          "$ref": "#/$defs/messageSubscriptionId"
-        },
-        "channel": {
-          "$ref": "#/$defs/messageChannel"
-        }
-      }
-    },
-    "enabledDeliverPayloadMessage": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "kind",
-        "subscriptionId",
-        "channel"
-      ],
-      "properties": {
-        "kind": {
-          "const": "deliverPayloadMessage"
-        },
-        "subscriptionId": {
-          "$ref": "#/$defs/messageSubscriptionId"
-        },
-        "channel": {
-          "$ref": "#/$defs/messageChannel"
-        }
-      }
-    },
-    "enabledPublishCorrelatedPayloadMessage": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "kind",
-        "address"
-      ],
-      "properties": {
-        "kind": {
-          "const": "publishCorrelatedPayloadMessage"
-        },
-        "address": {
-          "$ref": "#/$defs/correlatedMessageAddress"
-        }
-      }
-    },
-    "enabledRetryIncident": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "kind",
-        "incidentId"
-      ],
-      "properties": {
-        "kind": {
-          "const": "retryIncident"
-        },
-        "incidentId": {
-          "$ref": "#/$defs/effectIncidentId"
-        }
-      }
-    },
-    "enabledCancelIncidentProcess": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "kind",
-        "processInstanceId",
-        "incidentId"
-      ],
-      "properties": {
-        "kind": {
-          "const": "cancelIncidentProcess"
-        },
-        "processInstanceId": {
-          "$ref": "#/$defs/nonEmptyString"
-        },
-        "incidentId": {
-          "$ref": "#/$defs/effectIncidentId"
-        }
-      }
-    },
-    "activeWait": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "elementId",
-        "kind",
-        "multiplicity"
-      ],
-      "properties": {
-        "elementId": {
-          "$ref": "#/$defs/nonEmptyString"
-        },
-        "kind": {
-          "enum": [
-            "userTask",
-            "message",
-            "timer",
-            "effect",
-            "incident"
-          ]
-        },
-        "multiplicity": {
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 9007199254740991
-        }
-      }
-    },
-    "openUserTask": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "id",
-        "name",
-        "state"
-      ],
-      "properties": {
-        "id": {
-          "$ref": "#/$defs/userTaskInstanceId"
-        },
-        "name": {
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "state": {
-          "const": "active"
-        },
-        "metadata": {
-          "$ref": "#/$defs/userTaskMetadata"
-        },
-        "inputs": {
-          "type": "array",
-          "minItems": 1,
-          "maxItems": 1,
-          "items": {
-            "$ref": "#/$defs/variableBinding"
-          }
-        }
-      }
-    },
-    "openTimer": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "id",
-        "deadlineMs"
-      ],
-      "properties": {
-        "id": {
-          "$ref": "#/$defs/timerOccurrenceId"
-        },
-        "deadlineMs": {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 9007199254740991
-        }
-      }
-    },
-    "openMessageSubscription": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "id",
-        "channel"
-      ],
-      "properties": {
-        "id": {
-          "$ref": "#/$defs/messageSubscriptionId"
-        },
-        "channel": {
-          "$ref": "#/$defs/messageChannel"
-        }
-      }
-    },
-    "effectDescriptor": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "protocol",
-        "operation"
-      ],
-      "properties": {
-        "protocol": {
-          "$ref": "#/$defs/nonEmptyString"
-        },
-        "operation": {
-          "$ref": "#/$defs/nonEmptyString"
-        }
-      }
-    },
-    "openEffect": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "id",
-        "descriptor",
-        "arguments"
-      ],
-      "properties": {
-        "id": {
-          "$ref": "#/$defs/effectOccurrenceId"
-        },
-        "descriptor": {
-          "$ref": "#/$defs/effectDescriptor"
-        },
-        "arguments": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/variableBinding"
-          }
-        }
-      }
-    },
-    "openEffectIncident": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "kind",
-        "id",
-        "effect"
-      ],
-      "properties": {
-        "kind": {
-          "const": "effectExecutionFailed"
-        },
-        "id": {
-          "$ref": "#/$defs/effectIncidentId"
-        },
-        "effect": {
-          "$ref": "#/$defs/openEffect"
-        }
-      }
-    },
-    "deploymentObservation": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "kind",
-        "outcome"
-      ],
-      "properties": {
-        "kind": {
-          "const": "deployment"
-        },
-        "outcome": {
-          "enum": [
-            "committed",
-            "unsupported"
-          ]
-        }
-      }
-    },
-    "commandObservation": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "kind",
-        "commandId",
-        "outcome"
-      ],
-      "properties": {
-        "kind": {
-          "const": "command"
-        },
-        "commandId": {
-          "$ref": "#/$defs/commandId"
-        },
-        "outcome": {
-          "enum": [
-            "committed",
-            "rolledBack",
-            "rejected",
-            "semanticFailure",
-            "unsupported"
-          ]
-        }
-      }
-    },
-    "stateObservation": {
-      "type": "object",
-      "additionalProperties": false,
-      "allOf": [
-        {
-          "if": {
-            "properties": {
-              "status": {
-                "const": "failed"
-              }
-            },
-            "required": [
-              "status"
-            ]
-          },
-          "then": {
-            "required": [
-              "failure"
-            ],
-            "properties": {
-              "failure": {
-                "$ref": "#/$defs/compensationHandlerFailure"
-              },
-              "activeWaits": {
-                "type": "array",
-                "maxItems": 0
-              },
-              "openUserTasks": {
-                "type": "array",
-                "maxItems": 0
-              },
-              "openMessageSubscriptions": {
-                "type": "array",
-                "maxItems": 0
-              },
-              "openTimers": {
-                "type": "array",
-                "maxItems": 0
-              },
-              "openEffects": {
-                "type": "array",
-                "maxItems": 0
-              },
-              "openIncidents": {
-                "type": "array",
-                "maxItems": 0
-              },
-              "openMultiInstances": {
-                "type": "array",
-                "maxItems": 0
-              },
-              "enabledInteractions": {
-                "type": "array",
-                "maxItems": 0
-              }
-            }
-          },
-          "else": {
-            "not": {
-              "required": [
-                "failure"
-              ]
+        "incidents": {
+          "description": "A technically failed effect opens an incident (CIB createIncidentOnFailedJobEnabled); cancellable publishes cancelIncidentProcess beside retryIncident.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "cancellable"
+          ],
+          "properties": {
+            "cancellable": {
+              "type": "boolean"
             }
           }
         }
-      ],
-      "required": [
-        "kind",
-        "instanceId",
-        "status",
-        "activeWaits",
-        "openUserTasks",
-        "openMessageSubscriptions",
-        "openTimers",
-        "openEffects",
-        "openIncidents",
-        "variables",
-        "enabledInteractions",
-        "logicalTimeMs"
-      ],
-      "properties": {
-        "kind": {
-          "const": "state"
-        },
-        "instanceId": {
-          "$ref": "#/$defs/nonEmptyString"
-        },
-        "status": {
-          "enum": [
-            "notStarted",
-            "running",
-            "completed",
-            "cancelled",
-            "failed"
-          ]
-        },
-        "failure": {
-          "$ref": "#/$defs/compensationHandlerFailure"
-        },
-        "activeWaits": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/activeWait"
-          }
-        },
-        "openUserTasks": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/openUserTask"
-          }
-        },
-        "openMessageSubscriptions": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/openMessageSubscription"
-          }
-        },
-        "openTimers": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/openTimer"
-          }
-        },
-        "openEffects": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/openEffect"
-          }
-        },
-        "openIncidents": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/openEffectIncident"
-          }
-        },
-        "openMultiInstances": {
-          "type": "array",
-          "items": {
-            "oneOf": [
-              {
-                "$ref": "#/$defs/openSequentialMultiInstance"
-              },
-              {
-                "$ref": "#/$defs/openParallelMultiInstance"
-              },
-              {
-                "$ref": "#/$defs/openSequentialSubProcessMultiInstance"
-              }
-            ]
-          }
-        },
-        "variables": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/variableBinding"
-          }
-        },
-        "enabledInteractions": {
-          "type": "array",
-          "items": {
-            "oneOf": [
-              {
-                "$ref": "#/$defs/enabledCompleteUserTaskInstance"
-              },
-              {
-                "$ref": "#/$defs/enabledDeliverMessage"
-              },
-              {
-                "$ref": "#/$defs/enabledDeliverPayloadMessage"
-              },
-              {
-                "$ref": "#/$defs/enabledPublishCorrelatedPayloadMessage"
-              },
-              {
-                "$ref": "#/$defs/enabledRetryIncident"
-              },
-              {
-                "$ref": "#/$defs/enabledCancelIncidentProcess"
-              }
-            ]
-          }
-        },
-        "logicalTimeMs": {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 9007199254740991
-        }
       }
     },
-    "canonicalObservation": {
-      "oneOf": [
-        {
-          "$ref": "#/$defs/deploymentObservation"
-        },
-        {
-          "$ref": "#/$defs/commandObservation"
-        },
-        {
-          "$ref": "#/$defs/stateObservation"
-        }
-      ]
-    },
-    "canonicalResult": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "outcome",
-        "trace"
-      ],
-      "properties": {
-        "outcome": {
-          "$ref": "#/$defs/scenarioOutcome"
-        },
-        "trace": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/canonicalObservation"
-          }
-        }
-      }
-    },
-    "scopeOccurrenceId": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "processInstanceId",
-        "definitionScopeId",
-        "activation"
-      ],
-      "properties": {
-        "processInstanceId": {
-          "$ref": "#/$defs/nonEmptyString"
-        },
-        "activation": {
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 9007199254740991
-        },
-        "definitionScopeId": {
-          "$ref": "#/$defs/nonEmptyString"
-        }
-      }
-    },
-    "openSubProcessIteration": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "loopCounter",
-        "body",
-        "item",
-        "bindings",
-        "userTaskIds",
-        "effectIds"
-      ],
-      "properties": {
-        "loopCounter": {
-          "$ref": "#/$defs/nonnegativeSafeInteger"
-        },
-        "body": {
-          "$ref": "#/$defs/scopeOccurrenceId"
-        },
-        "item": {
-          "$ref": "#/$defs/variableBinding"
-        },
-        "bindings": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/variableBinding"
-          }
-        },
-        "userTaskIds": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/userTaskInstanceId"
-          }
-        },
-        "effectIds": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/effectOccurrenceId"
-          }
-        }
-      }
-    },
-    "openSequentialSubProcessMultiInstance": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "id",
-        "mode",
-        "bodyKind",
-        "plannedInstanceCount",
-        "pendingItemCount",
-        "numberOfInstances",
-        "numberOfActiveInstances",
-        "numberOfCompletedInstances",
-        "numberOfTerminatedInstances",
-        "activeIterations"
-      ],
-      "properties": {
-        "id": {
-          "$ref": "#/$defs/activityOccurrenceId"
-        },
-        "mode": {
-          "const": "sequential"
-        },
-        "plannedInstanceCount": {
-          "$ref": "#/$defs/nonnegativeSafeInteger"
-        },
-        "pendingItemCount": {
-          "$ref": "#/$defs/nonnegativeSafeInteger"
-        },
-        "numberOfInstances": {
-          "$ref": "#/$defs/nonnegativeSafeInteger"
-        },
-        "numberOfActiveInstances": {
-          "$ref": "#/$defs/nonnegativeSafeInteger"
-        },
-        "numberOfCompletedInstances": {
-          "$ref": "#/$defs/nonnegativeSafeInteger"
-        },
-        "numberOfTerminatedInstances": {
-          "$ref": "#/$defs/nonnegativeSafeInteger"
-        },
-        "activeIterations": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/openSubProcessIteration"
-          }
-        },
-        "bodyKind": {
-          "const": "subProcess"
-        }
-      }
+    "logicalTime": {
+      "description": "The input's logical time in milliseconds: the clock advances to it before the input applies, never backward; absent leaves the clock where it is. A host that owns logical time refuses a stimulus that states one.",
+      "$ref": "#/$defs/nonnegativeSafeInteger"
     }
   }
 }

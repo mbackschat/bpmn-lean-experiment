@@ -10,11 +10,10 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-activity-data-input-output-omitted",
-      "processId": "Process_ClaimAssessment",
       "instanceId": "ActivityDataInputOutputOmitted",
-      "initialVariables": [
+      "variables": [
         {
           "name": "Property_ClaimSummary",
           "value": {
@@ -25,27 +24,18 @@
       ]
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "assess-claim-omitted",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "ActivityDataInputOutputOmitted",
         "elementId": "UserTask_AssessClaim",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

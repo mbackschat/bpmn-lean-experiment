@@ -2,7 +2,7 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "service-task-effect-incident-root-cancellation",
-    "sha256": "0ab4e4c1be94a21b9a3f2fd354d49387b4521d7758c3938a13f1dc80f5b3c013"
+    "sha256": "c5f37b48ea85a3da34135ccdf13009d014a450ae0dec6a9fa5636c39ff6b0509"
   },
   "profile": {
     "id": "cibseven-2.2.0-service-task-incident-cancellation-draft",
@@ -206,31 +206,7 @@
         "kind": "state",
         "instanceId": "Instance_1",
         "status": "running",
-        "activeWaits": [
-          {
-            "elementId": "ServiceTask_Record",
-            "kind": "effect",
-            "multiplicity": 1
-          }
-        ],
-        "openUserTasks": [],
-        "openMessageSubscriptions": [],
-        "openTimers": [],
-        "openEffects": [
-          {
-            "id": {
-              "processInstanceId": "Instance_1",
-              "elementId": "ServiceTask_Record",
-              "activation": 1
-            },
-            "descriptor": {
-              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
-              "operation": "urn:bpmn-lean:effect-operation:probe-v1"
-            },
-            "arguments": []
-          }
-        ],
-        "openIncidents": [],
+        "logicalTimeMs": 0,
         "variables": [
           {
             "name": "preserved",
@@ -240,8 +216,25 @@
             }
           }
         ],
-        "enabledInteractions": [],
-        "logicalTimeMs": 0
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ServiceTask_Record",
+              "activation": 1
+            },
+            "definition": null,
+            "input": "effectResult",
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "urn:bpmn-lean:effect-operation:probe-v1",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            }
+          }
+        ]
       },
       {
         "kind": "command",
@@ -252,42 +245,7 @@
         "kind": "state",
         "instanceId": "Instance_1",
         "status": "running",
-        "activeWaits": [
-          {
-            "elementId": "ServiceTask_Record",
-            "kind": "incident",
-            "multiplicity": 1
-          }
-        ],
-        "openUserTasks": [],
-        "openMessageSubscriptions": [],
-        "openTimers": [],
-        "openEffects": [],
-        "openIncidents": [
-          {
-            "kind": "effectExecutionFailed",
-            "id": {
-              "effectId": {
-                "processInstanceId": "Instance_1",
-                "elementId": "ServiceTask_Record",
-                "activation": 1
-              },
-              "generation": 1
-            },
-            "effect": {
-              "id": {
-                "processInstanceId": "Instance_1",
-                "elementId": "ServiceTask_Record",
-                "activation": 1
-              },
-              "descriptor": {
-                "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
-                "operation": "urn:bpmn-lean:effect-operation:probe-v1"
-              },
-              "arguments": []
-            }
-          }
-        ],
+        "logicalTimeMs": 0,
         "variables": [
           {
             "name": "preserved",
@@ -297,32 +255,29 @@
             }
           }
         ],
-        "enabledInteractions": [
+        "openWaits": [
           {
-            "kind": "retryIncident",
-            "incidentId": {
-              "effectId": {
-                "processInstanceId": "Instance_1",
-                "elementId": "ServiceTask_Record",
-                "activation": 1
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ServiceTask_Record",
+              "activation": 1
+            },
+            "definition": null,
+            "input": "command",
+            "detail": {
+              "kind": "incident",
+              "effect": {
+                "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+                "operation": "urn:bpmn-lean:effect-operation:probe-v1",
+                "arguments": [],
+                "failures": 1,
+                "send": null
               },
-              "generation": 1
-            }
-          },
-          {
-            "kind": "cancelIncidentProcess",
-            "processInstanceId": "Instance_1",
-            "incidentId": {
-              "effectId": {
-                "processInstanceId": "Instance_1",
-                "elementId": "ServiceTask_Record",
-                "activation": 1
-              },
-              "generation": 1
+              "generation": 1,
+              "cancellable": true
             }
           }
-        ],
-        "logicalTimeMs": 0
+        ]
       },
       {
         "kind": "command",
@@ -333,12 +288,7 @@
         "kind": "state",
         "instanceId": "Instance_1",
         "status": "cancelled",
-        "activeWaits": [],
-        "openUserTasks": [],
-        "openMessageSubscriptions": [],
-        "openTimers": [],
-        "openEffects": [],
-        "openIncidents": [],
+        "logicalTimeMs": 0,
         "variables": [
           {
             "name": "preserved",
@@ -348,8 +298,7 @@
             }
           }
         ],
-        "enabledInteractions": [],
-        "logicalTimeMs": 0
+        "openWaits": []
       }
     ]
   }

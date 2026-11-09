@@ -11,17 +11,68 @@
       "sha256": "426426aa305556cba08c87d23717b0301661537d70076c3a6b63f6831aa86b8a"
     }
   },
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start-process",
+      "instanceId": "EquipmentDispatch_1",
+      "variables": [
+        {
+          "name": "order",
+          "value": {
+            "kind": "string",
+            "value": "ORD-31: two survey drones, 3 days"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "complete-effect-sha256:a9d7c3996c31829aa338db66f908d5ad96c01525605dc2c9954bed59a249e2f7",
+      "occurrence": {
+        "processInstanceId": "EquipmentDispatch_1",
+        "elementId": "ReserveEquipment",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": [
+          {
+            "name": "reservation",
+            "value": {
+              "kind": "string",
+              "value": "RES-31"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-pack-equipment",
+      "occurrence": {
+        "processInstanceId": "EquipmentDispatch_1",
+        "elementId": "PackEquipment",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-book-courier",
+      "occurrence": {
+        "processInstanceId": "EquipmentDispatch_1",
+        "elementId": "BookCourier",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
   ],
   "provenance": {
     "normativeRefs": [
@@ -35,63 +86,5 @@
       "CIB-EXT-0022",
       "CIB-AGR-0019"
     ]
-  },
-  "stimuli": [
-    {
-      "kind": "startProcess",
-      "commandId": "start-process",
-      "processId": "Process_EquipmentDispatch",
-      "instanceId": "EquipmentDispatch_1",
-      "initialVariables": [
-        {
-          "name": "order",
-          "value": {
-            "kind": "string",
-            "value": "ORD-31: two survey drones, 3 days"
-          }
-        }
-      ]
-    },
-    {
-      "kind": "completeEffect",
-      "commandId": "complete-effect-sha256:a9d7c3996c31829aa338db66f908d5ad96c01525605dc2c9954bed59a249e2f7",
-      "effectId": {
-        "processInstanceId": "EquipmentDispatch_1",
-        "elementId": "ReserveEquipment",
-        "activation": 1
-      },
-      "result": {
-        "kind": "success",
-        "localPatch": [
-          {
-            "name": "reservation",
-            "value": {
-              "kind": "string",
-              "value": "RES-31"
-            }
-          }
-        ]
-      }
-    },
-    {
-      "kind": "completeUserTaskInstance",
-      "commandId": "complete-pack-equipment",
-      "taskId": {
-        "processInstanceId": "EquipmentDispatch_1",
-        "elementId": "PackEquipment",
-        "activation": 1
-      },
-      "submittedValues": []
-    },
-    {
-      "kind": "completeUserTaskInstance",
-      "commandId": "complete-book-courier",
-      "taskId": {
-        "processInstanceId": "EquipmentDispatch_1",
-        "elementId": "BookCourier",
-        "activation": 1
-      },
-      "submittedValues": []
-    }
-  ]
+  }
 }

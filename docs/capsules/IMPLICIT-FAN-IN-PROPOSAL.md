@@ -191,7 +191,7 @@ Registration:
 Guards the implementation must change or satisfy:
 
 - [`lean-fanout`](../../scripts/lean-fanout.test.ts), [`lean-import-boundaries`](../../scripts/lean-import-boundaries.test.ts), [`lean-module-cost`](../../scripts/lean-module-cost.test.ts) and [`source-hygiene`](../../scripts/source-hygiene.test.ts), which bound every grown owner and the new modules;
-- [`semantic-operation-consumer-census`](../../scripts/semantic-operation-consumer-census.test.ts), for every consumer of `mergeExclusive`;
+- `semantic-operation-consumer-census`, for every consumer of `mergeExclusive`;
 - the [mixed-task control-flow source test](../../packages/bpmn-source/test/mixed-task-control-flow-source.test.ts) and the [checked graph admission test](../../packages/bpmn-source/test/checked-process-graph-admission.test.ts), which lock the other profiles' single incoming flows;
 - the [pipeline budget guard](../../scripts/pipeline-budget.test.ts), whose derived ceiling the three cases move without a bound change;
 - the value-domain matrix, the [executable model corpus](../../model-corpus/test/executable-model-corpus.test.ts), [`requirement-ledger-consistency`](https://github.com/mbackschat/bpmn-lean-experiment/blob/7f85d302750487fa2c30e54597200dadb2568c3d/scripts/requirement-ledger-consistency.test.ts) and the [About disclosure guard](../../scripts/capability-catalog-disclosures.test.ts), for the grown artifact;

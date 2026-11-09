@@ -38,6 +38,7 @@ type MutableIncidentScenario = {
     sourceOverlay: unknown;
   };
   stimuli: Array<Record<string, unknown>>;
+  options: { incidents: { cancellable: boolean } };
 };
 
 test("preserves the exact predecessor profile, scenario, and BPMN bytes", async () => {
@@ -48,7 +49,7 @@ test("preserves the exact predecessor profile, scenario, and BPMN bytes", async 
     ],
     [
       "scenarios/service-task-effect/scenario.json",
-      "8f1574665e864fa3054b6c4ccf8b3a996cf290ba6ef4b72869b1e155ac9ebc56",
+      "4fcb189b3dbbe1d11a8545fadd61cb7d08d8e6d8f09c7e761eb3404debf66487",
     ],
     [
       "scenarios/service-task-effect/process.bpmn",
@@ -86,12 +87,19 @@ test("binds the exact configured profile to the answer-free incident schedule", 
     /exact configured binding/u,
   );
 
-  const wrongGeneration = structuredClone(scenario);
-  const report = wrongGeneration.stimuli[1];
+  const wrongOccurrence = structuredClone(scenario);
+  const report = wrongOccurrence.stimuli[1]?.occurrence as Record<string, unknown> | undefined;
   assert.ok(report !== undefined);
-  report.generation = 2;
+  report.activation = 2;
   assert.throws(
-    () => verifyServiceTaskIncidentArtifactBinding(profile, wrongGeneration),
+    () => verifyServiceTaskIncidentArtifactBinding(profile, wrongOccurrence),
+    /exact answer-free schedule/u,
+  );
+
+  const cancellable = structuredClone(scenario);
+  cancellable.options.incidents.cancellable = true;
+  assert.throws(
+    () => verifyServiceTaskIncidentArtifactBinding(profile, cancellable),
     /exact answer-free schedule/u,
   );
 });

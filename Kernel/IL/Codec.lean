@@ -77,6 +77,73 @@ def bindingsFromJson (json : Json) : Except String (List (String × Value)) := d
   entries.toList.mapM fun entry => do
     pure (← entry.getObjValAs? String "name", ← valueFromJson (← entry.getObjVal? "value"))
 
+/-! ## Strict decoding
+
+Lean's derived decoders ignore unknown keys and read an absent field as `null`, and `Json.parse` keeps the last of
+repeated keys. A codec input is therefore accepted only when its text repeats no key and its JSON is exactly the
+canonical encoding of the value it decodes to; every refusal begins with one of these stable codes. -/
+
+def duplicateField : String := "codec.duplicateField"
+def unknownField : String := "codec.unknownField"
+def missingField : String := "codec.missingField"
+def malformed : String := "codec.malformed"
+
+/-- Prefix a refusal that carries no code with `codec.malformed`. -/
+def coded (refusal : String) : String :=
+  if refusal.startsWith "codec." then refusal else s!"{malformed}: {refusal}"
+
+/-- Object members in `text`: each member has the one `:` outside a string. -/
+def textMembers (text : String) : Nat :=
+  let (count, _, _) := text.foldl (fun (count, inString, escaped) char =>
+    if inString then
+      if escaped then (count, true, false)
+      else if char == '\\' then (count, true, true)
+      else (count, char != '"', false)
+    else if char == '"' then (count, true, false)
+    else if char == ':' then (count + 1, false, false)
+    else (count, false, false)) (0, false, false)
+  count
+
+partial def jsonMembers : Json → Nat
+  | .obj members => members.foldl (fun count _ value => count + jsonMembers value) members.size
+  | .arr items => items.foldl (fun count item => count + jsonMembers item) 0
+  | _ => 0
+
+/-- `Json.parse`, refusing a text whose objects repeat a key: parsing keeps one member per key, so the text then has
+more members than the parsed JSON. -/
+def parseStrict (text : String) : Except String Json := do
+  let json ← (Json.parse text).mapError coded
+  if textMembers text == jsonMembers json then pure json
+  else throw s!"{duplicateField}: an object repeats a key"
+
+/-- The first place `input` departs from the key structure of `canonical`, in key order, else `none`. -/
+partial def shapeRefusal (path : String) (input canonical : Json) : Option String :=
+  match input, canonical with
+  | .obj given, .obj expected =>
+    match given.keys.find? (fun key => !(expected.keys.contains key)) with
+    | some key => some s!"{unknownField}: {path}.{key}"
+    | none =>
+      match expected.keys.find? (fun key => !(given.keys.contains key)) with
+      | some key => some s!"{missingField}: {path}.{key}"
+      | none => expected.keys.findSome? fun key =>
+          shapeRefusal s!"{path}.{key}" (input.getObjValD key) (canonical.getObjValD key)
+  | .arr given, .arr expected =>
+    (List.range (min given.size expected.size)).findSome? fun index =>
+      shapeRefusal s!"{path}[{index}]" given[index]! expected[index]!
+  | .obj _, _ => some s!"{malformed}: {path} is an object"
+  | _, _ => none
+
+/-- Decode `json` through `decode` and accept it only in the canonical encoding `encode` gives. -/
+def strictly {α : Type} (decode : Json → Except String α) (encode : α → Json) (json : Json) : Except String α := do
+  let value ← (decode json).mapError coded
+  match shapeRefusal "$" json (encode value) with
+  | some refusal => throw refusal
+  | none => pure value
+
+/-- A kernel IL program, strictly. -/
+def programFromJson (json : Json) : Except String Program :=
+  strictly (fromJson? (α := Program)) toJson json
+
 def bindingsToJson (bindings : List (String × Value)) : Json :=
   Json.arr (bindings.map fun (name, value) =>
     Json.mkObj [("name", Json.str name), ("value", valueToJson value)]).toArray

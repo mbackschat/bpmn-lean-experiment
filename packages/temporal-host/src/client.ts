@@ -16,6 +16,7 @@ import {
 
 import type { PublicationPage } from "./publication.js";
 import type { JsonValue } from "./port.js";
+import type { ProcessDescription, ProcessHost, StartRequest } from "./process-port.js";
 import {
   ResultKind,
   RunKind,
@@ -29,7 +30,6 @@ import {
   timerFireUpdate,
   workflowType,
   type CommandResult,
-  type HostConfig,
   type HostSnapshot,
   type ProcessResult,
   type RunProcessArgs,
@@ -39,6 +39,7 @@ import { assertNever } from "./host-machine.js";
 export {
   ResultKind,
   Scheduling,
+  workflowType,
   type CommandResult,
   type Halt,
   type HostConfig,
@@ -47,19 +48,13 @@ export {
   type RunProcessArgs,
 } from "./protocol.js";
 export { PageKind, type Batch, type ExecutionTransition, type OccurrenceTransition, type PublicationPage } from "./publication.js";
-export type { DefinitionRef, HostView, JsonValue, OccurrenceId, Requirements, WaitView } from "./port.js";
-
-export interface StartRequest {
-  readonly workflowId: string;
-  readonly program: JsonValue;
-  readonly config: HostConfig;
-  /** The start stimulus, in the scenario contract's form. */
-  readonly start: JsonValue;
-}
+export type { HostView, JsonValue, OccurrenceId, Requirements, WaitView } from "./port.js";
+export type { ProcessDescription, ProcessHost, StartRequest } from "./process-port.js";
+export { ScheduleClient } from "./schedule-client.js";
 
 type ProcessWorkflow = (args: RunProcessArgs) => Promise<ProcessResult>;
 
-export class ProcessClient {
+export class ProcessClient implements ProcessHost {
   constructor(private readonly client: Client, private readonly taskQueue: string) {}
 
   /**
@@ -74,6 +69,7 @@ export class ProcessClient {
         workflowId: request.workflowId,
         workflowIdReusePolicy: "REJECT_DUPLICATE",
         args: [{ kind: RunKind.Start, program: request.program, config: request.config, start: request.start }],
+        ...(request.memo === undefined ? {} : { memo: request.memo }),
       });
     } catch (error) {
       if (error instanceof WorkflowExecutionAlreadyStartedError) {
@@ -126,6 +122,22 @@ export class ProcessClient {
 
   result(workflowId: string): Promise<ProcessResult> {
     return this.handle(workflowId).result();
+  }
+
+  async describe(workflowId: string): Promise<ProcessDescription | null> {
+    try {
+      const description = await this.handle(workflowId).describe();
+      return {
+        workflowId: description.workflowId,
+        workflowType: description.type,
+        taskQueue: description.taskQueue,
+        running: description.status.name === "RUNNING",
+        memo: (description.memo ?? null) as Readonly<Record<string, JsonValue>> | null,
+      };
+    } catch (error) {
+      if (error instanceof WorkflowNotFoundError) return null;
+      throw error;
+    }
   }
 
   private handle(workflowId: string): WorkflowHandle<ProcessWorkflow> {

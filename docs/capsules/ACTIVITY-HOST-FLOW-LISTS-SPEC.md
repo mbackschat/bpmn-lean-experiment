@@ -146,7 +146,7 @@ Each planned feature has its place, and none needs another constructor:
 
 ### Kind vocabularies
 
-The TypeScript discriminant `Activity` and the Lean constructor `activity` keep the two operation vocabularies equal for the [consumer census](../../scripts/semantic-operation-consumer-census.test.ts).
+The TypeScript discriminant `Activity` and the Lean constructor `activity` keep the two operation vocabularies equal for the `consumer census`.
 
 The published kind is derived, never the discriminant:
 
@@ -427,7 +427,7 @@ Growth that would cross an owner's 800-line review target moves into a family-ow
 - [`lean-fanout`](../../scripts/lean-fanout.test.ts)
 - [`lean-module-cost`](../../scripts/lean-module-cost.test.ts)
 - [`source-hygiene`](../../scripts/source-hygiene.test.ts)
-- [`semantic-operation-consumer-census`](../../scripts/semantic-operation-consumer-census.test.ts)
+- `semantic-operation-consumer-census`
 - [`internal-commutation-census`](../../scripts/internal-commutation-census.test.ts)
 - [`call-forest-selection-census`](../../scripts/call-forest-selection-census.test.ts)
 - [`activity-occurrence-writer-census`](../../scripts/activity-occurrence-writer-census.test.ts)
@@ -447,7 +447,7 @@ Growth that would cross an owner's 800-line review target moves into a family-ow
 
 ### New guard: the host-coverage census
 
-It sits beside the [consumer census](../../scripts/semantic-operation-consumer-census.test.ts) and works per declaration, not per file. It has five parts:
+It sits beside the `consumer census` and works per declaration, not per file. It has five parts:
 
 - **Lean population.** Every production Lean `def` (excluding `Experiments`, `*Conformance*` and `*Fixtures*`) whose body names `.awaitUserTask` or `.awaitEffect` and holds a wildcard arm (`| _ =>`, `| _,` or a trailing `| _`) must also name `.activity`. Measured 2026-11-06: 91 declarations in 47 files.
 - **Multiplicity-keyed sites.** These are listed by name and must name the host, though they never name `awaitUserTask`: `operationJoint`, `programReentry`, `checkedReentry`, `operationVertex?`, `internalArmInput?`, `prepareInternalArm?` and `semanticOperationInternalFamily`, with their TypeScript twins.

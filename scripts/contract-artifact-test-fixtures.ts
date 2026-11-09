@@ -9,15 +9,11 @@ import type {
   DefinitionArtifacts,
 } from "./contract-artifacts.ts";
 import type {
-  CanonicalObservation,
   CheckedNode,
-  CompleteUserTaskInstanceStimulus,
   ControlPlace,
   SemanticOperation,
   SemanticOperationKind,
   SemanticProcessProgram,
-  StateObservation,
-  Stimulus,
   CheckedNodeKind,
 } from "../packages/semantic-core/src/index.ts";
 
@@ -472,31 +468,21 @@ export function requiredAt<Value>(
   return required(values[index], `${label}[${index}]`);
 }
 
-export function requireUserTaskCompletion(
-  stimulus: DeepMutable<Stimulus> | undefined,
-): DeepMutable<CompleteUserTaskInstanceStimulus> {
-  if (stimulus?.kind !== "completeUserTaskInstance") {
-    throw new Error("expected a User Task completion stimulus");
-  }
-  return stimulus;
-}
+/** A stimulus that names the occurrence it addresses: every kind except `start`. */
+export type MutableOccurrenceStimulus = {
+  kind: string;
+  commandId: string;
+  occurrence: { processInstanceId: string; elementId: string; activation: number };
+};
 
-export function requireState(
-  observation: CanonicalObservation | undefined,
-): StateObservation {
-  if (observation?.kind !== "state") {
-    throw new Error("expected a canonical state observation");
+export function requireOccurrenceStimulus(
+  stimulus: unknown,
+): MutableOccurrenceStimulus {
+  const candidate = stimulus as Partial<MutableOccurrenceStimulus> | undefined;
+  if (candidate?.occurrence === undefined) {
+    throw new Error("expected a stimulus that addresses an occurrence");
   }
-  return observation;
-}
-
-export function requireMutableState(
-  observation: DeepMutable<CanonicalObservation> | undefined,
-): DeepMutable<StateObservation> {
-  if (observation?.kind !== "state") {
-    throw new Error("expected a mutable canonical state observation");
-  }
-  return observation;
+  return candidate as MutableOccurrenceStimulus;
 }
 
 type MutableCheckedUserTask = DeepMutable<

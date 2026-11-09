@@ -10,11 +10,10 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-inclusive-both-a-then-b",
-      "processId": "Process_Inclusive",
       "instanceId": "InclusiveInstance_BothAThenB",
-      "initialVariables": [
+      "variables": [
         {
           "name": "takeA",
           "value": {
@@ -32,37 +31,31 @@
       ]
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-inclusive-a-first",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "InclusiveInstance_BothAThenB",
         "elementId": "Task_A",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-inclusive-b-second",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "InclusiveInstance_BothAThenB",
         "elementId": "Task_B",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

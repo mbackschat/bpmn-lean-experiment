@@ -27,7 +27,7 @@ public final class CibSevenServiceTaskIncidentPhaseZeroProbeTest {
       PROJECT_ROOT.resolve("scenarios/service-task-effect/process.bpmn");
   private static final String PROCESS_ID = "Process_ServiceTaskEffectProbe";
   private static final String SERVICE_TASK_ID = "ServiceTask_Record";
-  private static final String HANDLER_BEAN = CibSevenEffectProjector.SOURCE_HANDLER_BEAN;
+  private static final String HANDLER_BEAN = "bpmnLeanEffectHandler";
 
   @Test
   public void provesConfiguredFailedJobIncidentCreationResolutionAndReplacement() throws Exception {

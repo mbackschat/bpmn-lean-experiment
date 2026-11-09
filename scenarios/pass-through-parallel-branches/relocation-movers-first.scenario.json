@@ -13,11 +13,10 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-process",
-      "processId": "Process_OfficeRelocation",
       "instanceId": "Relocation_1",
-      "initialVariables": [
+      "variables": [
         {
           "name": "employee",
           "value": {
@@ -28,26 +27,29 @@
       ]
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-approve-relocation",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Relocation_1",
         "elementId": "ApproveRelocation",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeEffect",
+      "kind": "effectResult",
       "commandId": "complete-effect-sha256:01a851fc3627b343c62b3e449c0d7b7aa013e0a154a9b9bfbb1473d5f161644b",
-      "effectId": {
+      "occurrence": {
         "processInstanceId": "Relocation_1",
         "elementId": "BookMovers",
         "activation": 1
       },
-      "result": {
+      "outcome": {
         "kind": "success",
-        "localPatch": [
+        "outputs": [
           {
             "name": "booking",
             "value": {
@@ -59,27 +61,18 @@
       }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-pack-boxes",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Relocation_1",
         "elementId": "PackBoxes",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

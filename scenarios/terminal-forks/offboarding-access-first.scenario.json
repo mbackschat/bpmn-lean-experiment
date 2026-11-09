@@ -11,17 +11,68 @@
       "sha256": "6e27440caf0944df9e7c00e32c5382432f6c70bbe55a1e41f8c2fe65c721f71d"
     }
   },
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start-process",
+      "instanceId": "Offboarding_1",
+      "variables": [
+        {
+          "name": "employee",
+          "value": {
+            "kind": "string",
+            "value": "Ada Example"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "complete-effect-sha256:0a15c66898b067a3f680c5c87112043ddf277baf4a84b65f714f9dd4757909f9",
+      "occurrence": {
+        "processInstanceId": "Offboarding_1",
+        "elementId": "LookUpEmployee",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": [
+          {
+            "name": "number",
+            "value": {
+              "kind": "string",
+              "value": "E-4711"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-revoke-system-access",
+      "occurrence": {
+        "processInstanceId": "Offboarding_1",
+        "elementId": "RevokeSystemAccess",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-collect-equipment",
+      "occurrence": {
+        "processInstanceId": "Offboarding_1",
+        "elementId": "CollectEquipment",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
   ],
   "provenance": {
     "normativeRefs": [
@@ -36,63 +87,5 @@
       "CIB-EXT-0020",
       "CIB-EXT-0022"
     ]
-  },
-  "stimuli": [
-    {
-      "kind": "startProcess",
-      "commandId": "start-process",
-      "processId": "Process_EmployeeOffboarding",
-      "instanceId": "Offboarding_1",
-      "initialVariables": [
-        {
-          "name": "employee",
-          "value": {
-            "kind": "string",
-            "value": "Ada Example"
-          }
-        }
-      ]
-    },
-    {
-      "kind": "completeEffect",
-      "commandId": "complete-effect-sha256:0a15c66898b067a3f680c5c87112043ddf277baf4a84b65f714f9dd4757909f9",
-      "effectId": {
-        "processInstanceId": "Offboarding_1",
-        "elementId": "LookUpEmployee",
-        "activation": 1
-      },
-      "result": {
-        "kind": "success",
-        "localPatch": [
-          {
-            "name": "number",
-            "value": {
-              "kind": "string",
-              "value": "E-4711"
-            }
-          }
-        ]
-      }
-    },
-    {
-      "kind": "completeUserTaskInstance",
-      "commandId": "complete-revoke-system-access",
-      "taskId": {
-        "processInstanceId": "Offboarding_1",
-        "elementId": "RevokeSystemAccess",
-        "activation": 1
-      },
-      "submittedValues": []
-    },
-    {
-      "kind": "completeUserTaskInstance",
-      "commandId": "complete-collect-equipment",
-      "taskId": {
-        "processInstanceId": "Offboarding_1",
-        "elementId": "CollectEquipment",
-        "activation": 1
-      },
-      "submittedValues": []
-    }
-  ]
+  }
 }

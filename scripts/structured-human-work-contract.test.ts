@@ -8,11 +8,6 @@ import type { SchemaObject } from "ajv/dist/2020.js";
 import {
   verifyScenarioVariableValueContract,
 } from "./contract-artifacts.ts";
-import {
-  projectCibUserTaskMetadata,
-  structuredHumanWorkProfileId,
-} from "./contract-cib-user-task-metadata-projection.ts";
-
 const structuredProfile =
   "bpmn-2.0.2-bpmn-lean-structured-human-work-draft";
 
@@ -42,8 +37,8 @@ function completionScenario(
   return {
     profile,
     stimuli: [{
-      kind: "completeUserTaskInstance",
-      submittedValues,
+      kind: "command",
+      action: { kind: "completeUserTask", values: submittedValues },
     }],
   };
 }
@@ -85,7 +80,6 @@ test("keeps assignment-only metadata closed beside byte-identical legacy metadat
   };
   const assignmentOnly = { assignment };
   for (const schemaName of [
-    "scenario.schema.json",
     "checked-process.schema.json",
     "semantic-process.schema.json",
   ]) {
@@ -105,30 +99,6 @@ test("keeps assignment-only metadata closed beside byte-identical legacy metadat
       assert.equal(validateDefinition(metadata, invalid), false, schemaName);
     }
   }
-});
-
-test("projects only the exact assignment-only CIB prefix facts", () => {
-  const task = {
-    elementId: "ReviewException",
-    name: "Review exception",
-    identityLinks: [{
-      type: "candidate",
-      userId: null,
-      groupId: "reviewers",
-    }],
-    formFields: [],
-  } as const;
-  assert.deepEqual(
-    projectCibUserTaskMetadata(structuredHumanWorkProfileId, task),
-    { assignment: { candidates: [{ kind: "group", id: "reviewers" }] } },
-  );
-  assert.throws(
-    () => projectCibUserTaskMetadata(structuredHumanWorkProfileId, {
-      ...task,
-      formFields: [{ id: "forbidden", typeName: "string" }],
-    }),
-    /zero form fields/u,
-  );
 });
 
 test("semantic stimulus validation rejects negative zero and new values on every wrong surface or profile", () => {
@@ -152,8 +122,8 @@ test("semantic stimulus validation rejects negative zero and new values on every
       () => verifyScenarioVariableValueContract({
         profile: structuredProfile,
         stimuli: [{
-          kind: "startProcess",
-          initialVariables: [binding("value", value)],
+          kind: "start",
+          variables: [binding("value", value)],
         }],
       } as never),
       /only admitted for structured Human Work completion/u,
@@ -162,8 +132,8 @@ test("semantic stimulus validation rejects negative zero and new values on every
       () => verifyScenarioVariableValueContract({
         profile: structuredProfile,
         stimuli: [{
-          kind: "completeEffect",
-          result: { kind: "success", localPatch: [binding("value", value)] },
+          kind: "effectResult",
+          outcome: { kind: "success", outputs: [binding("value", value)] },
         }],
       } as never),
       /only admitted for structured Human Work completion/u,

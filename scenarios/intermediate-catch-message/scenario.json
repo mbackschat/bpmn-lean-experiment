@@ -10,49 +10,42 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-message-process",
-      "processId": "Process_IntermediateCatchMessage",
       "instanceId": "MessageInstance_1",
-      "initialVariables": []
+      "variables": []
     },
     {
-      "kind": "deliverMessage",
+      "kind": "deliver",
       "commandId": "deliver-message",
-      "subscriptionId": {
+      "occurrence": {
         "processInstanceId": "MessageInstance_1",
         "elementId": "MessageCatch_ApprovalRequest",
         "activation": 1
       },
-      "channel": {
-        "kind": "operationMessage",
-        "interfaceId": "Interface_ProcessMessages",
-        "interfaceOperationId": "Operation_ReceiveApprovalRequest",
-        "messageId": "Message_ApprovalRequest"
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "operationMessage",
+          "interfaceId": "Interface_ProcessMessages",
+          "interfaceOperationId": "Operation_ReceiveApprovalRequest",
+          "messageId": "Message_ApprovalRequest"
+        }
       }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-message-user-task",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "MessageInstance_1",
         "elementId": "UserTask_Approve",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

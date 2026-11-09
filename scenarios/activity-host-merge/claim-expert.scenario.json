@@ -11,17 +11,97 @@
       "sha256": "daf02fc795b867dc85bb3deaaefcb938577409d5928b8edce224a6a8e5ddd302"
     }
   },
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start-process",
+      "instanceId": "ClaimReview_1",
+      "variables": [
+        {
+          "name": "claimSummary",
+          "value": {
+            "kind": "string",
+            "value": "CLM-12: storm damage to roof, EUR 6,400"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "complete-effect-sha256:c7249c7e96f866e057a9a7441b354dc6044cac0b3d692635e60d960a232443c7",
+      "occurrence": {
+        "processInstanceId": "ClaimReview_1",
+        "elementId": "TriageClaim",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": [
+          {
+            "name": "route",
+            "value": {
+              "kind": "string",
+              "value": "expert"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "complete-effect-sha256:1a865ec632a8cc9abdafd7604c4fd77d3c566cbe18dce3a255b632bf15f1210b",
+      "occurrence": {
+        "processInstanceId": "ClaimReview_1",
+        "elementId": "ObtainExpertOpinion",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": [
+          {
+            "name": "opinion",
+            "value": {
+              "kind": "string",
+              "value": "covered: storm exclusion does not apply"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-review-claim",
+      "occurrence": {
+        "processInstanceId": "ClaimReview_1",
+        "elementId": "ReviewClaim",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "complete-effect-sha256:92b2b9c8329c25b9e2b6ceccecdc332a4f1b8b48ea8f0947f3898f5136cd6ea0",
+      "occurrence": {
+        "processInstanceId": "ClaimReview_1",
+        "elementId": "FetchReviewOutcome",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": [
+          {
+            "name": "outcome",
+            "value": {
+              "kind": "string",
+              "value": "accept"
+            }
+          }
+        ]
+      }
+    }
   ],
   "provenance": {
     "normativeRefs": [
@@ -34,95 +114,5 @@
     "cibRefs": [
       "CIB-AGR-0020"
     ]
-  },
-  "stimuli": [
-    {
-      "kind": "startProcess",
-      "commandId": "start-process",
-      "processId": "Process_ClaimReview",
-      "instanceId": "ClaimReview_1",
-      "initialVariables": [
-        {
-          "name": "claimSummary",
-          "value": {
-            "kind": "string",
-            "value": "CLM-12: storm damage to roof, EUR 6,400"
-          }
-        }
-      ]
-    },
-    {
-      "kind": "completeEffect",
-      "commandId": "complete-effect-sha256:c7249c7e96f866e057a9a7441b354dc6044cac0b3d692635e60d960a232443c7",
-      "effectId": {
-        "processInstanceId": "ClaimReview_1",
-        "elementId": "TriageClaim",
-        "activation": 1
-      },
-      "result": {
-        "kind": "success",
-        "localPatch": [
-          {
-            "name": "route",
-            "value": {
-              "kind": "string",
-              "value": "expert"
-            }
-          }
-        ]
-      }
-    },
-    {
-      "kind": "completeEffect",
-      "commandId": "complete-effect-sha256:1a865ec632a8cc9abdafd7604c4fd77d3c566cbe18dce3a255b632bf15f1210b",
-      "effectId": {
-        "processInstanceId": "ClaimReview_1",
-        "elementId": "ObtainExpertOpinion",
-        "activation": 1
-      },
-      "result": {
-        "kind": "success",
-        "localPatch": [
-          {
-            "name": "opinion",
-            "value": {
-              "kind": "string",
-              "value": "covered: storm exclusion does not apply"
-            }
-          }
-        ]
-      }
-    },
-    {
-      "kind": "completeUserTaskInstance",
-      "commandId": "complete-review-claim",
-      "taskId": {
-        "processInstanceId": "ClaimReview_1",
-        "elementId": "ReviewClaim",
-        "activation": 1
-      },
-      "submittedValues": []
-    },
-    {
-      "kind": "completeEffect",
-      "commandId": "complete-effect-sha256:92b2b9c8329c25b9e2b6ceccecdc332a4f1b8b48ea8f0947f3898f5136cd6ea0",
-      "effectId": {
-        "processInstanceId": "ClaimReview_1",
-        "elementId": "FetchReviewOutcome",
-        "activation": 1
-      },
-      "result": {
-        "kind": "success",
-        "localPatch": [
-          {
-            "name": "outcome",
-            "value": {
-              "kind": "string",
-              "value": "accept"
-            }
-          }
-        ]
-      }
-    }
-  ]
+  }
 }

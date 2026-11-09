@@ -35,7 +35,8 @@ async function sha256Of(bytes: Uint8Array): Promise<string> {
   return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
-function declaredEncoding(bytes: Uint8Array): string | null {
+/** The encoding the source's XML declaration names, `null` when it names none; the reader accepts only UTF-8. */
+export function declaredSourceEncoding(bytes: Uint8Array): string | null {
   const start = bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf ? 3 : 0;
   const prefix = String.fromCharCode(...bytes.subarray(start, Math.min(bytes.byteLength, start + 512)));
   return /^\s*<\?xml\s+[^>]*encoding\s*=\s*["']([^"']+)["'][^>]*\?>/iu.exec(prefix)?.[1] ?? null;
@@ -133,7 +134,7 @@ export async function parseKernelSource(source: KernelSource): Promise<ParsedSou
   if (source.expectedSha256 !== undefined && source.expectedSha256 !== sha256) {
     refuse(ReadRefusalCode.SourceIdentityMismatch, `captured ${sha256}`);
   }
-  const encoding = declaredEncoding(source.bytes);
+  const encoding = declaredSourceEncoding(source.bytes);
   if (encoding !== null && !/^utf-?8$/iu.test(encoding)) refuse(ReadRefusalCode.SourceEncoding, encoding);
   const xml = decodeUtf8(source.bytes);
   if (/<\s*!DOCTYPE\b/iu.test(xml)) refuse(ReadRefusalCode.SourceDoctype, "DOCTYPE present");

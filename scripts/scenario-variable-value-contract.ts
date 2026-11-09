@@ -37,30 +37,30 @@ export function verifyScenarioVariableValueContract(
     if (scenario.profile === parallelMultiInstanceProfile) {
       verifyParallelMultiInstanceStimulus(stimulus);
     }
-    const patch = variablePatch(stimulus);
-    if (patch === undefined) continue;
-    for (const binding of patch.bindings) {
-      if (binding === null || typeof binding !== "object") continue;
-      const value = (binding as { readonly value?: unknown }).value;
-      if (
-        patch.surface === "payload" &&
-        (value === null || typeof value !== "object")
-      ) {
-        throw new TypeError("Message payload must be a tagged value");
+    for (const patch of variablePatches(stimulus)) {
+      for (const binding of patch.bindings) {
+        if (binding === null || typeof binding !== "object") continue;
+        const value = (binding as { readonly value?: unknown }).value;
+        if (
+          patch.surface === "payload" &&
+          (value === null || typeof value !== "object")
+        ) {
+          throw new TypeError("Message payload must be a tagged value");
+        }
+        if (value !== null && typeof value === "object") {
+          const tagged = value as {
+            readonly kind?: unknown;
+            readonly value?: unknown;
+          };
+          verifyProfileValue(scenario.profile, patch.surface, tagged);
+          requireByteCeiling(tagged, 16_384, "tagged value");
+        }
+        requireByteCeiling(binding, 20_480, "binding");
       }
-      if (value !== null && typeof value === "object") {
-        const tagged = value as {
-          readonly kind?: unknown;
-          readonly value?: unknown;
-        };
-        verifyProfileValue(scenario.profile, patch.surface, tagged);
-        requireByteCeiling(tagged, 16_384, "tagged value");
+      requireByteCeiling(patch.bindings, 65_536, "patch");
+      if (patch.surface === "payload") {
+        requireByteCeiling(stimulus, 65_536, "stimulus");
       }
-      requireByteCeiling(binding, 20_480, "binding");
-    }
-    requireByteCeiling(patch.bindings, 65_536, "patch");
-    if (patch.surface === "payload") {
-      requireByteCeiling(stimulus, 65_536, "stimulus");
     }
   }
 }
@@ -69,8 +69,8 @@ function verifyParallelMultiInstanceStimulus(
   stimulus: Readonly<Record<string, unknown>>,
 ): void {
   switch (stimulus.kind) {
-    case "startProcess": {
-      const bindings = stimulus.initialVariables;
+    case "start": {
+      const bindings = stimulus.variables;
       if (!Array.isArray(bindings) || bindings.length !== 2) {
         throw new TypeError(
           "parallel Multi-Instance Process start requires exactly the input collection and completion policy bindings",
@@ -98,21 +98,19 @@ function verifyParallelMultiInstanceStimulus(
       }
       return;
     }
-    case "completeUserTaskInstance": {
-      const taskId = stimulus.taskId;
-      const elementId = taskId !== null && typeof taskId === "object"
-        ? (taskId as { readonly elementId?: unknown }).elementId
-        : undefined;
-      if (elementId === "UserTask_Review") {
+    case "command": {
+      const completion = userTaskCompletion(stimulus);
+      if (completion === undefined) return;
+      if (completion.elementId === "UserTask_Review") {
         requireExactBinding(
-          stimulus.submittedValues,
+          completion.values,
           "DataOutput_CurrentResult",
           "string",
           "parallel Multi-Instance review completion requires exactly one DataOutput_CurrentResult string binding",
         );
       } else if (
-        !Array.isArray(stimulus.submittedValues) ||
-        stimulus.submittedValues.length !== 0
+        !Array.isArray(completion.values) ||
+        completion.values.length !== 0
       ) {
         throw new TypeError(
           "parallel Multi-Instance non-review User Task completion requires an empty patch",
@@ -120,12 +118,10 @@ function verifyParallelMultiInstanceStimulus(
       }
       return;
     }
-    case "completeEffect": {
-      const result = stimulus.result;
-      const patch = result !== null && typeof result === "object"
-        ? (result as { readonly localPatch?: unknown }).localPatch
-        : undefined;
-      if (!Array.isArray(patch) || patch.length !== 0) {
+    case "effectResult": {
+      const outputs = effectOutputs(stimulus);
+      if (outputs === undefined) return;
+      if (!Array.isArray(outputs) || outputs.length !== 0) {
         throw new TypeError(
           "parallel Multi-Instance effect completion requires an empty patch",
         );
@@ -141,29 +137,27 @@ function verifySequentialMultiInstanceStimulus(
   stimulus: Readonly<Record<string, unknown>>,
 ): void {
   switch (stimulus.kind) {
-    case "startProcess":
+    case "start":
       requireExactBinding(
-        stimulus.initialVariables,
+        stimulus.variables,
         "DataObjectReference_InputItems",
         "stringList",
         "sequential Multi-Instance Process start requires exactly one DataObjectReference_InputItems stringList binding",
       );
       return;
-    case "completeUserTaskInstance": {
-      const taskId = stimulus.taskId;
-      const elementId = taskId !== null && typeof taskId === "object"
-        ? (taskId as { readonly elementId?: unknown }).elementId
-        : undefined;
-      if (elementId === "UserTask_Review") {
+    case "command": {
+      const completion = userTaskCompletion(stimulus);
+      if (completion === undefined) return;
+      if (completion.elementId === "UserTask_Review") {
         requireExactBinding(
-          stimulus.submittedValues,
+          completion.values,
           "DataOutput_CurrentResult",
           "string",
           "sequential Multi-Instance review completion requires exactly one DataOutput_CurrentResult string binding",
         );
       } else if (
-        !Array.isArray(stimulus.submittedValues) ||
-        stimulus.submittedValues.length !== 0
+        !Array.isArray(completion.values) ||
+        completion.values.length !== 0
       ) {
         throw new TypeError(
           "sequential Multi-Instance non-review User Task completion requires an empty patch",
@@ -171,12 +165,10 @@ function verifySequentialMultiInstanceStimulus(
       }
       return;
     }
-    case "completeEffect": {
-      const result = stimulus.result;
-      const patch = result !== null && typeof result === "object"
-        ? (result as { readonly localPatch?: unknown }).localPatch
-        : undefined;
-      if (!Array.isArray(patch) || patch.length !== 0) {
+    case "effectResult": {
+      const outputs = effectOutputs(stimulus);
+      if (outputs === undefined) return;
+      if (!Array.isArray(outputs) || outputs.length !== 0) {
         throw new TypeError(
           "sequential Multi-Instance effect completion requires an empty patch",
         );
@@ -389,32 +381,78 @@ function verifySequentialMultiInstanceInput(
   );
 }
 
-function variablePatch(stimulus: Readonly<Record<string, unknown>>) {
+type VariablePatch = Readonly<{
+  surface: "start" | "completion" | "effect" | "payload";
+  bindings: ReadonlyArray<unknown>;
+}>;
+
+function asRecord(value: unknown): Readonly<Record<string, unknown>> | undefined {
+  return value !== null && typeof value === "object" && !Array.isArray(value)
+    ? value as Readonly<Record<string, unknown>>
+    : undefined;
+}
+
+function asBindings(value: unknown): ReadonlyArray<unknown> {
+  return Array.isArray(value) ? value : [];
+}
+
+/** The User Task completion a `command` stimulus carries: its task element and submitted values. */
+function userTaskCompletion(
+  stimulus: Readonly<Record<string, unknown>>,
+): Readonly<{ elementId: unknown; values: unknown }> | undefined {
+  const action = asRecord(stimulus.action);
+  if (action?.kind !== "completeUserTask") return undefined;
+  return { elementId: asRecord(stimulus.occurrence)?.elementId, values: action.values };
+}
+
+/** The output patch an `effectResult` that returns outputs carries; a technical failure carries none. */
+function effectOutputs(
+  stimulus: Readonly<Record<string, unknown>>,
+): unknown {
+  const outcome = asRecord(stimulus.outcome);
+  return outcome?.kind === "success" || outcome?.kind === "businessFailure"
+    ? outcome.outputs
+    : undefined;
+}
+
+// A command patch (`setVariables`) shares the completion surface: it is a submitted write no registered profile
+// admits the structured or portable kinds on, which is the refusal that surface already carries. A signal start's
+// variables share the start surface for the same reason. CIB cases are not widened by either.
+function variablePatches(
+  stimulus: Readonly<Record<string, unknown>>,
+): ReadonlyArray<VariablePatch> {
   switch (stimulus.kind) {
-    case "startProcess":
-      return {
-        surface: "start",
-        bindings: stimulus.initialVariables as ReadonlyArray<unknown>,
-      } as const;
-    case "completeUserTaskInstance":
-      return {
-        surface: "completion",
-        bindings: stimulus.submittedValues as ReadonlyArray<unknown>,
-      } as const;
-    case "completeEffect":
-      return {
-        surface: "effect",
-        bindings: (stimulus.result as {
-          readonly localPatch: ReadonlyArray<unknown>;
-        }).localPatch,
-      } as const;
-    case "deliverPayloadMessage":
-      return {
-        surface: "payload",
-        bindings: [{ value: stimulus.payload }],
-      } as const;
+    case "start": {
+      const trigger = asRecord(stimulus.trigger);
+      const patches: Array<VariablePatch> = [
+        { surface: "start", bindings: asBindings(stimulus.variables) },
+      ];
+      if (trigger?.kind === "signal") {
+        patches.push({ surface: "start", bindings: asBindings(trigger.variables) });
+      }
+      if (trigger?.kind === "message" && trigger.payload !== undefined) {
+        patches.push({ surface: "payload", bindings: [{ value: trigger.payload }] });
+      }
+      return patches;
+    }
+    case "command": {
+      const action = asRecord(stimulus.action);
+      return action?.kind === "completeUserTask" || action?.kind === "setVariables"
+        ? [{ surface: "completion", bindings: asBindings(action.values) }]
+        : [];
+    }
+    case "deliver":
+      return stimulus.payload === undefined
+        ? []
+        : [{ surface: "payload", bindings: [{ value: stimulus.payload }] }];
+    case "effectResult": {
+      const outputs = effectOutputs(stimulus);
+      return outputs === undefined
+        ? []
+        : [{ surface: "effect", bindings: asBindings(outputs) }];
+    }
     default:
-      return undefined;
+      return [];
   }
 }
 

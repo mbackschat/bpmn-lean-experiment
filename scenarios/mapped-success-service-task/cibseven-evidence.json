@@ -2,7 +2,7 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "mapped-success-service-task",
-    "sha256": "a116f41c7e1b9a7321196effc443c3ad1d00dfb5553da347d47de108ea7eefad"
+    "sha256": "30df2bff5b36b72058439f36c5d659f811caf0de93a866d89ae025fc516d2114"
   },
   "profile": {
     "id": "cibseven-2.0.0-mapped-success-service-task-draft",
@@ -90,12 +90,7 @@
         "kind": "state",
         "instanceId": "Instance_1",
         "status": "completed",
-        "activeWaits": [],
-        "openUserTasks": [],
-        "openMessageSubscriptions": [],
-        "openTimers": [],
-        "openEffects": [],
-        "openIncidents": [],
+        "logicalTimeMs": 0,
         "variables": [
           {
             "name": "resultValue",
@@ -105,8 +100,7 @@
             }
           }
         ],
-        "enabledInteractions": [],
-        "logicalTimeMs": 0
+        "openWaits": []
       }
     ]
   }

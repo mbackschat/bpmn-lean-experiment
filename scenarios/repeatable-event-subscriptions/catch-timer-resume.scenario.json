@@ -10,16 +10,15 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-subscription",
-      "processId": "Process_TerminateEnd",
       "instanceId": "Instance_catch-timer_resume",
-      "initialVariables": []
+      "variables": []
     },
     {
-      "kind": "fireTimer",
+      "kind": "timerFire",
       "commandId": "fire-timer-sha256:59892933ea71cd1e016b4846eddf913c3bb22e6004b85190b0bc0cfe99ed1825",
-      "timerId": {
+      "occurrence": {
         "processInstanceId": "Instance_catch-timer_resume",
         "elementId": "UserTask_Sibling",
         "activation": 1
@@ -27,47 +26,44 @@
       "logicalTimeMs": 1000
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-UserTask_Trigger-1",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Instance_catch-timer_resume",
         "elementId": "UserTask_Trigger",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-UserTask_Outer-1",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Instance_catch-timer_resume",
         "elementId": "UserTask_Outer",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-IndependentAudit-1",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Instance_catch-timer_resume",
         "elementId": "IndependentAudit",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

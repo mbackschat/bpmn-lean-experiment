@@ -2,7 +2,7 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "service-task-effect-success",
-    "sha256": "8f1574665e864fa3054b6c4ccf8b3a996cf290ba6ef4b72869b1e155ac9ebc56"
+    "sha256": "4fcb189b3dbbe1d11a8545fadd61cb7d08d8e6d8f09c7e761eb3404debf66487"
   },
   "profile": {
     "id": "cibseven-2.2.0-service-task-effect-draft",
@@ -104,34 +104,27 @@
         "kind": "state",
         "instanceId": "Instance_1",
         "status": "running",
-        "activeWaits": [
-          {
-            "elementId": "ServiceTask_Record",
-            "kind": "effect",
-            "multiplicity": 1
-          }
-        ],
-        "openUserTasks": [],
-        "openMessageSubscriptions": [],
-        "openTimers": [],
-        "openEffects": [
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
           {
             "id": {
               "processInstanceId": "Instance_1",
               "elementId": "ServiceTask_Record",
               "activation": 1
             },
-            "descriptor": {
+            "definition": null,
+            "input": "effectResult",
+            "detail": {
+              "kind": "effect",
               "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
-              "operation": "urn:bpmn-lean:effect-operation:probe-v1"
-            },
-            "arguments": []
+              "operation": "urn:bpmn-lean:effect-operation:probe-v1",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            }
           }
-        ],
-        "openIncidents": [],
-        "variables": [],
-        "enabledInteractions": [],
-        "logicalTimeMs": 0
+        ]
       },
       {
         "kind": "command",
@@ -142,15 +135,9 @@
         "kind": "state",
         "instanceId": "Instance_1",
         "status": "completed",
-        "activeWaits": [],
-        "openUserTasks": [],
-        "openMessageSubscriptions": [],
-        "openTimers": [],
-        "openEffects": [],
-        "openIncidents": [],
+        "logicalTimeMs": 0,
         "variables": [],
-        "enabledInteractions": [],
-        "logicalTimeMs": 0
+        "openWaits": []
       }
     ]
   }

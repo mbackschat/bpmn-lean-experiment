@@ -11,17 +11,55 @@
       "sha256": "303c2269870db5830e210bf4c2224c4f8b20a280be97ac7594d38c0acb2aeef3"
     }
   },
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start-process",
+      "instanceId": "ClaimArchiving_1",
+      "variables": [
+        {
+          "name": "claim",
+          "value": {
+            "kind": "string",
+            "value": "CLM-7: water damage, EUR 1,800"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "complete-effect-sha256:a5d5ff3c03387982fca412de720f5c22e90765594e6d0900b3861a8e8828b583",
+      "occurrence": {
+        "processInstanceId": "ClaimArchiving_1",
+        "elementId": "AssessClaim",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": [
+          {
+            "name": "decision",
+            "value": {
+              "kind": "string",
+              "value": "approve"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-approve-payout",
+      "occurrence": {
+        "processInstanceId": "ClaimArchiving_1",
+        "elementId": "ApprovePayout",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
   ],
   "provenance": {
     "normativeRefs": [
@@ -35,53 +73,5 @@
       "CIB-EXT-0022",
       "CIB-AGR-0019"
     ]
-  },
-  "stimuli": [
-    {
-      "kind": "startProcess",
-      "commandId": "start-process",
-      "processId": "Process_ClaimArchiving",
-      "instanceId": "ClaimArchiving_1",
-      "initialVariables": [
-        {
-          "name": "claim",
-          "value": {
-            "kind": "string",
-            "value": "CLM-7: water damage, EUR 1,800"
-          }
-        }
-      ]
-    },
-    {
-      "kind": "completeEffect",
-      "commandId": "complete-effect-sha256:a5d5ff3c03387982fca412de720f5c22e90765594e6d0900b3861a8e8828b583",
-      "effectId": {
-        "processInstanceId": "ClaimArchiving_1",
-        "elementId": "AssessClaim",
-        "activation": 1
-      },
-      "result": {
-        "kind": "success",
-        "localPatch": [
-          {
-            "name": "decision",
-            "value": {
-              "kind": "string",
-              "value": "approve"
-            }
-          }
-        ]
-      }
-    },
-    {
-      "kind": "completeUserTaskInstance",
-      "commandId": "complete-approve-payout",
-      "taskId": {
-        "processInstanceId": "ClaimArchiving_1",
-        "elementId": "ApprovePayout",
-        "activation": 1
-      },
-      "submittedValues": []
-    }
-  ]
+  }
 }

@@ -13,11 +13,10 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-process",
-      "processId": "Process_ExpenseRouting",
       "instanceId": "Expense_1",
-      "initialVariables": [
+      "variables": [
         {
           "name": "category",
           "value": {
@@ -49,40 +48,31 @@
       ]
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-review-urgently",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Expense_1",
         "elementId": "ReviewUrgently",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeEffect",
+      "kind": "effectResult",
       "commandId": "complete-effect-sha256:45decce9833821b820716b1381bb1c58139ebdc95358c135d3dba34d8b8560c0",
-      "effectId": {
+      "occurrence": {
         "processInstanceId": "Expense_1",
         "elementId": "ReimburseClaimant",
         "activation": 1
       },
-      "result": {
+      "outcome": {
         "kind": "success",
-        "localPatch": []
+        "outputs": []
       }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

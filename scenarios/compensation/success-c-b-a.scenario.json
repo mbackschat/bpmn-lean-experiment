@@ -10,11 +10,10 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-compensation-success-c-b-a",
-      "processId": "Process_Compensation",
       "instanceId": "Compensation_success_c_b_a",
-      "initialVariables": [
+      "variables": [
         {
           "name": "Property_TravelDetails",
           "value": {
@@ -25,96 +24,96 @@
       ]
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete:Task_ReserveHotel",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Compensation_success_c_b_a",
         "elementId": "Task_ReserveHotel",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "stale-task",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Compensation_success_c_b_a",
         "elementId": "Task_ReserveHotel",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete:Task_IssueInsurance",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Compensation_success_c_b_a",
         "elementId": "Task_IssueInsurance",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete:Task_ArrangeGroundTravel",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Compensation_success_c_b_a",
         "elementId": "Task_ArrangeGroundTravel",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeEffect",
+      "kind": "effectResult",
       "commandId": "complete-effect-sha256:8e05a92cb4cc6c91ec9addaf842fc2a81d1a66d6c721dc22c077012750337662",
-      "effectId": {
+      "occurrence": {
         "processInstanceId": "Compensation_success_c_b_a",
         "elementId": "Task_UndoInsurance",
         "activation": 1
       },
-      "result": {
+      "outcome": {
         "kind": "success",
-        "localPatch": []
+        "outputs": []
       }
     },
     {
-      "kind": "completeEffect",
+      "kind": "effectResult",
       "commandId": "complete-effect-sha256:73dad9ad72a7995a25d17e1ce16b2b062373f371166184032c7c6635d843a699",
-      "effectId": {
+      "occurrence": {
         "processInstanceId": "Compensation_success_c_b_a",
         "elementId": "Task_UndoGroundTravel",
         "activation": 1
       },
-      "result": {
+      "outcome": {
         "kind": "success",
-        "localPatch": []
+        "outputs": []
       }
     },
     {
-      "kind": "completeEffect",
+      "kind": "effectResult",
       "commandId": "complete-effect-sha256:0ead95015aa3fdf925682b5d128017c6b5de7e6dda9db7413526f4cccaf6800b",
-      "effectId": {
+      "occurrence": {
         "processInstanceId": "Compensation_success_c_b_a",
         "elementId": "Task_UndoReserveHotel",
         "activation": 1
       },
-      "result": {
+      "outcome": {
         "kind": "success",
-        "localPatch": []
+        "outputs": []
       }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

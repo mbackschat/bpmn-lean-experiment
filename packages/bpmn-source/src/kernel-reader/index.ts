@@ -36,6 +36,7 @@ export { defaultKernelProfileOptions, kernelProfileOptions } from "./wire.js";
 export type { KernelJson, KernelProfileOptions } from "./wire.js";
 export { ReadRefusalCode } from "./model.js";
 export type { SourceFactNotCarried } from "./model.js";
+export { declaredSourceEncoding } from "./source.js";
 export type { KernelSource } from "./source.js";
 
 export type KernelRead =

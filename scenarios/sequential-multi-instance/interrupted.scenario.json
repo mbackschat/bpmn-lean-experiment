@@ -10,11 +10,10 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-sequential-review-interrupted",
-      "processId": "Process_SequentialMultiInstanceReview",
       "instanceId": "SequentialMultiInstance_Interrupted",
-      "initialVariables": [
+      "variables": [
         {
           "name": "DataObjectReference_InputItems",
           "value": {
@@ -29,27 +28,30 @@
       ]
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-review-before-interruption",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "SequentialMultiInstance_Interrupted",
         "elementId": "UserTask_Review",
         "activation": 1
       },
-      "submittedValues": [
-        {
-          "name": "DataOutput_CurrentResult",
-          "value": {
-            "kind": "string",
-            "value": "accepted"
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "DataOutput_CurrentResult",
+            "value": {
+              "kind": "string",
+              "value": "accepted"
+            }
           }
-        }
-      ]
+        ]
+      }
     },
     {
-      "kind": "fireTimer",
+      "kind": "timerFire",
       "commandId": "fire-timer-sha256:3c8522f4c6969c8ac276d710323681959ec4556d84fe121c8fc661a5865890a6",
-      "timerId": {
+      "occurrence": {
         "processInstanceId": "SequentialMultiInstance_Interrupted",
         "elementId": "BoundaryTimer_Review",
         "activation": 1
@@ -57,36 +59,26 @@
       "logicalTimeMs": 5000
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "refuse-stale-second-review",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "SequentialMultiInstance_Interrupted",
         "elementId": "UserTask_Review",
         "activation": 2
       },
-      "submittedValues": [
-        {
-          "name": "DataOutput_CurrentResult",
-          "value": {
-            "kind": "string",
-            "value": "must-not-publish"
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "DataOutput_CurrentResult",
+            "value": {
+              "kind": "string",
+              "value": "must-not-publish"
+            }
           }
-        }
-      ]
+        ]
+      }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "openMultiInstances",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

@@ -13,35 +13,47 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-process",
-      "processId": "Process_TravelRequest",
       "instanceId": "Instance_1",
-      "initialVariables": [
-        { "name": "traveller", "value": { "kind": "string", "value": "Ada" } }
+      "variables": [
+        {
+          "name": "traveller",
+          "value": {
+            "kind": "string",
+            "value": "Ada"
+          }
+        }
       ]
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-check-request",
-      "taskId": { "processInstanceId": "Instance_1", "elementId": "CheckRequest", "activation": 1 },
-      "submittedValues": [
-        { "name": "channel", "value": { "kind": "string", "value": "email" } },
-        { "name": "decision", "value": { "kind": "string", "value": "reject" } }
-      ]
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "CheckRequest",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "channel",
+            "value": {
+              "kind": "string",
+              "value": "email"
+            }
+          },
+          {
+            "name": "decision",
+            "value": {
+              "kind": "string",
+              "value": "reject"
+            }
+          }
+        ]
+      }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

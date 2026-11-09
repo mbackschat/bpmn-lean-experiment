@@ -13,76 +13,124 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-process",
-      "processId": "Process_EmployeeOnboarding",
       "instanceId": "Instance_1",
-      "initialVariables": [
+      "variables": [
         {
           "name": "employee",
           "value": {
             "kind": "map",
             "value": [
-              { "name": "department", "value": { "kind": "string", "value": "Sales" } },
-              { "name": "name", "value": { "kind": "string", "value": "Grace" } }
+              {
+                "name": "department",
+                "value": {
+                  "kind": "string",
+                  "value": "Sales"
+                }
+              },
+              {
+                "name": "name",
+                "value": {
+                  "kind": "string",
+                  "value": "Grace"
+                }
+              }
             ]
           }
         }
       ]
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-prepare-workstation",
-      "taskId": { "processInstanceId": "Instance_1", "elementId": "PrepareWorkstation", "activation": 1 },
-      "submittedValues": []
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "PrepareWorkstation",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-confirm-documents",
-      "taskId": { "processInstanceId": "Instance_1", "elementId": "ConfirmDocuments", "activation": 1 },
-      "submittedValues": [
-        {
-          "name": "record",
-          "value": {
-            "kind": "map",
-            "value": [
-              { "name": "department", "value": { "kind": "string", "value": "Finance" } },
-              { "name": "name", "value": { "kind": "string", "value": "Grace" } }
-            ]
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "ConfirmDocuments",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "record",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "department",
+                  "value": {
+                    "kind": "string",
+                    "value": "Finance"
+                  }
+                },
+                {
+                  "name": "name",
+                  "value": {
+                    "kind": "string",
+                    "value": "Grace"
+                  }
+                }
+              ]
+            }
           }
-        }
-      ]
-    },
-    {
-      "kind": "completeEffect",
-      "commandId": "complete-effect-sha256:58d2b4c730865ca504ad74d3453165d629e35982251001defbe7f0fe3bebf1df",
-      "effectId": { "processInstanceId": "Instance_1", "elementId": "OrderLaptop", "activation": 1 },
-      "result": {
-        "kind": "success",
-        "localPatch": [
-          { "name": "stage", "value": { "kind": "string", "value": "equipment-ordered" } },
-          { "name": "tag", "value": { "kind": "string", "value": "LT-0042" } }
         ]
       }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "effectResult",
+      "commandId": "complete-effect-sha256:58d2b4c730865ca504ad74d3453165d629e35982251001defbe7f0fe3bebf1df",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "OrderLaptop",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": [
+          {
+            "name": "stage",
+            "value": {
+              "kind": "string",
+              "value": "equipment-ordered"
+            }
+          },
+          {
+            "name": "tag",
+            "value": {
+              "kind": "string",
+              "value": "LT-0042"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
       "commandId": "complete-hold-welcome-meeting",
-      "taskId": { "processInstanceId": "Instance_1", "elementId": "HoldWelcomeMeeting", "activation": 1 },
-      "submittedValues": []
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "HoldWelcomeMeeting",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

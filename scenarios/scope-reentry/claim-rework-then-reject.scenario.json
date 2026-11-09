@@ -13,11 +13,10 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-process",
-      "processId": "Process_ClaimRework",
       "instanceId": "Instance_1",
-      "initialVariables": [
+      "variables": [
         {
           "name": "claimSummary",
           "value": {
@@ -28,34 +27,37 @@
       ]
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-inspect-damage",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Instance_1",
         "elementId": "InspectDamage",
         "activation": 1
       },
-      "submittedValues": [
-        {
-          "name": "decision",
-          "value": {
-            "kind": "string",
-            "value": "rework"
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "decision",
+            "value": {
+              "kind": "string",
+              "value": "rework"
+            }
           }
-        }
-      ]
+        ]
+      }
     },
     {
-      "kind": "completeEffect",
+      "kind": "effectResult",
       "commandId": "complete-effect-sha256:2aa68c5fbd2c575586dc11fa8c9b04f358ada54bd9595d4bd8cee0c7a1575b88",
-      "effectId": {
+      "occurrence": {
         "processInstanceId": "Instance_1",
         "elementId": "PriceRepair",
         "activation": 1
       },
-      "result": {
+      "outcome": {
         "kind": "success",
-        "localPatch": [
+        "outputs": [
           {
             "name": "quote",
             "value": {
@@ -67,41 +69,44 @@
       }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-inspect-damage-2",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Instance_1",
         "elementId": "InspectDamage",
         "activation": 2
       },
-      "submittedValues": [
-        {
-          "name": "decision",
-          "value": {
-            "kind": "string",
-            "value": "reject"
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "decision",
+            "value": {
+              "kind": "string",
+              "value": "reject"
+            }
+          },
+          {
+            "name": "notes",
+            "value": {
+              "kind": "string",
+              "value": "damage predates policy"
+            }
           }
-        },
-        {
-          "name": "notes",
-          "value": {
-            "kind": "string",
-            "value": "damage predates policy"
-          }
-        }
-      ]
+        ]
+      }
     },
     {
-      "kind": "completeEffect",
+      "kind": "effectResult",
       "commandId": "complete-effect-sha256:b6e35e671852a0a11e6b8f9ea45700650710a434501ea02f0786f8f476b53f01",
-      "effectId": {
+      "occurrence": {
         "processInstanceId": "Instance_1",
         "elementId": "PriceRepair",
         "activation": 2
       },
-      "result": {
+      "outcome": {
         "kind": "success",
-        "localPatch": [
+        "outputs": [
           {
             "name": "quote",
             "value": {
@@ -113,27 +118,18 @@
       }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-notify-claimant",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Instance_1",
         "elementId": "NotifyClaimant",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

@@ -62,16 +62,16 @@ assert.ok(decoded.ok, decoded.ok ? "" : decoded.refusal);
 const program = decoded.value;
 
 const start = (at?: number): Json => ({
-  kind: "startProcess", commandId: "start", processId: "P", instanceId: "Instance_1", initialVariables: [], ...(at === undefined ? {} : { at }),
+  kind: "start", commandId: "start", instanceId: "Instance_1", variables: [], ...(at === undefined ? {} : { at }),
 });
 const complete = (at?: number): Json => ({
-  kind: "completeUserTaskInstance", commandId: "complete", submittedValues: [], ...(at === undefined ? {} : { at }),
-  taskId: { processInstanceId: "Instance_1", elementId: "Task", activation: 1 },
+  kind: "command", commandId: "complete", action: { kind: "completeUserTask", values: [] }, ...(at === undefined ? {} : { at }),
+  occurrence: { processInstanceId: "Instance_1", elementId: "Task", activation: 1 },
 });
 
 function run(state: State | null, stimulus: Json): Outcome {
   const input = stimulusFromJson(stimulus);
-  assert.ok(input.ok && input.value[1] !== null);
+  assert.ok(input.ok);
   return step(hooks, program, state, input.value[1]);
 }
 
@@ -103,8 +103,8 @@ test("a time before the clock is rejected", () => {
 });
 
 const fire = (logicalTimeMs: number, at?: number): Json => ({
-  kind: "fireTimer", commandId: "fire", logicalTimeMs, ...(at === undefined ? {} : { at }),
-  timerId: { processInstanceId: "Instance_1", elementId: "Timer", activation: 1 },
+  kind: "timerFire", commandId: "fire", logicalTimeMs, ...(at === undefined ? {} : { at }),
+  occurrence: { processInstanceId: "Instance_1", elementId: "Timer", activation: 1 },
 });
 
 // A host applies a firing when it wakes, at or after the deadline the firing names; the Timer is due, so the late

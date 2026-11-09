@@ -48,6 +48,7 @@ type ScenarioArtifact = Readonly<{
     sourceOverlay: unknown;
   }>;
   stimuli: ReadonlyArray<Readonly<Record<string, unknown>>>;
+  options?: unknown;
 }>;
 
 export type ServiceTaskDefinitionPair = Readonly<{
@@ -90,6 +91,7 @@ export function verifyServiceTaskIncidentArtifactBinding(
     scenario.bpmn.sha256 !==
       "669083696c1706836fcaa487f7f5623408f658fb721145a8111a8b00b7fd7c7d" ||
     scenario.bpmn.sourceOverlay !== null ||
+    !isDeepStrictEqual(scenario.options, { incidents: { cancellable: false } }) ||
     !exactIncidentStimulusSchedule(scenario.stimuli)
   ) {
     throw new Error(
@@ -101,37 +103,37 @@ export function verifyServiceTaskIncidentArtifactBinding(
 function exactIncidentStimulusSchedule(
   stimuli: ReadonlyArray<Readonly<Record<string, unknown>>>,
 ): boolean {
-  const effectId = {
+  const occurrence = {
     processInstanceId: "Instance_1",
     elementId: "ServiceTask_Record",
     activation: 1,
   };
   return isDeepStrictEqual(stimuli, [
     {
-      kind: "startProcess",
+      kind: "start",
       commandId: "start-process",
-      processId: "Process_ServiceTaskEffectProbe",
       instanceId: "Instance_1",
-      initialVariables: [],
+      variables: [],
     },
     {
-      kind: "reportEffectFailure",
+      kind: "effectResult",
       commandId:
         "report-effect-failure-sha256:b6b5077e469b9421ed4a598e4c08fae7c3ce3e31c941fae9733b4c7206a2b345",
-      effectId,
-      generation: 1,
+      occurrence,
+      outcome: { kind: "technicalFailure" },
     },
     {
-      kind: "retryIncident",
+      kind: "command",
       commandId: "retry-service-task-effect-incident",
-      incidentId: { effectId, generation: 1 },
+      occurrence,
+      action: { kind: "retryIncident" },
     },
     {
-      kind: "completeEffect",
+      kind: "effectResult",
       commandId:
         "complete-effect-sha256:64b75e53c74d30141f8c4e05db4cea269453a6cecdd09e190d1943f029797e5e",
-      effectId,
-      result: { kind: "success", localPatch: [] },
+      occurrence,
+      outcome: { kind: "success", outputs: [] },
     },
   ]);
 }

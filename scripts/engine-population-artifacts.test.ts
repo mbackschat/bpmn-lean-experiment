@@ -14,6 +14,18 @@ function clone(value: unknown): Record<string, unknown> {
   return JSON.parse(JSON.stringify(value)) as Record<string, unknown>;
 }
 
+function steps(document: Record<string, unknown>): Array<Record<string, unknown>> {
+  return document.steps as Array<Record<string, unknown>>;
+}
+
+function instanceSteps(document: Record<string, unknown>): Array<Record<string, unknown>> {
+  return steps(document).filter((step) => step.kind === "instance");
+}
+
+function stimulus(step: Record<string, unknown> | undefined): Record<string, unknown> {
+  return (step as { stimulus: Record<string, unknown> }).stimulus;
+}
+
 test("registers the four answer-free Message-correlation population schedules", async () => {
   const artifacts = await readEnginePopulationArtifacts(projectRoot);
 
@@ -22,24 +34,21 @@ test("registers the four answer-free Message-correlation population schedules", 
     enginePopulationScenarioRelativePaths,
   );
   assert.equal(artifacts.profile.id, "bpmn-2.0.2-message-key-correlation-draft");
-  assert.deepEqual(
-    artifacts.scenarios.map(({ document }) => document.executionTargets),
-    Array.from({ length: 4 }, () => ({
-      lean: true,
-      typeScriptCore: true,
-      temporal: true,
-      cib: null,
-    })),
-  );
+  for (const { document } of artifacts.scenarios) {
+    assert.equal(document.kind, "populationScenario");
+  }
 });
 
 test("constructs zero, unique, ambiguous, and definition-isolated populations without answers", async () => {
   const { scenarios } = await readEnginePopulationArtifacts(projectRoot);
   const matchingCandidateCounts = Object.fromEntries(scenarios.map(({ document }) => {
-    const publication = document.publications[0];
-    const count = document.instances.filter((instance) =>
-      instance.definitionId === publication.address.definition.sourceId &&
-        instance.stimuli[1].payload.value === publication.payload.value
+    const publication = document.steps.find((step) => step.kind === "publish");
+    assert.ok(publication?.kind === "publish");
+    const count = document.steps.filter((step) =>
+      step.kind === "instance" &&
+        step.stimulus.kind === "deliver" &&
+        step.definitionRef === publication.address.definitionRef &&
+        step.stimulus.payload?.value === publication.payload.value
     ).length;
     return [document.id, count];
   }));
@@ -62,12 +71,10 @@ test("refuses answer smuggling and caller-selected targets", async () => {
       document.expected = { outcome: "committed" };
     },
     (document: Record<string, unknown>) => {
-      const publications = document.publications as Array<Record<string, unknown>>;
-      publications[0]!.target = { processInstanceId: "lexical-first" };
+      steps(document).at(-1)!.target = { processInstanceId: "lexical-first" };
     },
     (document: Record<string, unknown>) => {
-      const publications = document.publications as Array<Record<string, unknown>>;
-      publications[0]!.workflowId = "caller-selected";
+      steps(document).at(-1)!.workflowId = "caller-selected";
     },
   ]) {
     const changed = clone(exact);
@@ -86,16 +93,23 @@ test("binds definition scope by complete source identity instead of local ids", 
   )?.document;
   assert.ok(crossDefinition !== undefined);
 
-  const changed = clone(crossDefinition);
-  const definitions = changed.definitions as Array<Record<string, unknown>>;
-  const publication = (changed.publications as Array<Record<string, unknown>>)[0]!;
-  const address = publication.address as Record<string, unknown>;
-  const identity = address.definition as Record<string, unknown>;
-  identity.sourceSha256 = definitions[1]!.sha256;
-
+  const undeclared = clone(crossDefinition);
+  ((steps(undeclared).at(-1) as { address: Record<string, unknown> }).address)
+    .definitionRef = "message-key-correlation-undeclared";
   await assert.rejects(
-    () => verifyEnginePopulationScenario(projectRoot, changed),
+    () => verifyEnginePopulationScenario(projectRoot, undeclared),
     /publication definition identity/u,
+  );
+
+  const sameSource = clone(crossDefinition);
+  const definitions = sameSource.definitions as Array<{ bpmn: Record<string, unknown> }>;
+  Object.assign(definitions[1]!.bpmn, {
+    relativePath: (definitions[0]!.bpmn).relativePath,
+    sha256: (definitions[0]!.bpmn).sha256,
+  });
+  await assert.rejects(
+    () => verifyEnginePopulationScenario(projectRoot, sameSource),
+    /definition (paths|source digests) contains duplicates/u,
   );
 });
 
@@ -104,14 +118,27 @@ test("requires canonical unique command, definition, and Process-instance identi
   const exact = scenarios[0]?.document;
   assert.ok(exact !== undefined);
 
-  const changed = clone(exact);
-  const instances = changed.instances as Array<Record<string, unknown>>;
-  const firstStimuli = instances[0]!.stimuli as Array<Record<string, unknown>>;
-  const secondStimuli = instances[1]!.stimuli as Array<Record<string, unknown>>;
-  secondStimuli[0]!.commandId = firstStimuli[0]!.commandId;
-
+  const duplicateCommand = clone(exact);
+  const starts = instanceSteps(duplicateCommand).filter((step) => stimulus(step).kind === "start");
+  stimulus(starts[1]).commandId = stimulus(starts[0]).commandId;
   await assert.rejects(
-    () => verifyEnginePopulationScenario(projectRoot, changed),
+    () => verifyEnginePopulationScenario(projectRoot, duplicateCommand),
     /command ids contains duplicates/u,
+  );
+
+  const duplicateRef = clone(exact);
+  const definitions = duplicateRef.definitions as Array<Record<string, unknown>>;
+  definitions.push({ ...definitions[0]! });
+  await assert.rejects(
+    () => verifyEnginePopulationScenario(projectRoot, duplicateRef),
+    /definition refs contains duplicates/u,
+  );
+
+  const crossesInstance = clone(exact);
+  const delivery = instanceSteps(crossesInstance).find((step) => stimulus(step).kind === "deliver");
+  ((stimulus(delivery).occurrence) as Record<string, unknown>).processInstanceId = "OtherInstance";
+  await assert.rejects(
+    () => verifyEnginePopulationScenario(projectRoot, crossesInstance),
+    /crosses Process-instance identity/u,
   );
 });

@@ -10,11 +10,10 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start",
-      "processId": "SupplierOnboarding",
       "instanceId": "SupplierOnboarding_string",
-      "initialVariables": [
+      "variables": [
         {
           "name": "Property_DueDiligenceDecision",
           "value": {
@@ -39,53 +38,47 @@
       ]
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "assess-supplier",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "call:25:SupplierOnboarding_string:17:Call_DueDiligence:1",
         "elementId": "Task_AssessSupplier",
         "activation": 1
       },
-      "submittedValues": [
-        {
-          "name": "Output_TaskDecision",
-          "value": {
-            "kind": "string",
-            "value": "supplier-summary"
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "Output_TaskDecision",
+            "value": {
+              "kind": "string",
+              "value": "supplier-summary"
+            }
           }
-        }
-      ]
+        ]
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-onboarding",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "SupplierOnboarding_string",
         "elementId": "Task_FinalReview",
         "activation": 1
       },
-      "submittedValues": [
-        {
-          "name": "Output_FinalReviewReceipt",
-          "value": {
-            "kind": "string",
-            "value": "onboarded"
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "Output_FinalReviewReceipt",
+            "value": {
+              "kind": "string",
+              "value": "onboarded"
+            }
           }
-        }
-      ]
+        ]
+      }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

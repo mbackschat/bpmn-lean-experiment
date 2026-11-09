@@ -13,80 +13,73 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-process",
-      "processId": "Process_FacilityInspection",
       "instanceId": "Instance_1",
-      "initialVariables": []
+      "variables": []
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-record-electrical-findings",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Instance_1",
         "elementId": "RecordElectricalFindings",
         "activation": 1
       },
-      "submittedValues": [
-        {
-          "name": "findings",
-          "value": {
-            "kind": "string",
-            "value": "wiring-ok"
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "findings",
+            "value": {
+              "kind": "string",
+              "value": "wiring-ok"
+            }
+          },
+          {
+            "name": "result",
+            "value": {
+              "kind": "string",
+              "value": "electrical-pass"
+            }
           }
-        },
-        {
-          "name": "result",
-          "value": {
-            "kind": "string",
-            "value": "electrical-pass"
-          }
-        }
-      ]
+        ]
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-record-fire-safety-findings",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Instance_1",
         "elementId": "RecordFireSafetyFindings",
         "activation": 1
       },
-      "submittedValues": [
-        {
-          "name": "findings",
-          "value": {
-            "kind": "string",
-            "value": "extinguishers-due"
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "findings",
+            "value": {
+              "kind": "string",
+              "value": "extinguishers-due"
+            }
           }
-        }
-      ]
+        ]
+      }
     },
     {
-      "kind": "completeEffect",
+      "kind": "effectResult",
       "commandId": "complete-effect-sha256:8b8ce269e47db92fd3258d2563f52791cc6cd9273b95914b66fbf0b3c5f2dbd0",
-      "effectId": {
+      "occurrence": {
         "processInstanceId": "Instance_1",
         "elementId": "Summarize",
         "activation": 1
       },
-      "result": {
+      "outcome": {
         "kind": "success",
-        "localPatch": []
+        "outputs": []
       }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

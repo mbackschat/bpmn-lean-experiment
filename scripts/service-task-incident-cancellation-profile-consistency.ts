@@ -55,6 +55,7 @@ type ScenarioArtifact = Readonly<{
     sourceOverlay: unknown;
   }>;
   stimuli: ReadonlyArray<Readonly<Record<string, unknown>>>;
+  options?: unknown;
 }>;
 
 export type ServiceTaskIncidentCancellationDefinitionPair = Readonly<{
@@ -99,6 +100,7 @@ export function verifyServiceTaskIncidentCancellationArtifactBinding(
     scenario.bpmn.relativePath !== "scenarios/service-task-effect/process.bpmn" ||
     scenario.bpmn.sha256 !== sourceSha256 ||
     scenario.bpmn.sourceOverlay !== null ||
+    !isDeepStrictEqual(scenario.options, { incidents: { cancellable: true } }) ||
     !isDeepStrictEqual(scenario.stimuli, exactCancellationSchedule())
   ) {
     throw new Error(
@@ -108,34 +110,33 @@ export function verifyServiceTaskIncidentCancellationArtifactBinding(
 }
 
 function exactCancellationSchedule(): ReadonlyArray<unknown> {
-  const effectId = {
+  const occurrence = {
     processInstanceId: "Instance_1",
     elementId: "ServiceTask_Record",
     activation: 1,
   };
   return [
     {
-      kind: "startProcess",
+      kind: "start",
       commandId: "start-process",
-      processId: "Process_ServiceTaskEffectProbe",
       instanceId: "Instance_1",
-      initialVariables: [{
+      variables: [{
         name: "preserved",
         value: { kind: "string", value: "before-cancel" },
       }],
     },
     {
-      kind: "reportEffectFailure",
+      kind: "effectResult",
       commandId:
         "report-effect-failure-sha256:b6b5077e469b9421ed4a598e4c08fae7c3ce3e31c941fae9733b4c7206a2b345",
-      effectId,
-      generation: 1,
+      occurrence,
+      outcome: { kind: "technicalFailure" },
     },
     {
-      kind: "cancelIncidentProcess",
+      kind: "command",
       commandId: "cancel-incident-process",
-      processInstanceId: "Instance_1",
-      incidentId: { effectId, generation: 1 },
+      occurrence,
+      action: { kind: "cancelIncidentProcess" },
     },
   ];
 }

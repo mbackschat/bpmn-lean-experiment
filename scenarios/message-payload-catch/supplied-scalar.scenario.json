@@ -10,25 +10,27 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-message-payload-catch-supplied-scalar",
-      "processId": "Process_MessagePayloadSettlement",
       "instanceId": "MessagePayloadCatchSuppliedScalar",
-      "initialVariables": []
+      "variables": []
     },
     {
-      "kind": "deliverPayloadMessage",
+      "kind": "deliver",
       "commandId": "deliver-message-payload-catch-supplied-scalar",
-      "subscriptionId": {
+      "occurrence": {
         "processInstanceId": "MessagePayloadCatchSuppliedScalar",
         "elementId": "MessageCatch_SettlementConfirmed",
         "activation": 1
       },
-      "channel": {
-        "kind": "operationMessage",
-        "interfaceId": "Interface_ClearingHouse",
-        "interfaceOperationId": "Operation_ConfirmSettlement",
-        "messageId": "Message_SettlementConfirmed"
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "operationMessage",
+          "interfaceId": "Interface_ClearingHouse",
+          "interfaceOperationId": "Operation_ConfirmSettlement",
+          "messageId": "Message_SettlementConfirmed"
+        }
       },
       "payload": {
         "kind": "string",
@@ -36,27 +38,18 @@
       }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-message-payload-catch-supplied-scalar",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "MessagePayloadCatchSuppliedScalar",
         "elementId": "UserTask_ReviewSettlement",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

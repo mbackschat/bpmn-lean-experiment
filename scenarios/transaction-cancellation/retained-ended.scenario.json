@@ -10,87 +10,89 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-retained-ended",
-      "processId": "Process_Withdrawal",
       "instanceId": "withdrawal-retained-ended",
-      "initialVariables": []
+      "variables": []
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete:Task_Reserve",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "withdrawal-retained-ended",
         "elementId": "Task_Reserve",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete:Task_Prepare",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "withdrawal-retained-ended",
         "elementId": "Task_Prepare",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete:Task_Withdraw",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "withdrawal-retained-ended",
         "elementId": "Task_Withdraw",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "stale-task",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "withdrawal-retained-ended",
         "elementId": "Task_Reserve",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeEffect",
+      "kind": "effectResult",
       "commandId": "complete-effect-sha256:da8d7d702ca798864372c1492a16b85c0a49643a0cba9f827933148f547daff3",
-      "effectId": {
+      "occurrence": {
         "processInstanceId": "withdrawal-retained-ended",
         "elementId": "Task_Release",
         "activation": 1
       },
-      "result": {
+      "outcome": {
         "kind": "success",
-        "localPatch": []
+        "outputs": []
       }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete:Task_Acknowledge",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "withdrawal-retained-ended",
         "elementId": "Task_Acknowledge",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

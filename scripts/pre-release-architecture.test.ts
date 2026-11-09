@@ -188,13 +188,19 @@ async function sourceFiles(
   return nested.flat();
 }
 
+const kernelTerminateFiles: ReadonlySet<string> = new Set([
+  "packages/bpmn-source/src/kernel-reader/events.ts",
+  "contracts/schemas/vocabulary.schema.json",
+]);
+
 function retiredSourceFindings(
   relativePath: string,
   source: string,
 ): string[] {
   return source.split("\n").flatMap((line, index) => {
-    // The kernel IL's Terminate End Event throw is BPMN's own name, not the retired operation.
-    const hasRetiredWireLiteral = relativePath !== "packages/bpmn-source/src/kernel-reader/events.ts" && new RegExp(
+    // The kernel IL's Terminate End Event throw is BPMN's own name, not the retired operation; the reader writes it and
+    // the generated vocabulary lists it.
+    const hasRetiredWireLiteral = !kernelTerminateFiles.has(relativePath) && new RegExp(
       `(["'])${retiredOperationName}\\1`,
       "u",
     ).test(line);

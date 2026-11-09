@@ -40,35 +40,6 @@ test("MI Sub-Process wire shapes bind completion to one entry and require explic
   }
 });
 
-test("MI progress wire shapes require a body discriminator and exact owned scope", async () => {
-  const document = JSON.parse(await readFile(`${projectRoot}/contracts/schemas/scenario.schema.json`, "utf8"));
-  const validate = new Ajv2020({ strict: true }).compile({ $defs: document.$defs, ...document.$defs.stateObservation.properties.openMultiInstances.items });
-  const id = { processInstanceId: "P", activityElementId: "Batch", activation: 1 };
-  const base = { id, mode: "sequential", plannedInstanceCount: 2, pendingItemCount: 1,
-    numberOfInstances: 1, numberOfActiveInstances: 1, numberOfCompletedInstances: 0,
-    numberOfTerminatedInstances: 0 };
-  const task = { loopCounter: 0, taskId: { processInstanceId: "P", elementId: "Task", activation: 1 },
-    taskInput: { name: "item", value: { kind: "string", value: "invoice" } }, completionBindingName: "result" };
-  const body = { loopCounter: 0, body: { processInstanceId: "P", definitionScopeId: "Body", activation: 1 },
-    item: task.taskInput, bindings: [], userTaskIds: [task.taskId], effectIds: [] };
-  for (const [bodyKind, iteration] of [["userTask", task], ["subProcess", body]] as const) {
-    const value = { ...base, bodyKind, activeIterations: [iteration] };
-    assert.equal(validate(value), true, JSON.stringify(validate.errors));
-    const { bodyKind: _omitted, ...legacy } = value;
-    assert.equal(validate(legacy), false);
-    assert.equal(validate({ ...value, bodyKind: "unknown" }), false);
-    assert.equal(validate({ ...value, activeIterations: [bodyKind === "userTask" ? body : task] }), false);
-  }
-  assert.equal(validate({ ...base, mode: "parallel", bodyKind: "subProcess", activeIterations: [body] }), false);
-  for (const field of Object.keys(body) as (keyof typeof body)[]) {
-    const { [field]: _omitted, ...missing } = body;
-    assert.equal(validate({ ...base, bodyKind: "subProcess", activeIterations: [missing] }), false);
-  }
-  for (const malformed of [{ ...body.body, activation: 0 }, { ...body.body, hostRunId: "private" }]) {
-    assert.equal(validate({ ...base, bodyKind: "subProcess", activeIterations: [{ ...body, body: malformed }] }), false);
-  }
-});
-
 test("direct Activity data endpoints distinguish Property and directional Process ports", async () => {
   for (const schema of ["checked-process.schema.json", "semantic-process.schema.json"]) {
     const document: unknown = JSON.parse(await readFile(`${projectRoot}/contracts/schemas/${schema}`, "utf8"));
@@ -184,39 +155,7 @@ test("gives every internal scheduling mode an exact top-level schema value", asy
   assert.equal(document.required.includes("internalSchedulingMode"), true);
 });
 
-test("keeps correlated Message definition identity standalone and exact", async () => {
-  const [scenarioDocument, programDocument] = await Promise.all([
-    readFile(`${projectRoot}/contracts/schemas/scenario.schema.json`, "utf8"),
-    readFile(`${projectRoot}/contracts/schemas/semantic-process.schema.json`, "utf8"),
-  ]).then((documents) => documents.map((document) => JSON.parse(document) as unknown));
-  assert.ok(isRecord(scenarioDocument));
-  assert.ok(isRecord(programDocument));
-  assert.ok(isRecord(scenarioDocument.$defs));
-  assert.ok(isRecord(programDocument.$defs));
-
-  const address = scenarioDocument.$defs.correlatedMessageAddress;
-  assert.ok(isRecord(address));
-  assert.ok(isRecord(address.properties));
-  assert.deepEqual(address.properties.definition, {
-    $ref: "#/$defs/programIdentity",
-  });
-
-  // Scenario schemas are compiled independently throughout the repository, so this identity must
-  // stay local while remaining byte-for-byte equivalent modulo the historic definition-name case.
-  const normalizeLocalReferenceCase = (value: unknown): unknown => JSON.parse(
-    JSON.stringify(value).replaceAll("#/$defs/nonEmptyString", "#/$defs/nonemptyString"),
-  ) as unknown;
-  assert.deepEqual(
-    normalizeLocalReferenceCase(scenarioDocument.$defs.programIdentity),
-    programDocument.$defs.programIdentity,
-  );
-  assert.deepEqual(
-    normalizeLocalReferenceCase(scenarioDocument.$defs.sourceOverlayIdentity),
-    programDocument.$defs.sourceOverlayIdentity,
-  );
-});
-
-test("keeps engine-population input closed and separate from single-instance scenarios", async () => {
+test("keeps population input closed and separate from single-instance scenarios", async () => {
   const [scenarioDocument, populationDocument] = await Promise.all([
     readFile(`${projectRoot}/contracts/schemas/scenario.schema.json`, "utf8"),
     readFile(
@@ -228,16 +167,18 @@ test("keeps engine-population input closed and separate from single-instance sce
   assert.ok(isRecord(populationDocument));
   assert.ok(isRecord(populationDocument.properties));
   assert.deepEqual(populationDocument.properties.kind, {
-    const: "enginePopulationScenario",
+    const: "populationScenario",
   });
-  assert.equal(JSON.stringify(scenarioDocument).includes("enginePopulationScenario"), false);
+  assert.equal(populationDocument.additionalProperties, false);
+  assert.equal(JSON.stringify(scenarioDocument).includes("populationScenario"), false);
 
   const serialized = JSON.stringify(populationDocument);
   for (const definition of [
     "bpmnResource",
-    "startProcess",
-    "deliverPayloadMessage",
-    "correlatedMessageAddress",
+    "stimulus",
+    "commandId",
+    "messageChannel",
+    "bindings",
     "provenance",
   ]) {
     assert.equal(

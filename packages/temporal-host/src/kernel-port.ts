@@ -27,7 +27,6 @@ import {
   observationJson,
   step,
   stimulusFromJson,
-  type DeploymentRef,
   type EffectOutcome,
   type Input,
   type OccurrenceRef,
@@ -40,7 +39,6 @@ import {
   EffectResultKind,
   Route,
   type Binding,
-  type DefinitionRef,
   type EffectResult,
   type HostView,
   type JsonValue,
@@ -87,15 +85,6 @@ function effectOutcome(result: EffectResult): EffectOutcome {
   return assertNever(result);
 }
 
-function deploymentRef(definition: DefinitionRef): DeploymentRef {
-  return {
-    sourceId: definition.sourceId,
-    sourceSha256: definition.sourceSha256,
-    overlay: definition.sourceOverlay,
-    profile: definition.profile,
-  };
-}
-
 /**
  * The Script Task a wait's effect belongs to, found by the public element identity the wait carries. Called
  * definitions can repeat an author's identifier, so more than one Script Task under it is a host fault rather than a
@@ -139,7 +128,7 @@ export const kernelPort: KernelPort<Program, State, Input> = {
   },
   // The rendering is `Kernel.Run.hostViewJson`'s, which `HostView` types field by field.
   hostView: (program, state) => hostViewJson(hostView(program, state)) as unknown as HostView,
-  observation: (program, definition, state) => observationJson(program, deploymentRef(definition), state) as JsonValue,
+  observation: (program, state) => observationJson(program, state) as JsonValue,
   encodeState: toWire,
   // The host decodes only what `encodeState` produced for this program.
   decodeState: (json) => fromWire(json) as State,

@@ -10,54 +10,50 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-process",
-      "processId": "Process_TerminateEnd",
       "instanceId": "TerminateEndInstance_SiblingFirst",
-      "initialVariables": []
+      "variables": []
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-sibling",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "TerminateEndInstance_SiblingFirst",
         "elementId": "UserTask_Sibling",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-trigger",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "TerminateEndInstance_SiblingFirst",
         "elementId": "UserTask_Trigger",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-outer",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "TerminateEndInstance_SiblingFirst",
         "elementId": "UserTask_Outer",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

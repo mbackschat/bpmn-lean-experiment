@@ -10,77 +10,76 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-retained-active",
-      "processId": "Process_Withdrawal",
       "instanceId": "withdrawal-retained-active",
-      "initialVariables": []
+      "variables": []
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete:Task_Reserve",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "withdrawal-retained-active",
         "elementId": "Task_Reserve",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete:Task_Withdraw",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "withdrawal-retained-active",
         "elementId": "Task_Withdraw",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "stale-task",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "withdrawal-retained-active",
         "elementId": "Task_Reserve",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeEffect",
+      "kind": "effectResult",
       "commandId": "complete-effect-sha256:6f524b45b894438330e1d54d65588721dd9b57e28a4cded2fc0ffca768b3a3a2",
-      "effectId": {
+      "occurrence": {
         "processInstanceId": "withdrawal-retained-active",
         "elementId": "Task_Release",
         "activation": 1
       },
-      "result": {
+      "outcome": {
         "kind": "success",
-        "localPatch": []
+        "outputs": []
       }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete:Task_Acknowledge",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "withdrawal-retained-active",
         "elementId": "Task_Acknowledge",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

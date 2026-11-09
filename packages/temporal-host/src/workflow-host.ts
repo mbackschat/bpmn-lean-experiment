@@ -125,7 +125,7 @@ async function hostProcess<P, S, I>(port: KernelPort<P, S, I>, args: RunProcessA
   let commits = 0;
 
   setHandler(observationQuery, () =>
-    instance === null ? null : port.observation(program, config.definition, instance.state));
+    instance === null ? null : port.observation(program, instance.state));
   setHandler(hostViewQuery, () => ({ revision: log.cursor.revision, view: instance?.view ?? null, halt }));
   setHandler(publicationQuery, (afterRevision, limit) => readPage(log, afterRevision, limit));
 
@@ -143,7 +143,6 @@ async function hostProcess<P, S, I>(port: KernelPort<P, S, I>, args: RunProcessA
     const start = timed(args.start);
     if (start === null) return { kind: ResultKind.NotStarted, outcome: "rejected", code: hostOwnsLogicalTime };
     const decoded = port.decodeStimulus(start);
-    if (decoded.input === null) return { kind: ResultKind.NotStarted, outcome: "unsupported", code: "stimulus" };
     if (port.route(decoded.input) !== Route.Start) {
       throw ApplicationFailure.create({ message: "the start argument is not a start stimulus", nonRetryable: true });
     }
@@ -155,7 +154,7 @@ async function hostProcess<P, S, I>(port: KernelPort<P, S, I>, args: RunProcessA
   }
 
   /** The decoded input an Update may carry, or the refusal its validator throws. */
-  const admitted = (route: Route, stimulus: JsonValue): DecodedStimulus<I> & { readonly input: I } => {
+  const admitted = (route: Route, stimulus: JsonValue): DecodedStimulus<I> => {
     if (halt !== null) throw rejection("host-halted");
     if (hostScheduled(route, config.scheduling)) throw rejection("host-scheduled-input");
     const clocked = timed(stimulus);
@@ -166,10 +165,8 @@ async function hostProcess<P, S, I>(port: KernelPort<P, S, I>, args: RunProcessA
     } catch (error) {
       throw rejection(`malformed-stimulus: ${error instanceof Error ? error.message : String(error)}`);
     }
-    const { input } = decoded;
-    if (input === null) throw rejection("unsupported-stimulus");
-    if (port.route(input) !== route) throw rejection("wrong-update");
-    return { commandId: decoded.commandId, input };
+    if (port.route(decoded.input) !== route) throw rejection("wrong-update");
+    return decoded;
   };
 
   const updates = [

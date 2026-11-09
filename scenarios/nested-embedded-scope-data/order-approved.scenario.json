@@ -11,37 +11,12 @@
       "sha256": "3951d791bcbc6852abe3828c72a7c9f706efa2802427ee3a1deaa3e214f9c655"
     }
   },
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
-  ],
-  "provenance": {
-    "normativeRefs": [
-      "BPMN 2.0.2 Clause 10.3.5",
-      "BPMN 2.0.2 Clause 10.4.1",
-      "BPMN 2.0.2 Clause 13.3.4"
-    ],
-    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
-    "cibRefs": [
-      "CIB-EXT-0015",
-      "CIB-EXT-0020"
-    ]
-  },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start",
-      "processId": "P",
       "instanceId": "Order_approved",
-      "initialVariables": [
+      "variables": [
         {
           "name": "initialStatus",
           "value": {
@@ -162,93 +137,111 @@
       ]
     },
     {
-      "kind": "completeEffect",
+      "kind": "effectResult",
       "commandId": "complete-effect-sha256:d684256b1582c3a65d0f6cc5b27f391a6701e11fb23387a01f5d0a45225c3609",
-      "effectId": {
+      "occurrence": {
         "processInstanceId": "Order_approved",
         "elementId": "KS",
         "activation": 1
       },
-      "result": {
+      "outcome": {
         "kind": "success",
-        "localPatch": []
+        "outputs": []
       }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "refuse-undeclared-name",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Order_approved",
         "elementId": "CU",
         "activation": 1
       },
-      "submittedValues": [
-        {
-          "name": "unknown",
-          "value": {
-            "kind": "string",
-            "value": "x"
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "unknown",
+            "value": {
+              "kind": "string",
+              "value": "x"
+            }
           }
-        }
-      ]
+        ]
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-credit-review",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Order_approved",
         "elementId": "CU",
         "activation": 1
       },
-      "submittedValues": [
-        {
-          "name": "decision",
-          "value": {
-            "kind": "string",
-            "value": "credit-approved"
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "decision",
+            "value": {
+              "kind": "string",
+              "value": "credit-approved"
+            }
+          },
+          {
+            "name": "limit",
+            "value": {
+              "kind": "string",
+              "value": "7500"
+            }
+          },
+          {
+            "name": "status",
+            "value": {
+              "kind": "string",
+              "value": "approved"
+            }
           }
-        },
-        {
-          "name": "limit",
-          "value": {
-            "kind": "string",
-            "value": "7500"
-          }
-        },
-        {
-          "name": "status",
-          "value": {
-            "kind": "string",
-            "value": "approved"
-          }
-        }
-      ]
+        ]
+      }
     },
     {
-      "kind": "completeEffect",
+      "kind": "effectResult",
       "commandId": "complete-effect-sha256:731dbc256c58c246e317657820628b60e84504b8b45744cc9b0df7fe59e0abf5",
-      "effectId": {
+      "occurrence": {
         "processInstanceId": "Order_approved",
         "elementId": "OS",
         "activation": 1
       },
-      "result": {
+      "outcome": {
         "kind": "success",
-        "localPatch": []
+        "outputs": []
       }
     },
     {
-      "kind": "completeEffect",
+      "kind": "effectResult",
       "commandId": "complete-effect-sha256:08836c071ac1bedefb3ce9429c511d5a66b91c90b9af1eeb2e0f817e8c2ff041",
-      "effectId": {
+      "occurrence": {
         "processInstanceId": "Order_approved",
         "elementId": "R",
         "activation": 1
       },
-      "result": {
+      "outcome": {
         "kind": "success",
-        "localPatch": []
+        "outputs": []
       }
     }
-  ]
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.3.5",
+      "BPMN 2.0.2 Clause 10.4.1",
+      "BPMN 2.0.2 Clause 13.3.4"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "CIB-EXT-0015",
+      "CIB-EXT-0020"
+    ]
+  }
 }

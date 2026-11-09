@@ -10,40 +10,34 @@
   },
   "stimuli": [
     {
-      "kind": "triggerMessageStart",
+      "kind": "start",
       "commandId": "trigger-message-start",
-      "processId": "Process_MessageStart",
       "instanceId": "MessageStartInstance_1",
-      "startEventId": "MessageStart_ApprovalRequest",
-      "channel": {
-        "kind": "operationMessage",
-        "interfaceId": "Interface_ProcessMessages",
-        "interfaceOperationId": "Operation_ReceiveApprovalRequest",
-        "messageId": "Message_ApprovalRequest"
-      }
+      "startEvent": "MessageStart_ApprovalRequest",
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "operationMessage",
+          "interfaceId": "Interface_ProcessMessages",
+          "interfaceOperationId": "Operation_ReceiveApprovalRequest",
+          "messageId": "Message_ApprovalRequest"
+        }
+      },
+      "variables": []
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-message-start-user-task",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "MessageStartInstance_1",
         "elementId": "UserTask_Approve",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

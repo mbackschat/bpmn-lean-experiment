@@ -10,54 +10,50 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-subscription",
-      "processId": "Process_TerminateEnd",
       "instanceId": "Instance_catch-timer_cancel",
-      "initialVariables": []
+      "variables": []
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-UserTask_Trigger-1",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Instance_catch-timer_cancel",
         "elementId": "UserTask_Trigger",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-UserTask_Outer-1",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Instance_catch-timer_cancel",
         "elementId": "UserTask_Outer",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-IndependentAudit-1",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Instance_catch-timer_cancel",
         "elementId": "IndependentAudit",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

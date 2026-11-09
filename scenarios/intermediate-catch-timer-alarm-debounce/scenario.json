@@ -10,16 +10,15 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-intermediate-catch-timer-alarm-debounce",
-      "processId": "Process_AlarmDebounce",
       "instanceId": "DebounceInstance_1",
-      "initialVariables": []
+      "variables": []
     },
     {
-      "kind": "fireTimer",
+      "kind": "timerFire",
       "commandId": "fire-timer-sha256:6faf3af6d55045250e2039c59dbe7ab7c489378928a93c5eae9512eeae23aee2",
-      "timerId": {
+      "occurrence": {
         "processInstanceId": "DebounceInstance_1",
         "elementId": "TimerCatch_Debounce",
         "activation": 1
@@ -27,35 +26,26 @@
       "logicalTimeMs": 2000
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-UserTask_AcknowledgeAlarm",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "DebounceInstance_1",
         "elementId": "UserTask_AcknowledgeAlarm",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [
-      "BPMN 2.0.2 \u00a710.5.4",
-      "BPMN 2.0.2 \u00a710.5.5",
-      "BPMN 2.0.2 \u00a710.7.3",
-      "BPMN 2.0.2 \u00a713.3.2",
-      "BPMN 2.0.2 \u00a713.3.3"
+      "BPMN 2.0.2 §10.5.4",
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 §10.7.3",
+      "BPMN 2.0.2 §13.3.2",
+      "BPMN 2.0.2 §13.3.3"
     ],
     "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
     "cibRefs": [

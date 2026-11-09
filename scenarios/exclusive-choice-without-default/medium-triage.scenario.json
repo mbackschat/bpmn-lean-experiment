@@ -13,11 +13,10 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-process",
-      "processId": "Process_TicketTriage",
       "instanceId": "Ticket_1",
-      "initialVariables": [
+      "variables": [
         {
           "name": "ticket",
           "value": {
@@ -28,35 +27,26 @@
       ]
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-triage-ticket",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Ticket_1",
         "elementId": "TriageTicket",
         "activation": 1
       },
-      "submittedValues": [
-        {
-          "name": "severity",
-          "value": {
-            "kind": "string",
-            "value": "medium"
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "severity",
+            "value": {
+              "kind": "string",
+              "value": "medium"
+            }
           }
-        }
-      ]
+        ]
+      }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [

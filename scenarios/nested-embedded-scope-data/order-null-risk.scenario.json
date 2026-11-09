@@ -11,37 +11,12 @@
       "sha256": "3951d791bcbc6852abe3828c72a7c9f706efa2802427ee3a1deaa3e214f9c655"
     }
   },
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
-  ],
-  "provenance": {
-    "normativeRefs": [
-      "BPMN 2.0.2 Clause 10.3.5",
-      "BPMN 2.0.2 Clause 10.4.1",
-      "BPMN 2.0.2 Clause 13.3.4"
-    ],
-    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
-    "cibRefs": [
-      "CIB-EXT-0015",
-      "CIB-EXT-0020"
-    ]
-  },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start",
-      "processId": "P",
       "instanceId": "Order_null_risk",
-      "initialVariables": [
+      "variables": [
         {
           "name": "initialStatus",
           "value": {
@@ -108,53 +83,68 @@
       ]
     },
     {
-      "kind": "completeEffect",
+      "kind": "effectResult",
       "commandId": "complete-effect-sha256:46e0d8a3f0522d1a304c6138285a51b6c71ef595e5978b30065a74eb9e59d140",
-      "effectId": {
+      "occurrence": {
         "processInstanceId": "Order_null_risk",
         "elementId": "KS",
         "activation": 1
       },
-      "result": {
+      "outcome": {
         "kind": "success",
-        "localPatch": []
+        "outputs": []
       }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-credit-review",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Order_null_risk",
         "elementId": "CU",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeEffect",
+      "kind": "effectResult",
       "commandId": "complete-effect-sha256:c949bc98ebe0ab83da1f56a07bd2049bcfbd064da359c613e177baaed9bc9b89",
-      "effectId": {
+      "occurrence": {
         "processInstanceId": "Order_null_risk",
         "elementId": "OS",
         "activation": 1
       },
-      "result": {
+      "outcome": {
         "kind": "success",
-        "localPatch": []
+        "outputs": []
       }
     },
     {
-      "kind": "completeEffect",
+      "kind": "effectResult",
       "commandId": "complete-effect-sha256:7815d2f29654f1c0cf3c9e066891640c4b4cfc3cb36d90b1291c4418e204112a",
-      "effectId": {
+      "occurrence": {
         "processInstanceId": "Order_null_risk",
         "elementId": "R",
         "activation": 1
       },
-      "result": {
+      "outcome": {
         "kind": "success",
-        "localPatch": []
+        "outputs": []
       }
     }
-  ]
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.3.5",
+      "BPMN 2.0.2 Clause 10.4.1",
+      "BPMN 2.0.2 Clause 13.3.4"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "CIB-EXT-0015",
+      "CIB-EXT-0020"
+    ]
+  }
 }

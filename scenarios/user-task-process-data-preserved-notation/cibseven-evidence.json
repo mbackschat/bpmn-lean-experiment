@@ -2,7 +2,7 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "user-task-process-data-preserved-notation",
-    "sha256": "dedef4e3f11c89318264986b736555e4eab3b93ebbe4bc512e66bc34db4fbe35"
+    "sha256": "7f4f0df314f2c1073028a25a18c133edacaf293989ebb5896cd0eede3fdd5491"
   },
   "profile": {
     "id": "cibseven-2.2.0-user-task-process-data-preserved-notation-draft",
@@ -101,28 +101,7 @@
         "kind": "state",
         "instanceId": "ProcessDataPreservedNotationInstance_1",
         "status": "running",
-        "activeWaits": [
-          {
-            "elementId": "UserTask_Approve",
-            "kind": "userTask",
-            "multiplicity": 1
-          }
-        ],
-        "openUserTasks": [
-          {
-            "id": {
-              "processInstanceId": "ProcessDataPreservedNotationInstance_1",
-              "elementId": "UserTask_Approve",
-              "activation": 1
-            },
-            "name": "Approve",
-            "state": "active"
-          }
-        ],
-        "openMessageSubscriptions": [],
-        "openTimers": [],
-        "openEffects": [],
-        "openIncidents": [],
+        "logicalTimeMs": 0,
         "variables": [
           {
             "name": "decision",
@@ -139,17 +118,30 @@
             }
           }
         ],
-        "enabledInteractions": [
+        "openWaits": [
           {
-            "kind": "completeUserTaskInstance",
-            "taskId": {
+            "id": {
               "processInstanceId": "ProcessDataPreservedNotationInstance_1",
               "elementId": "UserTask_Approve",
               "activation": 1
+            },
+            "definition": null,
+            "input": "command",
+            "detail": {
+              "kind": "userTask",
+              "name": "Approve",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
             }
           }
-        ],
-        "logicalTimeMs": 0
+        ]
       },
       {
         "kind": "command",
@@ -160,12 +152,7 @@
         "kind": "state",
         "instanceId": "ProcessDataPreservedNotationInstance_1",
         "status": "completed",
-        "activeWaits": [],
-        "openUserTasks": [],
-        "openMessageSubscriptions": [],
-        "openTimers": [],
-        "openEffects": [],
-        "openIncidents": [],
+        "logicalTimeMs": 0,
         "variables": [
           {
             "name": "decision",
@@ -188,8 +175,7 @@
             }
           }
         ],
-        "enabledInteractions": [],
-        "logicalTimeMs": 0
+        "openWaits": []
       }
     ]
   }

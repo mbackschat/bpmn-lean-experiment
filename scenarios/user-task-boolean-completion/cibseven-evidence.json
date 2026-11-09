@@ -2,7 +2,7 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "user-task-boolean-completion",
-    "sha256": "24e555adb776bc4a80ecf4b6b227794426cb34b8ac103e3ff9546898b670e243"
+    "sha256": "b143241884e466ecc2ea13f309ab66b17e0bf327af87b435911fe87359285c30"
   },
   "profile": {
     "id": "cibseven-2.2.0-user-task-boolean-completion-data-draft",
@@ -109,28 +109,7 @@
         "kind": "state",
         "instanceId": "BooleanInstance_1",
         "status": "running",
-        "activeWaits": [
-          {
-            "elementId": "UserTask_Approve",
-            "kind": "userTask",
-            "multiplicity": 1
-          }
-        ],
-        "openUserTasks": [
-          {
-            "id": {
-              "processInstanceId": "BooleanInstance_1",
-              "elementId": "UserTask_Approve",
-              "activation": 1
-            },
-            "name": "Approve",
-            "state": "active"
-          }
-        ],
-        "openMessageSubscriptions": [],
-        "openTimers": [],
-        "openEffects": [],
-        "openIncidents": [],
+        "logicalTimeMs": 0,
         "variables": [
           {
             "name": "initialNote",
@@ -146,17 +125,30 @@
             }
           }
         ],
-        "enabledInteractions": [
+        "openWaits": [
           {
-            "kind": "completeUserTaskInstance",
-            "taskId": {
+            "id": {
               "processInstanceId": "BooleanInstance_1",
               "elementId": "UserTask_Approve",
               "activation": 1
+            },
+            "definition": null,
+            "input": "command",
+            "detail": {
+              "kind": "userTask",
+              "name": "Approve",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
             }
           }
-        ],
-        "logicalTimeMs": 0
+        ]
       },
       {
         "kind": "command",
@@ -167,12 +159,7 @@
         "kind": "state",
         "instanceId": "BooleanInstance_1",
         "status": "completed",
-        "activeWaits": [],
-        "openUserTasks": [],
-        "openMessageSubscriptions": [],
-        "openTimers": [],
-        "openEffects": [],
-        "openIncidents": [],
+        "logicalTimeMs": 0,
         "variables": [
           {
             "name": "approved",
@@ -208,8 +195,7 @@
             }
           }
         ],
-        "enabledInteractions": [],
-        "logicalTimeMs": 0
+        "openWaits": []
       }
     ]
   }

@@ -13,11 +13,10 @@
   },
   "stimuli": [
     {
-      "kind": "startProcess",
+      "kind": "start",
       "commandId": "start-process",
-      "processId": "Process_OrderFulfilment",
       "instanceId": "Instance_1",
-      "initialVariables": [
+      "variables": [
         {
           "name": "order",
           "value": {
@@ -104,143 +103,149 @@
       ]
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "refuse-sibling-local-review-patch",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Instance_1",
         "elementId": "ReviewRoute",
         "activation": 1
       },
-      "submittedValues": [
-        {
-          "name": "packing",
-          "value": {
-            "kind": "string",
-            "value": "loose"
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "packing",
+            "value": {
+              "kind": "string",
+              "value": "loose"
+            }
           }
-        }
-      ]
+        ]
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-review-route",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Instance_1",
         "elementId": "ReviewRoute",
         "activation": 1
       },
-      "submittedValues": [
-        {
-          "name": "instructions",
-          "value": {
-            "kind": "map",
-            "value": [
-              {
-                "name": "handling",
-                "value": {
-                  "kind": "string",
-                  "value": "fragile"
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "instructions",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "handling",
+                  "value": {
+                    "kind": "string",
+                    "value": "fragile"
+                  }
                 }
-              }
-            ]
-          }
-        },
-        {
-          "name": "shipment",
-          "value": {
-            "kind": "map",
-            "value": [
-              {
-                "name": "discount",
-                "value": {
-                  "kind": "decimal",
-                  "coefficient": "-125",
-                  "scale": 2
-                }
-              },
-              {
-                "name": "lines",
-                "value": {
-                  "kind": "list",
-                  "value": [
-                    {
-                      "kind": "map",
-                      "value": [
-                        {
-                          "name": "quantity",
-                          "value": {
-                            "kind": "string",
-                            "value": "2"
+              ]
+            }
+          },
+          {
+            "name": "shipment",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "discount",
+                  "value": {
+                    "kind": "decimal",
+                    "coefficient": "-125",
+                    "scale": 2
+                  }
+                },
+                {
+                  "name": "lines",
+                  "value": {
+                    "kind": "list",
+                    "value": [
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "quantity",
+                            "value": {
+                              "kind": "string",
+                              "value": "2"
+                            }
+                          },
+                          {
+                            "name": "sku",
+                            "value": {
+                              "kind": "string",
+                              "value": "A-17"
+                            }
                           }
-                        },
-                        {
-                          "name": "sku",
-                          "value": {
-                            "kind": "string",
-                            "value": "A-17"
+                        ]
+                      },
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "quantity",
+                            "value": {
+                              "kind": "string",
+                              "value": "2"
+                            }
+                          },
+                          {
+                            "name": "sku",
+                            "value": {
+                              "kind": "string",
+                              "value": "A-17"
+                            }
                           }
-                        }
-                      ]
-                    },
-                    {
-                      "kind": "map",
-                      "value": [
-                        {
-                          "name": "quantity",
-                          "value": {
-                            "kind": "string",
-                            "value": "2"
-                          }
-                        },
-                        {
-                          "name": "sku",
-                          "value": {
-                            "kind": "string",
-                            "value": "A-17"
-                          }
-                        }
-                      ]
-                    }
-                  ]
-                }
-              },
-              {
-                "name": "shipTo",
-                "value": {
-                  "kind": "map",
-                  "value": [
-                    {
-                      "name": "city",
-                      "value": {
-                        "kind": "string",
-                        "value": "York"
+                        ]
                       }
-                    },
-                    {
-                      "name": "unit",
-                      "value": {
-                        "kind": "null"
+                    ]
+                  }
+                },
+                {
+                  "name": "shipTo",
+                  "value": {
+                    "kind": "map",
+                    "value": [
+                      {
+                        "name": "city",
+                        "value": {
+                          "kind": "string",
+                          "value": "York"
+                        }
+                      },
+                      {
+                        "name": "unit",
+                        "value": {
+                          "kind": "null"
+                        }
                       }
-                    }
-                  ]
+                    ]
+                  }
                 }
-              }
-            ]
+              ]
+            }
           }
-        }
-      ]
+        ]
+      }
     },
     {
-      "kind": "completeEffect",
+      "kind": "effectResult",
       "commandId": "complete-effect-sha256:16b45c3bee921f6fcf440090ce8b498de0a6dd30e19dc1bcc36913a8a4315a8f",
-      "effectId": {
+      "occurrence": {
         "processInstanceId": "Instance_1",
         "elementId": "PickItems",
         "activation": 1
       },
-      "result": {
+      "outcome": {
         "kind": "success",
-        "localPatch": [
+        "outputs": [
           {
             "name": "packed",
             "value": {
@@ -287,16 +292,16 @@
       }
     },
     {
-      "kind": "completeEffect",
+      "kind": "effectResult",
       "commandId": "complete-effect-sha256:51339b9051258a8e63300b7dd3d56c53fbfc0492de28f230a21448acca71e299",
-      "effectId": {
+      "occurrence": {
         "processInstanceId": "Instance_1",
         "elementId": "RateShipment",
         "activation": 1
       },
-      "result": {
+      "outcome": {
         "kind": "success",
-        "localPatch": [
+        "outputs": [
           {
             "name": "quote",
             "value": {
@@ -324,50 +329,44 @@
       }
     },
     {
-      "kind": "completeEffect",
+      "kind": "effectResult",
       "commandId": "complete-effect-sha256:37505e9d1a5e87d7022a0548397184d1bafe68ecaf34d1a04d5dbbc901a07beb",
-      "effectId": {
+      "occurrence": {
         "processInstanceId": "Instance_1",
         "elementId": "NotifyCustomer",
         "activation": 1
       },
-      "result": {
+      "outcome": {
         "kind": "success",
-        "localPatch": []
+        "outputs": []
       }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-confirm-fulfilment",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Instance_1",
         "elementId": "ConfirmFulfilment",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     },
     {
-      "kind": "completeUserTaskInstance",
+      "kind": "command",
       "commandId": "complete-close-order",
-      "taskId": {
+      "occurrence": {
         "processInstanceId": "Instance_1",
         "elementId": "CloseOrder",
         "activation": 1
       },
-      "submittedValues": []
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
     }
-  ],
-  "observations": [
-    "deployment",
-    "commandResults",
-    "processStatus",
-    "activeWaits",
-    "openUserTasks",
-    "openTimers",
-    "openEffects",
-    "variables",
-    "enabledInteractions",
-    "logicalTime"
   ],
   "provenance": {
     "normativeRefs": [
