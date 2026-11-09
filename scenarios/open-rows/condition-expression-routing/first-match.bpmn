@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_FirstMatch" targetNamespace="urn:bpmn-lean:scenarios:condition-expression-routing:first-match">
+  <process id="Process_FirstMatch" name="Route by first match" isExecutable="true">
+    <startEvent id="StartEvent_Start" />
+    <exclusiveGateway id="Gateway_Route" name="Route" gatewayDirection="Diverging" default="Flow_Default" />
+    <userTask id="UserTask_Large" name="large branch" />
+    <userTask id="UserTask_Europe" name="europe branch" />
+    <userTask id="UserTask_Any" name="any branch" />
+    <userTask id="UserTask_Standard" name="standard branch" />
+    <endEvent id="EndEvent_Large" />
+    <endEvent id="EndEvent_Europe" />
+    <endEvent id="EndEvent_Any" />
+    <endEvent id="EndEvent_Standard" />
+    <sequenceFlow id="Flow_Start_Route" sourceRef="StartEvent_Start" targetRef="Gateway_Route" />
+    <sequenceFlow id="Flow_Large" sourceRef="Gateway_Route" targetRef="UserTask_Large">
+      <conditionExpression xsi:type="tFormalExpression">${amount &gt; 1000}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Europe" sourceRef="Gateway_Route" targetRef="UserTask_Europe">
+      <conditionExpression xsi:type="tFormalExpression">${region == 'EU' and amount &gt; 100}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Any" sourceRef="Gateway_Route" targetRef="UserTask_Any">
+      <conditionExpression xsi:type="tFormalExpression">${amount &gt; 10}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Default" sourceRef="Gateway_Route" targetRef="UserTask_Standard" />
+    <sequenceFlow id="Flow_Large_Done" sourceRef="UserTask_Large" targetRef="EndEvent_Large" />
+    <sequenceFlow id="Flow_Europe_Done" sourceRef="UserTask_Europe" targetRef="EndEvent_Europe" />
+    <sequenceFlow id="Flow_Any_Done" sourceRef="UserTask_Any" targetRef="EndEvent_Any" />
+    <sequenceFlow id="Flow_Default_Done" sourceRef="UserTask_Standard" targetRef="EndEvent_Standard" />
+  </process>
+</definitions>

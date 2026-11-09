@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_MapMethods" targetNamespace="urn:bpmn-lean:scenarios:juel-core-forms:map-methods">
+  <process id="Process_MapMethods" name="Evaluate map methods forms" isExecutable="true">
+    <startEvent id="StartEvent_Start" />
+    <sequenceFlow id="Flow_Start_Observe" sourceRef="StartEvent_Start" targetRef="UserTask_Observe" />
+    <userTask id="UserTask_Observe" name="Observe the evaluated inputs">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="size">${person.size()}</camunda:inputParameter>
+          <camunda:inputParameter name="isEmpty">${person.isEmpty()}</camunda:inputParameter>
+          <camunda:inputParameter name="containsKey">${person.containsKey('name')}</camunda:inputParameter>
+          <camunda:inputParameter name="containsKeyAbsent">${person.containsKey('zip')}</camunda:inputParameter>
+          <camunda:inputParameter name="containsValue">${person.containsValue('Berlin')}</camunda:inputParameter>
+          <camunda:inputParameter name="get">${person.get('name')}</camunda:inputParameter>
+          <camunda:inputParameter name="getAbsent">${person.get('zip')}</camunda:inputParameter>
+          <camunda:inputParameter name="getThenLength">${person.get('name').length()}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <sequenceFlow id="Flow_Observe_Done" sourceRef="UserTask_Observe" targetRef="EndEvent_Done" />
+    <endEvent id="EndEvent_Done" />
+  </process>
+</definitions>

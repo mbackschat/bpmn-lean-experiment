@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_LateContext" targetNamespace="urn:bpmn-lean:scenarios:condition-expression-routing:late-context">
+  <process id="Process_LateContext" name="Route by late context" isExecutable="true">
+    <startEvent id="StartEvent_Start" />
+    <sequenceFlow id="Flow_Start_Collect" sourceRef="StartEvent_Start" targetRef="UserTask_Collect" />
+    <userTask id="UserTask_Collect" name="Collect the amount" />
+    <sequenceFlow id="Flow_Collect_Route" sourceRef="UserTask_Collect" targetRef="Gateway_Route" />
+    <exclusiveGateway id="Gateway_Route" name="Route" gatewayDirection="Diverging" default="Flow_Default" />
+    <userTask id="UserTask_Over" name="over branch" />
+    <userTask id="UserTask_Within" name="within branch" />
+    <endEvent id="EndEvent_Over" />
+    <endEvent id="EndEvent_Within" />
+    <sequenceFlow id="Flow_Over" sourceRef="Gateway_Route" targetRef="UserTask_Over">
+      <conditionExpression xsi:type="tFormalExpression">${amount &gt; limit}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Default" sourceRef="Gateway_Route" targetRef="UserTask_Within" />
+    <sequenceFlow id="Flow_Over_Done" sourceRef="UserTask_Over" targetRef="EndEvent_Over" />
+    <sequenceFlow id="Flow_Default_Done" sourceRef="UserTask_Within" targetRef="EndEvent_Within" />
+  </process>
+</definitions>

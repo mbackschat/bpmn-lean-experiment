@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_OrderHandoff" targetNamespace="urn:bpmn-lean:scenarios:structured-order-values:order-handoff">
+  <process id="Process_OrderHandoff" name="Review, archive and confirm a structured order" isExecutable="true">
+    <startEvent id="StartEvent_Start" />
+    <userTask id="UserTask_Review" name="Review order">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="order">${order}</camunda:inputParameter>
+          <camunda:inputParameter name="city">${order.customer.address.city}</camunda:inputParameter>
+          <camunda:inputParameter name="firstLine">${order.lines[0]}</camunda:inputParameter>
+          <camunda:inputParameter name="lineCount">${order.lines.size()}</camunda:inputParameter>
+          <camunda:inputParameter name="note">${order.note}</camunda:inputParameter>
+          <camunda:inputParameter name="total">${order.total}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <serviceTask id="ServiceTask_Archive" name="Archive order"
+                 implementation="urn:bpmn-lean:effect:probe-v1"
+                 camunda:delegateExpression="${bpmnLeanEffectHandler}" camunda:asyncBefore="true">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="payload">${reviewed}</camunda:inputParameter>
+          <camunda:inputParameter name="lines">${reviewed.lines}</camunda:inputParameter>
+          <camunda:outputParameter name="receipt">${result}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </serviceTask>
+    <userTask id="UserTask_Confirm" name="Confirm receipt">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="seenReceipt">${receipt}</camunda:inputParameter>
+          <camunda:inputParameter name="seenReviewed">${reviewed}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <endEvent id="EndEvent_Done" />
+    <sequenceFlow id="Flow_Start_Review" sourceRef="StartEvent_Start" targetRef="UserTask_Review" />
+    <sequenceFlow id="Flow_Review_Archive" sourceRef="UserTask_Review" targetRef="ServiceTask_Archive" />
+    <sequenceFlow id="Flow_Archive_Confirm" sourceRef="ServiceTask_Archive" targetRef="UserTask_Confirm" />
+    <sequenceFlow id="Flow_Confirm_Done" sourceRef="UserTask_Confirm" targetRef="EndEvent_Done" />
+  </process>
+</definitions>

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_Logical" targetNamespace="urn:bpmn-lean:scenarios:juel-core-forms:logical">
+  <process id="Process_Logical" name="Evaluate logical forms" isExecutable="true">
+    <startEvent id="StartEvent_Start" />
+    <sequenceFlow id="Flow_Start_Observe" sourceRef="StartEvent_Start" targetRef="UserTask_Observe" />
+    <userTask id="UserTask_Observe" name="Observe the evaluated inputs">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="andSymbol">${flag &amp;&amp; a &gt; b}</camunda:inputParameter>
+          <camunda:inputParameter name="andWord">${flag and b &gt; a}</camunda:inputParameter>
+          <camunda:inputParameter name="orSymbol">${off || a &gt; b}</camunda:inputParameter>
+          <camunda:inputParameter name="orWord">${off or b &gt; a}</camunda:inputParameter>
+          <camunda:inputParameter name="notSymbol">${!flag}</camunda:inputParameter>
+          <camunda:inputParameter name="notWord">${not off}</camunda:inputParameter>
+          <camunda:inputParameter name="notOfComparison">${not (a &gt; b)}</camunda:inputParameter>
+          <camunda:inputParameter name="andBindsTighter">${flag or off and off}</camunda:inputParameter>
+          <camunda:inputParameter name="groupedOr">${(flag or off) and off}</camunda:inputParameter>
+          <camunda:inputParameter name="doubleNegation">${!!flag}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <sequenceFlow id="Flow_Observe_Done" sourceRef="UserTask_Observe" targetRef="EndEvent_Done" />
+    <endEvent id="EndEvent_Done" />
+  </process>
+</definitions>

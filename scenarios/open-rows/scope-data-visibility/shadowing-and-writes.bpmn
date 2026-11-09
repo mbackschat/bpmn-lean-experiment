@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_ShadowingAndWrites" targetNamespace="urn:bpmn-lean:scenarios:scope-data-visibility:shadowing-and-writes">
+  <process id="Process_ShadowingAndWrites" name="Shadow a Process variable in a Sub-Process and in a task" isExecutable="true">
+    <startEvent id="StartEvent_Start" />
+    <subProcess id="SubProcess_Review" name="Review">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="status">${null}</camunda:inputParameter>
+          <camunda:inputParameter name="memo">sub-memo</camunda:inputParameter>
+          <camunda:inputParameter name="subOnly">sub-only</camunda:inputParameter>
+          <camunda:outputParameter name="finalStatus">${status}</camunda:outputParameter>
+          <camunda:outputParameter name="finalMemo">${memo}</camunda:outputParameter>
+          <camunda:outputParameter name="finalSubOnly">${subOnly}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+      <startEvent id="StartEvent_Review" />
+      <userTask id="UserTask_Inspect" name="Inspect">
+        <extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="memo">task-memo</camunda:inputParameter>
+            <camunda:inputParameter name="seenStatus">${status}</camunda:inputParameter>
+            <camunda:inputParameter name="seenMemo">${memo}</camunda:inputParameter>
+            <camunda:inputParameter name="seenSubOnly">${subOnly}</camunda:inputParameter>
+            <camunda:inputParameter name="seenTicket">${ticket}</camunda:inputParameter>
+          </camunda:inputOutput>
+        </extensionElements>
+      </userTask>
+      <endEvent id="EndEvent_Review" />
+      <sequenceFlow id="Flow_Review_Inspect" sourceRef="StartEvent_Review" targetRef="UserTask_Inspect" />
+      <sequenceFlow id="Flow_Inspect_Review" sourceRef="UserTask_Inspect" targetRef="EndEvent_Review" />
+    </subProcess>
+    <userTask id="UserTask_After" name="After the review">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="afterStatus">${status}</camunda:inputParameter>
+          <camunda:inputParameter name="afterMemo">${memo}</camunda:inputParameter>
+          <camunda:inputParameter name="afterTicket">${ticket}</camunda:inputParameter>
+          <camunda:inputParameter name="afterFresh">${fresh}</camunda:inputParameter>
+          <camunda:inputParameter name="afterFinalStatus">${finalStatus}</camunda:inputParameter>
+          <camunda:inputParameter name="afterFinalMemo">${finalMemo}</camunda:inputParameter>
+          <camunda:inputParameter name="afterFinalSubOnly">${finalSubOnly}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <endEvent id="EndEvent_Done" />
+    <sequenceFlow id="Flow_Start_Review" sourceRef="StartEvent_Start" targetRef="SubProcess_Review" />
+    <sequenceFlow id="Flow_Review_After" sourceRef="SubProcess_Review" targetRef="UserTask_After" />
+    <sequenceFlow id="Flow_After_Done" sourceRef="UserTask_After" targetRef="EndEvent_Done" />
+  </process>
+</definitions>

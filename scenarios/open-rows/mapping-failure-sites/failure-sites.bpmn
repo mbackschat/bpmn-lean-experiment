@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_FailureSites" targetNamespace="urn:bpmn-lean:scenarios:mapping-failure-sites:failure-sites">
+  <process id="Process_FailureSites" name="One mapping site per probe, selected by the start variable probe" isExecutable="true">
+    <startEvent id="StartEvent_Start" name="Probe selected" />
+    <sequenceFlow id="Flow_Start_Select" sourceRef="StartEvent_Start" targetRef="Gateway_Select" />
+    <exclusiveGateway id="Gateway_Select" name="Select probe" gatewayDirection="Diverging" default="Flow_NoProbe" />
+    <userTask id="UserTask_EntryMissing" name="entry missing">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${missing}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_EntryNull" name="entry null">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${nothing}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_EntryThrows" name="entry throws">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${word + 1}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_ExitMissing" name="exit missing">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:outputParameter name="got">${absentOutput}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_ExitNull" name="exit null">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:outputParameter name="got">${decision}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_ExitThrows" name="exit throws">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:outputParameter name="got">${decision + 1}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <subProcess id="SubProcess_ScopeExitMissing" name="scope exit missing">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:outputParameter name="got">${gone}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+      <startEvent id="StartEvent_Scope" />
+      <userTask id="UserTask_ScopeTask" name="Scope task" />
+      <endEvent id="EndEvent_Scope" />
+      <sequenceFlow id="Flow_Scope_Task" sourceRef="StartEvent_Scope" targetRef="UserTask_ScopeTask" />
+      <sequenceFlow id="Flow_Task_Scope" sourceRef="UserTask_ScopeTask" targetRef="EndEvent_Scope" />
+    </subProcess>
+    <callActivity id="CallActivity_CallInAbsent" name="call in absent" calledElement="Process_Peek">
+      <extensionElements>
+        <camunda:in source="absentIn" target="x" />
+      </extensionElements>
+    </callActivity>
+    <callActivity id="CallActivity_CallOutAbsent" name="call out absent" calledElement="Process_Peek">
+      <extensionElements>
+        <camunda:in source="seed" target="x" />
+        <camunda:out source="gone" target="back" />
+      </extensionElements>
+    </callActivity>
+    <exclusiveGateway id="Gateway_Merge" name="Merge" gatewayDirection="Converging" />
+    <endEvent id="EndEvent_Done" />
+    <sequenceFlow id="Flow_ToEntryMissing" sourceRef="Gateway_Select" targetRef="UserTask_EntryMissing">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'entry-missing'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToEntryNull" sourceRef="Gateway_Select" targetRef="UserTask_EntryNull">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'entry-null'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToEntryThrows" sourceRef="Gateway_Select" targetRef="UserTask_EntryThrows">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'entry-throws'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToExitMissing" sourceRef="Gateway_Select" targetRef="UserTask_ExitMissing">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'exit-missing'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToExitNull" sourceRef="Gateway_Select" targetRef="UserTask_ExitNull">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'exit-null'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToExitThrows" sourceRef="Gateway_Select" targetRef="UserTask_ExitThrows">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'exit-throws'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToScopeExitMissing" sourceRef="Gateway_Select" targetRef="SubProcess_ScopeExitMissing">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'scope-exit-missing'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToCallInAbsent" sourceRef="Gateway_Select" targetRef="CallActivity_CallInAbsent">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'call-in-absent'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToCallOutAbsent" sourceRef="Gateway_Select" targetRef="CallActivity_CallOutAbsent">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'call-out-absent'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_NoProbe" sourceRef="Gateway_Select" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_EntryMissing_Merge" sourceRef="UserTask_EntryMissing" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_EntryNull_Merge" sourceRef="UserTask_EntryNull" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_EntryThrows_Merge" sourceRef="UserTask_EntryThrows" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_ExitMissing_Merge" sourceRef="UserTask_ExitMissing" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_ExitNull_Merge" sourceRef="UserTask_ExitNull" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_ExitThrows_Merge" sourceRef="UserTask_ExitThrows" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_ScopeExitMissing_Merge" sourceRef="SubProcess_ScopeExitMissing" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_CallInAbsent_Merge" sourceRef="CallActivity_CallInAbsent" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_CallOutAbsent_Merge" sourceRef="CallActivity_CallOutAbsent" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_Merge_Done" sourceRef="Gateway_Merge" targetRef="EndEvent_Done" />
+  </process>
+  <process id="Process_Peek" name="The called Process shows what it received" isExecutable="true">
+    <startEvent id="StartEvent_Peek" />
+    <userTask id="UserTask_Peek" name="Peek">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="seenX">${x}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <endEvent id="EndEvent_Peek" />
+    <sequenceFlow id="Flow_Peek_Task" sourceRef="StartEvent_Peek" targetRef="UserTask_Peek" />
+    <sequenceFlow id="Flow_Task_Peek" sourceRef="UserTask_Peek" targetRef="EndEvent_Peek" />
+  </process>
+</definitions>

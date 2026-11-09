@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_AccessScalarResults" targetNamespace="urn:bpmn-lean:scenarios:juel-core-forms:access-scalar-results">
+  <process id="Process_AccessScalarResults" name="Evaluate access scalar results forms" isExecutable="true">
+    <startEvent id="StartEvent_Start" />
+    <sequenceFlow id="Flow_Start_Observe" sourceRef="StartEvent_Start" targetRef="UserTask_Observe" />
+    <userTask id="UserTask_Observe" name="Observe the evaluated inputs">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="dotProperty">${order.customer.name}</camunda:inputParameter>
+          <camunda:inputParameter name="bracketProperty">${order['customer']['name']}</camunda:inputParameter>
+          <camunda:inputParameter name="mixedAccess">${order.customer['address'].city}</camunda:inputParameter>
+          <camunda:inputParameter name="listIndex">${names[1]}</camunda:inputParameter>
+          <camunda:inputParameter name="listIndexVariable">${names[index]}</camunda:inputParameter>
+          <camunda:inputParameter name="listIndexComputed">${names[index + 1]}</camunda:inputParameter>
+          <camunda:inputParameter name="elementProperty">${order.lines[2].sku}</camunda:inputParameter>
+          <camunda:inputParameter name="elementArithmetic">${order.lines[2].quantity * 3}</camunda:inputParameter>
+          <camunda:inputParameter name="variableKey">${order.customer[key]}</camunda:inputParameter>
+          <camunda:inputParameter name="elementBracketKey">${order.lines[index]['sku']}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <sequenceFlow id="Flow_Observe_Done" sourceRef="UserTask_Observe" targetRef="EndEvent_Done" />
+    <endEvent id="EndEvent_Done" />
+  </process>
+</definitions>

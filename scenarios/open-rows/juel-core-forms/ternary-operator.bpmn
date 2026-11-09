@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_TernaryOperator" targetNamespace="urn:bpmn-lean:scenarios:juel-core-forms:ternary-operator">
+  <process id="Process_TernaryOperator" name="Evaluate ternary operator forms" isExecutable="true">
+    <startEvent id="StartEvent_Start" />
+    <sequenceFlow id="Flow_Start_Observe" sourceRef="StartEvent_Start" targetRef="UserTask_Observe" />
+    <userTask id="UserTask_Observe" name="Observe the evaluated inputs">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="trueBranch">${flag ? 'yes' : 'no'}</camunda:inputParameter>
+          <camunda:inputParameter name="falseBranch">${off ? 'yes' : 'no'}</camunda:inputParameter>
+          <camunda:inputParameter name="comparisonCondition">${count == 0 ? 'zero' : 'some'}</camunda:inputParameter>
+          <camunda:inputParameter name="numericBranches">${flag ? 1 : 2}</camunda:inputParameter>
+          <camunda:inputParameter name="nestedRight">${small &gt; 5 ? 'big' : small &gt; 0 ? 'some' : 'zero'}</camunda:inputParameter>
+          <camunda:inputParameter name="groupedNested">${(small &gt; 5 ? 1 : 2) + 10}</camunda:inputParameter>
+          <camunda:inputParameter name="variableBranches">${count == 0 ? small : count}</camunda:inputParameter>
+          <camunda:inputParameter name="mixedBranchTypes">${flag ? 1 : 'one'}</camunda:inputParameter>
+          <camunda:inputParameter name="negatedCondition">${not flag ? 'a' : 'b'}</camunda:inputParameter>
+          <camunda:inputParameter name="nullBranch">${off ? 1 : null}</camunda:inputParameter>
+          <camunda:inputParameter name="ternaryOperand">${small + (flag ? 1 : 2)}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <sequenceFlow id="Flow_Observe_Done" sourceRef="UserTask_Observe" targetRef="EndEvent_Done" />
+    <endEvent id="EndEvent_Done" />
+  </process>
+</definitions>

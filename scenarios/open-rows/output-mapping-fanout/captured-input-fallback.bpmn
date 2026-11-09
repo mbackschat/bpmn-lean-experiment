@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_CapturedInputFallback" targetNamespace="urn:bpmn-lean:scenarios:output-mapping-fanout:captured-input-fallback">
+  <process id="Process_CapturedInputFallback" name="Map an output from the name of a captured input" isExecutable="true">
+    <startEvent id="StartEvent_Start" />
+    <serviceTask id="ServiceTask_Compute" name="Compute"
+                 implementation="urn:bpmn-lean:effect:probe-v1"
+                 camunda:delegateExpression="${bpmnLeanEffectHandler}" camunda:asyncBefore="true">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="seed">${seed}</camunda:inputParameter>
+          <camunda:outputParameter name="answer">${result}</camunda:outputParameter>
+          <camunda:outputParameter name="echoed">${seed}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </serviceTask>
+    <userTask id="UserTask_Observe" name="Observe">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="seenAnswer">${answer}</camunda:inputParameter>
+          <camunda:inputParameter name="seenEcho">${echoed}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <endEvent id="EndEvent_Done" />
+    <sequenceFlow id="Flow_Start_Compute" sourceRef="StartEvent_Start" targetRef="ServiceTask_Compute" />
+    <sequenceFlow id="Flow_Compute_Observe" sourceRef="ServiceTask_Compute" targetRef="UserTask_Observe" />
+    <sequenceFlow id="Flow_Observe_Done" sourceRef="UserTask_Observe" targetRef="EndEvent_Done" />
+  </process>
+</definitions>

@@ -1,0 +1,1094 @@
+{
+  "kind": "scenario",
+  "id": "structured-value-bounds-start-at-node-bound",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "structured-value-bounds-bounded-value",
+    "relativePath": "scenarios/open-rows/structured-value-bounds/bounded-value.bpmn",
+    "sha256": "2bf978d15b499af18d1d661dee8fdc65627b4d9723c2fd00f433aed61c5c9a93",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start",
+      "instanceId": "Run_1",
+      "variables": [
+        {
+          "name": "payload",
+          "value": {
+            "kind": "map",
+            "value": [
+              {
+                "name": "k0",
+                "value": {
+                  "kind": "list",
+                  "value": [
+                    {
+                      "kind": "integer",
+                      "value": 0
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 1
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 2
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 3
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 4
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 5
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 6
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 7
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 8
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 9
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 10
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 11
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 12
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 13
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 14
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 15
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 16
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 17
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 18
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 19
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 20
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 21
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 22
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 23
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 24
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 25
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 26
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 27
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 28
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 29
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 30
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 31
+                    }
+                  ]
+                }
+              },
+              {
+                "name": "k1",
+                "value": {
+                  "kind": "list",
+                  "value": [
+                    {
+                      "kind": "integer",
+                      "value": 0
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 1
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 2
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 3
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 4
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 5
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 6
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 7
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 8
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 9
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 10
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 11
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 12
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 13
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 14
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 15
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 16
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 17
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 18
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 19
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 20
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 21
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 22
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 23
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 24
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 25
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 26
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 27
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 28
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 29
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 30
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 31
+                    }
+                  ]
+                }
+              },
+              {
+                "name": "k2",
+                "value": {
+                  "kind": "list",
+                  "value": [
+                    {
+                      "kind": "integer",
+                      "value": 0
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 1
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 2
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 3
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 4
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 5
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 6
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 7
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 8
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 9
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 10
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 11
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 12
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 13
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 14
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 15
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 16
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 17
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 18
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 19
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 20
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 21
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 22
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 23
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 24
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 25
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 26
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 27
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 28
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 29
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 30
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 31
+                    }
+                  ]
+                }
+              },
+              {
+                "name": "k3",
+                "value": {
+                  "kind": "list",
+                  "value": [
+                    {
+                      "kind": "integer",
+                      "value": 0
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 1
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 2
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 3
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 4
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 5
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 6
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 7
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 8
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 9
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 10
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 11
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 12
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 13
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 14
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 15
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 16
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 17
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 18
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 19
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 20
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 21
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 22
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 23
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 24
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 25
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 26
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 27
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 28
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 29
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 30
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 31
+                    }
+                  ]
+                }
+              },
+              {
+                "name": "k4",
+                "value": {
+                  "kind": "list",
+                  "value": [
+                    {
+                      "kind": "integer",
+                      "value": 0
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 1
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 2
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 3
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 4
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 5
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 6
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 7
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 8
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 9
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 10
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 11
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 12
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 13
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 14
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 15
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 16
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 17
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 18
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 19
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 20
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 21
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 22
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 23
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 24
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 25
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 26
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 27
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 28
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 29
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 30
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 31
+                    }
+                  ]
+                }
+              },
+              {
+                "name": "k5",
+                "value": {
+                  "kind": "list",
+                  "value": [
+                    {
+                      "kind": "integer",
+                      "value": 0
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 1
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 2
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 3
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 4
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 5
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 6
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 7
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 8
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 9
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 10
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 11
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 12
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 13
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 14
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 15
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 16
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 17
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 18
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 19
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 20
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 21
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 22
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 23
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 24
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 25
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 26
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 27
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 28
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 29
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 30
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 31
+                    }
+                  ]
+                }
+              },
+              {
+                "name": "k6",
+                "value": {
+                  "kind": "list",
+                  "value": [
+                    {
+                      "kind": "integer",
+                      "value": 0
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 1
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 2
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 3
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 4
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 5
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 6
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 7
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 8
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 9
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 10
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 11
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 12
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 13
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 14
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 15
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 16
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 17
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 18
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 19
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 20
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 21
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 22
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 23
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 24
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 25
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 26
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 27
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 28
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 29
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 30
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 31
+                    }
+                  ]
+                }
+              },
+              {
+                "name": "k7",
+                "value": {
+                  "kind": "list",
+                  "value": [
+                    {
+                      "kind": "integer",
+                      "value": 0
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 1
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 2
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 3
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 4
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 5
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 6
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 7
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 8
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 9
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 10
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 11
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 12
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 13
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 14
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 15
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 16
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 17
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 18
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 19
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 20
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 21
+                    },
+                    {
+                      "kind": "integer",
+                      "value": 22
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.3",
+      "BPMN 2.0.2 Clause 10.4.1",
+      "BPMN 2.0.2 Clause 10.4.2"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/UserTaskActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/variable/mapping/IoMapping.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/variable/mapping/InputParameter.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/variable/scope/AbstractVariableScope.java"
+    ]
+  }
+}

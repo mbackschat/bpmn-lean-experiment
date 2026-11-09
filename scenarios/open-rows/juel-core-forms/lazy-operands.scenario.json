@@ -1,0 +1,57 @@
+{
+  "kind": "scenario",
+  "id": "juel-core-forms-lazy-operands",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "juel-core-forms-lazy-operands",
+    "relativePath": "scenarios/open-rows/juel-core-forms/lazy-operands.bpmn",
+    "sha256": "d42a3249c1314fdf804a3e92295a3d8086615bc8dd05003ac577b2d8e3c0bb6c",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start",
+      "instanceId": "Run_1",
+      "variables": [
+        {
+          "name": "flag",
+          "value": {
+            "kind": "boolean",
+            "value": true
+          }
+        },
+        {
+          "name": "off",
+          "value": {
+            "kind": "boolean",
+            "value": false
+          }
+        }
+      ]
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.3",
+      "BPMN 2.0.2 Clause 10.4.2",
+      "BPMN 2.0.2 §13.3.2"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/el/JuelExpressionManager.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/el/VariableScopeElResolver.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/el/JuelExpression.java",
+      "juel/src/main/java/org/cibseven/bpm/impl/juel/TypeConverterImpl.java",
+      "juel/src/main/java/org/cibseven/bpm/impl/juel/AstBinary.java",
+      "juel/src/main/java/org/cibseven/bpm/impl/juel/AstUnary.java",
+      "juel/src/main/java/org/cibseven/bpm/impl/juel/AstChoice.java",
+      "juel/src/main/java/org/cibseven/bpm/impl/juel/AstProperty.java",
+      "juel/src/main/java/org/cibseven/bpm/impl/juel/AstMethod.java",
+      "juel/src/main/java/org/cibseven/bpm/impl/juel/AstIdentifier.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/variable/mapping/IoMapping.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/variable/mapping/InputParameter.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java"
+    ]
+  }
+}

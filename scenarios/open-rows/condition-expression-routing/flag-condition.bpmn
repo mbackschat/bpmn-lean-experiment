@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_FlagCondition" targetNamespace="urn:bpmn-lean:scenarios:condition-expression-routing:flag-condition">
+  <process id="Process_FlagCondition" name="Route by flag condition" isExecutable="true">
+    <startEvent id="StartEvent_Start" />
+    <exclusiveGateway id="Gateway_Route" name="Route" gatewayDirection="Diverging" default="Flow_Default" />
+    <userTask id="UserTask_Yes" name="yes branch" />
+    <userTask id="UserTask_No" name="no branch" />
+    <endEvent id="EndEvent_Yes" />
+    <endEvent id="EndEvent_No" />
+    <sequenceFlow id="Flow_Start_Route" sourceRef="StartEvent_Start" targetRef="Gateway_Route" />
+    <sequenceFlow id="Flow_Yes" sourceRef="Gateway_Route" targetRef="UserTask_Yes">
+      <conditionExpression xsi:type="tFormalExpression">${flag}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Default" sourceRef="Gateway_Route" targetRef="UserTask_No" />
+    <sequenceFlow id="Flow_Yes_Done" sourceRef="UserTask_Yes" targetRef="EndEvent_Yes" />
+    <sequenceFlow id="Flow_Default_Done" sourceRef="UserTask_No" targetRef="EndEvent_No" />
+  </process>
+</definitions>

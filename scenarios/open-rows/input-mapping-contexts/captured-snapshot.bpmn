@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_CapturedSnapshot" targetNamespace="urn:bpmn-lean:scenarios:input-mapping-contexts:captured-snapshot">
+  <process id="Process_CapturedSnapshot" name="Send a request whose arguments are computed at entry" isExecutable="true">
+    <startEvent id="StartEvent_Start" />
+    <serviceTask id="ServiceTask_Send" name="Send"
+                 implementation="urn:bpmn-lean:effect:probe-v1"
+                 camunda:delegateExpression="${bpmnLeanEffectHandler}" camunda:asyncBefore="true">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="amount">${quantity * 2}</camunda:inputParameter>
+          <camunda:inputParameter name="snapshot">${order}</camunda:inputParameter>
+          <camunda:inputParameter name="plain">${first}</camunda:inputParameter>
+          <camunda:outputParameter name="confirmation">${result}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </serviceTask>
+    <endEvent id="EndEvent_Done" />
+    <sequenceFlow id="Flow_Start_Send" sourceRef="StartEvent_Start" targetRef="ServiceTask_Send" />
+    <sequenceFlow id="Flow_Send_Done" sourceRef="ServiceTask_Send" targetRef="EndEvent_Done" />
+  </process>
+</definitions>

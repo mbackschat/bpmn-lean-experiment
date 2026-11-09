@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_Relational" targetNamespace="urn:bpmn-lean:scenarios:juel-core-forms:relational">
+  <process id="Process_Relational" name="Evaluate relational forms" isExecutable="true">
+    <startEvent id="StartEvent_Start" />
+    <sequenceFlow id="Flow_Start_Observe" sourceRef="StartEvent_Start" targetRef="UserTask_Observe" />
+    <userTask id="UserTask_Observe" name="Observe the evaluated inputs">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="eqSymbol">${a == 7}</camunda:inputParameter>
+          <camunda:inputParameter name="eqWord">${a eq b}</camunda:inputParameter>
+          <camunda:inputParameter name="neSymbol">${a != b}</camunda:inputParameter>
+          <camunda:inputParameter name="neWord">${a ne 7}</camunda:inputParameter>
+          <camunda:inputParameter name="ltSymbol">${b &lt; a}</camunda:inputParameter>
+          <camunda:inputParameter name="ltWord">${a lt b}</camunda:inputParameter>
+          <camunda:inputParameter name="gtSymbol">${a &gt; b}</camunda:inputParameter>
+          <camunda:inputParameter name="gtWord">${b gt a}</camunda:inputParameter>
+          <camunda:inputParameter name="leSymbol">${a &lt;= 7}</camunda:inputParameter>
+          <camunda:inputParameter name="leWord">${a le b}</camunda:inputParameter>
+          <camunda:inputParameter name="geSymbol">${b &gt;= 4}</camunda:inputParameter>
+          <camunda:inputParameter name="geWord">${a ge b}</camunda:inputParameter>
+          <camunda:inputParameter name="stringLess">${s &lt; t}</camunda:inputParameter>
+          <camunda:inputParameter name="stringEqual">${s == 'abc'}</camunda:inputParameter>
+          <camunda:inputParameter name="stringNotEqual">${s ne t}</camunda:inputParameter>
+          <camunda:inputParameter name="booleanEqual">${flag == true}</camunda:inputParameter>
+          <camunda:inputParameter name="relationalBeforeEquality">${a &gt; b == flag}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <sequenceFlow id="Flow_Observe_Done" sourceRef="UserTask_Observe" targetRef="EndEvent_Done" />
+    <endEvent id="EndEvent_Done" />
+  </process>
+</definitions>

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_CallOwnerData" targetNamespace="urn:bpmn-lean:scenarios:scope-data-visibility:call-owner-data">
+  <process id="Process_Owner" name="Call a Process that has its own data" isExecutable="true">
+    <startEvent id="StartEvent_Start" />
+    <callActivity id="CallActivity_Check" name="Check" calledElement="Process_Check">
+      <extensionElements>
+        <camunda:in source="subject" target="subject" />
+        <camunda:in sourceExpression="fixed" target="mode" />
+        <camunda:out source="verdict" target="checkVerdict" />
+      </extensionElements>
+    </callActivity>
+    <userTask id="UserTask_After" name="After the check">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="afterSubject">${subject}</camunda:inputParameter>
+          <camunda:inputParameter name="afterVerdict">${checkVerdict}</camunda:inputParameter>
+          <camunda:inputParameter name="afterOuterOnly">${outerOnly}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <endEvent id="EndEvent_Done" />
+    <sequenceFlow id="Flow_Start_Check" sourceRef="StartEvent_Start" targetRef="CallActivity_Check" />
+    <sequenceFlow id="Flow_Check_After" sourceRef="CallActivity_Check" targetRef="UserTask_After" />
+    <sequenceFlow id="Flow_After_Done" sourceRef="UserTask_After" targetRef="EndEvent_Done" />
+  </process>
+  <process id="Process_Check" name="The called check" isExecutable="true">
+    <startEvent id="StartEvent_Check" />
+    <userTask id="UserTask_Decide" name="Decide">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="seenSubject">${subject}</camunda:inputParameter>
+          <camunda:inputParameter name="seenMode">${mode}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <endEvent id="EndEvent_Check" />
+    <sequenceFlow id="Flow_Check_Decide" sourceRef="StartEvent_Check" targetRef="UserTask_Decide" />
+    <sequenceFlow id="Flow_Decide_Check" sourceRef="UserTask_Decide" targetRef="EndEvent_Check" />
+  </process>
+</definitions>

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_PlainNoLanguage" targetNamespace="urn:bpmn-lean:scenarios:condition-language-declarations:plain-no-language">
+  <process id="Process_PlainNoLanguage" name="Route on plain no language" isExecutable="true">
+    <startEvent id="StartEvent_Start" />
+    <sequenceFlow id="Flow_Start_Route" sourceRef="StartEvent_Start" targetRef="Gateway_Route" />
+    <exclusiveGateway id="Gateway_Route" name="Route" gatewayDirection="Diverging" default="Flow_No" />
+    <userTask id="UserTask_Yes" name="Yes branch" />
+    <userTask id="UserTask_No" name="No branch" />
+    <endEvent id="EndEvent_Yes" />
+    <endEvent id="EndEvent_No" />
+    <sequenceFlow id="Flow_Yes" sourceRef="Gateway_Route" targetRef="UserTask_Yes">
+      <conditionExpression>${flag}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_No" sourceRef="Gateway_Route" targetRef="UserTask_No" />
+    <sequenceFlow id="Flow_Yes_Done" sourceRef="UserTask_Yes" targetRef="EndEvent_Yes" />
+    <sequenceFlow id="Flow_No_Done" sourceRef="UserTask_No" targetRef="EndEvent_No" />
+  </process>
+</definitions>

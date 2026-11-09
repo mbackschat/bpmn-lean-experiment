@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_LiteralsAndText" targetNamespace="urn:bpmn-lean:scenarios:juel-core-forms:literals-and-text">
+  <process id="Process_LiteralsAndText" name="Evaluate literals and text forms" isExecutable="true">
+    <startEvent id="StartEvent_Start" />
+    <sequenceFlow id="Flow_Start_Observe" sourceRef="StartEvent_Start" targetRef="UserTask_Observe" />
+    <userTask id="UserTask_Observe" name="Observe the evaluated inputs">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="integerLiteral">${42}</camunda:inputParameter>
+          <camunda:inputParameter name="stringSingleQuoted">${'text'}</camunda:inputParameter>
+          <camunda:inputParameter name="stringDoubleQuoted">${"text"}</camunda:inputParameter>
+          <camunda:inputParameter name="booleanLiteral">${true}</camunda:inputParameter>
+          <camunda:inputParameter name="nullLiteral">${null}</camunda:inputParameter>
+          <camunda:inputParameter name="plainNumberText">42</camunda:inputParameter>
+          <camunda:inputParameter name="plainWordsText">hello world</camunda:inputParameter>
+          <camunda:inputParameter name="compositeText">v-${x}-${x + 1}</camunda:inputParameter>
+          <camunda:inputParameter name="adjacentExpressions">${x}${x}</camunda:inputParameter>
+          <camunda:inputParameter name="compositeBoolean">ok:${x &gt; 5}</camunda:inputParameter>
+          <camunda:inputParameter name="deferredDelimiter">#{x + 1}</camunda:inputParameter>
+          <camunda:inputParameter name="escapedQuote">${'a\'b'}</camunda:inputParameter>
+          <camunda:inputParameter name="emptyStringLiteral">${''}</camunda:inputParameter>
+          <camunda:inputParameter name="largestInteger">${9007199254740991}</camunda:inputParameter>
+          <camunda:inputParameter name="escapedDelimiter">\${x}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <sequenceFlow id="Flow_Observe_Done" sourceRef="UserTask_Observe" targetRef="EndEvent_Done" />
+    <endEvent id="EndEvent_Done" />
+  </process>
+</definitions>

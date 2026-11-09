@@ -1,0 +1,131 @@
+{
+  "kind": "scenario",
+  "id": "structured-order-values-empty-containers",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "structured-order-values-order-handoff",
+    "relativePath": "scenarios/open-rows/structured-order-values/order-handoff.bpmn",
+    "sha256": "e89384e7f5f203276ebac15fbf87b9cfbd5b0366e7a92f905e5aa8f9e28502cc",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start",
+      "instanceId": "Run_1",
+      "variables": [
+        {
+          "name": "order",
+          "value": {
+            "kind": "map",
+            "value": [
+              {
+                "name": "customer",
+                "value": {
+                  "kind": "map",
+                  "value": []
+                }
+              },
+              {
+                "name": "lines",
+                "value": {
+                  "kind": "list",
+                  "value": []
+                }
+              },
+              {
+                "name": "note",
+                "value": {
+                  "kind": "string",
+                  "value": ""
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-review",
+      "occurrence": {
+        "processInstanceId": "Run_1",
+        "elementId": "UserTask_Review",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "reviewed",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "lines",
+                  "value": {
+                    "kind": "list",
+                    "value": []
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "result-archive",
+      "occurrence": {
+        "processInstanceId": "Run_1",
+        "elementId": "ServiceTask_Archive",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": [
+          {
+            "name": "result",
+            "value": {
+              "kind": "map",
+              "value": []
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-confirm",
+      "occurrence": {
+        "processInstanceId": "Run_1",
+        "elementId": "UserTask_Confirm",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.3",
+      "BPMN 2.0.2 Clause 10.4.1",
+      "BPMN 2.0.2 Clause 10.4.2",
+      "BPMN 2.0.2 §13.3.3"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ServiceTaskDelegateExpressionActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/UserTaskActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/variable/mapping/IoMapping.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/variable/mapping/InputParameter.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/variable/mapping/OutputParameter.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/el/JuelExpression.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/el/VariableScopeElResolver.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java"
+    ]
+  }
+}

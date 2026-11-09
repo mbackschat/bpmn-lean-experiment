@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_AbsentAndNullAccess" targetNamespace="urn:bpmn-lean:scenarios:juel-core-forms:absent-and-null-access">
+  <process id="Process_AbsentAndNullAccess" name="Evaluate absent and null access forms" isExecutable="true">
+    <startEvent id="StartEvent_Start" />
+    <sequenceFlow id="Flow_Start_Observe" sourceRef="StartEvent_Start" targetRef="UserTask_Observe" />
+    <userTask id="UserTask_Observe" name="Observe the evaluated inputs">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="presentNullEntry">${order.note}</camunda:inputParameter>
+          <camunda:inputParameter name="absentEntry">${order.memo}</camunda:inputParameter>
+          <camunda:inputParameter name="propertyOfNull">${order.note.text}</camunda:inputParameter>
+          <camunda:inputParameter name="nullEqualsNull">${order.note == null}</camunda:inputParameter>
+          <camunda:inputParameter name="absentEqualsNull">${order.memo == null}</camunda:inputParameter>
+          <camunda:inputParameter name="emptyOfAbsent">${empty order.memo}</camunda:inputParameter>
+          <camunda:inputParameter name="nullInArithmetic">${order.note + 1}</camunda:inputParameter>
+          <camunda:inputParameter name="absentBelowAbsent">${order.customer.phone.number}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <sequenceFlow id="Flow_Observe_Done" sourceRef="UserTask_Observe" targetRef="EndEvent_Done" />
+    <endEvent id="EndEvent_Done" />
+  </process>
+</definitions>

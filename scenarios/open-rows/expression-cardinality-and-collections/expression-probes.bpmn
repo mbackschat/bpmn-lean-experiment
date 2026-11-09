@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_ExpressionProbes" targetNamespace="urn:bpmn-lean:scenarios:expression-cardinality-and-collections:expression-probes">
+  <process id="Process_ExpressionProbes" name="One parallel Multi-Instance User Task per expression probe, selected by the start variable probe" isExecutable="true">
+    <startEvent id="StartEvent_Start" name="Probe selected" />
+    <sequenceFlow id="Flow_Start_Select" sourceRef="StartEvent_Start" targetRef="Gateway_Select" />
+    <exclusiveGateway id="Gateway_Select" name="Select probe" gatewayDirection="Diverging" default="Flow_NoProbe" />
+    <userTask id="UserTask_SizeMethod" name="Review for size method">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="position">${loopCounter}</camunda:inputParameter>
+          <camunda:inputParameter name="instances">${nrOfInstances}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+      <multiInstanceLoopCharacteristics isSequential="false">
+        <loopCardinality xsi:type="tFormalExpression">${items.size()}</loopCardinality>
+      </multiInstanceLoopCharacteristics>
+    </userTask>
+    <userTask id="UserTask_StructuredCount" name="Review for structured count">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="position">${loopCounter}</camunda:inputParameter>
+          <camunda:inputParameter name="instances">${nrOfInstances}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+      <multiInstanceLoopCharacteristics isSequential="false">
+        <loopCardinality xsi:type="tFormalExpression">${order.count}</loopCardinality>
+      </multiInstanceLoopCharacteristics>
+    </userTask>
+    <userTask id="UserTask_NumericTextCount" name="Review for numeric text count">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="position">${loopCounter}</camunda:inputParameter>
+          <camunda:inputParameter name="instances">${nrOfInstances}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+      <multiInstanceLoopCharacteristics isSequential="false">
+        <loopCardinality xsi:type="tFormalExpression">${text}</loopCardinality>
+      </multiInstanceLoopCharacteristics>
+    </userTask>
+    <userTask id="UserTask_NonNumericTextCount" name="Review for non numeric text count">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="position">${loopCounter}</camunda:inputParameter>
+          <camunda:inputParameter name="instances">${nrOfInstances}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+      <multiInstanceLoopCharacteristics isSequential="false">
+        <loopCardinality xsi:type="tFormalExpression">${text}</loopCardinality>
+      </multiInstanceLoopCharacteristics>
+    </userTask>
+    <userTask id="UserTask_BooleanCount" name="Review for boolean count">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="position">${loopCounter}</camunda:inputParameter>
+          <camunda:inputParameter name="instances">${nrOfInstances}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+      <multiInstanceLoopCharacteristics isSequential="false">
+        <loopCardinality xsi:type="tFormalExpression">${flag}</loopCardinality>
+      </multiInstanceLoopCharacteristics>
+    </userTask>
+    <userTask id="UserTask_NegativeComputedCount" name="Review for negative computed count">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="position">${loopCounter}</camunda:inputParameter>
+          <camunda:inputParameter name="instances">${nrOfInstances}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+      <multiInstanceLoopCharacteristics isSequential="false">
+        <loopCardinality xsi:type="tFormalExpression">${count - 5}</loopCardinality>
+      </multiInstanceLoopCharacteristics>
+    </userTask>
+    <userTask id="UserTask_FractionalComputedCount" name="Review for fractional computed count">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="position">${loopCounter}</camunda:inputParameter>
+          <camunda:inputParameter name="instances">${nrOfInstances}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+      <multiInstanceLoopCharacteristics isSequential="false">
+        <loopCardinality xsi:type="tFormalExpression">${count / 2}</loopCardinality>
+      </multiInstanceLoopCharacteristics>
+    </userTask>
+    <userTask id="UserTask_NullCount" name="Review for null count">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="position">${loopCounter}</camunda:inputParameter>
+          <camunda:inputParameter name="instances">${nrOfInstances}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+      <multiInstanceLoopCharacteristics isSequential="false">
+        <loopCardinality xsi:type="tFormalExpression">${nothing}</loopCardinality>
+      </multiInstanceLoopCharacteristics>
+    </userTask>
+    <userTask id="UserTask_NestedListCollection" name="Review for nested list collection">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="subject">${item}</camunda:inputParameter>
+          <camunda:inputParameter name="position">${loopCounter}</camunda:inputParameter>
+          <camunda:inputParameter name="instances">${nrOfInstances}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+      <multiInstanceLoopCharacteristics isSequential="false" camunda:collection="${order.groups[1].members}" camunda:elementVariable="item" />
+    </userTask>
+    <userTask id="UserTask_MapCollection" name="Review for map collection">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="subject">${item}</camunda:inputParameter>
+          <camunda:inputParameter name="position">${loopCounter}</camunda:inputParameter>
+          <camunda:inputParameter name="instances">${nrOfInstances}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+      <multiInstanceLoopCharacteristics isSequential="false" camunda:collection="${order.customer}" camunda:elementVariable="item" />
+    </userTask>
+    <userTask id="UserTask_NullCollection" name="Review for null collection">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="subject">${item}</camunda:inputParameter>
+          <camunda:inputParameter name="position">${loopCounter}</camunda:inputParameter>
+          <camunda:inputParameter name="instances">${nrOfInstances}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+      <multiInstanceLoopCharacteristics isSequential="false" camunda:collection="${nothing}" camunda:elementVariable="item" />
+    </userTask>
+    <exclusiveGateway id="Gateway_Merge" name="Merge" gatewayDirection="Converging" />
+    <endEvent id="EndEvent_Done" />
+    <sequenceFlow id="Flow_ToSizeMethod" sourceRef="Gateway_Select" targetRef="UserTask_SizeMethod">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'size-method'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToStructuredCount" sourceRef="Gateway_Select" targetRef="UserTask_StructuredCount">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'structured-count'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToNumericTextCount" sourceRef="Gateway_Select" targetRef="UserTask_NumericTextCount">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'numeric-text-count'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToNonNumericTextCount" sourceRef="Gateway_Select" targetRef="UserTask_NonNumericTextCount">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'non-numeric-text-count'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToBooleanCount" sourceRef="Gateway_Select" targetRef="UserTask_BooleanCount">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'boolean-count'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToNegativeComputedCount" sourceRef="Gateway_Select" targetRef="UserTask_NegativeComputedCount">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'negative-computed-count'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToFractionalComputedCount" sourceRef="Gateway_Select" targetRef="UserTask_FractionalComputedCount">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'fractional-computed-count'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToNullCount" sourceRef="Gateway_Select" targetRef="UserTask_NullCount">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'null-count'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToNestedListCollection" sourceRef="Gateway_Select" targetRef="UserTask_NestedListCollection">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'nested-list-collection'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToMapCollection" sourceRef="Gateway_Select" targetRef="UserTask_MapCollection">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'map-collection'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToNullCollection" sourceRef="Gateway_Select" targetRef="UserTask_NullCollection">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'null-collection'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_NoProbe" sourceRef="Gateway_Select" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_SizeMethod_Merge" sourceRef="UserTask_SizeMethod" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_StructuredCount_Merge" sourceRef="UserTask_StructuredCount" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_NumericTextCount_Merge" sourceRef="UserTask_NumericTextCount" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_NonNumericTextCount_Merge" sourceRef="UserTask_NonNumericTextCount" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_BooleanCount_Merge" sourceRef="UserTask_BooleanCount" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_NegativeComputedCount_Merge" sourceRef="UserTask_NegativeComputedCount" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_FractionalComputedCount_Merge" sourceRef="UserTask_FractionalComputedCount" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_NullCount_Merge" sourceRef="UserTask_NullCount" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_NestedListCollection_Merge" sourceRef="UserTask_NestedListCollection" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_MapCollection_Merge" sourceRef="UserTask_MapCollection" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_NullCollection_Merge" sourceRef="UserTask_NullCollection" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_Merge_Done" sourceRef="Gateway_Merge" targetRef="EndEvent_Done" />
+  </process>
+</definitions>

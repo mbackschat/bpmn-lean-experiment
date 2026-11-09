@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_TwoConcurrentOwners" targetNamespace="urn:bpmn-lean:scenarios:scope-data-visibility:two-concurrent-owners">
+  <process id="Process_TwoConcurrentOwners" name="Two Sub-Processes on concurrent branches each declare slot" isExecutable="true">
+    <startEvent id="StartEvent_Start" />
+    <parallelGateway id="Gateway_Fork" name="Fork" gatewayDirection="Diverging" />
+    <subProcess id="SubProcess_Left" name="Left">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="slot">left-initial</camunda:inputParameter>
+          <camunda:outputParameter name="leftResult">${slot}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+      <startEvent id="StartEvent_Left" />
+      <userTask id="UserTask_LeftTask" name="Left task">
+        <extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="seen">${slot}</camunda:inputParameter>
+            <camunda:inputParameter name="seenSeed">${seed}</camunda:inputParameter>
+          </camunda:inputOutput>
+        </extensionElements>
+      </userTask>
+      <endEvent id="EndEvent_Left" />
+      <sequenceFlow id="Flow_Left_Task" sourceRef="StartEvent_Left" targetRef="UserTask_LeftTask" />
+      <sequenceFlow id="Flow_LeftTask_End" sourceRef="UserTask_LeftTask" targetRef="EndEvent_Left" />
+    </subProcess>
+    <subProcess id="SubProcess_Right" name="Right">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="slot">right-initial</camunda:inputParameter>
+          <camunda:outputParameter name="rightResult">${slot}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+      <startEvent id="StartEvent_Right" />
+      <userTask id="UserTask_RightTask" name="Right task">
+        <extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="seen">${slot}</camunda:inputParameter>
+            <camunda:inputParameter name="seenSeed">${seed}</camunda:inputParameter>
+          </camunda:inputOutput>
+        </extensionElements>
+      </userTask>
+      <endEvent id="EndEvent_Right" />
+      <sequenceFlow id="Flow_Right_Task" sourceRef="StartEvent_Right" targetRef="UserTask_RightTask" />
+      <sequenceFlow id="Flow_RightTask_End" sourceRef="UserTask_RightTask" targetRef="EndEvent_Right" />
+    </subProcess>
+    <parallelGateway id="Gateway_Join" name="Join" gatewayDirection="Converging" />
+    <userTask id="UserTask_Merged" name="Merged">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="leftSeen">${leftResult}</camunda:inputParameter>
+          <camunda:inputParameter name="rightSeen">${rightResult}</camunda:inputParameter>
+          <camunda:inputParameter name="rootSlot">${slot}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <endEvent id="EndEvent_Done" />
+    <sequenceFlow id="Flow_Start_Fork" sourceRef="StartEvent_Start" targetRef="Gateway_Fork" />
+    <sequenceFlow id="Flow_Fork_Left" sourceRef="Gateway_Fork" targetRef="SubProcess_Left" />
+    <sequenceFlow id="Flow_Fork_Right" sourceRef="Gateway_Fork" targetRef="SubProcess_Right" />
+    <sequenceFlow id="Flow_Left_Join" sourceRef="SubProcess_Left" targetRef="Gateway_Join" />
+    <sequenceFlow id="Flow_Right_Join" sourceRef="SubProcess_Right" targetRef="Gateway_Join" />
+    <sequenceFlow id="Flow_Join_Merged" sourceRef="Gateway_Join" targetRef="UserTask_Merged" />
+    <sequenceFlow id="Flow_Merged_Done" sourceRef="UserTask_Merged" targetRef="EndEvent_Done" />
+  </process>
+</definitions>

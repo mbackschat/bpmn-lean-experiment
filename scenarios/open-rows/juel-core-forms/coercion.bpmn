@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_Coercion" targetNamespace="urn:bpmn-lean:scenarios:juel-core-forms:coercion">
+  <process id="Process_Coercion" name="Evaluate coercion forms" isExecutable="true">
+    <startEvent id="StartEvent_Start" />
+    <sequenceFlow id="Flow_Start_Observe" sourceRef="StartEvent_Start" targetRef="UserTask_Observe" />
+    <userTask id="UserTask_Observe" name="Observe the evaluated inputs">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="textPlusInteger">${s + 1}</camunda:inputParameter>
+          <camunda:inputParameter name="textLiteralPlusInteger">${'3' + 4}</camunda:inputParameter>
+          <camunda:inputParameter name="textEqualsInteger">${s == a}</camunda:inputParameter>
+          <camunda:inputParameter name="integerEqualsText">${a == '7'}</camunda:inputParameter>
+          <camunda:inputParameter name="booleanEqualsText">${flag == t}</camunda:inputParameter>
+          <camunda:inputParameter name="trueTextAsBoolean">${t and flag}</camunda:inputParameter>
+          <camunda:inputParameter name="numericTextAsBoolean">${s and flag}</camunda:inputParameter>
+          <camunda:inputParameter name="nullAsZero">${nothing + 1}</camunda:inputParameter>
+          <camunda:inputParameter name="nullAsFalse">${nothing or flag}</camunda:inputParameter>
+          <camunda:inputParameter name="nullEqualsEmptyText">${nothing == ''}</camunda:inputParameter>
+          <camunda:inputParameter name="emptyTextEqualsNull">${blank == null}</camunda:inputParameter>
+          <camunda:inputParameter name="emptyTextAsZero">${blank + 1}</camunda:inputParameter>
+          <camunda:inputParameter name="textBeforeText">${'10' &lt; '9'}</camunda:inputParameter>
+          <camunda:inputParameter name="integerBeforeText">${10 &lt; '9'}</camunda:inputParameter>
+          <camunda:inputParameter name="textAgainstInteger">${s &gt; 5}</camunda:inputParameter>
+          <camunda:inputParameter name="trueTextCondition">${t ? 1 : 2}</camunda:inputParameter>
+          <camunda:inputParameter name="otherTextCondition">${'maybe' ? 1 : 2}</camunda:inputParameter>
+          <camunda:inputParameter name="negatedText">${!t}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <sequenceFlow id="Flow_Observe_Done" sourceRef="UserTask_Observe" targetRef="EndEvent_Done" />
+    <endEvent id="EndEvent_Done" />
+  </process>
+</definitions>

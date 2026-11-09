@@ -1,0 +1,58 @@
+{
+  "kind": "scenario",
+  "id": "juel-evaluation-failures-integer-overflow",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "juel-evaluation-failures-failure-probes",
+    "relativePath": "scenarios/open-rows/juel-evaluation-failures/failure-probes.bpmn",
+    "sha256": "151d9ca88c66ea440857060b8f9326793bc1b3c25ac661998b6969c68a9ab27f",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start",
+      "instanceId": "Run_1",
+      "variables": [
+        {
+          "name": "big",
+          "value": {
+            "kind": "integer",
+            "value": 9007199254740991
+          }
+        },
+        {
+          "name": "probe",
+          "value": {
+            "kind": "string",
+            "value": "integer-overflow"
+          }
+        }
+      ]
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.3",
+      "BPMN 2.0.2 Clause 10.4.2",
+      "BPMN 2.0.2 §10.5.1"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/el/JuelExpressionManager.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/el/VariableScopeElResolver.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/el/JuelExpression.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/el/ProcessApplicationBeanElResolverDelegate.java",
+      "juel/src/main/java/org/cibseven/bpm/impl/juel/TypeConverterImpl.java",
+      "juel/src/main/java/org/cibseven/bpm/impl/juel/AstBinary.java",
+      "juel/src/main/java/org/cibseven/bpm/impl/juel/AstProperty.java",
+      "juel/src/main/java/org/cibseven/bpm/impl/juel/AstMethod.java",
+      "juel/src/main/java/org/cibseven/bpm/impl/juel/AstIdentifier.java",
+      "juel/src/main/java/org/cibseven/bpm/impl/juel/NumberOperations.java",
+      "juel/src/main/java/org/cibseven/bpm/impl/juel/BooleanOperations.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/variable/mapping/IoMapping.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/variable/mapping/InputParameter.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java"
+    ]
+  }
+}

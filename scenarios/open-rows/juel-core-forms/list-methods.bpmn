@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_ListMethods" targetNamespace="urn:bpmn-lean:scenarios:juel-core-forms:list-methods">
+  <process id="Process_ListMethods" name="Evaluate list methods forms" isExecutable="true">
+    <startEvent id="StartEvent_Start" />
+    <sequenceFlow id="Flow_Start_Observe" sourceRef="StartEvent_Start" targetRef="UserTask_Observe" />
+    <userTask id="UserTask_Observe" name="Observe the evaluated inputs">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="size">${items.size()}</camunda:inputParameter>
+          <camunda:inputParameter name="contains">${items.contains('y')}</camunda:inputParameter>
+          <camunda:inputParameter name="containsAbsent">${items.contains('q')}</camunda:inputParameter>
+          <camunda:inputParameter name="isEmpty">${items.isEmpty()}</camunda:inputParameter>
+          <camunda:inputParameter name="get">${items.get(1)}</camunda:inputParameter>
+          <camunda:inputParameter name="indexOf">${items.indexOf('x')}</camunda:inputParameter>
+          <camunda:inputParameter name="lastIndexOf">${items.lastIndexOf('x')}</camunda:inputParameter>
+          <camunda:inputParameter name="sizeMinusOne">${items.size() - 1}</camunda:inputParameter>
+          <camunda:inputParameter name="sizeAsIndex">${items[items.size() - 1]}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <sequenceFlow id="Flow_Observe_Done" sourceRef="UserTask_Observe" targetRef="EndEvent_Done" />
+    <endEvent id="EndEvent_Done" />
+  </process>
+</definitions>

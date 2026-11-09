@@ -1,0 +1,30 @@
+# Scope data visibility, shadowing and lifetime
+
+Answer-free schedules for [PC-DATA-04](../../../docs/PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list): scope-local and parent visibility, present-null shadowing, nearest-existing writes and exact lifetime for Activity, embedded and called owners, two concurrent owners and two repeated lifetimes, and mapped Calls on concurrent branches under reverse completion. The [data semantics](../../../docs/kernel/semantics/DATA-SEMANTICS-SPEC.md) own the account (name-based declaration, shadowing and nearest-owner writes are the CIB extension [CIB-EXT-0020](../../../docs/CIB-BPMN-RELATION-REGISTER.md#cib-ext-0020--nested-embedded-scope-locals-and-nearest-owner-writes)); the retained CIB Seven `2.2.0` answer is the target. The profile is `cibseven-2.2.0` with no source overlay. The Multi-Instance owner is witnessed by [multi-instance-user-task](../multi-instance-user-task/README.md) and [multi-instance-sub-process](../multi-instance-sub-process/README.md), whose body-local schedules (PC-MI-10) share the row. The earlier registered scenarios [nested-embedded-scope-data](../../nested-embedded-scope-data/README.md), [scope-reentry](../../scope-reentry/README.md) and [concurrent-mapped-calls](../../concurrent-mapped-calls/README.md) use the scope-chain profile and handler overlays; these models carry no overlay and use only observation the CIB runner projects (open task inputs and the root variables).
+
+Every model publishes what each scope sees through User Task inputs, which the open task shows, and through the root variables.
+
+| Model | Journey |
+|---|---|
+| [shadowing-and-writes](shadowing-and-writes.bpmn) | The Process holds `status`, `memo` and `ticket`. The Sub-Process *Review* declares `status` as a present Null, `memo` and `subOnly`, and copies all three out as `finalStatus`, `finalMemo` and `finalSubOnly`. Its User Task *Inspect* declares its own `memo` and reads `status`, `memo`, `subOnly` and `ticket`. The User Task *After the review* reads the names at the Process again. |
+| [two-concurrent-owners](two-concurrent-owners.bpmn) | A Parallel Gateway forks into the Sub-Processes *Left* and *Right*, each declaring `slot` over the Process's own `slot` and copying it out as `leftResult` or `rightResult`; *Merged* reads both results and the Process `slot`. |
+| [repeated-lifetimes](repeated-lifetimes.bpmn) | The Sub-Process *Round* declares `attempt` and takes `carry` from the Process `carried`, to which it copies `attempt` back; *Decide* writes `again`, and an Exclusive Gateway repeats *Round* or ends. |
+| [call-owner-data](call-owner-data.bpmn) | The Call Activity *Check* maps `subject` in by name, a literal into `mode`, and `verdict` out as `checkVerdict`; the called Process has its own task *Decide*. |
+| [concurrent-calls](concurrent-calls.bpmn) | A Parallel Gateway forks into the Sub-Processes *Branch A* and *Branch B*, each declaring `slot` and holding a Call Activity of the shared Process *Expert* that maps its own topic in and `opinion` out to `slot`; each Sub-Process copies `slot` out as `resultA` or `resultB`. |
+
+| Schedule | Model | Case it separates | Row |
+|---|---|---|---|
+| [shadowing-lifecycle](shadowing-lifecycle.scenario.json) | [shadowing-and-writes](shadowing-and-writes.bpmn) | A local Null hides a Process namesake inside a Sub-Process; the task inside reads it, shadows the Sub-Process local `memo` with its own, and completes with one name for each layer (the task local, the Sub-Process locals, the Process) and one new name; after the exit the Process variables are read again. | PC-DATA-04 |
+| [completion-without-writes](completion-without-writes.scenario.json) | [shadowing-and-writes](shadowing-and-writes.bpmn) | The same Process, the task completing with no value; the Sub-Process outputs copy its untouched locals out. | PC-DATA-04 |
+| [right-completed-first](right-completed-first.scenario.json) | [two-concurrent-owners](two-concurrent-owners.bpmn) | Two Sub-Processes on concurrent branches each declare `slot` over a Process `slot`; each task writes `slot`, the right one first. | PC-DATA-04 |
+| [left-completed-first](left-completed-first.scenario.json) | [two-concurrent-owners](two-concurrent-owners.bpmn) | The same Process, the left task writing first. | PC-DATA-04 |
+| [second-lifetime](second-lifetime.scenario.json) | [repeated-lifetimes](repeated-lifetimes.bpmn) | A Sub-Process whose task rewrites its local `attempt` is entered a second time; its output `carried` feeds the second entry's `carry` input. | PC-DATA-04 |
+| [called-owner](called-owner.scenario.json) | [call-owner-data](call-owner-data.bpmn) | A Call with two `camunda:in` mappings and one `camunda:out`; the called task writes the mapped-in `subject`, the mapped-out `verdict` and a name the Call does not map out. | PC-DATA-04 |
+| [concurrent-calls-reverse](concurrent-calls-reverse.scenario.json) | [concurrent-calls](concurrent-calls.bpmn) | Two Call Activities of one called Process, each inside its own Sub-Process on a concurrent branch, map their opinions out to a Sub-Process local; the branch B call returns first. | PC-DATA-04 |
+
+The called instance of a Call Activity is addressed as `call:<length of the caller instance id>:<caller instance id>:<length of the Call element id>:<Call element id>:<activation>`, the identity the other called-Process schedules use.
+
+Notes for the target runners:
+
+- A mapped User Task completion that names its own locals is the case the [data semantics](../../../docs/kernel/semantics/DATA-SEMANTICS-SPEC.md) list as owed to this row; the schedule *shadowing-lifecycle* is its witness.
+- The Call Activity mappings include `sourceExpression`, a literal and an expression form.

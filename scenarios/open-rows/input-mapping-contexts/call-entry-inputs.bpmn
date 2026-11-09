@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_CallEntryInputs" targetNamespace="urn:bpmn-lean:scenarios:input-mapping-contexts:call-entry-inputs">
+  <process id="Process_CallEntryInputs" name="Call a Process whose inputs take every form" isExecutable="true">
+    <startEvent id="StartEvent_Start" />
+    <callActivity id="CallActivity_Delegate" name="Delegate" calledElement="Process_Delegate">
+      <extensionElements>
+        <camunda:in sourceExpression="${seed}" target="first" />
+        <camunda:in source="first" target="second" />
+        <camunda:in sourceExpression="fixed" target="literalIn" />
+        <camunda:in source="order" target="referenceIn" />
+        <camunda:in sourceExpression="${order.customer.name}" target="fieldIn" />
+        <camunda:in sourceExpression="${quantity * 2}" target="expressionIn" />
+        <camunda:in sourceExpression="Order ${order.customer.name} x${quantity}" target="compositeIn" />
+      </extensionElements>
+    </callActivity>
+    <endEvent id="EndEvent_Done" />
+    <sequenceFlow id="Flow_Start_Delegate" sourceRef="StartEvent_Start" targetRef="CallActivity_Delegate" />
+    <sequenceFlow id="Flow_Delegate_Done" sourceRef="CallActivity_Delegate" targetRef="EndEvent_Done" />
+  </process>
+  <process id="Process_Delegate" name="The called Process echoes what it received" isExecutable="true">
+    <startEvent id="StartEvent_Delegate" />
+    <userTask id="UserTask_Echo" name="Echo">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="seenSecond">${second}</camunda:inputParameter>
+          <camunda:inputParameter name="seenFirst">${first}</camunda:inputParameter>
+          <camunda:inputParameter name="seenLiteral">${literalIn}</camunda:inputParameter>
+          <camunda:inputParameter name="seenReference">${referenceIn}</camunda:inputParameter>
+          <camunda:inputParameter name="seenField">${fieldIn}</camunda:inputParameter>
+          <camunda:inputParameter name="seenExpression">${expressionIn}</camunda:inputParameter>
+          <camunda:inputParameter name="seenComposite">${compositeIn}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <endEvent id="EndEvent_Delegate" />
+    <sequenceFlow id="Flow_Delegate_Echo" sourceRef="StartEvent_Delegate" targetRef="UserTask_Echo" />
+    <sequenceFlow id="Flow_Echo_Delegate" sourceRef="UserTask_Echo" targetRef="EndEvent_Delegate" />
+  </process>
+</definitions>

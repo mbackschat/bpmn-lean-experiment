@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_ScopeEntryInputs" targetNamespace="urn:bpmn-lean:scenarios:input-mapping-contexts:scope-entry-inputs">
+  <process id="Process_ScopeEntryInputs" name="Enter a Sub-Process whose inputs take every form" isExecutable="true">
+    <startEvent id="StartEvent_Start" />
+    <subProcess id="SubProcess_Scope" name="Scope">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="second">${first}</camunda:inputParameter>
+          <camunda:inputParameter name="first">${seed}</camunda:inputParameter>
+          <camunda:inputParameter name="literalIn">fixed</camunda:inputParameter>
+          <camunda:inputParameter name="referenceIn">${order}</camunda:inputParameter>
+          <camunda:inputParameter name="fieldIn">${order.customer.name}</camunda:inputParameter>
+          <camunda:inputParameter name="expressionIn">${quantity * 2}</camunda:inputParameter>
+          <camunda:inputParameter name="compositeIn">Order ${order.customer.name} x${quantity}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+      <startEvent id="StartEvent_Scope" />
+      <userTask id="UserTask_Echo" name="Echo">
+        <extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="seenSecond">${second}</camunda:inputParameter>
+            <camunda:inputParameter name="seenFirst">${first}</camunda:inputParameter>
+            <camunda:inputParameter name="seenLiteral">${literalIn}</camunda:inputParameter>
+            <camunda:inputParameter name="seenReference">${referenceIn}</camunda:inputParameter>
+            <camunda:inputParameter name="seenField">${fieldIn}</camunda:inputParameter>
+            <camunda:inputParameter name="seenExpression">${expressionIn}</camunda:inputParameter>
+            <camunda:inputParameter name="seenComposite">${compositeIn}</camunda:inputParameter>
+          </camunda:inputOutput>
+        </extensionElements>
+      </userTask>
+      <endEvent id="EndEvent_Scope" />
+      <sequenceFlow id="Flow_Scope_Echo" sourceRef="StartEvent_Scope" targetRef="UserTask_Echo" />
+      <sequenceFlow id="Flow_Echo_Scope" sourceRef="UserTask_Echo" targetRef="EndEvent_Scope" />
+    </subProcess>
+    <endEvent id="EndEvent_Done" />
+    <sequenceFlow id="Flow_Start_Scope" sourceRef="StartEvent_Start" targetRef="SubProcess_Scope" />
+    <sequenceFlow id="Flow_Scope_Done" sourceRef="SubProcess_Scope" targetRef="EndEvent_Done" />
+  </process>
+</definitions>

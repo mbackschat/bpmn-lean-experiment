@@ -1,0 +1,86 @@
+{
+  "kind": "scenario",
+  "id": "output-mapping-fanout-completion-fanout",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "output-mapping-fanout-user-task-fanout",
+    "relativePath": "scenarios/open-rows/output-mapping-fanout/user-task-fanout.bpmn",
+    "sha256": "edec7b7ce39bff307cec789e5159ecc4dd335b04a2c7e174bf85cee76771dff9",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start",
+      "instanceId": "Run_1",
+      "variables": [
+        {
+          "name": "claim",
+          "value": {
+            "kind": "string",
+            "value": "C-1"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-decide",
+      "occurrence": {
+        "processInstanceId": "Run_1",
+        "elementId": "UserTask_Decide",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "decision",
+            "value": {
+              "kind": "string",
+              "value": "approve"
+            }
+          },
+          {
+            "name": "note",
+            "value": {
+              "kind": "null"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-observe",
+      "occurrence": {
+        "processInstanceId": "Run_1",
+        "elementId": "UserTask_Observe",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.3",
+      "BPMN 2.0.2 §10.3.5",
+      "BPMN 2.0.2 Clause 10.4.2",
+      "BPMN 2.0.2 §13.3.3"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/variable/mapping/IoMapping.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/variable/mapping/OutputParameter.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/variable/mapping/IoParameter.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ServiceTaskDelegateExpressionActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/UserTaskActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/SubProcessActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/variable/scope/AbstractVariableScope.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java"
+    ]
+  }
+}

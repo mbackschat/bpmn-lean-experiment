@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_MiEntryInputs" targetNamespace="urn:bpmn-lean:scenarios:input-mapping-contexts:mi-entry-inputs">
+  <process id="Process_MiEntryInputs" name="Visit twice, in turn, with inputs of every form" isExecutable="true">
+    <startEvent id="StartEvent_Start" />
+    <userTask id="UserTask_Visit" name="Visit">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="position">${loopCounter}</camunda:inputParameter>
+          <camunda:inputParameter name="second">${first}</camunda:inputParameter>
+          <camunda:inputParameter name="first">${seed}</camunda:inputParameter>
+          <camunda:inputParameter name="literalIn">fixed</camunda:inputParameter>
+          <camunda:inputParameter name="fieldIn">${order.customer.name}</camunda:inputParameter>
+          <camunda:inputParameter name="expressionIn">${quantity + loopCounter}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+      <multiInstanceLoopCharacteristics isSequential="true">
+        <loopCardinality xsi:type="tFormalExpression">${count}</loopCardinality>
+      </multiInstanceLoopCharacteristics>
+    </userTask>
+    <endEvent id="EndEvent_Done" />
+    <sequenceFlow id="Flow_Start_Visit" sourceRef="StartEvent_Start" targetRef="UserTask_Visit" />
+    <sequenceFlow id="Flow_Visit_Done" sourceRef="UserTask_Visit" targetRef="EndEvent_Done" />
+  </process>
+</definitions>

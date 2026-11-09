@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_ConcurrentCalls" targetNamespace="urn:bpmn-lean:scenarios:scope-data-visibility:concurrent-calls">
+  <process id="Process_Trip" name="Two branches each call the same expert Process" isExecutable="true">
+    <startEvent id="StartEvent_Start" />
+    <parallelGateway id="Gateway_Fork" name="Fork" gatewayDirection="Diverging" />
+    <subProcess id="SubProcess_BranchA" name="Branch A">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="slot">${null}</camunda:inputParameter>
+          <camunda:outputParameter name="resultA">${slot}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+      <startEvent id="StartEvent_BranchA" />
+      <callActivity id="CallActivity_CallA" name="Call A" calledElement="Process_Expert">
+        <extensionElements>
+          <camunda:in sourceExpression="alpha" target="topic" />
+          <camunda:in source="seed" target="seed" />
+          <camunda:out source="opinion" target="slot" />
+        </extensionElements>
+      </callActivity>
+      <endEvent id="EndEvent_BranchA" />
+      <sequenceFlow id="Flow_BranchA_Call" sourceRef="StartEvent_BranchA" targetRef="CallActivity_CallA" />
+      <sequenceFlow id="Flow_CallA_End" sourceRef="CallActivity_CallA" targetRef="EndEvent_BranchA" />
+    </subProcess>
+    <subProcess id="SubProcess_BranchB" name="Branch B">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="slot">${null}</camunda:inputParameter>
+          <camunda:outputParameter name="resultB">${slot}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+      <startEvent id="StartEvent_BranchB" />
+      <callActivity id="CallActivity_CallB" name="Call B" calledElement="Process_Expert">
+        <extensionElements>
+          <camunda:in sourceExpression="beta" target="topic" />
+          <camunda:in source="seed" target="seed" />
+          <camunda:out source="opinion" target="slot" />
+        </extensionElements>
+      </callActivity>
+      <endEvent id="EndEvent_BranchB" />
+      <sequenceFlow id="Flow_BranchB_Call" sourceRef="StartEvent_BranchB" targetRef="CallActivity_CallB" />
+      <sequenceFlow id="Flow_CallB_End" sourceRef="CallActivity_CallB" targetRef="EndEvent_BranchB" />
+    </subProcess>
+    <parallelGateway id="Gateway_Join" name="Join" gatewayDirection="Converging" />
+    <userTask id="UserTask_Merged" name="Merged">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="seenA">${resultA}</camunda:inputParameter>
+          <camunda:inputParameter name="seenB">${resultB}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <endEvent id="EndEvent_Done" />
+    <sequenceFlow id="Flow_Start_Fork" sourceRef="StartEvent_Start" targetRef="Gateway_Fork" />
+    <sequenceFlow id="Flow_Fork_A" sourceRef="Gateway_Fork" targetRef="SubProcess_BranchA" />
+    <sequenceFlow id="Flow_Fork_B" sourceRef="Gateway_Fork" targetRef="SubProcess_BranchB" />
+    <sequenceFlow id="Flow_A_Join" sourceRef="SubProcess_BranchA" targetRef="Gateway_Join" />
+    <sequenceFlow id="Flow_B_Join" sourceRef="SubProcess_BranchB" targetRef="Gateway_Join" />
+    <sequenceFlow id="Flow_Join_Merged" sourceRef="Gateway_Join" targetRef="UserTask_Merged" />
+    <sequenceFlow id="Flow_Merged_Done" sourceRef="UserTask_Merged" targetRef="EndEvent_Done" />
+  </process>
+  <process id="Process_Expert" name="The shared expert opinion" isExecutable="true">
+    <startEvent id="StartEvent_Expert" />
+    <userTask id="UserTask_Opine" name="Opine">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="seenTopic">${topic}</camunda:inputParameter>
+          <camunda:inputParameter name="seenSeed">${seed}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <endEvent id="EndEvent_Expert" />
+    <sequenceFlow id="Flow_Expert_Opine" sourceRef="StartEvent_Expert" targetRef="UserTask_Opine" />
+    <sequenceFlow id="Flow_Opine_Expert" sourceRef="UserTask_Opine" targetRef="EndEvent_Expert" />
+  </process>
+</definitions>

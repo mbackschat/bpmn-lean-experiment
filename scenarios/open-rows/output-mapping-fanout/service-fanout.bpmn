@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_ServiceFanout" targetNamespace="urn:bpmn-lean:scenarios:output-mapping-fanout:service-fanout">
+  <process id="Process_ServiceFanout" name="Map one Service result to many targets, local and enclosing" isExecutable="true">
+    <startEvent id="StartEvent_Start" />
+    <subProcess id="SubProcess_Pack" name="Pack">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="localTarget">local-initial</camunda:inputParameter>
+          <camunda:outputParameter name="packed">${localTarget}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+      <startEvent id="StartEvent_Pack" />
+      <serviceTask id="ServiceTask_Compute" name="Compute"
+                   implementation="urn:bpmn-lean:effect:probe-v1"
+                   camunda:delegateExpression="${bpmnLeanEffectHandler}" camunda:asyncBefore="true">
+        <extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="seed">${seed}</camunda:inputParameter>
+            <camunda:outputParameter name="textOut">${textResult}</camunda:outputParameter>
+            <camunda:outputParameter name="fanoutOne">${textResult}</camunda:outputParameter>
+            <camunda:outputParameter name="fanoutTwo">${textResult}</camunda:outputParameter>
+            <camunda:outputParameter name="nullOut">${nullResult}</camunda:outputParameter>
+            <camunda:outputParameter name="pickedCity">${structuredResult.city}</camunda:outputParameter>
+            <camunda:outputParameter name="wholeStructured">${structuredResult}</camunda:outputParameter>
+            <camunda:outputParameter name="localTarget">${textResult}</camunda:outputParameter>
+          </camunda:inputOutput>
+        </extensionElements>
+      </serviceTask>
+      <endEvent id="EndEvent_Pack" />
+      <sequenceFlow id="Flow_Pack_Compute" sourceRef="StartEvent_Pack" targetRef="ServiceTask_Compute" />
+      <sequenceFlow id="Flow_Compute_Pack" sourceRef="ServiceTask_Compute" targetRef="EndEvent_Pack" />
+    </subProcess>
+    <userTask id="UserTask_Observe" name="Observe">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="seenText">${textOut}</camunda:inputParameter>
+          <camunda:inputParameter name="seenOne">${fanoutOne}</camunda:inputParameter>
+          <camunda:inputParameter name="seenTwo">${fanoutTwo}</camunda:inputParameter>
+          <camunda:inputParameter name="seenNull">${nullOut}</camunda:inputParameter>
+          <camunda:inputParameter name="seenCity">${pickedCity}</camunda:inputParameter>
+          <camunda:inputParameter name="seenWhole">${wholeStructured}</camunda:inputParameter>
+          <camunda:inputParameter name="seenPacked">${packed}</camunda:inputParameter>
+          <camunda:inputParameter name="seenSeed">${seed}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <endEvent id="EndEvent_Done" />
+    <sequenceFlow id="Flow_Start_Pack" sourceRef="StartEvent_Start" targetRef="SubProcess_Pack" />
+    <sequenceFlow id="Flow_Pack_Observe" sourceRef="SubProcess_Pack" targetRef="UserTask_Observe" />
+    <sequenceFlow id="Flow_Observe_Done" sourceRef="UserTask_Observe" targetRef="EndEvent_Done" />
+  </process>
+</definitions>

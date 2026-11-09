@@ -1,0 +1,120 @@
+{
+  "kind": "scenario",
+  "id": "scalar-types-in-multi-instance-strings-only",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "scalar-types-in-multi-instance-typed-body",
+    "relativePath": "scenarios/open-rows/scalar-types-in-multi-instance/typed-body.bpmn",
+    "sha256": "944142614b5d66accadfef2f9ca062a32a2a5a498cbb8635e7e92285e4098e02",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start",
+      "instanceId": "Run_1",
+      "variables": []
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "result-fetch-1",
+      "occurrence": {
+        "processInstanceId": "Run_1",
+        "elementId": "ServiceTask_Fetch",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": [
+          {
+            "name": "result",
+            "value": {
+              "kind": "string",
+              "value": "a"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-review-1",
+      "occurrence": {
+        "processInstanceId": "Run_1",
+        "elementId": "UserTask_Review",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "v1"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "result-fetch-2",
+      "occurrence": {
+        "processInstanceId": "Run_1",
+        "elementId": "ServiceTask_Fetch",
+        "activation": 2
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": [
+          {
+            "name": "result",
+            "value": {
+              "kind": "string",
+              "value": "b"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-review-2",
+      "occurrence": {
+        "processInstanceId": "Run_1",
+        "elementId": "UserTask_Review",
+        "activation": 2
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "v2"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.3",
+      "BPMN 2.0.2 §10.3.5",
+      "BPMN 2.0.2 §10.3.8",
+      "BPMN 2.0.2 Clause 10.4.1"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ServiceTaskDelegateExpressionActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/SequentialMultiInstanceActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/UserTaskActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/variable/mapping/IoMapping.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/variable/mapping/OutputParameter.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java"
+    ]
+  }
+}

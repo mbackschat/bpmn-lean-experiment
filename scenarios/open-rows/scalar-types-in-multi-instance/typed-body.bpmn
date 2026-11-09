@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_TypedBody" targetNamespace="urn:bpmn-lean:scenarios:scalar-types-in-multi-instance:typed-body">
+  <process id="Process_TypedBody" name="Fetch and review twice, in turn" isExecutable="true">
+    <startEvent id="StartEvent_Start" />
+    <subProcess id="SubProcess_Batch" name="Batch">
+      <multiInstanceLoopCharacteristics isSequential="true">
+        <loopCardinality xsi:type="tFormalExpression">2</loopCardinality>
+      </multiInstanceLoopCharacteristics>
+      <startEvent id="StartEvent_Body" />
+      <serviceTask id="ServiceTask_Fetch" name="Fetch"
+                   implementation="urn:bpmn-lean:effect:probe-v1"
+                   camunda:delegateExpression="${bpmnLeanEffectHandler}" camunda:asyncBefore="true">
+        <extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="slot">${loopCounter}</camunda:inputParameter>
+            <camunda:outputParameter name="fetched">${result}</camunda:outputParameter>
+          </camunda:inputOutput>
+        </extensionElements>
+      </serviceTask>
+      <userTask id="UserTask_Review" name="Review">
+        <extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="position">${loopCounter}</camunda:inputParameter>
+            <camunda:inputParameter name="seen">${fetched}</camunda:inputParameter>
+          </camunda:inputOutput>
+        </extensionElements>
+      </userTask>
+      <endEvent id="EndEvent_Body" />
+      <sequenceFlow id="Flow_Body_Fetch" sourceRef="StartEvent_Body" targetRef="ServiceTask_Fetch" />
+      <sequenceFlow id="Flow_Fetch_Review" sourceRef="ServiceTask_Fetch" targetRef="UserTask_Review" />
+      <sequenceFlow id="Flow_Review_Body" sourceRef="UserTask_Review" targetRef="EndEvent_Body" />
+    </subProcess>
+    <endEvent id="EndEvent_Done" />
+    <sequenceFlow id="Flow_Start_Batch" sourceRef="StartEvent_Start" targetRef="SubProcess_Batch" />
+    <sequenceFlow id="Flow_Batch_Done" sourceRef="SubProcess_Batch" targetRef="EndEvent_Done" />
+  </process>
+</definitions>

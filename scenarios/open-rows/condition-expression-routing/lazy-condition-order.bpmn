@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_LazyConditionOrder" targetNamespace="urn:bpmn-lean:scenarios:condition-expression-routing:lazy-condition-order">
+  <process id="Process_LazyConditionOrder" name="Route by lazy condition order" isExecutable="true">
+    <startEvent id="StartEvent_Start" />
+    <exclusiveGateway id="Gateway_Route" name="Route" gatewayDirection="Diverging" default="Flow_Default" />
+    <userTask id="UserTask_First" name="first branch" />
+    <userTask id="UserTask_Broken" name="broken branch" />
+    <userTask id="UserTask_Fallback" name="fallback branch" />
+    <endEvent id="EndEvent_First" />
+    <endEvent id="EndEvent_Broken" />
+    <endEvent id="EndEvent_Fallback" />
+    <sequenceFlow id="Flow_Start_Route" sourceRef="StartEvent_Start" targetRef="Gateway_Route" />
+    <sequenceFlow id="Flow_First" sourceRef="Gateway_Route" targetRef="UserTask_First">
+      <conditionExpression xsi:type="tFormalExpression">${flag}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Broken" sourceRef="Gateway_Route" targetRef="UserTask_Broken">
+      <conditionExpression xsi:type="tFormalExpression">${missing}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Default" sourceRef="Gateway_Route" targetRef="UserTask_Fallback" />
+    <sequenceFlow id="Flow_First_Done" sourceRef="UserTask_First" targetRef="EndEvent_First" />
+    <sequenceFlow id="Flow_Broken_Done" sourceRef="UserTask_Broken" targetRef="EndEvent_Broken" />
+    <sequenceFlow id="Flow_Default_Done" sourceRef="UserTask_Fallback" targetRef="EndEvent_Fallback" />
+  </process>
+</definitions>

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_EmptyOperator" targetNamespace="urn:bpmn-lean:scenarios:juel-core-forms:empty-operator">
+  <process id="Process_EmptyOperator" name="Evaluate empty operator forms" isExecutable="true">
+    <startEvent id="StartEvent_Start" />
+    <sequenceFlow id="Flow_Start_Observe" sourceRef="StartEvent_Start" targetRef="UserTask_Observe" />
+    <userTask id="UserTask_Observe" name="Observe the evaluated inputs">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="emptyString">${empty blank}</camunda:inputParameter>
+          <camunda:inputParameter name="emptyNull">${empty nothing}</camunda:inputParameter>
+          <camunda:inputParameter name="emptyList">${empty noItems}</camunda:inputParameter>
+          <camunda:inputParameter name="filledList">${empty items}</camunda:inputParameter>
+          <camunda:inputParameter name="emptyMap">${empty noFields}</camunda:inputParameter>
+          <camunda:inputParameter name="filledMap">${empty person}</camunda:inputParameter>
+          <camunda:inputParameter name="filledString">${empty word}</camunda:inputParameter>
+          <camunda:inputParameter name="zeroNumber">${empty zero}</camunda:inputParameter>
+          <camunda:inputParameter name="falseBoolean">${empty flag}</camunda:inputParameter>
+          <camunda:inputParameter name="emptyLiteral">${empty ''}</camunda:inputParameter>
+          <camunda:inputParameter name="notEmpty">${not empty items}</camunda:inputParameter>
+          <camunda:inputParameter name="emptyOfProperty">${empty person.name}</camunda:inputParameter>
+          <camunda:inputParameter name="emptyOfElement">${empty items[1]}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <sequenceFlow id="Flow_Observe_Done" sourceRef="UserTask_Observe" targetRef="EndEvent_Done" />
+    <endEvent id="EndEvent_Done" />
+  </process>
+</definitions>

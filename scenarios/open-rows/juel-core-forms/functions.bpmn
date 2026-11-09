@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_Functions" targetNamespace="urn:bpmn-lean:scenarios:juel-core-forms:functions">
+  <process id="Process_Functions" name="Evaluate functions forms" isExecutable="true">
+    <startEvent id="StartEvent_Start" />
+    <sequenceFlow id="Flow_Start_Observe" sourceRef="StartEvent_Start" targetRef="UserTask_Observe" />
+    <userTask id="UserTask_Observe" name="Observe the evaluated inputs">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="currentUserIsNull">${currentUser() == null}</camunda:inputParameter>
+          <camunda:inputParameter name="groupsEmpty">${empty currentUserGroups()}</camunda:inputParameter>
+          <camunda:inputParameter name="nowPresent">${now() != null}</camunda:inputParameter>
+          <camunda:inputParameter name="dateTimePresent">${dateTime() != null}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <sequenceFlow id="Flow_Observe_Done" sourceRef="UserTask_Observe" targetRef="EndEvent_Done" />
+    <endEvent id="EndEvent_Done" />
+  </process>
+</definitions>

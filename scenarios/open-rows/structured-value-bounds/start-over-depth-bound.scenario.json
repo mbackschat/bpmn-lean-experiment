@@ -1,0 +1,75 @@
+{
+  "kind": "scenario",
+  "id": "structured-value-bounds-start-over-depth-bound",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "structured-value-bounds-bounded-value",
+    "relativePath": "scenarios/open-rows/structured-value-bounds/bounded-value.bpmn",
+    "sha256": "2bf978d15b499af18d1d661dee8fdc65627b4d9723c2fd00f433aed61c5c9a93",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start",
+      "instanceId": "Run_1",
+      "variables": [
+        {
+          "name": "payload",
+          "value": {
+            "kind": "map",
+            "value": [
+              {
+                "name": "a",
+                "value": {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "b",
+                      "value": {
+                        "kind": "list",
+                        "value": [
+                          {
+                            "kind": "map",
+                            "value": [
+                              {
+                                "name": "c",
+                                "value": {
+                                  "kind": "list",
+                                  "value": [
+                                    {
+                                      "kind": "integer",
+                                      "value": 1
+                                    }
+                                  ]
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.3",
+      "BPMN 2.0.2 Clause 10.4.1",
+      "BPMN 2.0.2 Clause 10.4.2"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/UserTaskActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/variable/mapping/IoMapping.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/variable/mapping/InputParameter.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/variable/scope/AbstractVariableScope.java"
+    ]
+  }
+}

@@ -1,0 +1,125 @@
+{
+  "kind": "scenario",
+  "id": "scope-data-visibility-second-lifetime",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "scope-data-visibility-repeated-lifetimes",
+    "relativePath": "scenarios/open-rows/scope-data-visibility/repeated-lifetimes.bpmn",
+    "sha256": "01e8be009f5b868452466db1a6219266c1204e786dec642a197f3bf1318b563f",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start",
+      "instanceId": "Run_1",
+      "variables": [
+        {
+          "name": "carried",
+          "value": {
+            "kind": "string",
+            "value": "none"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-work-1",
+      "occurrence": {
+        "processInstanceId": "Run_1",
+        "elementId": "UserTask_Work",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "attempt",
+            "value": {
+              "kind": "string",
+              "value": "first-written"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-decide-1",
+      "occurrence": {
+        "processInstanceId": "Run_1",
+        "elementId": "UserTask_Decide",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "again",
+            "value": {
+              "kind": "string",
+              "value": "yes"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-work-2",
+      "occurrence": {
+        "processInstanceId": "Run_1",
+        "elementId": "UserTask_Work",
+        "activation": 2
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-decide-2",
+      "occurrence": {
+        "processInstanceId": "Run_1",
+        "elementId": "UserTask_Decide",
+        "activation": 2
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "again",
+            "value": {
+              "kind": "string",
+              "value": "no"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.5",
+      "BPMN 2.0.2 §10.3.6",
+      "BPMN 2.0.2 Clause 10.4.1",
+      "BPMN 2.0.2 Clause 10.4.2",
+      "BPMN 2.0.2 §13.3.2"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/SubProcessActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/CallActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/UserTaskActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/variable/mapping/IoMapping.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/variable/mapping/InputParameter.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/variable/mapping/OutputParameter.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/variable/scope/AbstractVariableScope.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/model/CallableElementParameter.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/el/VariableScopeElResolver.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java"
+    ]
+  }
+}

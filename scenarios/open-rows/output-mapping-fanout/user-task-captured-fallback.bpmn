@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_UserTaskCapturedFallback" targetNamespace="urn:bpmn-lean:scenarios:output-mapping-fanout:user-task-captured-fallback">
+  <process id="Process_UserTaskCapturedFallback" name="Map a completion output from the name of a captured input" isExecutable="true">
+    <startEvent id="StartEvent_Start" />
+    <userTask id="UserTask_Decide" name="Decide">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="claimCopy">${claim}</camunda:inputParameter>
+          <camunda:outputParameter name="finalDecision">${decision}</camunda:outputParameter>
+          <camunda:outputParameter name="claimBack">${claimCopy}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_Observe" name="Observe">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="seenDecision">${finalDecision}</camunda:inputParameter>
+          <camunda:inputParameter name="seenClaim">${claimBack}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <endEvent id="EndEvent_Done" />
+    <sequenceFlow id="Flow_Start_Decide" sourceRef="StartEvent_Start" targetRef="UserTask_Decide" />
+    <sequenceFlow id="Flow_Decide_Observe" sourceRef="UserTask_Decide" targetRef="UserTask_Observe" />
+    <sequenceFlow id="Flow_Observe_Done" sourceRef="UserTask_Observe" targetRef="EndEvent_Done" />
+  </process>
+</definitions>

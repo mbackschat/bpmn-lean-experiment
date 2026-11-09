@@ -1,0 +1,84 @@
+{
+  "kind": "scenario",
+  "id": "juel-core-forms-coercion",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "juel-core-forms-coercion",
+    "relativePath": "scenarios/open-rows/juel-core-forms/coercion.bpmn",
+    "sha256": "a82ccc09e798778170c9531d9c8a16393126a62cbeae16b46fa36951aab7430b",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start",
+      "instanceId": "Run_1",
+      "variables": [
+        {
+          "name": "a",
+          "value": {
+            "kind": "integer",
+            "value": 7
+          }
+        },
+        {
+          "name": "blank",
+          "value": {
+            "kind": "string",
+            "value": ""
+          }
+        },
+        {
+          "name": "flag",
+          "value": {
+            "kind": "boolean",
+            "value": true
+          }
+        },
+        {
+          "name": "nothing",
+          "value": {
+            "kind": "null"
+          }
+        },
+        {
+          "name": "s",
+          "value": {
+            "kind": "string",
+            "value": "7"
+          }
+        },
+        {
+          "name": "t",
+          "value": {
+            "kind": "string",
+            "value": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.3",
+      "BPMN 2.0.2 Clause 10.4.2",
+      "BPMN 2.0.2 §13.3.2"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/el/JuelExpressionManager.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/el/VariableScopeElResolver.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/el/JuelExpression.java",
+      "juel/src/main/java/org/cibseven/bpm/impl/juel/TypeConverterImpl.java",
+      "juel/src/main/java/org/cibseven/bpm/impl/juel/AstBinary.java",
+      "juel/src/main/java/org/cibseven/bpm/impl/juel/AstUnary.java",
+      "juel/src/main/java/org/cibseven/bpm/impl/juel/AstChoice.java",
+      "juel/src/main/java/org/cibseven/bpm/impl/juel/AstProperty.java",
+      "juel/src/main/java/org/cibseven/bpm/impl/juel/AstMethod.java",
+      "juel/src/main/java/org/cibseven/bpm/impl/juel/AstIdentifier.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/variable/mapping/IoMapping.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/variable/mapping/InputParameter.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java"
+    ]
+  }
+}

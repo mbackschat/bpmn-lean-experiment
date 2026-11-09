@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_RepeatedLifetimes" targetNamespace="urn:bpmn-lean:scenarios:scope-data-visibility:repeated-lifetimes">
+  <process id="Process_RepeatedLifetimes" name="Enter the same Sub-Process twice" isExecutable="true">
+    <startEvent id="StartEvent_Start" />
+    <subProcess id="SubProcess_Round" name="Round">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="attempt">fresh</camunda:inputParameter>
+          <camunda:inputParameter name="carry">${carried}</camunda:inputParameter>
+          <camunda:outputParameter name="carried">${attempt}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+      <startEvent id="StartEvent_Round" />
+      <userTask id="UserTask_Work" name="Work">
+        <extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="seen">${attempt}</camunda:inputParameter>
+            <camunda:inputParameter name="seenCarry">${carry}</camunda:inputParameter>
+          </camunda:inputOutput>
+        </extensionElements>
+      </userTask>
+      <endEvent id="EndEvent_Round" />
+      <sequenceFlow id="Flow_Round_Work" sourceRef="StartEvent_Round" targetRef="UserTask_Work" />
+      <sequenceFlow id="Flow_Work_Round" sourceRef="UserTask_Work" targetRef="EndEvent_Round" />
+    </subProcess>
+    <userTask id="UserTask_Decide" name="Decide whether to go again" />
+    <exclusiveGateway id="Gateway_Again" name="Again?" gatewayDirection="Diverging" default="Flow_Stop" />
+    <endEvent id="EndEvent_Done" />
+    <sequenceFlow id="Flow_Start_Round" sourceRef="StartEvent_Start" targetRef="SubProcess_Round" />
+    <sequenceFlow id="Flow_Round_Decide" sourceRef="SubProcess_Round" targetRef="UserTask_Decide" />
+    <sequenceFlow id="Flow_Decide_Again" sourceRef="UserTask_Decide" targetRef="Gateway_Again" />
+    <sequenceFlow id="Flow_Repeat" sourceRef="Gateway_Again" targetRef="SubProcess_Round">
+      <conditionExpression xsi:type="tFormalExpression">${again == 'yes'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Stop" sourceRef="Gateway_Again" targetRef="EndEvent_Done" />
+  </process>
+</definitions>

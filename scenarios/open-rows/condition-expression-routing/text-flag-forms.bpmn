@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_TextFlagForms" targetNamespace="urn:bpmn-lean:scenarios:condition-expression-routing:text-flag-forms">
+  <process id="Process_TextFlagForms" name="Route by text flag forms" isExecutable="true">
+    <startEvent id="StartEvent_Start" />
+    <inclusiveGateway id="Gateway_Route" name="Route" gatewayDirection="Diverging" default="Flow_Default" />
+    <userTask id="UserTask_Equals" name="equals branch" />
+    <userTask id="UserTask_Negated" name="negated branch" />
+    <userTask id="UserTask_Conjunction" name="conjunction branch" />
+    <userTask id="UserTask_Bang" name="bang branch" />
+    <userTask id="UserTask_Fallback" name="fallback branch" />
+    <endEvent id="EndEvent_Equals" />
+    <endEvent id="EndEvent_Negated" />
+    <endEvent id="EndEvent_Conjunction" />
+    <endEvent id="EndEvent_Bang" />
+    <endEvent id="EndEvent_Fallback" />
+    <sequenceFlow id="Flow_Start_Route" sourceRef="StartEvent_Start" targetRef="Gateway_Route" />
+    <sequenceFlow id="Flow_Equals" sourceRef="Gateway_Route" targetRef="UserTask_Equals">
+      <conditionExpression xsi:type="tFormalExpression">${flag == 'true'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Negated" sourceRef="Gateway_Route" targetRef="UserTask_Negated">
+      <conditionExpression xsi:type="tFormalExpression">${not flag}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Conjunction" sourceRef="Gateway_Route" targetRef="UserTask_Conjunction">
+      <conditionExpression xsi:type="tFormalExpression">${flag and true}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Bang" sourceRef="Gateway_Route" targetRef="UserTask_Bang">
+      <conditionExpression xsi:type="tFormalExpression">${!flag}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Default" sourceRef="Gateway_Route" targetRef="UserTask_Fallback" />
+    <sequenceFlow id="Flow_Equals_Done" sourceRef="UserTask_Equals" targetRef="EndEvent_Equals" />
+    <sequenceFlow id="Flow_Negated_Done" sourceRef="UserTask_Negated" targetRef="EndEvent_Negated" />
+    <sequenceFlow id="Flow_Conjunction_Done" sourceRef="UserTask_Conjunction" targetRef="EndEvent_Conjunction" />
+    <sequenceFlow id="Flow_Bang_Done" sourceRef="UserTask_Bang" targetRef="EndEvent_Bang" />
+    <sequenceFlow id="Flow_Default_Done" sourceRef="UserTask_Fallback" targetRef="EndEvent_Fallback" />
+  </process>
+</definitions>

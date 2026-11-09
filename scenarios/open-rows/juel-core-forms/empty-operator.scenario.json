@@ -1,0 +1,122 @@
+{
+  "kind": "scenario",
+  "id": "juel-core-forms-empty-operator",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "juel-core-forms-empty-operator",
+    "relativePath": "scenarios/open-rows/juel-core-forms/empty-operator.bpmn",
+    "sha256": "9f2574a08a095e026266aede4039a7dde7840118281af7530f4e4ca378c6334d",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start",
+      "instanceId": "Run_1",
+      "variables": [
+        {
+          "name": "blank",
+          "value": {
+            "kind": "string",
+            "value": ""
+          }
+        },
+        {
+          "name": "flag",
+          "value": {
+            "kind": "boolean",
+            "value": false
+          }
+        },
+        {
+          "name": "items",
+          "value": {
+            "kind": "list",
+            "value": [
+              {
+                "kind": "string",
+                "value": "x"
+              },
+              {
+                "kind": "string",
+                "value": "y"
+              }
+            ]
+          }
+        },
+        {
+          "name": "noFields",
+          "value": {
+            "kind": "map",
+            "value": []
+          }
+        },
+        {
+          "name": "noItems",
+          "value": {
+            "kind": "list",
+            "value": []
+          }
+        },
+        {
+          "name": "nothing",
+          "value": {
+            "kind": "null"
+          }
+        },
+        {
+          "name": "person",
+          "value": {
+            "kind": "map",
+            "value": [
+              {
+                "name": "name",
+                "value": {
+                  "kind": "string",
+                  "value": "Ada"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "word",
+          "value": {
+            "kind": "string",
+            "value": "abc"
+          }
+        },
+        {
+          "name": "zero",
+          "value": {
+            "kind": "integer",
+            "value": 0
+          }
+        }
+      ]
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.3",
+      "BPMN 2.0.2 Clause 10.4.2",
+      "BPMN 2.0.2 §13.3.2"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/el/JuelExpressionManager.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/el/VariableScopeElResolver.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/el/JuelExpression.java",
+      "juel/src/main/java/org/cibseven/bpm/impl/juel/TypeConverterImpl.java",
+      "juel/src/main/java/org/cibseven/bpm/impl/juel/AstBinary.java",
+      "juel/src/main/java/org/cibseven/bpm/impl/juel/AstUnary.java",
+      "juel/src/main/java/org/cibseven/bpm/impl/juel/AstChoice.java",
+      "juel/src/main/java/org/cibseven/bpm/impl/juel/AstProperty.java",
+      "juel/src/main/java/org/cibseven/bpm/impl/juel/AstMethod.java",
+      "juel/src/main/java/org/cibseven/bpm/impl/juel/AstIdentifier.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/variable/mapping/IoMapping.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/variable/mapping/InputParameter.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java"
+    ]
+  }
+}
