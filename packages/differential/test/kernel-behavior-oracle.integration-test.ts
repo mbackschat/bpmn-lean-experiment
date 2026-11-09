@@ -6,9 +6,11 @@
  * effect inputs of delegates CIB ran inside another command). Discovery is by directory
  * (`scenario-discovery.ts`), so a new scenario or evidence file joins without an edit here.
  *
- * No disagreement is expected: each one fails the test and is listed with the scenario and the first differing path,
- * never adjusted away. The evidence is compared against the TypeScript kernel's result; the first test establishes
- * that it is also Lean's.
+ * No disagreement between the kernels is expected. A disagreement with retained evidence is expected exactly when the
+ * [ledger](cib-disagreement-ledger.ts) classifies it under an open row or a registered relation; every other one, and
+ * every listed one that now agrees, fails the test and is listed with the scenario and the first differing path, never
+ * adjusted away. The evidence is compared against the TypeScript kernel's result; the first test establishes that it is
+ * also Lean's.
  */
 import assert from "node:assert/strict";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
@@ -27,6 +29,7 @@ import type { ScenarioDisagreement, ValueDisagreement } from "@bpmn-lean/differe
 import { parseStrict, runPopulation, runScenario } from "@bpmn-lean/kernel";
 
 import { pipelineTestTimeoutMs } from "../../../scripts/pipeline-budget.ts";
+import { ledgerViolations, readCibDisagreementLedger } from "./cib-disagreement-ledger.ts";
 import { runLeanKernelPopulation, runLeanKernelScenario, writeProgram } from "./kernel-targets.ts";
 import { projectRoot } from "./pipeline-target-support.ts";
 import { DiscoveredKind, discoverScenarios, kernelProgramFor } from "./scenario-discovery.ts";
@@ -55,6 +58,8 @@ test("the Lean and TypeScript kernels agree on every discovered scenario, and th
   timeout: pipelineTestTimeoutMs(),
 }, async (t) => {
   const scenarios = await discoverScenarios();
+  const ledger = await readCibDisagreementLedger(projectRoot);
+  const retained = new Set<string>();
   const directory = await mkdtemp(path.join(tmpdir(), "bpmn-kernel-oracle-"));
   const kernelDisagreements: Array<OracleDisagreement> = [];
   const evidenceDisagreements: Array<EvidenceDisagreement> = [];
@@ -86,6 +91,7 @@ test("the Lean and TypeScript kernels agree on every discovered scenario, and th
           if (difference !== null) kernelDisagreements.push(difference);
           if (scenario.evidence === null) break;
           evidenceCount += 1;
+          retained.add(scenario.evidence.relativePath);
           const comparison = compareTargetResults(
             { target: DifferentialTarget.RetainedCibEvidence, result: scenario.evidence.result },
             [{ target: DifferentialTarget.KernelTs, result: foldSynchronousEffects(typeScript, scenario.evidence.result, {
@@ -110,15 +116,18 @@ test("the Lean and TypeScript kernels agree on every discovered scenario, and th
 
   assert.ok(scenarios.length > populationCount && populationCount > 0, "discovery found no scenarios of a required kind");
   assert.ok(evidenceCount > 0, "discovery found no retained CIB evidence");
+  const violations = ledgerViolations(new Set(evidenceDisagreements.map(({ evidence }) => evidence)), retained, ledger);
+  const unlisted = new Set(violations.unlisted);
   t.diagnostic(
     `scenarios ${String(scenarios.length - populationCount)}, populations ${String(populationCount)}, ` +
       `retained CIB results ${String(evidenceCount)}, kernel disagreements ${String(kernelDisagreements.length)}, ` +
-      `evidence disagreements ${String(evidenceDisagreements.length)}`,
+      `evidence disagreements ${String(evidenceDisagreements.length)}, classified ${String(ledger.length)}`,
   );
   assert.deepEqual(
-    { kernelDisagreements, evidenceDisagreements },
-    { kernelDisagreements: [], evidenceDisagreements: [] },
-    [...kernelDisagreements, ...evidenceDisagreements].map((entry) => JSON.stringify(entry)).join("\n"),
+    { kernelDisagreements, violations },
+    { kernelDisagreements: [], violations: { unlisted: [], agreeing: [], orphaned: [] } },
+    [...kernelDisagreements, ...evidenceDisagreements.filter(({ evidence }) => unlisted.has(evidence))]
+      .map((entry) => JSON.stringify(entry)).join("\n"),
   );
 });
 
