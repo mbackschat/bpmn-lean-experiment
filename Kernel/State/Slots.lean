@@ -33,11 +33,11 @@ inductive Resume where
   deriving Repr
 
 /-- One instance of a Multi-Instance Activity: waiting to start, running in its instance scope occurrence, or
-completed with the value its output data item received. -/
+completed with the value its output data item received, `none` for a loop without one. -/
 inductive Iteration where
   | waiting
   | active (scope : ScopeOccurrenceId)
-  | completed (output : Value)
+  | completed (output : Option Value)
   deriving Repr
 
 /-- A running Multi-Instance Activity (`Kernel.Feature.MultiInstance`): the scope occurrence it holds its instances

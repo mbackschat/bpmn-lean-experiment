@@ -8,6 +8,7 @@
  */
 import {
   CycleDialect,
+  ErrorCatchVariables,
   ExpressionTag,
   TimerScheduleTag,
   TriggerTag,
@@ -116,10 +117,17 @@ function outputs(subscription: Subscription): string | null {
   return triggerMessage(subscription.trigger) !== null || subscription.outputs.length === 0 ? null : "event.outputs";
 }
 
-function errorTrigger(trigger: ErrorTrigger): string | null {
-  if (trigger.codeVariable !== null) return "event.error.codeVariable";
-  if (trigger.messageVariable !== null) return "event.error.messageVariable";
-  return null;
+/** Catch variables are a CIB extension (CIB-EXT-0028) the profile selects; BPMN 2.0.2 defines none. */
+function errorTrigger(variables: ErrorCatchVariables, trigger: ErrorTrigger): string | null {
+  switch (variables) {
+    case ErrorCatchVariables.EventScope:
+      return null;
+    case ErrorCatchVariables.Refused:
+      if (trigger.codeVariable !== null) return "event.error.codeVariable";
+      if (trigger.messageVariable !== null) return "event.error.messageVariable";
+      return null;
+  }
+  return assertNever(variables);
 }
 
 function escalationTrigger(trigger: EscalationTrigger): string | null {
@@ -177,9 +185,11 @@ export function catchEvent(subscription: Subscription): string | null {
 /**
  * `transactionHost` says whether the boundary hangs on a Transaction. An Error boundary always interrupts (BPMN 2.0.2
  * Table 10.90) (PC-ERROR-01); a Cancel boundary always interrupts and hangs only on a Transaction (Table 10.90, §10.3.5;
- * `BpmnParse#parseBoundaryCancelEventDefinition`) (PC-TX-02).
+ * `BpmnParse#parseBoundaryCancelEventDefinition`) (PC-TX-02). `seen` holds the codes of the host's Error boundaries
+ * before this one, and an admitted Error boundary adds its own: two with one code have no selected order, since CIB
+ * takes the first in document order (`BpmnParse:3646`), which BPMN 2.0.2 §10.5.6 does not settle (PC-ERROR-01).
  */
-function boundary(transactionHost: boolean, attached: Boundary): string | null {
+function boundary(variables: ErrorCatchVariables, transactionHost: boolean, seen: Set<string>, attached: Boundary): string | null {
   const refused = outputs(attached.subscription);
   if (refused !== null) return refused;
   const trigger = attached.subscription.trigger;
@@ -192,8 +202,15 @@ function boundary(transactionHost: boolean, attached: Boundary): string | null {
       return "boundary.signal";
     case TriggerTag.Condition:
       return "boundary.condition";
-    case TriggerTag.Error:
-      return (attached.interrupting ? null : "boundary.error.nonInterrupting") ?? errorTrigger(trigger.payload);
+    case TriggerTag.Error: {
+      const declared = (attached.interrupting ? null : "boundary.error.nonInterrupting") ?? errorTrigger(variables, trigger.payload);
+      if (declared !== null) return declared;
+      const code = trigger.payload.code;
+      if (code === null) return null;
+      if (seen.has(code)) return "boundary.error.duplicateCode";
+      seen.add(code);
+      return null;
+    }
     case TriggerTag.Escalation:
       return escalationTrigger(trigger.payload);
     case TriggerTag.Compensation:
@@ -205,9 +222,10 @@ function boundary(transactionHost: boolean, attached: Boundary): string | null {
   return assertNever(trigger);
 }
 
-export function boundaries(transactionHost: boolean, list: readonly Boundary[]): string | null {
+export function boundaries(variables: ErrorCatchVariables, transactionHost: boolean, list: readonly Boundary[]): string | null {
+  const seen = new Set<string>();
   for (const attached of list) {
-    const refused = boundary(transactionHost, attached);
+    const refused = boundary(variables, transactionHost, seen, attached);
     if (refused !== null) return refused;
   }
   return null;
@@ -217,7 +235,7 @@ export function boundaries(transactionHost: boolean, list: readonly Boundary[]):
  * A triggered start. At process level (`nested = false`) the start input names it; nested, it is an Event Sub-Process
  * start, which may also repeat a cycle and catch what `feature/propagation.ts` raises.
  */
-export function start(nested: boolean, subscription: Subscription): string | null {
+export function start(variables: ErrorCatchVariables, nested: boolean, subscription: Subscription): string | null {
   const raised = (code: string): string | null => (nested ? null : code);
   const refused = outputs(subscription);
   if (refused !== null) return refused;
@@ -232,7 +250,7 @@ export function start(nested: boolean, subscription: Subscription): string | nul
     case TriggerTag.Condition:
       return "start.condition";
     case TriggerTag.Error:
-      return raised("start.error") ?? errorTrigger(trigger.payload);
+      return raised("start.error") ?? errorTrigger(variables, trigger.payload);
     case TriggerTag.Escalation:
       return raised("start.escalation") ?? escalationTrigger(trigger.payload);
     case TriggerTag.Compensation:

@@ -15,7 +15,6 @@ import {
   DeliveryVariables,
   Evaluator,
   MessageCorrelation,
-  UnhandledError,
   assertNever,
   type CompensationHandlerFailure,
   type ProfileOptions,
@@ -38,7 +37,6 @@ export function options(abnormalScope: boolean, selected: ProfileOptions): strin
   if (selected.compensationOrder === CompensationOrder.ReverseCreation) return "profile.compensationOrder.reverseCreation";
   const handlerFailure = compensationHandlerFailure(selected.compensationHandlerFailure);
   if (handlerFailure !== null) return handlerFailure;
-  if (selected.unhandledError === UnhandledError.EndsThrowingPath) return "profile.unhandledError.endsThrowingPath";
   if (selected.callBindingTime === CallBindingTime.Invocation) return "profile.callBindingTime.invocation";
   if (selected.timerZone !== null) return "profile.timerZone";
   if (abnormalScope && selected.abnormalScopeEnd === AbnormalScopeEnd.WithoutOutflow) return "profile.abnormalScopeEnd.withoutOutflow";

@@ -43,7 +43,6 @@ A profile may select only behaviour the kernel implements ([`Kernel/Admission/Pr
 | `profile.deliveryVariables.installs` | delivered variables installed by a correlation | PC-MESSAGE-08 |
 | `profile.compensationOrder.reverseCreation` | reverse-creation compensation order | PC-COMPENSATION rows |
 | `profile.compensationHandlerFailure.selected` | a selected handler-failure code | PC-COMPENSATION rows |
-| `profile.unhandledError.endsThrowingPath` | CIB's ending of the throwing path for an unmatched Error | PC-ERROR rows |
 | `profile.callBindingTime.invocation` | binding the called definition at invocation | PC-SCOPE-03 |
 | `profile.timerZone` | a timer zone other than UTC | PC-TIMER-02 |
 | `profile.abnormalScopeEnd.withoutOutflow` | the standards reading of an abnormal Sub-Process end, for a program that reaches one (a Terminate in a Sub-Process or an interrupting Event Sub-Process): the kernel has only the normal continuation | PC-TERMINATE-01, PC-SCOPE rows |

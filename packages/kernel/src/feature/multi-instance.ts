@@ -16,7 +16,9 @@
  * in it and writes nothing (`PMI-TIMER-01`).
  */
 import {
+  ExpressionTag,
   InstanceCountTag,
+  MultiInstanceBinding,
   MultiInstanceFinalBody,
   MultiInstanceMode,
   MultiInstanceOutputs,
@@ -25,6 +27,7 @@ import {
   elementEnvelope,
   programElement,
   type Envelope,
+  type Expression,
   type Header,
   type MultiInstance,
   type Value,
@@ -89,6 +92,17 @@ function opening(mode: MultiInstanceMode, instances: readonly Iteration[]): read
   return assertNever(mode);
 }
 
+function filled(slot: Iteration): boolean {
+  switch (slot.tag) {
+    case IterationTag.Completed:
+      return true;
+    case IterationTag.Waiting:
+    case IterationTag.Active:
+      return false;
+  }
+  return assertNever(slot);
+}
+
 function output(slot: Iteration): Value | null {
   switch (slot.tag) {
     case IterationTag.Completed:
@@ -107,6 +121,35 @@ function outputs(run: MultiInstanceRun): readonly Value[] {
   });
 }
 
+/**
+ * The collection a loop reads under the profile's binding: the Data Association reading the reader folds into `count`,
+ * or the variable `loopDataInputRef` names (CIB-INT-0014, `BpmnParse#parseMultiInstanceLoopCharacteristics`), which a
+ * loop without that element, given by `camunda:collection`, does not have.
+ */
+function collectionOf(ctx: Ctx, loop: MultiInstance, items: Expression): Expression {
+  switch (ctx.program.options.multiInstanceBinding) {
+    case MultiInstanceBinding.LoopReferences:
+      return loop.loopDataInputRef === null ? items : { tag: ExpressionTag.Variable, name: loop.loopDataInputRef };
+    case MultiInstanceBinding.DataAssociations:
+      return items;
+  }
+  return assertNever(ctx.program.options.multiInstanceBinding);
+}
+
+/**
+ * The local each instance holds its item in under the profile's binding: the Data Input the item's association feeds,
+ * or the `inputDataItem`'s `name`, none when it has no name (CIB-INT-0014).
+ */
+function itemName(ctx: Ctx, loop: MultiInstance): string | null {
+  switch (ctx.program.options.multiInstanceBinding) {
+    case MultiInstanceBinding.DataAssociations:
+      return loop.inputDataItem;
+    case MultiInstanceBinding.LoopReferences:
+      return loop.inputDataItemName;
+  }
+  return assertNever(ctx.program.options.multiInstanceBinding);
+}
+
 function runOf(state: State, body: number): MultiInstanceRun | null {
   return state.slots.multiInstances.find((run) => run.occurrence === body) ?? null;
 }
@@ -120,12 +163,13 @@ function setRun(state: State, run: MultiInstanceRun): State {
 }
 
 /** Begin the instances `opening` names, each in a scope occurrence holding its input data item. */
-function beginInstances(loop: MultiInstance, items: readonly Value[], run: MultiInstanceRun, state: State): State {
+function beginInstances(ctx: Ctx, loop: MultiInstance, items: readonly Value[], run: MultiInstanceRun, state: State): State {
   let current = state;
   const instances = [...run.instances];
+  const name = itemName(ctx, loop);
   for (const index of opening(loop.mode, run.instances)) {
     const value = items[index];
-    const locals: readonly Binding[] = loop.inputDataItem !== null && value !== undefined ? [[loop.inputDataItem, value]] : [];
+    const locals: readonly Binding[] = name !== null && value !== undefined ? [[name, value]] : [];
     const [entered, scope] = enterScope(current, run.element, run.scope, locals, null);
     current = signal(entered, {
       tag: SignalTag.Begin,
@@ -179,7 +223,7 @@ export function arriveMultiInstance(
   const count = loop.count;
   // Admission refuses it (`multiInstance.cardinality`).
   if (count.tag === InstanceCountTag.Cardinality) return failed(FailureTag.Unsupported, "multi-instance-cardinality");
-  const evaluation = ctx.evaluate(evalContext(state, occurrence.scope), count.items);
+  const evaluation = ctx.evaluate(evalContext(state, occurrence.scope), collectionOf(ctx, loop, count.items));
   if (evaluation.tag === EvaluationTag.Failure) {
     if (occurrence.incoming === null) return failed(FailureTag.SemanticFailure, "multi-instance-without-flow");
     return committed(hold(state, { occurrence: occurrence.id, flow: occurrence.incoming, scope: occurrence.scope }));
@@ -196,16 +240,18 @@ export function arriveMultiInstance(
     ? entered
     : signal(entered, { tag: SignalTag.Arm, host: occurrence.id, element: header.id, scope: occurrence.scope });
   const waiting: Iteration = { tag: IterationTag.Waiting };
-  return committed(beginInstances(loop, items, { ...run, scope, instances: items.map(() => waiting) }, armed));
+  return committed(beginInstances(ctx, loop, items, { ...run, scope, instances: items.map(() => waiting) }, armed));
 }
 
 /**
  * An instance's output, kept as a String when the input collection is a String List, whose output collection holds
- * Strings only. `feature/work.ts` has checked it is exactly the output data item.
+ * Strings only; a loop without an output data item takes the empty OutputSet. `feature/work.ts` has checked a User
+ * Task's submission is exactly the output data item.
  */
-function submitted(run: MultiInstanceRun, writes: readonly Binding[]): Result<Value> {
+function submitted(loop: MultiInstance, run: MultiInstanceRun, writes: readonly Binding[]): Result<Value | null> {
+  if (loop.outputDataItem === null && writes.length === 0) return committed(null);
   const [only] = writes;
-  if (writes.length !== 1 || only === undefined) return failed(FailureTag.Rejected, "undeclared-output");
+  if (loop.outputDataItem === null || writes.length !== 1 || only === undefined) return failed(FailureTag.Rejected, "undeclared-output");
   const value = only[1];
   if (run.collection.tag === ValueTag.StringList && value.tag !== ValueTag.String) return failed(FailureTag.Rejected, "instance-output-kind");
   return committed(value);
@@ -213,8 +259,7 @@ function submitted(run: MultiInstanceRun, writes: readonly Binding[]): Result<Va
 
 /** The body is done: complete it, writing the output collection when every slot is filled. */
 function finish(ctx: Ctx, loop: MultiInstance, run: MultiInstanceRun, state: State): State {
-  const collected = outputs(run);
-  const writes = collected.length === run.instances.length ? written(ctx, loop, run.collection, collected) : [];
+  const writes = run.instances.every(filled) ? written(ctx, loop, run.collection, outputs(run)) : [];
   return signal(state, completeSignal(run.occurrence, leaveOutgoing, writes, WriteRule.Outward));
 }
 
@@ -289,18 +334,18 @@ export function instanceCompleted(ctx: Ctx, body: number, occurrence: Occurrence
   if (loop === null) return failed(FailureTag.SemanticFailure, "instance-without-loop");
   const index = found.instances.findIndex((slot) => activeIn(slot, occurrence.scope));
   if (index < 0) return failed(FailureTag.SemanticFailure, "instance-without-slot");
-  const value = submitted(found, writes);
+  const value = submitted(loop, found, writes);
   if (!value.ok) return value;
   const instances = [...found.instances];
   instances[index] = { tag: IterationTag.Completed, output: value.value };
   const run: MultiInstanceRun = { ...found, instances };
   const left = setRun(leaveScope(state, occurrence.scope), run);
-  const exhausted = outputs(run).length === run.instances.length;
+  const exhausted = run.instances.every(filled);
   if (exhausted && !evaluatesFinalCondition(ctx, loop)) return committed(finish(ctx, loop, run, left));
   const stop = stops(ctx, loop, run, left);
   if (!stop.ok) return stop;
   if (stop.value || exhausted) return committed(finish(ctx, loop, run, left));
   const items = multiInstanceRunItems(run);
   if (items === null) return failed(FailureTag.SemanticFailure, "multi-instance-collection");
-  return committed(beginInstances(loop, items, run, left));
+  return committed(beginInstances(ctx, loop, items, run, left));
 }

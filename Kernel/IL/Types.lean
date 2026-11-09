@@ -313,6 +313,14 @@ structure MultiInstance where
   outputDataItem : Option String := none
   outputCollection : Option String := none
   mutableCollection : CollectionRead := .entrySnapshot
+  /-- A transaction boundary before each instance begins and after it completes, declared on the loop
+  characteristics; the envelope's marks are the body's (CIB-EXT-0027, `BpmnParse#parseMultiInstanceLoopCharacteristics`). -/
+  asyncBefore : Bool := false
+  asyncAfter : Bool := false
+  /-- The element `loopDataInputRef` names and the `inputDataItem`'s `name`, which `MultiInstanceBinding.loopReferences`
+  binds instead of the Data Associations (CIB-INT-0014). -/
+  loopDataInputRef : Option String := none
+  inputDataItemName : Option String := none
   deriving Repr
 
 structure Envelope where

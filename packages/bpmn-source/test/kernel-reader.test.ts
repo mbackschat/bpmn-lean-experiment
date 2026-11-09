@@ -128,6 +128,33 @@ test("an Activity carries its default flow and asynchronous continuations in its
   assert.deepEqual(p.flows.find((entry: Json) => entry.id === "c").condition, { simpleBoolean: { body: { literal: { value: true } } } });
 });
 
+test("a Multi-Instance loop carries its own asynchronous continuations and the literal names CIB binds", async () => {
+  const io = (id: string): string => `<bpmn:ioSpecification><bpmn:dataInput id="${id}s" isCollection="true"/><bpmn:dataInput id="${id}"/>
+      <bpmn:inputSet><bpmn:dataInputRefs>${id}s</bpmn:dataInputRefs><bpmn:dataInputRefs>${id}</bpmn:dataInputRefs></bpmn:inputSet><bpmn:outputSet/></bpmn:ioSpecification>
+    <bpmn:dataInputAssociation><bpmn:sourceRef>R</bpmn:sourceRef><bpmn:targetRef>${id}s</bpmn:targetRef></bpmn:dataInputAssociation>
+    <bpmn:dataInputAssociation><bpmn:sourceRef>Item_${id}</bpmn:sourceRef><bpmn:targetRef>${id}</bpmn:targetRef></bpmn:dataInputAssociation>`;
+  const p = await program(model(`<bpmn:dataObject id="O" isCollection="true"/><bpmn:dataObjectReference id="R" dataObjectRef="O"/>
+    <bpmn:userTask id="U" camunda:asyncBefore="true">${io("In")}
+      <bpmn:multiInstanceLoopCharacteristics camunda:async="true" camunda:asyncAfter="true">
+        <bpmn:loopDataInputRef>Ins</bpmn:loopDataInputRef><bpmn:inputDataItem id="Item_In" name="item"/>
+      </bpmn:multiInstanceLoopCharacteristics></bpmn:userTask>
+    <bpmn:userTask id="V">${io("Vn")}
+      <bpmn:multiInstanceLoopCharacteristics camunda:asyncBefore="true">
+        <bpmn:loopDataInputRef>Vns</bpmn:loopDataInputRef><bpmn:inputDataItem id="Item_Vn"/>
+      </bpmn:multiInstanceLoopCharacteristics></bpmn:userTask>`));
+  const u = element(p, "U").activity.payload.envelope;
+  assert.deepEqual([u.asyncBefore, u.asyncAfter], [true, false]);
+  assert.deepEqual(u.multiInstance, {
+    mode: "parallel", count: { collection: { items: { variable: { name: "R" } } } }, elementVariable: null,
+    completionCondition: null, inputDataItem: "In", outputDataItem: null, outputCollection: null,
+    mutableCollection: "entrySnapshot", asyncBefore: true, asyncAfter: true, loopDataInputRef: "Ins", inputDataItemName: "item",
+  });
+  const v = element(p, "V").activity.payload.envelope;
+  assert.deepEqual([v.asyncBefore, v.asyncAfter], [false, false]);
+  assert.deepEqual([v.multiInstance.asyncBefore, v.multiInstance.asyncAfter, v.multiInstance.loopDataInputRef, v.multiInstance.inputDataItemName],
+    [true, false, "Vns", null]);
+});
+
 test("a Transaction carries its BPMN method, Compensate when absent", async () => {
   const p = await program(model(`<bpmn:transaction id="A"/><bpmn:transaction id="C" method="##Compensate"/><bpmn:transaction id="I" method="##Image"/>
     <bpmn:transaction id="S" method="##Store"/><bpmn:transaction id="O" method="urn:x:method"/>`));
@@ -201,12 +228,15 @@ test("the profile options are the full record, each non-default selected by the 
     compensationOrder: "dependency",
     compensationHandlerFailure: "failsInstance",
     abnormalScopeEnd: "withoutOutflow",
-    unhandledError: "refused",
+    unhandledError: "failsInstance",
+    errorCatchVariables: "refused",
     callBindingTime: "programAssembly",
     timerZone: null,
+    multiInstanceBinding: "dataAssociations",
+    effectResultValues: "outputSet",
   });
   const relations = ["CIB-EXT-0010", "CIB-EXT-0020", "CIB-EXT-0016", "CIB-CFG-0008", "CIB-OP-0009", "CIB-EXT-0026",
-    "CIB-INT-0011", "CIB-EXT-0025", "CIB-INT-0009", "CIB-LIM-0001", "CIB-INT-0007", "CIB-CFG-0004"];
+    "CIB-INT-0011", "CIB-EXT-0025", "CIB-INT-0009", "CIB-LIM-0001", "CIB-INT-0007", "CIB-INT-0013", "CIB-EXT-0028"];
   assert.deepEqual(kernelProfileOptions(relations), {
     relations,
     evaluator: "simpleBoolean",
@@ -226,9 +256,14 @@ test("the profile options are the full record, each non-default selected by the 
     compensationHandlerFailure: "failsInstance",
     abnormalScopeEnd: "completesNormally",
     unhandledError: "endsThrowingPath",
+    errorCatchVariables: "eventScope",
     callBindingTime: "programAssembly",
     timerZone: null,
+    multiInstanceBinding: "dataAssociations",
+    effectResultValues: "outputSet",
   });
+  assert.equal(kernelProfileOptions(["CIB-INT-0014"]).multiInstanceBinding, "loopReferences");
+  assert.equal(kernelProfileOptions(["CIB-EXT-0015"]).effectResultValues, "activityLocals");
   assert.equal(kernelProfileOptions(["CIB-EXT-0005"]).submission, "installsVariables");
   for (const creates of ["CIB-EXT-0005", "CIB-EXT-0007", "CIB-EXT-0009", "CIB-EXT-0020"]) {
     assert.equal(kernelProfileOptions([creates]).undeclaredWrite, "atInstanceRoot", creates);

@@ -52,12 +52,6 @@ export const rows: readonly Row[] = [
     control: option({ compensationHandlerFailure: "failsInstance" }),
   },
   {
-    code: "profile.unhandledError.endsThrowingPath",
-    description: "an unhandled Error that ends only its throwing path",
-    mutate: option({ unhandledError: "endsThrowingPath" }),
-    control: option({ unhandledError: "refused" }),
-  },
-  {
     code: "profile.callBindingTime.invocation",
     description: "a called process bound at invocation",
     mutate: option({ callBindingTime: "invocation" }),

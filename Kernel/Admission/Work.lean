@@ -25,18 +25,20 @@ def mapsData : Work → Bool
   | .rule _ => false
   | .call _ => false
 
-/-- The work one instance of a Multi-Instance Activity may do: a User Task. The
-Multi-Instance shape itself is admitted by `Kernel.Admission.MultiInstance`. -/
-def instanceBody : Work → Bool
-  | .user _ => true
-  | .none => false
-  | .manual => false
-  | .receive _ => false
-  | .service _ => false
-  | .send _ => false
-  | .script _ => false
-  | .rule _ => false
-  | .call _ => false
+/-- The work one instance of a Multi-Instance Activity may do, `some submits` when it may and `submits` when its
+completion submits the loop's output data item: a User Task does; a Service Task's effect result is the empty OutputSet,
+since a Multi-Instance Activity has no mappings (PC-MI-02). The Multi-Instance shape itself is admitted by
+`Kernel.Admission.MultiInstance`. -/
+def instanceBody : Work → Option Bool
+  | .user _ => some true
+  | .service _ => some false
+  | .none => none
+  | .manual => none
+  | .receive _ => none
+  | .send _ => none
+  | .script _ => none
+  | .rule _ => none
+  | .call _ => none
 
 /-- The work an occurrence no token began may do: a task without work, a User Task or a Service Task. -/
 def beginsWithoutToken : Work → Bool
@@ -58,7 +60,7 @@ def branchContent (work : Work) : Option Bool :=
 def envelope (work : Work) (envelope : Envelope) : Option String :=
   if !envelope.inputs.isEmpty && !mapsData work then some "activity.inputMappings"
   else if !envelope.outputs.isEmpty && !mapsData work then some "activity.outputMappings"
-  else if envelope.multiInstance.isSome && !instanceBody work then some "activity.multiInstanceBody"
+  else if envelope.multiInstance.isSome && (instanceBody work).isNone then some "activity.multiInstanceBody"
   -- A compensation subject completes through the pipeline's `Hooks.completed`, which `Kernel.Feature.Work` reaches for a
   -- single User Task or Service Task only.
   else if envelope.compensationHandler.isSome && (!mapsData work || envelope.multiInstance.isSome) then

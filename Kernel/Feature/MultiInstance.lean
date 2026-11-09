@@ -39,10 +39,31 @@ def opening (mode : MultiInstanceMode) (instances : List Iteration) : List Nat :
   | .parallel => waiting
   | .sequential => if running then [] else waiting.take 1
 
+def filled : Iteration → Bool
+  | .completed _ => true
+  | .waiting => false
+  | .active _ => false
+
 def output? : Iteration → Option Value
-  | .completed output => some output
+  | .completed output => output
   | .waiting => none
   | .active _ => none
+
+/-- The collection a loop reads under the profile's binding: the Data Association reading the reader folds into
+`count`, or the variable `loopDataInputRef` names (CIB-INT-0014, `BpmnParse#parseMultiInstanceLoopCharacteristics`),
+which a loop without that element, given by `camunda:collection`, does not have. -/
+def collectionOf (ctx : Ctx) (loop : MultiInstance) (items : Expression) : Expression :=
+  match ctx.program.options.multiInstanceBinding, loop.loopDataInputRef with
+  | .loopReferences, some name => .variable name
+  | .loopReferences, none => items
+  | .dataAssociations, _ => items
+
+/-- The local each instance holds its item in under the profile's binding: the Data Input the item's association
+feeds, or the `inputDataItem`'s `name`, none when it has no name (CIB-INT-0014). -/
+def itemName (ctx : Ctx) (loop : MultiInstance) : Option String :=
+  match ctx.program.options.multiInstanceBinding with
+  | .dataAssociations => loop.inputDataItem
+  | .loopReferences => loop.inputDataItemName
 
 def runOf? (state : State) (body : Nat) : Option MultiInstanceRun :=
   state.slots.multiInstances.find? (·.occurrence == body)
@@ -54,9 +75,10 @@ def setRun (state : State) (run : MultiInstanceRun) : State :=
   { state with slots := { state.slots with multiInstances := runs } }
 
 /-- Begin the instances `opening` names, each in a scope occurrence holding its input data item. -/
-def beginInstances (loop : MultiInstance) (items : List Value) (run : MultiInstanceRun) (state : State) : State :=
+def beginInstances (ctx : Ctx) (loop : MultiInstance) (items : List Value) (run : MultiInstanceRun) (state : State) :
+    State :=
   let (state, instances) := (opening loop.mode run.instances).foldl (fun (state, instances) index =>
-    let locals := match loop.inputDataItem, items[index]? with
+    let locals := match itemName ctx loop, items[index]? with
       | some name, some value => [(name, value)]
       | _, _ => []
     let (state, scope) := state.enterScope run.element run.scope locals none
@@ -97,7 +119,7 @@ does ([BPMN 2.0.2 §10.4.2](../../docs/reference/bpmn-2.0.2/README.md)). -/
 def arriveMultiInstance (ctx : Ctx) (header : Header) (envelope : Envelope) (loop : MultiInstance)
     (occurrence : Occurrence) (state : State) : Outcome := do
   let source ← match loop.count with
-    | .collection items => .ok items
+    | .collection items => .ok (collectionOf ctx loop items)
     -- Admission refuses it (`multiInstance.cardinality`).
     | .cardinality _ => .error (.unsupported "multi-instance-cardinality")
   match ctx.evaluate (state.evalContext occurrence.scope) source with
@@ -114,24 +136,27 @@ def arriveMultiInstance (ctx : Ctx) (header : Header) (envelope : Envelope) (loo
       let (state, scope) := state.enterScope header.id occurrence.scope [] (some occurrence.id)
       let state := if envelope.boundaries.isEmpty then state
         else state.signal (.arm occurrence.id header.id occurrence.scope)
-      .ok (beginInstances loop items
+      .ok (beginInstances ctx loop items
         { run with scope, instances := items.map fun _ => .waiting } state)
 
 /-- An instance's output, kept as a String when the input collection is a String List, whose output collection holds
-Strings only. `Kernel.Feature.Work` has checked it is exactly the output data item. -/
-def submitted (run : MultiInstanceRun) (writes : List (String × Value)) : Except Failure Value :=
-  match writes with
-  | [(_, value)] =>
+Strings only; a loop without an output data item takes the empty OutputSet. `Kernel.Feature.Work` has checked a User
+Task's submission is exactly the output data item. -/
+def submitted (loop : MultiInstance) (run : MultiInstanceRun) (writes : List (String × Value)) :
+    Except Failure (Option Value) :=
+  match loop.outputDataItem, writes with
+  | none, [] => .ok none
+  | some _, [(_, value)] =>
     match run.collection, value with
-    | .stringList _, .string _ => .ok value
+    | .stringList _, .string _ => .ok (some value)
     | .stringList _, _ => .error (.rejected "instance-output-kind")
-    | _, _ => .ok value
-  | _ => .error (.rejected "undeclared-output")
+    | _, _ => .ok (some value)
+  | _, _ => .error (.rejected "undeclared-output")
 
 /-- The body is done: complete it, writing the output collection when every slot is filled. -/
 def finish (ctx : Ctx) (loop : MultiInstance) (run : MultiInstanceRun) (state : State) : State :=
-  let outputs := run.instances.filterMap output?
-  let writes := if outputs.length == run.instances.length then written ctx loop run.collection outputs else []
+  let writes := if run.instances.all filled then written ctx loop run.collection (run.instances.filterMap output?)
+    else []
   state.signal (.complete run.occurrence .outgoing writes .outward)
 
 def loopOf? (ctx : Ctx) (run : MultiInstanceRun) : Option MultiInstance :=
@@ -165,10 +190,10 @@ def instanceCompleted (ctx : Ctx) (body : Nat) (occurrence : Occurrence) (writes
       | .waiting => false
       | .completed _ => false)
     | .error (.semanticFailure "instance-without-slot")
-  let output ← submitted run writes
+  let output ← submitted loop run writes
   let run := { run with instances := run.instances.set index (.completed output) }
   let state := setRun (state.leaveScope occurrence.scope) run
-  let exhausted := (run.instances.filterMap output?).length == run.instances.length
+  let exhausted := run.instances.all filled
   if exhausted && !evaluatesFinalCondition ctx loop then .ok (finish ctx loop run state)
   else
     let stop ← match loop.completionCondition with
@@ -181,6 +206,6 @@ def instanceCompleted (ctx : Ctx) (body : Nat) (occurrence : Occurrence) (writes
     if stop || exhausted then .ok (finish ctx loop run state)
     else
       let some items := run.items | .error (.semanticFailure "multi-instance-collection")
-      .ok (beginInstances loop items run state)
+      .ok (beginInstances ctx loop items run state)
 
 end Kernel.Feature.MultiInstance

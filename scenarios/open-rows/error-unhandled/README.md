@@ -9,4 +9,4 @@ After a Parallel fork, one branch runs the Sub-Process `Settlement`, whose Servi
 | [effect-wrong-code](effect-wrong-code.scenario.json) | A typed business failure of `PayOut` whose code its only boundary does not name, then completion of the sibling branch. |
 | [error-end-no-catcher](error-end-no-catcher.scenario.json) | The uncaught Error End first, then the ordinary success path of the other branch to its end. |
 
-The schedules carry no expected outcome, route or Process state; the retained CIB evidence is the answer. The [propagation semantics](../../../docs/kernel/semantics/PROPAGATION-SEMANTICS-SPEC.md#open-rows) name the defined unhandled outcome as the decision owed.
+The schedules carry no expected outcome, route or Process state; the retained CIB evidence is the answer. The [propagation semantics](../../../docs/kernel/semantics/PROPAGATION-SEMANTICS-SPEC.md#finding-the-catcher) define the unhandled outcome.

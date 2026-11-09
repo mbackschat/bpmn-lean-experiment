@@ -57,15 +57,18 @@ def element (program : Program) (throws : List Element) : Element → Option Str
       (payload.work.call?.bind fun work => Admission.Data.mappings work.inputs <|> Admission.Data.mappings work.outputs) <|>
       Admission.Work.activity program payload <|>
       activityOrigin program header payload <|>
-      payload.envelope.multiInstance.bind (Admission.MultiInstance.activity payload.envelope) <|>
-      Admission.Subscriptions.boundaries false payload.envelope.boundaries <|> boundaryData payload.envelope.boundaries <|>
+      payload.envelope.multiInstance.bind
+        (Admission.MultiInstance.activity (Admission.Work.instanceBody payload.work) payload.envelope) <|>
+      Admission.Subscriptions.boundaries program.options.errorCatchVariables false payload.envelope.boundaries <|>
+      boundaryData payload.envelope.boundaries <|>
       Admission.Scopes.nestedCompensation program throws header payload.envelope
   | .scope header payload =>
     Admission.Data.origin header <|> Admission.Data.envelope payload.envelope <|>
       Admission.Scopes.scope program header payload <|>
       (Admission.Scopes.eventSubProcess? payload).bind (fun (start, interrupting) =>
         Admission.Subscriptions.eventSubProcess start interrupting) <|>
-      Admission.Subscriptions.boundaries (Admission.Scopes.isTransaction payload) payload.envelope.boundaries <|>
+      Admission.Subscriptions.boundaries program.options.errorCatchVariables (Admission.Scopes.isTransaction payload)
+        payload.envelope.boundaries <|>
       boundaryData payload.envelope.boundaries <|>
       Admission.Scopes.nestedCompensation program throws header payload.envelope
   | .event header payload =>
@@ -80,7 +83,8 @@ def element (program : Program) (throws : List Element) : Element → Option Str
   | .start header payload =>
     Admission.Data.origin header <|> Admission.Flow.start payload <|>
       payload.subscription.bind fun subscription =>
-        Admission.Subscriptions.start header.parent.isSome subscription <|> subscriptionData subscription
+        Admission.Subscriptions.start program.options.errorCatchVariables header.parent.isSome subscription <|>
+          subscriptionData subscription
 
 /-- Whether the program's shape reaches an abnormal scope end: a Terminate in a Sub-Process or an interrupting Event
 Sub-Process. -/

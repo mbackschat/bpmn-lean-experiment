@@ -1,5 +1,6 @@
 import { asElement } from "../moddle-graph.js";
 import type { ElementRecord } from "../moddle-graph.js";
+import { asyncContinuations } from "./build.js";
 import { associationSourceId, associationTargetId, conditionExpression, valueExpression } from "./data.js";
 import { ReadRefusal, ReadRefusalCode, list, optionalId, text } from "./model.js";
 import type { ReadContext } from "./model.js";
@@ -18,6 +19,8 @@ const noLoop: MultiInstanceRead = { multiInstance: null, folded: new Set() };
  * The BPMN loop data are folded into the loop itself: the collection a `loopDataInputRef` reads, the Activity's
  * DataInput an `inputDataItem` feeds, its DataOutput an `outputDataItem` is fed from, and the collection a
  * `loopDataOutputRef` writes (BPMN 2.0.2 §10.2.8). A variable name is the id of the item-aware element holding it.
+ * The loop also keeps the literal names CIB binds instead (CIB-INT-0014): the element `loopDataInputRef` names and the
+ * `inputDataItem`'s `name`; and its own asynchronous continuations, which mark each instance (CIB-EXT-0027).
  */
 export function readMultiInstance(ctx: ReadContext, activity: ElementRecord): MultiInstanceRead {
   const loop = asElement(activity.loopCharacteristics);
@@ -45,7 +48,8 @@ export function readMultiInstance(ctx: ReadContext, activity: ElementRecord): Mu
   const count = loopCount(ctx, activity, cibCollection, collectionVariable, cardinality);
 
   const completion = asElement(loop.completionCondition);
-  const itemInputName = itemAssociation === undefined ? optionalId(asElement(loop.inputDataItem) ?? {}) : associationTargetId(itemAssociation);
+  const inputDataItem = asElement(loop.inputDataItem);
+  const itemInputName = itemAssociation === undefined ? optionalId(inputDataItem ?? {}) : associationTargetId(itemAssociation);
   const itemOutputName = itemOutput === undefined ? optionalId(asElement(loop.outputDataItem) ?? {}) : associationSourceId(itemOutput);
   return {
     folded,
@@ -59,6 +63,9 @@ export function readMultiInstance(ctx: ReadContext, activity: ElementRecord): Mu
       outputCollection: collectionOutput === undefined ? optionalId(outputCollection ?? {}) : associationTargetId(collectionOutput),
       // No source attribute selects a sequential re-read (PC-MI-08); the reader carries the entry snapshot.
       mutableCollection: "entrySnapshot",
+      ...asyncContinuations(ctx, loop),
+      loopDataInputRef: optionalId(inputCollection ?? {}),
+      inputDataItemName: inputDataItem === undefined ? null : text(inputDataItem, "name"),
     },
   };
 }

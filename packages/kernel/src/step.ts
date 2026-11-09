@@ -57,7 +57,7 @@ import {
   committed,
   emptyDraft,
   failed,
-  featureSlotsKeepsAlive,
+  idle,
   initial,
   instanceOf,
   keyOf,
@@ -81,6 +81,7 @@ import {
   type Iteration,
   type Leave,
   type Occurrence,
+  type OccurrenceKey,
   type OccurrenceRef,
   type OpenItem,
   type Outcome,
@@ -162,21 +163,27 @@ function roleOf(program: Program, request: BeginRequest): ActivationRole {
 }
 
 /**
- * Whether the input in progress has crossed a transaction boundary: begun an occurrence of an element marked
- * `asyncBefore`, or completed one marked `asyncAfter`, in the journal or the micro-step's draft. The kernel's one reader
- * of both marks.
+ * The `asyncBefore` and `asyncAfter` marks of the occurrence `key`: a Multi-Instance Activity's envelope marks its body,
+ * and its loop characteristics mark each instance (CIB-EXT-0027, `BpmnParse#parseMultiInstanceLoopCharacteristics`).
+ */
+function marks(program: Program, key: OccurrenceKey): readonly [boolean, boolean] {
+  const found = programElement(program, key.element);
+  const envelope = found === null ? null : elementEnvelope(found);
+  if (envelope === null) return [false, false];
+  const loop = key.role === ActivationRole.Element ? envelope.multiInstance : null;
+  return loop === null ? [envelope.asyncBefore, envelope.asyncAfter] : [loop.asyncBefore, loop.asyncAfter];
+}
+
+/**
+ * Whether the input in progress has crossed a transaction boundary: begun an occurrence marked `asyncBefore`, or
+ * completed one marked `asyncAfter`, in the journal or the micro-step's draft. The kernel's one reader of the marks.
  */
 function crossed(program: Program, state: State): boolean {
-  const marks = (element: ElementId): readonly [boolean, boolean] => {
-    const found = programElement(program, element);
-    const envelope = found === null ? null : elementEnvelope(found);
-    return envelope === null ? [false, false] : [envelope.asyncBefore, envelope.asyncAfter];
-  };
   const facts = [...state.journal.map((transition) => [transition.started, transition.ended] as const),
     [state.draft.started, state.draft.ended] as const];
   return facts.some(([started, ended]) =>
-    started.some((fact) => marks(fact.occurrence.element)[0]) ||
-      ended.some(([key, terminal]) => terminal === Terminal.Completed && marks(key.element)[1]));
+    started.some((fact) => marks(program, fact.occurrence)[0]) ||
+      ended.some(([key, terminal]) => terminal === Terminal.Completed && marks(program, key)[1]));
 }
 
 /**
@@ -373,14 +380,6 @@ function activityLocal(ctx: Ctx, state: State, scope: ScopeOccurrence): boolean 
   if (occurrence === null) return false;
   const element = programElement(ctx.program, occurrence.element);
   return element !== null && elementActivity(element) !== null && occurrence.role === ActivationRole.Element;
-}
-
-function idle(state: State, scope: ScopeOccurrenceId): boolean {
-  return !state.tokens.some((token) => token.scope === scope) &&
-    !state.openItems.some((item) => item.scope === scope && !item.passive) &&
-    !state.occurrences.some((occurrence) => occurrence.scope === scope && occurrence.begun) &&
-    !state.scopes.some((candidate) => candidate.parent === scope) &&
-    !featureSlotsKeepsAlive(state.slots, scope);
 }
 
 /**

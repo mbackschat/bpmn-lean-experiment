@@ -68,8 +68,8 @@ deriving instance FromJson, ToJson for SimpleBoolean, Expression, ValueSource, M
   EventPayload, GatewayKind, GatewayPayload, StartPayload, DefinitionRef, ElementOrigin, Header, Element,
   Flow, ProgramIdentity, SubmissionRule, UndeclaredWrite, ErrorPathOutputs, TechnicalFailure, ContinuationFailure,
   MessageCorrelation, DeliveryVariables, MultiInstanceFinalBody, MultiInstanceOutputs, CompensationOrder,
-  CompensationHandlerFailure, AbnormalScopeEnd, UnhandledError, CallBindingTime, Evaluator, ConditionOrder, ProfileOptions,
-  CalledProcess, Program
+  CompensationHandlerFailure, AbnormalScopeEnd, UnhandledError, ErrorCatchVariables, CallBindingTime, Evaluator, ConditionOrder,
+  MultiInstanceBinding, ResultValues, ProfileOptions, CalledProcess, Program
 
 /-- `[{name, value}]`, the scenario contract's variable bindings. -/
 def bindingsFromJson (json : Json) : Except String (List (String × Value)) := do

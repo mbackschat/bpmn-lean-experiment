@@ -90,10 +90,20 @@ inductive AbnormalScopeEnd where
   | completesNormally
   deriving DecidableEq, Repr
 
+/-- What an Error that finds no catcher does. -/
 inductive UnhandledError where
-  | refused
-  /-- CIB-CFG-0004. -/
+  /-- BPMN 2.0.2 Table 10.88 leaves it unspecified, "a common one being termination of the Process instance". -/
+  | failsInstance
+  /-- CIB-INT-0013, CIB-CFG-0010. -/
   | endsThrowingPath
+  deriving DecidableEq, Repr
+
+/-- Whether an Error catcher may name variables for the caught code and message. -/
+inductive ErrorCatchVariables where
+  /-- BPMN 2.0.2 defines no such variables. -/
+  | refused
+  /-- CIB-EXT-0028: written from the catcher's event scope, outward. -/
+  | eventScope
   deriving DecidableEq, Repr
 
 /-- When a completing occurrence's outgoing conditions are evaluated relative to its own output writes. -/
@@ -112,6 +122,22 @@ inductive CallBindingTime where
 inductive Evaluator where
   | simpleBoolean
   | juel
+  deriving DecidableEq, Repr
+
+/-- Which variables a Multi-Instance loop reads its collection from and gives each instance its item in. -/
+inductive MultiInstanceBinding where
+  /-- BPMN 2.0.2 §10.2.8, §10.4.1: the Data Associations into the loop's Data Inputs. -/
+  | dataAssociations
+  /-- CIB-INT-0014: the variable `loopDataInputRef` names and the `inputDataItem`'s `name`. -/
+  | loopReferences
+  deriving DecidableEq, Repr
+
+/-- What becomes of an effect result value that no output mapping consumes. -/
+inductive ResultValues where
+  /-- BPMN 2.0.2 §10.4.1: the result is the Activity's OutputSet, so such a value is rejected (`undeclared-output`). -/
+  | outputSet
+  /-- CIB-EXT-0015: the delegate writes it as an Activity local, which ends with the Activity. -/
+  | activityLocals
   deriving DecidableEq, Repr
 
 structure ProfileOptions where
@@ -135,9 +161,12 @@ structure ProfileOptions where
   compensationOrder : CompensationOrder := .dependency
   compensationHandlerFailure : CompensationHandlerFailure := .failsInstance
   abnormalScopeEnd : AbnormalScopeEnd := .withoutOutflow
-  unhandledError : UnhandledError := .refused
+  unhandledError : UnhandledError := .failsInstance
+  errorCatchVariables : ErrorCatchVariables := .refused
   callBindingTime : CallBindingTime := .programAssembly
   timerZone : Option String := none
+  multiInstanceBinding : MultiInstanceBinding := .dataAssociations
+  effectResultValues : ResultValues := .outputSet
   deriving Repr
 
 end Kernel

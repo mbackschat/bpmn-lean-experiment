@@ -126,7 +126,7 @@ Each cell is a comma-separated token list; `-` means empty. A token is a Lean na
 | PC-SCOPE-06 | PC-SCOPE-06.json | CallWork.outputs, Boundary.subscription, ErrorTrigger.code, EscalationTrigger.code | ScopeOccurrence.calledInstance | Input.command, EffectOutcome.businessFailure | OpenKind.userTask, OpenKind.effect | L.complete.aborted+, L.write+, L.cancelled, X.error, X.escalation | O.errorPathOutputs+ | - | no |
 | PC-SCOPE-07 | PC-SCOPE-07.json | Boundary.interrupting, ScopeKind.embedded | State.scopes, State.occurrences, FeatureSlots.parked, FeatureSlots.held | Input.timerFire, Input.deliver | OpenKind.timer, OpenKind.message, OpenKind.userTask, OpenKind.effect | L.clearInside, L.cancelled | - | - | no |
 | PC-MI-01 | PC-MI-01.json | MultiInstance.mode, MultiInstance.count, MultiInstance.elementVariable, Work.user | MultiInstanceRun.instances, State.activations~ | CommandAction.completeUserTask | OpenKind.userTask | L.begin, L.bodyActivation+, L.instanceCompleted, L.completeBody | - | multiInstance.collectionExpression, multiInstance.cardinality, multiInstance.elementVariable | no |
-| PC-MI-02 | PC-MI-02.json | MultiInstance.mode, MultiInstance.count, Work.service | MultiInstanceRun.instances, EffectDetail.arguments | EffectOutcome.success, EffectOutcome.technicalFailure | OpenKind.effect, OpenKind.incident | L.begin, L.bodyActivation+, L.instanceCompleted, L.completeBody | - | activity.multiInstanceBody | no |
+| PC-MI-02 | PC-MI-02.json | MultiInstance.mode, MultiInstance.count, MultiInstance.asyncBefore, MultiInstance.asyncAfter, MultiInstance.loopDataInputRef, MultiInstance.inputDataItemName, Work.service | MultiInstanceRun.instances, Iteration.completed~, EffectDetail.arguments | EffectOutcome.success, EffectOutcome.technicalFailure | OpenKind.effect, OpenKind.incident | L.begin, L.bodyActivation+, L.instanceCompleted, L.completeBody | O.multiInstanceBinding | activity.multiInstanceBody, multiInstance.instanceResult | no |
 | PC-MI-03 | PC-MI-03.json | MultiInstance.mode, MultiInstance.count, Work.call, CallWork.inputs, CallWork.outputs | MultiInstanceRun.instances, ScopeOccurrence.calledInstance | CommandAction.completeUserTask | OpenKind.userTask | L.begin, L.bodyActivation+, L.completeCall, L.instanceCompleted, L.completeBody | - | activity.multiInstanceBody | no |
 | PC-MI-04 | PC-MI-04.json | MultiInstance.mode, MultiInstance.count, ScopeKind.embedded, Envelope.inputs | MultiInstanceRun.instances, State.scopes | Input.command, Input.effectResult | OpenKind.userTask, OpenKind.effect | L.begin, L.bodyActivation+, L.completeScope, L.instanceCompleted, L.completeBody | - | scope.multiInstance | no |
 | PC-MI-05 | PC-MI-05.json | MultiInstance.mode, MultiInstance.count, ScopeKind.embedded, Envelope.inputs | MultiInstanceRun.instances, State.scopes | Input.command, Input.effectResult | OpenKind.userTask, OpenKind.effect | L.begin, L.bodyActivation+, L.completeScope, L.instanceCompleted, L.completeBody, L.cancelled | - | scope.multiInstance, multiInstance.parallelBodyBound+ | no |
@@ -163,7 +163,7 @@ Each cell is a comma-separated token list; `-` means empty. A token is a Lean na
 | PC-CONDITION-03 | PC-CONDITION-03.json | EventRole.catch, ConditionTrigger.condition, GatewayKind.eventBased | Occurrence.begun, ConditionalWaitDetail.lastValue+, State.writes~ | CommandAction.setVariables+, CommandAction.completeUserTask | OpenKind.conditional+ | L.begin, L.ownerSubscription+, L.entry+, L.written, L.leave | - | event.catch.condition | no |
 | PC-CONDITION-04 | PC-CONDITION-04.json | Envelope.boundaries, Boundary.interrupting, ConditionTrigger.condition, Envelope.inputs, Envelope.outputs | Occurrence.begun, ScopeOccurrence.occurrence, State.writes~ | CommandAction.setVariables+, CommandAction.completeUserTask, EffectOutcome.success | OpenKind.conditional+, OpenKind.userTask, OpenKind.effect | L.ownerSubscription+, L.entry+, L.armBody+, L.activityScope+, L.write+, L.written, L.writeOutputs | - | boundary.condition | no |
 | PC-CONDITION-05 | PC-CONDITION-05.json | ScopeKind.eventSubProcess, ConditionTrigger.condition | Occurrence.begun, OpenItem.passive, State.writes~ | CommandAction.setVariables+ | OpenKind.conditional+ | L.ownerSubscription+, L.entry+, L.write+, L.written, L.stale+, X.eventStart | - | start.condition | no |
-| PC-ERROR-01 | PC-ERROR-01.json | Throw.error, ErrorThrow.code, ErrorThrow.message~, ErrorTrigger.code, ErrorTrigger.codeVariable, ErrorTrigger.messageVariable, Envelope.boundaries | State.failure, InstanceFailure.code | EffectOutcome.businessFailure, Input.command | OpenKind.effect, OpenKind.userTask | L.begin, L.entry+, L.complete.aborted+, L.complete.flows, X.error | O.unhandledError+ | - | no |
+| PC-ERROR-01 | PC-ERROR-01.json | Throw.error, ErrorThrow.code, ErrorThrow.message~, ErrorTrigger.code, ErrorTrigger.codeVariable, ErrorTrigger.messageVariable, Envelope.boundaries | State.failure, InstanceFailure.code | EffectOutcome.businessFailure, Input.command | OpenKind.effect, OpenKind.userTask | L.begin, L.entry+, L.complete.aborted+, L.complete.flows, X.error | O.unhandledError+, O.errorCatchVariables, O.errorPathOutputs+ | event.error.codeVariable, event.error.messageVariable, boundary.error.duplicateCode | no |
 | PC-ERROR-02 | PC-ERROR-02.json | ScopeKind.eventSubProcess, ErrorTrigger.code, StartPayload.subscription | State.scopes | Input.command, EffectOutcome.businessFailure | OpenKind.userTask, OpenKind.effect | L.entry+, L.clearInside, X.error, X.eventStart | O.abnormalScopeEnd+ | start.error, start.error.nonInterrupting+ | no |
 | PC-ERROR-03 | PC-ERROR-03.json | CallWork.outputs, MultiInstance.mode, ErrorTrigger.code | ScopeOccurrence.calledInstance, MultiInstanceRun.scope | EffectOutcome.businessFailure | OpenKind.effect | L.complete.aborted+, L.armBody+, L.cancelled, X.error | O.errorPathOutputs+ | - | no |
 | PC-ESCALATION-01 | PC-ESCALATION-01.json | Throw.escalation, EscalationThrow.code, EscalationTrigger.code, EscalationTrigger.codeVariable | State.tokens | Input.command | OpenKind.userTask | L.begin, L.complete.outgoing, X.escalation | - | - | no |
@@ -369,6 +369,10 @@ structure MultiInstance where
   outputDataItem : Option String := none
   outputCollection : Option String := none
   mutableCollection : CollectionRead := .entrySnapshot
+  asyncBefore : Bool := false                       -- PC-MI-02; each instance's transaction boundary (CIB-EXT-0027)
+  asyncAfter : Bool := false
+  loopDataInputRef : Option String := none          -- PC-MI-02; the literal binding (CIB-INT-0014)
+  inputDataItemName : Option String := none
   deriving Repr
 ```
 
@@ -440,8 +444,13 @@ inductive AbnormalScopeEnd where
   deriving DecidableEq, Repr
 
 inductive UnhandledError where
+  | failsInstance             -- BPMN 2.0.2 Table 10.88, "termination of the Process instance"
+  | endsThrowingPath          -- CIB-INT-0013, CIB-CFG-0010
+  deriving DecidableEq, Repr
+
+inductive ErrorCatchVariables where
   | refused
-  | endsThrowingPath          -- CIB-CFG-0004, widened to 2.2.0
+  | eventScope                -- CIB-EXT-0028
   deriving DecidableEq, Repr
 
 inductive CallBindingTime where
@@ -466,9 +475,12 @@ structure ProfileOptions where
   compensationOrder : CompensationOrder := .dependency
   compensationHandlerFailure : CompensationHandlerFailure := .failsInstance
   abnormalScopeEnd : AbnormalScopeEnd := .withoutOutflow
-  unhandledError : UnhandledError := .refused
+  unhandledError : UnhandledError := .failsInstance
+  errorCatchVariables : ErrorCatchVariables := .refused
   callBindingTime : CallBindingTime := .programAssembly
   timerZone : Option String := none
+  multiInstanceBinding : MultiInstanceBinding := .dataAssociations   -- PC-MI-02; CIB-INT-0014 selects loopReferences
+  effectResultValues : ResultValues := .outputSet                     -- CIB-EXT-0015 selects activityLocals
   deriving Repr
 ```
 
@@ -721,7 +733,8 @@ The evaluator needs no change. An expression outside Simple Boolean is refused a
 | `Scopes.startEventSubProcess`, `Step` | an interrupted parent completes normally after its handler | same as Terminate (E4) | `O.abnormalScopeEnd` |
 | `Propagation.best?`, `Subscriptions.codePrecedence` | exact before catch-all at one level | the code cites §10.5.4, which does not say this: Table 10.88 lets both catch; CIB `ErrorEventDefinition#getPrecedence`; unclassified (E6) | none |
 | `Propagation.searchScopes` | Event Sub-Processes before boundaries, nearest first | §10.5.1 and Table 10.88 for nearest; ESP before boundary is CIB (`BpmnParse:1221`, precedence 10); E6 | none |
-| `Propagation.unhandled` | an uncaught Error or Escalation is refused | §10.5.1 leaves it unresolved; Table 10.88 unspecified; refusal is a restriction | `O.unhandledError`; an uncaught Escalation continues (§10.5.1) |
+| `Propagation.unhandledError` | an uncaught Error fails the instance | §10.5.1 leaves it unresolved; Table 10.88 unspecified, "a common one being termination of the Process instance" | `O.unhandledError`: CIB-INT-0013 ends only the throwing path, CIB-LIM-0006 refused at run time |
+| `Propagation.exhausted` | an uncaught Escalation or Cancel is refused | §10.5.1: an uncaught Escalation continues; refusal is a restriction until PC-ESCALATION-01 | none |
 | `MultiInstance.completeInstance` | exhaustion is checked before the condition | §13.3.7 evaluates on every completion; CIB differs by mode; unclassified (E7) | `O.multiInstanceFinalBody` |
 | `MultiInstance.written` | aggregation, none on early completion | §13.3.7, `PMI-FINISH-01`, `PMI-EARLY-01`; CIB-LIM-0001 | `O.multiInstanceOutputs` |
 | `Compensation.advance` | dependency order, concurrent otherwise | §13.5.5; CIB uses reverse creation (PC-COMPENSATION-01 owns the entry) | `O.compensationOrder` |

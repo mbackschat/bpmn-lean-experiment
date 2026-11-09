@@ -25,9 +25,12 @@
     "compensationOrder": "dependency",
     "compensationHandlerFailure": "failsInstance",
     "abnormalScopeEnd": "withoutOutflow",
-    "unhandledError": "refused",
+    "unhandledError": "failsInstance",
+    "errorCatchVariables": "refused",
     "callBindingTime": "programAssembly",
-    "timerZone": null
+    "timerZone": null,
+    "multiInstanceBinding": "dataAssociations",
+    "effectResultValues": "outputSet"
   },
   "elements": [
     {

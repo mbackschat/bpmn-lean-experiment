@@ -1,6 +1,6 @@
 # Catch variables when the Error carries no message
 
-This directory serves [PC-ERROR-01](../../../docs/PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list), whose open decision is the catch code and message variables ([propagation semantics](../../../docs/kernel/semantics/PROPAGATION-SEMANTICS-SPEC.md#open-rows)). [error-catch-variables](../error-catch-variables/README.md) fixes both variables for an Error that carries a message; these schedules fix the message variable when there is none. Both models are project-authored MIT source for the `cibseven-2.2.0` profile; every schedule is answer-free and CIB Seven `2.2.0` supplies the retained answer.
+This directory serves [PC-ERROR-01](../../../docs/PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list), whose catch code and message variables the [propagation semantics](../../../docs/kernel/semantics/PROPAGATION-SEMANTICS-SPEC.md#finding-the-catcher) define. [error-catch-variables](../error-catch-variables/README.md) fixes both variables for an Error that carries a message; these schedules fix the message variable when there is none. Both models are project-authored MIT source for the `cibseven-2.2.0` profile; every schedule is answer-free and CIB Seven `2.2.0` supplies the retained answer.
 
 In both models the boundary names `camunda:errorCodeVariable` and `camunda:errorMessageVariable` and leads to a Human Task, so the variables are read from the Process state while that task is open.
 

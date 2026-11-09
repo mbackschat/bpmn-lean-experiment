@@ -46,22 +46,25 @@ function mapsData(work: Work): boolean {
 }
 
 /**
- * The work one instance of a Multi-Instance Activity may do: a User Task. The Multi-Instance shape itself is admitted by
+ * The work one instance of a Multi-Instance Activity may do: whether its completion submits the loop's output data
+ * item, `null` for work no instance may do. A User Task does; a Service Task's effect result is the empty OutputSet,
+ * since a Multi-Instance Activity has no mappings (PC-MI-02). The Multi-Instance shape itself is admitted by
  * `admission/multi-instance.ts`.
  */
-export function instanceBody(work: Work): boolean {
+export function instanceBody(work: Work): boolean | null {
   switch (work.tag) {
     case WorkTag.User:
       return true;
+    case WorkTag.Service:
+      return false;
     case WorkTag.None:
     case WorkTag.Manual:
     case WorkTag.Receive:
-    case WorkTag.Service:
     case WorkTag.Send:
     case WorkTag.Script:
     case WorkTag.Rule:
     case WorkTag.Call:
-      return false;
+      return null;
   }
   return assertNever(work);
 }
@@ -95,7 +98,7 @@ export function beginsWithoutToken(work: Work): boolean {
 function envelope(work: Work, fields: Envelope): string | null {
   if (fields.inputs.length > 0 && !mapsData(work)) return "activity.inputMappings";
   if (fields.outputs.length > 0 && !mapsData(work)) return "activity.outputMappings";
-  if (fields.multiInstance !== null && !instanceBody(work)) return "activity.multiInstanceBody";
+  if (fields.multiInstance !== null && instanceBody(work) === null) return "activity.multiInstanceBody";
   // A compensation subject completes through the pipeline's `Hooks.completed`, which `feature/work.ts` reaches for a
   // single User Task or Service Task only.
   if (fields.compensationHandler !== null && (!mapsData(work) || fields.multiInstance !== null)) return "activity.compensationHandler";

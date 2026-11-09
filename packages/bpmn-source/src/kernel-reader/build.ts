@@ -16,7 +16,7 @@ export const defaultFlowOf = (element: ElementRecord): string | null => optional
 export const fixed = (id: string, element: KernelJson): Built => ({ kind: "element", id, build: () => element });
 
 /** CIB `BpmnParse#isAsyncBefore`/`#isAsyncAfter`: exactly the text `true`, and `camunda:async` is `asyncBefore`. */
-function asyncContinuations(ctx: ReadContext, element: ElementRecord): Readonly<{ asyncBefore: boolean; asyncAfter: boolean }> {
+export function asyncContinuations(ctx: ReadContext, element: ElementRecord): Readonly<{ asyncBefore: boolean; asyncAfter: boolean }> {
   const legacy = ctx.attribute(element, "async") === "true";
   const before = ctx.attribute(element, "asyncBefore") === "true";
   return { asyncBefore: legacy || before, asyncAfter: ctx.attribute(element, "asyncAfter") === "true" };

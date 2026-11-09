@@ -348,6 +348,15 @@ def instanceRoot (state : State) (scope : ScopeOccurrenceId) : ScopeOccurrenceId
         | none => root
   go state.scopes.length scope
 
+/-- Whether nothing remains in `scope`: no token, no open item that keeps it alive, no begun occurrence, no child
+scope occurrence and no feature slot entry. -/
+def idle (state : State) (scope : ScopeOccurrenceId) : Bool :=
+  !state.tokens.any (·.scope == scope) &&
+    !state.openItems.any (fun item => item.scope == scope && !item.passive) &&
+    !state.occurrences.any (fun occurrence => occurrence.scope == scope && occurrence.begun) &&
+    !state.scopes.any (·.parent == some scope) &&
+    !state.slots.keepsAlive scope
+
 /-- The process instance identifier of `scope`. -/
 def instanceOf (state : State) (scope : ScopeOccurrenceId) : String :=
   ((state.scopes.find? (·.id == state.instanceRoot scope)).bind (·.calledInstance)).getD state.instanceId

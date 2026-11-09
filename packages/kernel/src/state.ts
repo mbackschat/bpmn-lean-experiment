@@ -487,6 +487,18 @@ export function instanceRoot(state: State, scope: ScopeOccurrenceId): ScopeOccur
   return root;
 }
 
+/**
+ * Whether nothing remains in `scope`: no token, no open item that keeps it alive, no begun occurrence, no child scope
+ * occurrence and no feature slot entry.
+ */
+export function idle(state: State, scope: ScopeOccurrenceId): boolean {
+  return !state.tokens.some((token) => token.scope === scope) &&
+    !state.openItems.some((item) => item.scope === scope && !item.passive) &&
+    !state.occurrences.some((occurrence) => occurrence.scope === scope && occurrence.begun) &&
+    !state.scopes.some((candidate) => candidate.parent === scope) &&
+    !featureSlotsKeepsAlive(state.slots, scope);
+}
+
 /** The process instance identifier of `scope`. */
 export function instanceOf(state: State, scope: ScopeOccurrenceId): string {
   return scopeOf(state, instanceRoot(state, scope))?.calledInstance ?? state.instanceId;

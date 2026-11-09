@@ -97,19 +97,25 @@ def roleOf (program : Program) (request : BeginRequest) : ActivationRole :=
   | .flow => if loops then .multiInstanceBody else .element
   | .compensation _ => if loops then .multiInstanceBody else .element
 
-/-- Whether the input in progress has crossed a transaction boundary: begun an occurrence of an element marked
-`asyncBefore`, or completed one marked `asyncAfter`, in the journal or the micro-step's draft. The kernel's one reader of
-both marks. -/
+/-- The `asyncBefore` and `asyncAfter` marks of the occurrence `key`: a Multi-Instance Activity's envelope marks its
+body, and its loop characteristics mark each instance (CIB-EXT-0027, `BpmnParse#parseMultiInstanceLoopCharacteristics`). -/
+def marks (program : Program) (key : OccurrenceKey) : Bool × Bool :=
+  match (program.element? key.element).bind (·.envelope?) with
+  | none => (false, false)
+  | some envelope =>
+    match key.role, envelope.multiInstance with
+    | .multiInstanceBody, _ => (envelope.asyncBefore, envelope.asyncAfter)
+    | .element, some loop => (loop.asyncBefore, loop.asyncAfter)
+    | .element, none => (envelope.asyncBefore, envelope.asyncAfter)
+
+/-- Whether the input in progress has crossed a transaction boundary: begun an occurrence marked `asyncBefore`, or
+completed one marked `asyncAfter`, in the journal or the micro-step's draft. The kernel's one reader of the marks. -/
 def crossed (program : Program) (state : State) : Bool :=
-  let marks (element : ElementId) : Bool × Bool :=
-    match (program.element? element).bind (·.envelope?) with
-    | some envelope => (envelope.asyncBefore, envelope.asyncAfter)
-    | none => (false, false)
   let facts := state.journal.map (fun transition => (transition.started, transition.ended)) ++
     [(state.draft.started, state.draft.ended)]
   facts.any fun (started, ended) =>
-    started.any (fun fact => (marks fact.occurrence.element).1) ||
-      ended.any fun (key, terminal) => terminal == .completed && (marks key.element).2
+    started.any (fun fact => (marks program fact.occurrence).1) ||
+      ended.any fun (key, terminal) => terminal == .completed && (marks program key).2
 
 /-- `outcome`, unless it rolls back or fails after `state` crossed a transaction boundary: CIB commits an input at the
 boundary and runs the rest in a job, which alone fails (`ExecutionEntity#performOperation`, CIB-EXT-0027). Rolling the
@@ -222,13 +228,6 @@ def activityLocal (ctx : Ctx) (state : State) (scope : ScopeOccurrence) : Bool :
   scope.calledInstance.isNone && (scope.occurrence.bind state.occurrence?).any fun occurrence =>
     (ctx.program.element? occurrence.element).any (·.activity?.isSome) && occurrence.role == .element
 
-def idle (state : State) (scope : ScopeOccurrenceId) : Bool :=
-  !state.tokens.any (·.scope == scope) &&
-    !state.openItems.any (fun item => item.scope == scope && !item.passive) &&
-    !state.occurrences.any (fun occurrence => occurrence.scope == scope && occurrence.begun) &&
-    !state.scopes.any (·.parent == some scope) &&
-    !state.slots.keepsAlive scope
-
 /-- Complete an idle scope occurrence through the occurrence that owns it: a Scope's by its hook, a called instance's
 root by its Call Activity's, a Multi-Instance body by its feature. -/
 def completeScope (hooks : Hooks) (ctx : Ctx) (scope : ScopeOccurrence) (state : State) : Outcome :=
@@ -268,12 +267,12 @@ def settle (hooks : Hooks) (ctx : Ctx) : Nat → State → Outcome
           { state with tokens := rest })
       | [], [] =>
         match state.scopes.find? (fun scope =>
-            scope.id != State.root && idle state scope.id && !activityLocal ctx state scope) with
+            scope.id != State.root && state.idle scope.id && !activityLocal ctx state scope) with
         | some scope => do
           settle hooks ctx fuel (← microStep hooks ctx (.idle scope.id) scope.element scope.id
             (completeScope hooks ctx scope) state)
         | none =>
-          if idle state State.root then
+          if state.idle State.root then
             microStep hooks ctx (.idle State.root) none State.root
               (fun state => .ok (endInstance .completed none state)) state
           else .ok state

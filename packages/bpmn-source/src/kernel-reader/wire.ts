@@ -60,9 +60,12 @@ export type KernelProfileOptions = Readonly<{
   compensationOrder: "dependency" | "reverseCreation";
   compensationHandlerFailure: "failsInstance" | Readonly<{ selected: Readonly<{ code: string }> }>;
   abnormalScopeEnd: "withoutOutflow" | "completesNormally";
-  unhandledError: "refused" | "endsThrowingPath";
+  unhandledError: "failsInstance" | "endsThrowingPath";
+  errorCatchVariables: "refused" | "eventScope";
   callBindingTime: "programAssembly" | "invocation";
   timerZone: string | null;
+  multiInstanceBinding: "dataAssociations" | "loopReferences";
+  effectResultValues: "outputSet" | "activityLocals";
 }>;
 
 /** One portable value's allowance, which bounds a scope-chain submission (`NSD-TASK-01`). */
@@ -94,9 +97,12 @@ export function kernelProfileOptions(relations: readonly string[]): KernelProfil
     compensationOrder: "dependency",
     compensationHandlerFailure: "failsInstance",
     abnormalScopeEnd: selects("CIB-INT-0007") ? "completesNormally" : "withoutOutflow",
-    unhandledError: selects("CIB-CFG-0004") ? "endsThrowingPath" : "refused",
+    unhandledError: selects("CIB-INT-0013") ? "endsThrowingPath" : "failsInstance",
+    errorCatchVariables: selects("CIB-EXT-0028") ? "eventScope" : "refused",
     callBindingTime: "programAssembly",
     timerZone: null,
+    multiInstanceBinding: selects("CIB-INT-0014") ? "loopReferences" : "dataAssociations",
+    effectResultValues: selects("CIB-EXT-0015") ? "activityLocals" : "outputSet",
   };
 }
 

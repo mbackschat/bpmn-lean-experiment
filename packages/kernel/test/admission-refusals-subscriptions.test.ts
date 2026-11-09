@@ -40,6 +40,9 @@ const eventSubProcessOn = (trigger: Json | string, interrupting: boolean) => (pr
 
 const named = message({ name: text("M") });
 
+/** The profile selection under which an Error catcher may name its code and message variables (CIB-EXT-0028). */
+const eventScopeVariables = { errorCatchVariables: "eventScope" };
+
 /** `T` becomes a Transaction with a Cancel boundary `B`; `over` overrides the boundary's own fields. */
 const onTransaction = (over: Json = {}) =>
   task(scope("T", { transaction: { payload: { method: "compensate" } } }, {}, { boundaries: [boundary("B", cancelTrigger, over)] }));
@@ -168,13 +171,29 @@ export const rows: readonly Row[] = [
     code: "event.error.codeVariable",
     description: "a boundary Error naming a code variable",
     mutate: bounded(errorTrigger({ codeVariable: "code" })),
-    control: bounded(errorTrigger({ code: "Failure" })),
+    control: (program) => bounded(errorTrigger({ codeVariable: "code" }))(withOptions(program, eventScopeVariables)),
   },
   {
     code: "event.error.messageVariable",
     description: "a boundary Error naming a message variable",
     mutate: bounded(errorTrigger({ messageVariable: "reason" })),
-    control: bounded(errorTrigger({ code: "Failure" })),
+    control: (program) => bounded(errorTrigger({ messageVariable: "reason" }))(withOptions(program, eventScopeVariables)),
+  },
+  {
+    code: "event.error.codeVariable",
+    description: "an Event Sub-Process start Error naming a code variable",
+    mutate: nested(errorTrigger({ codeVariable: "code" })),
+    control: (program) => nested(errorTrigger({ codeVariable: "code" }))(withOptions(program, eventScopeVariables)),
+  },
+  {
+    code: "boundary.error.duplicateCode",
+    description: "a host with two interrupting Error boundaries of the same code",
+    mutate: task(activity("T", "manual", {
+      boundaries: [boundary("B", errorTrigger({ code: "Failure" })), boundary("B2", errorTrigger({ code: "Failure" }))],
+    })),
+    control: task(activity("T", "manual", {
+      boundaries: [boundary("B", errorTrigger({ code: "Failure" })), boundary("B2", errorTrigger({ code: "Other" }))],
+    })),
   },
   {
     code: "event.escalation.codeVariable",

@@ -19,10 +19,16 @@
  * A boundary that catches begins its occurrence and leaves on its flows. A Compensation throw and a caught Cancel hand
  * their scope occurrence to `feature/compensation.ts` through `Signal.compensate`, with what follows once its handlers
  * have completed.
+ *
+ * An Error that finds no catcher does what the profile selects (`UnhandledError`): the standards reading fails the
+ * process instance, CIB ends only the throwing path, which the thrower's own completion already did. An Escalation or a
+ * Cancel that finds no catcher has no selected meaning.
  */
 import {
+  ErrorPathOutputs,
   Placement,
   ThrowTag,
+  UnhandledError,
   assertNever,
   elementEnvelope,
   elementScope,
@@ -40,6 +46,7 @@ import {
 } from "../il/types.js";
 import {
   FailureTag,
+  InstanceStatus,
   RaisedTag,
   ResumeTag,
   SignalTag,
@@ -49,10 +56,11 @@ import {
   committed,
   completeSignal,
   failed,
+  idle,
   instanceOf,
+  instanceRoot,
   leaveFlows,
   leaveOutgoing,
-  raisedIsCancel,
   signal,
   type Binding,
   type Leave,
@@ -65,7 +73,7 @@ import {
   type ScopeOccurrenceId,
   type State,
 } from "../state.js";
-import { ScopeRole, boundaryFire, type Ctx } from "../hooks.js";
+import { ScopeRole, boundaryFire, ctxRequireMappings, evalContext, type Ctx } from "../hooks.js";
 
 /** The catcher with the lowest precedence among `candidates`, the first in document order on a tie, with what it writes. */
 function best<T>(ctx: Ctx, raised: Raised, trigger: (candidate: T) => Trigger, candidates: readonly T[]): readonly [T, readonly Binding[]] | null {
@@ -92,41 +100,95 @@ function eventSubProcesses(ctx: Ctx, occurrence: ScopeOccurrence): readonly (rea
   });
 }
 
-/**
- * Unhandled events have no meaning selected yet: an uncaught Error or Escalation is refused, never treated as a none End
- * Event. Dynamic-only: whether a raised event finds a catcher depends on where its thrower runs.
- */
-function unhandled(raised: Raised): Outcome {
-  switch (raised.tag) {
-    case RaisedTag.Error:
-      return failed(FailureTag.Unsupported, "unhandled-error"); // dynamic-only: where its thrower runs
-    case RaisedTag.Escalation:
-      return failed(FailureTag.Unsupported, "unhandled-escalation"); // dynamic-only: where its thrower runs
-    case RaisedTag.Cancel:
-      return failed(FailureTag.Unsupported, "raise-cancel"); // dynamic-only: where its thrower runs
-  }
-  return assertNever(raised);
-}
-
 /** The public identity of a trigger: the thrower's occurrence, as `origin` names it. */
 function trigger(state: State, origin: Origin): OccurrenceRef {
   return { processInstanceId: instanceOf(state, origin.scope), element: origin.element, activation: origin.activation };
 }
 
 /**
- * An event left a compensation handler's context uncaught: an Error fails the handler; what any other event means there
- * is not selected. Dynamic-only: admission restricts handlers, but what they raise depends on the run.
+ * Whether the thrower's output mappings would run as its instance ends: it ran directly in its instance's root and
+ * nothing else remains there. CIB then rolls the command back (CIB-LIM-0006).
  */
-function leaveHandler(raised: Raised, handler: ScopeOccurrenceId, origin: Origin, state: State): Outcome {
+function endsInstanceWithOutputs(ctx: Ctx, origin: Origin, state: State): boolean {
+  const thrower = programElement(ctx.program, origin.element);
+  const outputs = (thrower === null ? null : elementEnvelope(thrower))?.outputs ?? [];
+  return outputs.length > 0 && instanceRoot(state, origin.scope) === origin.scope && idle(state, origin.scope);
+}
+
+/**
+ * An Error no catcher takes. BPMN 2.0.2 Table 10.88 leaves the outcome unspecified, "a common one being termination of
+ * the Process instance": `failsInstance` ends the instance failed, naming the thrower. `endsThrowingPath` is CIB's
+ * `execution.end(true)` (`BpmnExceptionHandler#propagateError`, CIB-INT-0013): the thrower's completion already ended
+ * its path, and the instance goes on or completes as what remains says.
+ */
+function unhandledError(ctx: Ctx, code: string, message: string | null, origin: Origin, state: State): Outcome {
+  const selected = ctx.program.options.unhandledError;
+  switch (selected) {
+    case UnhandledError.FailsInstance:
+      return committed(signal(state, {
+        tag: SignalTag.EndInstance,
+        status: InstanceStatus.Failed,
+        failure: { code, message, occurrence: trigger(state, origin), related: [] },
+      }));
+    case UnhandledError.EndsThrowingPath:
+      if (!endsInstanceWithOutputs(ctx, origin, state)) return committed(state);
+      return failed(FailureTag.Unsupported, "unhandled-error-ends-instance-with-outputs"); // dynamic-only: whether its path is the last
+  }
+  return assertNever(selected);
+}
+
+/**
+ * The search found no catcher: it ended at `handler`, the scope occurrence of a compensation handler, which an Error
+ * fails, or it passed its instance's root. What an Escalation or a Cancel means at either is not selected. Dynamic-only:
+ * whether a raised event finds a catcher depends on where its thrower runs.
+ */
+function exhausted(ctx: Ctx, raised: Raised, origin: Origin, handler: ScopeOccurrenceId | null, state: State): Outcome {
   switch (raised.tag) {
     case RaisedTag.Error:
-      return committed(signal(state, { tag: SignalTag.CompensationFailed, handler, code: raised.code, message: raised.message, origin }));
+      return handler === null
+        ? unhandledError(ctx, raised.code, raised.message, origin, state)
+        : committed(signal(state, { tag: SignalTag.CompensationFailed, handler, code: raised.code, message: raised.message, origin }));
     case RaisedTag.Escalation:
-      return failed(FailureTag.Unsupported, "compensation-handler-escalation"); // dynamic-only: what a handler raises
+      return handler === null
+        ? failed(FailureTag.Unsupported, "unhandled-escalation") // dynamic-only: where its thrower runs
+        : failed(FailureTag.Unsupported, "compensation-handler-escalation"); // dynamic-only: what a handler raises
     case RaisedTag.Cancel:
-      return failed(FailureTag.Unsupported, "compensation-handler-cancel"); // dynamic-only: what a handler raises
+      return handler === null
+        ? failed(FailureTag.Unsupported, "raise-cancel") // dynamic-only: where its thrower runs
+        : failed(FailureTag.Unsupported, "compensation-handler-cancel"); // dynamic-only: what a handler raises
   }
   return assertNever(raised);
+}
+
+/**
+ * Write a catch's code and message variables from the catcher's event scope outward: CIB sets them on the execution of
+ * the boundary's host or of the Event Sub-Process's enclosing scope (`BpmnExceptionHandler#propagateError`,
+ * CIB-EXT-0028). Admission refuses them unless the profile selects them.
+ */
+function writeCaught(scope: ScopeOccurrenceId, writes: readonly Binding[], state: State): State {
+  return writes.length === 0 ? state : signal(state, { tag: SignalTag.Write, scope, writes, rule: WriteRule.Outward });
+}
+
+/**
+ * Under `ErrorPathOutputs.mapped` a Scope an Error boundary interrupts writes its output mappings, after the catch
+ * variables: CIB runs them as it destroys the Scope (`ExecutionEntity.destroy`, `OutputParameter.execute`,
+ * CIB-EXT-0016).
+ */
+function interruptedOutputs(ctx: Ctx, occurrence: ScopeOccurrence, parent: ScopeOccurrenceId, state: State): Outcome {
+  const element = occurrence.element === null ? null : programElement(ctx.program, occurrence.element);
+  const mappings = (element === null ? null : elementScope(element))?.[1].envelope.outputs ?? [];
+  const selected = ctx.program.options.errorPathOutputs;
+  switch (selected) {
+    case ErrorPathOutputs.Mapped: {
+      if (mappings.length === 0) return committed(state);
+      const outputs = ctxRequireMappings(ctx, evalContext(state, occurrence.id), mappings);
+      if (!outputs.ok) return outputs;
+      return committed(signal(state, { tag: SignalTag.Write, scope: parent, writes: outputs.value, rule: WriteRule.Outward }));
+    }
+    case ErrorPathOutputs.None:
+      return committed(state);
+  }
+  return assertNever(selected);
 }
 
 /**
@@ -136,6 +198,7 @@ function leaveHandler(raised: Raised, handler: ScopeOccurrenceId, origin: Origin
  * and all compensation has been completed").
  */
 function leaveOccurrence(
+  ctx: Ctx,
   raised: Raised,
   origin: Origin,
   occurrence: ScopeOccurrence,
@@ -143,17 +206,27 @@ function leaveOccurrence(
   boundary: Boundary,
   writes: readonly Binding[],
   state: State,
-): State {
-  if (!raisedIsCancel(raised)) return boundaryFire(boundary, occurrence.occurrence, null, parent, writes, state);
-  const thrown = trigger(state, origin);
-  return signal(clearInside(state, occurrence.id), {
-    tag: SignalTag.Compensate,
-    scope: occurrence.id,
-    activity: null,
-    trigger: thrown,
-    leave: occurrence.occurrence,
-    resume: { tag: ResumeTag.Occur, element: boundary.id, scope: parent, leave: leaveFlows(boundary.outgoing) },
-  });
+): Outcome {
+  const caught = writeCaught(occurrence.id, writes, state);
+  switch (raised.tag) {
+    case RaisedTag.Error: {
+      const written = interruptedOutputs(ctx, occurrence, parent, caught);
+      if (!written.ok) return written;
+      return committed(boundaryFire(boundary, occurrence.occurrence, null, parent, [], written.value));
+    }
+    case RaisedTag.Escalation:
+      return committed(boundaryFire(boundary, occurrence.occurrence, null, parent, [], caught));
+    case RaisedTag.Cancel:
+      return committed(signal(clearInside(state, occurrence.id), {
+        tag: SignalTag.Compensate,
+        scope: occurrence.id,
+        activity: null,
+        trigger: trigger(state, origin),
+        leave: occurrence.occurrence,
+        resume: { tag: ResumeTag.Occur, element: boundary.id, scope: parent, leave: leaveFlows(boundary.outgoing) },
+      }));
+  }
+  return assertNever(raised);
 }
 
 /**
@@ -167,20 +240,21 @@ function searchScopes(ctx: Ctx, raised: Raised, origin: Origin, state: State, bo
     const occurrence = state.scopes.find((scope) => scope.id === at);
     if (occurrence === undefined) return failed(FailureTag.SemanticFailure, "raise-from-missing-scope");
     const role = ctx.scopeRole(state, occurrence.id);
-    if (role === ScopeRole.CompensationHandler) return leaveHandler(raised, occurrence.id, origin, state);
+    if (role === ScopeRole.CompensationHandler) return exhausted(ctx, raised, origin, occurrence.id, state);
     const handled = best(ctx, raised, ([, subscription]) => subscription.trigger, eventSubProcesses(ctx, occurrence));
     if (handled !== null) {
       const [[element], writes] = handled;
-      return committed(signal(state, { tag: SignalTag.Begin, request: beginRequest({ element, scope: occurrence.id, locals: writes }) }));
+      return committed(signal(writeCaught(occurrence.id, writes, state),
+        { tag: SignalTag.Begin, request: beginRequest({ element, scope: occurrence.id }) }));
     }
     if (occurrence.element !== null && occurrence.parent !== null) {
       const attached = role === ScopeRole.MultiInstanceInstance ? [] : boundaries(ctx, occurrence.element);
       const caught = best(ctx, raised, (boundary) => boundary.subscription.trigger, attached);
-      if (caught !== null) return committed(leaveOccurrence(raised, origin, occurrence, occurrence.parent, caught[0], caught[1], state));
+      if (caught !== null) return leaveOccurrence(ctx, raised, origin, occurrence, occurrence.parent, caught[0], caught[1], state);
     }
     current = occurrence.parent;
   }
-  return unhandled(raised);
+  return exhausted(ctx, raised, origin, null, state);
 }
 
 /** `Signal.raise`. */
@@ -188,7 +262,7 @@ export function raise(ctx: Ctx, raised: Raised, origin: Origin, state: State): O
   const hostBoundaries = ctx.scopeRole(state, origin.scope) === ScopeRole.MultiInstanceInstance ? [] : boundaries(ctx, origin.element);
   if (origin.host !== null) {
     const caught = best(ctx, raised, (boundary) => boundary.subscription.trigger, hostBoundaries);
-    if (caught !== null) return committed(boundaryFire(caught[0], null, null, origin.scope, caught[1], state));
+    if (caught !== null) return committed(boundaryFire(caught[0], null, null, origin.scope, [], writeCaught(origin.scope, caught[1], state)));
   }
   return searchScopes(ctx, raised, origin, state, state.scopes.length + 1, origin.scope);
 }

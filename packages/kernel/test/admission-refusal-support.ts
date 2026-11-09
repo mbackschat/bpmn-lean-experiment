@@ -89,7 +89,8 @@ export const ruleWork = (): Json => ({ rule: { payload: { decision: text("d"), r
 /** A Multi-Instance loop the kernel runs: one User Task per item of a collection variable, read once on entry. */
 export const loop = (over: Json = {}): Json => ({
   mode: "parallel", count: { collection: { items: variable("items") } }, elementVariable: null, completionCondition: null,
-  inputDataItem: "item", outputDataItem: "result", outputCollection: null, mutableCollection: "entrySnapshot", ...over,
+  inputDataItem: "item", outputDataItem: "result", outputCollection: null, mutableCollection: "entrySnapshot",
+  asyncBefore: false, asyncAfter: false, loopDataInputRef: null, inputDataItemName: null, ...over,
 });
 
 /** The definition a called process is bound to; a binding field set here is refused. */

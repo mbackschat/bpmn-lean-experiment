@@ -24,7 +24,6 @@ def options (abnormalScope : Bool) (selected : ProfileOptions) : Option String :
   (if selected.deliveryVariables == .installs then some "profile.deliveryVariables.installs" else none) <|>
   (if selected.compensationOrder == .reverseCreation then some "profile.compensationOrder.reverseCreation" else none) <|>
   compensationHandlerFailure selected.compensationHandlerFailure <|>
-  (if selected.unhandledError == .endsThrowingPath then some "profile.unhandledError.endsThrowingPath" else none) <|>
   (if selected.callBindingTime == .invocation then some "profile.callBindingTime.invocation" else none) <|>
   (if selected.timerZone.isSome then some "profile.timerZone" else none) <|>
   (if abnormalScope && selected.abnormalScopeEnd == .withoutOutflow then some "profile.abnormalScopeEnd.withoutOutflow" else none)

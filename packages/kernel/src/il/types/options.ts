@@ -85,10 +85,20 @@ export enum AbnormalScopeEnd {
   CompletesNormally = "completesNormally",
 }
 
+/** What an Error that finds no catcher does. */
 export enum UnhandledError {
-  Refused = "refused",
-  /** CIB-CFG-0004. */
+  /** BPMN 2.0.2 Table 10.88 leaves it unspecified, "a common one being termination of the Process instance". */
+  FailsInstance = "failsInstance",
+  /** CIB-INT-0013, CIB-CFG-0010. */
   EndsThrowingPath = "endsThrowingPath",
+}
+
+/** Whether an Error catcher may name variables for the caught code and message. */
+export enum ErrorCatchVariables {
+  /** BPMN 2.0.2 defines no such variables. */
+  Refused = "refused",
+  /** CIB-EXT-0028: written from the catcher's event scope, outward. */
+  EventScope = "eventScope",
 }
 
 /** When a completing occurrence's outgoing conditions are evaluated relative to its own output writes. */
@@ -102,6 +112,22 @@ export enum ConditionOrder {
 export enum CallBindingTime { ProgramAssembly = "programAssembly", Invocation = "invocation" }
 
 export enum Evaluator { SimpleBoolean = "simpleBoolean", Juel = "juel" }
+
+/** Which variables a Multi-Instance loop reads its collection from and gives each instance its item in. */
+export enum MultiInstanceBinding {
+  /** BPMN 2.0.2 §10.2.8, §10.4.1: the Data Associations into the loop's Data Inputs. */
+  DataAssociations = "dataAssociations",
+  /** CIB-INT-0014: the variable `loopDataInputRef` names and the `inputDataItem`'s `name`. */
+  LoopReferences = "loopReferences",
+}
+
+/** What becomes of an effect result value that no output mapping consumes. */
+export enum ResultValues {
+  /** BPMN 2.0.2 §10.4.1: the result is the Activity's OutputSet, so such a value is rejected (`undeclared-output`). */
+  OutputSet = "outputSet",
+  /** CIB-EXT-0015: the delegate writes it as an Activity local, which ends with the Activity. */
+  ActivityLocals = "activityLocals",
+}
 
 export interface ProfileOptions {
   readonly relations: readonly string[];
@@ -127,6 +153,9 @@ export interface ProfileOptions {
   readonly compensationHandlerFailure: CompensationHandlerFailure;
   readonly abnormalScopeEnd: AbnormalScopeEnd;
   readonly unhandledError: UnhandledError;
+  readonly errorCatchVariables: ErrorCatchVariables;
   readonly callBindingTime: CallBindingTime;
   readonly timerZone: string | null;
+  readonly multiInstanceBinding: MultiInstanceBinding;
+  readonly effectResultValues: ResultValues;
 }

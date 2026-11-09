@@ -31,9 +31,11 @@ def openWork (kind : OpenKind) (header : Header) (payload : ActivityPayload) (oc
 /-- The outputs a completion writes, from the values it submits. The submission must be exactly the Activity's
 OutputSet ([BPMN 2.0.2 §10.4.1](../../docs/reference/bpmn-2.0.2/README.md)): every output mapping evaluates against
 the submitted values alone, no name is submitted twice, and no submitted value is superfluous (dropping it leaves
-the outputs evaluable). Anything else is rejected, so a completion never commits a partial or unmediated write. -/
-def outputs (ctx : Ctx) (nowMs : Nat) (mappings : List Mapping) (values : List (String × Value)) :
-    Except Failure (List (String × Value)) :=
+the outputs evaluable). Anything else is rejected, so a completion never commits a partial or unmediated write. Under
+`ResultValues.activityLocals` a superfluous value is an Activity local that ends with the Activity, never written
+(CIB-EXT-0015). -/
+def outputs (ctx : Ctx) (nowMs : Nat) (unconsumed : ResultValues) (mappings : List Mapping)
+    (values : List (String × Value)) : Except Failure (List (String × Value)) :=
   let evaluated (variables : List (String × Value)) := ctx.evaluateMappings { variables, nowMs } mappings
   let fills (variables : List (String × Value)) : Bool :=
     match evaluated variables with
@@ -47,8 +49,11 @@ def outputs (ctx : Ctx) (nowMs : Nat) (mappings : List Mapping) (values : List (
     | .error failure => .error failure
     | .ok none => .error (.rejected "output-unavailable")
     | .ok (some written) =>
-      if names.any (fun name => fills (values.filter (·.1 != name))) then .error (.rejected "undeclared-output")
-      else .ok written
+      match unconsumed with
+      | .activityLocals => .ok written
+      | .outputSet =>
+        if names.any (fun name => fills (values.filter (·.1 != name))) then .error (.rejected "undeclared-output")
+        else .ok written
 
 /-- What an open User Task publishes, with the inputs it was given. -/
 def userTaskDetail (task : UserWork) (inputs : List (String × Value)) : UserTaskDetail :=
@@ -121,7 +126,7 @@ def completeUserTask (ctx : Ctx) (_ : Header) (payload : ActivityPayload) (item 
     match ctx.program.options.submission, payload.envelope.outputs with
     | .installsVariables, [] => .ok (state.signal (.complete item.occurrence .outgoing values .outward))
     | .installsVariables, _ :: _ | .outputSet, _ =>
-      let written ← outputs ctx state.logicalTimeMs payload.envelope.outputs values
+      let written ← outputs ctx state.logicalTimeMs .outputSet payload.envelope.outputs values
       .ok (state.signal (.complete item.occurrence .outgoing written .outward))
 
 /-- Replace the kind of the open item `id`, keeping its identity and attachments. -/
@@ -137,11 +142,11 @@ def effectResult (ctx : Ctx) (item : OpenItem) (outcome : EffectOutcome) (state 
   let mappings := (((ctx.program.element? item.element).bind (·.envelope?)).map (·.outputs)).getD []
   match outcome with
   | .success patch => do
-    let written ← outputs ctx state.logicalTimeMs mappings patch
+    let written ← outputs ctx state.logicalTimeMs ctx.program.options.effectResultValues mappings patch
     .ok (state.signal (.complete item.occurrence .outgoing written .outward))
   | .businessFailure code message patch => do
     let written ← match ctx.program.options.errorPathOutputs with
-      | .mapped => outputs ctx state.logicalTimeMs mappings patch
+      | .mapped => outputs ctx state.logicalTimeMs ctx.program.options.effectResultValues mappings patch
       | .none => if patch.isEmpty then .ok [] else .error (.rejected "error-path-outputs-not-accepted")
     let activation := ((state.occurrence? item.occurrence).map (·.activation)).getD 0
     .ok ((state.signal (.complete item.occurrence .raised written .outward)).signal (.raise (.error code message)

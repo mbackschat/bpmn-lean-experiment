@@ -25,10 +25,10 @@ The counts below cover only entries recorded by this project, including the sepa
 | Normative agreement records | 19 | 2 | A bounded BPMN requirement and pinned CIB observation agree; candidates remain unapproved |
 | Permitted operational details | 12 | 0 | CIB or the oracle adapter chooses host mechanics without changing required BPMN observations |
 | Confirmed normative deviations | 0 | 1 | Clear BPMN requirement and pinned CIB evidence establish incompatible behavior |
-| CIB interpretations of BPMN gaps or inconsistencies | 11 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
-| CIB extension records | 27 | 3 | Project profile deliberately includes behavior beyond bare BPMN execution; candidates remain unselected |
-| Configuration-specific realizations | 9 | 1 | Behavior is permitted or meaningful only under a declared CIB environment |
-| Known CIB limitations within reviewed scope | 5 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
+| CIB interpretations of BPMN gaps or inconsistencies | 13 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
+| CIB extension records | 29 | 3 | Project profile deliberately includes behavior beyond bare BPMN execution; candidates remain unselected |
+| Configuration-specific realizations | 10 | 1 | Behavior is permitted or meaningful only under a declared CIB environment |
+| Known CIB limitations within reviewed scope | 6 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
 
 The sequential User Task account has no recorded CIB deviation. That statement is bounded to its clauses, pinned environment, witnesses, and observation surface; it is not a general CIB conformance result.
 
@@ -216,7 +216,7 @@ The repository-wide audit on 2026-07-24 found no previously visited observation 
 
 **Evidence:** The [public-service phase-zero probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenSequentialMultiInstancePhaseZeroProbeTest.java), its [exact BPMN fixture](../runners/cibseven/src/test/resources/org/bpmnlean/cibseven/CibSevenSequentialMultiInstancePhaseZeroProbeTest.bpmn), and the [Sequential Multi-Instance specification](kernel/semantics/MULTI-INSTANCE-SEMANTICS-SPEC.md).
 
-**Fidelity boundary:** Task existence, generated task identity, item value, loop-variable values, Timer-job identity and due date, task staleness, boundary-route activation, and Process completion are observed through public CIB services. The probe supplies the collection under the literal `loopDataInputRef` identity because that is CIB's public Process-variable binding; this does not establish general BPMN Data Association execution or the project mediator.
+**Fidelity boundary:** Task existence, generated task identity, item value, loop-variable values, Timer-job identity and due date, task staleness, boundary-route activation, and Process completion are observed through public CIB services. The probe supplies the collection under the literal `loopDataInputRef` identity because that is CIB's public Process-variable binding, which `CIB-INT-0014` classifies; this does not establish general BPMN Data Association execution or the project mediator.
 
 **Boundary:** This agreement is limited to one private executable Process, one collection-driven sequential Multi-Instance User Task, three strings or an empty collection, one exact interrupting Boundary Timer, and one boundary-route User Task. Counter meaning is classified separately by `CIB-INT-0002`; output aggregation is excluded by `CIB-LIM-0001`. General Multi-Instance, another Activity body, completion conditions, parallel generation, other data mapping, repeated activation, and a CIB compatibility profile remain unreviewed.
 
@@ -454,7 +454,7 @@ BPMN Table 10.88 lets an exact-code and a catch-all catcher both catch, and §10
 
 **Evidence:** Pinned `BpmnParse:1221` (`setPrecedence(10)`), `ErrorEventDefinition#getPrecedence` ("handlers with error code take precedence over catchall-handlers"); the kernel's `Propagation.searchScopes` and `Subscriptions.codePrecedence`.
 
-**Boundary:** Error and Escalation catches at one catching scope. It does not cover searches across scopes, which §10.5.1 settles as nearest first, or a boundary's own catch-all order against another boundary with the same code.
+**Boundary:** Error and Escalation catches at one catching scope, including two catch-all Error boundaries on one host, which catch in document order ([notify-two-catch-alls](../scenarios/open-rows/error-boundary-candidates/README.md)). It does not cover searches across scopes, which §10.5.1 settles as nearest first. Two interrupting Error boundaries of one host with the same exact code, which CIB orders by document order (`BpmnParse:3646`), are refused under every profile (`boundary.error.duplicateCode`), since BPMN 2.0.2 §10.5.6 does not order them.
 
 ### CIB-INT-0011 — an Activity's outgoing conditions evaluate before its output writes
 
@@ -477,6 +477,30 @@ The kernel adopts that resolution as the semantic outcome `rolledBack` with the 
 **Evidence:** Pinned `InclusiveGatewayActivityBehavior.java:61-84`, with the throw at `:82`, and `BpmnBehaviorLogger.java:51-55` for the code; the kernel's `Feature.Flow.inclusiveFlows`.
 
 **Boundary:** A diverging Inclusive Gateway reached by a Start or a User Task completion. Admission refuses a split whose every output is conditioned and which has no default (`gateway.inclusive.conditionalWithoutDefault`), and an unconditioned output is always taken (`CIB-INT-0005`), so no admitted model reaches the no-match until `PC-CF-04` lifts that refusal. It does not cover a no-match after an effect result, incidents or job retries.
+
+### CIB-INT-0013 — an Error that no catcher takes ends only its throwing path
+
+**Status:** Recorded bounded interpretation from the pinned source and retained evidence; selected by `ProfileOptions.unhandledError = endsThrowingPath` through the [cibseven-2.2.0 cumulative profile](../profiles/cibseven-2.2.0/profile.json) and the scope-chain profile, under `CIB-CFG-0010`
+
+BPMN 2.0.2 §10.5.1 leaves an Error without a catcher unresolved, and Table 10.88 calls the outcome unspecified, "a common one being termination of the Process instance"; the standards profile selects that termination (`UnhandledError.failsInstance`, [propagation semantics](kernel/semantics/PROPAGATION-SEMANTICS-SPEC.md)). CIB Seven `2.2.0` with `enableExceptionsAfterUnhandledBpmnError = false` logs the missing catcher and calls `execution.end(true)` on the thrower's execution: the throwing path ends as at a None End Event, other paths are untouched, an enclosing Sub-Process completes normally once nothing else remains in it and its parent continues, and the instance completes when nothing remains. A Service Task's output parameters still run on that path, as on a caught one (`CIB-EXT-0016`).
+
+The kernel's `endsThrowingPath` changes nothing when the search ends: a Service Task's business failure has already ended its Activity, writing its error-path outputs under `ErrorPathOutputs.mapped`, and an Error End Event has already consumed its token.
+
+**Evidence:** Pinned `BpmnExceptionHandler#propagateError` (`BpmnExceptionHandler.java:129-137`); the retained witnesses [effect-wrong-code and error-end-no-catcher](../scenarios/open-rows/error-unhandled/README.md), [unrelated-sibling-catch-all](../scenarios/open-rows/error-ancestor-search/README.md), [root-without-outputs and parallel-root-branch-with-outputs](../scenarios/open-rows/error-unhandled-outcomes/README.md), [scope-unmatched-code](../scenarios/open-rows/automation-business-error-routing/README.md), whose Sub-Process continues after the mapped output of its unmatched Service Task, and [sibling-boundary-active](../scenarios/open-rows/automation-business-error-non-ancestor/README.md) (CIB Seven `2.2.0`, 2026-11-09); the kernel's `Propagation.unhandledError`.
+
+**Boundary:** Errors raised by an Error End Event or by a Service Task's business failure that no boundary or Event Sub-Process of the instance catches. When the thrower ran directly in its instance's root, has output parameters and its path is the last one there, CIB rolls the command back instead (`CIB-LIM-0006`). It does not cover Errors that leave a called instance, a Multi-Instance instance or a compensation handler, technical failures, which no Error code catches here (`CIB-EXT-0029`), the history CIB records for the ended thrower, or `enableExceptionsAfterUnhandledBpmnError = true`.
+
+### CIB-INT-0014 — a Multi-Instance loop binds its collection and item by the loop's own references, not by Data Associations
+
+**Status:** Recorded bounded interpretation from the pinned source; selected by `ProfileOptions.multiInstanceBinding = loopReferences` through the [cibseven-2.2.0 cumulative profile](../profiles/cibseven-2.2.0/profile.json)
+
+BPMN 2.0.2 §10.2.8 (Table 10.29) makes `loopDataInputRef` a reference to the Activity's collection Data Input and `inputDataItem` the Data Input each instance receives, and §10.4.1 and §10.4.2 fill Data Inputs through Data Input Associations; the standard says nothing about how an engine's externally named variables relate to those item-aware elements. CIB Seven `2.2.0` reads the collection from the Process variable literally named by the `loopDataInputRef` text (an expression when it contains `{`) and gives each instance the item as a local variable named by the `inputDataItem`'s `name`, ignoring the Data Input Associations and any Data Object they read. This is the literal binding [`CIB-AGR-0011`](#cib-agr-0011-bounded-collection-driven-sequential-multi-instance-user-task-lifecycle) already used as CIB's public Process-variable binding.
+
+The kernel reader carries both readings: `MultiInstance.count` and `inputDataItem` from the associations, `loopDataInputRef` and `inputDataItemName` from the loop. `MultiInstanceBinding.dataAssociations`, the standards reading, uses the first; `loopReferences` reads the collection from the variable `loopDataInputRef` names and binds the item to `inputDataItemName`, no local when the item has no name. A loop without `loopDataInputRef`, given by `camunda:collection`, keeps `count` under both.
+
+**Evidence:** Pinned `BpmnParse#parseMultiInstanceLoopCharacteristics` (`BpmnParse.java:1850-1873`: `loopDataInputRef` text to `setCollectionVariable` or `setCollectionExpression`, `inputDataItem@name` to `setCollectionElementVariable`); the [Multi-Instance Service Task witnesses](../scenarios/open-rows/multi-instance-service-task/README.md), whose start variable is `DataInput_Recipients`; the kernel's `MultiInstance.collectionOf` and `MultiInstance.itemName`.
+
+**Boundary:** Standard-form loops on admitted Multi-Instance bodies. It claims nothing about general Data Association execution, Data Objects, a `loopDataInputRef` expression, `loopDataOutputRef` or `outputDataItem` (`CIB-LIM-0001`), or `camunda:elementVariable` (PC-MI-04, PC-MI-10).
 
 ## Known limitation register
 
@@ -539,6 +563,16 @@ CIB attaches a Boundary Event to an Event Sub-Process like any Activity and runs
 **Evidence:** Pinned `BpmnParse#parseBoundaryEvents` at `834a9874` attaches by `attachedToRef` without excluding a triggered-by-event Sub-Process; the retained [Event Sub-Process boundary witness](../scenarios/open-rows/event-subprocess-boundary/README.md) deploys and commits in CIB Seven `2.2.0` (2026-11-09).
 
 **Boundary:** any Boundary Event whose `attachedToRef` names an Event Sub-Process, under every profile.
+
+### CIB-LIM-0006: ending an instance's last path through an uncaught Error rolls back when the thrower has output parameters
+
+**Status:** Profile limitation; not a deviation
+
+Under `CIB-INT-0013` an uncaught Error ends only its throwing path. When that path is the last one of the instance, the thrower ran directly in the instance's root and it has output parameters, CIB Seven `2.2.0` rolls the whole command back: the effect stays open and nothing the failure carried is written, as the 2.0.0 phase-zero probe already saw for a mapped thrower (`CIB-CFG-0004`). The same failure without output parameters completes the instance, and with another root path still open it commits and the mapped output is written. The rollback is CIB's cleanup order, not a BPMN outcome, so the CIB profiles do not imitate it: the kernel refuses that run with the dynamic-only code `unhandled-error-ends-instance-with-outputs` (`unsupported`), since whether the path is the last one depends on the run.
+
+**Evidence:** The retained witnesses [root-last-path-with-outputs](../scenarios/open-rows/error-unhandled-outcomes/README.md), against its controls root-without-outputs and parallel-root-branch-with-outputs, and [route-rejected-unmatched-code and scope-non-ancestor-after-completion](../scenarios/open-rows/automation-business-error-routing/README.md), whose throwers are a scope and a non-scope Service Task (CIB Seven `2.2.0`, 2026-11-09); pinned `BpmnExceptionHandler.java:136` and `OutputParameter#execute`; the kernel's `Propagation.endsInstanceWithOutputs`.
+
+**Boundary:** An uncaught Error of a Service Task with output parameters whose scope occurrence is its instance's root, the process root or a called instance's root, with nothing else left in that root. A thrower inside a Sub-Process whose normal completion then ends the instance is not witnessed: the kernel completes that instance, and the CIB claim does not cover it.
 
 ## Extension register
 
@@ -719,13 +753,13 @@ The research queue is not evidence and does not authorize implementation. It pre
 
 ### CIB-EXT-0015 — serial business-task enclosing inputs and local results
 
-**Status:** Selected bounded extension under the approved [serial business-task account](kernel/semantics/DATA-SEMANTICS-SPEC.md); implementation and profile evidence remain open.
+**Status:** Selected bounded extension under the approved [serial business-task account](kernel/semantics/DATA-SEMANTICS-SPEC.md); implementation and profile evidence remain open. Widened by root decision (2026-11-10) to effect result values no output mapping consumes, selected by `ProfileOptions.effectResultValues = activityLocals`.
 
-CIB Seven `2.2.0` input parameters evaluate against the enclosing scope before writing Activity-local inputs. Output parameters evaluate against the Activity scope; a local result takes precedence over a same-named parent value. The selected account admits only its explicit scalar literal/reference subset, unambiguous named delegate bindings and exact supplied output sources. Its identifier, reserved-name, initialization and result-patch restrictions are project admission decisions, not general CIB behavior.
+CIB Seven `2.2.0` input parameters evaluate against the enclosing scope before writing Activity-local inputs. Output parameters evaluate against the Activity scope; a local result takes precedence over a same-named parent value. The delegate writes every result value as an Activity local (the CIB runner's `CibSevenScriptedEffect#writeLocal`, `setVariableLocal`), so a value no output mapping consumes is discarded when the Activity ends; the kernel selects that under `ResultValues.activityLocals`, while the standards reading `outputSet` keeps rejecting it as `undeclared-output`, since BPMN 2.0.2 §10.4.1 makes the result the Activity's OutputSet (`Work.outputs`). The selected account admits only its explicit scalar literal/reference subset, unambiguous named delegate bindings and exact supplied output sources. Its identifier, reserved-name, initialization and result-patch restrictions are project admission decisions, not general CIB behavior.
 
 **Evidence:** The [phase-zero experiment](https://github.com/mbackschat/bpmn-lean-experiment/blob/404a39d7/docs/experiments/BUSINESS-EFFECT-DATA-EXPERIMENT.md) and [public-service probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenBusinessEffectDataPhaseZeroProbeTest.java) separate both input declaration orders, present null, missing-input failure before invocation, local output precedence and Process-instance separation. [Artifact-verifier coverage](../scripts/contract-artifact-projections.test.ts) requires this registered relationship and rejects a profile reference when its registry entry is absent. Full profile equivalence and retained scenario evidence remain unestablished.
 
-**Boundary:** No general JUEL, bean/Java API compatibility, nested mapping, parent-output fallback or technical-failure equivalence is claimed; concurrent continuations are classified by [`CIB-OP-0010`](#cib-op-0010-concurrent-async-before-service-task-continuations-mapped-to-concurrent-effect-occurrences). CIB's async-before job precedes invocation; the project's committed argument snapshot and durable external-effect interval remain its own operational realization. Input/final-output comparisons do not establish equivalent transaction timing or exactly-once external effects. Under the embedded completion profile only the binding clause applies to data-free Programs, whose overlay-bound Service Tasks have no input or output mappings ([concurrent scope Service Tasks](kernel/semantics/WORK-SEMANTICS-SPEC.md)); in data-bearing Programs of that profile the input and output mapping clauses also apply, with exact `${name}` sources resolved over the occurrence chain ([concurrent scope data](kernel/semantics/DATA-SEMANTICS-SPEC.md)). The same snapshot realization covers the nested scope-data profile's concurrent data-bearing effects, which CIB evaluates only when the continuation job runs; when a sibling command commits a write before that job runs, a CIB delegate reads the newer value and the project's snapshot does not, and no argument agreement is claimed for that schedule ([concurrent structured scope data](kernel/semantics/DATA-SEMANTICS-SPEC.md)).
+**Boundary:** The discarded-local clause covers effect results on the success and mapped Error arms, Multi-Instance instances included; a User Task submission is not an effect result and keeps its own rule (`SubmissionRule`). No general JUEL, bean/Java API compatibility, nested mapping, parent-output fallback or technical-failure equivalence is claimed; concurrent continuations are classified by [`CIB-OP-0010`](#cib-op-0010-concurrent-async-before-service-task-continuations-mapped-to-concurrent-effect-occurrences). CIB's async-before job precedes invocation; the project's committed argument snapshot and durable external-effect interval remain its own operational realization. Input/final-output comparisons do not establish equivalent transaction timing or exactly-once external effects. Under the embedded completion profile only the binding clause applies to data-free Programs, whose overlay-bound Service Tasks have no input or output mappings ([concurrent scope Service Tasks](kernel/semantics/WORK-SEMANTICS-SPEC.md)); in data-bearing Programs of that profile the input and output mapping clauses also apply, with exact `${name}` sources resolved over the occurrence chain ([concurrent scope data](kernel/semantics/DATA-SEMANTICS-SPEC.md)). The same snapshot realization covers the nested scope-data profile's concurrent data-bearing effects, which CIB evaluates only when the continuation job runs; when a sibling command commits a write before that job runs, a CIB delegate reads the newer value and the project's snapshot does not, and no argument agreement is claimed for that schedule ([concurrent structured scope data](kernel/semantics/DATA-SEMANTICS-SPEC.md)).
 
 ### CIB-EXT-0016 — CIB7 2.2.0 caught-business-Error output mapping
 
@@ -737,7 +771,9 @@ CIB Seven `2.2.0` applies the attached Service Task's output parameters on the m
 
 **Evidence:** The [business-failure experiment](https://github.com/mbackschat/bpmn-lean-experiment/blob/404a39d7/docs/experiments/BUSINESS-EFFECT-DATA-EXPERIMENT.md#business-failure-follow-up), its [public-service probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenBusinessFailurePhaseZeroProbeTest.java), pristine `ExecutionEntity.destroy`/`IoParameter.execute`/`OutputParameter.execute` source, and [artifact reference verification](../scripts/contract-artifact-projections.test.ts). CIB supplies this mapping account and cannot also count as independent corroboration of it.
 
-**Boundary:** String/null results and declared scalar mappings only; no arbitrary JUEL, Java binary compatibility, Process-side delegate writes, nested scope, missing-local fallback, retry equivalence or exactly-once external effects. The unmatched Error's root-cleanup failure is observed separately, including a literal-output counterexample and mapping-free control; it is not adopted semantics or a new BPMN deviation claim. Existing `2.0.0` records and profiles remain unchanged.
+Two widenings from the PC-ERROR-01 witnesses (CIB Seven `2.2.0`, 2026-11-09). The Service Task's output parameters also run when no catcher takes the Error and only its path ends (`CIB-INT-0013`; [scope-unmatched-code](../scenarios/open-rows/automation-business-error-routing/README.md), [parallel-root-branch-with-outputs](../scenarios/open-rows/error-unhandled-outcomes/README.md)). A Sub-Process that an Error boundary of its own interrupts runs its output parameters as CIB destroys it, after the catch variables of `CIB-EXT-0028`, so on a shared name the output wins ([output-shadow-caught](../scenarios/open-rows/error-esp-catch-variables/README.md)); the kernel's `Propagation.interruptedOutputs` writes them from the Sub-Process outward under `ErrorPathOutputs.mapped`.
+
+**Boundary:** String/null results and declared scalar mappings only; no arbitrary JUEL, Java binary compatibility, Process-side delegate writes, missing-local fallback, retry equivalence or exactly-once external effects. Of nested scopes only the interrupted host Sub-Process is covered: Sub-Processes the Error leaves between its thrower and the catching host, which CIB also destroys, run no output parameters in the kernel and are outside the claim. The unmatched Error's root-cleanup rollback is `CIB-LIM-0006`, not adopted semantics or a new BPMN deviation claim. Existing `2.0.0` records and profiles remain unchanged.
 
 ### CIB-EXT-0017 — repeated Sub-Process body-local mapping and enclosing writes
 
@@ -843,13 +879,37 @@ A failure in a continuation reached by an effect result fails the job and raises
 
 ### CIB-EXT-0027 — an asynchronous continuation commits the input at its boundary
 
-**Status:** Recorded extension from the pinned source, read under every profile; success path and failure split verified by one local probe against published CIB Seven `2.2.0` on 2026-11-08
+**Status:** Recorded extension from the pinned source, read under every profile; success path and failure split verified by one local probe against published CIB Seven `2.2.0` on 2026-11-08; Multi-Instance loop marks added from the pinned source (PC-MI-02, 2026-11-09)
 
 `camunda:asyncBefore` and `camunda:asyncAfter` are transaction boundaries. CIB commits the command at the boundary and continues in a job, so a failure after the boundary fails that job, with its retries and incidents (`CIB-EXT-0013`), and the part before it stays committed. The kernel runs a closure across a boundary as one input and does not split it: a closure that rolls back or fails after it crossed a boundary is `unsupported` (`async-boundary-failure`), never a rollback of the whole input. A closure that does not fail is unchanged, because CIB reaches the same committed state once the job has run.
 
 **Evidence:** Pinned `ExecutionEntity#performOperation` asks each atomic operation `isAsync` and, when it is, `scheduleAtomicOperationAsync` sends a message job instead of continuing. `PvmAtomicOperationTransitionCreateScope` and `PvmAtomicOperationActivityStartCreateScope` answer with `isAsyncBefore`, before the Activity's scope, start listeners and input mappings; `PvmAtomicOperationTransitionNotifyListenerTake` and `PvmAtomicOperationActivityEnd` answer with `isAsyncAfter`, after the Activity ended and before its outgoing flows are taken; `AsyncContinuationJobHandler` continues the stored operation in the job's own transaction. The probe ran the sequential User Task model with and without `asyncBefore` on the task: after the one continuation job ran, the open task, the activity history and the completed instance were identical. With `asyncAfter` on the task and an Exclusive Gateway whose conditions are all false behind it, completing the task committed, and the continuation job failed with `ENGINE-02004` and two retries left. The kernel's `Step.crossed` and `Step.deferred` own the rule.
 
-**Boundary:** The marks on Activities and Sub-Processes (`Envelope.asyncBefore`, `asyncAfter`), read conservatively: any rollback or semantic failure after any crossing in the same input is `unsupported`, including one on a concurrent branch that CIB would roll back together with the boundary's job. Job identity, retries, exclusivity and priority, the separate Multi-Instance body and instance marks, and asynchronous continuations on Events and Gateways stay outside; no job or transaction-timing equivalence is claimed.
+On a Multi-Instance Activity the marks are two pairs with no BPMN meaning. The Activity's own marks belong to the Multi-Instance body as a whole, and the marks declared on `multiInstanceLoopCharacteristics` (with legacy `camunda:async` as `asyncBefore`) belong to each inner instance, one continuation job per instance: `BpmnParse#parseAsynchronousContinuationForActivity` (`BpmnParse.java:2412-2426`) puts the Activity element's marks on the body activity and the loop characteristics' marks on the inner Activity; `MultiInstanceActivityBehavior#performInstance` starts each instance through `executeActivity`, which honours them. The IL carries the loop's pair as `MultiInstance.asyncBefore` and `asyncAfter`, and `Step.crossed` reads a mark by the occurrence's role: the body's from the envelope, an instance's from the loop.
+
+**Boundary:** The marks on Activities and Sub-Processes (`Envelope.asyncBefore`, `asyncAfter`) and on Multi-Instance loop characteristics (`MultiInstance.asyncBefore`, `asyncAfter`), read conservatively: any rollback or semantic failure after any crossing in the same input is `unsupported`, including one on a concurrent branch that CIB would roll back together with the boundary's job. Job identity, retries, exclusivity and priority, and asynchronous continuations on Events and Gateways stay outside; no job or transaction-timing equivalence is claimed.
+
+### CIB-EXT-0028 — an Error catcher writes the caught code and message to named variables
+
+**Status:** Selected bounded extension; selected by `ProfileOptions.errorCatchVariables = eventScope` through the [cibseven-2.2.0 cumulative profile](../profiles/cibseven-2.2.0/profile.json) and the scope-chain profile; the standards profile refuses both attributes (`event.error.codeVariable`, `event.error.messageVariable`)
+
+`camunda:errorCodeVariable` and `camunda:errorMessageVariable` on an Error Event Definition of a boundary or of an Event Sub-Process start name variables that receive the caught Error's code, a String, and its message, a String or a present null when the Error has none. BPMN 2.0.2 defines no such variables. CIB sets both with `setVariable` on the execution of the catcher's event scope before it starts the catcher: the boundary's host (`BpmnParse:3298`), or for an Event Sub-Process the enclosing scope (`BpmnParse:1112`). `setVariable` updates the nearest scope that binds the name and otherwise creates it at the instance root, so the variables outlive the handler. On a name shared with the interrupted host's output parameters the output, written later as CIB destroys the host, wins (`CIB-EXT-0016`); a Sub-Process local of that name is updated and leaves with the Sub-Process.
+
+The kernel's `Propagation.writeCaught` writes the variables from that event scope outward before the catcher begins; a Service Task host has already ended when its boundary catches, so its variables are written from the scope it ran in.
+
+**Evidence:** Pinned `BpmnExceptionHandler#propagateError` (`BpmnExceptionHandler.java:146-154`) and `AbstractVariableScope#setVariable`; the retained witnesses [error-catch-variables](../scenarios/open-rows/error-catch-variables/README.md), [error-esp-catch-variables](../scenarios/open-rows/error-esp-catch-variables/README.md) and [error-null-message](../scenarios/open-rows/error-null-message/README.md) (CIB Seven `2.2.0`, 2026-11-09). The local-shadow witness disagrees only where CIB's root-variable observation lists the Sub-Process local, which audit history attributes to the root (`DefaultHistoryEventProducer#createHistoricVariableEvent`).
+
+**Boundary:** Error catchers on boundaries and Event Sub-Process starts. A catch variable named like an input parameter of a Service Task host, or like an output parameter of the throwing Service Task, which CIB writes after the catch variables and the kernel before them, is outside the claim, as are Escalation catch variables (`event.escalation.codeVariable` stays refused) and expression-valued messages.
+
+### CIB-EXT-0029 — a technical failure is caught by an Error code that names its Java exception class
+
+**Status:** Recorded extension; not selected by any profile and not realized by the kernel
+
+`ErrorEventDefinition#catchesException` (`ErrorEventDefinition.java:75-96`) lets an Error catcher whose `errorCode` equals the class name of a thrown Java exception, or of one of its superclasses, catch that exception: a technical failure of a delegate becomes the Error path instead of a failed job (`ErrorDeclarationForProcessInstanceFinder.java:45`, `BpmnExceptionHandler#propagateExceptionAsError`). The kernel's technical failure carries no exception type, so it never selects an Error catcher; it stays an incident (`CIB-EXT-0013`) or a host failure.
+
+**Evidence:** The retained witnesses [error-java-class-codes](../scenarios/open-rows/error-java-class-codes/README.md) (CIB Seven `2.2.0`, 2026-11-09): the runner's technical failure is caught by boundaries coded `java.lang.RuntimeException` and `java.lang.IllegalStateException`; both disagreements stay classified under this entry. A business failure whose code is a class name is an ordinary code and agrees.
+
+**Boundary:** The CIB profiles' claim covers Error codes that name no Java exception type; a model whose catcher code names one is outside it.
 
 ## Permitted operational-detail register
 
@@ -1015,13 +1075,13 @@ The synchronous CreateDocument path does not use a continuation job, but the ful
 
 ### CIB-CFG-0004 — default unmatched BPMN Error under the pinned A12 engine
 
-**Status:** Reviewed configuration dependency
+**Status:** Reviewed configuration dependency of the retired CIB Seven `2.0.0` engine; superseded for `2.2.0` by `CIB-CFG-0010`, `CIB-INT-0013` and `CIB-LIM-0006`
 
 CIB Seven `2.0.0` defaults `enableExceptionsAfterUnhandledBpmnError` to `false`. For an unmatched `RelationshipLinkageError`, the engine logs the missing catcher and calls `execution.end(true)` rather than rethrowing the Error.
 
 The mapping-free phase-zero control isolates that default: the Process has no remaining runtime instance, task, job, incident, normal End execution, or boundary-task execution; history retains one ended Process plus Activity-local `relationshipModel = "RelationshipModel"` and `newLinkId = "must-not-map"`. In the complete selected fixture, the later Camunda output mapping instead tries to resolve the already destroyed `newLinkId`, raises `Cannot resolve identifier 'newLinkId'`, and rolls the entire start command back, leaving no runtime or historic Process state.
 
-**Classification rationale:** The two outcomes are separate configuration-and-extension facts. The mapping-free result records default unmatched handling; the mapped rollback is conditional on `CIB-EXT-0004` and must never be generalized as CIB's universal unmatched-Error behavior. The project does not select either as BPMN semantic authority. Its current unmatched successful Activity result becomes typed adapter failure `BPMN_UNHANDLED_BPMN_ERROR`.
+**Classification rationale:** The two outcomes are separate configuration-and-extension facts. The mapping-free result records default unmatched handling; the mapped rollback is conditional on `CIB-EXT-0004` and must never be generalized as CIB's universal unmatched-Error behavior. Neither is BPMN semantic authority; on `2.2.0` the CIB profiles select the ending of the throwing path (`CIB-INT-0013`) and refuse the mapped rollback (`CIB-LIM-0006`).
 
 **Evidence:** [Boundary-error specification](kernel/semantics/PROPAGATION-SEMANTICS-SPEC.md) and the seven-test [frozen packaged-engine phase-zero probe](../adoption/a12/legacy/source-tree/runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenBoundaryErrorPhaseZeroProbeTest.java).
 
@@ -1064,6 +1124,16 @@ The registered Service Task incident profile explicitly sets `createIncidentOnFa
 **Status:** Selected configuration dependency for the [structured effect-data amendment](kernel/semantics/DATA-SEMANTICS-SPEC.md), closed by independent review on 2026-10-14; selected by the draft effect-data profile artifact. The [structured effect-result probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenStructuredEffectResultProbeTest.java) (2026-10-14) stores the credit assessment under the pinned default and reads back List order and duplicates, present Null, a Null distinct from an empty Map and the retained `BigDecimal` scale of `-1234.550`, whose local projection is the capsule's Decimal `-123455` at scale 2.
 
 Without a Spin JSON default, CIB stores a serializable `java.util.Map` or `List` as an object value with Java serialization (`ProcessEngineConfigurationImpl.java:589-590,2591-2601`, `JavaObjectSerializer.java:40,67-87`); disabled Java serialization blocks only client-supplied serialized bytes (`VariableUtil.java:54-60`). That realization keeps List order and duplicates and `BigDecimal` scale. The calibration probe [`CibSevenStructuredEffectResultProbeTest`](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenStructuredEffectResultProbeTest.java), not retained differential evidence, has a local projection that reads the deserialized value, orders String Map keys by Unicode scalar value rather than Java's UTF-16 `compareTo`, projects nonnegative in-bound `Integer`/`Long` to the portable Integer and projects a `BigDecimal` to the canonical portable Decimal of the same mathematical value: trailing zeros are stripped and a negative scale becomes zero, and a canonical scale above 6 or a coefficient outside the signed 64-bit range is outside the domain. Non-String keys and negative or out-of-bound `Integer`/`Long` values are outside the domain and never become Decimals. CIB-retained scale is therefore not a compared fact. A Spin JSON default is excluded: the project runner installs no Spin plugin and its value fidelity is unverified.
+
+### CIB-CFG-0010 — default unmatched BPMN Error under CIB Seven 2.2.0
+
+**Status:** Selected configuration dependency; pinned in the [cibseven-2.2.0 profile](../profiles/cibseven-2.2.0/profile.json) environment
+
+CIB Seven `2.2.0` defaults `enableExceptionsAfterUnhandledBpmnError` to `false` (`ProcessEngineConfiguration.java:356`). Under it a BPMN Error that no catcher takes ends the throwing path (`CIB-INT-0013`); under `true` it raises `missingBoundaryCatchEventError` and rolls the command back (`BpmnExceptionHandler.java:132-133`). The profile's environment states `enableExceptionsAfterUnhandledBpmnError: false`, so `CIB-INT-0013` never rests on an undeclared default. The project runner sets no other value, so the pin names the engine default it already runs.
+
+**Evidence:** The pinned source lines above and the retained PC-ERROR-01 witnesses cited by `CIB-INT-0013`.
+
+**Boundary:** This setting selects only the unmatched-Error outcome of `CIB-INT-0013`. It replaces the `2.0.0` record `CIB-CFG-0004` for the `2.2.0` engine and authorizes no other configuration.
 
 ## Audit of previously visited findings
 

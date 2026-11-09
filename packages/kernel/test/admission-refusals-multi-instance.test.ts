@@ -1,10 +1,11 @@
 /**
- * Refusal tests of `admission/multi-instance.ts`: the kernel runs one User Task per item of an input collection it reads
- * once on entry, takes each instance's item and result through a data item, and reads a completion condition only as
+ * Refusal tests of `admission/multi-instance.ts`: the kernel runs one User Task or Service Task per item of an input
+ * collection it reads once on entry, gives each instance its item through a data item, takes a User Task's result
+ * through its output data item and a Service Task's as the empty OutputSet, and reads a completion condition only as
  * Simple Boolean. Every other loop shape is refused whole.
  */
 import {
-  activity, foreign, literalValue, bool, loop, mapping, refusalTests, simpleBoolean, task, userWork, variable,
+  activity, foreign, literalValue, bool, loop, mapping, refusalTests, serviceWork, simpleBoolean, task, userWork, variable,
 } from "./admission-refusal-support.ts";
 import type { Json, Row } from "./admission-refusal-support.ts";
 
@@ -12,6 +13,10 @@ import type { Json, Row } from "./admission-refusal-support.ts";
 const looping = (over: Json = {}, env: Json = {}) => task(activity("T", userWork(), { multiInstance: loop(over), ...env }));
 
 const admitted = looping();
+
+/** `T` becomes a Service Task running the loop `loop(over)` without an output data item (PC-MI-02). */
+const effects = (over: Json = {}) =>
+  task(activity("T", serviceWork(), { multiInstance: loop({ outputDataItem: null, ...over }) }));
 
 export const rows: readonly Row[] = [
   {
@@ -79,6 +84,18 @@ export const rows: readonly Row[] = [
     description: "a loop without an output data item",
     mutate: looping({ outputDataItem: null }),
     control: admitted,
+  },
+  {
+    code: "multiInstance.instanceResult",
+    description: "a Service Task loop naming an output data item, which the effect's empty OutputSet never fills",
+    mutate: effects({ outputDataItem: "result" }),
+    control: effects(),
+  },
+  {
+    code: "multiInstance.instanceResult",
+    description: "a Service Task loop naming an output collection",
+    mutate: effects({ outputCollection: "results" }),
+    control: effects(),
   },
   {
     code: "multiInstance.mappings",

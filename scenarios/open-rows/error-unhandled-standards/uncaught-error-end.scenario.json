@@ -1,0 +1,54 @@
+{
+  "kind": "scenario",
+  "id": "error-unhandled-standards-uncaught-error-end",
+  "profile": "bpmn-2.0.2",
+  "bpmn": {
+    "id": "claim-review",
+    "relativePath": "scenarios/open-rows/error-unhandled-standards/claim-review.bpmn",
+    "sha256": "07262a3d17caa13712ae35c78c2e16e226dff4e8469ca4b25f579d5a0fe42037",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start-claim",
+      "instanceId": "claim-1",
+      "variables": []
+    },
+    {
+      "kind": "command",
+      "commandId": "complete:Inspect",
+      "occurrence": {
+        "processInstanceId": "claim-1",
+        "elementId": "Inspect",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "complete:Audit",
+      "occurrence": {
+        "processInstanceId": "claim-1",
+        "elementId": "Audit",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.5.1",
+      "BPMN 2.0.2 Table 10.88",
+      "BPMN 2.0.2 Clause 13.5.3"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

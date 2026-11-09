@@ -118,8 +118,8 @@ function element(program: Program, throws: readonly Element[], entry: Element): 
         () => (call === null ? null : Data.mappings(call.inputs) ?? Data.mappings(call.outputs)),
         () => Work.activity(program, payload),
         () => activityOrigin(program, header, payload),
-        () => (loop === null ? null : MultiInstance.activity(payload.envelope, loop)),
-        () => Subscriptions.boundaries(false, payload.envelope.boundaries),
+        () => (loop === null ? null : MultiInstance.activity(Work.instanceBody(payload.work), payload.envelope, loop)),
+        () => Subscriptions.boundaries(program.options.errorCatchVariables, false, payload.envelope.boundaries),
         () => boundaryData(payload.envelope.boundaries),
         () => Scopes.nestedCompensation(program, throws, header, payload.envelope),
       );
@@ -132,7 +132,8 @@ function element(program: Program, throws: readonly Element[], entry: Element): 
         () => Data.envelope(payload.envelope),
         () => Scopes.scope(program, header, payload),
         () => (subProcess === null ? null : Subscriptions.eventSubProcess(subProcess[0], subProcess[1])),
-        () => Subscriptions.boundaries(Scopes.isTransaction(payload), payload.envelope.boundaries),
+        () => Subscriptions.boundaries(
+          program.options.errorCatchVariables, Scopes.isTransaction(payload), payload.envelope.boundaries),
         () => boundaryData(payload.envelope.boundaries),
         () => Scopes.nestedCompensation(program, throws, header, payload.envelope),
       );
@@ -148,7 +149,8 @@ function element(program: Program, throws: readonly Element[], entry: Element): 
         () => FlowAdmission.start(entry.payload),
         () => (subscription === null
           ? null
-          : Subscriptions.start(header.parent !== null, subscription) ?? subscriptionData(subscription)),
+          : Subscriptions.start(program.options.errorCatchVariables, header.parent !== null, subscription) ??
+            subscriptionData(subscription)),
       );
     }
   }

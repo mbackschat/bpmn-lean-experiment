@@ -256,14 +256,32 @@
         },
         "unhandledError": {
           "enum": [
-            "refused",
+            "failsInstance",
             "endsThrowingPath"
+          ]
+        },
+        "errorCatchVariables": {
+          "enum": [
+            "refused",
+            "eventScope"
           ]
         },
         "callBindingTime": {
           "enum": [
             "programAssembly",
             "invocation"
+          ]
+        },
+        "multiInstanceBinding": {
+          "enum": [
+            "dataAssociations",
+            "loopReferences"
+          ]
+        },
+        "effectResultValues": {
+          "enum": [
+            "outputSet",
+            "activityLocals"
           ]
         }
       }
@@ -279,6 +297,7 @@
         "boundary.cancel.host",
         "boundary.cancel.nonInterrupting",
         "boundary.condition",
+        "boundary.error.duplicateCode",
         "boundary.error.nonInterrupting",
         "boundary.signal",
         "call.calledEventSubProcess",
@@ -327,6 +346,7 @@
         "multiInstance.completionConditionExpression",
         "multiInstance.elementVariable",
         "multiInstance.inputDataItem",
+        "multiInstance.instanceResult",
         "multiInstance.mappings",
         "multiInstance.mutableCollection",
         "multiInstance.outputDataItem",
@@ -341,7 +361,6 @@
         "profile.evaluator.juel",
         "profile.messageCorrelation.apiCriteria",
         "profile.timerZone",
-        "profile.unhandledError.endsThrowingPath",
         "reader.conditionWithoutExpression",
         "reader.dataAssociationShape",
         "reader.eventBasedGatewayInstantiate",

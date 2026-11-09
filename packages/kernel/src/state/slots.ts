@@ -37,14 +37,14 @@ export type Resume =
 
 /**
  * One instance of a Multi-Instance Activity: waiting to start, running in its instance scope occurrence, or completed
- * with the value its output data item received.
+ * with the value its output data item received, `null` for a loop without one.
  */
 export enum IterationTag { Waiting = "waiting", Active = "active", Completed = "completed" }
 
 export type Iteration =
   | { readonly tag: IterationTag.Waiting }
   | { readonly tag: IterationTag.Active; readonly scope: ScopeOccurrenceId }
-  | { readonly tag: IterationTag.Completed; readonly output: Value };
+  | { readonly tag: IterationTag.Completed; readonly output: Value | null };
 
 /**
  * A running Multi-Instance Activity: the scope occurrence it holds its instances in, its element and body occurrence,

@@ -13,13 +13,15 @@ import {
   AbnormalScopeEnd, CallBindingTime, type CompensationHandlerFailure, CompensationHandlerFailureTag, CompensationOrder,
   ConditionOrder, ContinuationFailure, DeliveryVariables, ErrorPathOutputs, Evaluator, MessageCorrelation,
   MultiInstanceFinalBody, MultiInstanceOutputs, type ProfileOptions, SubmissionRule, TechnicalFailure, UndeclaredWrite,
-  UnhandledError,
+  UnhandledError, ErrorCatchVariables,
+  MultiInstanceBinding, ResultValues,
 } from "./types/options.js";
 export {
   AbnormalScopeEnd, CallBindingTime, type CompensationHandlerFailure, CompensationHandlerFailureTag, CompensationOrder,
   ConditionOrder, ContinuationFailure, DeliveryVariables, ErrorPathOutputs, Evaluator, MessageCorrelation,
   MultiInstanceFinalBody, MultiInstanceOutputs, type ProfileOptions, SubmissionRule, TechnicalFailure, UndeclaredWrite,
-  UnhandledError,
+  UnhandledError, ErrorCatchVariables,
+  MultiInstanceBinding, ResultValues,
 };
 
 export type ElementId = string;
@@ -403,6 +405,18 @@ export interface MultiInstance {
   readonly outputDataItem: string | null;
   readonly outputCollection: string | null;
   readonly mutableCollection: CollectionRead;
+  /**
+   * A transaction boundary before each instance begins and after it completes, declared on the loop characteristics;
+   * the envelope's marks are the body's (CIB-EXT-0027, `BpmnParse#parseMultiInstanceLoopCharacteristics`).
+   */
+  readonly asyncBefore: boolean;
+  readonly asyncAfter: boolean;
+  /**
+   * The element `loopDataInputRef` names and the `inputDataItem`'s `name`, which `MultiInstanceBinding.LoopReferences`
+   * binds instead of the Data Associations (CIB-INT-0014).
+   */
+  readonly loopDataInputRef: string | null;
+  readonly inputDataItemName: string | null;
 }
 
 export interface Envelope {

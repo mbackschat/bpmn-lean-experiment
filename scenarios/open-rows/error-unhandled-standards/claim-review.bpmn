@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="Definitions_ClaimReview" targetNamespace="urn:bpmn-lean:scenarios:error-unhandled-standards">
+  <bpmn:error id="Error_Rejected" name="Claim rejected" errorCode="CLAIM_REJECTED" />
+  <bpmn:error id="Error_Incomplete" name="Claim incomplete" errorCode="CLAIM_INCOMPLETE" />
+  <bpmn:process id="Process_ClaimReview" isExecutable="true">
+    <bpmn:startEvent id="Start_Claim" />
+    <bpmn:parallelGateway id="Split_Review" gatewayDirection="Diverging" />
+    <bpmn:subProcess id="Review" name="Review claim">
+      <bpmn:startEvent id="Start_Review" />
+      <bpmn:userTask id="Inspect" name="Inspect claim" />
+      <bpmn:endEvent id="End_Rejected">
+        <bpmn:errorEventDefinition id="Throw_Rejected" errorRef="Error_Rejected" />
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="Flow_Review_Inspect" sourceRef="Start_Review" targetRef="Inspect" />
+      <bpmn:sequenceFlow id="Flow_Inspect_Rejected" sourceRef="Inspect" targetRef="End_Rejected" />
+    </bpmn:subProcess>
+    <bpmn:boundaryEvent id="Boundary_Incomplete" attachedToRef="Review">
+      <bpmn:errorEventDefinition id="Catch_Incomplete" errorRef="Error_Incomplete" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Complete" name="Complete claim" />
+    <bpmn:userTask id="Audit" name="Audit claim" />
+    <bpmn:endEvent id="End_Reviewed" />
+    <bpmn:endEvent id="End_Completed" />
+    <bpmn:endEvent id="End_Audited" />
+    <bpmn:sequenceFlow id="Flow_Start_Split" sourceRef="Start_Claim" targetRef="Split_Review" />
+    <bpmn:sequenceFlow id="Flow_Split_Review" sourceRef="Split_Review" targetRef="Review" />
+    <bpmn:sequenceFlow id="Flow_Split_Audit" sourceRef="Split_Review" targetRef="Audit" />
+    <bpmn:sequenceFlow id="Flow_Review_End" sourceRef="Review" targetRef="End_Reviewed" />
+    <bpmn:sequenceFlow id="Flow_Incomplete_Complete" sourceRef="Boundary_Incomplete" targetRef="Complete" />
+    <bpmn:sequenceFlow id="Flow_Complete_End" sourceRef="Complete" targetRef="End_Completed" />
+    <bpmn:sequenceFlow id="Flow_Audit_End" sourceRef="Audit" targetRef="End_Audited" />
+  </bpmn:process>
+</bpmn:definitions>

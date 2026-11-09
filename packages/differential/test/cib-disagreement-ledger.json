@@ -274,57 +274,53 @@
     ]
   },
   {
-    "evidence": "scenarios/open-rows/automation-business-error-non-ancestor/sibling-boundary-active.cibseven-evidence.json",
-    "owners": [
-      "PC-AUTO-02"
-    ]
-  },
-  {
     "evidence": "scenarios/open-rows/automation-business-error-routing/route-rejected-unmatched-code.cibseven-evidence.json",
     "owners": [
-      "PC-AUTO-02"
+      "CIB-LIM-0006",
+      "PC-DATA-05"
     ]
   },
   {
     "evidence": "scenarios/open-rows/automation-business-error-routing/route-rejected-with-payload.cibseven-evidence.json",
     "owners": [
-      "PC-AUTO-02"
+      "PC-DATA-05"
     ]
   },
   {
     "evidence": "scenarios/open-rows/automation-business-error-routing/route-rejected-without-payload.cibseven-evidence.json",
     "owners": [
-      "PC-AUTO-02"
+      "PC-DATA-05"
     ]
   },
   {
     "evidence": "scenarios/open-rows/automation-business-error-routing/route-success.cibseven-evidence.json",
     "owners": [
-      "PC-AUTO-02"
+      "PC-DATA-05"
     ]
   },
   {
     "evidence": "scenarios/open-rows/automation-business-error-routing/scope-ancestor-handler.cibseven-evidence.json",
     "owners": [
-      "PC-AUTO-02"
+      "PC-DATA-05"
     ]
   },
   {
     "evidence": "scenarios/open-rows/automation-business-error-routing/scope-inner-handler.cibseven-evidence.json",
     "owners": [
-      "PC-AUTO-02"
+      "PC-DATA-05"
     ]
   },
   {
     "evidence": "scenarios/open-rows/automation-business-error-routing/scope-non-ancestor-after-completion.cibseven-evidence.json",
     "owners": [
-      "PC-AUTO-02"
+      "CIB-LIM-0006",
+      "PC-DATA-05"
     ]
   },
   {
     "evidence": "scenarios/open-rows/automation-business-error-routing/scope-unmatched-code.cibseven-evidence.json",
     "owners": [
-      "PC-AUTO-02"
+      "PC-DATA-05"
     ]
   },
   {
@@ -1092,62 +1088,15 @@
     ]
   },
   {
-    "evidence": "scenarios/open-rows/error-ancestor-search/unrelated-sibling-catch-all.cibseven-evidence.json",
-    "owners": [
-      "PC-ERROR-01"
-    ]
-  },
-  {
     "evidence": "scenarios/open-rows/error-called-child-error-data/child-failure-code-and-message.cibseven-evidence.json",
     "owners": [
       "PC-ERROR-03"
     ]
   },
   {
-    "evidence": "scenarios/open-rows/error-catch-variables/effect-code-and-message.cibseven-evidence.json",
-    "owners": [
-      "PC-ERROR-01"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/error-catch-variables/error-end-code-and-message.cibseven-evidence.json",
-    "owners": [
-      "PC-ERROR-01"
-    ]
-  },
-  {
     "evidence": "scenarios/open-rows/error-esp-catch-variables/local-shadow-caught.cibseven-evidence.json",
     "owners": [
-      "PC-ERROR-01",
-      "PC-ERROR-02"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/error-esp-catch-variables/output-shadow-caught.cibseven-evidence.json",
-    "owners": [
-      "PC-ERROR-01",
-      "PC-ERROR-02"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/error-esp-catch-variables/output-shadow-completed.cibseven-evidence.json",
-    "owners": [
-      "PC-ERROR-01",
-      "PC-ERROR-02"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/error-esp-catch-variables/region-handler.cibseven-evidence.json",
-    "owners": [
-      "PC-ERROR-01",
-      "PC-ERROR-02"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/error-esp-catch-variables/root-handler.cibseven-evidence.json",
-    "owners": [
-      "PC-ERROR-01",
-      "PC-ERROR-02"
+      "PC-DATA-05"
     ]
   },
   {
@@ -1169,24 +1118,15 @@
     ]
   },
   {
-    "evidence": "scenarios/open-rows/error-java-class-codes/illegal-state-business-failure.cibseven-evidence.json",
-    "owners": [
-      "PC-AUTO-02",
-      "PC-ERROR-01"
-    ]
-  },
-  {
     "evidence": "scenarios/open-rows/error-java-class-codes/illegal-state-technical-failure.cibseven-evidence.json",
     "owners": [
-      "PC-AUTO-02",
-      "PC-ERROR-01"
+      "CIB-EXT-0029"
     ]
   },
   {
     "evidence": "scenarios/open-rows/error-java-class-codes/runtime-exception-technical-failure.cibseven-evidence.json",
     "owners": [
-      "PC-AUTO-02",
-      "PC-ERROR-01"
+      "CIB-EXT-0029"
     ]
   },
   {
@@ -1202,48 +1142,9 @@
     ]
   },
   {
-    "evidence": "scenarios/open-rows/error-null-message/effect-without-message.cibseven-evidence.json",
-    "owners": [
-      "PC-ERROR-01"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/error-null-message/error-end-without-message.cibseven-evidence.json",
-    "owners": [
-      "PC-ERROR-01"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/error-unhandled-outcomes/parallel-root-branch-with-outputs.cibseven-evidence.json",
-    "owners": [
-      "PC-AUTO-02",
-      "PC-ERROR-01"
-    ]
-  },
-  {
     "evidence": "scenarios/open-rows/error-unhandled-outcomes/root-last-path-with-outputs.cibseven-evidence.json",
     "owners": [
-      "PC-AUTO-02",
-      "PC-ERROR-01"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/error-unhandled-outcomes/root-without-outputs.cibseven-evidence.json",
-    "owners": [
-      "PC-AUTO-02",
-      "PC-ERROR-01"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/error-unhandled/effect-wrong-code.cibseven-evidence.json",
-    "owners": [
-      "PC-ERROR-01"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/error-unhandled/error-end-no-catcher.cibseven-evidence.json",
-    "owners": [
-      "PC-ERROR-01"
+      "CIB-LIM-0006"
     ]
   },
   {
@@ -2272,19 +2173,7 @@
     ]
   },
   {
-    "evidence": "scenarios/open-rows/multi-instance-service-task/parallel-business-error.cibseven-evidence.json",
-    "owners": [
-      "PC-MI-12"
-    ]
-  },
-  {
     "evidence": "scenarios/open-rows/multi-instance-service-task/parallel-cardinality-reversed.cibseven-evidence.json",
-    "owners": [
-      "PC-MI-02"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/multi-instance-service-task/parallel-missing-result-and-stale.cibseven-evidence.json",
     "owners": [
       "PC-MI-02"
     ]
@@ -2308,43 +2197,7 @@
     ]
   },
   {
-    "evidence": "scenarios/open-rows/multi-instance-service-task/parallel-reverse-equal-items.cibseven-evidence.json",
-    "owners": [
-      "PC-MI-02"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/multi-instance-service-task/parallel-technical-failure-retry.cibseven-evidence.json",
-    "owners": [
-      "PC-MI-02"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/multi-instance-service-task/sequential-business-error.cibseven-evidence.json",
-    "owners": [
-      "PC-MI-12"
-    ]
-  },
-  {
     "evidence": "scenarios/open-rows/multi-instance-service-task/sequential-cardinality.cibseven-evidence.json",
-    "owners": [
-      "PC-MI-02"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/multi-instance-service-task/sequential-equal-items.cibseven-evidence.json",
-    "owners": [
-      "PC-MI-02"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/multi-instance-service-task/sequential-missing-result.cibseven-evidence.json",
-    "owners": [
-      "PC-MI-02"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/multi-instance-service-task/sequential-premature-and-stale-effects.cibseven-evidence.json",
     "owners": [
       "PC-MI-02"
     ]
@@ -2365,12 +2218,6 @@
     "evidence": "scenarios/open-rows/multi-instance-service-task/sequential-quorum-reached-early.cibseven-evidence.json",
     "owners": [
       "PC-MI-09"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/multi-instance-service-task/sequential-technical-failure-retry.cibseven-evidence.json",
-    "owners": [
-      "PC-MI-02"
     ]
   },
   {

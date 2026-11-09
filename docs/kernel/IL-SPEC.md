@@ -48,7 +48,9 @@ Every element is `{"<kind>": {"header": …, "payload": …}}`; the header is `i
 | `gateway` | `kind` (`exclusive {candidates, default}`, `parallel`, `inclusive {candidates, default}`, `eventBased`), `incoming`, `outgoing`; candidates keep document order, a flow's condition lives on the flow, and an Event-Based Gateway's arms are the targets of its outgoing flows |
 | `start` | optional `subscription`, `outgoing`; root or Event Sub-Process placement follows from the parent |
 
-The shared activity envelope, on Activity and Scope alike: `incoming` and `outgoing` (implicit merge and split), input and output `Mapping`s, `boundaries` (each `id`, `subscription`, `interrupting`, `outgoing`), optional `multiInstance`, optional `compensationHandler`, optional `defaultFlow`, and the transaction-boundary marks `asyncBefore` and `asyncAfter`.
+The shared activity envelope, on Activity and Scope alike: `incoming` and `outgoing` (implicit merge and split), input and output `Mapping`s, `boundaries` (each `id`, `subscription`, `interrupting`, `outgoing`), optional `multiInstance`, optional `compensationHandler`, optional `defaultFlow`, and the transaction-boundary marks `asyncBefore` and `asyncAfter`, which on a Multi-Instance Activity mark its body.
+
+`MultiInstance` is `mode`, `count` (`collection` or `cardinality` expression), `elementVariable`, `completionCondition`, `inputDataItem`, `outputDataItem`, `outputCollection` and `mutableCollection`, read through the Data Associations; the loop characteristics' own transaction-boundary marks `asyncBefore` and `asyncAfter`, which mark each instance (CIB-EXT-0027); and the literal `loopDataInputRef` and `inputDataItemName`, which `multiInstanceBinding` may select instead (CIB-INT-0014).
 
 `Work` is one of `none`, `manual`, `user` (name, assignee, candidate users and groups, form key and fields, due and follow-up dates, priority), `receive` (a Message trigger), `service` (protocol, operation), `send` (binding, recipient, correlation, Message and Operation references), `script` (format, source, result variable), `rule` (decision, result variable, binding, result mapping), `call` (called element, binding, tenant, business key, input and output mappings, propagate-all flags).
 
@@ -86,9 +88,12 @@ One enumerated field per decision point the kernel branches on, each defaulting 
 | `compensationOrder` | `dependency`, `reverseCreation` |
 | `compensationHandlerFailure` | `failsInstance`, `selected {code}` |
 | `abnormalScopeEnd` | `withoutOutflow`, `completesNormally` |
-| `unhandledError` | `refused`, `endsThrowingPath` |
+| `unhandledError` | `failsInstance`, `endsThrowingPath` |
+| `errorCatchVariables` | `refused`, `eventScope` |
 | `callBindingTime` | `programAssembly`, `invocation` |
 | `timerZone` | `null` or a zone name |
+| `multiInstanceBinding` | `dataAssociations`, `loopReferences` |
+| `effectResultValues` | `outputSet`, `activityLocals` |
 
 ## Inputs
 

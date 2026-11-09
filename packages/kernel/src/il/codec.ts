@@ -26,6 +26,7 @@ import {
   DecisionResultMapping,
   DeliveryVariables,
   ElementTag,
+  ErrorCatchVariables,
   ErrorPathOutputs,
   Evaluator,
   EventRoleTag,
@@ -34,10 +35,12 @@ import {
   InstanceCountTag,
   MappingDialect,
   MessageCorrelation,
+  MultiInstanceBinding,
   MultiInstanceFinalBody,
   MultiInstanceMode,
   MultiInstanceOutputs,
   Placement,
+  ResultValues,
   ScopeKindTag,
   SimpleBooleanTag,
   SubmissionRule,
@@ -572,6 +575,10 @@ const multiInstance = struct<MultiInstance>("MultiInstance", {
   outputDataItem: option(string),
   outputCollection: option(string),
   mutableCollection: members("CollectionRead", CollectionRead),
+  asyncBefore: bool,
+  asyncAfter: bool,
+  loopDataInputRef: option(string),
+  inputDataItemName: option(string),
 });
 
 const envelope = struct<Envelope>("Envelope", {
@@ -681,8 +688,11 @@ const profileOptions = struct<ProfileOptions>("ProfileOptions", {
   compensationHandlerFailure,
   abnormalScopeEnd: members("AbnormalScopeEnd", AbnormalScopeEnd),
   unhandledError: members("UnhandledError", UnhandledError),
+  errorCatchVariables: members("ErrorCatchVariables", ErrorCatchVariables),
   callBindingTime: members("CallBindingTime", CallBindingTime),
   timerZone: option(string),
+  multiInstanceBinding: members("MultiInstanceBinding", MultiInstanceBinding),
+  effectResultValues: members("ResultValues", ResultValues),
 });
 
 const program = struct<Program>("Program", {

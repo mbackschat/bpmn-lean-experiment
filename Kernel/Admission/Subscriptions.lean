@@ -69,10 +69,14 @@ def correlatedCatch (subscription : Subscription) (trigger : MessageTrigger) : O
 def outputs (subscription : Subscription) : Option String :=
   if subscription.trigger.message?.isSome || subscription.outputs.isEmpty then none else some "event.outputs"
 
-def errorTrigger (trigger : ErrorTrigger) : Option String :=
-  if trigger.codeVariable.isSome then some "event.error.codeVariable"
-  else if trigger.messageVariable.isSome then some "event.error.messageVariable"
-  else none
+/-- Catch variables are a CIB extension (CIB-EXT-0028) the profile selects; BPMN 2.0.2 defines none. -/
+def errorTrigger (variables : ErrorCatchVariables) (trigger : ErrorTrigger) : Option String :=
+  match variables with
+  | .eventScope => none
+  | .refused =>
+    if trigger.codeVariable.isSome then some "event.error.codeVariable"
+    else if trigger.messageVariable.isSome then some "event.error.messageVariable"
+    else none
 
 def escalationTrigger (trigger : EscalationTrigger) : Option String :=
   if trigger.codeVariable.isSome then some "event.escalation.codeVariable" else none
@@ -104,29 +108,44 @@ def catchEvent (subscription : Subscription) : Option String :=
 
 /-- `transactionHost` says whether the boundary hangs on a Transaction. An Error boundary always interrupts (BPMN 2.0.2
 Table 10.90) (PC-ERROR-01); a Cancel boundary always interrupts and hangs only on a Transaction (Table 10.90, §10.3.5;
-`BpmnParse#parseBoundaryCancelEventDefinition`) (PC-TX-02). -/
-def boundary (transactionHost : Bool) (boundary : Boundary) : Option String :=
-  outputs boundary.subscription <|>
-  match boundary.subscription.trigger with
-  | .timer trigger => (if boundary.interrupting then interruptingCycle trigger else none) <|> timer true trigger
-  | .message trigger => message trigger
-  | .signal _ => some "boundary.signal"
-  | .condition _ => some "boundary.condition"
-  | .error trigger =>
-    (if boundary.interrupting then none else some "boundary.error.nonInterrupting") <|> errorTrigger trigger
-  | .escalation trigger => escalationTrigger trigger
-  | .compensation => none
-  | .cancel =>
-    if !transactionHost then some "boundary.cancel.host"
-    else if boundary.interrupting then none
-    else some "boundary.cancel.nonInterrupting"
+`BpmnParse#parseBoundaryCancelEventDefinition`) (PC-TX-02). `seen` holds the codes of the host's Error boundaries
+before this one, and an admitted Error boundary adds its own: two with one code have no selected order, since CIB
+takes the first in document order (`BpmnParse:3646`), which BPMN 2.0.2 §10.5.6 does not settle (PC-ERROR-01). -/
+def boundary (variables : ErrorCatchVariables) (transactionHost : Bool) (seen : List String) (boundary : Boundary) :
+    Except String (List String) :=
+  let check (refusal : Option String) : Except String (List String) :=
+    match refusal with
+    | some code => .error code
+    | none => .ok seen
+  match outputs boundary.subscription with
+  | some code => .error code
+  | none =>
+    match boundary.subscription.trigger with
+    | .timer trigger => check ((if boundary.interrupting then interruptingCycle trigger else none) <|> timer true trigger)
+    | .message trigger => check (message trigger)
+    | .signal _ => .error "boundary.signal"
+    | .condition _ => .error "boundary.condition"
+    | .error trigger => do
+      let seen ← check ((if boundary.interrupting then none else some "boundary.error.nonInterrupting") <|>
+        errorTrigger variables trigger)
+      match trigger.code with
+      | some code => if seen.contains code then .error "boundary.error.duplicateCode" else .ok (code :: seen)
+      | none => .ok seen
+    | .escalation trigger => check (escalationTrigger trigger)
+    | .compensation => .ok seen
+    | .cancel =>
+      check (if !transactionHost then some "boundary.cancel.host"
+        else if boundary.interrupting then none
+        else some "boundary.cancel.nonInterrupting")
 
-def boundaries (transactionHost : Bool) (list : List Boundary) : Option String :=
-  list.findSome? (boundary transactionHost)
+def boundaries (variables : ErrorCatchVariables) (transactionHost : Bool) (list : List Boundary) : Option String :=
+  match list.foldlM (boundary variables transactionHost) [] with
+  | .error code => some code
+  | .ok _ => none
 
 /-- A triggered start. At process level (`nested = false`) the start input names it; nested, it is an Event
 Sub-Process start, which may also repeat a cycle and catch what `Kernel.Feature.Propagation` raises. -/
-def start (nested : Bool) (subscription : Subscription) : Option String :=
+def start (variables : ErrorCatchVariables) (nested : Bool) (subscription : Subscription) : Option String :=
   let raised (code : String) : Option String := if nested then none else some code
   outputs subscription <|>
   match subscription.trigger with
@@ -135,7 +154,7 @@ def start (nested : Bool) (subscription : Subscription) : Option String :=
     (if !nested && !subscription.outputs.isEmpty then some "start.message.outputs" else none) <|> message trigger
   | .signal _ => some "start.signal"
   | .condition _ => some "start.condition"
-  | .error trigger => raised "start.error" <|> errorTrigger trigger
+  | .error trigger => raised "start.error" <|> errorTrigger variables trigger
   | .escalation trigger => raised "start.escalation" <|> escalationTrigger trigger
   | .compensation => raised "start.compensation"
   | .cancel => some "start.cancel"

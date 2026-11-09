@@ -13,6 +13,7 @@
  */
 import {
   ErrorPathOutputs,
+  ResultValues,
   SubmissionRule,
   TechnicalFailure,
   ValueSourceTag,
@@ -79,9 +80,16 @@ function openWork(kind: OpenKind, header: Header, payload: ActivityPayload, occu
  * The outputs a completion writes, from the values it submits. The submission must be exactly the Activity's OutputSet
  * (BPMN 2.0.2 §10.4.1): every output mapping evaluates against the submitted values alone, no name is submitted twice,
  * and no submitted value is superfluous (dropping it leaves the outputs evaluable). Anything else is rejected, so a
- * completion never commits a partial or unmediated write.
+ * completion never commits a partial or unmediated write. Under `ResultValues.ActivityLocals` a superfluous value is an
+ * Activity local that ends with the Activity, never written (CIB-EXT-0015).
  */
-function outputs(ctx: Ctx, nowMs: number, mappings: readonly Mapping[], values: readonly Binding[]): Result<readonly Binding[]> {
+function outputs(
+  ctx: Ctx,
+  nowMs: number,
+  unconsumed: ResultValues,
+  mappings: readonly Mapping[],
+  values: readonly Binding[],
+): Result<readonly Binding[]> {
   const evaluated = (variables: readonly Binding[]): Result<readonly Binding[] | null> =>
     ctxEvaluateMappings(ctx, { variables, nowMs }, mappings);
   const fills = (variables: readonly Binding[]): boolean => {
@@ -93,8 +101,15 @@ function outputs(ctx: Ctx, nowMs: number, mappings: readonly Mapping[], values: 
   const written = evaluated(values);
   if (!written.ok) return failedWith(written.failure);
   if (written.value === null) return failed(FailureTag.Rejected, "output-unavailable");
-  if (names.some((name) => fills(values.filter(([other]) => other !== name)))) return failed(FailureTag.Rejected, "undeclared-output");
-  return committed(written.value);
+  switch (unconsumed) {
+    case ResultValues.ActivityLocals:
+      return committed(written.value);
+    case ResultValues.OutputSet:
+      return names.some((name) => fills(values.filter(([other]) => other !== name)))
+        ? failed(FailureTag.Rejected, "undeclared-output")
+        : committed(written.value);
+  }
+  return assertNever(unconsumed);
 }
 
 /** What an open User Task publishes, with the inputs it was given. */
@@ -221,7 +236,7 @@ export function completeUserTask(
   if (ctx.program.options.submission === SubmissionRule.InstallsVariables && payload.envelope.outputs.length === 0) {
     return committed(signal(state, completeSignal(item.occurrence, leaveOutgoing, values, WriteRule.Outward)));
   }
-  const written = outputs(ctx, state.logicalTimeMs, payload.envelope.outputs, values);
+  const written = outputs(ctx, state.logicalTimeMs, ResultValues.OutputSet, payload.envelope.outputs, values);
   if (!written.ok) return failedWith(written.failure);
   return committed(signal(state, completeSignal(item.occurrence, leaveOutgoing, written.value, WriteRule.Outward)));
 }
@@ -243,7 +258,7 @@ export function effectResult(ctx: Ctx, item: OpenItem, outcome: EffectOutcome, s
   const mappings = (element === null ? null : elementEnvelope(element))?.outputs ?? [];
   switch (outcome.tag) {
     case EffectOutcomeTag.Success: {
-      const written = outputs(ctx, state.logicalTimeMs, mappings, outcome.outputs);
+      const written = outputs(ctx, state.logicalTimeMs, ctx.program.options.effectResultValues, mappings, outcome.outputs);
       if (!written.ok) return failedWith(written.failure);
       return committed(signal(state, completeSignal(item.occurrence, leaveOutgoing, written.value, WriteRule.Outward)));
     }
@@ -267,7 +282,7 @@ export function effectResult(ctx: Ctx, item: OpenItem, outcome: EffectOutcome, s
 function errorPathWrites(ctx: Ctx, state: State, mappings: readonly Mapping[], patch: readonly Binding[]): Result<readonly Binding[]> {
   switch (ctx.program.options.errorPathOutputs) {
     case ErrorPathOutputs.Mapped:
-      return outputs(ctx, state.logicalTimeMs, mappings, patch);
+      return outputs(ctx, state.logicalTimeMs, ctx.program.options.effectResultValues, mappings, patch);
     case ErrorPathOutputs.None:
       return patch.length === 0 ? committed([]) : failed(FailureTag.Rejected, "error-path-outputs-not-accepted");
   }
