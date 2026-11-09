@@ -165,8 +165,12 @@ final class CibSevenOpenWaitProjector {
     return new UserTaskDetail(
         task.getName(),
         task.getAssignee(),
-        candidates.stream().map(IdentityLinkEvidence::userId).filter(id -> id != null).toList(),
-        candidates.stream().map(IdentityLinkEvidence::groupId).filter(id -> id != null).toList(),
+        // CIB lists candidate identity links in no stable order (two runs of one scenario in one engine differ), and
+        // the canonical result compares candidates as multisets, so the projection fixes one order for its evidence.
+        candidates.stream().map(IdentityLinkEvidence::userId).filter(id -> id != null)
+            .sorted(WireStrings::compare).toList(),
+        candidates.stream().map(IdentityLinkEvidence::groupId).filter(id -> id != null)
+            .sorted(WireStrings::compare).toList(),
         task.getFormKey(),
         fields.stream().map(field -> new FormField(field.id(), field.typeName())).toList(),
         instant(task.getDueDate()),

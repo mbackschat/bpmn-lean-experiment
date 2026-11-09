@@ -308,8 +308,8 @@
                 "carol"
               ],
               "candidateGroups": [
-                "triagers",
-                "leads"
+                "leads",
+                "triagers"
               ],
               "formKey": "embedded:app:forms/triage.html",
               "formFields": [
@@ -370,12 +370,12 @@
               "name": "Triage case",
               "assignee": "alice",
               "candidateUsers": [
-                "carol",
-                "bob"
+                "bob",
+                "carol"
               ],
               "candidateGroups": [
-                "triagers",
-                "leads"
+                "leads",
+                "triagers"
               ],
               "formKey": "embedded:app:forms/triage.html",
               "formFields": [

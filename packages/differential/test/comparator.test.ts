@@ -101,6 +101,19 @@ test("compares open waits in the schema's canonical order, never in the order a 
     [{ target: DifferentialTarget.Kernel, result: changed }])).kind, DisagreementKind.ObservationValue);
 });
 
+test("compares a Human Task's candidates as multisets, never in the order a target lists them", () => {
+  const task = (candidateUsers: ReadonlyArray<string>, candidateGroups: ReadonlyArray<string>) =>
+    recut([{ ...wait("Task_A", "userTask"), detail: { kind: "userTask", candidateUsers, candidateGroups } }], null);
+  const compare = (left: CanonicalResult, right: CanonicalResult) =>
+    compareTargetResults({ target: DifferentialTarget.RetainedCibEvidence, result: left },
+      [{ target: DifferentialTarget.Kernel, result: right }]);
+  const declared = task(["bob", "carol"], ["triagers", "leads"]) as CanonicalResult;
+  assert.equal(compare(declared, task(["carol", "bob"], ["leads", "triagers"]) as CanonicalResult).kind,
+    ComparisonKind.Agreement);
+  assert.equal(requireDisagreement(compare(declared, task(["bob", "bob"], ["triagers", "leads"]) as CanonicalResult)).kind,
+    DisagreementKind.ObservationValue);
+});
+
 test("compares a command's code between the two kernels only, never against retained CIB evidence", () => {
   const lean = { target: DifferentialTarget.Kernel, result: recut([], "unknown-task") };
   assert.equal(compareTargetResults({ target: DifferentialTarget.RetainedCibEvidence, result: recut([], null) }, [lean]).kind,

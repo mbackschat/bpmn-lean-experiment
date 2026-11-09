@@ -102,7 +102,21 @@ function comparable(observation: unknown, kernels: boolean): unknown {
     ? { ...rest, ...(code === undefined ? {} : { code }), ...(scopes === undefined ? {} : { scopes }) }
     : rest;
   const waits = kept["openWaits"];
-  return Array.isArray(waits) ? { ...kept, openWaits: [...waits].sort(compareOpenWaits) } : kept;
+  return Array.isArray(waits) ? { ...kept, openWaits: waits.map(comparableWait).sort(compareOpenWaits) } : kept;
+}
+
+/**
+ * A Human Task's candidate users and groups are multisets: CIB Seven lists its candidate identity links in no stable
+ * order (two runs of one scenario in one engine differ), so the order is no semantic claim.
+ */
+function comparableWait(wait: unknown): unknown {
+  if (!isJsonRecord(wait) || !isJsonRecord(wait["detail"]) || wait["detail"]["kind"] !== "userTask") return wait;
+  const detail = wait["detail"];
+  const sorted = (list: unknown) => Array.isArray(list) ? [...list].map(String).sort(compareCanonicalStrings) : list;
+  return {
+    ...wait,
+    detail: { ...detail, candidateUsers: sorted(detail["candidateUsers"]), candidateGroups: sorted(detail["candidateGroups"]) },
+  };
 }
 
 function compareScenarioResults(

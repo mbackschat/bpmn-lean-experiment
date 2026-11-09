@@ -592,12 +592,14 @@
           ]
         },
         "candidateUsers": {
+          "description": "A multiset: its order is no semantic claim, and comparisons sort both sides.",
           "type": "array",
           "items": {
             "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonEmptyString"
           }
         },
         "candidateGroups": {
+          "description": "A multiset: its order is no semantic claim, and comparisons sort both sides.",
           "type": "array",
           "items": {
             "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonEmptyString"
