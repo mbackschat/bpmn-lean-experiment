@@ -33,8 +33,8 @@ export async function readCaseSource(source: CaseSource, profileId: string): Pro
 /**
  * Reads one case's BPMN source to the kernel IL.
  *
- * Every scenario's model must be read: a refusal here means a source the reader cannot read faithfully, which is a
- * harness error rather than a semantic outcome to compare.
+ * For callers whose model must be read, a population definition or a fixture: a refusal here is a harness error. A
+ * single-instance scenario's refused source is a refused deployment instead (`scenarioKernelInput`).
  */
 export async function readCaseKernelProgram(source: CaseSource, profileId: string): Promise<KernelJson> {
   const read = await readCaseSource(source, profileId);

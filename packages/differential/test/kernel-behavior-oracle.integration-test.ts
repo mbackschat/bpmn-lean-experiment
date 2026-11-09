@@ -32,7 +32,7 @@ import { pipelineTestTimeoutMs } from "../../../scripts/pipeline-budget.ts";
 import { ledgerViolations, readCibDisagreementLedger } from "./cib-disagreement-ledger.ts";
 import { runLeanKernelPopulation, runLeanKernelScenario, writeProgram } from "./kernel-targets.ts";
 import { projectRoot } from "./pipeline-target-support.ts";
-import { DiscoveredKind, discoverScenarios, kernelProgramFor } from "./scenario-discovery.ts";
+import { DiscoveredKind, discoverScenarios, kernelProgramFor, scenarioKernelInput } from "./scenario-discovery.ts";
 import type { CanonicalResult, DiscoveredScenario, ScenarioDocument } from "./scenario-discovery.ts";
 
 type OracleDisagreement = Readonly<{ scenario: string } & ValueDisagreement>;
@@ -82,13 +82,17 @@ test("the Lean and TypeScript kernels agree on every discovered scenario, and th
           break;
         }
         case DiscoveredKind.Scenario: {
-          const program = await kernelProgramFor(scenario.relativePath, scenario.document.bpmn, scenario.document.profile);
-          const programPath = path.join(directory, `scenario-${String(index)}.json`);
-          await writeProgram(programPath, program);
-          const lean = await runLeanKernelScenario(programPath, scenarioPath);
-          const typeScript = wireValue(runScenario(program, scenario.document)) as CanonicalResult;
-          const difference = compared(label(scenario), lean, typeScript);
-          if (difference !== null) kernelDisagreements.push(difference);
+          const input = await scenarioKernelInput(scenario.relativePath, scenario.document.bpmn, scenario.document.profile);
+          let typeScript: CanonicalResult;
+          if (input.kind === "refused") typeScript = input.result;
+          else {
+            const programPath = path.join(directory, `scenario-${String(index)}.json`);
+            await writeProgram(programPath, input.program);
+            const lean = await runLeanKernelScenario(programPath, scenarioPath);
+            typeScript = wireValue(runScenario(input.program, scenario.document)) as CanonicalResult;
+            const difference = compared(label(scenario), lean, typeScript);
+            if (difference !== null) kernelDisagreements.push(difference);
+          }
           if (scenario.evidence === null) break;
           evidenceCount += 1;
           retained.add(scenario.evidence.relativePath);

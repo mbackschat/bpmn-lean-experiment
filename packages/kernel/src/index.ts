@@ -1,5 +1,13 @@
 /** The kernel's public entry points: the scenario, host-view and population runners, the IL codec and the host interface. */
-export { capabilitiesJson, hostViewJson, observationJson, runHostView, runPopulation, runScenario } from "./run.js";
+export {
+  capabilitiesJson,
+  hostViewJson,
+  observationJson,
+  runHostView,
+  runPopulation,
+  runScenario,
+  unsupportedDeploymentResult,
+} from "./run.js";
 export {
   CodecRefusalCode,
   bindingsFromJson,

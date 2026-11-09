@@ -11,6 +11,7 @@ import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 
 import type { KernelJson, KernelRead } from "@bpmn-lean/bpmn-source";
+import { unsupportedDeploymentResult } from "@bpmn-lean/kernel";
 
 import { differentialDiscoveryRoots } from "../../../scripts/pipeline-budget.ts";
 import { parseWireJsonBytes } from "../../../scripts/strict-json.ts";
@@ -172,6 +173,27 @@ export async function readSourceFor(scenarioPath: string, source: SourceDefiniti
     { relativePath: source.relativePath, bytes, sha256: source.sha256, overlay: await boundOverlay(scenarioPath, source) },
     profile,
   );
+}
+
+export type ScenarioKernelInput = Readonly<
+  { kind: "program"; program: KernelJson } | { kind: "refused"; result: CanonicalResult }
+>;
+
+/**
+ * The kernel input of one single-instance scenario: its source's IL, or, when the reader refuses the source, the result
+ * of that refused deployment, which runs no input. The engine rejects such a definition with the reader's code
+ * (`engine-api/src/definition.ts`), the same answer it gives a program admission refuses, so the scenario is compared
+ * with CIB's like any other unsupported deployment.
+ */
+export async function scenarioKernelInput(
+  scenarioPath: string,
+  source: SourceDefinition,
+  profile: string,
+): Promise<ScenarioKernelInput> {
+  const read = await readSourceFor(scenarioPath, source, profile);
+  return read.kind === "refused"
+    ? { kind: "refused", result: unsupportedDeploymentResult(read.code) as CanonicalResult }
+    : { kind: "program", program: read.program };
 }
 
 /** The kernel IL of one source a discovered scenario binds; a reader refusal is a harness error here. */

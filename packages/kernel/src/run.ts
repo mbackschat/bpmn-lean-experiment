@@ -243,10 +243,16 @@ function deploymentJson(outcome: string, code: string | null): JsonValue {
   return code === null ? { kind: "deployment", outcome } : { kind: "deployment", outcome, code };
 }
 
+const semantic = (outcome: string): JsonValue => ({ kind: "semantic", outcome });
+
+/** The result of a refused deployment, which runs no input; `code` names the refusal. */
+export function unsupportedDeploymentResult(code: string): JsonValue {
+  return { outcome: semantic("unsupported"), trace: [deploymentJson("unsupported", code)] };
+}
+
 function result(program: Program, stimuli: readonly ScenarioStimulus[]): JsonValue {
-  const semantic = (outcome: string): JsonValue => ({ kind: "semantic", outcome });
   const code = admit(program);
-  if (code !== null) return { outcome: semantic("unsupported"), trace: [deploymentJson("unsupported", code)] };
+  if (code !== null) return unsupportedDeploymentResult(code);
   const [trace, outcome] = execute(program, stimuli);
   return { outcome: semantic(outcome), trace: [deploymentJson("committed", null), ...trace] };
 }

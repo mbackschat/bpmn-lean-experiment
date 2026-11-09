@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import { discoveredScenarioCount } from "../../../scripts/pipeline-budget.ts";
-import { DiscoveredKind, discoverScenarios } from "./scenario-discovery.ts";
+import { DiscoveredKind, discoverScenarios, scenarioKernelInput } from "./scenario-discovery.ts";
 
 test("discovery finds both scenario kinds and binds retained CIB evidence by exact bytes", async () => {
   const scenarios = await discoverScenarios();
@@ -19,6 +19,19 @@ test("discovery finds both scenario kinds and binds retained CIB evidence by exa
 test("the pipeline deadline counts exactly the scenarios the differential discovers", async () => {
   // pipeline-budget counts files without a package build; a divergence would give the pipeline another catalog's deadline.
   assert.equal(discoveredScenarioCount(), (await discoverScenarios()).length);
+});
+
+test("a source the kernel reader refuses yields an unsupported deployment carrying the reader's code", async () => {
+  const relativePath = "scenarios/open-rows/event-reference-forms/multiple-event-definitions-message-then-timer.scenario.json";
+  const scenario = (await discoverScenarios()).find((candidate) => candidate.relativePath === relativePath);
+  assert.ok(scenario?.kind === DiscoveredKind.Scenario);
+  assert.deepEqual(await scenarioKernelInput(scenario.relativePath, scenario.document.bpmn, scenario.document.profile), {
+    kind: "refused",
+    result: {
+      outcome: { kind: "semantic", outcome: "unsupported" },
+      trace: [{ kind: "deployment", outcome: "unsupported", code: "reader.multipleEventDefinitions" }],
+    },
+  });
 });
 
 test("discovery refuses evidence bound to other bytes and evidence without its scenario", async () => {

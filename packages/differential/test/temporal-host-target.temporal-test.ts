@@ -26,7 +26,7 @@ import { EffectResultKind, createHostWorker } from "@bpmn-lean/temporal-host/wor
 import type { EffectRequest } from "@bpmn-lean/temporal-host/worker";
 
 import { projectRoot } from "./pipeline-target-support.ts";
-import { DiscoveredKind, discoverScenarios, kernelProgramFor } from "./scenario-discovery.ts";
+import { DiscoveredKind, discoverScenarios, scenarioKernelInput } from "./scenario-discovery.ts";
 
 const taskQueue = "bpmn-lean-differential-temporal-host";
 
@@ -68,7 +68,10 @@ test("the Temporal host returns the kernel's result on every discovered single-i
   let compared = 0;
   for (const scenario of await discoverScenarios()) {
     if (scenario.kind !== DiscoveredKind.Scenario) continue;
-    const program = wire(await kernelProgramFor(scenario.relativePath, scenario.document.bpmn, scenario.document.profile));
+    const input = await scenarioKernelInput(scenario.relativePath, scenario.document.bpmn, scenario.document.profile);
+    // A source the reader refuses is rejected at deployment and never reaches a Workflow; the oracle owns its result.
+    if (input.kind === "refused") continue;
+    const program = wire(input.program);
     const document = wire(JSON.parse(await readFile(path.join(projectRoot, scenario.relativePath), "utf8")));
     const hosted = await runScenario(program, document, {
       client,
