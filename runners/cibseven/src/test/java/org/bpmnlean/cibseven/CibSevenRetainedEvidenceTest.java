@@ -45,9 +45,11 @@ public class CibSevenRetainedEvidenceTest {
         var expected = evidence.get("result");
         assertEquals(scenarioPath.toString(), canonical(expected.get("outcome")), canonical(actual.get("outcome")));
         assertEquals(scenarioPath.toString(), canonical(expected.get("trace")), canonical(actual.get("trace")));
+        // Both sides come from JSON text: `valueToTree` keeps the record's `long` counts as long nodes, a parsed small
+        // number is an int node, and Jackson's node equality compares node types.
         assertEquals(
             scenarioPath.toString(),
-            MAPPER.valueToTree(ScenarioDiagnosticsProtocol.CleanupProjection.clean()),
+            MAPPER.readTree(MAPPER.writeValueAsString(ScenarioDiagnosticsProtocol.CleanupProjection.clean())),
             actual.at("/diagnostics/cleanup"));
         compared += 1;
       }
