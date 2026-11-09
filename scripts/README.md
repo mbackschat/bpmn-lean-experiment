@@ -30,7 +30,7 @@ The [engineering rules](../docs/kernel/ENGINEERING-POLICY.md#verification) own w
 | Validate BPMN XML | [`validate-bpmn-xml.sh`](validate-bpmn-xml.sh) | Validate explicit files against the registered `BPMN20.xsd`. |
 | Run the differential or model-corpus pipeline | [`test-pipeline.ts`](test-pipeline.ts) | Use `./scripts/pnpm.sh run test:pipeline` or `test:model-corpus` (hosted lanes); do not call its imported libraries directly. |
 | Run the CIB oracle | [`test-cibseven-oracle.sh`](test-cibseven-oracle.sh) | Build and run the pinned CIB evidence lane through its Maven budget and Java resolution helpers; locally only a compile or a single-scenario probe under a timeout. |
-| Replace retained CIB evidence | [`replace-cibseven-evidence.ts`](replace-cibseven-evidence.ts) | Explicit evidence replacement only. |
+| Replace retained CIB evidence | [`replace-cibseven-evidence.ts`](replace-cibseven-evidence.ts) | Explicit runs only: produces or replaces the evidence of every scenario whose profile names an oracle, and lists the scenarios CIB cannot run. |
 
 ## Maintenance
 

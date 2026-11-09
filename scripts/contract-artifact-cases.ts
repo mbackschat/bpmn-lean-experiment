@@ -8,7 +8,7 @@
  * standards-only schedules also appears there, provided a CIB artifact case still binds it.
  * `capsule-roundtrip.ts` holds the other direction: every evidence file and profile is reached from a scenario.
  */
-import { existsSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -44,6 +44,24 @@ const scenarioRelativePaths = discoveredScenarioRelativePaths();
 export const artifactCases: ReadonlyArray<ArtifactCase> = Object.freeze(
   scenarioRelativePaths
     .filter((scenarioRelativePath) => existsSync(path.join(projectRoot, evidenceRelativePathFor(scenarioRelativePath))))
+    .map((scenarioRelativePath) => Object.freeze({
+      scenarioRelativePath,
+      evidenceRelativePath: evidenceRelativePathFor(scenarioRelativePath),
+    })),
+);
+
+/**
+ * Every scenario whose profile names a CIB oracle, with or without evidence yet: the set an evidence production run
+ * covers, since a profile that claims an oracle claims it for each scenario it binds.
+ */
+export const oracleEvidenceCases: ReadonlyArray<ArtifactCase> = Object.freeze(
+  scenarioRelativePaths
+    .filter((scenarioRelativePath) => {
+      const scenario = JSON.parse(readFileSync(path.join(projectRoot, scenarioRelativePath), "utf8")) as { profile: string };
+      const profile = JSON.parse(readFileSync(path.join(projectRoot, "profiles", scenario.profile, "profile.json"), "utf8")) as
+        { oracle?: unknown };
+      return profile.oracle !== undefined;
+    })
     .map((scenarioRelativePath) => Object.freeze({
       scenarioRelativePath,
       evidenceRelativePath: evidenceRelativePathFor(scenarioRelativePath),
