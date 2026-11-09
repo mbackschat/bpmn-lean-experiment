@@ -6,18 +6,6 @@
  */
 import { ExpressionTag, assertNever, type Envelope, type Expression, type Flow, type Header, type Mapping } from "../il/types.js";
 
-/** A foreign expression at a position with no code of its own. */
-export function foreign(expression: Expression): string | null {
-  switch (expression.tag) {
-    case ExpressionTag.Foreign:
-      return "expression.outsideSimpleBoolean";
-    case ExpressionTag.Literal:
-    case ExpressionTag.SimpleBoolean:
-    case ExpressionTag.Variable:
-      return null;
-  }
-  return assertNever(expression);
-}
 
 export function mapping(entry: Mapping): string | null {
   switch (entry.source.tag) {

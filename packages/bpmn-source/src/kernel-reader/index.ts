@@ -54,9 +54,6 @@ function scanContainer(scan: Scan, container: ElementRecord, parent: string | nu
     const kind = flowElementKind(element);
     if (kind === FlowElementKind.DataDeclaration) continue;
     const id = requireId(element);
-    if (scan.nodes.has(id) || scan.flows.some((flow) => flow.id === id)) {
-      throw new ReadRefusal(ReadRefusalCode.SourceDuplicateId, id, "id used twice");
-    }
     if (kind === FlowElementKind.SequenceFlow) {
       scan.flows.push(element);
     } else {

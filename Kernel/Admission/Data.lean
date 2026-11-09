@@ -13,12 +13,6 @@ public section
 
 namespace Kernel.Admission.Data
 
-/-- A foreign expression at a position with no code of its own. -/
-def foreign : Expression → Option String
-  | .foreign _ _ => some "expression.outsideSimpleBoolean"
-  | .literal _ => none
-  | .simpleBoolean _ => none
-  | .variable _ => none
 
 def mapping (entry : Mapping) : Option String :=
   match entry.source with

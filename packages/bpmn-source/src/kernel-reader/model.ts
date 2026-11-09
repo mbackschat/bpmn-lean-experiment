@@ -14,7 +14,6 @@ export enum ReadRefusalCode {
   SourceContainmentCardinality = "source.containmentCardinality",
   SourceNoProcess = "source.noProcess",
   SourceMissingId = "source.missingId",
-  SourceDuplicateId = "source.duplicateId",
   SourceReference = "source.reference",
   ParserFailure = "parser.failure",
   ParserWarning = "parser.warning",
