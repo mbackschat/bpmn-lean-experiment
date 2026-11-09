@@ -36,23 +36,15 @@ const definition = {
 const instance = { processInstanceId: failedProcessLabels.processInstanceId, definition };
 const identity = {
   definition: {
-    compiler: "bpmn-source-semantic-process",
-    semanticProfile: definition.semanticProfile,
-    sourceId: definition.source.id,
-    sourceSha256: definition.source.sha256,
+    ref: {
+      definitionKey: definition.processId,
+      version: definition.version,
+      sha256: definition.source.sha256,
+    },
+    profile: definition.semanticProfile,
     sourceOverlay: null,
   },
-  processId: definition.processId,
   processInstanceId: instance.processInstanceId,
-};
-const rootPosition = {
-  id: {
-    processInstanceId: instance.processInstanceId,
-    definitionScopeId: "Scope_Process",
-    activation: 1,
-  },
-  parent: null,
-  bpmnElementId: definition.processId,
 };
 
 function occurrence(activation: number) {
@@ -65,13 +57,16 @@ function occurrence(activation: number) {
 
 // These closed wire examples exercise presentation, not engine reachability; the proposal's real-host lane owns that evidence.
 function publication(message: string | null, status: FailedProcessFixtureStatus) {
+  // The failure form of `canonical-result.schema.json#/$defs/instanceFailure`: the failed occurrence and the named
+  // occurrences it relates to, as the kernel's compensation failure publishes them.
   const failure = {
-    kind: "compensationHandlerFailure",
-    triggerId: occurrence(17),
-    handlerId: occurrence(18),
-    effectId: occurrence(19),
     code: failedProcessLabels.code,
     message,
+    occurrence: occurrence(19),
+    related: [
+      { name: "trigger", occurrence: occurrence(17) },
+      { name: "handler", occurrence: occurrence(18) },
+    ],
   };
   const batches = [{
     commandId: "start-wire-example",
@@ -79,20 +74,10 @@ function publication(message: string | null, status: FailedProcessFixtureStatus)
     throughRevision: 1,
     transitions: [{
       revision: 1,
-      logicalTimeMs: 0,
-      transition: {
-        kind: "externalStimulus",
-        stimulus: {
-          kind: "startProcess",
-          commandId: "start-wire-example",
-          processId: definition.processId,
-          instanceId: instance.processInstanceId,
-          initialVariables: [],
-        },
-      },
-      positionDelta: {
-        consumedTokens: [], producedTokens: [], enteredScopes: [rootPosition], exitedScopes: [],
-      },
+      role: { kind: "input", input: "start" },
+      element: "StartEvent_1",
+      sourceType: "startEvent",
+      owner: 0,
     }],
   }, {
     commandId: "complete-effect-wire-example",
@@ -100,23 +85,14 @@ function publication(message: string | null, status: FailedProcessFixtureStatus)
     throughRevision: 2,
     transitions: [{
       revision: 2,
-      logicalTimeMs: 0,
-      transition: {
-        kind: "externalStimulus",
-        stimulus: {
-          kind: "completeEffect",
-          commandId: "complete-effect-wire-example",
-          effectId: failure.effectId,
-          result: { kind: "bpmnError", code: failure.code, message, localPatch: [] },
-        },
-      },
-      positionDelta: {
-        consumedTokens: [], producedTokens: [], enteredScopes: [], exitedScopes: [rootPosition],
-      },
+      role: { kind: "input", input: "effectResult" },
+      element: failedProcessLabels.elementId,
+      sourceType: "serviceTask",
+      owner: 0,
     }],
   }];
   return {
-    format: "bpmn-lean.execution-publication.v1",
+    format: "bpmn-lean.execution-publication",
     ...identity,
     headRevision: 2,
     batches,
@@ -127,11 +103,11 @@ function publication(message: string | null, status: FailedProcessFixtureStatus)
         instanceId: instance.processInstanceId,
         status,
         ...(status === FailedProcessFixtureStatus.Failed ? { failure } : {}),
-        activeWaits: [], openUserTasks: [], openMessageSubscriptions: [], openTimers: [],
-        openEffects: [], openIncidents: [], variables: [], enabledInteractions: [], logicalTimeMs: 0,
+        logicalTimeMs: 0,
+        variables: [],
+        scopes: [],
+        openWaits: [],
       },
-      controlTokens: [],
-      scopes: [],
     },
   };
 }

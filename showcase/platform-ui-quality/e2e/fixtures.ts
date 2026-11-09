@@ -53,7 +53,7 @@ const definition = {
     declaredEncoding: "UTF-8",
     decodedAs: "UTF-8",
   },
-  semanticProfile: "user-task-assignment-form-metadata-v1",
+  semanticProfile: "cibseven-2.2.0",
   sourceOverlay: null,
   startCapabilities: { messageStarts: [], timerStarts: [] },
 } as const;
@@ -240,21 +240,14 @@ function taskCandidates(options: PublicApiFixtureOptions) {
   }, ...tasks.slice(1)] as const;
 }
 
+// `taskCandidates` already gives the called-Process task its own instance identity; a detail repeats its task's own
+// identity, so only the first task answers with the called instance.
 function taskDetail(
   task: typeof tasks[number],
   state: FixtureTaskDetailState,
 ) {
-  const exactTask = state === FixtureTaskDetailState.CalledProcess
-    ? {
-        ...task,
-        task: {
-          ...task.task,
-          id: { ...task.task.id, processInstanceId: "called-process-instance-42" },
-        },
-      }
-    : task;
   return {
-    workTask: exactTask,
+    workTask: task,
     form: {
       fields: [{
         key: "approvalDecision",

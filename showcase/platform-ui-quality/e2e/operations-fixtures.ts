@@ -47,14 +47,8 @@ const presentationGeneratorSha256 = "d".repeat(64);
 const processId = "Process_Enterprise_Incident_Recovery_And_Regulatory_Cancellation";
 const secondProcessId = "Process_Incident_Retry_Only";
 
-const definition = definitionVersion(
-  processId,
-  "cib-seven-2.2.0:service-task-incident-cancellation",
-);
-const retryOnlyDefinition = definitionVersion(
-  secondProcessId,
-  "cib-seven-2.2.0:service-task-incident-retry",
-);
+const definition = definitionVersion(processId, "cibseven-2.2.0");
+const retryOnlyDefinition = definitionVersion(secondProcessId, "cibseven-2.2.0");
 
 export const operationsFixtureLabels = {
   actor: "operator-responsible-for-european-regulatory-incident-recovery-2026",

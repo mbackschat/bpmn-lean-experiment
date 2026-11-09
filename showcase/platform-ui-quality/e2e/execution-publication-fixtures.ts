@@ -42,7 +42,7 @@ const definition = {
     declaredEncoding: "UTF-8",
     decodedAs: "UTF-8",
   },
-  semanticProfile: "cib-seven-2.2.0:committed-execution-publication-parallel-review",
+  semanticProfile: "cibseven-2.2.0",
   sourceOverlay: null,
   startCapabilities: { messageStarts: [], timerStarts: [] },
 } as const;
@@ -52,17 +52,24 @@ const instance = {
   definition,
 } as const;
 
-const publicationIdentity = {
-  definition: {
-    compiler: "bpmn-source-semantic-process",
-    semanticProfile: definition.semanticProfile,
-    sourceId: definition.source.id,
-    sourceSha256,
-    sourceOverlay: null,
-  },
-  processId: definition.processId,
-  processInstanceId: instance.processInstanceId,
-} as const;
+/** A publication names its definition as the engine does (`semantic-publication.schema.json#/$defs/definitionIdentity`). */
+function publicationIdentityOf(exact: Readonly<{
+  processId: string;
+  version: number;
+  source: Readonly<{ sha256: string }>;
+  semanticProfile: string;
+}>) {
+  return {
+    definition: {
+      ref: { definitionKey: exact.processId, version: exact.version, sha256: exact.source.sha256 },
+      profile: exact.semanticProfile,
+      sourceOverlay: null,
+    },
+    processInstanceId: executionPublicationLabels.processInstanceId,
+  } as const;
+}
+
+const publicationIdentity = publicationIdentityOf(definition);
 
 const alphaDefinition = {
   ...definition,
@@ -82,190 +89,98 @@ const alphaInstance = {
   definition: alphaDefinition,
 } as const;
 
-const alphaPublicationIdentity = {
-  definition: {
-    ...publicationIdentity.definition,
-    semanticProfile: alphaDefinition.semanticProfile,
-    sourceId: alphaDefinition.source.id,
-    sourceSha256: alphaDefinition.source.sha256,
-  },
-  processId: alphaDefinition.processId,
-  processInstanceId: alphaInstance.processInstanceId,
-} as const;
+const alphaPublicationIdentity = publicationIdentityOf(alphaDefinition);
 
-const rootScope = scope("Scope_Process", 1);
-const repeatedScopeOne = scope("Scope_Repeated", 1);
-const repeatedScopeTwo = scope("Scope_Repeated", 2);
+/** The record of one kernel micro-step: its cause, the element it acted on and the scope occurrence that owns it. */
+function arrival(
+  revision: number,
+  flow: string,
+  element: string,
+  sourceType: string,
+  owner: number,
+) {
+  return {
+    revision,
+    role: { kind: "arrive", flow },
+    element,
+    sourceType,
+    owner,
+  } as const;
+}
 
-const emptyDelta = {
-  consumedTokens: [],
-  producedTokens: [],
-  enteredScopes: [],
-  exitedScopes: [],
-} as const;
-
+// The repeated element arrives under two distinct scope occurrences, so only its owner tells the arrivals apart.
 const batch = {
   commandId: "command-start-enterprise-parallel-compliance-review-000001",
   fromRevision: 0,
   throughRevision: 5,
   transitions: [{
     revision: 1,
-    logicalTimeMs: 0,
-    transition: {
-      kind: "externalStimulus",
-      stimulus: {
-        kind: "startProcess",
-        commandId: "command-start-enterprise-parallel-compliance-review-000001",
-        processId: publicationIdentity.processId,
-        instanceId: publicationIdentity.processInstanceId,
-        initialVariables: [{
-          name: "regionalApproval",
-          value: { kind: "string", value: "pending-review" },
-        }],
-      },
-    },
-    positionDelta: emptyDelta,
-  }, {
-    revision: 2,
-    logicalTimeMs: 0,
-    transition: {
-      kind: "internalOperation",
-      operationId: "Operation_Start",
-      operationKind: "initiate",
-      origin: { kind: "bpmnElement", elementId: "StartEvent_1" },
-      owner: rootScope,
-    },
-    positionDelta: {
-      consumedTokens: [],
-      producedTokens: [{ sequenceFlowId: "Flow_Pre", owner: rootScope, multiplicity: 1 }],
-      enteredScopes: [{ id: rootScope, parent: null, bpmnElementId: definition.processId }],
-      exitedScopes: [],
-    },
-  }, {
-    revision: 3,
-    logicalTimeMs: 0,
-    transition: {
-      kind: "internalOperation",
-      operationId: "Operation_Parallel_Fork",
-      operationKind: "duplicate",
-      origin: { kind: "bpmnElement", elementId: "Gateway_Parallel" },
-      owner: rootScope,
-    },
-    positionDelta: {
-      consumedTokens: [{ sequenceFlowId: "Flow_Pre", owner: rootScope, multiplicity: 1 }],
-      producedTokens: [
-        { sequenceFlowId: "Flow_1", owner: rootScope, multiplicity: 1 },
-        { sequenceFlowId: "Flow_2", owner: rootScope, multiplicity: 1 },
-      ],
-      enteredScopes: [],
-      exitedScopes: [],
-    },
-  }, {
-    revision: 4,
-    logicalTimeMs: 0,
-    transition: {
-      kind: "internalOperation",
-      operationId: "Operation_Repeated_Review",
-      operationKind: "enterScope",
-      origin: { kind: "bpmnElement", elementId: executionPublicationLabels.repeatedElementId },
-      owner: repeatedScopeOne,
-    },
-    positionDelta: {
-      consumedTokens: [],
-      producedTokens: [],
-      enteredScopes: [{
-        id: repeatedScopeOne,
-        parent: rootScope,
-        bpmnElementId: executionPublicationLabels.missingElementId,
-      }],
-      exitedScopes: [],
-    },
-  }, {
-    revision: 5,
-    logicalTimeMs: 0,
-    transition: {
-      kind: "internalOperation",
-      operationId: "Operation_Repeated_Review",
-      operationKind: "enterScope",
-      origin: { kind: "bpmnElement", elementId: executionPublicationLabels.repeatedElementId },
-      owner: repeatedScopeTwo,
-    },
-    positionDelta: {
-      consumedTokens: [],
-      producedTokens: [],
-      enteredScopes: [{
-        id: repeatedScopeTwo,
-        parent: rootScope,
-        bpmnElementId: executionPublicationLabels.missingElementId,
-      }],
-      exitedScopes: [],
-    },
-  }],
+    role: { kind: "input", input: "start" },
+    element: "StartEvent_1",
+    sourceType: "startEvent",
+    owner: 0,
+  },
+  arrival(2, "Flow_Pre", "Gateway_Parallel", "parallelGateway", 0),
+  arrival(3, "Flow_1", "Task_Left", "userTask", 0),
+  arrival(4, "Flow_Repeat", executionPublicationLabels.repeatedElementId, "userTask", 1),
+  arrival(5, "Flow_Repeat", executionPublicationLabels.repeatedElementId, "userTask", 2)],
 } as const;
 
-const alphaBatch = {
-  ...batch,
-  transitions: batch.transitions.map((record) => {
-    if (
-      record.transition.kind !== "externalStimulus" ||
-      record.transition.stimulus.kind !== "startProcess"
-    ) return record;
-    return {
-      ...record,
-      transition: {
-        ...record.transition,
-        stimulus: {
-          ...record.transition.stimulus,
-          processId: alphaDefinition.processId,
-        },
-      },
-    };
-  }),
+/** One open wait of the root instance, in the engine's typed form (`canonical-result.schema.json#/$defs/openWait`). */
+function effectWait(elementId: string, activation: number) {
+  return {
+    id: { processInstanceId: executionPublicationLabels.processInstanceId, elementId, activation },
+    definition: null,
+    input: "effectResult",
+    detail: {
+      kind: "effect",
+      protocol: "cibDelegate",
+      operation: "recordComplianceReview",
+      arguments: [],
+      failures: 0,
+      send: null,
+    },
+  } as const;
+}
+
+const taskLeftWait = {
+  id: { processInstanceId: executionPublicationLabels.processInstanceId, elementId: "Task_Left", activation: 1 },
+  definition: null,
+  input: "command",
+  detail: {
+    kind: "userTask",
+    name: null,
+    assignee: null,
+    candidateUsers: [],
+    candidateGroups: [],
+    formKey: null,
+    formFields: [],
+    dueDate: null,
+    followUpDate: null,
+    priority: null,
+    inputs: [],
+  },
 } as const;
 
+// Open waits stay in the canonical order of their occurrences: element identifier, then activation.
 const current = {
   revision: 5,
   state: {
     kind: "state",
     instanceId: publicationIdentity.processInstanceId,
     status: "running",
-    activeWaits: [
-      { elementId: "Task_Left", kind: "userTask", multiplicity: 1 },
-      {
-        elementId: executionPublicationLabels.missingElementId,
-        kind: "effect",
-        multiplicity: 2,
-      },
-    ],
-    openUserTasks: [],
-    openMessageSubscriptions: [],
-    openTimers: [],
-    openEffects: [],
-    openIncidents: [],
+    logicalTimeMs: 0,
     variables: [{
       name: "regionalApproval",
       value: { kind: "string", value: "pending-review" },
     }],
-    enabledInteractions: [],
-    logicalTimeMs: 0,
+    scopes: [],
+    openWaits: [
+      effectWait(executionPublicationLabels.missingElementId, 1),
+      effectWait(executionPublicationLabels.missingElementId, 2),
+      taskLeftWait,
+    ],
   },
-  controlTokens: [
-    { sequenceFlowId: "Flow_1", owner: rootScope, multiplicity: 1 },
-    { sequenceFlowId: "Flow_2", owner: rootScope, multiplicity: 1 },
-  ],
-  scopes: [{
-    id: rootScope,
-    parent: null,
-    bpmnElementId: definition.processId,
-  }, {
-    id: repeatedScopeOne,
-    parent: rootScope,
-    bpmnElementId: executionPublicationLabels.missingElementId,
-  }, {
-    id: repeatedScopeTwo,
-    parent: rootScope,
-    bpmnElementId: executionPublicationLabels.missingElementId,
-  }],
 } as const;
 
 const pageBody = {
@@ -280,11 +195,10 @@ const pageBody = {
 const alphaPageBody = {
   ...pageBody,
   ...alphaPublicationIdentity,
-  batches: [alphaBatch],
 } as const;
 
 const exportBody = {
-  format: "bpmn-lean.execution-publication.v1",
+  format: "bpmn-lean.execution-publication",
   ...publicationIdentity,
   headRevision: 5,
   batches: [batch],
@@ -299,15 +213,22 @@ export async function installExecutionPublicationFixtures(
   const publicResponses: unknown[] = [];
   let sequentialExecutionRequests = 0;
   const selectedInstance = isAlphaFixtureState(state) ? alphaInstance : instance;
+  const alphaBase = {
+    batch,
+    current,
+    pageBody: alphaPageBody,
+    processInstanceId: alphaPublicationIdentity.processInstanceId,
+  } as const;
 
   function alphaPage(journey: AlphaFixtureJourney): unknown {
-    return muePreviewAlphaExecutionPage({
-      batch: alphaBatch,
-      current,
-      emptyDelta,
-      pageBody: alphaPageBody,
-      processInstanceId: alphaPublicationIdentity.processInstanceId,
-    }, journey, sequentialExecutionRequests);
+    return muePreviewAlphaExecutionPage(alphaBase, journey, sequentialExecutionRequests);
+  }
+
+  /** The Alpha export is the running snapshot: the download journey belongs to the ordinary state. */
+  function alphaExportBytes(): Uint8Array {
+    const { requestedAfterRevision: _requested, pageThroughRevision: _through, ...running } =
+      muePreviewAlphaExecutionPage(alphaBase, AlphaFixtureJourney.Running, 1);
+    return new TextEncoder().encode(canonicalJson({ format: exportBody.format, ...running }));
   }
 
   await page.route("**/api/v1/**", async (route) => {
@@ -351,7 +272,7 @@ export async function installExecutionPublicationFixtures(
           body: JSON.stringify({ workflowId: "private-host-fact" }),
         });
       }
-      const body = executionPublicationExportBytes();
+      const body = isAlphaFixtureState(state) ? alphaExportBytes() : executionPublicationExportBytes();
       publicResponses.push(new TextDecoder().decode(body));
       return route.fulfill({
         status: 200,
@@ -368,7 +289,7 @@ export async function installExecutionPublicationFixtures(
     ) {
       const body = {
         format: "bpmn-lean.operator-audit.v1",
-        instance,
+        instance: selectedInstance,
         work: { headEventId: null, events: [] },
         incidentActions: { headEventId: null, events: [] },
       } as const;
@@ -409,14 +330,6 @@ function isAlphaFixtureState(state: ExecutionPublicationFixtureState): boolean {
 
 export function executionPublicationExportBytes(): Uint8Array {
   return new TextEncoder().encode(canonicalJson(exportBody));
-}
-
-function scope(definitionScopeId: string, activation: number) {
-  return {
-    processInstanceId: executionPublicationLabels.processInstanceId,
-    definitionScopeId,
-    activation,
-  } as const;
 }
 
 function diagramPresentation() {

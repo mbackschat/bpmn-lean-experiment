@@ -12,11 +12,8 @@ type FixtureRecord = Readonly<Record<string, unknown>>;
 export type MuePreviewAlphaFixtureBase = Readonly<{
   batch: FixtureRecord;
   current: FixtureRecord & Readonly<{
-    controlTokens: readonly unknown[];
-    scopes: readonly unknown[];
     state: FixtureRecord & Readonly<{ variables: readonly unknown[] }>;
   }>;
-  emptyDelta: FixtureRecord;
   pageBody: FixtureRecord;
   processInstanceId: string;
 }>;
@@ -26,7 +23,7 @@ export function muePreviewAlphaExecutionPage(
   base: MuePreviewAlphaFixtureBase,
   journey: AlphaFixtureJourney,
   requestCount: number,
-): unknown {
+): Record<string, unknown> {
   const fixtures = buildFixtures(base);
   if (requestCount === 1 || journey === AlphaFixtureJourney.Running) {
     return structuredClone({
@@ -49,86 +46,40 @@ export function muePreviewAlphaExecutionPage(
 }
 
 function buildFixtures(base: MuePreviewAlphaFixtureBase) {
-  const taskId = {
-    processInstanceId: base.processInstanceId,
-    elementId: "UserTask_Review",
-    activation: 2,
-  } as const;
-  const timerId = {
-    processInstanceId: base.processInstanceId,
-    elementId: "BoundaryTimer_Review",
-    activation: 1,
-  } as const;
+  const reviewId = occurrenceId(base, "UserTask_Review", 2);
+  const timerId = occurrenceId(base, "BoundaryTimer_Review", 1);
+  const escalationId = occurrenceId(base, "UserTask_Escalation", 1);
+  // The canonical state orders open waits by occurrence: element identifier first, then activation.
   const running = {
-    ...base.current,
+    revision: 5,
     state: {
       ...base.current.state,
-      activeWaits: [{
-        elementId: taskId.elementId,
-        kind: "userTask",
-        multiplicity: 1,
-      }, {
-        elementId: timerId.elementId,
-        kind: "timer",
-        multiplicity: 1,
-      }],
-      openUserTasks: [{ id: taskId, name: "Review item", state: "active" }],
-      openTimers: [{ id: timerId, deadlineMs: 5_000 }],
-      openMultiInstances: [{
-        id: {
-          processInstanceId: base.processInstanceId,
-          activityElementId: taskId.elementId,
-          activation: 1,
-        },
-        mode: "sequential",
-        bodyKind: "userTask",
-        plannedInstanceCount: 3,
-        pendingItemCount: 1,
-        numberOfInstances: 2,
-        numberOfActiveInstances: 1,
-        numberOfCompletedInstances: 1,
-        numberOfTerminatedInstances: 0,
-        activeIterations: [{
-          loopCounter: 1,
-          taskId,
-          taskInput: {
-            name: "DataInput_CurrentItem",
-            value: { kind: "string", value: "invoice" },
-          },
-          completionBindingName: "DataOutput_CurrentResult",
-        }],
-      }],
-      enabledInteractions: [{ kind: "completeUserTaskInstance", taskId }],
+      openWaits: [
+        timerWait(timerId),
+        userTaskWait(reviewId, "Review item", [{
+          name: "DataInput_CurrentItem",
+          value: { kind: "string", value: "invoice" },
+        }]),
+      ],
     },
   } as const;
   const naturalCompletionBatch = completionBatch(
-    base,
     "complete-review-receipt-alpha",
-    taskId,
     5,
     6,
-    [{
-      name: "DataOutput_CurrentResult",
-      value: { kind: "string", value: "archived" },
-    }],
+    "UserTask_Review",
   );
   const naturalTerminal = {
     revision: 6,
     state: {
       ...running.state,
       status: "completed",
-      activeWaits: [],
-      openUserTasks: [],
-      openTimers: [],
-      openMultiInstances: [],
+      openWaits: [],
       variables: [{
         name: "DataObjectReference_OutputResults",
         value: { kind: "stringList", value: ["accepted", "flagged", "archived"] },
       }, ...base.current.state.variables],
-      enabledInteractions: [],
     },
-    controlTokens: [],
-    scopes: [],
   } as const;
   const timerFiringBatch = {
     commandId: "fire-timer-alpha",
@@ -136,69 +87,34 @@ function buildFixtures(base: MuePreviewAlphaFixtureBase) {
     throughRevision: 6,
     transitions: [{
       revision: 6,
-      logicalTimeMs: 5_000,
-      transition: {
-        kind: "externalStimulus",
-        stimulus: {
-          kind: "fireTimer",
-          commandId: "fire-timer-alpha",
-          timerId,
-          logicalTimeMs: 5_000,
-        },
-      },
-      positionDelta: base.emptyDelta,
+      role: { kind: "input", input: "timerFire" },
+      element: timerId.elementId,
+      sourceType: "boundaryEvent",
+      owner: 0,
     }],
   } as const;
-  const escalationTaskId = {
-    processInstanceId: base.processInstanceId,
-    elementId: "UserTask_Escalation",
-    activation: 1,
-  } as const;
   const interrupted = {
-    ...running,
     revision: 6,
     state: {
       ...running.state,
-      activeWaits: [{
-        elementId: escalationTaskId.elementId,
-        kind: "userTask",
-        multiplicity: 1,
-      }],
-      openUserTasks: [{
-        id: escalationTaskId,
-        name: "Handle interrupted review",
-        state: "active",
-      }],
-      openTimers: [],
-      openMultiInstances: [],
-      enabledInteractions: [{
-        kind: "completeUserTaskInstance",
-        taskId: escalationTaskId,
-      }],
+      openWaits: [userTaskWait(escalationId, "Handle interrupted review", [])],
       logicalTimeMs: 5_000,
     },
   } as const;
   const escalationCompletionBatch = completionBatch(
-    base,
     "complete-escalation-alpha",
-    escalationTaskId,
     6,
     7,
-    [],
+    escalationId.elementId,
   );
   const interruptedTerminal = {
     revision: 7,
     state: {
       ...interrupted.state,
       status: "completed",
-      activeWaits: [],
-      openUserTasks: [],
-      openMultiInstances: [],
+      openWaits: [],
       variables: base.current.state.variables,
-      enabledInteractions: [],
     },
-    controlTokens: [],
-    scopes: [],
   } as const;
   return {
     running,
@@ -211,13 +127,47 @@ function buildFixtures(base: MuePreviewAlphaFixtureBase) {
   } as const;
 }
 
+function occurrenceId(base: MuePreviewAlphaFixtureBase, elementId: string, activation: number) {
+  return { processInstanceId: base.processInstanceId, elementId, activation } as const;
+}
+
+type OccurrenceId = ReturnType<typeof occurrenceId>;
+
+function timerWait(id: OccurrenceId) {
+  return {
+    id,
+    definition: null,
+    input: "timerFire",
+    detail: { kind: "timer", deadlineMs: 5_000, recurrence: null },
+  } as const;
+}
+
+function userTaskWait(id: OccurrenceId, name: string, inputs: readonly unknown[]) {
+  return {
+    id,
+    definition: null,
+    input: "command",
+    detail: {
+      kind: "userTask",
+      name,
+      assignee: null,
+      candidateUsers: [],
+      candidateGroups: [],
+      formKey: null,
+      formFields: [],
+      dueDate: null,
+      followUpDate: null,
+      priority: null,
+      inputs,
+    },
+  } as const;
+}
+
 function completionBatch(
-  base: MuePreviewAlphaFixtureBase,
   commandId: string,
-  taskId: FixtureRecord,
   fromRevision: number,
   throughRevision: number,
-  submittedValues: readonly unknown[],
+  element: string,
 ) {
   return {
     commandId,
@@ -225,22 +175,10 @@ function completionBatch(
     throughRevision,
     transitions: [{
       revision: throughRevision,
-      logicalTimeMs: throughRevision === 7 ? 5_000 : 0,
-      transition: {
-        kind: "externalStimulus",
-        stimulus: {
-          kind: "completeUserTaskInstance",
-          commandId,
-          taskId,
-          submittedValues,
-        },
-      },
-      positionDelta: {
-        consumedTokens: base.current.controlTokens,
-        producedTokens: [],
-        enteredScopes: [],
-        exitedScopes: base.current.scopes,
-      },
+      role: { kind: "input", input: "command" },
+      element,
+      sourceType: "userTask",
+      owner: 0,
     }],
   } as const;
 }
@@ -249,7 +187,7 @@ function interruptedPage(
   base: MuePreviewAlphaFixtureBase,
   fixtures: ReturnType<typeof buildFixtures>,
   terminal: boolean,
-): unknown {
+): Record<string, unknown> {
   return structuredClone(terminal ? {
     ...base.pageBody,
     pageThroughRevision: 7,

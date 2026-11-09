@@ -21,13 +21,16 @@ test("failed Overview preserves literal failure and all complete occurrence iden
     name: `Process instance ${failedProcessLabels.processInstanceId}`,
   })).toBeFocused();
   const detail = page.locator('[data-ui="process-execution-detail"]');
-  const failure = page.getByRole("region", { name: "Compensation failure", exact: true });
+  const failure = page.getByRole("region", { name: "Process failure", exact: true });
   await expect(failure).toBeVisible();
   expect(await fact(detail, "Current status").textContent()).toBe("failed");
   expect(await fact(failure, "Code").textContent()).toBe(failedProcessLabels.code);
   expect(await fact(failure, "Message").textContent()).toBe(failedProcessLabels.message);
-  for (const [role, activation] of [["Trigger", 17], ["Handler", 18], ["Effect", 19]] as const) {
-    const occurrence = failure.getByRole("region", { name: `${role} occurrence`, exact: true });
+  // The failed occurrence and the two occurrences the engine names as related to it, each with its complete identity.
+  for (const [role, activation] of [
+    ["Related occurrence: trigger", 17], ["Related occurrence: handler", 18], ["Failed occurrence", 19],
+  ] as const) {
+    const occurrence = failure.getByRole("region", { name: role, exact: true });
     expect(await fact(occurrence, "Process-instance ID").textContent()).toBe(failedProcessLabels.processInstanceId);
     expect(await fact(occurrence, "Element ID").textContent()).toBe(failedProcessLabels.elementId);
     expect(await fact(occurrence, "Activation").textContent()).toBe(String(activation));
@@ -47,7 +50,7 @@ test("failed Overview preserves literal failure and all complete occurrence iden
 for (const [label, message] of [["absent", null], ["empty", ""]] as const) {
   test(`failed Overview keeps ${label} message distinct`, async ({ page }) => {
     await openDetail(page, message);
-    const failure = page.getByRole("region", { name: "Compensation failure", exact: true });
+    const failure = page.getByRole("region", { name: "Process failure", exact: true });
     await expect(failure).toBeVisible();
     expect(await fact(failure, "Message").textContent()).toBe(message === null ? "Absent (null)" : "");
     await exactDownload(page, message);
@@ -67,12 +70,8 @@ test("failed History stays readable with exact export and independent unavailabl
     rows.map((row) => row.getAttribute("data-revision"))
   )).toEqual(["1", "2"]);
   const effect = history.locator('[data-revision="2"]');
-  await expect(effect).toContainText("completeEffect");
-  await expect(effect).toContainText(`${failedProcessLabels.processInstanceId} / ${failedProcessLabels.elementId} / activation 19`);
-  await effect.getByRole("button", { name: "Show Exact stimulus values", exact: true }).click();
-  await expect(effect.getByRole("button", { name: "Hide Exact stimulus values", exact: true })).toHaveAttribute("aria-expanded", "true");
-  const stimulus = JSON.parse(await effect.locator("pre").innerText()) as { result: { message: string; code: string } };
-  expect(stimulus.result).toMatchObject({ code: failedProcessLabels.code, message: failedProcessLabels.message });
+  await expect(effect).toContainText("effectResult");
+  expect(await fact(effect, "Element").textContent()).toBe(failedProcessLabels.elementId);
   await noOverflow(page, history);
   expect(await horizontalOverflowFindings(history.locator("li, dl, dd, pre"))).toEqual([]);
 
@@ -80,7 +79,7 @@ test("failed History stays readable with exact export and independent unavailabl
   const diagram = page.locator('[data-ui="execution-diagram"]');
   await expect(diagram.getByRole("alert")).toContainText("Diagram view is unavailable:");
   await expect(diagram.locator(".bpmn-platform-current")).toHaveCount(0);
-  await expect(diagram.getByText("None.", { exact: true })).toHaveCount(3);
+  await expect(diagram.getByText("None.", { exact: true })).toHaveCount(2);
   await noOverflow(page, diagram);
   await page.getByRole("tab", { name: "Operator history", exact: true }).click();
   const audit = page.locator('[data-ui="operator-history"]');
@@ -94,7 +93,7 @@ for (const status of [FailedProcessFixtureStatus.Running, FailedProcessFixtureSt
     await openDetail(page, null, status);
     const detail = page.locator('[data-ui="process-execution-detail"]');
     expect(await fact(detail, "Current status").textContent()).toBe(status);
-    await expect(detail.getByRole("region", { name: "Compensation failure", exact: true })).toHaveCount(0);
+    await expect(detail.getByRole("region", { name: "Process failure", exact: true })).toHaveCount(0);
     await expect(detail.getByRole("tab")).toHaveCount(4);
     await expect(detail.getByRole("button", { name: "Download execution history" })).toBeEnabled();
     await exactDownload(page, null, status);
