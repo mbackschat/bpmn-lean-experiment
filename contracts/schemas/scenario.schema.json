@@ -705,7 +705,8 @@
             "generation": {
               "description": "The generation of the open incident the command resolves; another generation is rejected as stale.",
               "type": "integer",
-              "minimum": 1
+              "minimum": 1,
+              "maximum": 9007199254740991
             }
           }
         },
@@ -723,7 +724,8 @@
             "generation": {
               "description": "The generation of the open incident the command resolves; another generation is rejected as stale.",
               "type": "integer",
-              "minimum": 1
+              "minimum": 1,
+              "maximum": 9007199254740991
             }
           }
         },

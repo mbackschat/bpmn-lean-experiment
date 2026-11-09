@@ -30,15 +30,17 @@ test("admits only the literal-free incident report and retry stimuli", async () 
     kind: "command",
     commandId: "retry-incident",
     occurrence,
-    action: { kind: "retryIncident" },
+    action: { kind: "retryIncident", generation: 1 },
   } as const;
 
   assert.equal(report(exactReport), true, JSON.stringify(report.errors));
   assert.equal(command(exactRetry), true, JSON.stringify(command.errors));
-  // The incident generation is a wait fact, never an input: no stimulus carries one.
+  // An incident command names the generation it resolves so the kernel rejects a stale one in the same step; an
+  // effect report never names one, because the failure it reports is what opens the next generation.
   assert.equal(report({ ...exactReport, generation: 1 }), false);
   assert.equal(report({ ...exactReport, outcome: { kind: "technicalFailure", privateCause: "forbidden" } }), false);
-  assert.equal(command({ ...exactRetry, action: { kind: "retryIncident", generation: 1 } }), false);
+  assert.equal(command({ ...exactRetry, action: { kind: "retryIncident" } }), false);
+  assert.equal(command({ ...exactRetry, action: { kind: "retryIncident", generation: 0 } }), false);
   assert.equal(command({ ...exactRetry, occurrence: { ...occurrence, jobId: "private" } }), false);
 });
 
@@ -49,13 +51,14 @@ test("admits only the exact incident-root cancellation command and its open-wait
     kind: "command",
     commandId: "cancel-incident-process",
     occurrence,
-    action: { kind: "cancelIncidentProcess" },
+    action: { kind: "cancelIncidentProcess", generation: 1 },
   } as const;
 
   assert.equal(command(exactCancel), true, JSON.stringify(command.errors));
+  assert.equal(command({ ...exactCancel, action: { kind: "cancelIncidentProcess" } }), false);
   assert.equal(command({ ...exactCancel, processInstanceId: "caller-selected" }), false);
   for (const extra of [{ owner: "caller-selected" }, { reason: "private" }, { force: true }]) {
-    assert.equal(command({ ...exactCancel, action: { kind: "cancelIncidentProcess", ...extra } }), false);
+    assert.equal(command({ ...exactCancel, action: { kind: "cancelIncidentProcess", generation: 1, ...extra } }), false);
   }
   assert.equal(command({ ...exactCancel, action: { kind: "cancelAnyProcess" } }), false);
 
