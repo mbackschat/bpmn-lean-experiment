@@ -66,6 +66,7 @@ import {
   effectResultUpdate,
   hostViewQuery,
   observationQuery,
+  stateQuery,
   publicationQuery,
   rejectionType,
   settleUpdate,
@@ -149,6 +150,7 @@ async function hostProcess<P, S, I>(port: KernelPort<P, S, I>, args: RunProcessA
 
   setHandler(observationQuery, () =>
     instance === null ? null : port.observation(program, instance.state));
+  setHandler(stateQuery, () => instance === null ? null : port.encodeState(instance.state));
   setHandler(hostViewQuery, () =>
     ({ revision: log.cursor.revision, view: instance?.view ?? null, halt, registering: registrationsOwed().length > 0 }));
   setHandler(publicationQuery, (afterRevision, limit) => readPage(log, afterRevision, limit));

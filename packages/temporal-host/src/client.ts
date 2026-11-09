@@ -35,7 +35,9 @@ import {
   publishUpdate,
   rejectionType,
   settleUpdate,
+  stateQuery,
   timerFireUpdate,
+  workflowClosed,
   workflowType,
   type CommandResult,
   type CorrelatedPublication,
@@ -92,7 +94,7 @@ export async function submitUpdate(
         error.cause.type === rejectionType) {
       return { outcome: "rejected", code: error.cause.message, revision: null };
     }
-    if (error instanceof WorkflowNotFoundError) return { outcome: "rejected", code: "workflow-closed", revision: null };
+    if (error instanceof WorkflowNotFoundError) return { outcome: "rejected", code: workflowClosed, revision: null };
     throw error;
   }
 }
@@ -160,6 +162,11 @@ export class ProcessClient implements ProcessHost {
 
   observation(workflowId: string): Promise<JsonValue> {
     return this.handle(workflowId).query(observationQuery);
+  }
+
+  /** The chain's encoded kernel state (`stateQuery`); a closed Workflow still answers it. */
+  state(workflowId: string): Promise<JsonValue> {
+    return this.handle(workflowId).query(stateQuery);
   }
 
   hostView(workflowId: string): Promise<HostSnapshot> {

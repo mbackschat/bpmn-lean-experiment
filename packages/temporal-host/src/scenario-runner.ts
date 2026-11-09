@@ -5,16 +5,24 @@
  * The chain runs under `Scheduling.External`: timer firings and effect results are the scenario's explicit inputs.
  * Trace rules follow `Kernel.Run.execute`: a committed input, or a rejected one that is not last, adds its command
  * and the state observation and the run continues; any other outcome adds them and ends the run; a command that did
- * not commit carries its code. Each verdict comes from the host, except an input before any instance exists, which the
- * kernel judges with no state, as the host has no Workflow to send it to.
+ * not commit carries its code. Each verdict comes from the host, except where the host has no Workflow to send an input
+ * to: before any instance exists the kernel judges it with no state, and after the chain ended it judges it from the
+ * chain's final state, so a late input carries the kernel's code and never the host's closed-chain one.
  */
 import type { ProcessClient } from "./client.js";
+import { workflowClosed } from "./host-contract.js";
 import { assertNever } from "./host-machine.js";
 import { Route, type JsonValue, type KernelPort } from "./port.js";
 import { Scheduling, type CommandResult, type HostConfig } from "./protocol.js";
 
+/** The client calls a scenario run makes. */
+export type ScenarioClient = Pick<
+  ProcessClient,
+  "start" | "command" | "deliver" | "timerFire" | "effectResult" | "observation" | "state"
+>;
+
 export interface ScenarioHost {
-  readonly client: ProcessClient;
+  readonly client: ScenarioClient;
   /** Prefix of the Workflow IDs this run starts; one per start attempt until an instance exists. */
   readonly workflowIdPrefix: string;
 }
@@ -54,6 +62,25 @@ export async function runScenarioThroughHost<P, S, I>(
   let instance: string | null = null;
   let attempts = 0;
 
+  const judged = (before: S | null, input: I): CommandResult => {
+    const verdict = port.step(program, before, input);
+    return verdict.committed
+      ? { outcome: "committed", code: null, revision: null }
+      : { outcome: verdict.outcome, code: verdict.code, revision: null };
+  };
+
+  const hosted = async (workflowId: string, stimulus: JsonValue, route: Route): Promise<CommandResult> => {
+    switch (route) {
+      case Route.Start:
+        return host.client.start({ workflowId, program: programJson, config, start: stimulus });
+      case Route.Command: return host.client.command(workflowId, stimulus);
+      case Route.Deliver: return host.client.deliver(workflowId, stimulus);
+      case Route.TimerFire: return host.client.timerFire(workflowId, stimulus);
+      case Route.EffectResult: return host.client.effectResult(workflowId, stimulus);
+    }
+    return assertNever(route);
+  };
+
   const submit = async (stimulus: JsonValue, input: I): Promise<CommandResult> => {
     const route = port.route(input);
     if (route === Route.Start && instance === null) {
@@ -63,21 +90,11 @@ export async function runScenarioThroughHost<P, S, I>(
       if (result.outcome === "committed") instance = workflowId;
       return result;
     }
-    if (instance === null) {
-      const verdict = port.step(program, null, input);
-      return verdict.committed
-        ? { outcome: "committed", code: null, revision: null }
-        : { outcome: verdict.outcome, code: verdict.code, revision: null };
-    }
-    switch (route) {
-      case Route.Start:
-        return host.client.start({ workflowId: instance, program: programJson, config, start: stimulus });
-      case Route.Command: return host.client.command(instance, stimulus);
-      case Route.Deliver: return host.client.deliver(instance, stimulus);
-      case Route.TimerFire: return host.client.timerFire(instance, stimulus);
-      case Route.EffectResult: return host.client.effectResult(instance, stimulus);
-    }
-    return assertNever(route);
+    if (instance === null) return judged(null, input);
+    const result = await hosted(instance, stimulus, route);
+    if (result.outcome !== "rejected" || result.code !== workflowClosed) return result;
+    const final = await host.client.state(instance);
+    return final === null ? result : judged(port.decodeState(final), input);
   };
 
   const observation = async (): Promise<JsonValue[]> => {

@@ -23,6 +23,7 @@ export {
   ingressWorkflowType,
   notCorrelatedCode,
   rejectionType,
+  workflowClosed,
   workflowType,
   type CommandResult,
   type CorrelatedPublication,
@@ -43,6 +44,11 @@ export const effectResultUpdate = defineUpdate<CommandResult, [JsonValue]>("effe
 /** The canonical state observation, `null` before a committed start. */
 export const observationQuery = defineQuery<JsonValue>("observation");
 export const hostViewQuery = defineQuery<HostSnapshot>("hostView");
+/**
+ * The encoded committed kernel state, `null` before a committed start. Only a scenario runner reads it, so that the
+ * kernel, not the host, judges an input the ended chain can no longer receive.
+ */
+export const stateQuery = defineQuery<JsonValue>("state");
 export const publicationQuery = defineQuery<PublicationPage, [afterRevision: number, limit: number]>("publication");
 
 /** Resolves once the instance's open correlated waits are registered; returns the publication head. */

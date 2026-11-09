@@ -157,3 +157,6 @@ export type PublicationResult =
 
 /** The failure type a validator refuses with; the message is the kernel's or the host's refusal code. */
 export const rejectionType = "rejected";
+
+/** The host's verdict for an input sent to a chain that has ended: there is no Workflow left to judge it. */
+export const workflowClosed = "workflow-closed";

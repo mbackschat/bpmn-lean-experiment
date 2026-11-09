@@ -29,6 +29,7 @@ import {
   type HostConfig,
   type HostSnapshot,
   type PublicationResult,
+  workflowClosed,
 } from "./host-contract.js";
 import { applyInput, assertNever, clockStimulus, hostOwnsLogicalTime } from "./host-machine.js";
 import { kernelPort } from "./kernel-port.js";
@@ -130,7 +131,7 @@ class MemoryHost<P, S, I> implements MemoryProcessHost {
 
   async arrive(workflowId: string, stimulus: JsonValue): Promise<CommandResult> {
     const chain = this.#chains.get(workflowId);
-    if (chain === undefined || !this.#running(chain)) return { outcome: "rejected", code: "workflow-closed", revision: null };
+    if (chain === undefined || !this.#running(chain)) return { outcome: "rejected", code: workflowClosed, revision: null };
     const route = this.port.route(this.port.decodeStimulus(stimulus).input);
     switch (route) {
       case Route.TimerFire:
@@ -176,7 +177,7 @@ class MemoryHost<P, S, I> implements MemoryProcessHost {
 
   async #submit(workflowId: string, stimulus: JsonValue, route: Route): Promise<CommandResult> {
     const chain = this.#chains.get(workflowId);
-    if (chain === undefined || !this.#running(chain)) return { outcome: "rejected", code: "workflow-closed", revision: null };
+    if (chain === undefined || !this.#running(chain)) return { outcome: "rejected", code: workflowClosed, revision: null };
     return this.#apply(chain, stimulus, route);
   }
 
