@@ -5,14 +5,13 @@ import {
   rm,
   writeFile,
 } from "node:fs/promises";
-import { existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { oracleEvidenceCases } from "./contract-artifact-cases.ts";
 import { resolveJavaHome } from "./java-home.ts";
-import { CommandTimeoutError, runCommand } from "./run-command.ts";
+import { runCommand } from "./run-command.ts";
 import { parseWireJson, parseWireJsonBytes } from "./strict-json.ts";
 import type { CibSevenEvidence, ScenarioDocument } from "./contract-artifacts.ts";
 
@@ -140,46 +139,34 @@ function requireCleanDiagnostics(
 /** Scenarios per Maven invocation, so one invocation stays inside its deadline as the batch grows. */
 const cibBatchChunkSize = 20;
 
-type BatchOutcome<Result> = Readonly<{ results: ReadonlyArray<Result>; failure: string | null }>;
+type HarnessFailure = Readonly<{ scenarioId: string; failure: string }>;
+type BatchOutcome = Readonly<{ results: ReadonlyArray<CibRunnerResult>; failures: ReadonlyArray<HarnessFailure> }>;
 
 /**
- * Runs `items` in chunks through `run`, which answers the results of the leading items it ran and, when it stopped early,
- * the failure of the next item. That item is recorded as a harness failure and the rest of its chunk runs again, so one
- * scenario CIB cannot run costs one more invocation instead of the whole batch.
+ * Splits the export bridge's output into answers and harness failures. The bridge answers every requested scenario in
+ * request order, either with its result or with the harness failure that stopped it, and keeps running the rest in the
+ * same engine; anything else, a missing line included, is a failure of the whole run and is never attributed to a scenario.
  */
-export async function runIsolatedBatches<Item, Result>(
-  items: ReadonlyArray<Item>,
-  chunkSize: number,
-  run: (items: ReadonlyArray<Item>) => Promise<BatchOutcome<Result>>,
-): Promise<Readonly<{ results: ReadonlyArray<Result>; failures: ReadonlyArray<Readonly<{ item: Item; failure: string }>> }>> {
-  const results: Result[] = [];
-  const failures: Array<Readonly<{ item: Item; failure: string }>> = [];
-  for (let start = 0; start < items.length; start += chunkSize) {
-    let rest = items.slice(start, start + chunkSize);
-    while (rest.length > 0) {
-      const outcome = await run(rest);
-      results.push(...outcome.results);
-      if (outcome.failure === null) {
-        if (outcome.results.length !== rest.length) {
-          throw new Error(`CIB batch returned ${String(outcome.results.length)} results for ${String(rest.length)} scenarios`);
-        }
-        break;
-      }
-      failures.push({ item: rest[outcome.results.length]!, failure: outcome.failure });
-      rest = rest.slice(outcome.results.length + 1);
+export function bridgeOutcomes(requested: ReadonlyArray<string>, lines: ReadonlyArray<string>): BatchOutcome {
+  if (lines.length !== requested.length) {
+    throw new Error(`CIB bridge answered ${String(lines.length)} of ${String(requested.length)} scenarios`);
+  }
+  const results: CibRunnerResult[] = [];
+  const failures: HarnessFailure[] = [];
+  for (const [index, line] of lines.entries()) {
+    const answer = parseWireJson<Readonly<{ kind: string; scenarioId: string; failure?: string }>>(
+      line,
+      `CIB result line ${String(index + 1)}`,
+    );
+    if (answer.scenarioId !== requested[index]) {
+      throw new Error(`CIB bridge line ${String(index + 1)} answers ${answer.scenarioId}, not ${requested[index]!}`);
     }
+    if (answer.kind === "scenarioResult") results.push(answer as unknown as CibRunnerResult);
+    else if (answer.kind === "scenarioHarnessFailure" && typeof answer.failure === "string") {
+      failures.push({ scenarioId: answer.scenarioId, failure: answer.failure });
+    } else throw new Error(`CIB bridge line ${String(index + 1)} has kind ${answer.kind}`);
   }
   return { results, failures };
-}
-
-/**
- * The scenario error an export-bridge run reports, or `null` when the failure is not one scenario's: a deadline, a build
- * or an environment failure fails the whole replacement and is never attributed to the scenario that happened to be next.
- */
-export function scenarioFailureOf(error: unknown): string | null {
-  if (error instanceof CommandTimeoutError || !(error instanceof Error)) return null;
-  if (!error.message.includes("Tests run: 1, Failures: 0, Errors: 1")) return null;
-  return /exportsCanonicalScenarioBatch\b.*<<< ERROR!\n(.+)/u.exec(error.message)?.[1]?.trim() ?? null;
 }
 
 async function runCibBatch(
@@ -190,7 +177,7 @@ async function runCibBatch(
     | "plainSuccess"
     | "incidentReportRetrySuccess"
     | "incidentReportCancel",
-): Promise<BatchOutcome<CibRunnerResult>> {
+): Promise<BatchOutcome> {
   batchInvocations += 1;
   const inputPath = path.join(
     temporaryDirectory,
@@ -227,35 +214,23 @@ async function runCibBatch(
       `-Dmaven.repo.local=${process.env.BPMN_MAVEN_REPO_LOCAL}`,
     );
   }
-  let failure: string | null = null;
-  try {
-    await runCommand(
-      path.join(runnerDirectory, "mvnw"),
-      args,
-      {
-        cwd: projectRoot,
-        env: {
-          ...process.env,
-          JAVA_HOME: resolveJavaHome(),
-        },
-        timeoutMs: 30_000,
+  await runCommand(
+    path.join(runnerDirectory, "mvnw"),
+    args,
+    {
+      cwd: projectRoot,
+      env: {
+        ...process.env,
+        JAVA_HOME: resolveJavaHome(),
       },
-    );
-  } catch (error: unknown) {
-    failure = scenarioFailureOf(error);
-    if (failure === null) throw error;
-  }
-  // The bridge flushes each result as it finishes, so the results of a stopped run are those of its leading scenarios.
-  const output = existsSync(outputPath) ? await readFile(outputPath) : Buffer.alloc(0);
-  const results = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(output)
+      timeoutMs: 30_000,
+    },
+  );
+  const output = await readFile(outputPath);
+  const lines = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(output)
     .split("\n")
-    .filter((line) => line.length > 0)
-    .map((line, index) =>
-      parseWireJson<CibRunnerResult>(
-        line,
-        `CIB result line ${index + 1}`,
-      ));
-  return { results, failure };
+    .filter((line) => line.length > 0);
+  return bridgeOutcomes(scenarios.map(({ id }) => id), lines);
 }
 
 /**
@@ -314,13 +289,13 @@ async function replaceEvidence() {
       }
       const engineVersion = parsed[0];
       const effectSchedule = parsed[1];
-      const batch = await runIsolatedBatches(
-        versionSources.map(({ scenario }) => scenario.value),
-        cibBatchChunkSize,
-        (scenarios) => runCibBatch(scenarios, temporaryDirectory, engineVersion, effectSchedule),
-      );
-      results.push(...batch.results);
-      failures.push(...batch.failures.map(({ item, failure }) => `${item.id}: ${failure}`));
+      const scenarios = versionSources.map(({ scenario }) => scenario.value);
+      for (let start = 0; start < scenarios.length; start += cibBatchChunkSize) {
+        const batch = await runCibBatch(
+          scenarios.slice(start, start + cibBatchChunkSize), temporaryDirectory, engineVersion, effectSchedule);
+        results.push(...batch.results);
+        failures.push(...batch.failures.map(({ scenarioId, failure }) => `${scenarioId}: ${failure}`));
+      }
     }
     const failedIds = new Set(failures.map((failure) => failure.slice(0, failure.indexOf(": "))));
     const produced = sources.filter(({ scenario }) => !failedIds.has(scenario.value.id));

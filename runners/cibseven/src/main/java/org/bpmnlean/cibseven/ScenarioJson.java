@@ -38,6 +38,21 @@ public final class ScenarioJson {
     return MAPPER.readValue(json, ScenarioProtocol.ScenarioResult.class);
   }
 
+  /** The `id` of a scenario line, read leniently so a scenario the protocol refuses can still be named; else null. */
+  public static String scenarioIdOf(String json) {
+    try {
+      var id = MAPPER.readTree(json).get("id");
+      return id != null && id.isTextual() ? id.textValue() : null;
+    } catch (JsonProcessingException exception) {
+      return null;
+    }
+  }
+
+  public static String writeFailure(ScenarioProtocol.ScenarioHarnessFailure failure)
+      throws JsonProcessingException {
+    return MAPPER.writeValueAsString(failure);
+  }
+
   static int canonicalByteLength(Object value) {
     try {
       return MAPPER.writeValueAsBytes(value).length;

@@ -35,6 +35,23 @@ public class CibSevenOracleMainTest {
     }
   }
   @Test
+  public void answersAScenarioItCannotRunWithAHarnessFailureAndRunsTheNext() throws Exception {
+    var capsuleRoot = PROJECT_ROOT.resolve("scenarios/user-task-discovery-completion");
+    var good = ScenarioJson.writeScenario(ScenarioJson.read(capsuleRoot.resolve("scenario.json")));
+    var refused = good.replaceFirst("\"kind\":\"scenario\"", "\"kind\":\"scenario\",\"unknownField\":true");
+    var output = new StringWriter();
+
+    CibSevenOracleMain.serve(
+        new StringReader(refused + System.lineSeparator() + good + System.lineSeparator()), output, PROJECT_ROOT);
+
+    var lines = output.toString().lines().toList();
+    assertEquals(2, lines.size());
+    assertTrue(lines.get(0).startsWith("{\"kind\":\"scenarioHarnessFailure\""));
+    assertTrue(lines.get(0).contains("unknownField"));
+    assertEquals(ScenarioProtocol.SCENARIO_RESULT_KIND, ScenarioJson.readResult(lines.get(1)).kind());
+  }
+
+  @Test
   public void servesTheInteractionCapsuleInRequestOrderThroughOneEngine()
       throws Exception {
     var capsuleRoot =

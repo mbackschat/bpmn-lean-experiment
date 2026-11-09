@@ -1,5 +1,6 @@
 package org.bpmnlean.cibseven;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -14,8 +15,9 @@ import java.nio.file.Path;
 /**
  * Persistent JSON Lines boundary for callers in other runtimes.
  *
- * <p>Each non-empty input line is one scenario and each output line is its result. The engine is
- * started once per process and scenario cleanup is enforced by {@link CibSevenScenarioRunner}.
+ * <p>Each non-empty input line is one scenario and each output line is its result, or its harness failure when the
+ * runner cannot run it. The engine is started once per process and scenario cleanup is enforced by
+ * {@link CibSevenScenarioRunner}.
  */
 public final class CibSevenOracleMain {
 
@@ -49,9 +51,18 @@ public final class CibSevenOracleMain {
         if (line.isBlank()) {
           continue;
         }
-        var scenario = ScenarioJson.read(line);
-        var result = runner.run(scenario, projectRoot, effectSchedule);
-        writer.write(ScenarioJson.write(result));
+        var scenarioId = ScenarioJson.scenarioIdOf(line);
+        try {
+          var scenario = ScenarioJson.read(line);
+          writer.write(ScenarioJson.write(runner.run(scenario, projectRoot, effectSchedule)));
+        } catch (RuntimeException | JsonProcessingException failed) {
+          // A line naming no scenario cannot be answered for one, so it fails the whole batch.
+          if (scenarioId == null) {
+            throw failed;
+          }
+          writer.write(ScenarioJson.writeFailure(new ScenarioProtocol.ScenarioHarnessFailure(
+              ScenarioProtocol.SCENARIO_HARNESS_FAILURE_KIND, scenarioId, failed.toString())));
+        }
         writer.newLine();
         writer.flush();
       }

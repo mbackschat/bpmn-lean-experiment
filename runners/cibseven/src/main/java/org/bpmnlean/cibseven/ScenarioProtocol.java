@@ -21,6 +21,7 @@ public final class ScenarioProtocol {
 
   public static final String SCENARIO_KIND = "scenario";
   public static final String SCENARIO_RESULT_KIND = "scenarioResult";
+  public static final String SCENARIO_HARNESS_FAILURE_KIND = "scenarioHarnessFailure";
   static final long MAX_SAFE_WIRE_INTEGER = 9007199254740991L;
 
   private ScenarioProtocol() {}
@@ -760,6 +761,18 @@ public final class ScenarioProtocol {
     public CanonicalResult {
       Objects.requireNonNull(outcome, "outcome");
       trace = List.copyOf(trace);
+    }
+  }
+
+  /**
+   * The answer for a scenario the runner could not run, a harness failure distinct from every semantic outcome: the
+   * runner names it and goes on with the next scenario, because each run deletes its deployment and resets the clock.
+   */
+  public record ScenarioHarnessFailure(String kind, String scenarioId, String failure) {
+    public ScenarioHarnessFailure {
+      Objects.requireNonNull(kind, "kind");
+      Objects.requireNonNull(scenarioId, "scenarioId");
+      Objects.requireNonNull(failure, "failure");
     }
   }
 
