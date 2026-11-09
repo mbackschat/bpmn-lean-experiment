@@ -28,7 +28,7 @@ W0 budget: seven days from approval (168 hours); with the tracks and integration
 In order, each before the next starts:
 
 1. Profile consolidation, closed with W0 (`3a10a909`): one BPMN 2.0.2 standards profile, one cumulative CIB Seven 2.2.0 profile and its scope-chain variant ([profiles](kernel/ARCHITECTURE-SPEC.md#profiles)); the CIB 2.0.0 profiles retired into 2.2.0 and every retained CIB result was regenerated on 2.2.0. The abnormal-scope refusals resolved under CIB-INT-0007; Sub-Process-level Data Objects as declared items pass to PC-DATA-04, the default expression language to PC-DATA-07 and Send Task implementations to M3.
-2. Scenario and evidence batch: scenarios and row fixtures for the open rows, with their CIB evidence produced in one batched hosted run.
+2. Scenario and evidence batch, closed (`5f170b34`): open-row witnesses for M1–M9 under `scenarios/open-rows/`, CIB Seven `2.2.0` evidence for 709 scenarios from one batched hosted run, and the [disagreement ledger](../packages/differential/test/cib-disagreement-ledger.json) classifying all 530 kernel disagreements under their open rows or `CIB-LIM-0004` and `CIB-LIM-0005`. Witnesses the CIB runner cannot yet run carry no evidence, and each track realizes its own before its fill: Decimal, List, Map, Double and negative Integer values and the condition languages (M2); delivery payloads, correlation and name-based delivery (PC-HUM-03, PC-MESSAGE-01, PC-MESSAGE-08); numbering of parallel Multi-Instance continuations and hosts and of cycle successors (M5, M6); a timer due at arming (PC-TIMER-01); starts of processes without a None Start and every population scenario, whose witnesses are held outside the repository (M8); overlay effect bindings of registered scenarios. The kernel reader admits XSD-invalid documents (an `operationRef` attribute, misordered artifacts), which the BPMN 2.0.2 XSD forbids; verification now XSD-validates registered models, and the reader's own check belongs to the admission work of M1.
 3. Pilot rows PC-MI-02, PC-ERROR-01 and PC-AUTO-02, green on both kernels and the CIB evidence before the tracks scale out.
 4. Mechanism tracks M1–M9, then the integration track.
 
@@ -65,7 +65,7 @@ HIGH track agents author kernel feature, admission and laws modules in Lean and 
 
 Active work: Practical CIB7 Coverage, through the [kernel architecture](kernel/ARCHITECTURE-SPEC.md) (owner direction 2026-11-08).
 
-Current task: the scenario and evidence batch, step 2 of the [after-W0 sequence](#after-w0). W0 closed on 2026-11-09 with `main` at `5b526180` (pull request #64), profile consolidation included: three profiles (`bpmn-2.0.2`, `cibseven-2.2.0`, `cibseven-2.2.0-scope-chain`) and every retained CIB result regenerated on 2.2.0.
+Current task: the pilot rows PC-MI-02, PC-ERROR-01 and PC-AUTO-02, step 3 of the [after-W0 sequence](#after-w0). The scenario and evidence batch closed on 2026-11-09 (`5f170b34`): every runnable open-row witness has a retained CIB Seven `2.2.0` answer and every kernel disagreement is classified.
 
 Deliverable after W0: the [after-W0 sequence](#after-w0), then mechanism tracks M1–M9 and the integration track.
 
@@ -75,7 +75,7 @@ Owner items: none open; the owner packet (proof wave, JUEL levels, Script runtim
 
 Effort budget: W0's 168 hours from approval; the tracks five days across three in parallel, integration two days.
 
-Next action: inventory the open rows' missing scenarios and fixtures against the [coverage target](PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list), then author them for one batched hosted evidence run.
+Next action: PC-MI-02 first: a cold interpretation review of loop-level `camunda:asyncBefore` and of the activation of concurrent pending body continuations, then the IL field, the CIB runner's numbering and the row's fill against its [retained witnesses](../scenarios/open-rows/multi-instance-service-task/README.md).
 
 Oracle: the guardrails, both kernels and the retained CIB evidence on every scenario.
 
