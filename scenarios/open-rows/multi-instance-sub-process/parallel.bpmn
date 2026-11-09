@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_MiSubProcessParallel"
+  targetNamespace="urn:bpmn-lean:scenarios:multi-instance-sub-process:parallel">
+  <bpmn:process id="Process_MiSubProcessParallel" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Start" />
+    <bpmn:sequenceFlow id="Flow_Start_Item" sourceRef="StartEvent_Start" targetRef="SubProcess_Item" />
+    <bpmn:subProcess id="SubProcess_Item" name="Process one item">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="status">pending</camunda:inputParameter>
+          <camunda:inputParameter name="note">${note}</camunda:inputParameter>
+          <camunda:inputParameter name="decision">unset</camunda:inputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+      <bpmn:multiInstanceLoopCharacteristics isSequential="false" camunda:collection="invoices" camunda:elementVariable="invoice">
+        <bpmn:completionCondition>${nrOfCompletedInstances &gt;= quorum}</bpmn:completionCondition>
+      </bpmn:multiInstanceLoopCharacteristics>
+      <bpmn:startEvent id="StartEvent_Item" />
+      <bpmn:sequenceFlow id="Flow_Item_Checks" sourceRef="StartEvent_Item" targetRef="Gateway_Checks" />
+      <bpmn:parallelGateway id="Gateway_Checks" />
+      <bpmn:sequenceFlow id="Flow_Checks_Commercial" sourceRef="Gateway_Checks" targetRef="UserTask_Commercial" />
+      <bpmn:sequenceFlow id="Flow_Checks_Compliance" sourceRef="Gateway_Checks" targetRef="UserTask_Compliance" />
+      <bpmn:userTask id="UserTask_Commercial" name="Check commercial terms">
+        <bpmn:extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="seenInvoice">${invoice}</camunda:inputParameter>
+            <camunda:inputParameter name="seenStatus">${status}</camunda:inputParameter>
+            <camunda:inputParameter name="seenNote">${note}</camunda:inputParameter>
+            <camunda:inputParameter name="position">${loopCounter}</camunda:inputParameter>
+          </camunda:inputOutput>
+        </bpmn:extensionElements>
+      </bpmn:userTask>
+      <bpmn:sequenceFlow id="Flow_Commercial_End" sourceRef="UserTask_Commercial" targetRef="EndEvent_Commercial" />
+      <bpmn:endEvent id="EndEvent_Commercial" />
+      <bpmn:userTask id="UserTask_Compliance" name="Check invoice compliance">
+        <bpmn:extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="seenInvoice">${invoice}</camunda:inputParameter>
+            <camunda:inputParameter name="seenStatus">${status}</camunda:inputParameter>
+            <camunda:inputParameter name="seenNote">${note}</camunda:inputParameter>
+            <camunda:inputParameter name="position">${loopCounter}</camunda:inputParameter>
+          </camunda:inputOutput>
+        </bpmn:extensionElements>
+      </bpmn:userTask>
+      <bpmn:sequenceFlow id="Flow_Compliance_Validate" sourceRef="UserTask_Compliance" targetRef="ServiceTask_Validate" />
+      <bpmn:serviceTask
+        id="ServiceTask_Validate"
+        name="Validate invoice"
+        implementation="urn:bpmn-lean:effect:probe-v1"
+        camunda:delegateExpression="${bpmnLeanEffectHandler}"
+        camunda:asyncBefore="true">
+        <bpmn:extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="payload">${invoice}</camunda:inputParameter>
+            <camunda:inputParameter name="status">${status}</camunda:inputParameter>
+            <camunda:outputParameter name="decision">${result}</camunda:outputParameter>
+            <camunda:outputParameter name="summary">${result}</camunda:outputParameter>
+          </camunda:inputOutput>
+        </bpmn:extensionElements>
+      </bpmn:serviceTask>
+      <bpmn:sequenceFlow id="Flow_Validate_End" sourceRef="ServiceTask_Validate" targetRef="EndEvent_Compliance" />
+      <bpmn:endEvent id="EndEvent_Compliance" />
+    </bpmn:subProcess>
+    <bpmn:sequenceFlow id="Flow_Item_Publish" sourceRef="SubProcess_Item" targetRef="UserTask_Publish" />
+    <bpmn:userTask id="UserTask_Publish" name="Publish outcome" />
+    <bpmn:sequenceFlow id="Flow_Publish_End" sourceRef="UserTask_Publish" targetRef="EndEvent_Done" />
+    <bpmn:endEvent id="EndEvent_Done" />
+  </bpmn:process>
+</bpmn:definitions>

@@ -1,0 +1,416 @@
+{
+  "kind": "scenario",
+  "id": "mi-subprocess-parallel-sixteen-bodies-natural",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "mi-subprocess-parallel-simple",
+    "relativePath": "scenarios/open-rows/multi-instance-sub-process/parallel-simple.bpmn",
+    "sha256": "8532aad93f42658f632d8ffe470152969b7ebeb04cb4f7767883fb179cd638b0",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "items",
+          "value": {
+            "kind": "stringList",
+            "value": [
+              "item-01",
+              "item-02",
+              "item-03",
+              "item-04",
+              "item-05",
+              "item-06",
+              "item-07",
+              "item-08",
+              "item-09",
+              "item-10",
+              "item-11",
+              "item-12",
+              "item-13",
+              "item-14",
+              "item-15",
+              "item-16"
+            ]
+          }
+        },
+        {
+          "name": "quorum",
+          "value": {
+            "kind": "integer",
+            "value": 99
+          }
+        }
+      ]
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-complete-UserTask_Inspect-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Inspect",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "v1"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-complete-UserTask_Inspect-2",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Inspect",
+        "activation": 2
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "v2"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s04-complete-UserTask_Inspect-3",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Inspect",
+        "activation": 3
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "v3"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s05-complete-UserTask_Inspect-4",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Inspect",
+        "activation": 4
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "v4"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s06-complete-UserTask_Inspect-5",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Inspect",
+        "activation": 5
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "v5"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s07-complete-UserTask_Inspect-6",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Inspect",
+        "activation": 6
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "v6"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s08-complete-UserTask_Inspect-7",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Inspect",
+        "activation": 7
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "v7"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s09-complete-UserTask_Inspect-8",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Inspect",
+        "activation": 8
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "v8"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s10-complete-UserTask_Inspect-9",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Inspect",
+        "activation": 9
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "v9"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s11-complete-UserTask_Inspect-10",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Inspect",
+        "activation": 10
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "v10"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s12-complete-UserTask_Inspect-11",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Inspect",
+        "activation": 11
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "v11"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s13-complete-UserTask_Inspect-12",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Inspect",
+        "activation": 12
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "v12"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s14-complete-UserTask_Inspect-13",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Inspect",
+        "activation": 13
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "v13"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s15-complete-UserTask_Inspect-14",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Inspect",
+        "activation": 14
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "v14"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s16-complete-UserTask_Inspect-15",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Inspect",
+        "activation": 15
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "v15"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s17-complete-UserTask_Inspect-16",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Inspect",
+        "activation": 16
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "v16"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s18-complete-UserTask_Publish-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Publish",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.8",
+      "BPMN 2.0.2 §13.3.7",
+      "BPMN 2.0.2 Table 10.29",
+      "BPMN 2.0.2 Table 10.30",
+      "BPMN 2.0.2 §10.3.5",
+      "BPMN 2.0.2 §13.3.4"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/MultiInstanceActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ParallelMultiInstanceActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java"
+    ]
+  }
+}

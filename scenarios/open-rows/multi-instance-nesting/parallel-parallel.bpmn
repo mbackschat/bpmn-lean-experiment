@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_MiNestingParallelParallel"
+  targetNamespace="urn:bpmn-lean:scenarios:multi-instance-nesting:parallel-parallel">
+  <bpmn:process id="Process_MiNestingParallelParallel" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Start" />
+    <bpmn:sequenceFlow id="Flow_Start_Group" sourceRef="StartEvent_Start" targetRef="SubProcess_Group" />
+    <bpmn:subProcess id="SubProcess_Group" name="Review one group">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="outerGroup">${group}</camunda:inputParameter>
+          <camunda:inputParameter name="outerPosition">${loopCounter}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+      <bpmn:multiInstanceLoopCharacteristics isSequential="false" camunda:collection="groups" camunda:elementVariable="group" />
+      <bpmn:startEvent id="StartEvent_Group" />
+      <bpmn:sequenceFlow id="Flow_Group_Member" sourceRef="StartEvent_Group" targetRef="UserTask_Member" />
+      <bpmn:userTask id="UserTask_Member" name="Review one member">
+        <bpmn:extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="subject">${member}</camunda:inputParameter>
+            <camunda:inputParameter name="position">${loopCounter}</camunda:inputParameter>
+            <camunda:inputParameter name="instances">${nrOfInstances}</camunda:inputParameter>
+            <camunda:inputParameter name="group">${outerGroup}</camunda:inputParameter>
+            <camunda:inputParameter name="groupPosition">${outerPosition}</camunda:inputParameter>
+          </camunda:inputOutput>
+        </bpmn:extensionElements>
+        <bpmn:multiInstanceLoopCharacteristics isSequential="false" camunda:collection="members" camunda:elementVariable="member">
+          <bpmn:completionCondition>${nrOfCompletedInstances &gt;= innerQuorum}</bpmn:completionCondition>
+        </bpmn:multiInstanceLoopCharacteristics>
+      </bpmn:userTask>
+      <bpmn:sequenceFlow id="Flow_Member_End" sourceRef="UserTask_Member" targetRef="EndEvent_Group" />
+      <bpmn:endEvent id="EndEvent_Group" />
+    </bpmn:subProcess>
+    <bpmn:sequenceFlow id="Flow_Group_Publish" sourceRef="SubProcess_Group" targetRef="UserTask_Publish" />
+    <bpmn:userTask id="UserTask_Publish" name="Publish outcome" />
+    <bpmn:sequenceFlow id="Flow_Publish_End" sourceRef="UserTask_Publish" targetRef="EndEvent_Done" />
+    <bpmn:endEvent id="EndEvent_Done" />
+  </bpmn:process>
+</bpmn:definitions>
