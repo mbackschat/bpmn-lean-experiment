@@ -26,6 +26,7 @@ import {
   flattenElements,
   parseXmlElements,
 } from "./minimal-xml-tree.ts";
+import { isOpenRowWitness } from "./contract-artifact-cases.ts";
 import { detectExecutableBpmnCapabilities } from "./executable-model-capabilities.ts";
 import { compareCanonicalStrings } from "./strict-json.ts";
 import type {
@@ -233,9 +234,11 @@ export async function inspectExecutableModelCorpus(
     await verifyExternalCorpusSource(source, options.externalRoot);
   }
 
-  // The catalog states what the discovered scenarios exercise, no more and no less.
+  // The catalog states what the discovered scenarios exercise, no more and no less; an open-row witness claims no
+  // capability (`isOpenRowWitness`), so it widens no catalog.
   const exercised = new Set<MvpBpmnCapabilityId>();
-  for (const relativePath of new Set(options.scenarios.flatMap(({ sources }) => sources.map((source) => source.relativePath)))) {
+  const claiming = options.scenarios.filter(({ relativePath }) => !isOpenRowWitness(relativePath));
+  for (const relativePath of new Set(claiming.flatMap(({ sources }) => sources.map((source) => source.relativePath)))) {
     const xml = await readFile(path.join(options.projectRoot, relativePath), "utf8");
     for (const capability of detectExecutableBpmnCapabilities(xml)) exercised.add(capability);
   }
