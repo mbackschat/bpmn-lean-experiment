@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_MetadataControl" targetNamespace="urn:bpmn-lean:metadata-control">
+  <process id="Process_MetadataControl" name="Routing that reads task metadata" isExecutable="true">
+    <startEvent id="RequestReceived" name="Request received" />
+    <userTask id="Assess" name="Assess request" camunda:assignee="alice" camunda:candidateGroups="reviewers">
+      <extensionElements>
+        <camunda:formData>
+          <camunda:formField id="note" type="string" />
+        </camunda:formData>
+      </extensionElements>
+    </userTask>
+    <exclusiveGateway id="AssigneeCheck" name="Assignee check" gatewayDirection="Diverging" default="Flow_Other" />
+    <userTask id="AliceFollowUp" name="Follow up by Alice" />
+    <userTask id="OtherFollowUp" name="Follow up by another reviewer" />
+    <endEvent id="RequestClosed" name="Request closed" />
+    <sequenceFlow id="Flow_Received" sourceRef="RequestReceived" targetRef="Assess" />
+    <sequenceFlow id="Flow_Assessed" sourceRef="Assess" targetRef="AssigneeCheck" />
+    <sequenceFlow id="Flow_Alice" sourceRef="AssigneeCheck" targetRef="AliceFollowUp">
+      <conditionExpression xsi:type="tFormalExpression">${task.assignee == 'alice'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Other" sourceRef="AssigneeCheck" targetRef="OtherFollowUp" />
+    <sequenceFlow id="Flow_AliceDone" sourceRef="AliceFollowUp" targetRef="RequestClosed" />
+    <sequenceFlow id="Flow_OtherDone" sourceRef="OtherFollowUp" targetRef="RequestClosed" />
+  </process>
+</definitions>

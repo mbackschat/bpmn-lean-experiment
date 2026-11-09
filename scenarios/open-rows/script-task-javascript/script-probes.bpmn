@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_ScriptProbes" targetNamespace="urn:bpmn-lean:script-probes">
+  <process id="Process_ScriptProbes" name="One Script Task per probe, selected by the start variable probe" isExecutable="true">
+    <startEvent id="OrderReceived" name="Order received" />
+    <exclusiveGateway id="Select" name="Select probe" gatewayDirection="Diverging" default="Flow_NoProbe" />
+    <scriptTask id="Total" name="Compute total" scriptFormat="javascript" camunda:resultVariable="total">
+      <script>parseInt(price, 10) * parseInt(quantity, 10)</script>
+    </scriptTask>
+    <scriptTask id="Label" name="Compose label" scriptFormat="javascript" camunda:resultVariable="fullName">
+      <script>firstName.toUpperCase() + ' ' + lastName</script>
+    </scriptTask>
+    <scriptTask id="OtherLanguage" name="Add in JUEL" scriptFormat="juel" camunda:resultVariable="sum">
+      <script>${price + quantity}</script>
+    </scriptTask>
+    <scriptTask id="MutateHost" name="Mutate the execution" scriptFormat="javascript" camunda:resultVariable="outcome">
+      <script>execution.setVariable('leaked', 'yes'); true;</script>
+    </scriptTask>
+    <scriptTask id="Randomness" name="Read a random number" scriptFormat="javascript" camunda:resultVariable="outcome">
+      <script>Math.random() &gt;= 0</script>
+    </scriptTask>
+    <scriptTask id="WallClock" name="Read the wall clock" scriptFormat="javascript" camunda:resultVariable="outcome">
+      <script>Date.now() &gt; 0</script>
+    </scriptTask>
+    <scriptTask id="UnknownName" name="Read an unknown name" scriptFormat="javascript" camunda:resultVariable="outcome">
+      <script>missingName + 1</script>
+    </scriptTask>
+    <scriptTask id="ThrownError" name="Throw an error" scriptFormat="javascript" camunda:resultVariable="outcome">
+      <script>throw new Error('boom');</script>
+    </scriptTask>
+    <exclusiveGateway id="Merge" name="Merge" gatewayDirection="Converging" />
+    <userTask id="Inspect" name="Inspect result" />
+    <endEvent id="OrderClosed" name="Order closed" />
+    <sequenceFlow id="Flow_Received" sourceRef="OrderReceived" targetRef="Select" />
+    <sequenceFlow id="Flow_ToTotal" sourceRef="Select" targetRef="Total">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'total'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToLabel" sourceRef="Select" targetRef="Label">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'label'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToOtherLanguage" sourceRef="Select" targetRef="OtherLanguage">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'juel'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToMutateHost" sourceRef="Select" targetRef="MutateHost">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'mutate'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToRandomness" sourceRef="Select" targetRef="Randomness">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'random'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToWallClock" sourceRef="Select" targetRef="WallClock">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'clock'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToUnknownName" sourceRef="Select" targetRef="UnknownName">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'unknown'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToThrownError" sourceRef="Select" targetRef="ThrownError">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'throw'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_NoProbe" sourceRef="Select" targetRef="Merge" />
+    <sequenceFlow id="Flow_TotalDone" sourceRef="Total" targetRef="Merge" />
+    <sequenceFlow id="Flow_LabelDone" sourceRef="Label" targetRef="Merge" />
+    <sequenceFlow id="Flow_OtherLanguageDone" sourceRef="OtherLanguage" targetRef="Merge" />
+    <sequenceFlow id="Flow_MutateHostDone" sourceRef="MutateHost" targetRef="Merge" />
+    <sequenceFlow id="Flow_RandomnessDone" sourceRef="Randomness" targetRef="Merge" />
+    <sequenceFlow id="Flow_WallClockDone" sourceRef="WallClock" targetRef="Merge" />
+    <sequenceFlow id="Flow_UnknownNameDone" sourceRef="UnknownName" targetRef="Merge" />
+    <sequenceFlow id="Flow_ThrownErrorDone" sourceRef="ThrownError" targetRef="Merge" />
+    <sequenceFlow id="Flow_Merged" sourceRef="Merge" targetRef="Inspect" />
+    <sequenceFlow id="Flow_Inspected" sourceRef="Inspect" targetRef="OrderClosed" />
+  </process>
+</definitions>

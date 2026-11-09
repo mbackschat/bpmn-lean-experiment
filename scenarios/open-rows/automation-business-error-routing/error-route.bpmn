@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_ErrorRoute" targetNamespace="urn:bpmn-lean:automation-error-route">
+  <error id="Error_Invalid" name="Invoice invalid" errorCode="INVALID" />
+  <process id="Process_ErrorRoute" name="Validate an invoice and route a rejection" isExecutable="true">
+    <startEvent id="InvoiceReceived" name="Invoice received" />
+    <serviceTask id="Validate" name="Validate invoice"
+                 implementation="urn:bpmn-lean:effect:probe-v1"
+                 camunda:delegateExpression="${bpmnLeanEffectHandler}" camunda:asyncBefore="true">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="payload">${request}</camunda:inputParameter>
+          <camunda:outputParameter name="verdict">${result}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </serviceTask>
+    <boundaryEvent id="InvoiceRejected" name="Invoice rejected" attachedToRef="Validate">
+      <errorEventDefinition id="CatchInvalid" errorRef="Error_Invalid" />
+    </boundaryEvent>
+    <userTask id="ApproveInvoice" name="Approve invoice" />
+    <userTask id="FixInvoice" name="Fix invoice" />
+    <endEvent id="InvoiceApproved" name="Invoice approved" />
+    <endEvent id="InvoiceFixed" name="Invoice fixed" />
+    <sequenceFlow id="Flow_Received" sourceRef="InvoiceReceived" targetRef="Validate" />
+    <sequenceFlow id="Flow_Validated" sourceRef="Validate" targetRef="ApproveInvoice" />
+    <sequenceFlow id="Flow_Approved" sourceRef="ApproveInvoice" targetRef="InvoiceApproved" />
+    <sequenceFlow id="Flow_Rejected" sourceRef="InvoiceRejected" targetRef="FixInvoice" />
+    <sequenceFlow id="Flow_Fixed" sourceRef="FixInvoice" targetRef="InvoiceFixed" />
+  </process>
+</definitions>

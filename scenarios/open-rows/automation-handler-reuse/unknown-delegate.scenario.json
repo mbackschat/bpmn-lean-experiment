@@ -1,0 +1,53 @@
+{
+  "kind": "scenario",
+  "id": "automation-handler-reuse-unknown-delegate",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "handlers-unknown",
+    "relativePath": "scenarios/open-rows/automation-handler-reuse/unknown-handler.bpmn",
+    "sha256": "0a2856acf60cb51aad8aa9303a9552a5a92f17efdd18f695c59ace441b938d29",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start",
+      "instanceId": "Order_1",
+      "variables": [
+        {
+          "name": "orderId",
+          "value": {
+            "kind": "string",
+            "value": "O-7"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "complete-notify",
+      "occurrence": {
+        "processInstanceId": "Order_1",
+        "elementId": "Notify",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.3.1",
+      "BPMN 2.0.2 Table 10.8",
+      "BPMN 2.0.2 §13.3.3"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ServiceTaskDelegateExpressionActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/variable/mapping/IoMapping.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java"
+    ]
+  }
+}

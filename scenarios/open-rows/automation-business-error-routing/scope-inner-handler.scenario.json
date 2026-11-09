@@ -1,0 +1,96 @@
+{
+  "kind": "scenario",
+  "id": "automation-business-error-routing-scope-inner-handler",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "automation-error-scope",
+    "relativePath": "scenarios/open-rows/automation-business-error-routing/error-scope.bpmn",
+    "sha256": "13603af7fc82f8753b7ae5e677be63ec3aa936f192697091d8fab7d675e75649",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start",
+      "instanceId": "Applicant_1",
+      "variables": [
+        {
+          "name": "applicant",
+          "value": {
+            "kind": "string",
+            "value": "ada"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "refuse-check",
+      "occurrence": {
+        "processInstanceId": "Applicant_1",
+        "elementId": "Check",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "businessFailure",
+        "code": "CHECK_FAILED",
+        "outputs": [
+          {
+            "name": "result",
+            "value": {
+              "kind": "string",
+              "value": "refused"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-recheck",
+      "occurrence": {
+        "processInstanceId": "Applicant_1",
+        "elementId": "Recheck",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "complete-decide",
+      "occurrence": {
+        "processInstanceId": "Applicant_1",
+        "elementId": "Decide",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": [
+          {
+            "name": "result",
+            "value": {
+              "kind": "string",
+              "value": "accept"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.3.1",
+      "BPMN 2.0.2 §10.5.1",
+      "BPMN 2.0.2 §13.5.3"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ServiceTaskDelegateExpressionActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/helper/BpmnExceptionHandler.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/variable/mapping/IoMapping.java"
+    ]
+  }
+}

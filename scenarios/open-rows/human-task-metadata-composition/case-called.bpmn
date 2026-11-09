@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_CaseCalled" targetNamespace="urn:bpmn-lean:metadata-case-called">
+  <process id="Process_CaseHandover" name="Hand a case to a reusable verification" isExecutable="true">
+    <startEvent id="HandoverRequested" name="Handover requested" />
+    <callActivity id="VerifyCase" name="Verify case" calledElement="Process_CaseVerification">
+      <extensionElements>
+        <camunda:in source="claim" target="claim" />
+      </extensionElements>
+    </callActivity>
+    <userTask id="WrapUp" name="Wrap up" />
+    <endEvent id="HandoverClosed" name="Handover closed" />
+    <sequenceFlow id="Flow_Requested" sourceRef="HandoverRequested" targetRef="VerifyCase" />
+    <sequenceFlow id="Flow_Verified" sourceRef="VerifyCase" targetRef="WrapUp" />
+    <sequenceFlow id="Flow_WrappedUp" sourceRef="WrapUp" targetRef="HandoverClosed" />
+  </process>
+  <process id="Process_CaseVerification" name="Verify a case" isExecutable="true">
+    <startEvent id="VerificationStarted" name="Verification started" />
+    <userTask id="Verify" name="Verify the case"
+              camunda:assignee="dana" camunda:candidateGroups="verifiers" camunda:priority="40">
+      <extensionElements>
+        <camunda:formData>
+          <camunda:formField id="verified" type="boolean" />
+        </camunda:formData>
+      </extensionElements>
+    </userTask>
+    <endEvent id="VerificationCompleted" name="Verification completed" />
+    <sequenceFlow id="Flow_VerificationStarted" sourceRef="VerificationStarted" targetRef="Verify" />
+    <sequenceFlow id="Flow_VerificationCompleted" sourceRef="Verify" targetRef="VerificationCompleted" />
+  </process>
+</definitions>

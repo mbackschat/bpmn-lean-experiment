@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             id="Definitions_EmbeddedPayment" targetNamespace="urn:bpmn-lean:receive-embedded-payment">
+  <message id="Message_Payment" name="paymentReceived" />
+  <process id="Process_EmbeddedPayment" name="Collect a payment within a deadline" isExecutable="true">
+    <startEvent id="OrderPlaced" name="Order placed" />
+    <subProcess id="Collection" name="Collection">
+      <startEvent id="CollectionOpened" />
+      <receiveTask id="AwaitPayment" name="Await payment" messageRef="Message_Payment" />
+      <endEvent id="CollectionClosed" />
+      <sequenceFlow id="Flow_CollectionOpened" sourceRef="CollectionOpened" targetRef="AwaitPayment" />
+      <sequenceFlow id="Flow_PaymentReceived" sourceRef="AwaitPayment" targetRef="CollectionClosed" />
+    </subProcess>
+    <boundaryEvent id="PaymentTimeout" name="Payment timeout" attachedToRef="Collection">
+      <timerEventDefinition id="PaymentTimer">
+        <timeDuration xsi:type="tFormalExpression">PT1H</timeDuration>
+      </timerEventDefinition>
+    </boundaryEvent>
+    <userTask id="WrapUp" name="Wrap up" />
+    <userTask id="Escalate" name="Escalate unpaid order" />
+    <endEvent id="OrderPaid" name="Order paid" />
+    <endEvent id="OrderEscalated" name="Order escalated" />
+    <sequenceFlow id="Flow_Placed" sourceRef="OrderPlaced" targetRef="Collection" />
+    <sequenceFlow id="Flow_Collected" sourceRef="Collection" targetRef="WrapUp" />
+    <sequenceFlow id="Flow_WrappedUp" sourceRef="WrapUp" targetRef="OrderPaid" />
+    <sequenceFlow id="Flow_TimedOut" sourceRef="PaymentTimeout" targetRef="Escalate" />
+    <sequenceFlow id="Flow_Escalated" sourceRef="Escalate" targetRef="OrderEscalated" />
+  </process>
+</definitions>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_UntypedFormField" targetNamespace="urn:bpmn-lean:metadata-untyped-form-field">
+  <process id="Process_UntypedFormField" name="Review with a form field that declares no type" isExecutable="true">
+    <startEvent id="RequestReceived" name="Request received" />
+    <userTask id="Review" name="Review request" camunda:candidateGroups="reviewers">
+      <extensionElements>
+        <camunda:formData>
+          <camunda:formField id="route" />
+        </camunda:formData>
+      </extensionElements>
+    </userTask>
+    <endEvent id="RequestClosed" name="Request closed" />
+    <sequenceFlow id="Flow_Received" sourceRef="RequestReceived" targetRef="Review" />
+    <sequenceFlow id="Flow_Reviewed" sourceRef="Review" targetRef="RequestClosed" />
+  </process>
+</definitions>

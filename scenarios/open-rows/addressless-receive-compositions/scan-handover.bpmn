@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_ScanHandover" targetNamespace="urn:bpmn-lean:addressless-scan-handover">
+  <process id="Process_ScanHandover" name="Scan a parcel until accepted, then hand it over in a scope" isExecutable="true">
+    <startEvent id="ParcelArrived" name="Parcel arrived" />
+    <exclusiveGateway id="ScanRequested" name="Scan requested" gatewayDirection="Converging" />
+    <receiveTask id="AwaitScan" name="Await scan" />
+    <userTask id="CheckScan" name="Check scan">
+      <extensionElements>
+        <camunda:formData>
+          <camunda:formField id="again" type="string" />
+        </camunda:formData>
+      </extensionElements>
+    </userTask>
+    <exclusiveGateway id="ScanOutcome" name="Scan outcome" gatewayDirection="Diverging" default="Flow_ScanAccepted" />
+    <subProcess id="Handover" name="Handover">
+      <startEvent id="HandoverOpened" />
+      <receiveTask id="AwaitSignature" name="Await signature" />
+      <endEvent id="HandoverClosed" />
+      <sequenceFlow id="Flow_HandoverOpened" sourceRef="HandoverOpened" targetRef="AwaitSignature" />
+      <sequenceFlow id="Flow_Signed" sourceRef="AwaitSignature" targetRef="HandoverClosed" />
+    </subProcess>
+    <endEvent id="ParcelHandedOver" name="Parcel handed over" />
+    <sequenceFlow id="Flow_Arrived" sourceRef="ParcelArrived" targetRef="ScanRequested" />
+    <sequenceFlow id="Flow_ScanRequested" sourceRef="ScanRequested" targetRef="AwaitScan" />
+    <sequenceFlow id="Flow_Scanned" sourceRef="AwaitScan" targetRef="CheckScan" />
+    <sequenceFlow id="Flow_Checked" sourceRef="CheckScan" targetRef="ScanOutcome" />
+    <sequenceFlow id="Flow_ScanAgain" sourceRef="ScanOutcome" targetRef="ScanRequested">
+      <conditionExpression xsi:type="tFormalExpression">${again == 'yes'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ScanAccepted" sourceRef="ScanOutcome" targetRef="Handover" />
+    <sequenceFlow id="Flow_HandedOver" sourceRef="Handover" targetRef="ParcelHandedOver" />
+  </process>
+</definitions>

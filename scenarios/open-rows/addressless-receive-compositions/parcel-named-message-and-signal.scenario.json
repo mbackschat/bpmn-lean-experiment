@@ -1,0 +1,75 @@
+{
+  "kind": "scenario",
+  "id": "addressless-receive-compositions-parcel-named-message-and-signal",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "addressless-receive-task-process",
+    "relativePath": "scenarios/addressless-receive-task/process.bpmn",
+    "sha256": "8cd4ab3670897b60e8a68152e5021bc5f684c5522115a28a2fa46621d68ba3aa",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start",
+      "instanceId": "Handover_1",
+      "variables": []
+    },
+    {
+      "kind": "deliver",
+      "commandId": "named-message",
+      "occurrence": {
+        "processInstanceId": "Handover_1",
+        "elementId": "ReceiveTask_AwaitCourierPickup",
+        "activation": 1
+      },
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "directMessage",
+          "messageId": "Message_CourierPickup"
+        }
+      }
+    },
+    {
+      "kind": "deliver",
+      "commandId": "signal-broadcast",
+      "occurrence": {
+        "processInstanceId": "Handover_1",
+        "elementId": "ReceiveTask_AwaitCourierPickup",
+        "activation": 1
+      },
+      "trigger": {
+        "kind": "signal",
+        "name": "courierScanned"
+      }
+    },
+    {
+      "kind": "deliver",
+      "commandId": "courier-scanned",
+      "occurrence": {
+        "processInstanceId": "Handover_1",
+        "elementId": "ReceiveTask_AwaitCourierPickup",
+        "activation": 1
+      },
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "unspecifiedMessage"
+        }
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.3",
+      "BPMN 2.0.2 Table 10.10",
+      "BPMN 2.0.2 §13.3.3"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ReceiveTaskActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/cmd/SignalCmd.java"
+    ]
+  }
+}

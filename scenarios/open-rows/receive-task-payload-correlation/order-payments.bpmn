@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_OrderPayments" targetNamespace="urn:bpmn-lean:receive-order-payments">
+  <message id="Message_Payment" name="paymentReceived" />
+  <process id="Process_OrderPayments" name="Collect a card and a bank payment for one order" isExecutable="true">
+    <startEvent id="OrderPlaced" name="Order placed" />
+    <parallelGateway id="Split" name="Split" gatewayDirection="Diverging" />
+    <exclusiveGateway id="CardRequested" name="Card payment requested" gatewayDirection="Converging" />
+    <receiveTask id="AwaitCard" name="Await card payment" messageRef="Message_Payment" />
+    <userTask id="ReviewCard" name="Review card payment">
+      <extensionElements>
+        <camunda:formData>
+          <camunda:formField id="again" type="string" />
+        </camunda:formData>
+      </extensionElements>
+    </userTask>
+    <exclusiveGateway id="CardOutcome" name="Card outcome" gatewayDirection="Diverging" default="Flow_CardAccepted" />
+    <receiveTask id="AwaitBank" name="Await bank payment" messageRef="Message_Payment" />
+    <parallelGateway id="Join" name="Join" gatewayDirection="Converging" />
+    <endEvent id="OrderPaid" name="Order paid" />
+    <sequenceFlow id="Flow_Placed" sourceRef="OrderPlaced" targetRef="Split" />
+    <sequenceFlow id="Flow_ToCard" sourceRef="Split" targetRef="CardRequested" />
+    <sequenceFlow id="Flow_ToBank" sourceRef="Split" targetRef="AwaitBank" />
+    <sequenceFlow id="Flow_CardRequested" sourceRef="CardRequested" targetRef="AwaitCard" />
+    <sequenceFlow id="Flow_CardReceived" sourceRef="AwaitCard" targetRef="ReviewCard" />
+    <sequenceFlow id="Flow_CardReviewed" sourceRef="ReviewCard" targetRef="CardOutcome" />
+    <sequenceFlow id="Flow_CardAgain" sourceRef="CardOutcome" targetRef="CardRequested">
+      <conditionExpression xsi:type="tFormalExpression">${again == 'yes'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_CardAccepted" sourceRef="CardOutcome" targetRef="Join" />
+    <sequenceFlow id="Flow_BankReceived" sourceRef="AwaitBank" targetRef="Join" />
+    <sequenceFlow id="Flow_Joined" sourceRef="Join" targetRef="OrderPaid" />
+  </process>
+</definitions>

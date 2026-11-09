@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_CalledPayment" targetNamespace="urn:bpmn-lean:receive-called-payment">
+  <message id="Message_Payment" name="paymentReceived" />
+  <process id="Process_PaymentDesk" name="Hand an order to a reusable payment collection" isExecutable="true">
+    <startEvent id="OrderPlaced" name="Order placed" />
+    <callActivity id="CollectPayment" name="Collect payment" calledElement="Process_PaymentCollection">
+      <extensionElements>
+        <camunda:in source="orderId" target="orderId" />
+      </extensionElements>
+    </callActivity>
+    <userTask id="WrapUp" name="Wrap up" />
+    <endEvent id="OrderClosed" name="Order closed" />
+    <sequenceFlow id="Flow_Placed" sourceRef="OrderPlaced" targetRef="CollectPayment" />
+    <sequenceFlow id="Flow_Collected" sourceRef="CollectPayment" targetRef="WrapUp" />
+    <sequenceFlow id="Flow_WrappedUp" sourceRef="WrapUp" targetRef="OrderClosed" />
+  </process>
+  <process id="Process_PaymentCollection" name="Collect a payment" isExecutable="true">
+    <startEvent id="CollectionStarted" name="Collection started" />
+    <receiveTask id="AwaitPayment" name="Await payment" messageRef="Message_Payment" />
+    <endEvent id="CollectionCompleted" name="Collection completed" />
+    <sequenceFlow id="Flow_CollectionStarted" sourceRef="CollectionStarted" targetRef="AwaitPayment" />
+    <sequenceFlow id="Flow_CollectionCompleted" sourceRef="AwaitPayment" targetRef="CollectionCompleted" />
+  </process>
+</definitions>

@@ -1,0 +1,77 @@
+{
+  "kind": "scenario",
+  "id": "addressless-receive-compositions-items-sequential-turnover",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "addressless-item-handover-sequential",
+    "relativePath": "scenarios/open-rows/addressless-receive-compositions/item-handover-sequential.bpmn",
+    "sha256": "7fa388b944bdadf7a96482bd390600a907259a7e9163688b065e1f11b06e22b4",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start",
+      "instanceId": "Items_1",
+      "variables": []
+    },
+    {
+      "kind": "deliver",
+      "commandId": "scan-item-1",
+      "occurrence": {
+        "processInstanceId": "Items_1",
+        "elementId": "AwaitItemScan",
+        "activation": 1
+      },
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "unspecifiedMessage"
+        }
+      }
+    },
+    {
+      "kind": "deliver",
+      "commandId": "scan-item-1-again",
+      "occurrence": {
+        "processInstanceId": "Items_1",
+        "elementId": "AwaitItemScan",
+        "activation": 1
+      },
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "unspecifiedMessage"
+        }
+      }
+    },
+    {
+      "kind": "deliver",
+      "commandId": "scan-item-2",
+      "occurrence": {
+        "processInstanceId": "Items_1",
+        "elementId": "AwaitItemScan",
+        "activation": 2
+      },
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "unspecifiedMessage"
+        }
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.3",
+      "BPMN 2.0.2 Table 10.10",
+      "BPMN 2.0.2 §13.3.3"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ReceiveTaskActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/cmd/SignalCmd.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/MultiInstanceActivityBehavior.java"
+    ]
+  }
+}

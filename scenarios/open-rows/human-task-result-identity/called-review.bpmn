@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_CalledReview" targetNamespace="urn:bpmn-lean:human-called-review">
+  <process id="Process_CaseDesk" name="Hand a case to a reusable review" isExecutable="true">
+    <startEvent id="CaseOpened" name="Case opened" />
+    <callActivity id="ReviewCase" name="Review case" calledElement="Process_CaseReview">
+      <extensionElements>
+        <camunda:in source="claim" target="claim" />
+        <camunda:out source="verdict" target="decision" />
+      </extensionElements>
+    </callActivity>
+    <userTask id="Publish" name="Publish decision" />
+    <endEvent id="CaseClosed" name="Case closed" />
+    <sequenceFlow id="Flow_Opened" sourceRef="CaseOpened" targetRef="ReviewCase" />
+    <sequenceFlow id="Flow_Reviewed" sourceRef="ReviewCase" targetRef="Publish" />
+    <sequenceFlow id="Flow_Published" sourceRef="Publish" targetRef="CaseClosed" />
+  </process>
+  <process id="Process_CaseReview" name="Review a case" isExecutable="true">
+    <startEvent id="ReviewStarted" name="Review started" />
+    <userTask id="CaseReviewTask" name="Review the case">
+      <extensionElements>
+        <camunda:formData>
+          <camunda:formField id="verdict" type="string" />
+        </camunda:formData>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="summary">${claim}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <endEvent id="ReviewCompleted" name="Review completed" />
+    <sequenceFlow id="Flow_ReviewStarted" sourceRef="ReviewStarted" targetRef="CaseReviewTask" />
+    <sequenceFlow id="Flow_ReviewCompleted" sourceRef="CaseReviewTask" targetRef="ReviewCompleted" />
+  </process>
+</definitions>

@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_ClaimReview" targetNamespace="urn:bpmn-lean:human-claim-review">
+  <process id="Process_ClaimReview" name="Review a claim with rework, a parallel branch and a scoped intake" isExecutable="true">
+    <startEvent id="ClaimReceived" name="Claim received" />
+    <exclusiveGateway id="ReviewRequested" name="Review requested" gatewayDirection="Converging" />
+    <userTask id="Review" name="Review claim">
+      <extensionElements>
+        <camunda:formData>
+          <camunda:formField id="verdict" type="string" />
+        </camunda:formData>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="summary">${claim}</camunda:inputParameter>
+          <camunda:inputParameter name="verdict">pending</camunda:inputParameter>
+          <camunda:outputParameter name="decision">${verdict}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <exclusiveGateway id="ReviewOutcome" name="Review outcome" gatewayDirection="Diverging" default="Flow_Proceed" />
+    <parallelGateway id="Fork" name="Fork" gatewayDirection="Diverging" />
+    <userTask id="Sign" name="Sign claim" />
+    <subProcess id="Intake" name="Intake">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="notes">${claim}</camunda:inputParameter>
+          <camunda:outputParameter name="intakeNotes">${notes}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+      <startEvent id="IntakeOpened" />
+      <userTask id="Collect" name="Collect notes">
+        <extensionElements>
+          <camunda:formData>
+            <camunda:formField id="notes" type="string" />
+          </camunda:formData>
+        </extensionElements>
+      </userTask>
+      <endEvent id="IntakeClosed" />
+      <sequenceFlow id="Flow_IntakeOpened" sourceRef="IntakeOpened" targetRef="Collect" />
+      <sequenceFlow id="Flow_Collected" sourceRef="Collect" targetRef="IntakeClosed" />
+    </subProcess>
+    <parallelGateway id="Join" name="Join" gatewayDirection="Converging" />
+    <endEvent id="ClaimClosed" name="Claim closed" />
+    <sequenceFlow id="Flow_Received" sourceRef="ClaimReceived" targetRef="ReviewRequested" />
+    <sequenceFlow id="Flow_EnterReview" sourceRef="ReviewRequested" targetRef="Review" />
+    <sequenceFlow id="Flow_Reviewed" sourceRef="Review" targetRef="ReviewOutcome" />
+    <sequenceFlow id="Flow_Rework" sourceRef="ReviewOutcome" targetRef="ReviewRequested">
+      <conditionExpression xsi:type="tFormalExpression">${decision == 'rework'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Proceed" sourceRef="ReviewOutcome" targetRef="Fork" />
+    <sequenceFlow id="Flow_ToSign" sourceRef="Fork" targetRef="Sign" />
+    <sequenceFlow id="Flow_ToIntake" sourceRef="Fork" targetRef="Intake" />
+    <sequenceFlow id="Flow_Signed" sourceRef="Sign" targetRef="Join" />
+    <sequenceFlow id="Flow_IntakeDone" sourceRef="Intake" targetRef="Join" />
+    <sequenceFlow id="Flow_Joined" sourceRef="Join" targetRef="ClaimClosed" />
+  </process>
+</definitions>

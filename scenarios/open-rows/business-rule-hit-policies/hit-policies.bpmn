@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_HitPolicies" targetNamespace="urn:bpmn-lean:business-rule-hit-policies-process">
+  <process id="Process_HitPolicies" name="One Business Rule Task per decision, selected by the start variable policy" isExecutable="true">
+    <startEvent id="ApplicantReceived" name="Applicant received" />
+    <exclusiveGateway id="Select" name="Select decision" gatewayDirection="Diverging" default="Flow_NoPolicy" />
+    <businessRuleTask id="GradeUnique" name="Grade, unique" camunda:decisionRef="gradeUnique"
+                      camunda:mapDecisionResult="singleEntry" camunda:resultVariable="grade" />
+    <businessRuleTask id="GradeFirst" name="Grade, first" camunda:decisionRef="gradeFirst"
+                      camunda:mapDecisionResult="singleEntry" camunda:resultVariable="grade" />
+    <businessRuleTask id="GradeAnyAgree" name="Grade, any with agreeing outputs" camunda:decisionRef="gradeAnyAgree"
+                      camunda:mapDecisionResult="singleEntry" camunda:resultVariable="grade" />
+    <businessRuleTask id="GradeAnyConflict" name="Grade, any with conflicting outputs" camunda:decisionRef="gradeAnyConflict"
+                      camunda:mapDecisionResult="singleEntry" camunda:resultVariable="grade" />
+    <businessRuleTask id="GradeCollect" name="Grade, collect" camunda:decisionRef="gradeCollect"
+                      camunda:mapDecisionResult="collectEntries" camunda:resultVariable="grades" />
+    <businessRuleTask id="GradeRuleOrder" name="Grade, rule order" camunda:decisionRef="gradeRuleOrder"
+                      camunda:mapDecisionResult="collectEntries" camunda:resultVariable="grades" />
+    <businessRuleTask id="GradeBadOutput" name="Grade with an output of the wrong type" camunda:decisionRef="gradeBadOutput"
+                      camunda:mapDecisionResult="singleEntry" camunda:resultVariable="grade" />
+    <businessRuleTask id="Fee" name="Fee by channel" camunda:decisionRef="fee"
+                      camunda:mapDecisionResult="singleEntry" camunda:resultVariable="fee" />
+    <businessRuleTask id="UnknownDecision" name="Decision that is not deployed" camunda:decisionRef="noSuchDecision"
+                      camunda:mapDecisionResult="singleEntry" camunda:resultVariable="grade" />
+    <exclusiveGateway id="Merge" name="Merge" gatewayDirection="Converging" />
+    <userTask id="Inspect" name="Inspect result" />
+    <endEvent id="ApplicantClosed" name="Applicant closed" />
+    <sequenceFlow id="Flow_Received" sourceRef="ApplicantReceived" targetRef="Select" />
+    <sequenceFlow id="Flow_ToGradeUnique" sourceRef="Select" targetRef="GradeUnique">
+      <conditionExpression xsi:type="tFormalExpression">${policy == 'unique'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToGradeFirst" sourceRef="Select" targetRef="GradeFirst">
+      <conditionExpression xsi:type="tFormalExpression">${policy == 'first'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToGradeAnyAgree" sourceRef="Select" targetRef="GradeAnyAgree">
+      <conditionExpression xsi:type="tFormalExpression">${policy == 'any-agree'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToGradeAnyConflict" sourceRef="Select" targetRef="GradeAnyConflict">
+      <conditionExpression xsi:type="tFormalExpression">${policy == 'any-conflict'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToGradeCollect" sourceRef="Select" targetRef="GradeCollect">
+      <conditionExpression xsi:type="tFormalExpression">${policy == 'collect'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToGradeRuleOrder" sourceRef="Select" targetRef="GradeRuleOrder">
+      <conditionExpression xsi:type="tFormalExpression">${policy == 'rule-order'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToGradeBadOutput" sourceRef="Select" targetRef="GradeBadOutput">
+      <conditionExpression xsi:type="tFormalExpression">${policy == 'bad-output'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToFee" sourceRef="Select" targetRef="Fee">
+      <conditionExpression xsi:type="tFormalExpression">${policy == 'fee'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToUnknownDecision" sourceRef="Select" targetRef="UnknownDecision">
+      <conditionExpression xsi:type="tFormalExpression">${policy == 'unknown'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_NoPolicy" sourceRef="Select" targetRef="Merge" />
+    <sequenceFlow id="Flow_GradeUniqueDone" sourceRef="GradeUnique" targetRef="Merge" />
+    <sequenceFlow id="Flow_GradeFirstDone" sourceRef="GradeFirst" targetRef="Merge" />
+    <sequenceFlow id="Flow_GradeAnyAgreeDone" sourceRef="GradeAnyAgree" targetRef="Merge" />
+    <sequenceFlow id="Flow_GradeAnyConflictDone" sourceRef="GradeAnyConflict" targetRef="Merge" />
+    <sequenceFlow id="Flow_GradeCollectDone" sourceRef="GradeCollect" targetRef="Merge" />
+    <sequenceFlow id="Flow_GradeRuleOrderDone" sourceRef="GradeRuleOrder" targetRef="Merge" />
+    <sequenceFlow id="Flow_GradeBadOutputDone" sourceRef="GradeBadOutput" targetRef="Merge" />
+    <sequenceFlow id="Flow_FeeDone" sourceRef="Fee" targetRef="Merge" />
+    <sequenceFlow id="Flow_UnknownDecisionDone" sourceRef="UnknownDecision" targetRef="Merge" />
+    <sequenceFlow id="Flow_Merged" sourceRef="Merge" targetRef="Inspect" />
+    <sequenceFlow id="Flow_Inspected" sourceRef="Inspect" targetRef="ApplicantClosed" />
+  </process>
+</definitions>

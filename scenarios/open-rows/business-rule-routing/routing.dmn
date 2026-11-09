@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" id="Definitions_Routing" name="Routing" namespace="urn:bpmn-lean:business-rule-routing">
+  <decision id="routeDecision" name="Route an applicant by score">
+    <decisionTable id="DecisionTable_routeDecision" hitPolicy="UNIQUE">
+      <input id="Input_routeDecision" label="Score">
+        <inputExpression id="InputExpression_routeDecision" typeRef="integer"><text>score</text></inputExpression>
+      </input>
+      <output id="Output_routeDecision_grade" name="grade" typeRef="string" />
+      <output id="Output_routeDecision_limit" name="limit" typeRef="integer" />
+      <rule id="Rule_routeDecision_1">
+        <inputEntry id="InputEntry_routeDecision_1"><text>&lt; 40</text></inputEntry>
+        <outputEntry id="OutputEntry_routeDecision_1_1"><text>"low"</text></outputEntry>
+        <outputEntry id="OutputEntry_routeDecision_1_2"><text>100</text></outputEntry>
+      </rule>
+      <rule id="Rule_routeDecision_2">
+        <inputEntry id="InputEntry_routeDecision_2"><text>[40..70]</text></inputEntry>
+        <outputEntry id="OutputEntry_routeDecision_2_1"><text>"mid"</text></outputEntry>
+        <outputEntry id="OutputEntry_routeDecision_2_2"><text>300</text></outputEntry>
+      </rule>
+      <rule id="Rule_routeDecision_3">
+        <inputEntry id="InputEntry_routeDecision_3"><text>&gt; 60</text></inputEntry>
+        <outputEntry id="OutputEntry_routeDecision_3_1"><text>"high"</text></outputEntry>
+        <outputEntry id="OutputEntry_routeDecision_3_2"><text>900</text></outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+</definitions>

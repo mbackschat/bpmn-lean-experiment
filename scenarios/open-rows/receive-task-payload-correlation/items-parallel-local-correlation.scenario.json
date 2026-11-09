@@ -1,0 +1,144 @@
+{
+  "kind": "scenario",
+  "id": "receive-task-payload-correlation-items-parallel-local-correlation",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "receive-item-payments",
+    "relativePath": "scenarios/open-rows/receive-task-payload-correlation/item-payments.bpmn",
+    "sha256": "b54d47569265fe9a2d0c9865fe7f8d4d69dced0761e3e9d069c891ee264ae1e1",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start",
+      "instanceId": "Items_1",
+      "variables": []
+    },
+    {
+      "kind": "deliver",
+      "commandId": "deliver-body-1-counter-1",
+      "occurrence": {
+        "processInstanceId": "Items_1",
+        "elementId": "AwaitItemPayment",
+        "activation": 1
+      },
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "directMessage",
+          "messageId": "Message_Payment"
+        }
+      },
+      "correlation": [
+        {
+          "target": {
+            "kind": "localVariable",
+            "name": "loopCounter"
+          },
+          "expected": {
+            "kind": "integer",
+            "value": 1
+          }
+        }
+      ]
+    },
+    {
+      "kind": "deliver",
+      "commandId": "deliver-body-2-counter-1",
+      "occurrence": {
+        "processInstanceId": "Items_1",
+        "elementId": "AwaitItemPayment",
+        "activation": 2
+      },
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "directMessage",
+          "messageId": "Message_Payment"
+        }
+      },
+      "correlation": [
+        {
+          "target": {
+            "kind": "localVariable",
+            "name": "loopCounter"
+          },
+          "expected": {
+            "kind": "integer",
+            "value": 1
+          }
+        }
+      ]
+    },
+    {
+      "kind": "deliver",
+      "commandId": "deliver-body-2-again",
+      "occurrence": {
+        "processInstanceId": "Items_1",
+        "elementId": "AwaitItemPayment",
+        "activation": 2
+      },
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "directMessage",
+          "messageId": "Message_Payment"
+        }
+      },
+      "correlation": [
+        {
+          "target": {
+            "kind": "localVariable",
+            "name": "loopCounter"
+          },
+          "expected": {
+            "kind": "integer",
+            "value": 1
+          }
+        }
+      ]
+    },
+    {
+      "kind": "deliver",
+      "commandId": "deliver-body-1-counter-0",
+      "occurrence": {
+        "processInstanceId": "Items_1",
+        "elementId": "AwaitItemPayment",
+        "activation": 1
+      },
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "directMessage",
+          "messageId": "Message_Payment"
+        }
+      },
+      "correlation": [
+        {
+          "target": {
+            "kind": "localVariable",
+            "name": "loopCounter"
+          },
+          "expected": {
+            "kind": "integer",
+            "value": 0
+          }
+        }
+      ]
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.3",
+      "BPMN 2.0.2 Table 10.10",
+      "BPMN 2.0.2 §13.3.3"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ReceiveTaskActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/cmd/SignalCmd.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java"
+    ]
+  }
+}

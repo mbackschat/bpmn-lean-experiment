@@ -1,0 +1,117 @@
+{
+  "kind": "scenario",
+  "id": "send-task-configured-send-send-snapshot-after-change",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "send-shipping-notice",
+    "relativePath": "scenarios/open-rows/send-task-configured-send/shipping-notice.bpmn",
+    "sha256": "4cb5e89e52d1965b89997c110585c4ab21cabb38d923357f1f4468d465cfa8df",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start",
+      "instanceId": "Order_1",
+      "variables": [
+        {
+          "name": "copies",
+          "value": {
+            "kind": "string",
+            "value": "2"
+          }
+        },
+        {
+          "name": "customerEmail",
+          "value": {
+            "kind": "string",
+            "value": "ada@example.org"
+          }
+        },
+        {
+          "name": "order",
+          "value": {
+            "kind": "string",
+            "value": "A-17"
+          }
+        },
+        {
+          "name": "urgent",
+          "value": {
+            "kind": "boolean",
+            "value": false
+          }
+        }
+      ]
+    },
+    {
+      "kind": "command",
+      "commandId": "pack-order",
+      "occurrence": {
+        "processInstanceId": "Order_1",
+        "elementId": "Pack",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "notice",
+            "value": {
+              "kind": "string",
+              "value": "v1"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "change-notice",
+      "occurrence": {
+        "processInstanceId": "Order_1",
+        "elementId": "SendNotice",
+        "activation": 1
+      },
+      "action": {
+        "kind": "setVariables",
+        "values": [
+          {
+            "name": "notice",
+            "value": {
+              "kind": "string",
+              "value": "v2"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "complete-send",
+      "occurrence": {
+        "processInstanceId": "Order_1",
+        "elementId": "SendNotice",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.3",
+      "BPMN 2.0.2 Table 10.9",
+      "BPMN 2.0.2 §13.3.3"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ServiceTaskDelegateExpressionActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/helper/BpmnExceptionHandler.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/cmd/DefaultJobRetryCmd.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java"
+    ]
+  }
+}

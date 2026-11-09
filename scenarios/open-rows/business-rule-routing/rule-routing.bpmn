@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_RuleRouting" targetNamespace="urn:bpmn-lean:business-rule-routing-process">
+  <process id="Process_RuleRouting" name="Route an applicant by a decision with two outputs" isExecutable="true">
+    <startEvent id="ApplicantReceived" name="Applicant received" />
+    <businessRuleTask id="Assess" name="Assess applicant" camunda:decisionRef="routeDecision"
+                      camunda:mapDecisionResult="singleResult" camunda:resultVariable="outcome">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="outcome">none</camunda:inputParameter>
+          <camunda:outputParameter name="grade">${outcome.grade}</camunda:outputParameter>
+          <camunda:outputParameter name="limit">${outcome.limit}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </businessRuleTask>
+    <exclusiveGateway id="Route" name="Route by grade" gatewayDirection="Diverging" default="Flow_Held" />
+    <userTask id="ManualReview" name="Review manually" />
+    <sendTask id="SendNotice" name="Send approval notice"
+              implementation="urn:bpmn-lean:effect:probe-v1"
+              camunda:delegateExpression="${bpmnLeanEffectHandler}" camunda:asyncBefore="true">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="recipient">${applicant}</camunda:inputParameter>
+          <camunda:inputParameter name="grade">${grade}</camunda:inputParameter>
+          <camunda:inputParameter name="limit">${limit}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </sendTask>
+    <endEvent id="ApplicantReviewed" name="Applicant reviewed" />
+    <endEvent id="NoticeSent" name="Notice sent" />
+    <endEvent id="ApplicantHeld" name="Applicant held" />
+    <sequenceFlow id="Flow_Received" sourceRef="ApplicantReceived" targetRef="Assess" />
+    <sequenceFlow id="Flow_Assessed" sourceRef="Assess" targetRef="Route" />
+    <sequenceFlow id="Flow_Review" sourceRef="Route" targetRef="ManualReview">
+      <conditionExpression xsi:type="tFormalExpression">${grade == 'high'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Notify" sourceRef="Route" targetRef="SendNotice">
+      <conditionExpression xsi:type="tFormalExpression">${grade == 'low'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Held" sourceRef="Route" targetRef="ApplicantHeld" />
+    <sequenceFlow id="Flow_Reviewed" sourceRef="ManualReview" targetRef="ApplicantReviewed" />
+    <sequenceFlow id="Flow_Notified" sourceRef="SendNotice" targetRef="NoticeSent" />
+  </process>
+</definitions>

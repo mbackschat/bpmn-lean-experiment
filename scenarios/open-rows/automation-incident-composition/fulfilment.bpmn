@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_Fulfilment" targetNamespace="urn:bpmn-lean:incident-fulfilment">
+  <error id="Error_PaymentDeclined" name="Payment declined" errorCode="PAYMENT_DECLINED" />
+  <process id="Process_Fulfilment" name="Take, charge, ship and close an order, repeatably" isExecutable="true">
+    <startEvent id="OrderReceived" name="Order received" />
+    <exclusiveGateway id="OrderRequested" name="Order requested" gatewayDirection="Converging" />
+    <userTask id="Intake" name="Take order" />
+    <serviceTask id="Charge" name="Charge customer"
+                 implementation="urn:bpmn-lean:effect:probe-v1"
+                 camunda:delegateExpression="${bpmnLeanEffectHandler}" camunda:asyncBefore="true">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="reference">${orderId}</camunda:inputParameter>
+          <camunda:outputParameter name="charged">${result}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </serviceTask>
+    <boundaryEvent id="PaymentDeclined" name="Payment declined" attachedToRef="Charge">
+      <errorEventDefinition id="CatchPaymentDeclined" errorRef="Error_PaymentDeclined" />
+    </boundaryEvent>
+    <userTask id="HandleDecline" name="Handle declined payment" />
+    <subProcess id="Ship" name="Ship">
+      <startEvent id="ShipOpened" />
+      <serviceTask id="Reserve" name="Reserve stock"
+                   implementation="urn:bpmn-lean:effect:probe-v1"
+                   camunda:delegateExpression="${bpmnLeanEffectHandler}" camunda:asyncBefore="true">
+        <extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="sku">${orderId}</camunda:inputParameter>
+            <camunda:outputParameter name="reserved">${result}</camunda:outputParameter>
+          </camunda:inputOutput>
+        </extensionElements>
+      </serviceTask>
+      <serviceTask id="Dispatch" name="Dispatch parcel"
+                   implementation="urn:bpmn-lean:effect:probe-v1"
+                   camunda:delegateExpression="${bpmnLeanEffectHandler}" camunda:asyncBefore="true">
+        <extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="sku">${orderId}</camunda:inputParameter>
+            <camunda:outputParameter name="dispatched">${result}</camunda:outputParameter>
+          </camunda:inputOutput>
+        </extensionElements>
+      </serviceTask>
+      <endEvent id="ShipClosed" />
+      <sequenceFlow id="Flow_ShipOpened" sourceRef="ShipOpened" targetRef="Reserve" />
+      <sequenceFlow id="Flow_Reserved" sourceRef="Reserve" targetRef="Dispatch" />
+      <sequenceFlow id="Flow_Dispatched" sourceRef="Dispatch" targetRef="ShipClosed" />
+    </subProcess>
+    <userTask id="Close" name="Close order">
+      <extensionElements>
+        <camunda:formData>
+          <camunda:formField id="again" type="string" />
+        </camunda:formData>
+      </extensionElements>
+    </userTask>
+    <exclusiveGateway id="CloseOutcome" name="Close outcome" gatewayDirection="Diverging" default="Flow_Finish" />
+    <endEvent id="OrderShipped" name="Order shipped" />
+    <endEvent id="OrderDeclined" name="Order declined" />
+    <sequenceFlow id="Flow_Received" sourceRef="OrderReceived" targetRef="OrderRequested" />
+    <sequenceFlow id="Flow_Requested" sourceRef="OrderRequested" targetRef="Intake" />
+    <sequenceFlow id="Flow_Taken" sourceRef="Intake" targetRef="Charge" />
+    <sequenceFlow id="Flow_Charged" sourceRef="Charge" targetRef="Ship" />
+    <sequenceFlow id="Flow_Declined" sourceRef="PaymentDeclined" targetRef="HandleDecline" />
+    <sequenceFlow id="Flow_DeclineHandled" sourceRef="HandleDecline" targetRef="OrderDeclined" />
+    <sequenceFlow id="Flow_Shipped" sourceRef="Ship" targetRef="Close" />
+    <sequenceFlow id="Flow_Closed" sourceRef="Close" targetRef="CloseOutcome" />
+    <sequenceFlow id="Flow_Again" sourceRef="CloseOutcome" targetRef="OrderRequested">
+      <conditionExpression xsi:type="tFormalExpression">${again == 'yes'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Finish" sourceRef="CloseOutcome" targetRef="OrderShipped" />
+  </process>
+</definitions>

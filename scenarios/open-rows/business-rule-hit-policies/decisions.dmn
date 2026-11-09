@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" id="Definitions_HitPolicies" name="Hit policies" namespace="urn:bpmn-lean:business-rule-hit-policies">
+  <decision id="gradeUnique" name="Grade, unique">
+    <decisionTable id="DecisionTable_gradeUnique" hitPolicy="UNIQUE">
+      <input id="Input_gradeUnique" label="Score">
+        <inputExpression id="InputExpression_gradeUnique" typeRef="integer"><text>score</text></inputExpression>
+      </input>
+      <output id="Output_gradeUnique_grade" name="grade" typeRef="string" />
+      <rule id="Rule_gradeUnique_1">
+        <inputEntry id="InputEntry_gradeUnique_1"><text>&lt; 50</text></inputEntry>
+        <outputEntry id="OutputEntry_gradeUnique_1_1"><text>"low"</text></outputEntry>
+      </rule>
+      <rule id="Rule_gradeUnique_2">
+        <inputEntry id="InputEntry_gradeUnique_2"><text>[40..70]</text></inputEntry>
+        <outputEntry id="OutputEntry_gradeUnique_2_1"><text>"mid"</text></outputEntry>
+      </rule>
+      <rule id="Rule_gradeUnique_3">
+        <inputEntry id="InputEntry_gradeUnique_3"><text>&gt; 60</text></inputEntry>
+        <outputEntry id="OutputEntry_gradeUnique_3_1"><text>"high"</text></outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <decision id="gradeFirst" name="Grade, first">
+    <decisionTable id="DecisionTable_gradeFirst" hitPolicy="FIRST">
+      <input id="Input_gradeFirst" label="Score">
+        <inputExpression id="InputExpression_gradeFirst" typeRef="integer"><text>score</text></inputExpression>
+      </input>
+      <output id="Output_gradeFirst_grade" name="grade" typeRef="string" />
+      <rule id="Rule_gradeFirst_1">
+        <inputEntry id="InputEntry_gradeFirst_1"><text>&lt; 50</text></inputEntry>
+        <outputEntry id="OutputEntry_gradeFirst_1_1"><text>"low"</text></outputEntry>
+      </rule>
+      <rule id="Rule_gradeFirst_2">
+        <inputEntry id="InputEntry_gradeFirst_2"><text>[40..70]</text></inputEntry>
+        <outputEntry id="OutputEntry_gradeFirst_2_1"><text>"mid"</text></outputEntry>
+      </rule>
+      <rule id="Rule_gradeFirst_3">
+        <inputEntry id="InputEntry_gradeFirst_3"><text>&gt; 60</text></inputEntry>
+        <outputEntry id="OutputEntry_gradeFirst_3_1"><text>"high"</text></outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <decision id="gradeAnyAgree" name="Grade, any with agreeing outputs">
+    <decisionTable id="DecisionTable_gradeAnyAgree" hitPolicy="ANY">
+      <input id="Input_gradeAnyAgree" label="Score">
+        <inputExpression id="InputExpression_gradeAnyAgree" typeRef="integer"><text>score</text></inputExpression>
+      </input>
+      <output id="Output_gradeAnyAgree_grade" name="grade" typeRef="string" />
+      <rule id="Rule_gradeAnyAgree_1">
+        <inputEntry id="InputEntry_gradeAnyAgree_1"><text>&lt; 50</text></inputEntry>
+        <outputEntry id="OutputEntry_gradeAnyAgree_1_1"><text>"fail"</text></outputEntry>
+      </rule>
+      <rule id="Rule_gradeAnyAgree_2">
+        <inputEntry id="InputEntry_gradeAnyAgree_2"><text>[40..70]</text></inputEntry>
+        <outputEntry id="OutputEntry_gradeAnyAgree_2_1"><text>"ok"</text></outputEntry>
+      </rule>
+      <rule id="Rule_gradeAnyAgree_3">
+        <inputEntry id="InputEntry_gradeAnyAgree_3"><text>&gt; 60</text></inputEntry>
+        <outputEntry id="OutputEntry_gradeAnyAgree_3_1"><text>"ok"</text></outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <decision id="gradeAnyConflict" name="Grade, any with conflicting outputs">
+    <decisionTable id="DecisionTable_gradeAnyConflict" hitPolicy="ANY">
+      <input id="Input_gradeAnyConflict" label="Score">
+        <inputExpression id="InputExpression_gradeAnyConflict" typeRef="integer"><text>score</text></inputExpression>
+      </input>
+      <output id="Output_gradeAnyConflict_grade" name="grade" typeRef="string" />
+      <rule id="Rule_gradeAnyConflict_1">
+        <inputEntry id="InputEntry_gradeAnyConflict_1"><text>&lt; 50</text></inputEntry>
+        <outputEntry id="OutputEntry_gradeAnyConflict_1_1"><text>"low"</text></outputEntry>
+      </rule>
+      <rule id="Rule_gradeAnyConflict_2">
+        <inputEntry id="InputEntry_gradeAnyConflict_2"><text>[40..70]</text></inputEntry>
+        <outputEntry id="OutputEntry_gradeAnyConflict_2_1"><text>"mid"</text></outputEntry>
+      </rule>
+      <rule id="Rule_gradeAnyConflict_3">
+        <inputEntry id="InputEntry_gradeAnyConflict_3"><text>&gt; 60</text></inputEntry>
+        <outputEntry id="OutputEntry_gradeAnyConflict_3_1"><text>"high"</text></outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <decision id="gradeCollect" name="Grade, collect">
+    <decisionTable id="DecisionTable_gradeCollect" hitPolicy="COLLECT">
+      <input id="Input_gradeCollect" label="Score">
+        <inputExpression id="InputExpression_gradeCollect" typeRef="integer"><text>score</text></inputExpression>
+      </input>
+      <output id="Output_gradeCollect_grade" name="grade" typeRef="string" />
+      <rule id="Rule_gradeCollect_1">
+        <inputEntry id="InputEntry_gradeCollect_1"><text>&lt; 50</text></inputEntry>
+        <outputEntry id="OutputEntry_gradeCollect_1_1"><text>"low"</text></outputEntry>
+      </rule>
+      <rule id="Rule_gradeCollect_2">
+        <inputEntry id="InputEntry_gradeCollect_2"><text>[40..70]</text></inputEntry>
+        <outputEntry id="OutputEntry_gradeCollect_2_1"><text>"mid"</text></outputEntry>
+      </rule>
+      <rule id="Rule_gradeCollect_3">
+        <inputEntry id="InputEntry_gradeCollect_3"><text>&gt; 60</text></inputEntry>
+        <outputEntry id="OutputEntry_gradeCollect_3_1"><text>"high"</text></outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <decision id="gradeRuleOrder" name="Grade, rule order">
+    <decisionTable id="DecisionTable_gradeRuleOrder" hitPolicy="RULE ORDER">
+      <input id="Input_gradeRuleOrder" label="Score">
+        <inputExpression id="InputExpression_gradeRuleOrder" typeRef="integer"><text>score</text></inputExpression>
+      </input>
+      <output id="Output_gradeRuleOrder_grade" name="grade" typeRef="string" />
+      <rule id="Rule_gradeRuleOrder_1">
+        <inputEntry id="InputEntry_gradeRuleOrder_1"><text>&lt; 50</text></inputEntry>
+        <outputEntry id="OutputEntry_gradeRuleOrder_1_1"><text>"low"</text></outputEntry>
+      </rule>
+      <rule id="Rule_gradeRuleOrder_2">
+        <inputEntry id="InputEntry_gradeRuleOrder_2"><text>[40..70]</text></inputEntry>
+        <outputEntry id="OutputEntry_gradeRuleOrder_2_1"><text>"mid"</text></outputEntry>
+      </rule>
+      <rule id="Rule_gradeRuleOrder_3">
+        <inputEntry id="InputEntry_gradeRuleOrder_3"><text>&gt; 60</text></inputEntry>
+        <outputEntry id="OutputEntry_gradeRuleOrder_3_1"><text>"high"</text></outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <decision id="gradeBadOutput" name="Grade with an output of the wrong type">
+    <decisionTable id="DecisionTable_gradeBadOutput" hitPolicy="UNIQUE">
+      <input id="Input_gradeBadOutput" label="Score">
+        <inputExpression id="InputExpression_gradeBadOutput" typeRef="integer"><text>score</text></inputExpression>
+      </input>
+      <output id="Output_gradeBadOutput_grade" name="grade" typeRef="integer" />
+      <rule id="Rule_gradeBadOutput_1">
+        <inputEntry id="InputEntry_gradeBadOutput_1"><text>&lt; 50</text></inputEntry>
+        <outputEntry id="OutputEntry_gradeBadOutput_1_1"><text>1</text></outputEntry>
+      </rule>
+      <rule id="Rule_gradeBadOutput_2">
+        <inputEntry id="InputEntry_gradeBadOutput_2"><text>[50..70]</text></inputEntry>
+        <outputEntry id="OutputEntry_gradeBadOutput_2_1"><text>"many"</text></outputEntry>
+      </rule>
+      <rule id="Rule_gradeBadOutput_3">
+        <inputEntry id="InputEntry_gradeBadOutput_3"><text>&gt; 70</text></inputEntry>
+        <outputEntry id="OutputEntry_gradeBadOutput_3_1"><text>3</text></outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <decision id="fee" name="Fee by channel">
+    <decisionTable id="DecisionTable_fee" hitPolicy="UNIQUE">
+      <input id="Input_fee" label="Channel">
+        <inputExpression id="InputExpression_fee" typeRef="string"><text>channel</text></inputExpression>
+      </input>
+      <output id="Output_fee_fee" name="fee" typeRef="integer" />
+      <rule id="Rule_fee_1">
+        <inputEntry id="InputEntry_fee_1"><text>"branch"</text></inputEntry>
+        <outputEntry id="OutputEntry_fee_1_1"><text>0</text></outputEntry>
+      </rule>
+      <rule id="Rule_fee_2">
+        <inputEntry id="InputEntry_fee_2"><text>"web","app"</text></inputEntry>
+        <outputEntry id="OutputEntry_fee_2_1"><text>1</text></outputEntry>
+      </rule>
+      <rule id="Rule_fee_3">
+        <inputEntry id="InputEntry_fee_3"><text>not("branch","web","app")</text></inputEntry>
+        <outputEntry id="OutputEntry_fee_3_1"><text>5</text></outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+</definitions>

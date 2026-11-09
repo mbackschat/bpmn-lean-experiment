@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_ErrorScope" targetNamespace="urn:bpmn-lean:automation-error-scope">
+  <error id="Error_CheckFailed" name="Check failed" errorCode="CHECK_FAILED" />
+  <error id="Error_ScreeningFailed" name="Screening failed" errorCode="SCREENING_FAILED" />
+  <process id="Process_ErrorScope" name="Screen an applicant, then decide" isExecutable="true">
+    <startEvent id="ApplicantReceived" name="Applicant received" />
+    <subProcess id="Screening" name="Screening">
+      <startEvent id="ScreeningOpened" />
+      <serviceTask id="Check" name="Check applicant"
+                   implementation="urn:bpmn-lean:effect:probe-v1"
+                   camunda:delegateExpression="${bpmnLeanEffectHandler}" camunda:asyncBefore="true">
+        <extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="subject">${applicant}</camunda:inputParameter>
+            <camunda:outputParameter name="screened">${result}</camunda:outputParameter>
+          </camunda:inputOutput>
+        </extensionElements>
+      </serviceTask>
+      <boundaryEvent id="CheckRefused" name="Check refused" attachedToRef="Check">
+        <errorEventDefinition id="CatchCheckFailed" errorRef="Error_CheckFailed" />
+      </boundaryEvent>
+      <userTask id="Recheck" name="Recheck applicant" />
+      <endEvent id="ScreeningClosed" />
+      <endEvent id="RecheckClosed" />
+      <sequenceFlow id="Flow_ScreeningOpened" sourceRef="ScreeningOpened" targetRef="Check" />
+      <sequenceFlow id="Flow_Checked" sourceRef="Check" targetRef="ScreeningClosed" />
+      <sequenceFlow id="Flow_CheckRefused" sourceRef="CheckRefused" targetRef="Recheck" />
+      <sequenceFlow id="Flow_Rechecked" sourceRef="Recheck" targetRef="RecheckClosed" />
+    </subProcess>
+    <boundaryEvent id="ScreeningRefused" name="Screening refused" attachedToRef="Screening">
+      <errorEventDefinition id="CatchScreeningFailed" errorRef="Error_ScreeningFailed" />
+    </boundaryEvent>
+    <userTask id="ManualScreening" name="Screen manually" />
+    <serviceTask id="Decide" name="Decide on applicant"
+                 implementation="urn:bpmn-lean:effect:probe-v1"
+                 camunda:delegateExpression="${bpmnLeanEffectHandler}" camunda:asyncBefore="true">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="subject">${applicant}</camunda:inputParameter>
+          <camunda:outputParameter name="decision">${result}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </serviceTask>
+    <endEvent id="ApplicantDecided" name="Applicant decided" />
+    <endEvent id="ApplicantScreenedManually" name="Applicant screened manually" />
+    <sequenceFlow id="Flow_Received" sourceRef="ApplicantReceived" targetRef="Screening" />
+    <sequenceFlow id="Flow_Screened" sourceRef="Screening" targetRef="Decide" />
+    <sequenceFlow id="Flow_Decided" sourceRef="Decide" targetRef="ApplicantDecided" />
+    <sequenceFlow id="Flow_ScreeningRefused" sourceRef="ScreeningRefused" targetRef="ManualScreening" />
+    <sequenceFlow id="Flow_ManuallyScreened" sourceRef="ManualScreening" targetRef="ApplicantScreenedManually" />
+  </process>
+</definitions>

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_ItemHandlers" targetNamespace="urn:bpmn-lean:handlers-items">
+  <process id="Process_ItemHandlers" name="Fetch every item in turn" isExecutable="true">
+    <startEvent id="ItemsReceived" name="Items received" />
+    <subProcess id="Batch" name="Batch">
+      <multiInstanceLoopCharacteristics isSequential="true">
+        <loopCardinality xsi:type="tFormalExpression">2</loopCardinality>
+      </multiInstanceLoopCharacteristics>
+      <startEvent id="BatchOpened" />
+      <serviceTask id="Fetch" name="Fetch item"
+                   implementation="urn:bpmn-lean:effect:probe-v1"
+                   camunda:delegateExpression="${bpmnLeanEffectHandler}" camunda:asyncBefore="true">
+        <extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="sku">${loopCounter}</camunda:inputParameter>
+            <camunda:outputParameter name="fetched">${result}</camunda:outputParameter>
+          </camunda:inputOutput>
+        </extensionElements>
+      </serviceTask>
+      <endEvent id="BatchClosed" />
+      <sequenceFlow id="Flow_BatchOpened" sourceRef="BatchOpened" targetRef="Fetch" />
+      <sequenceFlow id="Flow_Fetched" sourceRef="Fetch" targetRef="BatchClosed" />
+    </subProcess>
+    <endEvent id="ItemsFetched" name="Items fetched" />
+    <sequenceFlow id="Flow_Received" sourceRef="ItemsReceived" targetRef="Batch" />
+    <sequenceFlow id="Flow_Batched" sourceRef="Batch" targetRef="ItemsFetched" />
+  </process>
+</definitions>

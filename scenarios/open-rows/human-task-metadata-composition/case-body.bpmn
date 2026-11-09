@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_CaseBody" targetNamespace="urn:bpmn-lean:metadata-case-body">
+  <process id="Process_CaseBody" name="Assess every item at once" isExecutable="true">
+    <startEvent id="ItemsReceived" name="Items received" />
+    <userTask id="AssessItem" name="Assess item"
+              camunda:assignee="erin" camunda:candidateGroups="assessors" camunda:formKey="embedded:app:forms/item.html"
+              camunda:priority="30">
+      <extensionElements>
+        <camunda:formData>
+          <camunda:formField id="grade" type="string" />
+        </camunda:formData>
+      </extensionElements>
+      <multiInstanceLoopCharacteristics isSequential="false">
+        <loopCardinality xsi:type="tFormalExpression">2</loopCardinality>
+      </multiInstanceLoopCharacteristics>
+    </userTask>
+    <endEvent id="ItemsAssessed" name="Items assessed" />
+    <sequenceFlow id="Flow_Received" sourceRef="ItemsReceived" targetRef="AssessItem" />
+    <sequenceFlow id="Flow_Assessed" sourceRef="AssessItem" targetRef="ItemsAssessed" />
+  </process>
+</definitions>

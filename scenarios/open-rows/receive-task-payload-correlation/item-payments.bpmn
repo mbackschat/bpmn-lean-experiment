@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             id="Definitions_ItemPayments" targetNamespace="urn:bpmn-lean:receive-item-payments">
+  <message id="Message_Payment" name="paymentReceived" />
+  <process id="Process_ItemPayments" name="Collect one payment per body at once" isExecutable="true">
+    <startEvent id="ItemsReceived" name="Items received" />
+    <receiveTask id="AwaitItemPayment" name="Await item payment" messageRef="Message_Payment">
+      <multiInstanceLoopCharacteristics isSequential="false">
+        <loopCardinality xsi:type="tFormalExpression">2</loopCardinality>
+      </multiInstanceLoopCharacteristics>
+    </receiveTask>
+    <endEvent id="ItemsPaid" name="Items paid" />
+    <sequenceFlow id="Flow_Received" sourceRef="ItemsReceived" targetRef="AwaitItemPayment" />
+    <sequenceFlow id="Flow_Paid" sourceRef="AwaitItemPayment" targetRef="ItemsPaid" />
+  </process>
+</definitions>

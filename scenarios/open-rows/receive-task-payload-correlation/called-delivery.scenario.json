@@ -1,0 +1,109 @@
+{
+  "kind": "scenario",
+  "id": "receive-task-payload-correlation-called-delivery",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "receive-called-payment",
+    "relativePath": "scenarios/open-rows/receive-task-payload-correlation/called-payment.bpmn",
+    "sha256": "2502373cb33a4a4327090140729b0fd92a307baac1cf0bdf7e370c3d41f6107f",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start",
+      "instanceId": "Desk_1",
+      "variables": [
+        {
+          "name": "orderId",
+          "value": {
+            "kind": "string",
+            "value": "o-1"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "deliver",
+      "commandId": "deliver-caller-identity",
+      "occurrence": {
+        "processInstanceId": "Desk_1",
+        "elementId": "AwaitPayment",
+        "activation": 1
+      },
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "directMessage",
+          "messageId": "Message_Payment"
+        }
+      },
+      "correlation": [
+        {
+          "target": {
+            "kind": "processVariable",
+            "name": "orderId"
+          },
+          "expected": {
+            "kind": "string",
+            "value": "o-1"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "deliver",
+      "commandId": "deliver-called-payment",
+      "occurrence": {
+        "processInstanceId": "call:6:Desk_1:14:CollectPayment:1",
+        "elementId": "AwaitPayment",
+        "activation": 1
+      },
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "directMessage",
+          "messageId": "Message_Payment"
+        }
+      },
+      "correlation": [
+        {
+          "target": {
+            "kind": "processVariable",
+            "name": "orderId"
+          },
+          "expected": {
+            "kind": "string",
+            "value": "o-1"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "command",
+      "commandId": "wrap-up",
+      "occurrence": {
+        "processInstanceId": "Desk_1",
+        "elementId": "WrapUp",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.3",
+      "BPMN 2.0.2 Table 10.10",
+      "BPMN 2.0.2 §13.3.3"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ReceiveTaskActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/cmd/SignalCmd.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java"
+    ]
+  }
+}

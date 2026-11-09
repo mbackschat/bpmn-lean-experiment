@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             id="Definitions_MessageFlowOnly" targetNamespace="urn:bpmn-lean:send-message-flow-only">
+  <message id="Message_Notice" name="shippingNotice" />
+  <process id="Process_MessageFlowSend" name="A Send Task whose only transport is a Message Flow" isExecutable="true">
+    <startEvent id="OrderReceived" name="Order received" />
+    <sendTask id="SendNotice" name="Send shipping notice" messageRef="Message_Notice" />
+    <endEvent id="NoticeSent" name="Notice sent" />
+    <sequenceFlow id="Flow_Received" sourceRef="OrderReceived" targetRef="SendNotice" />
+    <sequenceFlow id="Flow_Sent" sourceRef="SendNotice" targetRef="NoticeSent" />
+  </process>
+  <collaboration id="Collaboration_Notice">
+    <participant id="Participant_Shop" name="Shop" processRef="Process_MessageFlowSend" />
+    <participant id="Participant_Customer" name="Customer" />
+    <messageFlow id="MessageFlow_Notice" sourceRef="SendNotice" targetRef="Participant_Customer" messageRef="Message_Notice" />
+  </collaboration>
+</definitions>

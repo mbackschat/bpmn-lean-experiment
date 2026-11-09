@@ -1,0 +1,119 @@
+{
+  "kind": "scenario",
+  "id": "addressless-receive-compositions-scan-repeated-and-embedded",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "addressless-scan-handover",
+    "relativePath": "scenarios/open-rows/addressless-receive-compositions/scan-handover.bpmn",
+    "sha256": "d2c0d5e25f2eda2de5765215167401370425e24fc1572be8a780dfe4735319f5",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start",
+      "instanceId": "Parcel_1",
+      "variables": []
+    },
+    {
+      "kind": "deliver",
+      "commandId": "scan-1",
+      "occurrence": {
+        "processInstanceId": "Parcel_1",
+        "elementId": "AwaitScan",
+        "activation": 1
+      },
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "unspecifiedMessage"
+        }
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "check-1",
+      "occurrence": {
+        "processInstanceId": "Parcel_1",
+        "elementId": "CheckScan",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "again",
+            "value": {
+              "kind": "string",
+              "value": "yes"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "deliver",
+      "commandId": "scan-2",
+      "occurrence": {
+        "processInstanceId": "Parcel_1",
+        "elementId": "AwaitScan",
+        "activation": 2
+      },
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "unspecifiedMessage"
+        }
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "check-2",
+      "occurrence": {
+        "processInstanceId": "Parcel_1",
+        "elementId": "CheckScan",
+        "activation": 2
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "again",
+            "value": {
+              "kind": "string",
+              "value": "no"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "deliver",
+      "commandId": "sign",
+      "occurrence": {
+        "processInstanceId": "Parcel_1",
+        "elementId": "AwaitSignature",
+        "activation": 1
+      },
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "unspecifiedMessage"
+        }
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.3",
+      "BPMN 2.0.2 Table 10.10",
+      "BPMN 2.0.2 §13.3.3"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ReceiveTaskActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/cmd/SignalCmd.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/MultiInstanceActivityBehavior.java"
+    ]
+  }
+}

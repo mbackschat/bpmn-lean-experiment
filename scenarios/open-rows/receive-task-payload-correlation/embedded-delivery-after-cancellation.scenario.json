@@ -1,0 +1,91 @@
+{
+  "kind": "scenario",
+  "id": "receive-task-payload-correlation-embedded-delivery-after-cancellation",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "receive-embedded-payment",
+    "relativePath": "scenarios/open-rows/receive-task-payload-correlation/embedded-payment.bpmn",
+    "sha256": "ff543341d0faf34cdd0259e79e4541d1ddaa4349280bb3db32d16bcdc53b198d",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start",
+      "instanceId": "Order_1",
+      "variables": [
+        {
+          "name": "orderId",
+          "value": {
+            "kind": "string",
+            "value": "o-1"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "timerFire",
+      "commandId": "fire-payment-timeout",
+      "occurrence": {
+        "processInstanceId": "Order_1",
+        "elementId": "PaymentTimeout",
+        "activation": 1
+      },
+      "logicalTimeMs": 3600000
+    },
+    {
+      "kind": "deliver",
+      "commandId": "deliver-after-cancellation",
+      "occurrence": {
+        "processInstanceId": "Order_1",
+        "elementId": "AwaitPayment",
+        "activation": 1
+      },
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "directMessage",
+          "messageId": "Message_Payment"
+        }
+      },
+      "correlation": [
+        {
+          "target": {
+            "kind": "processVariable",
+            "name": "orderId"
+          },
+          "expected": {
+            "kind": "string",
+            "value": "o-1"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "command",
+      "commandId": "escalate",
+      "occurrence": {
+        "processInstanceId": "Order_1",
+        "elementId": "Escalate",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.3",
+      "BPMN 2.0.2 Table 10.10",
+      "BPMN 2.0.2 §13.3.3"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ReceiveTaskActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/cmd/SignalCmd.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java"
+    ]
+  }
+}

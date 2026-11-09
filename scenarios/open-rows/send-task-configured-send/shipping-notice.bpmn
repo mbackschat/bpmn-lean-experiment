@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_ShippingNotice" targetNamespace="urn:bpmn-lean:send-shipping-notice">
+  <error id="Error_SendRejected" name="Send rejected" errorCode="SEND_REJECTED" />
+  <process id="Process_ShippingNotice" name="Pack an order and send its shipping notice" isExecutable="true">
+    <startEvent id="OrderReceived" name="Order received" />
+    <userTask id="Pack" name="Pack order">
+      <extensionElements>
+        <camunda:formData>
+          <camunda:formField id="notice" type="string" />
+        </camunda:formData>
+      </extensionElements>
+    </userTask>
+    <sendTask id="SendNotice" name="Send shipping notice"
+              implementation="urn:bpmn-lean:effect:probe-v1"
+              camunda:delegateExpression="${bpmnLeanEffectHandler}" camunda:asyncBefore="true">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="recipient">${customerEmail}</camunda:inputParameter>
+          <camunda:inputParameter name="correlationId">${order}</camunda:inputParameter>
+          <camunda:inputParameter name="copies">${copies}</camunda:inputParameter>
+          <camunda:inputParameter name="urgent">${urgent}</camunda:inputParameter>
+          <camunda:inputParameter name="channel">email</camunda:inputParameter>
+          <camunda:inputParameter name="body">${notice}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </sendTask>
+    <boundaryEvent id="NoticeRefused" name="Notice refused" attachedToRef="SendNotice">
+      <errorEventDefinition id="CatchSendRejected" errorRef="Error_SendRejected" />
+    </boundaryEvent>
+    <userTask id="ReviewFailure" name="Review failed notice" />
+    <endEvent id="NoticeSent" name="Notice sent" />
+    <endEvent id="NoticeFailed" name="Notice failed" />
+    <sequenceFlow id="Flow_Received" sourceRef="OrderReceived" targetRef="Pack" />
+    <sequenceFlow id="Flow_Packed" sourceRef="Pack" targetRef="SendNotice" />
+    <sequenceFlow id="Flow_Sent" sourceRef="SendNotice" targetRef="NoticeSent" />
+    <sequenceFlow id="Flow_Refused" sourceRef="NoticeRefused" targetRef="ReviewFailure" />
+    <sequenceFlow id="Flow_Reviewed" sourceRef="ReviewFailure" targetRef="NoticeFailed" />
+  </process>
+</definitions>

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_CaseTriage" targetNamespace="urn:bpmn-lean:metadata-case-triage">
+  <process id="Process_CaseTriage" name="Triage a case with rework and a scoped intake" isExecutable="true">
+    <startEvent id="CaseReceived" name="Case received" />
+    <exclusiveGateway id="TriageRequested" name="Triage requested" gatewayDirection="Converging" />
+    <userTask id="Triage" name="Triage case"
+              camunda:assignee="alice" camunda:candidateUsers="bob, carol" camunda:candidateGroups="triagers,leads"
+              camunda:formKey="embedded:app:forms/triage.html"
+              camunda:dueDate="2026-12-31T00:00:00Z" camunda:followUpDate="2026-12-24T00:00:00Z" camunda:priority="70">
+      <extensionElements>
+        <camunda:formData>
+          <camunda:formField id="route" type="string" />
+          <camunda:formField id="urgent" type="boolean" />
+        </camunda:formData>
+      </extensionElements>
+    </userTask>
+    <exclusiveGateway id="TriageOutcome" name="Triage outcome" gatewayDirection="Diverging" default="Flow_Proceed" />
+    <subProcess id="Intake" name="Intake">
+      <startEvent id="IntakeOpened" />
+      <userTask id="Collect" name="Collect notes" camunda:candidateGroups="clerks" camunda:priority="10">
+        <extensionElements>
+          <camunda:formData>
+            <camunda:formField id="notes" type="string" />
+          </camunda:formData>
+        </extensionElements>
+      </userTask>
+      <endEvent id="IntakeClosed" />
+      <sequenceFlow id="Flow_IntakeOpened" sourceRef="IntakeOpened" targetRef="Collect" />
+      <sequenceFlow id="Flow_Collected" sourceRef="Collect" targetRef="IntakeClosed" />
+    </subProcess>
+    <userTask id="Confirm" name="Confirm case" />
+    <endEvent id="CaseClosed" name="Case closed" />
+    <sequenceFlow id="Flow_Received" sourceRef="CaseReceived" targetRef="TriageRequested" />
+    <sequenceFlow id="Flow_EnterTriage" sourceRef="TriageRequested" targetRef="Triage" />
+    <sequenceFlow id="Flow_Triaged" sourceRef="Triage" targetRef="TriageOutcome" />
+    <sequenceFlow id="Flow_Rework" sourceRef="TriageOutcome" targetRef="TriageRequested">
+      <conditionExpression xsi:type="tFormalExpression">${route == 'rework'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Proceed" sourceRef="TriageOutcome" targetRef="Intake" />
+    <sequenceFlow id="Flow_IntakeDone" sourceRef="Intake" targetRef="Confirm" />
+    <sequenceFlow id="Flow_Confirmed" sourceRef="Confirm" targetRef="CaseClosed" />
+  </process>
+</definitions>

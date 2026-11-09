@@ -1,0 +1,71 @@
+{
+  "kind": "scenario",
+  "id": "automation-incident-composition-called-incident-cancel",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "incident-called",
+    "relativePath": "scenarios/open-rows/automation-incident-composition/called-incident.bpmn",
+    "sha256": "0225471a020ed04845ecaa4f50ee295667f112bd181fc98a9176d9570bd2abe2",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start",
+      "instanceId": "Desk_1",
+      "variables": [
+        {
+          "name": "orderId",
+          "value": {
+            "kind": "string",
+            "value": "O-7"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "fail-dispatch",
+      "occurrence": {
+        "processInstanceId": "call:6:Desk_1:11:FulfilOrder:1",
+        "elementId": "Dispatch",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "technicalFailure"
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "cancel-process",
+      "occurrence": {
+        "processInstanceId": "call:6:Desk_1:11:FulfilOrder:1",
+        "elementId": "Dispatch",
+        "activation": 1
+      },
+      "action": {
+        "kind": "cancelIncidentProcess",
+        "generation": 1
+      }
+    }
+  ],
+  "options": {
+    "incidents": {
+      "cancellable": true
+    }
+  },
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.3.1",
+      "BPMN 2.0.2 Table 10.8",
+      "BPMN 2.0.2 §13.3.3"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/cmd/DefaultJobRetryCmd.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/cmd/SetJobRetriesCmd.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/persistence/entity/IncidentEntity.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ServiceTaskDelegateExpressionActivityBehavior.java"
+    ]
+  }
+}

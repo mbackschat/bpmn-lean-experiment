@@ -1,0 +1,67 @@
+{
+  "kind": "scenario",
+  "id": "script-task-javascript-probe-randomness",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "script-probes",
+    "relativePath": "scenarios/open-rows/script-task-javascript/script-probes.bpmn",
+    "sha256": "842cf1f9bdb60ab6026b4f02a6ac231249285a51af88186d81b2bdfee85d4d33",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start",
+      "instanceId": "Order_1",
+      "variables": [
+        {
+          "name": "firstName",
+          "value": {
+            "kind": "string",
+            "value": "ada"
+          }
+        },
+        {
+          "name": "lastName",
+          "value": {
+            "kind": "string",
+            "value": "lovelace"
+          }
+        },
+        {
+          "name": "price",
+          "value": {
+            "kind": "string",
+            "value": "6"
+          }
+        },
+        {
+          "name": "probe",
+          "value": {
+            "kind": "string",
+            "value": "random"
+          }
+        },
+        {
+          "name": "quantity",
+          "value": {
+            "kind": "string",
+            "value": "7"
+          }
+        }
+      ]
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.3",
+      "BPMN 2.0.2 §13.3.3"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ScriptTaskActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/scripting/engine/ScriptBindings.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java"
+    ]
+  }
+}

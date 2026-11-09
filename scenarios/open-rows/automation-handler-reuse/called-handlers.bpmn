@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_CalledHandlers" targetNamespace="urn:bpmn-lean:handlers-called">
+  <process id="Process_OrderDesk" name="Hand an order to a reusable fulfilment" isExecutable="true">
+    <startEvent id="OrderPlaced" name="Order placed" />
+    <callActivity id="FulfilOrder" name="Fulfil order" calledElement="Process_Fulfilment">
+      <extensionElements>
+        <camunda:in source="orderId" target="orderId" />
+        <camunda:out source="shipment" target="shipmentRef" />
+      </extensionElements>
+    </callActivity>
+    <endEvent id="OrderClosed" name="Order closed" />
+    <sequenceFlow id="Flow_Placed" sourceRef="OrderPlaced" targetRef="FulfilOrder" />
+    <sequenceFlow id="Flow_Fulfilled" sourceRef="FulfilOrder" targetRef="OrderClosed" />
+  </process>
+  <process id="Process_Fulfilment" name="Fulfil an order" isExecutable="true">
+    <startEvent id="FulfilmentStarted" name="Fulfilment started" />
+    <serviceTask id="Dispatch" name="Dispatch order"
+                 implementation="urn:bpmn-lean:effect:probe-v1"
+                 camunda:delegateExpression="${bpmnLeanEffectHandler}" camunda:asyncBefore="true">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="sku">${orderId}</camunda:inputParameter>
+          <camunda:outputParameter name="shipment">${result}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </serviceTask>
+    <endEvent id="FulfilmentCompleted" name="Fulfilment completed" />
+    <sequenceFlow id="Flow_FulfilmentStarted" sourceRef="FulfilmentStarted" targetRef="Dispatch" />
+    <sequenceFlow id="Flow_Dispatched" sourceRef="Dispatch" targetRef="FulfilmentCompleted" />
+  </process>
+</definitions>

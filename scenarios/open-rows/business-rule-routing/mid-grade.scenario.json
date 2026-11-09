@@ -1,0 +1,46 @@
+{
+  "kind": "scenario",
+  "id": "business-rule-routing-mid-grade",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "business-rule-routing-process",
+    "relativePath": "scenarios/open-rows/business-rule-routing/rule-routing.bpmn",
+    "sha256": "1c0189eb6ec4f84dca6120ad8eb693083f5a60692951e542c29dfd44903899af",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start",
+      "instanceId": "Applicant_1",
+      "variables": [
+        {
+          "name": "applicant",
+          "value": {
+            "kind": "string",
+            "value": "ada@example.org"
+          }
+        },
+        {
+          "name": "score",
+          "value": {
+            "kind": "string",
+            "value": "50"
+          }
+        }
+      ]
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.3"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/DmnBusinessRuleTaskActivityBehavior.java",
+      "engine-dmn/engine/src/main/java/org/cibseven/bpm/dmn/engine/impl/hitpolicy/UniqueHitPolicyHandler.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/variable/mapping/IoMapping.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ServiceTaskDelegateExpressionActivityBehavior.java"
+    ]
+  }
+}

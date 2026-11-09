@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_OrderHandlers" targetNamespace="urn:bpmn-lean:handlers-order">
+  <process id="Process_OrderHandlers" name="Price, label and seal an order with two independent handlers" isExecutable="true">
+    <startEvent id="OrderReceived" name="Order received" />
+    <serviceTask id="Price" name="Price order"
+                 implementation="urn:bpmn-lean:effect:probe-v1"
+                 camunda:delegateExpression="${bpmnLeanEffectHandler}" camunda:asyncBefore="true">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="sku">${orderId}</camunda:inputParameter>
+          <camunda:inputParameter name="qty">${quantity}</camunda:inputParameter>
+          <camunda:inputParameter name="rush">${express}</camunda:inputParameter>
+          <camunda:inputParameter name="memo">${note}</camunda:inputParameter>
+          <camunda:outputParameter name="total">${result}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </serviceTask>
+    <subProcess id="Pack" name="Pack">
+      <startEvent id="PackOpened" />
+      <serviceTask id="Label" name="Label parcel"
+                   implementation="urn:bpmn-lean:effect:probe-v1"
+                   camunda:delegateExpression="${bpmnLeanEffectHandler}" camunda:asyncBefore="true">
+        <extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="label">${orderId}</camunda:inputParameter>
+            <camunda:outputParameter name="packed">${result}</camunda:outputParameter>
+          </camunda:inputOutput>
+        </extensionElements>
+      </serviceTask>
+      <serviceTask id="Seal" name="Seal parcel" camunda:delegateExpression="${mappedSuccessHandler}">
+        <extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="stamp">${orderId}</camunda:inputParameter>
+            <camunda:outputParameter name="sealed">${result}</camunda:outputParameter>
+          </camunda:inputOutput>
+        </extensionElements>
+      </serviceTask>
+      <endEvent id="PackClosed" />
+      <sequenceFlow id="Flow_PackOpened" sourceRef="PackOpened" targetRef="Label" />
+      <sequenceFlow id="Flow_Labelled" sourceRef="Label" targetRef="Seal" />
+      <sequenceFlow id="Flow_Sealed" sourceRef="Seal" targetRef="PackClosed" />
+    </subProcess>
+    <endEvent id="OrderShipped" name="Order shipped" />
+    <sequenceFlow id="Flow_Received" sourceRef="OrderReceived" targetRef="Price" />
+    <sequenceFlow id="Flow_Priced" sourceRef="Price" targetRef="Pack" />
+    <sequenceFlow id="Flow_Packed" sourceRef="Pack" targetRef="OrderShipped" />
+  </process>
+</definitions>

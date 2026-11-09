@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             id="Definitions_ItemHandoverParallel" targetNamespace="urn:bpmn-lean:addressless-item-handover-parallel">
+  <process id="Process_ItemHandoverParallel" name="Wait for one scan per item, at once" isExecutable="true">
+    <startEvent id="ItemsArrived" name="Items arrived" />
+    <receiveTask id="AwaitItemScan" name="Await item scan">
+      <multiInstanceLoopCharacteristics isSequential="false">
+        <loopCardinality xsi:type="tFormalExpression">2</loopCardinality>
+      </multiInstanceLoopCharacteristics>
+    </receiveTask>
+    <endEvent id="ItemsScanned" name="Items scanned" />
+    <sequenceFlow id="Flow_Arrived" sourceRef="ItemsArrived" targetRef="AwaitItemScan" />
+    <sequenceFlow id="Flow_Scanned" sourceRef="AwaitItemScan" targetRef="ItemsScanned" />
+  </process>
+</definitions>

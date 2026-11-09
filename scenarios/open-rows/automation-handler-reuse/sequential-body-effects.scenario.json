@@ -1,0 +1,74 @@
+{
+  "kind": "scenario",
+  "id": "automation-handler-reuse-sequential-body-effects",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "handlers-items",
+    "relativePath": "scenarios/open-rows/automation-handler-reuse/item-handlers.bpmn",
+    "sha256": "19e8112395dbccf4cc13fc9f918d33856f83dda0b0fb00f521a9882b983712b0",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start",
+      "instanceId": "Items_1",
+      "variables": []
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "complete-fetch-1",
+      "occurrence": {
+        "processInstanceId": "Items_1",
+        "elementId": "Fetch",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": [
+          {
+            "name": "result",
+            "value": {
+              "kind": "string",
+              "value": "r-a"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "complete-fetch-2",
+      "occurrence": {
+        "processInstanceId": "Items_1",
+        "elementId": "Fetch",
+        "activation": 2
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": [
+          {
+            "name": "result",
+            "value": {
+              "kind": "string",
+              "value": "r-b"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.3.1",
+      "BPMN 2.0.2 Table 10.8",
+      "BPMN 2.0.2 §13.3.3"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ServiceTaskDelegateExpressionActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/variable/mapping/IoMapping.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java"
+    ]
+  }
+}

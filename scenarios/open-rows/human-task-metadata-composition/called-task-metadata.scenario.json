@@ -1,0 +1,72 @@
+{
+  "kind": "scenario",
+  "id": "human-task-metadata-composition-called-task-metadata",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "metadata-case-called",
+    "relativePath": "scenarios/open-rows/human-task-metadata-composition/case-called.bpmn",
+    "sha256": "90305ac85282ac1be1b6303c8bf62f94e47e0722c831834b647030f03d5a4370",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start",
+      "instanceId": "Handover_1",
+      "variables": [
+        {
+          "name": "claim",
+          "value": {
+            "kind": "string",
+            "value": "C-1"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "command",
+      "commandId": "verify-called",
+      "occurrence": {
+        "processInstanceId": "call:10:Handover_1:10:VerifyCase:1",
+        "elementId": "Verify",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "verified",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "wrap-up",
+      "occurrence": {
+        "processInstanceId": "Handover_1",
+        "elementId": "WrapUp",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.3",
+      "BPMN 2.0.2 §13.3.3"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/UserTaskActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/persistence/entity/TaskEntity.java"
+    ]
+  }
+}

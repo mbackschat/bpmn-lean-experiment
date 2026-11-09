@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_UnknownHandler" targetNamespace="urn:bpmn-lean:handlers-unknown">
+  <process id="Process_UnknownHandler" name="A Service Task whose handler no host registers" isExecutable="true">
+    <startEvent id="OrderReceived" name="Order received" />
+    <serviceTask id="Notify" name="Notify customer"
+                 implementation="urn:bpmn-lean:effect:probe-v1"
+                 camunda:delegateExpression="${noSuchHandler}" camunda:asyncBefore="true">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="to">${orderId}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </serviceTask>
+    <endEvent id="OrderClosed" name="Order closed" />
+    <sequenceFlow id="Flow_Received" sourceRef="OrderReceived" targetRef="Notify" />
+    <sequenceFlow id="Flow_Notified" sourceRef="Notify" targetRef="OrderClosed" />
+  </process>
+</definitions>
