@@ -1,0 +1,63 @@
+{
+  "kind": "scenario",
+  "id": "conditional-evaluation-unrelated-write-with-absent-variables",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "conditional-evaluation",
+    "relativePath": "scenarios/open-rows/conditional-evaluation/evaluation.bpmn",
+    "sha256": "cf3436d272f61c721c2c6b5bd2790ecc4899ff94c17b847eac570f8eefa487f9",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "note",
+          "value": {
+            "kind": "string",
+            "value": "n"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-set-other",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Host",
+        "activation": 1
+      },
+      "action": {
+        "kind": "setVariables",
+        "values": [
+          {
+            "name": "other",
+            "value": {
+              "kind": "integer",
+              "value": 1
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 Table 10.95"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/ConditionalEventDefinition.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/event/ConditionalEventHandler.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/el/UelExpressionCondition.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/persistence/entity/ExecutionEntity.java",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/event/conditional/BoundaryConditionalEventTest.java",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/event/conditional/ConditionalEventWithSpecificVariableEventTest.java"
+    ]
+  }
+}

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_ParallelBodyTimers"
+  targetNamespace="urn:bpmn-lean:scenarios:timer-lifetimes:parallel">
+  <bpmn:process id="Process_ParallelBodyTimers" name="Inspect lots (parallel)" isExecutable="true">
+    <bpmn:startEvent id="Start_Bodies" />
+    <bpmn:subProcess id="SubProcess_Bodies" name="Inspect every lot">
+      <bpmn:multiInstanceLoopCharacteristics isSequential="false" camunda:collection="items" camunda:elementVariable="item" />
+      <bpmn:startEvent id="Start_Body" />
+      <bpmn:userTask id="Inspect" name="Inspect one lot" />
+      <bpmn:endEvent id="End_Body" />
+      <bpmn:sequenceFlow id="Flow_Start_Body_Inspect" sourceRef="Start_Body" targetRef="Inspect" />
+      <bpmn:sequenceFlow id="Flow_Inspect_End_Body" sourceRef="Inspect" targetRef="End_Body" />
+      <bpmn:boundaryEvent id="Body_Deadline" attachedToRef="Inspect">
+        <bpmn:timerEventDefinition>
+          <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT5S</bpmn:timeDuration>
+        </bpmn:timerEventDefinition>
+      </bpmn:boundaryEvent>
+      <bpmn:userTask id="Body_Late" name="Handle the late lot" />
+      <bpmn:endEvent id="End_Body_Late" />
+      <bpmn:sequenceFlow id="Flow_Body_Deadline_Body_Late" sourceRef="Body_Deadline" targetRef="Body_Late" />
+      <bpmn:sequenceFlow id="Flow_Body_Late_End_Body_Late" sourceRef="Body_Late" targetRef="End_Body_Late" />
+      <bpmn:subProcess id="ESP_Body" triggeredByEvent="true">
+        <bpmn:startEvent id="Start_Body_Note" isInterrupting="false">
+          <bpmn:timerEventDefinition>
+            <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT3S</bpmn:timeDuration>
+          </bpmn:timerEventDefinition>
+        </bpmn:startEvent>
+        <bpmn:userTask id="Body_Note" name="Note the slow lot" />
+        <bpmn:endEvent id="End_Body_Note" />
+        <bpmn:sequenceFlow id="Flow_Start_Body_Note_Body_Note" sourceRef="Start_Body_Note" targetRef="Body_Note" />
+        <bpmn:sequenceFlow id="Flow_Body_Note_End_Body_Note" sourceRef="Body_Note" targetRef="End_Body_Note" />
+      </bpmn:subProcess>
+    </bpmn:subProcess>
+    <bpmn:boundaryEvent id="Outer_Deadline" attachedToRef="SubProcess_Bodies">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT50S</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Outer_Late" name="Handle the abandoned inspection" />
+    <bpmn:endEvent id="End_Outer_Late" />
+    <bpmn:userTask id="Publish" name="Publish the inspection" />
+    <bpmn:endEvent id="End_Bodies" />
+    <bpmn:sequenceFlow id="Flow_Start_Bodies_SubProcess_Bodies" sourceRef="Start_Bodies" targetRef="SubProcess_Bodies" />
+    <bpmn:sequenceFlow id="Flow_SubProcess_Bodies_Publish" sourceRef="SubProcess_Bodies" targetRef="Publish" />
+    <bpmn:sequenceFlow id="Flow_Publish_End_Bodies" sourceRef="Publish" targetRef="End_Bodies" />
+    <bpmn:sequenceFlow id="Flow_Outer_Deadline_Outer_Late" sourceRef="Outer_Deadline" targetRef="Outer_Late" />
+    <bpmn:sequenceFlow id="Flow_Outer_Late_End_Outer_Late" sourceRef="Outer_Late" targetRef="End_Outer_Late" />
+  </bpmn:process>
+</bpmn:definitions>

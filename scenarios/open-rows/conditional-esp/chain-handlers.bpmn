@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_ChainHandlers"
+  targetNamespace="urn:bpmn-lean:scenarios:conditional-esp:chain">
+  <bpmn:process id="Process_ChainHandlers" name="File work with a self-triggering handler" isExecutable="true">
+    <bpmn:startEvent id="Start_Chain_Root" />
+    <bpmn:userTask id="Work" name="Prepare the file" />
+    <bpmn:userTask id="Finish" name="Release the file" />
+    <bpmn:endEvent id="End_Chain_Root" />
+    <bpmn:sequenceFlow id="Flow_Start_Chain_Root_Work" sourceRef="Start_Chain_Root" targetRef="Work" />
+    <bpmn:sequenceFlow id="Flow_Work_Finish" sourceRef="Work" targetRef="Finish" />
+    <bpmn:sequenceFlow id="Flow_Finish_End_Chain_Root" sourceRef="Finish" targetRef="End_Chain_Root" />
+    <bpmn:subProcess id="ESP_Chain" triggeredByEvent="true">
+      <bpmn:startEvent id="Start_Chain" isInterrupting="false">
+        <bpmn:conditionalEventDefinition id="CED_Chain" camunda:variableName="chain">
+          <bpmn:condition xsi:type="bpmn:tFormalExpression">${chain &gt; 0 &amp;&amp; chain &lt; 4}</bpmn:condition>
+        </bpmn:conditionalEventDefinition>
+      </bpmn:startEvent>
+      <bpmn:userTask id="Handle_Chain" name="Handle the chain step">
+        <bpmn:extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="step">${execution.setVariable('chain', chain + 1)}</camunda:inputParameter>
+          </camunda:inputOutput>
+        </bpmn:extensionElements>
+      </bpmn:userTask>
+      <bpmn:endEvent id="End_Chain" />
+      <bpmn:sequenceFlow id="Flow_Start_Chain_Handle_Chain" sourceRef="Start_Chain" targetRef="Handle_Chain" />
+      <bpmn:sequenceFlow id="Flow_Handle_Chain_End_Chain" sourceRef="Handle_Chain" targetRef="End_Chain" />
+    </bpmn:subProcess>
+  </bpmn:process>
+</bpmn:definitions>

@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_ConditionalHandlers"
+  targetNamespace="urn:bpmn-lean:scenarios:conditional-esp">
+  <bpmn:process id="Process_ConditionalHandlers" name="File work with Conditional handlers" isExecutable="true">
+    <bpmn:startEvent id="Start_Cond" />
+    <bpmn:parallelGateway id="Fork_Cond" gatewayDirection="Diverging" />
+    <bpmn:sequenceFlow id="Flow_Start_Cond_Fork_Cond" sourceRef="Start_Cond" targetRef="Fork_Cond" />
+    <bpmn:userTask id="Work" name="Prepare the file" />
+    <bpmn:userTask id="Finish" name="Release the file" />
+    <bpmn:endEvent id="End_Cond" />
+    <bpmn:sequenceFlow id="Flow_Fork_Cond_Work" sourceRef="Fork_Cond" targetRef="Work" />
+    <bpmn:sequenceFlow id="Flow_Work_Finish" sourceRef="Work" targetRef="Finish" />
+    <bpmn:sequenceFlow id="Flow_Finish_End_Cond" sourceRef="Finish" targetRef="End_Cond" />
+    <bpmn:subProcess id="Region" name="Inspect the lot">
+      <bpmn:startEvent id="Start_Inner" />
+      <bpmn:userTask id="Inner" name="Inspect the lot" />
+      <bpmn:endEvent id="End_Inner" />
+      <bpmn:sequenceFlow id="Flow_Start_Inner_Inner" sourceRef="Start_Inner" targetRef="Inner" />
+      <bpmn:sequenceFlow id="Flow_Inner_End_Inner" sourceRef="Inner" targetRef="End_Inner" />
+      <bpmn:subProcess id="ESP_RegionAlert" triggeredByEvent="true">
+        <bpmn:startEvent id="Start_RegionAlert" isInterrupting="false">
+          <bpmn:conditionalEventDefinition id="CED_RegionAlert" camunda:variableName="regionLevel">
+            <bpmn:condition xsi:type="bpmn:tFormalExpression">${regionLevel &gt; 5}</bpmn:condition>
+          </bpmn:conditionalEventDefinition>
+        </bpmn:startEvent>
+        <bpmn:userTask id="Handle_RegionAlert" name="Handle the region alert" />
+        <bpmn:endEvent id="End_RegionAlert" />
+        <bpmn:sequenceFlow id="Flow_Start_RegionAlert_Handle_RegionAlert" sourceRef="Start_RegionAlert" targetRef="Handle_RegionAlert" />
+        <bpmn:sequenceFlow id="Flow_Handle_RegionAlert_End_RegionAlert" sourceRef="Handle_RegionAlert" targetRef="End_RegionAlert" />
+      </bpmn:subProcess>
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_Region_Outer" />
+    <bpmn:sequenceFlow id="Flow_Fork_Cond_Region" sourceRef="Fork_Cond" targetRef="Region" />
+    <bpmn:sequenceFlow id="Flow_Region_End_Region_Outer" sourceRef="Region" targetRef="End_Region_Outer" />
+    <bpmn:subProcess id="ESP_Alert" triggeredByEvent="true">
+      <bpmn:startEvent id="Start_Alert" isInterrupting="false">
+        <bpmn:conditionalEventDefinition id="CED_Alert" camunda:variableName="level">
+          <bpmn:condition xsi:type="bpmn:tFormalExpression">${level &gt; 5}</bpmn:condition>
+        </bpmn:conditionalEventDefinition>
+      </bpmn:startEvent>
+      <bpmn:userTask id="Handle_Alert" name="Handle the alert" />
+      <bpmn:endEvent id="End_Alert" />
+      <bpmn:sequenceFlow id="Flow_Start_Alert_Handle_Alert" sourceRef="Start_Alert" targetRef="Handle_Alert" />
+      <bpmn:sequenceFlow id="Flow_Handle_Alert_End_Alert" sourceRef="Handle_Alert" targetRef="End_Alert" />
+    </bpmn:subProcess>
+    <bpmn:subProcess id="ESP_Stop" triggeredByEvent="true">
+      <bpmn:startEvent id="Start_Stop">
+        <bpmn:conditionalEventDefinition id="CED_Stop" camunda:variableName="stop">
+          <bpmn:condition xsi:type="bpmn:tFormalExpression">${stop == true}</bpmn:condition>
+        </bpmn:conditionalEventDefinition>
+      </bpmn:startEvent>
+      <bpmn:userTask id="Handle_Stop" name="Handle the stop" />
+      <bpmn:endEvent id="End_Stop" />
+      <bpmn:sequenceFlow id="Flow_Start_Stop_Handle_Stop" sourceRef="Start_Stop" targetRef="Handle_Stop" />
+      <bpmn:sequenceFlow id="Flow_Handle_Stop_End_Stop" sourceRef="Handle_Stop" targetRef="End_Stop" />
+    </bpmn:subProcess>
+    <bpmn:subProcess id="ESP_Cycle" triggeredByEvent="true">
+      <bpmn:startEvent id="Start_Cycle" isInterrupting="false">
+        <bpmn:conditionalEventDefinition id="CED_Cycle" camunda:variableName="cycle">
+          <bpmn:condition xsi:type="bpmn:tFormalExpression">${cycle &gt; 0 &amp;&amp; cycle &lt; 3}</bpmn:condition>
+        </bpmn:conditionalEventDefinition>
+      </bpmn:startEvent>
+      <bpmn:serviceTask id="Write_Cycle" name="Write the next cycle value" implementation="urn:bpmn-lean:effect:probe-v1" camunda:delegateExpression="${bpmnLeanEffectHandler}" camunda:asyncBefore="true">
+        <bpmn:extensionElements>
+          <camunda:inputOutput>
+            <camunda:outputParameter name="cycle">${cycleNext}</camunda:outputParameter>
+          </camunda:inputOutput>
+        </bpmn:extensionElements>
+      </bpmn:serviceTask>
+      <bpmn:endEvent id="End_Cycle" />
+      <bpmn:sequenceFlow id="Flow_Start_Cycle_Write_Cycle" sourceRef="Start_Cycle" targetRef="Write_Cycle" />
+      <bpmn:sequenceFlow id="Flow_Write_Cycle_End_Cycle" sourceRef="Write_Cycle" targetRef="End_Cycle" />
+    </bpmn:subProcess>
+  </bpmn:process>
+</bpmn:definitions>

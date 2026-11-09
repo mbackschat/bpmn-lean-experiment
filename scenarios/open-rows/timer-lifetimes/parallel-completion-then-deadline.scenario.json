@@ -1,0 +1,146 @@
+{
+  "kind": "scenario",
+  "id": "timer-lifetimes-parallel-completion-then-deadline",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "timer-lifetimes-parallel-bodies",
+    "relativePath": "scenarios/open-rows/timer-lifetimes/parallel-body-timers.bpmn",
+    "sha256": "9817f28396fb9d365276a3bf4b58c39d78c4b6ef2ebebe140abfa786d511250f",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "items",
+          "value": {
+            "kind": "stringList",
+            "value": [
+              "a",
+              "b",
+              "c"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-complete-Inspect",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Inspect",
+        "activation": 2
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "timerFire",
+      "commandId": "s03-fire-Body_Deadline",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Body_Deadline",
+        "activation": 2
+      },
+      "logicalTimeMs": 5000
+    },
+    {
+      "kind": "timerFire",
+      "commandId": "s04-fire-Start_Body_Note",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Start_Body_Note",
+        "activation": 1
+      },
+      "logicalTimeMs": 3000
+    },
+    {
+      "kind": "timerFire",
+      "commandId": "s05-fire-Body_Deadline",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Body_Deadline",
+        "activation": 1
+      },
+      "logicalTimeMs": 5000
+    },
+    {
+      "kind": "command",
+      "commandId": "s06-complete-Body_Note",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Body_Note",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s07-complete-Body_Late",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Body_Late",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s08-complete-Inspect",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Inspect",
+        "activation": 3
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s09-complete-Publish",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Publish",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.5.4",
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 Table 10.101",
+      "BPMN 2.0.2 §10.5.6",
+      "BPMN 2.0.2 §13.5.3",
+      "BPMN 2.0.2 Table 10.91",
+      "BPMN 2.0.2 Table 10.92",
+      "BPMN 2.0.2 §10.3.8"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/jobexecutor/TimerDeclarationImpl.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/BoundaryEventActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/EventSubProcessStartEventActivityBehavior.java",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/event/timer/BoundaryTimerNonInterruptingEventTest.java",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/event/timer/BoundaryTimerEventTest.java"
+    ]
+  }
+}

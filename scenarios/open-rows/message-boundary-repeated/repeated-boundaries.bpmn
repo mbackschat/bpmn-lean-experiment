@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_RepeatedBoundaries"
+  targetNamespace="urn:bpmn-lean:scenarios:message-boundary-repeated">
+  <bpmn:message id="Message_Ping" name="ping" />
+  <bpmn:message id="Message_Note" name="note" />
+  <bpmn:message id="Message_PingScope" name="pingScope" />
+  <bpmn:message id="Message_PingReceive" name="pingReceive" />
+  <bpmn:message id="Message_Docs" name="documents" />
+  <bpmn:process id="Process_RepeatedBoundaries" name="Orders with repeatable message handlers" isExecutable="true">
+    <bpmn:startEvent id="Start_Repeat" />
+    <bpmn:parallelGateway id="Fork_Repeat" gatewayDirection="Diverging" />
+    <bpmn:userTask id="Host_User" name="Review the order" />
+    <bpmn:userTask id="After_User" name="File the order" />
+    <bpmn:endEvent id="End_User" />
+    <bpmn:boundaryEvent id="Ping_User" attachedToRef="Host_User" cancelActivity="false">
+      <bpmn:messageEventDefinition id="MED_Ping_User" messageRef="Message_Ping" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handler_User" name="Respond to the ping" />
+    <bpmn:endEvent id="End_Handler_User" />
+    <bpmn:boundaryEvent id="Note_User" attachedToRef="Host_User" cancelActivity="false">
+      <bpmn:messageEventDefinition id="MED_Note_User" messageRef="Message_Note" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handler_Note" name="Respond to the note" />
+    <bpmn:endEvent id="End_Handler_Note" />
+    <bpmn:subProcess id="Host_Scope" name="Inspect the site">
+      <bpmn:startEvent id="Start_Inner" />
+      <bpmn:parallelGateway id="Fork_Inner" gatewayDirection="Diverging" />
+      <bpmn:userTask id="Scope_A" name="Inspect the north wing" />
+      <bpmn:userTask id="Scope_B" name="Inspect the south wing" />
+      <bpmn:endEvent id="End_Inner_A" />
+      <bpmn:endEvent id="End_Inner_B" />
+      <bpmn:sequenceFlow id="Flow_Start_Inner_Fork_Inner" sourceRef="Start_Inner" targetRef="Fork_Inner" />
+      <bpmn:sequenceFlow id="Flow_Fork_Inner_Scope_A" sourceRef="Fork_Inner" targetRef="Scope_A" />
+      <bpmn:sequenceFlow id="Flow_Fork_Inner_Scope_B" sourceRef="Fork_Inner" targetRef="Scope_B" />
+      <bpmn:sequenceFlow id="Flow_Scope_A_End_Inner_A" sourceRef="Scope_A" targetRef="End_Inner_A" />
+      <bpmn:sequenceFlow id="Flow_Scope_B_End_Inner_B" sourceRef="Scope_B" targetRef="End_Inner_B" />
+    </bpmn:subProcess>
+    <bpmn:userTask id="After_Scope" name="File the inspection" />
+    <bpmn:endEvent id="End_Host_Scope" />
+    <bpmn:boundaryEvent id="Ping_Scope" attachedToRef="Host_Scope" cancelActivity="false">
+      <bpmn:messageEventDefinition id="MED_Ping_Scope" messageRef="Message_PingScope" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handler_Scope" name="Respond to the scope ping" />
+    <bpmn:endEvent id="End_Handler_Scope" />
+    <bpmn:receiveTask id="Host_Receive" name="Await the documents" messageRef="Message_Docs" />
+    <bpmn:endEvent id="End_Receive" />
+    <bpmn:boundaryEvent id="Ping_Receive" attachedToRef="Host_Receive" cancelActivity="false">
+      <bpmn:messageEventDefinition id="MED_Ping_Receive" messageRef="Message_PingReceive" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handler_Receive" name="Respond to the receive ping" />
+    <bpmn:endEvent id="End_Handler_Receive" />
+    <bpmn:sequenceFlow id="Flow_Start_Repeat_Fork_Repeat" sourceRef="Start_Repeat" targetRef="Fork_Repeat" />
+    <bpmn:sequenceFlow id="Flow_Fork_Repeat_Host_User" sourceRef="Fork_Repeat" targetRef="Host_User" />
+    <bpmn:sequenceFlow id="Flow_Host_User_After_User" sourceRef="Host_User" targetRef="After_User" />
+    <bpmn:sequenceFlow id="Flow_After_User_End_User" sourceRef="After_User" targetRef="End_User" />
+    <bpmn:sequenceFlow id="Flow_Ping_User_Handler_User" sourceRef="Ping_User" targetRef="Handler_User" />
+    <bpmn:sequenceFlow id="Flow_Handler_User_End_Handler_User" sourceRef="Handler_User" targetRef="End_Handler_User" />
+    <bpmn:sequenceFlow id="Flow_Note_User_Handler_Note" sourceRef="Note_User" targetRef="Handler_Note" />
+    <bpmn:sequenceFlow id="Flow_Handler_Note_End_Handler_Note" sourceRef="Handler_Note" targetRef="End_Handler_Note" />
+    <bpmn:sequenceFlow id="Flow_Fork_Repeat_Host_Scope" sourceRef="Fork_Repeat" targetRef="Host_Scope" />
+    <bpmn:sequenceFlow id="Flow_Host_Scope_After_Scope" sourceRef="Host_Scope" targetRef="After_Scope" />
+    <bpmn:sequenceFlow id="Flow_After_Scope_End_Host_Scope" sourceRef="After_Scope" targetRef="End_Host_Scope" />
+    <bpmn:sequenceFlow id="Flow_Ping_Scope_Handler_Scope" sourceRef="Ping_Scope" targetRef="Handler_Scope" />
+    <bpmn:sequenceFlow id="Flow_Handler_Scope_End_Handler_Scope" sourceRef="Handler_Scope" targetRef="End_Handler_Scope" />
+    <bpmn:sequenceFlow id="Flow_Fork_Repeat_Host_Receive" sourceRef="Fork_Repeat" targetRef="Host_Receive" />
+    <bpmn:sequenceFlow id="Flow_Host_Receive_End_Receive" sourceRef="Host_Receive" targetRef="End_Receive" />
+    <bpmn:sequenceFlow id="Flow_Ping_Receive_Handler_Receive" sourceRef="Ping_Receive" targetRef="Handler_Receive" />
+    <bpmn:sequenceFlow id="Flow_Handler_Receive_End_Handler_Receive" sourceRef="Handler_Receive" targetRef="End_Handler_Receive" />
+  </bpmn:process>
+</bpmn:definitions>

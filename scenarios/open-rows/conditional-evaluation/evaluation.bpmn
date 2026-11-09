@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_ConditionalEvaluation"
+  targetNamespace="urn:bpmn-lean:scenarios:conditional-evaluation">
+  <bpmn:process id="Process_ConditionalEvaluation" name="Account review with Conditional boundaries" isExecutable="true">
+    <bpmn:startEvent id="Start_Eval" />
+    <bpmn:parallelGateway id="Fork_Eval" gatewayDirection="Diverging" />
+    <bpmn:userTask id="Host" name="Review the account" />
+    <bpmn:endEvent id="End_Host" />
+    <bpmn:boundaryEvent id="Cond_Create" name="Condition Create" attachedToRef="Host" cancelActivity="false">
+      <bpmn:conditionalEventDefinition id="CED_Create" camunda:variableName="amount" camunda:variableEvents="create">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">${amount &gt; 100}</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handle_Create" name="Handle the create condition" />
+    <bpmn:endEvent id="End_Create" />
+    <bpmn:boundaryEvent id="Cond_Update" name="Condition Update" attachedToRef="Host" cancelActivity="false">
+      <bpmn:conditionalEventDefinition id="CED_Update" camunda:variableName="amount" camunda:variableEvents="update">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">${amount &gt; 100}</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handle_Update" name="Handle the update condition" />
+    <bpmn:endEvent id="End_Update" />
+    <bpmn:boundaryEvent id="Cond_Any" name="Condition Any" attachedToRef="Host" cancelActivity="false">
+      <bpmn:conditionalEventDefinition id="CED_Any">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">${flag == true}</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handle_Any" name="Handle the any condition" />
+    <bpmn:endEvent id="End_Any" />
+    <bpmn:boundaryEvent id="Cond_Delete" name="Condition Delete" attachedToRef="Host" cancelActivity="false">
+      <bpmn:conditionalEventDefinition id="CED_Delete" camunda:variableName="note" camunda:variableEvents="delete">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">${!execution.hasVariable('note')}</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handle_Delete" name="Handle the delete condition" />
+    <bpmn:endEvent id="End_Delete" />
+    <bpmn:boundaryEvent id="Cond_Null" name="Condition Null" attachedToRef="Host" cancelActivity="false">
+      <bpmn:conditionalEventDefinition id="CED_Null" camunda:variableName="status">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">${status == null}</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handle_Null" name="Handle the null condition" />
+    <bpmn:endEvent id="End_Null" />
+    <bpmn:boundaryEvent id="Cond_False" name="Condition False" attachedToRef="Host" cancelActivity="false">
+      <bpmn:conditionalEventDefinition id="CED_False" camunda:variableName="approved">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">${approved == false}</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handle_False" name="Handle the false condition" />
+    <bpmn:endEvent id="End_False" />
+    <bpmn:boundaryEvent id="Cond_NonBoolean" name="Condition NonBoolean" attachedToRef="Host" cancelActivity="false">
+      <bpmn:conditionalEventDefinition id="CED_NonBoolean" camunda:variableName="level">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">${level}</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handle_NonBoolean" name="Handle the nonboolean condition" />
+    <bpmn:endEvent id="End_NonBoolean" />
+    <bpmn:userTask id="Host_Local" name="Review the local account">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="level2">${0}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+    </bpmn:userTask>
+    <bpmn:boundaryEvent id="Cond_Local" name="Condition on a local variable" attachedToRef="Host_Local" cancelActivity="false">
+      <bpmn:conditionalEventDefinition id="CED_Local" camunda:variableName="level2">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">${level2 &gt; 5}</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handle_Local" name="Handle the local condition" />
+    <bpmn:endEvent id="End_Host_Local" />
+    <bpmn:endEvent id="End_Local" />
+    <bpmn:sequenceFlow id="Flow_Start_Eval_Fork_Eval" sourceRef="Start_Eval" targetRef="Fork_Eval" />
+    <bpmn:sequenceFlow id="Flow_Fork_Eval_Host" sourceRef="Fork_Eval" targetRef="Host" />
+    <bpmn:sequenceFlow id="Flow_Host_End_Host" sourceRef="Host" targetRef="End_Host" />
+    <bpmn:sequenceFlow id="Flow_Cond_Create_Handle_Create" sourceRef="Cond_Create" targetRef="Handle_Create" />
+    <bpmn:sequenceFlow id="Flow_Handle_Create_End_Create" sourceRef="Handle_Create" targetRef="End_Create" />
+    <bpmn:sequenceFlow id="Flow_Cond_Update_Handle_Update" sourceRef="Cond_Update" targetRef="Handle_Update" />
+    <bpmn:sequenceFlow id="Flow_Handle_Update_End_Update" sourceRef="Handle_Update" targetRef="End_Update" />
+    <bpmn:sequenceFlow id="Flow_Cond_Any_Handle_Any" sourceRef="Cond_Any" targetRef="Handle_Any" />
+    <bpmn:sequenceFlow id="Flow_Handle_Any_End_Any" sourceRef="Handle_Any" targetRef="End_Any" />
+    <bpmn:sequenceFlow id="Flow_Cond_Delete_Handle_Delete" sourceRef="Cond_Delete" targetRef="Handle_Delete" />
+    <bpmn:sequenceFlow id="Flow_Handle_Delete_End_Delete" sourceRef="Handle_Delete" targetRef="End_Delete" />
+    <bpmn:sequenceFlow id="Flow_Cond_Null_Handle_Null" sourceRef="Cond_Null" targetRef="Handle_Null" />
+    <bpmn:sequenceFlow id="Flow_Handle_Null_End_Null" sourceRef="Handle_Null" targetRef="End_Null" />
+    <bpmn:sequenceFlow id="Flow_Cond_False_Handle_False" sourceRef="Cond_False" targetRef="Handle_False" />
+    <bpmn:sequenceFlow id="Flow_Handle_False_End_False" sourceRef="Handle_False" targetRef="End_False" />
+    <bpmn:sequenceFlow id="Flow_Cond_NonBoolean_Handle_NonBoolean" sourceRef="Cond_NonBoolean" targetRef="Handle_NonBoolean" />
+    <bpmn:sequenceFlow id="Flow_Handle_NonBoolean_End_NonBoolean" sourceRef="Handle_NonBoolean" targetRef="End_NonBoolean" />
+    <bpmn:sequenceFlow id="Flow_Fork_Eval_Host_Local" sourceRef="Fork_Eval" targetRef="Host_Local" />
+    <bpmn:sequenceFlow id="Flow_Host_Local_End_Host_Local" sourceRef="Host_Local" targetRef="End_Host_Local" />
+    <bpmn:sequenceFlow id="Flow_Cond_Local_Handle_Local" sourceRef="Cond_Local" targetRef="Handle_Local" />
+    <bpmn:sequenceFlow id="Flow_Handle_Local_End_Local" sourceRef="Handle_Local" targetRef="End_Local" />
+  </bpmn:process>
+</bpmn:definitions>

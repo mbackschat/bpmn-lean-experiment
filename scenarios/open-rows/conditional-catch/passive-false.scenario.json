@@ -1,0 +1,87 @@
+{
+  "kind": "scenario",
+  "id": "conditional-catch-passive-false",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "conditional-catch-waits",
+    "relativePath": "scenarios/open-rows/conditional-catch/catches.bpmn",
+    "sha256": "ae0f107e28dbb532e353fd64bb89cd6e5346f48f6a3f2c12a219f0a28911e08e",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "ready",
+          "value": {
+            "kind": "boolean",
+            "value": false
+          }
+        }
+      ]
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-complete-Prepare",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Prepare",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-set-ready",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Catch_Ready",
+        "activation": 1
+      },
+      "action": {
+        "kind": "setVariables",
+        "values": [
+          {
+            "name": "ready",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s04-complete-Proceed_Ready",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Proceed_Ready",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 Table 10.95"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/IntermediateConditionalEventBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/ConditionalEventDefinition.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/event/ConditionalEventHandler.java",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/event/conditional/IntermediateConditionalEventTest.java"
+    ]
+  }
+}

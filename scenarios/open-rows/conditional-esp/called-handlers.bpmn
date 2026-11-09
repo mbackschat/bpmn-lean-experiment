@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_CalledHandlers"
+  targetNamespace="urn:bpmn-lean:scenarios:conditional-esp:called">
+  <bpmn:process id="Process_CalledHandlers" name="Caller of a Process with a Conditional handler" isExecutable="true">
+    <bpmn:startEvent id="Start_Called" />
+    <bpmn:parallelGateway id="Fork_Called" gatewayDirection="Diverging" />
+    <bpmn:sequenceFlow id="Flow_Start_Called_Fork_Called" sourceRef="Start_Called" targetRef="Fork_Called" />
+    <bpmn:callActivity id="Call_Child" name="Run the external check" calledElement="Process_ConditionalChild" />
+    <bpmn:userTask id="After_Call" name="File the check" />
+    <bpmn:endEvent id="End_Call" />
+    <bpmn:sequenceFlow id="Flow_Fork_Called_Call_Child" sourceRef="Fork_Called" targetRef="Call_Child" />
+    <bpmn:sequenceFlow id="Flow_Call_Child_After_Call" sourceRef="Call_Child" targetRef="After_Call" />
+    <bpmn:sequenceFlow id="Flow_After_Call_End_Call" sourceRef="After_Call" targetRef="End_Call" />
+    <bpmn:userTask id="Work_Parent" name="Work in the caller" />
+    <bpmn:endEvent id="End_Parent" />
+    <bpmn:sequenceFlow id="Flow_Fork_Called_Work_Parent" sourceRef="Fork_Called" targetRef="Work_Parent" />
+    <bpmn:sequenceFlow id="Flow_Work_Parent_End_Parent" sourceRef="Work_Parent" targetRef="End_Parent" />
+  </bpmn:process>
+  <bpmn:process id="Process_ConditionalChild" isExecutable="true">
+    <bpmn:startEvent id="Start_Child" />
+    <bpmn:userTask id="Child_Work" name="Carry out the check" />
+    <bpmn:endEvent id="End_Child" />
+    <bpmn:sequenceFlow id="Flow_Start_Child_Child_Work" sourceRef="Start_Child" targetRef="Child_Work" />
+    <bpmn:sequenceFlow id="Flow_Child_Work_End_Child" sourceRef="Child_Work" targetRef="End_Child" />
+    <bpmn:subProcess id="ESP_Child" triggeredByEvent="true">
+      <bpmn:startEvent id="Start_ChildAlert" isInterrupting="false">
+        <bpmn:conditionalEventDefinition id="CED_ChildAlert" camunda:variableName="childLevel">
+          <bpmn:condition xsi:type="bpmn:tFormalExpression">${childLevel &gt; 5}</bpmn:condition>
+        </bpmn:conditionalEventDefinition>
+      </bpmn:startEvent>
+      <bpmn:userTask id="Child_Alert" name="Handle the child alert" />
+      <bpmn:endEvent id="End_ChildAlert" />
+      <bpmn:sequenceFlow id="Flow_Start_ChildAlert_Child_Alert" sourceRef="Start_ChildAlert" targetRef="Child_Alert" />
+      <bpmn:sequenceFlow id="Flow_Child_Alert_End_ChildAlert" sourceRef="Child_Alert" targetRef="End_ChildAlert" />
+    </bpmn:subProcess>
+  </bpmn:process>
+</bpmn:definitions>

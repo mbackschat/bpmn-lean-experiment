@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_ConditionalRace"
+  targetNamespace="urn:bpmn-lean:scenarios:conditional-catch:race">
+  <bpmn:message id="Message_Reject" name="reject" />
+  <bpmn:process id="Process_ConditionalRace" name="Decision race" isExecutable="true">
+    <bpmn:startEvent id="Start_Race" />
+    <bpmn:userTask id="Prepare" name="Prepare the decision" />
+    <bpmn:eventBasedGateway id="Gateway_Race" />
+    <bpmn:intermediateCatchEvent id="Catch_Approved" name="Approval recorded">
+      <bpmn:conditionalEventDefinition id="CED_Approved" camunda:variableName="approved">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">${approved == true}</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="Catch_Rejected" name="Rejection received">
+      <bpmn:messageEventDefinition id="MED_Rejected" messageRef="Message_Reject" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="Catch_Expired" name="Decision window over">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT30S</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:userTask id="Approved" name="Approve" />
+    <bpmn:userTask id="Rejected" name="Reject" />
+    <bpmn:userTask id="Expired" name="Expire" />
+    <bpmn:endEvent id="End_Approved" />
+    <bpmn:endEvent id="End_Rejected" />
+    <bpmn:endEvent id="End_Expired" />
+    <bpmn:sequenceFlow id="Flow_Start_Race_Prepare" sourceRef="Start_Race" targetRef="Prepare" />
+    <bpmn:sequenceFlow id="Flow_Prepare_Gateway_Race" sourceRef="Prepare" targetRef="Gateway_Race" />
+    <bpmn:sequenceFlow id="Flow_Gateway_Race_Catch_Approved" sourceRef="Gateway_Race" targetRef="Catch_Approved" />
+    <bpmn:sequenceFlow id="Flow_Gateway_Race_Catch_Rejected" sourceRef="Gateway_Race" targetRef="Catch_Rejected" />
+    <bpmn:sequenceFlow id="Flow_Gateway_Race_Catch_Expired" sourceRef="Gateway_Race" targetRef="Catch_Expired" />
+    <bpmn:sequenceFlow id="Flow_Catch_Approved_Approved" sourceRef="Catch_Approved" targetRef="Approved" />
+    <bpmn:sequenceFlow id="Flow_Catch_Rejected_Rejected" sourceRef="Catch_Rejected" targetRef="Rejected" />
+    <bpmn:sequenceFlow id="Flow_Catch_Expired_Expired" sourceRef="Catch_Expired" targetRef="Expired" />
+    <bpmn:sequenceFlow id="Flow_Approved_End_Approved" sourceRef="Approved" targetRef="End_Approved" />
+    <bpmn:sequenceFlow id="Flow_Rejected_End_Rejected" sourceRef="Rejected" targetRef="End_Rejected" />
+    <bpmn:sequenceFlow id="Flow_Expired_End_Expired" sourceRef="Expired" targetRef="End_Expired" />
+  </bpmn:process>
+</bpmn:definitions>

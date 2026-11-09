@@ -1,0 +1,130 @@
+{
+  "kind": "scenario",
+  "id": "message-payload-catches-sequential-bodies-previous-body",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "message-payload-catches",
+    "relativePath": "scenarios/open-rows/message-payload-catches/payload-catches.bpmn",
+    "sha256": "0ccabb654ce86aaa4396e871786bb21896d6c232c51139f4d58c1dd9139d9ead",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "items",
+          "value": {
+            "kind": "stringList",
+            "value": [
+              "x",
+              "y"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "kind": "deliver",
+      "commandId": "s02-deliver-Catch_SeqBody",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Catch_SeqBody",
+        "activation": 1
+      },
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "directMessage",
+          "messageId": "Message_SeqNote"
+        }
+      },
+      "payload": {
+        "kind": "string",
+        "value": "first body"
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-complete-Check_Seq",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Check_Seq",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "deliver",
+      "commandId": "s04-deliver-Catch_SeqBody",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Catch_SeqBody",
+        "activation": 1
+      },
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "directMessage",
+          "messageId": "Message_SeqNote"
+        }
+      },
+      "payload": {
+        "kind": "string",
+        "value": "stale body"
+      }
+    },
+    {
+      "kind": "deliver",
+      "commandId": "s05-deliver-Catch_SeqBody",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Catch_SeqBody",
+        "activation": 2
+      },
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "directMessage",
+          "messageId": "Message_SeqNote"
+        }
+      },
+      "payload": {
+        "kind": "string",
+        "value": "second body"
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s06-complete-Check_Seq",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Check_Seq",
+        "activation": 2
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 Table 10.99",
+      "BPMN 2.0.2 §10.5.1",
+      "BPMN 2.0.2 §10.3.8"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/cmd/MessageEventReceivedCmd.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/persistence/entity/EventSubscriptionEntity.java",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/event/message/MessageIntermediateEventTest.java"
+    ]
+  }
+}

@@ -1,0 +1,101 @@
+{
+  "kind": "scenario",
+  "id": "message-esp-interrupting-region-completes-first",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "message-esp-interrupting",
+    "relativePath": "scenarios/open-rows/message-esp-interrupting/interrupting-handlers.bpmn",
+    "sha256": "3d1786532400f84c03a6655680c752b5c31d4adb7d8c0c02a8de74d4dc265ede",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "orderRef",
+          "value": {
+            "kind": "string",
+            "value": "order-1"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-complete-Work",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Work",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-complete-Inner",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Inner",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "deliver",
+      "commandId": "s04-deliver-Start_RegionAbort",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Start_RegionAbort",
+        "activation": 1
+      },
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "directMessage",
+          "messageId": "Message_Abort"
+        }
+      },
+      "payload": {
+        "kind": "string",
+        "value": "site closed"
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s05-complete-Finish",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Finish",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 Table 10.99",
+      "BPMN 2.0.2 §10.3.5",
+      "BPMN 2.0.2 §13.5.4"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/EventSubProcessActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/EventSubProcessStartEventActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/cmd/MessageEventReceivedCmd.java",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/event/message/MessageEventSubprocessTest.java"
+    ]
+  }
+}

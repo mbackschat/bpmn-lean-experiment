@@ -1,0 +1,109 @@
+{
+  "kind": "scenario",
+  "id": "timer-boundary-hosts-scope-soft-then-work-completes",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "timer-boundary-hosts",
+    "relativePath": "scenarios/open-rows/timer-boundary-hosts/boundary-hosts.bpmn",
+    "sha256": "0c52d58aee7767eda5ebf5626e454e7fffb7daf38247844b3c36dea091759787",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    },
+    {
+      "kind": "timerFire",
+      "commandId": "s02-fire-Soft_Scope",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Soft_Scope",
+        "activation": 1
+      },
+      "logicalTimeMs": 9000
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-complete-Scope_A",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Scope_A",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s04-complete-Scope_B",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Scope_B",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "timerFire",
+      "commandId": "s05-fire-Hard_Scope",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Hard_Scope",
+        "activation": 1
+      },
+      "logicalTimeMs": 16000
+    },
+    {
+      "kind": "command",
+      "commandId": "s06-complete-Nudge_Scope",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Nudge_Scope",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s07-complete-After_Scope",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "After_Scope",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.5.4",
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 Table 10.101",
+      "BPMN 2.0.2 §10.5.6",
+      "BPMN 2.0.2 §13.5.3",
+      "BPMN 2.0.2 Table 10.91",
+      "BPMN 2.0.2 Table 10.92"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/jobexecutor/TimerDeclarationImpl.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/BoundaryEventActivityBehavior.java",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/event/timer/BoundaryTimerNonInterruptingEventTest.java",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/event/timer/BoundaryTimerEventTest.java"
+    ]
+  }
+}

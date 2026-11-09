@@ -1,0 +1,130 @@
+{
+  "kind": "scenario",
+  "id": "timer-event-subprocess-cycle-handlers-overlap-past-the-ordinary-path",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "timer-event-subprocess",
+    "relativePath": "scenarios/open-rows/timer-event-subprocess/timer-handlers.bpmn",
+    "sha256": "45e8cdfd85dd9f039a519866746558abdccfe41b60264e5d787400b255260656",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    },
+    {
+      "kind": "timerFire",
+      "commandId": "s02-fire-Start_Reminder",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Start_Reminder",
+        "activation": 1
+      },
+      "logicalTimeMs": 10000
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-complete-Work",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Work",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s04-complete-Inner",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Inner",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s05-complete-Finish",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Finish",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "timerFire",
+      "commandId": "s06-fire-Start_Reminder",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Start_Reminder",
+        "activation": 2
+      },
+      "logicalTimeMs": 20000
+    },
+    {
+      "kind": "command",
+      "commandId": "s07-complete-Remind",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Remind",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s08-complete-Remind",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Remind",
+        "activation": 2
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "timerFire",
+      "commandId": "s09-fire-Start_Reminder",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Start_Reminder",
+        "activation": 3
+      },
+      "logicalTimeMs": 30000
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.5.4",
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 Table 10.101",
+      "BPMN 2.0.2 §10.3.5",
+      "BPMN 2.0.2 §13.5.4"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/jobexecutor/TimerDeclarationImpl.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/EventSubProcessActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/EventSubProcessStartEventActivityBehavior.java",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/event/timer/StartTimerEventTest.java"
+    ]
+  }
+}

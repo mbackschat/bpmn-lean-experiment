@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_Names"
+  targetNamespace="urn:bpmn-lean:scenarios:message-name-addressing:names">
+  <bpmn:message id="Message_Plain" name="plain notice" />
+  <bpmn:message id="Message_Expr" name="${wire}" />
+  <bpmn:message id="Message_Alpha" name="Message_Beta" />
+  <bpmn:message id="Message_Beta" name="Message_Alpha" />
+  <bpmn:process id="Process_Names" name="Notices addressed by name" isExecutable="true">
+    <bpmn:startEvent id="Start_Names" />
+    <bpmn:parallelGateway id="Fork_Names" gatewayDirection="Diverging" />
+    <bpmn:sequenceFlow id="Flow_Start_Names_Fork_Names" sourceRef="Start_Names" targetRef="Fork_Names" />
+    <bpmn:intermediateCatchEvent id="Catch_Plain" name="Await Catch_Plain">
+      <bpmn:messageEventDefinition id="MED_Catch_Plain" messageRef="Message_Plain" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:userTask id="Proceed_Plain" name="Proceed with the plain notice" />
+    <bpmn:endEvent id="End_Proceed_Plain" />
+    <bpmn:sequenceFlow id="Flow_Fork_Names_Catch_Plain" sourceRef="Fork_Names" targetRef="Catch_Plain" />
+    <bpmn:sequenceFlow id="Flow_Catch_Plain_Proceed_Plain" sourceRef="Catch_Plain" targetRef="Proceed_Plain" />
+    <bpmn:sequenceFlow id="Flow_Proceed_Plain_End_Proceed_Plain" sourceRef="Proceed_Plain" targetRef="End_Proceed_Plain" />
+    <bpmn:intermediateCatchEvent id="Catch_Expr" name="Await Catch_Expr">
+      <bpmn:messageEventDefinition id="MED_Catch_Expr" messageRef="Message_Expr" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:userTask id="Proceed_Expr" name="Proceed with the computed notice" />
+    <bpmn:endEvent id="End_Proceed_Expr" />
+    <bpmn:sequenceFlow id="Flow_Fork_Names_Catch_Expr" sourceRef="Fork_Names" targetRef="Catch_Expr" />
+    <bpmn:sequenceFlow id="Flow_Catch_Expr_Proceed_Expr" sourceRef="Catch_Expr" targetRef="Proceed_Expr" />
+    <bpmn:sequenceFlow id="Flow_Proceed_Expr_End_Proceed_Expr" sourceRef="Proceed_Expr" targetRef="End_Proceed_Expr" />
+    <bpmn:intermediateCatchEvent id="Catch_Alpha" name="Await Catch_Alpha">
+      <bpmn:messageEventDefinition id="MED_Catch_Alpha" messageRef="Message_Alpha" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:userTask id="Proceed_Alpha" name="Proceed with the first swapped notice" />
+    <bpmn:endEvent id="End_Proceed_Alpha" />
+    <bpmn:sequenceFlow id="Flow_Fork_Names_Catch_Alpha" sourceRef="Fork_Names" targetRef="Catch_Alpha" />
+    <bpmn:sequenceFlow id="Flow_Catch_Alpha_Proceed_Alpha" sourceRef="Catch_Alpha" targetRef="Proceed_Alpha" />
+    <bpmn:sequenceFlow id="Flow_Proceed_Alpha_End_Proceed_Alpha" sourceRef="Proceed_Alpha" targetRef="End_Proceed_Alpha" />
+    <bpmn:intermediateCatchEvent id="Catch_Beta" name="Await Catch_Beta">
+      <bpmn:messageEventDefinition id="MED_Catch_Beta" messageRef="Message_Beta" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:userTask id="Proceed_Beta" name="Proceed with the second swapped notice" />
+    <bpmn:endEvent id="End_Proceed_Beta" />
+    <bpmn:sequenceFlow id="Flow_Fork_Names_Catch_Beta" sourceRef="Fork_Names" targetRef="Catch_Beta" />
+    <bpmn:sequenceFlow id="Flow_Catch_Beta_Proceed_Beta" sourceRef="Catch_Beta" targetRef="Proceed_Beta" />
+    <bpmn:sequenceFlow id="Flow_Proceed_Beta_End_Proceed_Beta" sourceRef="Proceed_Beta" targetRef="End_Proceed_Beta" />
+  </bpmn:process>
+</bpmn:definitions>

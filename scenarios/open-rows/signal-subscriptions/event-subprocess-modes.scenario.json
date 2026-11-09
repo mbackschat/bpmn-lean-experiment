@@ -1,0 +1,141 @@
+{
+  "kind": "scenario",
+  "id": "signal-subscriptions-event-subprocess-modes",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "signal-subscriptions",
+    "relativePath": "scenarios/open-rows/signal-subscriptions/signal-subscriptions.bpmn",
+    "sha256": "fe8adc6121ce6041e23d4f8cddf4ba2c6f563ee90a150cbfeea7377f27914263",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "items",
+          "value": {
+            "kind": "stringList",
+            "value": [
+              "a",
+              "b"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "kind": "deliver",
+      "commandId": "s02-signal-Start_Alert",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Start_Alert",
+        "activation": 1
+      },
+      "trigger": {
+        "kind": "signal",
+        "name": "alert"
+      }
+    },
+    {
+      "kind": "deliver",
+      "commandId": "s03-signal-Start_Alert",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Start_Alert",
+        "activation": 1
+      },
+      "trigger": {
+        "kind": "signal",
+        "name": "alert"
+      }
+    },
+    {
+      "kind": "deliver",
+      "commandId": "s04-signal-Start_Abort",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Start_Abort",
+        "activation": 1
+      },
+      "trigger": {
+        "kind": "signal",
+        "name": "abort"
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s05-complete-Work_Esp",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Work_Esp",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s06-complete-Handle_Abort",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Handle_Abort",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s07-complete-Handle_Alert",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Handle_Alert",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s08-complete-Handle_Alert",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Handle_Alert",
+        "activation": 2
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 Table 10.100",
+      "BPMN 2.0.2 §10.5.6",
+      "BPMN 2.0.2 §13.5.3",
+      "BPMN 2.0.2 Table 10.91",
+      "BPMN 2.0.2 Table 10.92",
+      "BPMN 2.0.2 §10.3.5",
+      "BPMN 2.0.2 §13.5.4"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ThrowSignalEventActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/cmd/SignalEventReceivedCmd.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/persistence/entity/EventSubscriptionEntity.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/BoundaryEventActivityBehavior.java",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/event/signal/SignalEventTest.java"
+    ]
+  }
+}

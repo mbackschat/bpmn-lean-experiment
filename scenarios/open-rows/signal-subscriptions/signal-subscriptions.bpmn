@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_SignalSubscriptions"
+  targetNamespace="urn:bpmn-lean:scenarios:signal-subscriptions">
+  <bpmn:signal id="Signal_Cancel" name="cancel" />
+  <bpmn:signal id="Signal_Note" name="note" />
+  <bpmn:signal id="Signal_Stop" name="stop" />
+  <bpmn:signal id="Signal_Alert" name="alert" />
+  <bpmn:signal id="Signal_Abort" name="abort" />
+  <bpmn:signal id="Signal_Ping" name="ping" />
+  <bpmn:signal id="Signal_Quit" name="quit" />
+  <bpmn:process id="Process_SignalSubscriptions" name="Case handling with Signal subscriptions" isExecutable="true">
+    <bpmn:startEvent id="Start_Signals" />
+    <bpmn:parallelGateway id="Fork_Signals" gatewayDirection="Diverging" />
+    <bpmn:userTask id="Host_User" name="Review the case" />
+    <bpmn:userTask id="After_User" name="File the case" />
+    <bpmn:endEvent id="End_User" />
+    <bpmn:boundaryEvent id="Cancel_User" attachedToRef="Host_User">
+      <bpmn:signalEventDefinition id="SED_Cancel_User" signalRef="Signal_Cancel" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handle_Cancel" name="Handle the cancellation" />
+    <bpmn:endEvent id="End_Handle_Cancel" />
+    <bpmn:boundaryEvent id="Note_User" attachedToRef="Host_User" cancelActivity="false">
+      <bpmn:signalEventDefinition id="SED_Note_User" signalRef="Signal_Note" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handle_Note" name="Handle the note" />
+    <bpmn:endEvent id="End_Handle_Note" />
+    <bpmn:subProcess id="Region" name="Decide and stop">
+      <bpmn:startEvent id="Start_Region" />
+      <bpmn:userTask id="Inner" name="Decide in the region" />
+      <bpmn:intermediateThrowEvent id="Throw_Stop" name="Throw stop">
+        <bpmn:signalEventDefinition id="SED_Throw_Stop" signalRef="Signal_Stop" />
+      </bpmn:intermediateThrowEvent>
+      <bpmn:userTask id="Inner_After" name="Continue in the region" />
+      <bpmn:endEvent id="End_Region" />
+      <bpmn:sequenceFlow id="Flow_Start_Region_Inner" sourceRef="Start_Region" targetRef="Inner" />
+      <bpmn:sequenceFlow id="Flow_Inner_Throw_Stop" sourceRef="Inner" targetRef="Throw_Stop" />
+      <bpmn:sequenceFlow id="Flow_Throw_Stop_Inner_After" sourceRef="Throw_Stop" targetRef="Inner_After" />
+      <bpmn:sequenceFlow id="Flow_Inner_After_End_Region" sourceRef="Inner_After" targetRef="End_Region" />
+    </bpmn:subProcess>
+    <bpmn:userTask id="After_Region" name="File the region" />
+    <bpmn:endEvent id="End_After_Region" />
+    <bpmn:boundaryEvent id="Stop_Region" attachedToRef="Region">
+      <bpmn:signalEventDefinition id="SED_Stop_Region" signalRef="Signal_Stop" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handle_Stop" name="Handle the stop" />
+    <bpmn:endEvent id="End_Handle_Stop" />
+    <bpmn:intermediateCatchEvent id="Catch_Stop" name="Outside receiver of stop">
+      <bpmn:signalEventDefinition id="SED_Catch_Stop" signalRef="Signal_Stop" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:userTask id="Proceed_Stop" name="Proceed after stop" />
+    <bpmn:endEvent id="End_Proceed_Stop" />
+    <bpmn:subProcess id="Region_Esp" name="Guarded region">
+      <bpmn:startEvent id="Start_Esp" />
+      <bpmn:userTask id="Work_Esp" name="Work in the guarded region" />
+      <bpmn:endEvent id="End_Esp" />
+      <bpmn:sequenceFlow id="Flow_Start_Esp_Work_Esp" sourceRef="Start_Esp" targetRef="Work_Esp" />
+      <bpmn:sequenceFlow id="Flow_Work_Esp_End_Esp" sourceRef="Work_Esp" targetRef="End_Esp" />
+      <bpmn:subProcess id="ESP_Alert" triggeredByEvent="true">
+        <bpmn:startEvent id="Start_Alert" isInterrupting="false">
+          <bpmn:signalEventDefinition id="SED_Start_Alert" signalRef="Signal_Alert" />
+        </bpmn:startEvent>
+        <bpmn:userTask id="Handle_Alert" name="Handle the alert" />
+        <bpmn:endEvent id="End_Handle_Alert" />
+        <bpmn:sequenceFlow id="Flow_Start_Alert_Handle_Alert" sourceRef="Start_Alert" targetRef="Handle_Alert" />
+        <bpmn:sequenceFlow id="Flow_Handle_Alert_End_Handle_Alert" sourceRef="Handle_Alert" targetRef="End_Handle_Alert" />
+      </bpmn:subProcess>
+      <bpmn:subProcess id="ESP_Abort" triggeredByEvent="true">
+        <bpmn:startEvent id="Start_Abort">
+          <bpmn:signalEventDefinition id="SED_Start_Abort" signalRef="Signal_Abort" />
+        </bpmn:startEvent>
+        <bpmn:userTask id="Handle_Abort" name="Handle the abort" />
+        <bpmn:endEvent id="End_Handle_Abort" />
+        <bpmn:sequenceFlow id="Flow_Start_Abort_Handle_Abort" sourceRef="Start_Abort" targetRef="Handle_Abort" />
+        <bpmn:sequenceFlow id="Flow_Handle_Abort_End_Handle_Abort" sourceRef="Handle_Abort" targetRef="End_Handle_Abort" />
+      </bpmn:subProcess>
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_Region_Esp" />
+    <bpmn:subProcess id="Bodies" name="Inspect lots">
+      <bpmn:multiInstanceLoopCharacteristics isSequential="false" camunda:collection="items" camunda:elementVariable="item" />
+      <bpmn:startEvent id="Start_Body" />
+      <bpmn:userTask id="Inner_Body" name="Inspect one lot" />
+      <bpmn:endEvent id="End_Body" />
+      <bpmn:sequenceFlow id="Flow_Start_Body_Inner_Body" sourceRef="Start_Body" targetRef="Inner_Body" />
+      <bpmn:sequenceFlow id="Flow_Inner_Body_End_Body" sourceRef="Inner_Body" targetRef="End_Body" />
+      <bpmn:boundaryEvent id="Ping_Body" attachedToRef="Inner_Body" cancelActivity="false">
+        <bpmn:signalEventDefinition id="SED_Ping_Body" signalRef="Signal_Ping" />
+      </bpmn:boundaryEvent>
+      <bpmn:userTask id="Handle_Ping_Body" name="Handle the ping" />
+      <bpmn:endEvent id="End_Ping_Body" />
+      <bpmn:sequenceFlow id="Flow_Ping_Body_Handle_Ping_Body" sourceRef="Ping_Body" targetRef="Handle_Ping_Body" />
+      <bpmn:sequenceFlow id="Flow_Handle_Ping_Body_End_Ping_Body" sourceRef="Handle_Ping_Body" targetRef="End_Ping_Body" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_Bodies" />
+    <bpmn:callActivity id="Host_Call" name="Run the external check" calledElement="Process_Child" />
+    <bpmn:userTask id="After_Call" name="File the check" />
+    <bpmn:endEvent id="End_Call" />
+    <bpmn:boundaryEvent id="Quit_Call" attachedToRef="Host_Call">
+      <bpmn:signalEventDefinition id="SED_Quit_Call" signalRef="Signal_Quit" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handle_Quit" name="Handle the quit" />
+    <bpmn:endEvent id="End_Handle_Quit" />
+    <bpmn:sequenceFlow id="Flow_Start_Signals_Fork_Signals" sourceRef="Start_Signals" targetRef="Fork_Signals" />
+    <bpmn:sequenceFlow id="Flow_Fork_Signals_Host_User" sourceRef="Fork_Signals" targetRef="Host_User" />
+    <bpmn:sequenceFlow id="Flow_Host_User_After_User" sourceRef="Host_User" targetRef="After_User" />
+    <bpmn:sequenceFlow id="Flow_After_User_End_User" sourceRef="After_User" targetRef="End_User" />
+    <bpmn:sequenceFlow id="Flow_Cancel_User_Handle_Cancel" sourceRef="Cancel_User" targetRef="Handle_Cancel" />
+    <bpmn:sequenceFlow id="Flow_Handle_Cancel_End_Handle_Cancel" sourceRef="Handle_Cancel" targetRef="End_Handle_Cancel" />
+    <bpmn:sequenceFlow id="Flow_Note_User_Handle_Note" sourceRef="Note_User" targetRef="Handle_Note" />
+    <bpmn:sequenceFlow id="Flow_Handle_Note_End_Handle_Note" sourceRef="Handle_Note" targetRef="End_Handle_Note" />
+    <bpmn:sequenceFlow id="Flow_Fork_Signals_Region" sourceRef="Fork_Signals" targetRef="Region" />
+    <bpmn:sequenceFlow id="Flow_Region_After_Region" sourceRef="Region" targetRef="After_Region" />
+    <bpmn:sequenceFlow id="Flow_After_Region_End_After_Region" sourceRef="After_Region" targetRef="End_After_Region" />
+    <bpmn:sequenceFlow id="Flow_Stop_Region_Handle_Stop" sourceRef="Stop_Region" targetRef="Handle_Stop" />
+    <bpmn:sequenceFlow id="Flow_Handle_Stop_End_Handle_Stop" sourceRef="Handle_Stop" targetRef="End_Handle_Stop" />
+    <bpmn:sequenceFlow id="Flow_Fork_Signals_Catch_Stop" sourceRef="Fork_Signals" targetRef="Catch_Stop" />
+    <bpmn:sequenceFlow id="Flow_Catch_Stop_Proceed_Stop" sourceRef="Catch_Stop" targetRef="Proceed_Stop" />
+    <bpmn:sequenceFlow id="Flow_Proceed_Stop_End_Proceed_Stop" sourceRef="Proceed_Stop" targetRef="End_Proceed_Stop" />
+    <bpmn:sequenceFlow id="Flow_Fork_Signals_Region_Esp" sourceRef="Fork_Signals" targetRef="Region_Esp" />
+    <bpmn:sequenceFlow id="Flow_Region_Esp_End_Region_Esp" sourceRef="Region_Esp" targetRef="End_Region_Esp" />
+    <bpmn:sequenceFlow id="Flow_Fork_Signals_Bodies" sourceRef="Fork_Signals" targetRef="Bodies" />
+    <bpmn:sequenceFlow id="Flow_Bodies_End_Bodies" sourceRef="Bodies" targetRef="End_Bodies" />
+    <bpmn:sequenceFlow id="Flow_Fork_Signals_Host_Call" sourceRef="Fork_Signals" targetRef="Host_Call" />
+    <bpmn:sequenceFlow id="Flow_Host_Call_After_Call" sourceRef="Host_Call" targetRef="After_Call" />
+    <bpmn:sequenceFlow id="Flow_After_Call_End_Call" sourceRef="After_Call" targetRef="End_Call" />
+    <bpmn:sequenceFlow id="Flow_Quit_Call_Handle_Quit" sourceRef="Quit_Call" targetRef="Handle_Quit" />
+    <bpmn:sequenceFlow id="Flow_Handle_Quit_End_Handle_Quit" sourceRef="Handle_Quit" targetRef="End_Handle_Quit" />
+  </bpmn:process>
+  <bpmn:process id="Process_Child" isExecutable="true">
+    <bpmn:startEvent id="Start_Child" />
+    <bpmn:userTask id="Child_Work" name="Carry out the check" />
+    <bpmn:endEvent id="End_Child" />
+    <bpmn:sequenceFlow id="Flow_Start_Child_Child_Work" sourceRef="Start_Child" targetRef="Child_Work" />
+    <bpmn:sequenceFlow id="Flow_Child_Work_End_Child" sourceRef="Child_Work" targetRef="End_Child" />
+  </bpmn:process>
+</bpmn:definitions>

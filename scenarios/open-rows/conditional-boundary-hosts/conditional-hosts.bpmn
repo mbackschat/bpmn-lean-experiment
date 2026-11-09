@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_ConditionalHosts"
+  targetNamespace="urn:bpmn-lean:scenarios:conditional-boundary-hosts">
+  <bpmn:process id="Process_ConditionalHosts" name="Case work with Conditional boundaries on every kind of host" isExecutable="true">
+    <bpmn:startEvent id="Start_Hosts" />
+    <bpmn:parallelGateway id="Fork_Hosts" gatewayDirection="Diverging" />
+    <bpmn:userTask id="Host_Level" name="Work against a level" />
+    <bpmn:userTask id="After_Level" name="File the level work" />
+    <bpmn:endEvent id="End_Level" />
+    <bpmn:boundaryEvent id="Warn_Level" attachedToRef="Host_Level" cancelActivity="false">
+      <bpmn:conditionalEventDefinition id="CED_Warn" camunda:variableName="level">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">${level &gt; 5}</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handle_Warn" name="Handle the warning" />
+    <bpmn:endEvent id="End_Warn" />
+    <bpmn:boundaryEvent id="Stop_Level" attachedToRef="Host_Level">
+      <bpmn:conditionalEventDefinition id="CED_Stop" camunda:variableName="level">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">${level &gt; 8}</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handle_Stop_Level" name="Handle the stop" />
+    <bpmn:endEvent id="End_Stop_Level" />
+    <bpmn:userTask id="Writer" name="Record the outcome" />
+    <bpmn:endEvent id="End_Writer" />
+    <bpmn:userTask id="Watcher" name="Watch the outcome" />
+    <bpmn:userTask id="After_Watcher" name="File the watch" />
+    <bpmn:endEvent id="End_Watcher" />
+    <bpmn:boundaryEvent id="Done_Watch" attachedToRef="Watcher" cancelActivity="false">
+      <bpmn:conditionalEventDefinition id="CED_Done" camunda:variableName="done">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">${done == true}</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handle_Done" name="Handle the outcome" />
+    <bpmn:endEvent id="End_Done" />
+    <bpmn:userTask id="Host_Self" name="Close the file" />
+    <bpmn:userTask id="After_Self" name="Archive the file" />
+    <bpmn:endEvent id="End_Self" />
+    <bpmn:boundaryEvent id="Self_Cond" attachedToRef="Host_Self">
+      <bpmn:conditionalEventDefinition id="CED_Self" camunda:variableName="closed">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">${closed == true}</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handle_Self" name="Handle the closure" />
+    <bpmn:endEvent id="End_Self_Handler" />
+    <bpmn:subProcess id="Bodies" name="Review every lot">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="phase">open</camunda:inputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+      <bpmn:multiInstanceLoopCharacteristics isSequential="false" camunda:collection="items" camunda:elementVariable="item" />
+      <bpmn:startEvent id="Start_Body" />
+      <bpmn:userTask id="Body_Task" name="Review one lot" />
+      <bpmn:endEvent id="End_Body" />
+      <bpmn:sequenceFlow id="Flow_Start_Body_Body_Task" sourceRef="Start_Body" targetRef="Body_Task" />
+      <bpmn:sequenceFlow id="Flow_Body_Task_End_Body" sourceRef="Body_Task" targetRef="End_Body" />
+    </bpmn:subProcess>
+    <bpmn:userTask id="After_Bodies" name="File the lots" />
+    <bpmn:endEvent id="End_Bodies" />
+    <bpmn:boundaryEvent id="Outer_Cond" attachedToRef="Bodies">
+      <bpmn:conditionalEventDefinition id="CED_Outer" camunda:variableName="phase">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">${phase == 'closed'}</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handle_Outer" name="Handle the closed phase" />
+    <bpmn:endEvent id="End_Outer" />
+    <bpmn:callActivity id="Host_Call" name="Run the external check" calledElement="Process_Child">
+      <bpmn:extensionElements>
+        <camunda:out source="verdict" target="approval" />
+      </bpmn:extensionElements>
+    </bpmn:callActivity>
+    <bpmn:userTask id="After_Call" name="File the check" />
+    <bpmn:endEvent id="End_Call" />
+    <bpmn:boundaryEvent id="Call_Cond" attachedToRef="Host_Call" cancelActivity="false">
+      <bpmn:conditionalEventDefinition id="CED_Call" camunda:variableName="pause">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">${pause == true}</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handle_Pause" name="Handle the pause" />
+    <bpmn:endEvent id="End_Pause" />
+    <bpmn:userTask id="Watcher_Call" name="Watch the approval" />
+    <bpmn:userTask id="After_WatcherCall" name="File the approval watch" />
+    <bpmn:endEvent id="End_WatcherCall" />
+    <bpmn:boundaryEvent id="Approval_Cond" attachedToRef="Watcher_Call" cancelActivity="false">
+      <bpmn:conditionalEventDefinition id="CED_Approval" camunda:variableName="approval">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">${approval == 'yes'}</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handle_Approval" name="Handle the approval" />
+    <bpmn:endEvent id="End_Approval" />
+    <bpmn:userTask id="Host_MiUser" name="Review every lot together">
+      <bpmn:multiInstanceLoopCharacteristics isSequential="false" camunda:collection="items" camunda:elementVariable="item" />
+    </bpmn:userTask>
+    <bpmn:endEvent id="End_MiUser" />
+    <bpmn:boundaryEvent id="Halt_Mi" attachedToRef="Host_MiUser">
+      <bpmn:conditionalEventDefinition id="CED_Halt" camunda:variableName="halt">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">${halt == true}</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handle_Halt_Mi" name="Handle the halt" />
+    <bpmn:endEvent id="End_Halt_Mi" />
+    <bpmn:serviceTask id="Host_Service" name="Call the registry" implementation="urn:bpmn-lean:effect:probe-v1" camunda:delegateExpression="${bpmnLeanEffectHandler}" camunda:asyncBefore="true" />
+    <bpmn:endEvent id="End_Service" />
+    <bpmn:boundaryEvent id="Service_Cond" attachedToRef="Host_Service" cancelActivity="false">
+      <bpmn:conditionalEventDefinition id="CED_Service" camunda:variableName="poke">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">${poke == true}</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handle_Poke" name="Handle the poke" />
+    <bpmn:endEvent id="End_Poke" />
+    <bpmn:sequenceFlow id="Flow_Start_Hosts_Fork_Hosts" sourceRef="Start_Hosts" targetRef="Fork_Hosts" />
+    <bpmn:sequenceFlow id="Flow_Fork_Hosts_Host_Level" sourceRef="Fork_Hosts" targetRef="Host_Level" />
+    <bpmn:sequenceFlow id="Flow_Host_Level_After_Level" sourceRef="Host_Level" targetRef="After_Level" />
+    <bpmn:sequenceFlow id="Flow_After_Level_End_Level" sourceRef="After_Level" targetRef="End_Level" />
+    <bpmn:sequenceFlow id="Flow_Warn_Level_Handle_Warn" sourceRef="Warn_Level" targetRef="Handle_Warn" />
+    <bpmn:sequenceFlow id="Flow_Handle_Warn_End_Warn" sourceRef="Handle_Warn" targetRef="End_Warn" />
+    <bpmn:sequenceFlow id="Flow_Stop_Level_Handle_Stop_Level" sourceRef="Stop_Level" targetRef="Handle_Stop_Level" />
+    <bpmn:sequenceFlow id="Flow_Handle_Stop_Level_End_Stop_Level" sourceRef="Handle_Stop_Level" targetRef="End_Stop_Level" />
+    <bpmn:sequenceFlow id="Flow_Fork_Hosts_Writer" sourceRef="Fork_Hosts" targetRef="Writer" />
+    <bpmn:sequenceFlow id="Flow_Writer_End_Writer" sourceRef="Writer" targetRef="End_Writer" />
+    <bpmn:sequenceFlow id="Flow_Fork_Hosts_Watcher" sourceRef="Fork_Hosts" targetRef="Watcher" />
+    <bpmn:sequenceFlow id="Flow_Watcher_After_Watcher" sourceRef="Watcher" targetRef="After_Watcher" />
+    <bpmn:sequenceFlow id="Flow_After_Watcher_End_Watcher" sourceRef="After_Watcher" targetRef="End_Watcher" />
+    <bpmn:sequenceFlow id="Flow_Done_Watch_Handle_Done" sourceRef="Done_Watch" targetRef="Handle_Done" />
+    <bpmn:sequenceFlow id="Flow_Handle_Done_End_Done" sourceRef="Handle_Done" targetRef="End_Done" />
+    <bpmn:sequenceFlow id="Flow_Fork_Hosts_Host_Self" sourceRef="Fork_Hosts" targetRef="Host_Self" />
+    <bpmn:sequenceFlow id="Flow_Host_Self_After_Self" sourceRef="Host_Self" targetRef="After_Self" />
+    <bpmn:sequenceFlow id="Flow_After_Self_End_Self" sourceRef="After_Self" targetRef="End_Self" />
+    <bpmn:sequenceFlow id="Flow_Self_Cond_Handle_Self" sourceRef="Self_Cond" targetRef="Handle_Self" />
+    <bpmn:sequenceFlow id="Flow_Handle_Self_End_Self_Handler" sourceRef="Handle_Self" targetRef="End_Self_Handler" />
+    <bpmn:sequenceFlow id="Flow_Fork_Hosts_Bodies" sourceRef="Fork_Hosts" targetRef="Bodies" />
+    <bpmn:sequenceFlow id="Flow_Bodies_After_Bodies" sourceRef="Bodies" targetRef="After_Bodies" />
+    <bpmn:sequenceFlow id="Flow_After_Bodies_End_Bodies" sourceRef="After_Bodies" targetRef="End_Bodies" />
+    <bpmn:sequenceFlow id="Flow_Outer_Cond_Handle_Outer" sourceRef="Outer_Cond" targetRef="Handle_Outer" />
+    <bpmn:sequenceFlow id="Flow_Handle_Outer_End_Outer" sourceRef="Handle_Outer" targetRef="End_Outer" />
+    <bpmn:sequenceFlow id="Flow_Fork_Hosts_Host_Call" sourceRef="Fork_Hosts" targetRef="Host_Call" />
+    <bpmn:sequenceFlow id="Flow_Host_Call_After_Call" sourceRef="Host_Call" targetRef="After_Call" />
+    <bpmn:sequenceFlow id="Flow_After_Call_End_Call" sourceRef="After_Call" targetRef="End_Call" />
+    <bpmn:sequenceFlow id="Flow_Call_Cond_Handle_Pause" sourceRef="Call_Cond" targetRef="Handle_Pause" />
+    <bpmn:sequenceFlow id="Flow_Handle_Pause_End_Pause" sourceRef="Handle_Pause" targetRef="End_Pause" />
+    <bpmn:sequenceFlow id="Flow_Fork_Hosts_Watcher_Call" sourceRef="Fork_Hosts" targetRef="Watcher_Call" />
+    <bpmn:sequenceFlow id="Flow_Watcher_Call_After_WatcherCall" sourceRef="Watcher_Call" targetRef="After_WatcherCall" />
+    <bpmn:sequenceFlow id="Flow_After_WatcherCall_End_WatcherCall" sourceRef="After_WatcherCall" targetRef="End_WatcherCall" />
+    <bpmn:sequenceFlow id="Flow_Approval_Cond_Handle_Approval" sourceRef="Approval_Cond" targetRef="Handle_Approval" />
+    <bpmn:sequenceFlow id="Flow_Handle_Approval_End_Approval" sourceRef="Handle_Approval" targetRef="End_Approval" />
+    <bpmn:sequenceFlow id="Flow_Fork_Hosts_Host_MiUser" sourceRef="Fork_Hosts" targetRef="Host_MiUser" />
+    <bpmn:sequenceFlow id="Flow_Host_MiUser_End_MiUser" sourceRef="Host_MiUser" targetRef="End_MiUser" />
+    <bpmn:sequenceFlow id="Flow_Halt_Mi_Handle_Halt_Mi" sourceRef="Halt_Mi" targetRef="Handle_Halt_Mi" />
+    <bpmn:sequenceFlow id="Flow_Handle_Halt_Mi_End_Halt_Mi" sourceRef="Handle_Halt_Mi" targetRef="End_Halt_Mi" />
+    <bpmn:sequenceFlow id="Flow_Fork_Hosts_Host_Service" sourceRef="Fork_Hosts" targetRef="Host_Service" />
+    <bpmn:sequenceFlow id="Flow_Host_Service_End_Service" sourceRef="Host_Service" targetRef="End_Service" />
+    <bpmn:sequenceFlow id="Flow_Service_Cond_Handle_Poke" sourceRef="Service_Cond" targetRef="Handle_Poke" />
+    <bpmn:sequenceFlow id="Flow_Handle_Poke_End_Poke" sourceRef="Handle_Poke" targetRef="End_Poke" />
+  </bpmn:process>
+  <bpmn:process id="Process_Child" isExecutable="true">
+    <bpmn:startEvent id="Start_Child" />
+    <bpmn:userTask id="Child_Work" name="Carry out the check" />
+    <bpmn:endEvent id="End_Child" />
+    <bpmn:sequenceFlow id="Flow_Start_Child_Child_Work" sourceRef="Start_Child" targetRef="Child_Work" />
+    <bpmn:sequenceFlow id="Flow_Child_Work_End_Child" sourceRef="Child_Work" targetRef="End_Child" />
+  </bpmn:process>
+</bpmn:definitions>

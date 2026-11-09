@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_InterruptingHandlers"
+  targetNamespace="urn:bpmn-lean:scenarios:message-esp-interrupting">
+  <bpmn:itemDefinition id="ItemDefinition_Payload" structureRef="xsd:string" />
+  <bpmn:message id="Message_Cancel" name="cancelOrder" itemRef="ItemDefinition_Payload" />
+  <bpmn:message id="Message_Abort" name="abortRegion" itemRef="ItemDefinition_Payload" />
+  <bpmn:process id="Process_InterruptingHandlers" name="Order with interrupting Message handlers" isExecutable="true">
+    <bpmn:property id="Property_Reason" />
+    <bpmn:startEvent id="Start_Order" />
+    <bpmn:userTask id="Work" name="Prepare the order" />
+    <bpmn:subProcess id="Region" name="Inspect the lot">
+      <bpmn:property id="Property_AbortNote" />
+      <bpmn:startEvent id="Start_Inner" />
+      <bpmn:userTask id="Inner" name="Inspect the lot" />
+      <bpmn:endEvent id="End_Inner" />
+      <bpmn:sequenceFlow id="Flow_Start_Inner_Inner" sourceRef="Start_Inner" targetRef="Inner" />
+      <bpmn:sequenceFlow id="Flow_Inner_End_Inner" sourceRef="Inner" targetRef="End_Inner" />
+      <bpmn:subProcess id="ESP_RegionAbort" triggeredByEvent="true">
+        <bpmn:startEvent id="Start_RegionAbort">
+          <bpmn:dataOutput id="DataOutput_Start_RegionAbort" name="Start_RegionAbort payload" itemSubjectRef="ItemDefinition_Payload" />
+          <bpmn:dataOutputAssociation id="DataOutputAssociation_Start_RegionAbort">
+            <bpmn:sourceRef>DataOutput_Start_RegionAbort</bpmn:sourceRef>
+            <bpmn:targetRef>Property_AbortNote</bpmn:targetRef>
+          </bpmn:dataOutputAssociation>
+          <bpmn:outputSet id="OutputSet_Start_RegionAbort">
+            <bpmn:dataOutputRefs>DataOutput_Start_RegionAbort</bpmn:dataOutputRefs>
+          </bpmn:outputSet>
+          <bpmn:messageEventDefinition id="MED_RegionAbort" messageRef="Message_Abort" />
+        </bpmn:startEvent>
+        <bpmn:userTask id="Abort_Handler" name="Record the aborted lot" />
+        <bpmn:endEvent id="End_Abort_Handler" />
+        <bpmn:sequenceFlow id="Flow_Start_RegionAbort_Abort_Handler" sourceRef="Start_RegionAbort" targetRef="Abort_Handler" />
+        <bpmn:sequenceFlow id="Flow_Abort_Handler_End_Abort_Handler" sourceRef="Abort_Handler" targetRef="End_Abort_Handler" />
+      </bpmn:subProcess>
+    </bpmn:subProcess>
+    <bpmn:userTask id="Finish" name="Release the order" />
+    <bpmn:endEvent id="End_Order" />
+    <bpmn:sequenceFlow id="Flow_Start_Order_Work" sourceRef="Start_Order" targetRef="Work" />
+    <bpmn:sequenceFlow id="Flow_Work_Region" sourceRef="Work" targetRef="Region" />
+    <bpmn:sequenceFlow id="Flow_Region_Finish" sourceRef="Region" targetRef="Finish" />
+    <bpmn:sequenceFlow id="Flow_Finish_End_Order" sourceRef="Finish" targetRef="End_Order" />
+    <bpmn:subProcess id="ESP_Cancel" triggeredByEvent="true">
+      <bpmn:startEvent id="Start_Cancel">
+        <bpmn:dataOutput id="DataOutput_Start_Cancel" name="Start_Cancel payload" itemSubjectRef="ItemDefinition_Payload" />
+        <bpmn:dataOutputAssociation id="DataOutputAssociation_Start_Cancel">
+          <bpmn:sourceRef>DataOutput_Start_Cancel</bpmn:sourceRef>
+          <bpmn:targetRef>Property_Reason</bpmn:targetRef>
+        </bpmn:dataOutputAssociation>
+        <bpmn:outputSet id="OutputSet_Start_Cancel">
+          <bpmn:dataOutputRefs>DataOutput_Start_Cancel</bpmn:dataOutputRefs>
+        </bpmn:outputSet>
+        <bpmn:messageEventDefinition id="MED_Cancel" messageRef="Message_Cancel" />
+      </bpmn:startEvent>
+      <bpmn:userTask id="Cancel_Handler" name="Record the cancellation">
+        <bpmn:extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="orderSeen">${orderRef}</camunda:inputParameter>
+          </camunda:inputOutput>
+        </bpmn:extensionElements>
+      </bpmn:userTask>
+      <bpmn:endEvent id="End_Cancel_Handler" />
+      <bpmn:sequenceFlow id="Flow_Start_Cancel_Cancel_Handler" sourceRef="Start_Cancel" targetRef="Cancel_Handler" />
+      <bpmn:sequenceFlow id="Flow_Cancel_Handler_End_Cancel_Handler" sourceRef="Cancel_Handler" targetRef="End_Cancel_Handler" />
+    </bpmn:subProcess>
+  </bpmn:process>
+</bpmn:definitions>

@@ -1,0 +1,70 @@
+{
+  "kind": "scenario",
+  "id": "conditional-catch-true-at-the-gateway",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "conditional-catch-race",
+    "relativePath": "scenarios/open-rows/conditional-catch/race.bpmn",
+    "sha256": "b580076d2de9e75d6c6c7e9ca911397773a8f145f678284bb99574de72e53dd2",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "approved",
+          "value": {
+            "kind": "boolean",
+            "value": true
+          }
+        }
+      ]
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-complete-Prepare",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Prepare",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "deliver",
+      "commandId": "s03-deliver-Catch_Rejected",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Catch_Rejected",
+        "activation": 1
+      },
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "directMessage",
+          "messageId": "Message_Reject"
+        }
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 Table 10.95"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/IntermediateConditionalEventBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/ConditionalEventDefinition.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/event/ConditionalEventHandler.java",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/event/conditional/IntermediateConditionalEventTest.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/EventBasedGatewayActivityBehavior.java"
+    ]
+  }
+}

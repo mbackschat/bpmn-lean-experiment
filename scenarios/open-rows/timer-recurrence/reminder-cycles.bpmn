@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_ReminderCycles"
+  targetNamespace="urn:bpmn-lean:scenarios:timer-recurrence">
+  <bpmn:process id="Process_ReminderCycles" name="Recurring reminders on review work" isExecutable="true">
+    <bpmn:startEvent id="Start_Cycles" />
+    <bpmn:exclusiveGateway id="Gateway_Pick" gatewayDirection="Diverging" />
+    <bpmn:userTask id="Host_Count" name="Review (count)" />
+    <bpmn:boundaryEvent id="Cycle_Count" name="Reminder R3/PT10S" attachedToRef="Host_Count" cancelActivity="false">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeCycle xsi:type="bpmn:tFormalExpression">R3/PT10S</bpmn:timeCycle>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handler_Count" name="Respond to the reminder (count)" />
+    <bpmn:endEvent id="End_Host_Count" />
+    <bpmn:endEvent id="End_Handler_Count" />
+    <bpmn:userTask id="Host_Dated" name="Review (dated)" />
+    <bpmn:boundaryEvent id="Cycle_Dated" name="Reminder R2/1970-01-01T00:01:00Z/PT20S" attachedToRef="Host_Dated" cancelActivity="false">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeCycle xsi:type="bpmn:tFormalExpression">R2/1970-01-01T00:01:00Z/PT20S</bpmn:timeCycle>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handler_Dated" name="Respond to the reminder (dated)" />
+    <bpmn:endEvent id="End_Host_Dated" />
+    <bpmn:endEvent id="End_Handler_Dated" />
+    <bpmn:userTask id="Host_DatedEnd" name="Review (dated-end)" />
+    <bpmn:boundaryEvent id="Cycle_DatedEnd" name="Reminder R2/1970-01-01T00:01:00Z/1970-01-01T00:01:20Z" attachedToRef="Host_DatedEnd" cancelActivity="false">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeCycle xsi:type="bpmn:tFormalExpression">R2/1970-01-01T00:01:00Z/1970-01-01T00:01:20Z</bpmn:timeCycle>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handler_DatedEnd" name="Respond to the reminder (dated-end)" />
+    <bpmn:endEvent id="End_Host_DatedEnd" />
+    <bpmn:endEvent id="End_Handler_DatedEnd" />
+    <bpmn:userTask id="Host_Cron" name="Review (cron)" />
+    <bpmn:boundaryEvent id="Cycle_Cron" name="Reminder 0/30 * * * * ?" attachedToRef="Host_Cron" cancelActivity="false">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeCycle xsi:type="bpmn:tFormalExpression">0/30 * * * * ?</bpmn:timeCycle>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handler_Cron" name="Respond to the reminder (cron)" />
+    <bpmn:endEvent id="End_Host_Cron" />
+    <bpmn:endEvent id="End_Handler_Cron" />
+    <bpmn:userTask id="Host_Interrupting" name="Review (interrupting cycle)" />
+    <bpmn:boundaryEvent id="Cycle_Interrupting" name="Deadline R3/PT10S" attachedToRef="Host_Interrupting">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeCycle xsi:type="bpmn:tFormalExpression">R3/PT10S</bpmn:timeCycle>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handler_Interrupting" name="Respond to the deadline" />
+    <bpmn:endEvent id="End_Host_Interrupting" />
+    <bpmn:endEvent id="End_Handler_Interrupting" />
+    <bpmn:intermediateCatchEvent id="Catch_CatchCycle" name="Wait R3/PT10S">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeCycle xsi:type="bpmn:tFormalExpression">R3/PT10S</bpmn:timeCycle>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:userTask id="Proceed_CatchCycle" name="Proceed (catch-cycle)" />
+    <bpmn:endEvent id="End_CatchCycle" />
+    <bpmn:intermediateCatchEvent id="Catch_CatchCron" name="Wait 0/30 * * * * ?">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeCycle xsi:type="bpmn:tFormalExpression">0/30 * * * * ?</bpmn:timeCycle>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:userTask id="Proceed_CatchCron" name="Proceed (catch-cron)" />
+    <bpmn:endEvent id="End_CatchCron" />
+    <bpmn:sequenceFlow id="Flow_Start_Cycles_Gateway_Pick" sourceRef="Start_Cycles" targetRef="Gateway_Pick" />
+    <bpmn:sequenceFlow id="Flow_Gateway_Pick_Host_Count" sourceRef="Gateway_Pick" targetRef="Host_Count">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${form == 'count'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Host_Count_End_Host_Count" sourceRef="Host_Count" targetRef="End_Host_Count" />
+    <bpmn:sequenceFlow id="Flow_Cycle_Count_Handler_Count" sourceRef="Cycle_Count" targetRef="Handler_Count" />
+    <bpmn:sequenceFlow id="Flow_Handler_Count_End_Handler_Count" sourceRef="Handler_Count" targetRef="End_Handler_Count" />
+    <bpmn:sequenceFlow id="Flow_Gateway_Pick_Host_Dated" sourceRef="Gateway_Pick" targetRef="Host_Dated">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${form == 'dated'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Host_Dated_End_Host_Dated" sourceRef="Host_Dated" targetRef="End_Host_Dated" />
+    <bpmn:sequenceFlow id="Flow_Cycle_Dated_Handler_Dated" sourceRef="Cycle_Dated" targetRef="Handler_Dated" />
+    <bpmn:sequenceFlow id="Flow_Handler_Dated_End_Handler_Dated" sourceRef="Handler_Dated" targetRef="End_Handler_Dated" />
+    <bpmn:sequenceFlow id="Flow_Gateway_Pick_Host_DatedEnd" sourceRef="Gateway_Pick" targetRef="Host_DatedEnd">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${form == 'dated-end'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Host_DatedEnd_End_Host_DatedEnd" sourceRef="Host_DatedEnd" targetRef="End_Host_DatedEnd" />
+    <bpmn:sequenceFlow id="Flow_Cycle_DatedEnd_Handler_DatedEnd" sourceRef="Cycle_DatedEnd" targetRef="Handler_DatedEnd" />
+    <bpmn:sequenceFlow id="Flow_Handler_DatedEnd_End_Handler_DatedEnd" sourceRef="Handler_DatedEnd" targetRef="End_Handler_DatedEnd" />
+    <bpmn:sequenceFlow id="Flow_Gateway_Pick_Host_Cron" sourceRef="Gateway_Pick" targetRef="Host_Cron">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${form == 'cron'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Host_Cron_End_Host_Cron" sourceRef="Host_Cron" targetRef="End_Host_Cron" />
+    <bpmn:sequenceFlow id="Flow_Cycle_Cron_Handler_Cron" sourceRef="Cycle_Cron" targetRef="Handler_Cron" />
+    <bpmn:sequenceFlow id="Flow_Handler_Cron_End_Handler_Cron" sourceRef="Handler_Cron" targetRef="End_Handler_Cron" />
+    <bpmn:sequenceFlow id="Flow_Gateway_Pick_Host_Interrupting" sourceRef="Gateway_Pick" targetRef="Host_Interrupting">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${form == 'interrupting'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Host_Interrupting_End_Host_Interrupting" sourceRef="Host_Interrupting" targetRef="End_Host_Interrupting" />
+    <bpmn:sequenceFlow id="Flow_Cycle_Interrupting_Handler_Interrupting" sourceRef="Cycle_Interrupting" targetRef="Handler_Interrupting" />
+    <bpmn:sequenceFlow id="Flow_Handler_Interrupting_End_Handler_Interrupting" sourceRef="Handler_Interrupting" targetRef="End_Handler_Interrupting" />
+    <bpmn:sequenceFlow id="Flow_Gateway_Pick_Catch_CatchCycle" sourceRef="Gateway_Pick" targetRef="Catch_CatchCycle">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${form == 'catch-cycle'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Catch_CatchCycle_Proceed_CatchCycle" sourceRef="Catch_CatchCycle" targetRef="Proceed_CatchCycle" />
+    <bpmn:sequenceFlow id="Flow_Proceed_CatchCycle_End_CatchCycle" sourceRef="Proceed_CatchCycle" targetRef="End_CatchCycle" />
+    <bpmn:sequenceFlow id="Flow_Gateway_Pick_Catch_CatchCron" sourceRef="Gateway_Pick" targetRef="Catch_CatchCron">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${form == 'catch-cron'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Catch_CatchCron_Proceed_CatchCron" sourceRef="Catch_CatchCron" targetRef="Proceed_CatchCron" />
+    <bpmn:sequenceFlow id="Flow_Proceed_CatchCron_End_CatchCron" sourceRef="Proceed_CatchCron" targetRef="End_CatchCron" />
+  </bpmn:process>
+</bpmn:definitions>

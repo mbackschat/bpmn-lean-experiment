@@ -1,0 +1,40 @@
+{
+  "kind": "scenario",
+  "id": "timer-duration-forms-form-negative",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "timer-duration-forms",
+    "relativePath": "scenarios/open-rows/timer-duration-forms/duration-forms.bpmn",
+    "sha256": "7ce14f7e4df7406ee6bc615d5759b2f208d4f77490d2ff2670583463601299a6",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "form",
+          "value": {
+            "kind": "string",
+            "value": "negative"
+          }
+        }
+      ]
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.5.4",
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 Table 10.101"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/jobexecutor/TimerDeclarationImpl.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/calendar/DurationHelper.java",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/event/timer/IntermediateTimerEventTest.java"
+    ]
+  }
+}

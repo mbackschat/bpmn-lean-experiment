@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_DateForms"
+  targetNamespace="urn:bpmn-lean:scenarios:timer-date-forms">
+  <bpmn:process id="Process_DateForms" name="Wait until a date" isExecutable="true">
+    <bpmn:startEvent id="Start_Dates" />
+    <bpmn:exclusiveGateway id="Gateway_Delay" gatewayDirection="Diverging" default="Flow_Gateway_Delay_Gateway_Merge_Delay" />
+    <bpmn:intermediateCatchEvent id="Catch_Delay" name="Let two hours pass">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT2H</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:exclusiveGateway id="Gateway_Merge_Delay" gatewayDirection="Converging" />
+    <bpmn:exclusiveGateway id="Gateway_Pick" gatewayDirection="Diverging" />
+    <bpmn:exclusiveGateway id="Gateway_Merge_Dates" gatewayDirection="Converging" />
+    <bpmn:userTask id="Proceed" name="Proceed after the date" />
+    <bpmn:endEvent id="End_Dates" />
+    <bpmn:intermediateCatchEvent id="Catch_Future" name="Wait until 1970-01-01T01:00:00Z">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDate xsi:type="bpmn:tFormalExpression">1970-01-01T01:00:00Z</bpmn:timeDate>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="Catch_Fraction" name="Wait until 1970-01-01T01:00:00.500Z">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDate xsi:type="bpmn:tFormalExpression">1970-01-01T01:00:00.500Z</bpmn:timeDate>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="Catch_UtcOffset" name="Wait until 1970-01-01T01:00:00+00:00">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDate xsi:type="bpmn:tFormalExpression">1970-01-01T01:00:00+00:00</bpmn:timeDate>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="Catch_Far" name="Wait until 2100-01-01T00:00:00Z">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDate xsi:type="bpmn:tFormalExpression">2100-01-01T00:00:00Z</bpmn:timeDate>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="Catch_Now" name="Wait until 1970-01-01T02:00:00Z">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDate xsi:type="bpmn:tFormalExpression">1970-01-01T02:00:00Z</bpmn:timeDate>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="Catch_Malformed" name="Wait until 1970-13-45T25:61:61Z">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDate xsi:type="bpmn:tFormalExpression">1970-13-45T25:61:61Z</bpmn:timeDate>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="Catch_Lowercase" name="Wait until 1970-01-01t01:00:00z">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDate xsi:type="bpmn:tFormalExpression">1970-01-01t01:00:00z</bpmn:timeDate>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:sequenceFlow id="Flow_Start_Dates_Gateway_Delay" sourceRef="Start_Dates" targetRef="Gateway_Delay" />
+    <bpmn:sequenceFlow id="Flow_Gateway_Delay_Catch_Delay" sourceRef="Gateway_Delay" targetRef="Catch_Delay">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${delayed == true}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Gateway_Delay_Gateway_Merge_Delay" sourceRef="Gateway_Delay" targetRef="Gateway_Merge_Delay" />
+    <bpmn:sequenceFlow id="Flow_Catch_Delay_Gateway_Merge_Delay" sourceRef="Catch_Delay" targetRef="Gateway_Merge_Delay" />
+    <bpmn:sequenceFlow id="Flow_Gateway_Merge_Delay_Gateway_Pick" sourceRef="Gateway_Merge_Delay" targetRef="Gateway_Pick" />
+    <bpmn:sequenceFlow id="Flow_Gateway_Merge_Dates_Proceed" sourceRef="Gateway_Merge_Dates" targetRef="Proceed" />
+    <bpmn:sequenceFlow id="Flow_Proceed_End_Dates" sourceRef="Proceed" targetRef="End_Dates" />
+    <bpmn:sequenceFlow id="Flow_Gateway_Pick_Catch_Future" sourceRef="Gateway_Pick" targetRef="Catch_Future">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${form == 'future'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Catch_Future_Gateway_Merge_Dates" sourceRef="Catch_Future" targetRef="Gateway_Merge_Dates" />
+    <bpmn:sequenceFlow id="Flow_Gateway_Pick_Catch_Fraction" sourceRef="Gateway_Pick" targetRef="Catch_Fraction">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${form == 'fraction'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Catch_Fraction_Gateway_Merge_Dates" sourceRef="Catch_Fraction" targetRef="Gateway_Merge_Dates" />
+    <bpmn:sequenceFlow id="Flow_Gateway_Pick_Catch_UtcOffset" sourceRef="Gateway_Pick" targetRef="Catch_UtcOffset">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${form == 'utc-offset'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Catch_UtcOffset_Gateway_Merge_Dates" sourceRef="Catch_UtcOffset" targetRef="Gateway_Merge_Dates" />
+    <bpmn:sequenceFlow id="Flow_Gateway_Pick_Catch_Far" sourceRef="Gateway_Pick" targetRef="Catch_Far">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${form == 'far'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Catch_Far_Gateway_Merge_Dates" sourceRef="Catch_Far" targetRef="Gateway_Merge_Dates" />
+    <bpmn:sequenceFlow id="Flow_Gateway_Pick_Catch_Now" sourceRef="Gateway_Pick" targetRef="Catch_Now">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${form == 'now'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Catch_Now_Gateway_Merge_Dates" sourceRef="Catch_Now" targetRef="Gateway_Merge_Dates" />
+    <bpmn:sequenceFlow id="Flow_Gateway_Pick_Catch_Malformed" sourceRef="Gateway_Pick" targetRef="Catch_Malformed">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${form == 'malformed'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Catch_Malformed_Gateway_Merge_Dates" sourceRef="Catch_Malformed" targetRef="Gateway_Merge_Dates" />
+    <bpmn:sequenceFlow id="Flow_Gateway_Pick_Catch_Lowercase" sourceRef="Gateway_Pick" targetRef="Catch_Lowercase">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${form == 'lowercase'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Catch_Lowercase_Gateway_Merge_Dates" sourceRef="Catch_Lowercase" targetRef="Gateway_Merge_Dates" />
+  </bpmn:process>
+</bpmn:definitions>

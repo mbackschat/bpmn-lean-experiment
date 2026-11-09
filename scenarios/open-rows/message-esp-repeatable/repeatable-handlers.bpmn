@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_RepeatableHandlers"
+  targetNamespace="urn:bpmn-lean:scenarios:message-esp-repeatable">
+  <bpmn:message id="Message_Notice" name="notice" />
+  <bpmn:message id="Message_Ack" name="ack" />
+  <bpmn:message id="Message_RegionNotice" name="regionNotice" />
+  <bpmn:message id="Message_ParNotice" name="parNotice" />
+  <bpmn:message id="Message_SeqNotice" name="seqNotice" />
+  <bpmn:process id="Process_RepeatableHandlers" name="Shipment with repeatable notice handlers" isExecutable="true">
+    <bpmn:startEvent id="Start_Handlers" />
+    <bpmn:parallelGateway id="Fork_Handlers" gatewayDirection="Diverging" />
+    <bpmn:sequenceFlow id="Flow_Start_Handlers_Fork_Handlers" sourceRef="Start_Handlers" targetRef="Fork_Handlers" />
+    <bpmn:userTask id="Work" name="Prepare the shipment" />
+    <bpmn:userTask id="Finish" name="Release the shipment" />
+    <bpmn:endEvent id="End_Handlers" />
+    <bpmn:sequenceFlow id="Flow_Fork_Handlers_Work" sourceRef="Fork_Handlers" targetRef="Work" />
+    <bpmn:sequenceFlow id="Flow_Work_Finish" sourceRef="Work" targetRef="Finish" />
+    <bpmn:sequenceFlow id="Flow_Finish_End_Handlers" sourceRef="Finish" targetRef="End_Handlers" />
+    <bpmn:subProcess id="Region" name="Inspect the lot">
+      <bpmn:startEvent id="Start_Inner" />
+      <bpmn:userTask id="Inner" name="Inspect the lot" />
+      <bpmn:endEvent id="End_Inner" />
+      <bpmn:sequenceFlow id="Flow_Start_Inner_Inner" sourceRef="Start_Inner" targetRef="Inner" />
+      <bpmn:sequenceFlow id="Flow_Inner_End_Inner" sourceRef="Inner" targetRef="End_Inner" />
+      <bpmn:subProcess id="ESP_RegionNotice" triggeredByEvent="true">
+        <bpmn:startEvent id="Start_RegionNotice" isInterrupting="false">
+          <bpmn:messageEventDefinition id="MED_RegionNotice" messageRef="Message_RegionNotice" />
+        </bpmn:startEvent>
+        <bpmn:userTask id="Handle_RegionNotice" name="Handle the region notice" />
+        <bpmn:endEvent id="End_RegionNotice" />
+        <bpmn:sequenceFlow id="Flow_Start_RegionNotice_Handle_RegionNotice" sourceRef="Start_RegionNotice" targetRef="Handle_RegionNotice" />
+        <bpmn:sequenceFlow id="Flow_Handle_RegionNotice_End_RegionNotice" sourceRef="Handle_RegionNotice" targetRef="End_RegionNotice" />
+      </bpmn:subProcess>
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_Region_Outer" />
+    <bpmn:sequenceFlow id="Flow_Fork_Handlers_Region" sourceRef="Fork_Handlers" targetRef="Region" />
+    <bpmn:sequenceFlow id="Flow_Region_End_Region_Outer" sourceRef="Region" targetRef="End_Region_Outer" />
+    <bpmn:subProcess id="Bodies_Par" name="Inspect lots (par)">
+      <bpmn:multiInstanceLoopCharacteristics isSequential="false" camunda:collection="items" camunda:elementVariable="item" />
+      <bpmn:startEvent id="Start_Par" />
+      <bpmn:userTask id="Inner_Par" name="Inspect one par lot" />
+      <bpmn:endEvent id="End_Inner_Par" />
+      <bpmn:sequenceFlow id="Flow_Start_Par_Inner_Par" sourceRef="Start_Par" targetRef="Inner_Par" />
+      <bpmn:sequenceFlow id="Flow_Inner_Par_End_Inner_Par" sourceRef="Inner_Par" targetRef="End_Inner_Par" />
+      <bpmn:subProcess id="ESP_ParNotice" triggeredByEvent="true">
+        <bpmn:startEvent id="Start_ParNotice" isInterrupting="false">
+          <bpmn:messageEventDefinition id="MED_ParNotice" messageRef="Message_ParNotice" />
+        </bpmn:startEvent>
+        <bpmn:userTask id="Handle_ParNotice" name="Handle the par notice" />
+        <bpmn:endEvent id="End_ParNotice" />
+        <bpmn:sequenceFlow id="Flow_Start_ParNotice_Handle_ParNotice" sourceRef="Start_ParNotice" targetRef="Handle_ParNotice" />
+        <bpmn:sequenceFlow id="Flow_Handle_ParNotice_End_ParNotice" sourceRef="Handle_ParNotice" targetRef="End_ParNotice" />
+      </bpmn:subProcess>
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_Par_Outer" />
+    <bpmn:sequenceFlow id="Flow_Fork_Handlers_Bodies_Par" sourceRef="Fork_Handlers" targetRef="Bodies_Par" />
+    <bpmn:sequenceFlow id="Flow_Bodies_Par_End_Par_Outer" sourceRef="Bodies_Par" targetRef="End_Par_Outer" />
+    <bpmn:subProcess id="Bodies_Seq" name="Inspect lots (seq)">
+      <bpmn:multiInstanceLoopCharacteristics isSequential="true" camunda:collection="items" camunda:elementVariable="item" />
+      <bpmn:startEvent id="Start_Seq" />
+      <bpmn:userTask id="Inner_Seq" name="Inspect one seq lot" />
+      <bpmn:endEvent id="End_Inner_Seq" />
+      <bpmn:sequenceFlow id="Flow_Start_Seq_Inner_Seq" sourceRef="Start_Seq" targetRef="Inner_Seq" />
+      <bpmn:sequenceFlow id="Flow_Inner_Seq_End_Inner_Seq" sourceRef="Inner_Seq" targetRef="End_Inner_Seq" />
+      <bpmn:subProcess id="ESP_SeqNotice" triggeredByEvent="true">
+        <bpmn:startEvent id="Start_SeqNotice" isInterrupting="false">
+          <bpmn:messageEventDefinition id="MED_SeqNotice" messageRef="Message_SeqNotice" />
+        </bpmn:startEvent>
+        <bpmn:userTask id="Handle_SeqNotice" name="Handle the seq notice" />
+        <bpmn:endEvent id="End_SeqNotice" />
+        <bpmn:sequenceFlow id="Flow_Start_SeqNotice_Handle_SeqNotice" sourceRef="Start_SeqNotice" targetRef="Handle_SeqNotice" />
+        <bpmn:sequenceFlow id="Flow_Handle_SeqNotice_End_SeqNotice" sourceRef="Handle_SeqNotice" targetRef="End_SeqNotice" />
+      </bpmn:subProcess>
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_Seq_Outer" />
+    <bpmn:sequenceFlow id="Flow_Fork_Handlers_Bodies_Seq" sourceRef="Fork_Handlers" targetRef="Bodies_Seq" />
+    <bpmn:sequenceFlow id="Flow_Bodies_Seq_End_Seq_Outer" sourceRef="Bodies_Seq" targetRef="End_Seq_Outer" />
+    <bpmn:subProcess id="ESP_Notice" triggeredByEvent="true">
+      <bpmn:startEvent id="Start_Notice" isInterrupting="false">
+        <bpmn:messageEventDefinition id="MED_Notice" messageRef="Message_Notice" />
+      </bpmn:startEvent>
+      <bpmn:userTask id="Handle_Notice" name="Handle the notice" />
+      <bpmn:receiveTask id="Await_Ack" name="Await the acknowledgement" messageRef="Message_Ack" />
+      <bpmn:boundaryEvent id="Ack_Deadline" attachedToRef="Await_Ack">
+        <bpmn:timerEventDefinition>
+          <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT30S</bpmn:timeDuration>
+        </bpmn:timerEventDefinition>
+      </bpmn:boundaryEvent>
+      <bpmn:userTask id="Ack_Late" name="Chase the acknowledgement" />
+      <bpmn:endEvent id="End_Notice" />
+      <bpmn:endEvent id="End_Ack_Late" />
+      <bpmn:sequenceFlow id="Flow_Start_Notice_Handle_Notice" sourceRef="Start_Notice" targetRef="Handle_Notice" />
+      <bpmn:sequenceFlow id="Flow_Handle_Notice_Await_Ack" sourceRef="Handle_Notice" targetRef="Await_Ack" />
+      <bpmn:sequenceFlow id="Flow_Await_Ack_End_Notice" sourceRef="Await_Ack" targetRef="End_Notice" />
+      <bpmn:sequenceFlow id="Flow_Ack_Deadline_Ack_Late" sourceRef="Ack_Deadline" targetRef="Ack_Late" />
+      <bpmn:sequenceFlow id="Flow_Ack_Late_End_Ack_Late" sourceRef="Ack_Late" targetRef="End_Ack_Late" />
+    </bpmn:subProcess>
+  </bpmn:process>
+</bpmn:definitions>

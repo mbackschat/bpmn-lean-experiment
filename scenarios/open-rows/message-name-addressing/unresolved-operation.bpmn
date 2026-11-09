@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_Unresolved"
+  targetNamespace="urn:bpmn-lean:scenarios:message-name-addressing:unresolved">
+  <bpmn:message id="Message_Dangling" name="dangling notice" />
+  <bpmn:process id="Process_Unresolved" name="Wait with an unresolved Operation" isExecutable="true">
+    <bpmn:startEvent id="Start_Dangling" />
+    <bpmn:intermediateCatchEvent id="Catch_Dangling">
+      <bpmn:messageEventDefinition id="MED_Dangling" messageRef="Message_Dangling">
+        <bpmn:operationRef>Operation_Missing</bpmn:operationRef>
+      </bpmn:messageEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:userTask id="Proceed_Dangling" name="Proceed" />
+    <bpmn:endEvent id="End_Dangling" />
+    <bpmn:sequenceFlow id="Flow_Start_Dangling_Catch_Dangling" sourceRef="Start_Dangling" targetRef="Catch_Dangling" />
+    <bpmn:sequenceFlow id="Flow_Catch_Dangling_Proceed_Dangling" sourceRef="Catch_Dangling" targetRef="Proceed_Dangling" />
+    <bpmn:sequenceFlow id="Flow_Proceed_Dangling_End_Dangling" sourceRef="Proceed_Dangling" targetRef="End_Dangling" />
+  </bpmn:process>
+</bpmn:definitions>

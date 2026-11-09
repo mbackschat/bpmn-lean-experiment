@@ -1,0 +1,129 @@
+{
+  "kind": "scenario",
+  "id": "conditional-esp-process-alert-repeats",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "conditional-esp",
+    "relativePath": "scenarios/open-rows/conditional-esp/conditional-handlers.bpmn",
+    "sha256": "f7b83629e8071e5c7c36e1451d064df8ec710fb07d7ef4a2e46b0006df0dd87f",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-set-level",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Work",
+        "activation": 1
+      },
+      "action": {
+        "kind": "setVariables",
+        "values": [
+          {
+            "name": "level",
+            "value": {
+              "kind": "integer",
+              "value": 6
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-set-level",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Work",
+        "activation": 1
+      },
+      "action": {
+        "kind": "setVariables",
+        "values": [
+          {
+            "name": "level",
+            "value": {
+              "kind": "integer",
+              "value": 7
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s04-complete-Handle_Alert",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Handle_Alert",
+        "activation": 2
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s05-complete-Handle_Alert",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Handle_Alert",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s06-complete-Work",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Work",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s07-complete-Finish",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Finish",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 Table 10.95",
+      "BPMN 2.0.2 §10.3.5",
+      "BPMN 2.0.2 §13.5.4"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/EventSubProcessStartConditionalEventActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/ConditionalEventDefinition.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/event/ConditionalEventHandler.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/persistence/entity/ExecutionEntity.java",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/event/conditional/EventSubProcessStartConditionalEventTest.java"
+    ]
+  }
+}

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_ConditionalCatches"
+  targetNamespace="urn:bpmn-lean:scenarios:conditional-catch:catches">
+  <bpmn:process id="Process_ConditionalCatches" name="Release when ready" isExecutable="true">
+    <bpmn:startEvent id="Start_Ready" />
+    <bpmn:userTask id="Prepare" name="Prepare the release" />
+    <bpmn:intermediateCatchEvent id="Catch_Ready" name="Wait until ready">
+      <bpmn:conditionalEventDefinition id="CED_Ready" camunda:variableName="ready">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">${ready == true}</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:userTask id="Proceed_Ready" name="Release" />
+    <bpmn:endEvent id="End_Ready" />
+    <bpmn:sequenceFlow id="Flow_Start_Ready_Prepare" sourceRef="Start_Ready" targetRef="Prepare" />
+    <bpmn:sequenceFlow id="Flow_Prepare_Catch_Ready" sourceRef="Prepare" targetRef="Catch_Ready" />
+    <bpmn:sequenceFlow id="Flow_Catch_Ready_Proceed_Ready" sourceRef="Catch_Ready" targetRef="Proceed_Ready" />
+    <bpmn:sequenceFlow id="Flow_Proceed_Ready_End_Ready" sourceRef="Proceed_Ready" targetRef="End_Ready" />
+  </bpmn:process>
+</bpmn:definitions>

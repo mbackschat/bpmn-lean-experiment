@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_DerivedDeadlines"
+  targetNamespace="urn:bpmn-lean:scenarios:timer-data-derived">
+  <bpmn:process id="Process_DerivedDeadlines" name="Deadlines read from Process data" isExecutable="true">
+    <bpmn:startEvent id="Start_Derived" />
+    <bpmn:userTask id="Prepare" name="Prepare the deadline inputs" />
+    <bpmn:exclusiveGateway id="Gateway_Route" gatewayDirection="Diverging" />
+    <bpmn:intermediateCatchEvent id="Catch_Delay" name="Wait for the delay">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">${delay}</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:userTask id="Proceed_Catch" name="Proceed after the delay" />
+    <bpmn:endEvent id="End_Catch" />
+    <bpmn:userTask id="Host_Work" name="Work against a limit" />
+    <bpmn:boundaryEvent id="Limit" name="Limit reached" attachedToRef="Host_Work">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">${limit}</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handler_Limit" name="Handle the limit" />
+    <bpmn:endEvent id="End_Work" />
+    <bpmn:endEvent id="End_Limit" />
+    <bpmn:intermediateCatchEvent id="Catch_Due" name="Wait until the due date">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDate xsi:type="bpmn:tFormalExpression">${due}</bpmn:timeDate>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:userTask id="Proceed_Date" name="Proceed after the due date" />
+    <bpmn:endEvent id="End_Date" />
+    <bpmn:userTask id="Host_Remind" name="Work with reminders" />
+    <bpmn:boundaryEvent id="Cadence" name="Reminder cadence" attachedToRef="Host_Remind" cancelActivity="false">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeCycle xsi:type="bpmn:tFormalExpression">${cadence}</bpmn:timeCycle>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handler_Cadence" name="Respond to the reminder" />
+    <bpmn:endEvent id="End_Remind" />
+    <bpmn:endEvent id="End_Cadence" />
+    <bpmn:sequenceFlow id="Flow_Start_Derived_Prepare" sourceRef="Start_Derived" targetRef="Prepare" />
+    <bpmn:sequenceFlow id="Flow_Prepare_Gateway_Route" sourceRef="Prepare" targetRef="Gateway_Route" />
+    <bpmn:sequenceFlow id="Flow_Gateway_Route_Catch_Delay" sourceRef="Gateway_Route" targetRef="Catch_Delay">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${route == 'catch'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Catch_Delay_Proceed_Catch" sourceRef="Catch_Delay" targetRef="Proceed_Catch" />
+    <bpmn:sequenceFlow id="Flow_Proceed_Catch_End_Catch" sourceRef="Proceed_Catch" targetRef="End_Catch" />
+    <bpmn:sequenceFlow id="Flow_Gateway_Route_Host_Work" sourceRef="Gateway_Route" targetRef="Host_Work">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${route == 'boundary'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Host_Work_End_Work" sourceRef="Host_Work" targetRef="End_Work" />
+    <bpmn:sequenceFlow id="Flow_Limit_Handler_Limit" sourceRef="Limit" targetRef="Handler_Limit" />
+    <bpmn:sequenceFlow id="Flow_Handler_Limit_End_Limit" sourceRef="Handler_Limit" targetRef="End_Limit" />
+    <bpmn:sequenceFlow id="Flow_Gateway_Route_Catch_Due" sourceRef="Gateway_Route" targetRef="Catch_Due">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${route == 'date'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Catch_Due_Proceed_Date" sourceRef="Catch_Due" targetRef="Proceed_Date" />
+    <bpmn:sequenceFlow id="Flow_Proceed_Date_End_Date" sourceRef="Proceed_Date" targetRef="End_Date" />
+    <bpmn:sequenceFlow id="Flow_Gateway_Route_Host_Remind" sourceRef="Gateway_Route" targetRef="Host_Remind">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${route == 'cycle'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Host_Remind_End_Remind" sourceRef="Host_Remind" targetRef="End_Remind" />
+    <bpmn:sequenceFlow id="Flow_Cadence_Handler_Cadence" sourceRef="Cadence" targetRef="Handler_Cadence" />
+    <bpmn:sequenceFlow id="Flow_Handler_Cadence_End_Cadence" sourceRef="Handler_Cadence" targetRef="End_Cadence" />
+  </bpmn:process>
+</bpmn:definitions>

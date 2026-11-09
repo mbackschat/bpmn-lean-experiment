@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_ReviewLoop"
+  targetNamespace="urn:bpmn-lean:scenarios:timer-catch-cycles">
+  <bpmn:message id="Message_Docs" name="documents" />
+  <bpmn:process id="Process_ReviewLoop" name="Review loop with waits" isExecutable="true">
+    <bpmn:startEvent id="Start_Loop" />
+    <bpmn:parallelGateway id="Fork_Loop" gatewayDirection="Diverging" />
+    <bpmn:exclusiveGateway id="Merge_Loop" gatewayDirection="Converging" />
+    <bpmn:userTask id="Draft" name="Draft the report" />
+    <bpmn:intermediateCatchEvent id="Catch_Wait" name="Cooling-off wait">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT10S</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:userTask id="Review" name="Review the draft" />
+    <bpmn:intermediateCatchEvent id="Catch_Cycle" name="Second wait with a cycle">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeCycle xsi:type="bpmn:tFormalExpression">R3/PT10S</bpmn:timeCycle>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:userTask id="Approve" name="Approve or send back" />
+    <bpmn:exclusiveGateway id="Gateway_Again" gatewayDirection="Diverging" default="Flow_Gateway_Again_End_Loop" />
+    <bpmn:endEvent id="End_Loop" />
+    <bpmn:intermediateCatchEvent id="Catch_Branch" name="Wait for the supplier window">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT25S</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:receiveTask id="Await_Docs" name="Await the documents" messageRef="Message_Docs" />
+    <bpmn:endEvent id="End_Branch" />
+    <bpmn:sequenceFlow id="Flow_Start_Loop_Fork_Loop" sourceRef="Start_Loop" targetRef="Fork_Loop" />
+    <bpmn:sequenceFlow id="Flow_Fork_Loop_Merge_Loop" sourceRef="Fork_Loop" targetRef="Merge_Loop" />
+    <bpmn:sequenceFlow id="Flow_Merge_Loop_Draft" sourceRef="Merge_Loop" targetRef="Draft" />
+    <bpmn:sequenceFlow id="Flow_Draft_Catch_Wait" sourceRef="Draft" targetRef="Catch_Wait" />
+    <bpmn:sequenceFlow id="Flow_Catch_Wait_Review" sourceRef="Catch_Wait" targetRef="Review" />
+    <bpmn:sequenceFlow id="Flow_Review_Catch_Cycle" sourceRef="Review" targetRef="Catch_Cycle" />
+    <bpmn:sequenceFlow id="Flow_Catch_Cycle_Approve" sourceRef="Catch_Cycle" targetRef="Approve" />
+    <bpmn:sequenceFlow id="Flow_Approve_Gateway_Again" sourceRef="Approve" targetRef="Gateway_Again" />
+    <bpmn:sequenceFlow id="Flow_Gateway_Again_Merge_Loop" sourceRef="Gateway_Again" targetRef="Merge_Loop">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${again == true}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Gateway_Again_End_Loop" sourceRef="Gateway_Again" targetRef="End_Loop" />
+    <bpmn:sequenceFlow id="Flow_Fork_Loop_Catch_Branch" sourceRef="Fork_Loop" targetRef="Catch_Branch" />
+    <bpmn:sequenceFlow id="Flow_Catch_Branch_Await_Docs" sourceRef="Catch_Branch" targetRef="Await_Docs" />
+    <bpmn:sequenceFlow id="Flow_Await_Docs_End_Branch" sourceRef="Await_Docs" targetRef="End_Branch" />
+  </bpmn:process>
+</bpmn:definitions>

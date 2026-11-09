@@ -1,0 +1,170 @@
+{
+  "kind": "scenario",
+  "id": "message-esp-repeatable-process-notices-overlap-with-nested-wait",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "message-esp-repeatable",
+    "relativePath": "scenarios/open-rows/message-esp-repeatable/repeatable-handlers.bpmn",
+    "sha256": "a7a86ca8f685442072f68fe2449b36884764ee9e09cf872a17e7e6afc0030b71",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "items",
+          "value": {
+            "kind": "stringList",
+            "value": [
+              "a",
+              "b"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "kind": "deliver",
+      "commandId": "s02-deliver-Start_Notice",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Start_Notice",
+        "activation": 1
+      },
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "directMessage",
+          "messageId": "Message_Notice"
+        }
+      }
+    },
+    {
+      "kind": "deliver",
+      "commandId": "s03-deliver-Start_Notice",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Start_Notice",
+        "activation": 1
+      },
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "directMessage",
+          "messageId": "Message_Notice"
+        }
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s04-complete-Work",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Work",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s05-complete-Finish",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Finish",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s06-complete-Handle_Notice",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Handle_Notice",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "deliver",
+      "commandId": "s07-deliver-Await_Ack",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Await_Ack",
+        "activation": 1
+      },
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "directMessage",
+          "messageId": "Message_Ack"
+        }
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s08-complete-Handle_Notice",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Handle_Notice",
+        "activation": 2
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "timerFire",
+      "commandId": "s09-fire-Ack_Deadline",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Ack_Deadline",
+        "activation": 2
+      },
+      "logicalTimeMs": 30000
+    },
+    {
+      "kind": "command",
+      "commandId": "s10-complete-Ack_Late",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Ack_Late",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 Table 10.99",
+      "BPMN 2.0.2 §10.3.5",
+      "BPMN 2.0.2 §13.5.4",
+      "BPMN 2.0.2 §10.5.4",
+      "BPMN 2.0.2 Table 10.101"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/EventSubProcessActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/EventSubProcessStartEventActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/cmd/MessageEventReceivedCmd.java",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/event/message/MessageEventSubprocessTest.java"
+    ]
+  }
+}

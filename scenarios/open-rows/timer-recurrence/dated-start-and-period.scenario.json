@@ -1,0 +1,97 @@
+{
+  "kind": "scenario",
+  "id": "timer-recurrence-dated-start-and-period",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "timer-recurrence",
+    "relativePath": "scenarios/open-rows/timer-recurrence/reminder-cycles.bpmn",
+    "sha256": "77542da5f76aecdd2111cb3bc66235de0bc9826651a5e3bd134273d928f9936c",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "form",
+          "value": {
+            "kind": "string",
+            "value": "dated"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "timerFire",
+      "commandId": "s02-fire-Cycle_Dated",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Cycle_Dated",
+        "activation": 1
+      },
+      "logicalTimeMs": 60000
+    },
+    {
+      "kind": "timerFire",
+      "commandId": "s03-fire-Cycle_Dated",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Cycle_Dated",
+        "activation": 2
+      },
+      "logicalTimeMs": 80000
+    },
+    {
+      "kind": "timerFire",
+      "commandId": "s04-fire-Cycle_Dated",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Cycle_Dated",
+        "activation": 3
+      },
+      "logicalTimeMs": 100000
+    },
+    {
+      "kind": "timerFire",
+      "commandId": "s05-fire-Cycle_Dated",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Cycle_Dated",
+        "activation": 4
+      },
+      "logicalTimeMs": 120000
+    },
+    {
+      "kind": "command",
+      "commandId": "s06-complete-Host_Dated",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Host_Dated",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.5.4",
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 Table 10.101",
+      "BPMN 2.0.2 §10.5.6"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/jobexecutor/TimerDeclarationImpl.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/persistence/entity/TimerEntity.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/calendar/CycleBusinessCalendar.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/calendar/DurationHelper.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/calendar/CronTimer.java",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/event/timer/BoundaryTimerNonInterruptingEventTest.java"
+    ]
+  }
+}

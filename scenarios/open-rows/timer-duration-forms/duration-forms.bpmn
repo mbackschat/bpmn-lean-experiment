@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_DurationForms"
+  targetNamespace="urn:bpmn-lean:scenarios:timer-duration-forms">
+  <bpmn:process id="Process_DurationForms" name="Wait for a duration" isExecutable="true">
+    <bpmn:startEvent id="Start_Forms" />
+    <bpmn:exclusiveGateway id="Gateway_Pick" gatewayDirection="Diverging" />
+    <bpmn:exclusiveGateway id="Gateway_Merge" gatewayDirection="Converging" />
+    <bpmn:userTask id="Proceed" name="Proceed after the wait" />
+    <bpmn:endEvent id="End_Forms" />
+    <bpmn:intermediateCatchEvent id="Catch_Baseline" name="Wait PT30M">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT30M</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="Catch_Zero" name="Wait PT0S">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT0S</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="Catch_Fraction" name="Wait PT0.5S">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT0.5S</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="Catch_NominalDay" name="Wait P1D">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">P1D</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="Catch_NominalWeek" name="Wait P1W">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">P1W</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="Catch_NominalMonth" name="Wait P1M">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">P1M</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="Catch_MixedNominal" name="Wait P1DT12H">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">P1DT12H</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="Catch_AboveBound" name="Wait PT87661H">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT87661H</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="Catch_Negative" name="Wait -PT5S">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">-PT5S</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="Catch_BareNumber" name="Wait PT5">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT5</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="Catch_Lowercase" name="Wait pt5s">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">pt5s</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:sequenceFlow id="Flow_Start_Forms_Gateway_Pick" sourceRef="Start_Forms" targetRef="Gateway_Pick" />
+    <bpmn:sequenceFlow id="Flow_Gateway_Merge_Proceed" sourceRef="Gateway_Merge" targetRef="Proceed" />
+    <bpmn:sequenceFlow id="Flow_Proceed_End_Forms" sourceRef="Proceed" targetRef="End_Forms" />
+    <bpmn:sequenceFlow id="Flow_Gateway_Pick_Catch_Baseline" sourceRef="Gateway_Pick" targetRef="Catch_Baseline">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${form == 'baseline'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Catch_Baseline_Gateway_Merge" sourceRef="Catch_Baseline" targetRef="Gateway_Merge" />
+    <bpmn:sequenceFlow id="Flow_Gateway_Pick_Catch_Zero" sourceRef="Gateway_Pick" targetRef="Catch_Zero">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${form == 'zero'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Catch_Zero_Gateway_Merge" sourceRef="Catch_Zero" targetRef="Gateway_Merge" />
+    <bpmn:sequenceFlow id="Flow_Gateway_Pick_Catch_Fraction" sourceRef="Gateway_Pick" targetRef="Catch_Fraction">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${form == 'fraction'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Catch_Fraction_Gateway_Merge" sourceRef="Catch_Fraction" targetRef="Gateway_Merge" />
+    <bpmn:sequenceFlow id="Flow_Gateway_Pick_Catch_NominalDay" sourceRef="Gateway_Pick" targetRef="Catch_NominalDay">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${form == 'nominal-day'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Catch_NominalDay_Gateway_Merge" sourceRef="Catch_NominalDay" targetRef="Gateway_Merge" />
+    <bpmn:sequenceFlow id="Flow_Gateway_Pick_Catch_NominalWeek" sourceRef="Gateway_Pick" targetRef="Catch_NominalWeek">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${form == 'nominal-week'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Catch_NominalWeek_Gateway_Merge" sourceRef="Catch_NominalWeek" targetRef="Gateway_Merge" />
+    <bpmn:sequenceFlow id="Flow_Gateway_Pick_Catch_NominalMonth" sourceRef="Gateway_Pick" targetRef="Catch_NominalMonth">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${form == 'nominal-month'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Catch_NominalMonth_Gateway_Merge" sourceRef="Catch_NominalMonth" targetRef="Gateway_Merge" />
+    <bpmn:sequenceFlow id="Flow_Gateway_Pick_Catch_MixedNominal" sourceRef="Gateway_Pick" targetRef="Catch_MixedNominal">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${form == 'mixed-nominal'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Catch_MixedNominal_Gateway_Merge" sourceRef="Catch_MixedNominal" targetRef="Gateway_Merge" />
+    <bpmn:sequenceFlow id="Flow_Gateway_Pick_Catch_AboveBound" sourceRef="Gateway_Pick" targetRef="Catch_AboveBound">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${form == 'above-bound'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Catch_AboveBound_Gateway_Merge" sourceRef="Catch_AboveBound" targetRef="Gateway_Merge" />
+    <bpmn:sequenceFlow id="Flow_Gateway_Pick_Catch_Negative" sourceRef="Gateway_Pick" targetRef="Catch_Negative">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${form == 'negative'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Catch_Negative_Gateway_Merge" sourceRef="Catch_Negative" targetRef="Gateway_Merge" />
+    <bpmn:sequenceFlow id="Flow_Gateway_Pick_Catch_BareNumber" sourceRef="Gateway_Pick" targetRef="Catch_BareNumber">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${form == 'bare-number'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Catch_BareNumber_Gateway_Merge" sourceRef="Catch_BareNumber" targetRef="Gateway_Merge" />
+    <bpmn:sequenceFlow id="Flow_Gateway_Pick_Catch_Lowercase" sourceRef="Gateway_Pick" targetRef="Catch_Lowercase">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${form == 'lowercase'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Catch_Lowercase_Gateway_Merge" sourceRef="Catch_Lowercase" targetRef="Gateway_Merge" />
+  </bpmn:process>
+</bpmn:definitions>

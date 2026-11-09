@@ -1,0 +1,213 @@
+{
+  "kind": "scenario",
+  "id": "timer-catch-cycles-two-rounds-with-stale-deadlines",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "timer-catch-cycles",
+    "relativePath": "scenarios/open-rows/timer-catch-cycles/review-loop.bpmn",
+    "sha256": "bab58016dfe9023861e38761297c38e3d0dc720c5ae5f540c68288f6c7420076",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-complete-Draft",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Draft",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "timerFire",
+      "commandId": "s03-fire-Catch_Wait",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Catch_Wait",
+        "activation": 1
+      },
+      "logicalTimeMs": 10000
+    },
+    {
+      "kind": "command",
+      "commandId": "s04-complete-Review",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Review",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "timerFire",
+      "commandId": "s05-fire-Catch_Cycle",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Catch_Cycle",
+        "activation": 1
+      },
+      "logicalTimeMs": 20000
+    },
+    {
+      "kind": "command",
+      "commandId": "s06-complete-Approve",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Approve",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "again",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s07-complete-Draft",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Draft",
+        "activation": 2
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "timerFire",
+      "commandId": "s08-fire-Catch_Branch",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Catch_Branch",
+        "activation": 1
+      },
+      "logicalTimeMs": 25000
+    },
+    {
+      "kind": "timerFire",
+      "commandId": "s09-fire-Catch_Wait",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Catch_Wait",
+        "activation": 1
+      },
+      "logicalTimeMs": 10000
+    },
+    {
+      "kind": "timerFire",
+      "commandId": "s10-fire-Catch_Wait",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Catch_Wait",
+        "activation": 2
+      },
+      "logicalTimeMs": 10000
+    },
+    {
+      "kind": "timerFire",
+      "commandId": "s11-fire-Catch_Wait",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Catch_Wait",
+        "activation": 2
+      },
+      "logicalTimeMs": 30000
+    },
+    {
+      "kind": "command",
+      "commandId": "s12-complete-Review",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Review",
+        "activation": 2
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "timerFire",
+      "commandId": "s13-fire-Catch_Cycle",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Catch_Cycle",
+        "activation": 2
+      },
+      "logicalTimeMs": 40000
+    },
+    {
+      "kind": "command",
+      "commandId": "s14-complete-Approve",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Approve",
+        "activation": 2
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "again",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "deliver",
+      "commandId": "s15-deliver-Await_Docs",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Await_Docs",
+        "activation": 1
+      },
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "directMessage",
+          "messageId": "Message_Docs"
+        }
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.5.4",
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 Table 10.101"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/jobexecutor/TimerDeclarationImpl.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/IntermediateCatchEventActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/persistence/entity/TimerEntity.java",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/event/timer/IntermediateTimerEventTest.java"
+    ]
+  }
+}

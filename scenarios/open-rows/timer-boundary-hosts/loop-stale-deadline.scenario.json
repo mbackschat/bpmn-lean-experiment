@@ -1,0 +1,124 @@
+{
+  "kind": "scenario",
+  "id": "timer-boundary-hosts-loop-stale-deadline",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "timer-boundary-hosts",
+    "relativePath": "scenarios/open-rows/timer-boundary-hosts/boundary-hosts.bpmn",
+    "sha256": "0c52d58aee7767eda5ebf5626e454e7fffb7daf38247844b3c36dea091759787",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-complete-Host_Loop",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Host_Loop",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "timerFire",
+      "commandId": "s03-fire-Soft_User",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Soft_User",
+        "activation": 1
+      },
+      "logicalTimeMs": 5000
+    },
+    {
+      "kind": "command",
+      "commandId": "s04-complete-Review_Loop",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Review_Loop",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "again",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "timerFire",
+      "commandId": "s05-fire-Deadline_Loop",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Deadline_Loop",
+        "activation": 1
+      },
+      "logicalTimeMs": 10000
+    },
+    {
+      "kind": "timerFire",
+      "commandId": "s06-fire-Deadline_Loop",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Deadline_Loop",
+        "activation": 2
+      },
+      "logicalTimeMs": 10000
+    },
+    {
+      "kind": "timerFire",
+      "commandId": "s07-fire-Deadline_Loop",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Deadline_Loop",
+        "activation": 2
+      },
+      "logicalTimeMs": 15000
+    },
+    {
+      "kind": "command",
+      "commandId": "s08-complete-Late_Loop",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Late_Loop",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.5.4",
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 Table 10.101",
+      "BPMN 2.0.2 §10.5.6",
+      "BPMN 2.0.2 §13.5.3",
+      "BPMN 2.0.2 Table 10.91",
+      "BPMN 2.0.2 Table 10.92"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/jobexecutor/TimerDeclarationImpl.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/BoundaryEventActivityBehavior.java",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/event/timer/BoundaryTimerNonInterruptingEventTest.java",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/event/timer/BoundaryTimerEventTest.java"
+    ]
+  }
+}

@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_TimerHandlers"
+  targetNamespace="urn:bpmn-lean:scenarios:timer-event-subprocess">
+  <bpmn:process id="Process_TimerHandlers" name="Shipment with timed handlers" isExecutable="true">
+    <bpmn:startEvent id="Start_Handlers" />
+    <bpmn:userTask id="Work" name="Prepare the shipment" />
+    <bpmn:subProcess id="Region" name="Inspect the lot">
+      <bpmn:startEvent id="Start_Inner" />
+      <bpmn:userTask id="Inner" name="Inspect the lot" />
+      <bpmn:endEvent id="End_Inner" />
+      <bpmn:sequenceFlow id="Flow_Start_Inner_Inner" sourceRef="Start_Inner" targetRef="Inner" />
+      <bpmn:sequenceFlow id="Flow_Inner_End_Inner" sourceRef="Inner" targetRef="End_Inner" />
+      <bpmn:subProcess id="ESP_Region" triggeredByEvent="true">
+        <bpmn:startEvent id="Start_Region_Note" isInterrupting="false">
+          <bpmn:timerEventDefinition>
+            <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT7S</bpmn:timeDuration>
+          </bpmn:timerEventDefinition>
+        </bpmn:startEvent>
+        <bpmn:userTask id="Note_Region" name="Note the slow lot" />
+        <bpmn:endEvent id="End_Note_Region" />
+        <bpmn:sequenceFlow id="Flow_Start_Region_Note_Note_Region" sourceRef="Start_Region_Note" targetRef="Note_Region" />
+        <bpmn:sequenceFlow id="Flow_Note_Region_End_Note_Region" sourceRef="Note_Region" targetRef="End_Note_Region" />
+      </bpmn:subProcess>
+    </bpmn:subProcess>
+    <bpmn:userTask id="Finish" name="Release the shipment" />
+    <bpmn:endEvent id="End_Handlers" />
+    <bpmn:sequenceFlow id="Flow_Start_Handlers_Work" sourceRef="Start_Handlers" targetRef="Work" />
+    <bpmn:sequenceFlow id="Flow_Work_Region" sourceRef="Work" targetRef="Region" />
+    <bpmn:sequenceFlow id="Flow_Region_Finish" sourceRef="Region" targetRef="Finish" />
+    <bpmn:sequenceFlow id="Flow_Finish_End_Handlers" sourceRef="Finish" targetRef="End_Handlers" />
+    <bpmn:subProcess id="ESP_Reminder" triggeredByEvent="true">
+      <bpmn:startEvent id="Start_Reminder" isInterrupting="false">
+        <bpmn:timerEventDefinition>
+          <bpmn:timeCycle xsi:type="bpmn:tFormalExpression">R3/PT10S</bpmn:timeCycle>
+        </bpmn:timerEventDefinition>
+      </bpmn:startEvent>
+      <bpmn:userTask id="Remind" name="Remind the carrier" />
+      <bpmn:endEvent id="End_Remind" />
+      <bpmn:sequenceFlow id="Flow_Start_Reminder_Remind" sourceRef="Start_Reminder" targetRef="Remind" />
+      <bpmn:sequenceFlow id="Flow_Remind_End_Remind" sourceRef="Remind" targetRef="End_Remind" />
+    </bpmn:subProcess>
+    <bpmn:subProcess id="ESP_Dated" triggeredByEvent="true">
+      <bpmn:startEvent id="Start_Dated" isInterrupting="false">
+        <bpmn:timerEventDefinition>
+          <bpmn:timeDate xsi:type="bpmn:tFormalExpression">1970-01-01T00:00:12Z</bpmn:timeDate>
+        </bpmn:timerEventDefinition>
+      </bpmn:startEvent>
+      <bpmn:userTask id="Dated_Note" name="Record the dated notice" />
+      <bpmn:endEvent id="End_Dated_Note" />
+      <bpmn:sequenceFlow id="Flow_Start_Dated_Dated_Note" sourceRef="Start_Dated" targetRef="Dated_Note" />
+      <bpmn:sequenceFlow id="Flow_Dated_Note_End_Dated_Note" sourceRef="Dated_Note" targetRef="End_Dated_Note" />
+    </bpmn:subProcess>
+    <bpmn:subProcess id="ESP_Abort" triggeredByEvent="true">
+      <bpmn:startEvent id="Start_Abort">
+        <bpmn:timerEventDefinition>
+          <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT25S</bpmn:timeDuration>
+        </bpmn:timerEventDefinition>
+      </bpmn:startEvent>
+      <bpmn:userTask id="Abort_Handler" name="Abort the shipment" />
+      <bpmn:endEvent id="End_Abort" />
+      <bpmn:sequenceFlow id="Flow_Start_Abort_Abort_Handler" sourceRef="Start_Abort" targetRef="Abort_Handler" />
+      <bpmn:sequenceFlow id="Flow_Abort_Handler_End_Abort" sourceRef="Abort_Handler" targetRef="End_Abort" />
+    </bpmn:subProcess>
+  </bpmn:process>
+</bpmn:definitions>

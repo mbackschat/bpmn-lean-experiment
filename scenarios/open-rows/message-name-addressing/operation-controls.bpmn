@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_Operations"
+  targetNamespace="urn:bpmn-lean:scenarios:message-name-addressing:operations">
+  <bpmn:message id="Message_Match" name="match notice" />
+  <bpmn:message id="Message_Subject" name="subject notice" />
+  <bpmn:message id="Message_Elsewhere" name="elsewhere notice" />
+  <bpmn:message id="Message_Same" name="same notice" />
+  <bpmn:interface id="Interface_Controls" name="Control messages">
+    <bpmn:operation id="Operation_Match" name="Match">
+      <bpmn:inMessageRef>Message_Match</bpmn:inMessageRef>
+    </bpmn:operation>
+    <bpmn:operation id="Operation_Other" name="Other">
+      <bpmn:inMessageRef>Message_Elsewhere</bpmn:inMessageRef>
+    </bpmn:operation>
+    <bpmn:operation id="Operation_Same1" name="Same one">
+      <bpmn:inMessageRef>Message_Same</bpmn:inMessageRef>
+    </bpmn:operation>
+    <bpmn:operation id="Operation_Same2" name="Same two">
+      <bpmn:inMessageRef>Message_Same</bpmn:inMessageRef>
+    </bpmn:operation>
+  </bpmn:interface>
+  <bpmn:process id="Process_Operations" name="Waits with Operations" isExecutable="true">
+    <bpmn:startEvent id="Start_Ops" />
+    <bpmn:parallelGateway id="Fork_Ops" gatewayDirection="Diverging" />
+    <bpmn:sequenceFlow id="Flow_Start_Ops_Fork_Ops" sourceRef="Start_Ops" targetRef="Fork_Ops" />
+    <bpmn:intermediateCatchEvent id="Catch_OpMatch">
+      <bpmn:messageEventDefinition id="MED_OpMatch" messageRef="Message_Match">
+        <bpmn:operationRef>Operation_Match</bpmn:operationRef>
+      </bpmn:messageEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:userTask id="Proceed_OpMatch" name="Proceed after the consistent Operation" />
+    <bpmn:endEvent id="End_OpMatch" />
+    <bpmn:sequenceFlow id="Flow_Fork_Ops_Catch_OpMatch" sourceRef="Fork_Ops" targetRef="Catch_OpMatch" />
+    <bpmn:sequenceFlow id="Flow_Catch_OpMatch_Proceed_OpMatch" sourceRef="Catch_OpMatch" targetRef="Proceed_OpMatch" />
+    <bpmn:sequenceFlow id="Flow_Proceed_OpMatch_End_OpMatch" sourceRef="Proceed_OpMatch" targetRef="End_OpMatch" />
+    <bpmn:intermediateCatchEvent id="Catch_OpOther">
+      <bpmn:messageEventDefinition id="MED_OpOther" messageRef="Message_Subject">
+        <bpmn:operationRef>Operation_Other</bpmn:operationRef>
+      </bpmn:messageEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:userTask id="Proceed_OpOther" name="Proceed after the foreign Operation" />
+    <bpmn:endEvent id="End_OpOther" />
+    <bpmn:sequenceFlow id="Flow_Fork_Ops_Catch_OpOther" sourceRef="Fork_Ops" targetRef="Catch_OpOther" />
+    <bpmn:sequenceFlow id="Flow_Catch_OpOther_Proceed_OpOther" sourceRef="Catch_OpOther" targetRef="Proceed_OpOther" />
+    <bpmn:sequenceFlow id="Flow_Proceed_OpOther_End_OpOther" sourceRef="Proceed_OpOther" targetRef="End_OpOther" />
+    <bpmn:intermediateCatchEvent id="Catch_SameRoot">
+      <bpmn:messageEventDefinition id="MED_SameRoot" messageRef="Message_Same">
+        <bpmn:operationRef>Operation_Same1</bpmn:operationRef>
+      </bpmn:messageEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:userTask id="Proceed_SameRoot" name="Proceed after the first Operation" />
+    <bpmn:endEvent id="End_SameRoot" />
+    <bpmn:sequenceFlow id="Flow_Fork_Ops_Catch_SameRoot" sourceRef="Fork_Ops" targetRef="Catch_SameRoot" />
+    <bpmn:sequenceFlow id="Flow_Catch_SameRoot_Proceed_SameRoot" sourceRef="Catch_SameRoot" targetRef="Proceed_SameRoot" />
+    <bpmn:sequenceFlow id="Flow_Proceed_SameRoot_End_SameRoot" sourceRef="Proceed_SameRoot" targetRef="End_SameRoot" />
+    <bpmn:subProcess id="Region" name="Nested wait">
+      <bpmn:startEvent id="Start_Region" />
+      <bpmn:intermediateCatchEvent id="Catch_SameNested">
+        <bpmn:messageEventDefinition id="MED_SameNested" messageRef="Message_Same">
+          <bpmn:operationRef>Operation_Same2</bpmn:operationRef>
+        </bpmn:messageEventDefinition>
+      </bpmn:intermediateCatchEvent>
+      <bpmn:userTask id="Proceed_SameNested" name="Proceed after the second Operation" />
+      <bpmn:endEvent id="End_Region" />
+      <bpmn:sequenceFlow id="Flow_Start_Region_Catch_SameNested" sourceRef="Start_Region" targetRef="Catch_SameNested" />
+      <bpmn:sequenceFlow id="Flow_Catch_SameNested_Proceed_SameNested" sourceRef="Catch_SameNested" targetRef="Proceed_SameNested" />
+      <bpmn:sequenceFlow id="Flow_Proceed_SameNested_End_Region" sourceRef="Proceed_SameNested" targetRef="End_Region" />
+    </bpmn:subProcess>
+    <bpmn:sequenceFlow id="Flow_Fork_Ops_Region" sourceRef="Fork_Ops" targetRef="Region" />
+  </bpmn:process>
+</bpmn:definitions>

@@ -1,0 +1,80 @@
+{
+  "kind": "scenario",
+  "id": "timer-date-forms-past-after-delay",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "timer-date-forms",
+    "relativePath": "scenarios/open-rows/timer-date-forms/date-forms.bpmn",
+    "sha256": "af8a7bf4c0ff90209c07a97ae9dee7c6ae00f6149b2df4aa49f1bf952400e0a0",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "delayed",
+          "value": {
+            "kind": "boolean",
+            "value": true
+          }
+        },
+        {
+          "name": "form",
+          "value": {
+            "kind": "string",
+            "value": "future"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "timerFire",
+      "commandId": "s02-fire-Catch_Delay",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Catch_Delay",
+        "activation": 1
+      },
+      "logicalTimeMs": 7200000
+    },
+    {
+      "kind": "timerFire",
+      "commandId": "s03-fire-Catch_Future",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Catch_Future",
+        "activation": 1
+      },
+      "logicalTimeMs": 3600000
+    },
+    {
+      "kind": "command",
+      "commandId": "s04-complete-Proceed",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Proceed",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.5.4",
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 Table 10.101"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/jobexecutor/TimerDeclarationImpl.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/calendar/DueDateBusinessCalendar.java",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/event/timer/IntermediateTimerEventTest.java"
+    ]
+  }
+}

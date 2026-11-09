@@ -1,0 +1,64 @@
+{
+  "kind": "scenario",
+  "id": "message-name-addressing-same-name-same-scope",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "message-name-addressing-twin-same-scope",
+    "relativePath": "scenarios/open-rows/message-name-addressing/twin-same-scope.bpmn",
+    "sha256": "35f055f07f765dda7c0565eb3982d0035177c78631340f0efd87d394058a9179",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    },
+    {
+      "kind": "deliver",
+      "commandId": "s02-deliver-Catch_TwinA",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Catch_TwinA",
+        "activation": 1
+      },
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "directMessage",
+          "messageId": "Message_TwinA"
+        }
+      }
+    },
+    {
+      "kind": "deliver",
+      "commandId": "s03-deliver-Catch_TwinB",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Catch_TwinB",
+        "activation": 1
+      },
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "directMessage",
+          "messageId": "Message_TwinB"
+        }
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 Table 10.99"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/cmd/MessageEventReceivedCmd.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/persistence/entity/EventSubscriptionEntity.java",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/event/message/MessageIntermediateEventTest.java"
+    ]
+  }
+}

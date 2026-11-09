@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_CallAndTransactionTimers"
+  targetNamespace="urn:bpmn-lean:scenarios:timer-lifetimes:call-and-transaction">
+  <bpmn:process id="Process_CallAndTransactionTimers" name="Timed check and timed booking" isExecutable="true">
+    <bpmn:startEvent id="Start_CallTx" />
+    <bpmn:parallelGateway id="Fork_CallTx" gatewayDirection="Diverging" />
+    <bpmn:callActivity id="Call_Child" name="Run the timed check" calledElement="Process_TimedChild" />
+    <bpmn:boundaryEvent id="Call_Deadline" attachedToRef="Call_Child">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT40S</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Call_Late" name="Handle the abandoned check" />
+    <bpmn:endEvent id="End_Call_Late" />
+    <bpmn:userTask id="After_Call" name="File the check" />
+    <bpmn:endEvent id="End_Call" />
+    <bpmn:transaction id="Transaction_Booking" name="Book the slot">
+      <bpmn:startEvent id="Start_Tx" />
+      <bpmn:userTask id="Reserve" name="Reserve the slot" />
+      <bpmn:userTask id="Pay" name="Take the payment" />
+      <bpmn:endEvent id="End_Tx_Inner" />
+      <bpmn:sequenceFlow id="Flow_Start_Tx_Reserve" sourceRef="Start_Tx" targetRef="Reserve" />
+      <bpmn:sequenceFlow id="Flow_Reserve_Pay" sourceRef="Reserve" targetRef="Pay" />
+      <bpmn:sequenceFlow id="Flow_Pay_End_Tx_Inner" sourceRef="Pay" targetRef="End_Tx_Inner" />
+    </bpmn:transaction>
+    <bpmn:boundaryEvent id="Tx_Deadline" attachedToRef="Transaction_Booking">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT30S</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Tx_Late" name="Handle the expired booking" />
+    <bpmn:endEvent id="End_Tx_Late" />
+    <bpmn:userTask id="After_Tx" name="Confirm the booking" />
+    <bpmn:endEvent id="End_Tx" />
+    <bpmn:sequenceFlow id="Flow_Start_CallTx_Fork_CallTx" sourceRef="Start_CallTx" targetRef="Fork_CallTx" />
+    <bpmn:sequenceFlow id="Flow_Fork_CallTx_Call_Child" sourceRef="Fork_CallTx" targetRef="Call_Child" />
+    <bpmn:sequenceFlow id="Flow_Fork_CallTx_Transaction_Booking" sourceRef="Fork_CallTx" targetRef="Transaction_Booking" />
+    <bpmn:sequenceFlow id="Flow_Call_Deadline_Call_Late" sourceRef="Call_Deadline" targetRef="Call_Late" />
+    <bpmn:sequenceFlow id="Flow_Call_Late_End_Call_Late" sourceRef="Call_Late" targetRef="End_Call_Late" />
+    <bpmn:sequenceFlow id="Flow_Call_Child_After_Call" sourceRef="Call_Child" targetRef="After_Call" />
+    <bpmn:sequenceFlow id="Flow_After_Call_End_Call" sourceRef="After_Call" targetRef="End_Call" />
+    <bpmn:sequenceFlow id="Flow_Tx_Deadline_Tx_Late" sourceRef="Tx_Deadline" targetRef="Tx_Late" />
+    <bpmn:sequenceFlow id="Flow_Tx_Late_End_Tx_Late" sourceRef="Tx_Late" targetRef="End_Tx_Late" />
+    <bpmn:sequenceFlow id="Flow_Transaction_Booking_After_Tx" sourceRef="Transaction_Booking" targetRef="After_Tx" />
+    <bpmn:sequenceFlow id="Flow_After_Tx_End_Tx" sourceRef="After_Tx" targetRef="End_Tx" />
+  </bpmn:process>
+  <bpmn:process id="Process_TimedChild" isExecutable="true">
+    <bpmn:startEvent id="Start_Child" />
+    <bpmn:userTask id="Child_Task" name="Carry out the check" />
+    <bpmn:boundaryEvent id="Child_Boundary" attachedToRef="Child_Task" cancelActivity="false">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT6S</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Child_Note" name="Note the slow check" />
+    <bpmn:endEvent id="End_Child_Note" />
+    <bpmn:intermediateCatchEvent id="Child_Wait" name="Settling wait">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT20S</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:endEvent id="End_Child" />
+    <bpmn:sequenceFlow id="Flow_Start_Child_Child_Task" sourceRef="Start_Child" targetRef="Child_Task" />
+    <bpmn:sequenceFlow id="Flow_Child_Task_Child_Wait" sourceRef="Child_Task" targetRef="Child_Wait" />
+    <bpmn:sequenceFlow id="Flow_Child_Wait_End_Child" sourceRef="Child_Wait" targetRef="End_Child" />
+    <bpmn:sequenceFlow id="Flow_Child_Boundary_Child_Note" sourceRef="Child_Boundary" targetRef="Child_Note" />
+    <bpmn:sequenceFlow id="Flow_Child_Note_End_Child_Note" sourceRef="Child_Note" targetRef="End_Child_Note" />
+  </bpmn:process>
+</bpmn:definitions>

@@ -1,0 +1,119 @@
+{
+  "kind": "scenario",
+  "id": "conditional-esp-handler-writes-through-effect-result",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "conditional-esp",
+    "relativePath": "scenarios/open-rows/conditional-esp/conditional-handlers.bpmn",
+    "sha256": "f7b83629e8071e5c7c36e1451d064df8ec710fb07d7ef4a2e46b0006df0dd87f",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-set-cycle",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Work",
+        "activation": 1
+      },
+      "action": {
+        "kind": "setVariables",
+        "values": [
+          {
+            "name": "cycle",
+            "value": {
+              "kind": "integer",
+              "value": 1
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "s03-effect-Write_Cycle",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Write_Cycle",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": [
+          {
+            "name": "cycleNext",
+            "value": {
+              "kind": "integer",
+              "value": 2
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "s04-effect-Write_Cycle",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Write_Cycle",
+        "activation": 2
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": [
+          {
+            "name": "cycleNext",
+            "value": {
+              "kind": "integer",
+              "value": 3
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "s05-effect-Write_Cycle",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Write_Cycle",
+        "activation": 3
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": [
+          {
+            "name": "cycleNext",
+            "value": {
+              "kind": "integer",
+              "value": 3
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 Table 10.95",
+      "BPMN 2.0.2 §10.3.5",
+      "BPMN 2.0.2 §13.5.4"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/EventSubProcessStartConditionalEventActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/ConditionalEventDefinition.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/event/ConditionalEventHandler.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/persistence/entity/ExecutionEntity.java",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/event/conditional/EventSubProcessStartConditionalEventTest.java"
+    ]
+  }
+}

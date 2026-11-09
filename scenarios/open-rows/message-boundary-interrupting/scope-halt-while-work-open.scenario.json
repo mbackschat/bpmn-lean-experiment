@@ -1,0 +1,89 @@
+{
+  "kind": "scenario",
+  "id": "message-boundary-interrupting-scope-halt-while-work-open",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "message-boundary-interrupting",
+    "relativePath": "scenarios/open-rows/message-boundary-interrupting/message-hosts.bpmn",
+    "sha256": "68164368269900a949d7afd407852038844e7635d9742f62cf5b36aef60012f3",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "items",
+          "value": {
+            "kind": "stringList",
+            "value": [
+              "a",
+              "b"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "kind": "deliver",
+      "commandId": "s02-deliver-Halt_Scope",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Halt_Scope",
+        "activation": 1
+      },
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "directMessage",
+          "messageId": "Message_Halt"
+        }
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-complete-Scope_A",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Scope_A",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s04-complete-Handle_Halt_Scope",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Handle_Halt_Scope",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 Table 10.99",
+      "BPMN 2.0.2 §10.5.6",
+      "BPMN 2.0.2 §13.5.3",
+      "BPMN 2.0.2 Table 10.91",
+      "BPMN 2.0.2 Table 10.92"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/BoundaryEventActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/cmd/MessageEventReceivedCmd.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/persistence/entity/EventSubscriptionEntity.java",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/event/message/MessageBoundaryEventTest.java"
+    ]
+  }
+}

@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_PayloadCatches"
+  targetNamespace="urn:bpmn-lean:scenarios:message-payload-catches">
+  <bpmn:itemDefinition id="ItemDefinition_Payload" structureRef="xsd:string" />
+  <bpmn:message id="Message_Quote" name="quote" itemRef="ItemDefinition_Payload" />
+  <bpmn:message id="Message_Note" name="note" itemRef="ItemDefinition_Payload" />
+  <bpmn:message id="Message_Docs" name="documents" />
+  <bpmn:message id="Message_SeqNote" name="seqNote" itemRef="ItemDefinition_Payload" />
+  <bpmn:message id="Message_ParNote" name="parNote" itemRef="ItemDefinition_Payload" />
+  <bpmn:process id="Process_PayloadCatches" name="Payload-bearing waits in branches and bodies" isExecutable="true">
+    <bpmn:property id="Property_Quote" />
+    <bpmn:startEvent id="Start_Payloads" />
+    <bpmn:parallelGateway id="Fork_Payloads" gatewayDirection="Diverging" />
+    <bpmn:sequenceFlow id="Flow_Start_Payloads_Fork_Payloads" sourceRef="Start_Payloads" targetRef="Fork_Payloads" />
+    <bpmn:exclusiveGateway id="Merge_Quote" gatewayDirection="Converging" />
+    <bpmn:intermediateCatchEvent id="Catch_Quote">
+      <bpmn:dataOutput id="DataOutput_Catch_Quote" name="Catch_Quote payload" itemSubjectRef="ItemDefinition_Payload" />
+      <bpmn:dataOutputAssociation id="DataOutputAssociation_Catch_Quote">
+        <bpmn:sourceRef>DataOutput_Catch_Quote</bpmn:sourceRef>
+        <bpmn:targetRef>Property_Quote</bpmn:targetRef>
+      </bpmn:dataOutputAssociation>
+      <bpmn:outputSet id="OutputSet_Catch_Quote">
+        <bpmn:dataOutputRefs>DataOutput_Catch_Quote</bpmn:dataOutputRefs>
+      </bpmn:outputSet>
+      <bpmn:messageEventDefinition id="MED_Catch_Quote" messageRef="Message_Quote" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:userTask id="Review_Quote" name="Review the quote" />
+    <bpmn:exclusiveGateway id="Gateway_Quote" gatewayDirection="Diverging" default="Flow_Gateway_Quote_End_Quote" />
+    <bpmn:endEvent id="End_Quote" />
+    <bpmn:sequenceFlow id="Flow_Fork_Payloads_Merge_Quote" sourceRef="Fork_Payloads" targetRef="Merge_Quote" />
+    <bpmn:sequenceFlow id="Flow_Merge_Quote_Catch_Quote" sourceRef="Merge_Quote" targetRef="Catch_Quote" />
+    <bpmn:sequenceFlow id="Flow_Catch_Quote_Review_Quote" sourceRef="Catch_Quote" targetRef="Review_Quote" />
+    <bpmn:sequenceFlow id="Flow_Review_Quote_Gateway_Quote" sourceRef="Review_Quote" targetRef="Gateway_Quote" />
+    <bpmn:sequenceFlow id="Flow_Gateway_Quote_Merge_Quote" sourceRef="Gateway_Quote" targetRef="Merge_Quote">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${again == true}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Gateway_Quote_End_Quote" sourceRef="Gateway_Quote" targetRef="End_Quote" />
+    <bpmn:subProcess id="Region" name="Nested payload destination">
+      <bpmn:property id="Property_Note" />
+      <bpmn:startEvent id="Start_Region" />
+      <bpmn:intermediateCatchEvent id="Catch_Note">
+        <bpmn:dataOutput id="DataOutput_Catch_Note" name="Catch_Note payload" itemSubjectRef="ItemDefinition_Payload" />
+        <bpmn:dataOutputAssociation id="DataOutputAssociation_Catch_Note">
+          <bpmn:sourceRef>DataOutput_Catch_Note</bpmn:sourceRef>
+          <bpmn:targetRef>Property_Note</bpmn:targetRef>
+        </bpmn:dataOutputAssociation>
+        <bpmn:outputSet id="OutputSet_Catch_Note">
+          <bpmn:dataOutputRefs>DataOutput_Catch_Note</bpmn:dataOutputRefs>
+        </bpmn:outputSet>
+        <bpmn:messageEventDefinition id="MED_Catch_Note" messageRef="Message_Note" />
+      </bpmn:intermediateCatchEvent>
+      <bpmn:userTask id="Inspect_Note" name="Inspect the note" />
+      <bpmn:endEvent id="End_Region" />
+      <bpmn:sequenceFlow id="Flow_Start_Region_Catch_Note" sourceRef="Start_Region" targetRef="Catch_Note" />
+      <bpmn:sequenceFlow id="Flow_Catch_Note_Inspect_Note" sourceRef="Catch_Note" targetRef="Inspect_Note" />
+      <bpmn:sequenceFlow id="Flow_Inspect_Note_End_Region" sourceRef="Inspect_Note" targetRef="End_Region" />
+    </bpmn:subProcess>
+    <bpmn:sequenceFlow id="Flow_Fork_Payloads_Region" sourceRef="Fork_Payloads" targetRef="Region" />
+    <bpmn:receiveTask id="Await_Docs" name="Await the documents" messageRef="Message_Docs" />
+    <bpmn:userTask id="File_Docs" name="File the documents" />
+    <bpmn:endEvent id="End_Docs" />
+    <bpmn:sequenceFlow id="Flow_Fork_Payloads_Await_Docs" sourceRef="Fork_Payloads" targetRef="Await_Docs" />
+    <bpmn:sequenceFlow id="Flow_Await_Docs_File_Docs" sourceRef="Await_Docs" targetRef="File_Docs" />
+    <bpmn:sequenceFlow id="Flow_File_Docs_End_Docs" sourceRef="File_Docs" targetRef="End_Docs" />
+    <bpmn:subProcess id="Bodies_Seq" name="Sequential bodies">
+      <bpmn:multiInstanceLoopCharacteristics isSequential="true" camunda:collection="items" camunda:elementVariable="item" />
+      <bpmn:property id="Property_SeqNote" />
+      <bpmn:startEvent id="Start_Seq" />
+      <bpmn:intermediateCatchEvent id="Catch_SeqBody">
+        <bpmn:dataOutput id="DataOutput_Catch_SeqBody" name="Catch_SeqBody payload" itemSubjectRef="ItemDefinition_Payload" />
+        <bpmn:dataOutputAssociation id="DataOutputAssociation_Catch_SeqBody">
+          <bpmn:sourceRef>DataOutput_Catch_SeqBody</bpmn:sourceRef>
+          <bpmn:targetRef>Property_SeqNote</bpmn:targetRef>
+        </bpmn:dataOutputAssociation>
+        <bpmn:outputSet id="OutputSet_Catch_SeqBody">
+          <bpmn:dataOutputRefs>DataOutput_Catch_SeqBody</bpmn:dataOutputRefs>
+        </bpmn:outputSet>
+        <bpmn:messageEventDefinition id="MED_Catch_SeqBody" messageRef="Message_SeqNote" />
+      </bpmn:intermediateCatchEvent>
+      <bpmn:userTask id="Check_Seq" name="Check the sequential body" />
+      <bpmn:endEvent id="End_Seq" />
+      <bpmn:sequenceFlow id="Flow_Start_Seq_Catch_SeqBody" sourceRef="Start_Seq" targetRef="Catch_SeqBody" />
+      <bpmn:sequenceFlow id="Flow_Catch_SeqBody_Check_Seq" sourceRef="Catch_SeqBody" targetRef="Check_Seq" />
+      <bpmn:sequenceFlow id="Flow_Check_Seq_End_Seq" sourceRef="Check_Seq" targetRef="End_Seq" />
+    </bpmn:subProcess>
+    <bpmn:sequenceFlow id="Flow_Fork_Payloads_Bodies_Seq" sourceRef="Fork_Payloads" targetRef="Bodies_Seq" />
+    <bpmn:subProcess id="Bodies_Par" name="Parallel bodies">
+      <bpmn:multiInstanceLoopCharacteristics isSequential="false" camunda:collection="items" camunda:elementVariable="item" />
+      <bpmn:property id="Property_ParNote" />
+      <bpmn:startEvent id="Start_Par" />
+      <bpmn:intermediateCatchEvent id="Catch_ParBody">
+        <bpmn:dataOutput id="DataOutput_Catch_ParBody" name="Catch_ParBody payload" itemSubjectRef="ItemDefinition_Payload" />
+        <bpmn:dataOutputAssociation id="DataOutputAssociation_Catch_ParBody">
+          <bpmn:sourceRef>DataOutput_Catch_ParBody</bpmn:sourceRef>
+          <bpmn:targetRef>Property_ParNote</bpmn:targetRef>
+        </bpmn:dataOutputAssociation>
+        <bpmn:outputSet id="OutputSet_Catch_ParBody">
+          <bpmn:dataOutputRefs>DataOutput_Catch_ParBody</bpmn:dataOutputRefs>
+        </bpmn:outputSet>
+        <bpmn:messageEventDefinition id="MED_Catch_ParBody" messageRef="Message_ParNote" />
+      </bpmn:intermediateCatchEvent>
+      <bpmn:userTask id="Check_Par" name="Check the parallel body" />
+      <bpmn:endEvent id="End_Par" />
+      <bpmn:sequenceFlow id="Flow_Start_Par_Catch_ParBody" sourceRef="Start_Par" targetRef="Catch_ParBody" />
+      <bpmn:sequenceFlow id="Flow_Catch_ParBody_Check_Par" sourceRef="Catch_ParBody" targetRef="Check_Par" />
+      <bpmn:sequenceFlow id="Flow_Check_Par_End_Par" sourceRef="Check_Par" targetRef="End_Par" />
+    </bpmn:subProcess>
+    <bpmn:sequenceFlow id="Flow_Fork_Payloads_Bodies_Par" sourceRef="Fork_Payloads" targetRef="Bodies_Par" />
+  </bpmn:process>
+</bpmn:definitions>

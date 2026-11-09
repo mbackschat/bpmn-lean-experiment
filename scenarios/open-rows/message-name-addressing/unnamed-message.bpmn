@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_Unnamed"
+  targetNamespace="urn:bpmn-lean:scenarios:message-name-addressing:unnamed">
+  <bpmn:message id="Message_Unnamed" />
+  <bpmn:process id="Process_Unnamed" name="Wait on a Message without a name" isExecutable="true">
+    <bpmn:startEvent id="Start_Unnamed" />
+    <bpmn:intermediateCatchEvent id="Catch_Unnamed">
+      <bpmn:messageEventDefinition id="MED_Unnamed" messageRef="Message_Unnamed" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:userTask id="Proceed_Unnamed" name="Proceed" />
+    <bpmn:endEvent id="End_Unnamed" />
+    <bpmn:sequenceFlow id="Flow_Start_Unnamed_Catch_Unnamed" sourceRef="Start_Unnamed" targetRef="Catch_Unnamed" />
+    <bpmn:sequenceFlow id="Flow_Catch_Unnamed_Proceed_Unnamed" sourceRef="Catch_Unnamed" targetRef="Proceed_Unnamed" />
+    <bpmn:sequenceFlow id="Flow_Proceed_Unnamed_End_Unnamed" sourceRef="Proceed_Unnamed" targetRef="End_Unnamed" />
+  </bpmn:process>
+</bpmn:definitions>

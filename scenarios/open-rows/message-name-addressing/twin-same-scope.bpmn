@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_TwinSameScope"
+  targetNamespace="urn:bpmn-lean:scenarios:message-name-addressing:twin-same-scope">
+  <bpmn:message id="Message_TwinA" name="twin notice" />
+  <bpmn:message id="Message_TwinB" name="twin notice" />
+  <bpmn:process id="Process_TwinSameScope" name="Two Messages with one name" isExecutable="true">
+    <bpmn:startEvent id="Start_Twin" />
+    <bpmn:parallelGateway id="Fork_Twin" gatewayDirection="Diverging" />
+    <bpmn:sequenceFlow id="Flow_Start_Twin_Fork_Twin" sourceRef="Start_Twin" targetRef="Fork_Twin" />
+    <bpmn:intermediateCatchEvent id="Catch_TwinA">
+      <bpmn:messageEventDefinition id="MED_TwinA" messageRef="Message_TwinA" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:userTask id="Proceed_TwinA" name="Proceed with notice A" />
+    <bpmn:endEvent id="End_TwinA" />
+    <bpmn:sequenceFlow id="Flow_Fork_Twin_Catch_TwinA" sourceRef="Fork_Twin" targetRef="Catch_TwinA" />
+    <bpmn:sequenceFlow id="Flow_Catch_TwinA_Proceed_TwinA" sourceRef="Catch_TwinA" targetRef="Proceed_TwinA" />
+    <bpmn:sequenceFlow id="Flow_Proceed_TwinA_End_TwinA" sourceRef="Proceed_TwinA" targetRef="End_TwinA" />
+    <bpmn:intermediateCatchEvent id="Catch_TwinB">
+      <bpmn:messageEventDefinition id="MED_TwinB" messageRef="Message_TwinB" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:userTask id="Proceed_TwinB" name="Proceed with notice B" />
+    <bpmn:endEvent id="End_TwinB" />
+    <bpmn:sequenceFlow id="Flow_Fork_Twin_Catch_TwinB" sourceRef="Fork_Twin" targetRef="Catch_TwinB" />
+    <bpmn:sequenceFlow id="Flow_Catch_TwinB_Proceed_TwinB" sourceRef="Catch_TwinB" targetRef="Proceed_TwinB" />
+    <bpmn:sequenceFlow id="Flow_Proceed_TwinB_End_TwinB" sourceRef="Proceed_TwinB" targetRef="End_TwinB" />
+  </bpmn:process>
+</bpmn:definitions>
