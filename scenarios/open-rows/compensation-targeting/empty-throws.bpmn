@@ -21,7 +21,6 @@
       <bpmn:compensateEventDefinition id="CompensateDefinition_Later" />
     </bpmn:boundaryEvent>
     <bpmn:userTask id="UserTask_UndoLater" name="Undo the later work" isForCompensation="true" />
-    <bpmn:association id="Association_Later" associationDirection="One" sourceRef="Boundary_CompensateLater" targetRef="UserTask_UndoLater" />
     <bpmn:sequenceFlow id="Flow_Later_ThrowLater" sourceRef="UserTask_Later" targetRef="IntermediateThrow_Later" />
 
     <bpmn:intermediateThrowEvent id="IntermediateThrow_Later">
@@ -31,5 +30,6 @@
     <bpmn:userTask id="UserTask_Done" name="Done" />
     <bpmn:sequenceFlow id="Flow_Done_End" sourceRef="UserTask_Done" targetRef="EndEvent_Done" />
     <bpmn:endEvent id="EndEvent_Done" />
+    <bpmn:association id="Association_Later" associationDirection="One" sourceRef="Boundary_CompensateLater" targetRef="UserTask_UndoLater" />
   </bpmn:process>
 </bpmn:definitions>

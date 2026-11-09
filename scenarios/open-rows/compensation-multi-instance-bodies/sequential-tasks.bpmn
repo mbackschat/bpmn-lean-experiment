@@ -20,7 +20,6 @@
         </camunda:inputOutput>
       </bpmn:extensionElements>
     </bpmn:userTask>
-    <bpmn:association id="Association_Visit" associationDirection="One" sourceRef="Boundary_CompensateVisit" targetRef="UserTask_UndoVisit" />
     <bpmn:sequenceFlow id="Flow_UserTask_Visit_Pause" sourceRef="UserTask_Visit" targetRef="UserTask_Pause" />
     <bpmn:userTask id="UserTask_Pause" name="Pause before compensating" />
     <bpmn:sequenceFlow id="Flow_Pause_Throw" sourceRef="UserTask_Pause" targetRef="IntermediateThrow_All" />
@@ -31,5 +30,6 @@
     <bpmn:userTask id="UserTask_After" name="Continue" />
     <bpmn:sequenceFlow id="Flow_After_End" sourceRef="UserTask_After" targetRef="EndEvent_Done" />
     <bpmn:endEvent id="EndEvent_Done" />
+    <bpmn:association id="Association_Visit" associationDirection="One" sourceRef="Boundary_CompensateVisit" targetRef="UserTask_UndoVisit" />
   </bpmn:process>
 </bpmn:definitions>

@@ -40,8 +40,7 @@
       </bpmn:outputSet>
       <bpmn:messageEventDefinition
         id="MessageEventDefinition_SettlementConfirmed"
-        messageRef="Message_SettlementConfirmed"
-        operationRef="Operation_ConfirmSettlement" />
+        messageRef="Message_SettlementConfirmed"><bpmn:operationRef>Operation_ConfirmSettlement</bpmn:operationRef></bpmn:messageEventDefinition>
     </bpmn:intermediateCatchEvent>
     <bpmn:sequenceFlow
       id="Flow_Confirm_Review"

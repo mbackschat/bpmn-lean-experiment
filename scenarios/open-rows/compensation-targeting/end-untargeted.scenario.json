@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "compensation-targeting-linear-throws",
     "relativePath": "scenarios/open-rows/compensation-targeting/linear-throws.bpmn",
-    "sha256": "bbb172cd4c7e10b5cbbea86a25542ecc3d343e6f64121650e30d43d313a243b5",
+    "sha256": "4b1ca58163bd334a712fec7b82e57735783c9d3308ab9349c6c1225d40801595",
     "sourceOverlay": null
   },
   "stimuli": [

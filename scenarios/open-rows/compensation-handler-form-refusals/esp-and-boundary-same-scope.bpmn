@@ -27,8 +27,8 @@
       <bpmn:compensateEventDefinition id="CompensateDefinition_Region" />
     </bpmn:boundaryEvent>
     <bpmn:userTask id="UserTask_UndoWholeRegion" name="Undo the region" isForCompensation="true" />
-    <bpmn:association id="Association_Region" associationDirection="One" sourceRef="Boundary_CompensateRegion" targetRef="UserTask_UndoWholeRegion" />
     <bpmn:sequenceFlow id="Flow_Region_Done" sourceRef="SubProcess_Region" targetRef="EndEvent_Done" />
     <bpmn:endEvent id="EndEvent_Done" />
+    <bpmn:association id="Association_Region" associationDirection="One" sourceRef="Boundary_CompensateRegion" targetRef="UserTask_UndoWholeRegion" />
   </bpmn:process>
 </bpmn:definitions>

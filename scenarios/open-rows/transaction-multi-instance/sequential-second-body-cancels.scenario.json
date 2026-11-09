@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "transaction-multi-instance-sequential-batch",
     "relativePath": "scenarios/open-rows/transaction-multi-instance/sequential-batch.bpmn",
-    "sha256": "f8fcb5a8216e26c9f98f709b8234e4723a5d96f7e45ac92e54b4b18a75227877",
+    "sha256": "e62d238580bcbf625321c4a532030606098e314391ca54974190586a9973b3b2",
     "sourceOverlay": null
   },
   "stimuli": [

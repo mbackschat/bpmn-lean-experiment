@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "shipment-manifest-intake",
     "relativePath": "scenarios/portable-business-message-payload/process.bpmn",
-    "sha256": "656f738c78b90d5318b8a1dd2aa3385dd7a1d1da061e5d6c63942afa0e6a297a",
+    "sha256": "47aa6df25976ca893a218083b5553b922334d4466aae98bbb4aaf8ab54b6f64d",
     "sourceOverlay": null
   },
   "stimuli": [

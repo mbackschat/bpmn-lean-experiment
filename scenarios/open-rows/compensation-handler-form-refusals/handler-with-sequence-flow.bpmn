@@ -12,12 +12,12 @@
       <bpmn:compensateEventDefinition id="CompensateDefinition_Work" />
     </bpmn:boundaryEvent>
     <bpmn:userTask id="UserTask_Undo" name="Undo the work" isForCompensation="true" />
-    <bpmn:association id="Association_Work" associationDirection="One" sourceRef="Boundary_Compensate" targetRef="UserTask_Undo" />
     <bpmn:sequenceFlow id="Flow_Undo_Aftermath" sourceRef="UserTask_Undo" targetRef="UserTask_Aftermath" />
     <bpmn:userTask id="UserTask_Aftermath" name="Handle the aftermath" />
     <bpmn:sequenceFlow id="Flow_Work_End" sourceRef="UserTask_Work" targetRef="EndEvent_Done" />
     <bpmn:sequenceFlow id="Flow_Aftermath_End" sourceRef="UserTask_Aftermath" targetRef="EndEvent_Aftermath" />
     <bpmn:endEvent id="EndEvent_Done" />
     <bpmn:endEvent id="EndEvent_Aftermath" />
+    <bpmn:association id="Association_Work" associationDirection="One" sourceRef="Boundary_Compensate" targetRef="UserTask_Undo" />
   </bpmn:process>
 </bpmn:definitions>

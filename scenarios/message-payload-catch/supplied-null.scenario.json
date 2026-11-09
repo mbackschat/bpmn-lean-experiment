@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "message-payload-catch-process",
     "relativePath": "scenarios/message-payload-catch/process.bpmn",
-    "sha256": "6f1177913a919a024719c7a91c207be70df1ded57852626bc8f4c25551ffc605",
+    "sha256": "ab13a9de9f5bc2e6a29d2f19222e8bcfe4e9a2c2286e3558a9c0e770fee50580",
     "sourceOverlay": null
   },
   "stimuli": [

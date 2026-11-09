@@ -14,7 +14,6 @@
       <bpmn:compensateEventDefinition id="CompensateDefinition_Reserve" />
     </bpmn:boundaryEvent>
     <bpmn:userTask id="UserTask_UndoReserve" name="Undo reserve" isForCompensation="true" />
-    <bpmn:association id="Association_Reserve" associationDirection="One" sourceRef="Boundary_CompensateReserve" targetRef="UserTask_UndoReserve" />
     <bpmn:sequenceFlow id="Flow_Reserve_Ship" sourceRef="UserTask_Reserve" targetRef="UserTask_Ship" />
 
     <bpmn:userTask id="UserTask_Ship" name="Ship" />
@@ -22,7 +21,6 @@
       <bpmn:compensateEventDefinition id="CompensateDefinition_Ship" />
     </bpmn:boundaryEvent>
     <bpmn:userTask id="UserTask_UndoShip" name="Undo ship" isForCompensation="true" />
-    <bpmn:association id="Association_Ship" associationDirection="One" sourceRef="Boundary_CompensateShip" targetRef="UserTask_UndoShip" />
     <bpmn:sequenceFlow id="Flow_Ship_Bill" sourceRef="UserTask_Ship" targetRef="UserTask_Bill" />
 
     <bpmn:userTask id="UserTask_Bill" name="Bill" />
@@ -30,7 +28,6 @@
       <bpmn:compensateEventDefinition id="CompensateDefinition_Bill" />
     </bpmn:boundaryEvent>
     <bpmn:userTask id="UserTask_UndoBill" name="Undo bill" isForCompensation="true" />
-    <bpmn:association id="Association_Bill" associationDirection="One" sourceRef="Boundary_CompensateBill" targetRef="UserTask_UndoBill" />
     <bpmn:sequenceFlow id="Flow_Bill_Route" sourceRef="UserTask_Bill" targetRef="Gateway_Route" />
 
     <bpmn:exclusiveGateway id="Gateway_Route" default="Flow_Route_EndAll" />
@@ -69,5 +66,8 @@
     <bpmn:endEvent id="EndEvent_All">
       <bpmn:compensateEventDefinition id="CompensateDefinition_EndAll" />
     </bpmn:endEvent>
+    <bpmn:association id="Association_Reserve" associationDirection="One" sourceRef="Boundary_CompensateReserve" targetRef="UserTask_UndoReserve" />
+    <bpmn:association id="Association_Ship" associationDirection="One" sourceRef="Boundary_CompensateShip" targetRef="UserTask_UndoShip" />
+    <bpmn:association id="Association_Bill" associationDirection="One" sourceRef="Boundary_CompensateBill" targetRef="UserTask_UndoBill" />
   </bpmn:process>
 </bpmn:definitions>

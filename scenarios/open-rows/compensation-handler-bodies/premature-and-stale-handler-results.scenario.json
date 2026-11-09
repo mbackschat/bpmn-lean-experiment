@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "compensation-handler-bodies-handler-bodies",
     "relativePath": "scenarios/open-rows/compensation-handler-bodies/handler-bodies.bpmn",
-    "sha256": "6b96ca0e17e54cd63701c2166d236af87d553658069ea7599ad4bf6d97e46e1d",
+    "sha256": "6580189daade687c54bab371a474e38e610decf50846c32b613337c312cae8f6",
     "sourceOverlay": null
   },
   "stimuli": [

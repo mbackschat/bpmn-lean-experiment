@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "transaction-multi-instance-parallel-batch",
     "relativePath": "scenarios/open-rows/transaction-multi-instance/parallel-batch.bpmn",
-    "sha256": "860037f868d6eaae8ea6b014107c61a8f9bc93665f60dbff95e9725a9e71577b",
+    "sha256": "a8b3c5c4aa3123e1483f354b630499b6d723c1840704a83907b4fc20582bf430",
     "sourceOverlay": null
   },
   "stimuli": [

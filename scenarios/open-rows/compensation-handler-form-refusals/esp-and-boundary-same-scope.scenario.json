@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "compensation-handler-form-refusals-esp-and-boundary-same-scope",
     "relativePath": "scenarios/open-rows/compensation-handler-form-refusals/esp-and-boundary-same-scope.bpmn",
-    "sha256": "d9a41e35438fb15d06d893501619f5ae109b1b9ea9cb3473ea300c87dd238d1c",
+    "sha256": "468f8dad91df9db7fb1a03a298901fc6a2cdb3394f256136b169a94c3a9b46f1",
     "sourceOverlay": null
   },
   "stimuli": [

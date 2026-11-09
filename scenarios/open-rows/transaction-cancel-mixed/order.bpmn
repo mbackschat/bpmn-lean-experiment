@@ -30,7 +30,6 @@
           </camunda:inputOutput>
         </bpmn:extensionElements>
       </bpmn:userTask>
-      <bpmn:association id="Association_Pick" associationDirection="One" sourceRef="Boundary_CompensatePick" targetRef="UserTask_UndoPick" />
       <bpmn:sequenceFlow id="Flow_Pick_End" sourceRef="UserTask_Pick" targetRef="EndEvent_Pick" />
       <bpmn:endEvent id="EndEvent_Pick" />
 
@@ -50,7 +49,6 @@
         implementation="urn:bpmn-lean:effect:probe-v1"
         camunda:delegateExpression="${bpmnLeanEffectHandler}"
         camunda:asyncBefore="true" />
-      <bpmn:association id="Association_Charge" associationDirection="One" sourceRef="Boundary_CompensateCharge" targetRef="ServiceTask_Refund" />
       <bpmn:sequenceFlow id="Flow_Charge_End" sourceRef="ServiceTask_Charge" targetRef="EndEvent_Charge" />
       <bpmn:endEvent id="EndEvent_Charge" />
 
@@ -95,6 +93,8 @@
         <bpmn:cancelEventDefinition id="CancelDefinition_Order" />
       </bpmn:endEvent>
       <bpmn:endEvent id="EndEvent_Keep" />
+      <bpmn:association id="Association_Pick" associationDirection="One" sourceRef="Boundary_CompensatePick" targetRef="UserTask_UndoPick" />
+      <bpmn:association id="Association_Charge" associationDirection="One" sourceRef="Boundary_CompensateCharge" targetRef="ServiceTask_Refund" />
     </bpmn:transaction>
     <bpmn:boundaryEvent id="Boundary_Cancel" attachedToRef="Transaction_Order">
       <bpmn:cancelEventDefinition id="CancelDefinition_Catch" />

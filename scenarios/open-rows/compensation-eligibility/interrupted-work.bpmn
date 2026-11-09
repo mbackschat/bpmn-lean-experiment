@@ -13,7 +13,6 @@
       <bpmn:compensateEventDefinition id="CompensateDefinition_Work" />
     </bpmn:boundaryEvent>
     <bpmn:userTask id="UserTask_UndoWork" name="Undo the work" isForCompensation="true" />
-    <bpmn:association id="Association_Work" associationDirection="One" sourceRef="Boundary_Compensate" targetRef="UserTask_UndoWork" />
     <bpmn:boundaryEvent id="Boundary_Timeout" attachedToRef="UserTask_Work" cancelActivity="true">
       <bpmn:timerEventDefinition>
         <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT5S</bpmn:timeDuration>
@@ -32,5 +31,6 @@
     <bpmn:userTask id="UserTask_After" name="Continue" />
     <bpmn:sequenceFlow id="Flow_After_End" sourceRef="UserTask_After" targetRef="EndEvent_Done" />
     <bpmn:endEvent id="EndEvent_Done" />
+    <bpmn:association id="Association_Work" associationDirection="One" sourceRef="Boundary_Compensate" targetRef="UserTask_UndoWork" />
   </bpmn:process>
 </bpmn:definitions>

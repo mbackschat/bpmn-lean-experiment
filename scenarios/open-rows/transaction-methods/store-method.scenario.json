@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "transaction-methods-store-method",
     "relativePath": "scenarios/open-rows/transaction-methods/store-method.bpmn",
-    "sha256": "f2dd1ce101feb8495a8386f1470a97b390e4a89f1102c17853d0929f7d25d4ec",
+    "sha256": "b9136554ae6580b99b80d31e982a48c70119ed398567e5cd4fd4258df209a28d",
     "sourceOverlay": null
   },
   "stimuli": [

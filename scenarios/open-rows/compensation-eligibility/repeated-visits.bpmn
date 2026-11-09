@@ -25,7 +25,6 @@
         </camunda:inputOutput>
       </bpmn:extensionElements>
     </bpmn:userTask>
-    <bpmn:association id="Association_Visit" associationDirection="One" sourceRef="Boundary_CompensateVisit" targetRef="UserTask_UndoVisit" />
     <bpmn:sequenceFlow id="Flow_Visit_More" sourceRef="UserTask_Visit" targetRef="Gateway_More" />
     <bpmn:exclusiveGateway id="Gateway_More" default="Flow_More_End" />
     <bpmn:sequenceFlow id="Flow_More_Again" sourceRef="Gateway_More" targetRef="Gateway_VisitMerge">
@@ -49,5 +48,6 @@
     <bpmn:userTask id="UserTask_Done" name="Done" />
     <bpmn:sequenceFlow id="Flow_Done_End" sourceRef="UserTask_Done" targetRef="EndEvent_Trigger" />
     <bpmn:endEvent id="EndEvent_Trigger" />
+    <bpmn:association id="Association_Visit" associationDirection="One" sourceRef="Boundary_CompensateVisit" targetRef="UserTask_UndoVisit" />
   </bpmn:process>
 </bpmn:definitions>

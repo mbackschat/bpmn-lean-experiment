@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "transaction-methods-image-method",
     "relativePath": "scenarios/open-rows/transaction-methods/image-method.bpmn",
-    "sha256": "b1986975a76afb67a3bd8afbcc5caf00712a4b6fe76b39c3cf8f2f14bc57963b",
+    "sha256": "04c85c0efa36c7f300fe359b9a816d118eae8ba9d1ddab7d905c1b021421f48c",
     "sourceOverlay": null
   },
   "stimuli": [

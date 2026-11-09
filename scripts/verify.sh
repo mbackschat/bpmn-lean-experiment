@@ -18,6 +18,8 @@ verify_common() {
     "$timer_start_bpmn_path" \
     "$configured_task_bpmn_path" \
     "$activity_boundary_message_bpmn_path"
+  # Every registered scenario model is XSD-valid; an open-row witness may probe an invalid document on purpose.
+  find scenarios -name '*.bpmn' -not -path 'scenarios/open-rows/*' -print | sort | xargs ./scripts/validate-bpmn-xml.sh
 }
 
 verify_lean_library() {

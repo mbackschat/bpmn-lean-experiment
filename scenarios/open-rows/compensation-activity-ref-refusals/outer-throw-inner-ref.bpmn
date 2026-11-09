@@ -15,9 +15,9 @@
         <bpmn:compensateEventDefinition id="CompensateDefinition_InnerWork" />
       </bpmn:boundaryEvent>
       <bpmn:userTask id="UserTask_UndoInnerWork" name="Undo inner work" isForCompensation="true" />
-      <bpmn:association id="Association_InnerWork" associationDirection="One" sourceRef="Boundary_CompensateInnerWork" targetRef="UserTask_UndoInnerWork" />
       <bpmn:sequenceFlow id="Flow_Work_End" sourceRef="UserTask_InnerWork" targetRef="EndEvent_Region" />
       <bpmn:endEvent id="EndEvent_Region" />
+      <bpmn:association id="Association_InnerWork" associationDirection="One" sourceRef="Boundary_CompensateInnerWork" targetRef="UserTask_UndoInnerWork" />
     </bpmn:subProcess>
     <bpmn:sequenceFlow id="Flow_Region_Throw" sourceRef="SubProcess_Region" targetRef="IntermediateThrow_Wrong" />
     <bpmn:intermediateThrowEvent id="IntermediateThrow_Wrong">

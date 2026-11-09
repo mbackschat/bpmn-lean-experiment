@@ -23,7 +23,7 @@
       <outputSet id="OutputSet_Confirmation">
         <dataOutputRefs>DataOutput_ConfirmationReference</dataOutputRefs>
       </outputSet>
-      <messageEventDefinition id="AwaitConfirmation_Message" messageRef="Message_ConfirmationSent" operationRef="Operation_ConfirmOrder" />
+      <messageEventDefinition id="AwaitConfirmation_Message" messageRef="Message_ConfirmationSent"><operationRef>Operation_ConfirmOrder</operationRef></messageEventDefinition>
     </intermediateCatchEvent>
     <userTask id="FulfilOrder" name="Fulfil the order" />
     <endEvent id="OrderFulfilled" name="Order fulfilled" />

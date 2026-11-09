@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "compensation-handler-form-refusals-association-to-ordinary-activity",
     "relativePath": "scenarios/open-rows/compensation-handler-form-refusals/association-to-ordinary-activity.bpmn",
-    "sha256": "8fb83b495de31c0b6ab8a58a004d6247dd24cd58354a3bd378dc621f65d87ded",
+    "sha256": "83b99ee6bdaa49e1d721b86813cb13accfe2c07dbd73ea5cdb0cd64e83273bce",
     "sourceOverlay": null
   },
   "stimuli": [

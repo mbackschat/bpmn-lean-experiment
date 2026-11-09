@@ -19,7 +19,6 @@
         </camunda:inputOutput>
       </bpmn:extensionElements>
     </bpmn:userTask>
-    <bpmn:association id="Association_Charge" associationDirection="One" sourceRef="Boundary_CompensateCharge" targetRef="UserTask_UndoCharge" />
     <bpmn:sequenceFlow id="Flow_Charge_Boundaried" sourceRef="UserTask_Charge" targetRef="SubProcess_Boundaried" />
 
     <bpmn:subProcess id="SubProcess_Boundaried" name="Pack with a boundary handler">
@@ -44,7 +43,6 @@
         </camunda:inputOutput>
       </bpmn:extensionElements>
     </bpmn:userTask>
-    <bpmn:association id="Association_Boundaried" associationDirection="One" sourceRef="Boundary_CompensateBoundaried" targetRef="UserTask_UndoBoundaried" />
     <bpmn:sequenceFlow id="Flow_Boundaried_Snapshotted" sourceRef="SubProcess_Boundaried" targetRef="SubProcess_Snapshotted" />
 
     <bpmn:subProcess id="SubProcess_Snapshotted" name="Pack with an event sub-process handler">
@@ -95,9 +93,9 @@
           </camunda:inputOutput>
         </bpmn:extensionElements>
       </bpmn:userTask>
-      <bpmn:association id="Association_PackPlain" associationDirection="One" sourceRef="Boundary_CompensatePackPlain" targetRef="UserTask_UndoPackPlain" />
       <bpmn:sequenceFlow id="Flow_PackPlain_End" sourceRef="UserTask_PackPlain" targetRef="EndEvent_Plain" />
       <bpmn:endEvent id="EndEvent_Plain" />
+      <bpmn:association id="Association_PackPlain" associationDirection="One" sourceRef="Boundary_CompensatePackPlain" targetRef="UserTask_UndoPackPlain" />
     </bpmn:subProcess>
     <bpmn:sequenceFlow id="Flow_Plain_Pause" sourceRef="SubProcess_Plain" targetRef="UserTask_Pause" />
 
@@ -110,5 +108,7 @@
     <bpmn:userTask id="UserTask_After" name="Continue" />
     <bpmn:sequenceFlow id="Flow_After_End" sourceRef="UserTask_After" targetRef="EndEvent_Done" />
     <bpmn:endEvent id="EndEvent_Done" />
+    <bpmn:association id="Association_Charge" associationDirection="One" sourceRef="Boundary_CompensateCharge" targetRef="UserTask_UndoCharge" />
+    <bpmn:association id="Association_Boundaried" associationDirection="One" sourceRef="Boundary_CompensateBoundaried" targetRef="UserTask_UndoBoundaried" />
   </bpmn:process>
 </bpmn:definitions>

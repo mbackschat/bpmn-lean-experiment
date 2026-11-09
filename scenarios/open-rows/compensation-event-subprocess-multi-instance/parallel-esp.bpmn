@@ -23,7 +23,6 @@
           </camunda:inputOutput>
         </bpmn:extensionElements>
       </bpmn:userTask>
-      <bpmn:association id="Association_Visit" associationDirection="One" sourceRef="Boundary_CompensateVisit" targetRef="UserTask_UndoVisit" />
       <bpmn:sequenceFlow id="Flow_Visit_End" sourceRef="UserTask_Visit" targetRef="EndEvent_Visit" />
       <bpmn:endEvent id="EndEvent_Visit" />
       <bpmn:subProcess id="EventSubProcess_Visit" triggeredByEvent="true">
@@ -51,6 +50,7 @@
         <bpmn:endEvent id="EndEvent_EspStop" />
         <bpmn:endEvent id="EndEvent_EspRethrown" />
       </bpmn:subProcess>
+      <bpmn:association id="Association_Visit" associationDirection="One" sourceRef="Boundary_CompensateVisit" targetRef="UserTask_UndoVisit" />
     </bpmn:subProcess>
     <bpmn:sequenceFlow id="Flow_Visits_Pause" sourceRef="SubProcess_Visits" targetRef="UserTask_Pause" />
     <bpmn:userTask id="UserTask_Pause" name="Pause before compensating" />

@@ -23,7 +23,6 @@
           </camunda:inputOutput>
         </bpmn:extensionElements>
       </bpmn:userTask>
-      <bpmn:association id="Association_Process" associationDirection="One" sourceRef="Boundary_CompensateProcess" targetRef="UserTask_UndoProcess" />
       <bpmn:sequenceFlow id="Flow_Process_Check" sourceRef="UserTask_Process" targetRef="UserTask_Check" />
       <bpmn:userTask id="UserTask_Check" name="Check the lot" />
       <bpmn:sequenceFlow id="Flow_Check_Gateway" sourceRef="UserTask_Check" targetRef="Gateway_Check" />
@@ -36,6 +35,7 @@
         <bpmn:cancelEventDefinition id="CancelDefinition_Lot" />
       </bpmn:endEvent>
       <bpmn:endEvent id="EndEvent_Keep" />
+      <bpmn:association id="Association_Process" associationDirection="One" sourceRef="Boundary_CompensateProcess" targetRef="UserTask_UndoProcess" />
     </bpmn:transaction>
     <bpmn:boundaryEvent id="Boundary_Cancel" attachedToRef="Transaction_Lot">
       <bpmn:cancelEventDefinition id="CancelDefinition_Catch" />

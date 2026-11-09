@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "compensation-handler-form-refusals-two-compensation-boundaries",
     "relativePath": "scenarios/open-rows/compensation-handler-form-refusals/two-compensation-boundaries.bpmn",
-    "sha256": "0e72d6d04a2347b5a1272e8ee7399453124455e3dfe1448dea57d1bfc5ece00e",
+    "sha256": "d862ef6c401036b522d7cc110e137b313add8c0807bb99af6fd854eac09d1d6d",
     "sourceOverlay": null
   },
   "stimuli": [

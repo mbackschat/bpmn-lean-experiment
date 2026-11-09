@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "intermediate-catch-message-process",
     "relativePath": "scenarios/intermediate-catch-message/process.bpmn",
-    "sha256": "41ba50066e54fa1a01340b185afb04c70d1acc761f902a8f321f31eb095f2515",
+    "sha256": "53ea724c542089fbba498714a896901de22b3edf9f005c284aaabbdcaa232e4c",
     "sourceOverlay": null
   },
   "stimuli": [

@@ -24,7 +24,6 @@
       implementation="urn:bpmn-lean:effect:probe-v1"
       camunda:delegateExpression="${bpmnLeanEffectHandler}"
       camunda:asyncBefore="true" />
-    <bpmn:association id="Association_Reserve" associationDirection="One" sourceRef="Boundary_CompensateReserve" targetRef="ServiceTask_Release" />
     <bpmn:boundaryEvent id="Boundary_ReserveFailed" attachedToRef="ServiceTask_Reserve">
       <bpmn:errorEventDefinition id="ErrorDefinition_ReserveFailed" errorRef="Error_ReserveFailed" />
     </bpmn:boundaryEvent>
@@ -41,5 +40,6 @@
     <bpmn:userTask id="UserTask_After" name="Continue" />
     <bpmn:sequenceFlow id="Flow_After_End" sourceRef="UserTask_After" targetRef="EndEvent_Done" />
     <bpmn:endEvent id="EndEvent_Done" />
+    <bpmn:association id="Association_Reserve" associationDirection="One" sourceRef="Boundary_CompensateReserve" targetRef="ServiceTask_Release" />
   </bpmn:process>
 </bpmn:definitions>

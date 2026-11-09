@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "compensation-multi-instance-bodies-sequential-regions",
     "relativePath": "scenarios/open-rows/compensation-multi-instance-bodies/sequential-regions.bpmn",
-    "sha256": "0e2fdc7a8c469bc8954a862361c07aeb76f9fa0c1112241b62e1b8988b6152c4",
+    "sha256": "7c5e997dc6ff7fc0b77969934e686b7a52a7b82ad7ffe762933150fbca5c9d8e",
     "sourceOverlay": null
   },
   "stimuli": [

@@ -12,8 +12,8 @@
       <bpmn:compensateEventDefinition id="CompensateDefinition_Work" />
     </bpmn:boundaryEvent>
     <bpmn:userTask id="UserTask_Undo" name="Undo the work" />
-    <bpmn:association id="Association_Work" associationDirection="One" sourceRef="Boundary_Compensate" targetRef="UserTask_Undo" />
     <bpmn:sequenceFlow id="Flow_Work_End" sourceRef="UserTask_Work" targetRef="EndEvent_Done" />
     <bpmn:endEvent id="EndEvent_Done" />
+    <bpmn:association id="Association_Work" associationDirection="One" sourceRef="Boundary_Compensate" targetRef="UserTask_Undo" />
   </bpmn:process>
 </bpmn:definitions>

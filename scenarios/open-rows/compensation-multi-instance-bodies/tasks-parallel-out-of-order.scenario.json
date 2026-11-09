@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "compensation-multi-instance-bodies-parallel-tasks",
     "relativePath": "scenarios/open-rows/compensation-multi-instance-bodies/parallel-tasks.bpmn",
-    "sha256": "d70aaca785dddcf8275b7a856c0d3d13be13c2509a5edddc9f88640841c6b326",
+    "sha256": "b024a3984c441a2352e41e8ec4445c72f0c127971cd1195e8c582a1913729f0d",
     "sourceOverlay": null
   },
   "stimuli": [

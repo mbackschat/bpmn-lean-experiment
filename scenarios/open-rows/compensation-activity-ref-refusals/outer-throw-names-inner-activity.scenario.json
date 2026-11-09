@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "compensation-activity-ref-refusals-outer-throw-inner-ref",
     "relativePath": "scenarios/open-rows/compensation-activity-ref-refusals/outer-throw-inner-ref.bpmn",
-    "sha256": "655f8068c02bcc9fe894a779cb86cbf10e048cf86e24de944a4c96b253748d01",
+    "sha256": "53a20feef4f05c5d1399553e4eeda22627813d540ace975ae84128a33cb86eb4",
     "sourceOverlay": null
   },
   "stimuli": [

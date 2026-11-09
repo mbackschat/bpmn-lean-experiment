@@ -18,7 +18,7 @@
         <bpmn:targetRef>Property_ShipmentManifest</bpmn:targetRef>
       </bpmn:dataOutputAssociation>
       <bpmn:outputSet id="OutputSet_ManifestReceived"><bpmn:dataOutputRefs>DataOutput_Manifest</bpmn:dataOutputRefs></bpmn:outputSet>
-      <bpmn:messageEventDefinition id="MessageEventDefinition_ManifestReceived" messageRef="Message_ManifestReceived" operationRef="Operation_SubmitManifest" />
+      <bpmn:messageEventDefinition id="MessageEventDefinition_ManifestReceived" messageRef="Message_ManifestReceived"><bpmn:operationRef>Operation_SubmitManifest</bpmn:operationRef></bpmn:messageEventDefinition>
     </bpmn:intermediateCatchEvent>
     <bpmn:sequenceFlow id="Flow_Manifest_Review" sourceRef="MessageCatch_ManifestReceived" targetRef="UserTask_ReviewManifest" />
     <bpmn:userTask id="UserTask_ReviewManifest" name="Review manifest">

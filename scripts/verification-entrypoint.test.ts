@@ -412,6 +412,14 @@ test("verification scripts validate BPMN XML through one preflighting owner", as
   }
 });
 
+test("default verification XSD-validates every registered scenario model and exempts open-row witnesses", async () => {
+  // Deployment of an XSD-invalid model fails in CIB while the kernel reader may accept it, so an unchecked registered
+  // model silently loses its CIB answer (47 such models found on 2026-11-09).
+  const source = await readFile(verifyScriptPath, "utf8");
+
+  assert.match(source, /find scenarios -name '\*\.bpmn' -not -path 'scenarios\/open-rows\/\*'/u);
+});
+
 test("default verification XSD-validates the Timer Start fixture", async () => {
   const source = await readFile(verifyScriptPath, "utf8");
 

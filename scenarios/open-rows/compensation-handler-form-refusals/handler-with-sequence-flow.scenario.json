@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "compensation-handler-form-refusals-handler-with-sequence-flow",
     "relativePath": "scenarios/open-rows/compensation-handler-form-refusals/handler-with-sequence-flow.bpmn",
-    "sha256": "18bba75958b050c19bafdf0279016c20cdfead1a133e2ca1dbef04a9beedd0b6",
+    "sha256": "f59a33cd623cbcb1b491bc96e834ca81ca1f4cdebcb87d0bc7e1a5d2d2d242aa",
     "sourceOverlay": null
   },
   "stimuli": [

@@ -2539,7 +2539,7 @@
       "source": {
         "kind": "retainedScenario",
         "bpmnRelativePath": "scenarios/intermediate-catch-message/process.bpmn",
-        "sha256": "41ba50066e54fa1a01340b185afb04c70d1acc761f902a8f321f31eb095f2515",
+        "sha256": "53ea724c542089fbba498714a896901de22b3edf9f005c284aaabbdcaa232e4c",
         "scenarioRelativePath": "scenarios/intermediate-catch-message/scenario.json",
         "license": "MIT"
       },
@@ -2575,7 +2575,7 @@
       "source": {
         "kind": "retainedScenario",
         "bpmnRelativePath": "scenarios/message-payload-catch/process.bpmn",
-        "sha256": "6f1177913a919a024719c7a91c207be70df1ded57852626bc8f4c25551ffc605",
+        "sha256": "ab13a9de9f5bc2e6a29d2f19222e8bcfe4e9a2c2286e3558a9c0e770fee50580",
         "scenarioRelativePath": "scenarios/message-payload-catch/supplied-scalar.scenario.json",
         "license": "MIT"
       },
@@ -2611,7 +2611,7 @@
       "source": {
         "kind": "retainedScenario",
         "bpmnRelativePath": "scenarios/portable-business-message-payload/process.bpmn",
-        "sha256": "656f738c78b90d5318b8a1dd2aa3385dd7a1d1da061e5d6c63942afa0e6a297a",
+        "sha256": "47aa6df25976ca893a218083b5553b922334d4466aae98bbb4aaf8ab54b6f64d",
         "scenarioRelativePath": "scenarios/portable-business-message-payload/manifest-delivered.scenario.json",
         "license": "MIT"
       },
@@ -2788,7 +2788,7 @@
       "source": {
         "kind": "retainedScenario",
         "bpmnRelativePath": "scenarios/event-based-gateway-message-timer/process.bpmn",
-        "sha256": "3e7ca1e205c8b2adcb8a60e13edc9326bab1d45ede9fbc1c0809e96a701b0039",
+        "sha256": "a8f7638401e15a5bcffa81412a4468997a6dc9571cb5d9d4508495563ea1fd3a",
         "scenarioRelativePath": "scenarios/event-based-gateway-message-timer/message-wins.scenario.json",
         "license": "MIT"
       },
@@ -3004,7 +3004,7 @@
       "source": {
         "kind": "retainedScenario",
         "bpmnRelativePath": "scenarios/message-start-event/process.bpmn",
-        "sha256": "254823e574c7ba8b69ff3e965a86cc579c3ccfcb42f23f0abb344aacc130099c",
+        "sha256": "41901ab8ce778e33daa143af1d2a23e4ef42916fa5181801cdf3df825f9389a4",
         "scenarioRelativePath": "scenarios/message-start-event/scenario.json",
         "license": "MIT"
       },
@@ -3904,7 +3904,7 @@
       "source": {
         "kind": "retainedScenario",
         "bpmnRelativePath": "scenarios/transaction-cancellation/reservation-withdrawal.bpmn",
-        "sha256": "1286fe6dd67bcf788f7626297a123ebd8c3d4d403f84a0ea9dcc67abc8edc4d4",
+        "sha256": "9cbf9d029ef1246b55b3429160fafaac4786dd1b99e41a827c8fcf41414632ee",
         "scenarioRelativePath": "scenarios/transaction-cancellation/retained-active.scenario.json",
         "license": "MIT"
       },

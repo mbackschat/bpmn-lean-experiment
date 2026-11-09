@@ -12,7 +12,6 @@
       <bpmn:compensateEventDefinition id="CompensateDefinition_OuterWork" />
     </bpmn:boundaryEvent>
     <bpmn:userTask id="UserTask_UndoOuterWork" name="Undo outer work" isForCompensation="true" />
-    <bpmn:association id="Association_OuterWork" associationDirection="One" sourceRef="Boundary_CompensateOuterWork" targetRef="UserTask_UndoOuterWork" />
     <bpmn:sequenceFlow id="Flow_Work_Region" sourceRef="UserTask_OuterWork" targetRef="SubProcess_Region" />
     <bpmn:subProcess id="SubProcess_Region" name="Region">
       <bpmn:startEvent id="StartEvent_Region" />
@@ -25,5 +24,6 @@
     </bpmn:subProcess>
     <bpmn:sequenceFlow id="Flow_Region_End" sourceRef="SubProcess_Region" targetRef="EndEvent_Done" />
     <bpmn:endEvent id="EndEvent_Done" />
+    <bpmn:association id="Association_OuterWork" associationDirection="One" sourceRef="Boundary_CompensateOuterWork" targetRef="UserTask_UndoOuterWork" />
   </bpmn:process>
 </bpmn:definitions>

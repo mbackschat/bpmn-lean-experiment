@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "compensation-event-subprocess-nesting-nested-esp",
     "relativePath": "scenarios/open-rows/compensation-event-subprocess-nesting/nested-esp.bpmn",
-    "sha256": "c6afa0659b8b55938eebcae38c21eab6447f64a28b29fd8454b1dcf9f0e46460",
+    "sha256": "95578fe621da5a1a290e7a74138a17d5157b46017152815ff1c54f79a156880e",
     "sourceOverlay": null
   },
   "stimuli": [

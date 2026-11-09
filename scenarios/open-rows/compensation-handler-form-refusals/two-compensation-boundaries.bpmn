@@ -16,9 +16,9 @@
     </bpmn:boundaryEvent>
     <bpmn:userTask id="UserTask_UndoFirst" name="Undo the first way" isForCompensation="true" />
     <bpmn:userTask id="UserTask_UndoSecond" name="Undo the second way" isForCompensation="true" />
-    <bpmn:association id="Association_First" associationDirection="One" sourceRef="Boundary_CompensateFirst" targetRef="UserTask_UndoFirst" />
-    <bpmn:association id="Association_Second" associationDirection="One" sourceRef="Boundary_CompensateSecond" targetRef="UserTask_UndoSecond" />
     <bpmn:sequenceFlow id="Flow_Work_End" sourceRef="UserTask_Work" targetRef="EndEvent_Done" />
     <bpmn:endEvent id="EndEvent_Done" />
+    <bpmn:association id="Association_First" associationDirection="One" sourceRef="Boundary_CompensateFirst" targetRef="UserTask_UndoFirst" />
+    <bpmn:association id="Association_Second" associationDirection="One" sourceRef="Boundary_CompensateSecond" targetRef="UserTask_UndoSecond" />
   </bpmn:process>
 </bpmn:definitions>

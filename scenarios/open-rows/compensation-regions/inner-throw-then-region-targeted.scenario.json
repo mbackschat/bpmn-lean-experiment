@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "compensation-regions-regions",
     "relativePath": "scenarios/open-rows/compensation-regions/regions.bpmn",
-    "sha256": "c856d4faac329947a804d3b927b9f483d54b142845604d9f068748fa03cb7b0c",
+    "sha256": "7aa8faf419db459d92fddbf4f8270fb5b97cf0bbcbe837eb0d866e98b22e59d3",
     "sourceOverlay": null
   },
   "stimuli": [

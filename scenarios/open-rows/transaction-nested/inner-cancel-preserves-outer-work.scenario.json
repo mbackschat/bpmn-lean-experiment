@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "transaction-nested-nested",
     "relativePath": "scenarios/open-rows/transaction-nested/nested.bpmn",
-    "sha256": "7175ea2a10e046af43b89f31c194e9d05b30c67584a79da2203aeade1a8003b4",
+    "sha256": "d2113473af65922356f25018902b4b849fb7fb4428f4fb47ff3d63e8d8b6f92a",
     "sourceOverlay": null
   },
   "stimuli": [

@@ -22,7 +22,7 @@
     <bpmn:intermediateCatchEvent id="MessageCatch">
       <bpmn:incoming>Flow_Message_Config</bpmn:incoming>
       <bpmn:outgoing>Flow_Message_Task</bpmn:outgoing>
-      <bpmn:messageEventDefinition id="MessageDefinition" messageRef="Message_Approval" operationRef="Operation_ReceiveApproval"/>
+      <bpmn:messageEventDefinition id="MessageDefinition" messageRef="Message_Approval"><bpmn:operationRef>Operation_ReceiveApproval</bpmn:operationRef></bpmn:messageEventDefinition>
     </bpmn:intermediateCatchEvent>
     <bpmn:intermediateCatchEvent id="TimerCatch">
       <bpmn:incoming>Flow_Timer_Config</bpmn:incoming>

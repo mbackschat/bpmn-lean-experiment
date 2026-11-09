@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "compensation-activity-ref-refusals-non-activity-ref",
     "relativePath": "scenarios/open-rows/compensation-activity-ref-refusals/non-activity-ref.bpmn",
-    "sha256": "8f063d5f4ac982fece51c1a7b562ec4157c061ab5b03c9d460fd86535084a538",
+    "sha256": "46635b5388e9cf5a77ed8dc54aea0f48aac403ae54ef26a5f082ce4acd081484",
     "sourceOverlay": null
   },
   "stimuli": [

@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "message-esp-interrupting",
     "relativePath": "scenarios/open-rows/message-esp-interrupting/interrupting-handlers.bpmn",
-    "sha256": "3d1786532400f84c03a6655680c752b5c31d4adb7d8c0c02a8de74d4dc265ede",
+    "sha256": "6b46ac05535cbed5d5c7be0b474a99ee682cd2031b984fa6aed4e106c6589bab",
     "sourceOverlay": null
   },
   "stimuli": [

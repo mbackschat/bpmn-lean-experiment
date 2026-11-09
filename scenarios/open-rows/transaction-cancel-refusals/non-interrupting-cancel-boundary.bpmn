@@ -18,7 +18,6 @@
         <bpmn:compensateEventDefinition id="CompensateDefinition_Step" />
       </bpmn:boundaryEvent>
       <bpmn:userTask id="UserTask_UndoStep" name="Undo the step" isForCompensation="true" />
-      <bpmn:association id="Association_Step" associationDirection="One" sourceRef="Boundary_CompensateStep" targetRef="UserTask_UndoStep" />
       <bpmn:sequenceFlow id="Flow_Step_Cancel" sourceRef="UserTask_Step" targetRef="EndEvent_Cancel" />
       <bpmn:endEvent id="EndEvent_Cancel">
         <bpmn:cancelEventDefinition id="CancelDefinition_Work" />
@@ -26,6 +25,7 @@
       <bpmn:userTask id="UserTask_Other" name="Do the other work" />
       <bpmn:sequenceFlow id="Flow_Other_End" sourceRef="UserTask_Other" targetRef="EndEvent_Other" />
       <bpmn:endEvent id="EndEvent_Other" />
+      <bpmn:association id="Association_Step" associationDirection="One" sourceRef="Boundary_CompensateStep" targetRef="UserTask_UndoStep" />
     </bpmn:transaction>
     <bpmn:boundaryEvent id="Boundary_Cancel" attachedToRef="Transaction_Work" cancelActivity="false">
       <bpmn:cancelEventDefinition id="CancelDefinition_Catch" />

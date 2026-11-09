@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "message-correlation-criteria-confirmation-payload",
     "relativePath": "scenarios/open-rows/message-correlation-criteria/confirmation-payload.bpmn",
-    "sha256": "4980b843284dd35cc2173d1c01639e1692dc340698d42d44725f2c2de36ac983",
+    "sha256": "4f5f6a31ba3173a124faa3781514fe1d7440a42f8fd30d947ceefa0440ecd462",
     "sourceOverlay": null
   },
   "stimuli": [

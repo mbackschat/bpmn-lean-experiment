@@ -20,7 +20,7 @@
       <outputSet id="OutputSet_ShipmentAnnounced">
         <dataOutputRefs>DataOutput_ManifestReference</dataOutputRefs>
       </outputSet>
-      <messageEventDefinition id="StartShipmentAnnounced_Message" messageRef="Message_ShipmentAnnounced" operationRef="Operation_AnnounceShipment" />
+      <messageEventDefinition id="StartShipmentAnnounced_Message" messageRef="Message_ShipmentAnnounced"><operationRef>Operation_AnnounceShipment</operationRef></messageEventDefinition>
     </startEvent>
     <userTask id="CheckManifest" name="Check the manifest">
       <incoming>Flow_Announced</incoming>

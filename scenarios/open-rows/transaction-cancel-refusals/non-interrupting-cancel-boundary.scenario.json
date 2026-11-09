@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "transaction-cancel-refusals-non-interrupting-cancel-boundary",
     "relativePath": "scenarios/open-rows/transaction-cancel-refusals/non-interrupting-cancel-boundary.bpmn",
-    "sha256": "586a3aa515a75c128aa46540c7f4641956cbf2c6e6ea7b8392fb668d66a2a3d4",
+    "sha256": "f52c5b3f38ce3162d88c9e5486ffcb3e8d55060b02815668e77a463013f2e7b1",
     "sourceOverlay": null
   },
   "stimuli": [

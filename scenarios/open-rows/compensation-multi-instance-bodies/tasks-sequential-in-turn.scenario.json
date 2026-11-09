@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "compensation-multi-instance-bodies-sequential-tasks",
     "relativePath": "scenarios/open-rows/compensation-multi-instance-bodies/sequential-tasks.bpmn",
-    "sha256": "e25ea3144572718e3b7e36930aaa908aaf53df43b0eba389e5d566e21e96787a",
+    "sha256": "2adfba19bdda27dafe1f7f81c9e962bc5e3090d3c1702a852bd29c04ea2272f3",
     "sourceOverlay": null
   },
   "stimuli": [

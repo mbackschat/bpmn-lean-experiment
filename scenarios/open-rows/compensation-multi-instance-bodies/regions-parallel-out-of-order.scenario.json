@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "compensation-multi-instance-bodies-parallel-regions",
     "relativePath": "scenarios/open-rows/compensation-multi-instance-bodies/parallel-regions.bpmn",
-    "sha256": "29e97b83046989cec54ceebdc3e990e79695d7142ec54475c50d8cd6f2eed068",
+    "sha256": "d7059bfa0778e16159582976bff797c08df5a11d7c684a398277a65490b0a238",
     "sourceOverlay": null
   },
   "stimuli": [

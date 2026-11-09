@@ -22,7 +22,6 @@
         <bpmn:compensateEventDefinition id="CompensateDefinition_OuterWork" />
       </bpmn:boundaryEvent>
       <bpmn:userTask id="UserTask_UndoOuterWork" name="Undo outer work" isForCompensation="true" />
-      <bpmn:association id="Association_OuterWork" associationDirection="One" sourceRef="Boundary_CompensateOuterWork" targetRef="UserTask_UndoOuterWork" />
       <bpmn:sequenceFlow id="Flow_OuterWork_End" sourceRef="UserTask_OuterWork" targetRef="EndEvent_OuterWork" />
       <bpmn:endEvent id="EndEvent_OuterWork" />
 
@@ -34,7 +33,6 @@
           <bpmn:compensateEventDefinition id="CompensateDefinition_InnerWork" />
         </bpmn:boundaryEvent>
         <bpmn:userTask id="UserTask_UndoInnerWork" name="Undo inner work" isForCompensation="true" />
-        <bpmn:association id="Association_InnerWork" associationDirection="One" sourceRef="Boundary_CompensateInnerWork" targetRef="UserTask_UndoInnerWork" />
         <bpmn:sequenceFlow id="Flow_InnerWork_Decide" sourceRef="UserTask_InnerWork" targetRef="UserTask_InnerDecide" />
         <bpmn:userTask id="UserTask_InnerDecide" name="Decide whether to cancel the inner transaction" />
         <bpmn:sequenceFlow id="Flow_InnerDecide_Gateway" sourceRef="UserTask_InnerDecide" targetRef="Gateway_Inner" />
@@ -47,6 +45,7 @@
           <bpmn:cancelEventDefinition id="CancelDefinition_Inner" />
         </bpmn:endEvent>
         <bpmn:endEvent id="EndEvent_InnerKeep" />
+        <bpmn:association id="Association_InnerWork" associationDirection="One" sourceRef="Boundary_CompensateInnerWork" targetRef="UserTask_UndoInnerWork" />
       </bpmn:transaction>
       <bpmn:boundaryEvent id="Boundary_CancelInner" attachedToRef="Transaction_Inner">
         <bpmn:cancelEventDefinition id="CancelDefinition_InnerCatch" />
@@ -69,6 +68,7 @@
         <bpmn:cancelEventDefinition id="CancelDefinition_Outer" />
       </bpmn:endEvent>
       <bpmn:endEvent id="EndEvent_OuterKeep" />
+      <bpmn:association id="Association_OuterWork" associationDirection="One" sourceRef="Boundary_CompensateOuterWork" targetRef="UserTask_UndoOuterWork" />
     </bpmn:transaction>
     <bpmn:boundaryEvent id="Boundary_CancelOuter" attachedToRef="Transaction_Outer">
       <bpmn:cancelEventDefinition id="CancelDefinition_OuterCatch" />

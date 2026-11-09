@@ -24,14 +24,12 @@
           </camunda:inputOutput>
         </bpmn:extensionElements>
       </bpmn:userTask>
-      <bpmn:association id="Association_Flight" associationDirection="One" sourceRef="Boundary_CompensateFlight" targetRef="UserTask_UndoFlight" />
       <bpmn:sequenceFlow id="Flow_Flight_Hotel" sourceRef="UserTask_Flight" targetRef="UserTask_Hotel" />
       <bpmn:userTask id="UserTask_Hotel" name="Book the hotel" />
       <bpmn:boundaryEvent id="Boundary_CompensateHotel" attachedToRef="UserTask_Hotel">
         <bpmn:compensateEventDefinition id="CompensateDefinition_Hotel" />
       </bpmn:boundaryEvent>
       <bpmn:userTask id="UserTask_UndoHotel" name="Undo the hotel" isForCompensation="true" />
-      <bpmn:association id="Association_Hotel" associationDirection="One" sourceRef="Boundary_CompensateHotel" targetRef="UserTask_UndoHotel" />
       <bpmn:sequenceFlow id="Flow_Hotel_Outcome" sourceRef="UserTask_Hotel" targetRef="Gateway_Outcome" />
       <bpmn:exclusiveGateway id="Gateway_Outcome" default="Flow_Outcome_Ok" />
       <bpmn:sequenceFlow id="Flow_Outcome_Cancel" sourceRef="Gateway_Outcome" targetRef="EndEvent_Cancel">
@@ -48,6 +46,8 @@
         <bpmn:errorEventDefinition id="ErrorDefinition_Throw" errorRef="Error_BookingFailed" />
       </bpmn:endEvent>
       <bpmn:endEvent id="EndEvent_Ok" />
+      <bpmn:association id="Association_Flight" associationDirection="One" sourceRef="Boundary_CompensateFlight" targetRef="UserTask_UndoFlight" />
+      <bpmn:association id="Association_Hotel" associationDirection="One" sourceRef="Boundary_CompensateHotel" targetRef="UserTask_UndoHotel" />
     </bpmn:transaction>
     <bpmn:boundaryEvent id="Boundary_Cancel" attachedToRef="Transaction_Booking">
       <bpmn:cancelEventDefinition id="CancelDefinition_Catch" />

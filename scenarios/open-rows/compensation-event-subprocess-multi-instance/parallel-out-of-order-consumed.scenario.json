@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "compensation-event-subprocess-multi-instance-parallel-esp",
     "relativePath": "scenarios/open-rows/compensation-event-subprocess-multi-instance/parallel-esp.bpmn",
-    "sha256": "4b3f92652b39819587875539d154a552859cae9354f5496e4e9a790c3aac013b",
+    "sha256": "16610dbd74980e7fe886a629e89d68207cc99a65d188fb094d73e6cce779643f",
     "sourceOverlay": null
   },
   "stimuli": [

@@ -23,7 +23,6 @@
       implementation="urn:bpmn-lean:effect:probe-v1"
       camunda:delegateExpression="${bpmnLeanEffectHandler}"
       camunda:asyncBefore="true" />
-    <bpmn:association id="Association_1" associationDirection="One" sourceRef="Boundary_Compensate1" targetRef="ServiceTask_Release1" />
     <bpmn:sequenceFlow id="Flow_Book1_Join" sourceRef="UserTask_Book1" targetRef="Gateway_Join" />
 
     <bpmn:userTask id="UserTask_Book2" name="Book two" />
@@ -37,7 +36,6 @@
       implementation="urn:bpmn-lean:effect:probe-v1"
       camunda:delegateExpression="${bpmnLeanEffectHandler}"
       camunda:asyncBefore="true" />
-    <bpmn:association id="Association_2" associationDirection="One" sourceRef="Boundary_Compensate2" targetRef="ServiceTask_Release2" />
     <bpmn:sequenceFlow id="Flow_Book2_Join" sourceRef="UserTask_Book2" targetRef="Gateway_Join" />
 
     <bpmn:parallelGateway id="Gateway_Join" />
@@ -59,5 +57,7 @@
       <bpmn:sequenceFlow id="Flow_Recover_End" sourceRef="UserTask_Recover" targetRef="EndEvent_Recovered" />
       <bpmn:endEvent id="EndEvent_Recovered" />
     </bpmn:subProcess>
+    <bpmn:association id="Association_1" associationDirection="One" sourceRef="Boundary_Compensate1" targetRef="ServiceTask_Release1" />
+    <bpmn:association id="Association_2" associationDirection="One" sourceRef="Boundary_Compensate2" targetRef="ServiceTask_Release2" />
   </bpmn:process>
 </bpmn:definitions>

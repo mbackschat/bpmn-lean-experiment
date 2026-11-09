@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "compensation-eligibility-repeated-visits",
     "relativePath": "scenarios/open-rows/compensation-eligibility/repeated-visits.bpmn",
-    "sha256": "a11836167e1f6afc955c26f57d18d41fc7677be40bde26fa61ddaea91708a907",
+    "sha256": "d883feebe24582b5bcdbaa6f6952424b9222abcbb18d004b0ecd5b3b372e6e61",
     "sourceOverlay": null
   },
   "stimuli": [

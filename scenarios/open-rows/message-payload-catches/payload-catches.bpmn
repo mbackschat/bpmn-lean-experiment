@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions
+<bpmn:definitions xmlns:xsd="http://www.w3.org/2001/XMLSchema"
   xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
   xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -67,8 +67,8 @@
     <bpmn:sequenceFlow id="Flow_Await_Docs_File_Docs" sourceRef="Await_Docs" targetRef="File_Docs" />
     <bpmn:sequenceFlow id="Flow_File_Docs_End_Docs" sourceRef="File_Docs" targetRef="End_Docs" />
     <bpmn:subProcess id="Bodies_Seq" name="Sequential bodies">
-      <bpmn:multiInstanceLoopCharacteristics isSequential="true" camunda:collection="items" camunda:elementVariable="item" />
       <bpmn:property id="Property_SeqNote" />
+      <bpmn:multiInstanceLoopCharacteristics isSequential="true" camunda:collection="items" camunda:elementVariable="item" />
       <bpmn:startEvent id="Start_Seq" />
       <bpmn:intermediateCatchEvent id="Catch_SeqBody">
         <bpmn:dataOutput id="DataOutput_Catch_SeqBody" name="Catch_SeqBody payload" itemSubjectRef="ItemDefinition_Payload" />
@@ -89,8 +89,8 @@
     </bpmn:subProcess>
     <bpmn:sequenceFlow id="Flow_Fork_Payloads_Bodies_Seq" sourceRef="Fork_Payloads" targetRef="Bodies_Seq" />
     <bpmn:subProcess id="Bodies_Par" name="Parallel bodies">
-      <bpmn:multiInstanceLoopCharacteristics isSequential="false" camunda:collection="items" camunda:elementVariable="item" />
       <bpmn:property id="Property_ParNote" />
+      <bpmn:multiInstanceLoopCharacteristics isSequential="false" camunda:collection="items" camunda:elementVariable="item" />
       <bpmn:startEvent id="Start_Par" />
       <bpmn:intermediateCatchEvent id="Catch_ParBody">
         <bpmn:dataOutput id="DataOutput_Catch_ParBody" name="Catch_ParBody payload" itemSubjectRef="ItemDefinition_Payload" />

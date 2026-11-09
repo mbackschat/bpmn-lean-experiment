@@ -14,7 +14,6 @@
       <bpmn:compensateEventDefinition id="CompensateDefinition_Outer" />
     </bpmn:boundaryEvent>
     <bpmn:userTask id="UserTask_UndoOuter" name="Undo outer work" isForCompensation="true" />
-    <bpmn:association id="Association_Outer" associationDirection="One" sourceRef="Boundary_CompensateOuter" targetRef="UserTask_UndoOuter" />
     <bpmn:sequenceFlow id="Flow_Outer_Region" sourceRef="UserTask_Outer" targetRef="SubProcess_Region" />
 
     <bpmn:subProcess id="SubProcess_Region" name="Region">
@@ -26,7 +25,6 @@
         <bpmn:compensateEventDefinition id="CompensateDefinition_InnerA" />
       </bpmn:boundaryEvent>
       <bpmn:userTask id="UserTask_UndoInnerA" name="Undo inner work A" isForCompensation="true" />
-      <bpmn:association id="Association_InnerA" associationDirection="One" sourceRef="Boundary_CompensateInnerA" targetRef="UserTask_UndoInnerA" />
       <bpmn:sequenceFlow id="Flow_InnerA_Deep" sourceRef="UserTask_InnerA" targetRef="SubProcess_Deep" />
 
       <bpmn:subProcess id="SubProcess_Deep" name="Deep region">
@@ -37,9 +35,9 @@
           <bpmn:compensateEventDefinition id="CompensateDefinition_DeepWork" />
         </bpmn:boundaryEvent>
         <bpmn:userTask id="UserTask_UndoDeepWork" name="Undo deep work" isForCompensation="true" />
-        <bpmn:association id="Association_DeepWork" associationDirection="One" sourceRef="Boundary_CompensateDeepWork" targetRef="UserTask_UndoDeepWork" />
         <bpmn:sequenceFlow id="Flow_DeepWork_End" sourceRef="UserTask_DeepWork" targetRef="EndEvent_Deep" />
         <bpmn:endEvent id="EndEvent_Deep" />
+        <bpmn:association id="Association_DeepWork" associationDirection="One" sourceRef="Boundary_CompensateDeepWork" targetRef="UserTask_UndoDeepWork" />
       </bpmn:subProcess>
       <bpmn:sequenceFlow id="Flow_Deep_Inner" sourceRef="SubProcess_Deep" targetRef="Gateway_Inner" />
 
@@ -57,6 +55,7 @@
       <bpmn:exclusiveGateway id="Gateway_InnerMerge" />
       <bpmn:sequenceFlow id="Flow_InnerMerge_End" sourceRef="Gateway_InnerMerge" targetRef="EndEvent_Region" />
       <bpmn:endEvent id="EndEvent_Region" />
+      <bpmn:association id="Association_InnerA" associationDirection="One" sourceRef="Boundary_CompensateInnerA" targetRef="UserTask_UndoInnerA" />
     </bpmn:subProcess>
     <bpmn:sequenceFlow id="Flow_Region_Mid" sourceRef="SubProcess_Region" targetRef="UserTask_Mid" />
 
@@ -80,5 +79,6 @@
     <bpmn:userTask id="UserTask_Tail" name="Tail" />
     <bpmn:sequenceFlow id="Flow_Tail_End" sourceRef="UserTask_Tail" targetRef="EndEvent_Done" />
     <bpmn:endEvent id="EndEvent_Done" />
+    <bpmn:association id="Association_Outer" associationDirection="One" sourceRef="Boundary_CompensateOuter" targetRef="UserTask_UndoOuter" />
   </bpmn:process>
 </bpmn:definitions>

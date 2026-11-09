@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "compensation-eligibility-interrupted-work",
     "relativePath": "scenarios/open-rows/compensation-eligibility/interrupted-work.bpmn",
-    "sha256": "e91c7f704287d9ed952ca3ad506c07f40d867ce888b9276de572ffdb278af8f2",
+    "sha256": "60573db513243d7522aa0ca4cbea2303b60f2adb7840a05d04a9a54efbddd95f",
     "sourceOverlay": null
   },
   "stimuli": [

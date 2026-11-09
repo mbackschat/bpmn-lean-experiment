@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "compensation-targeting-unwaited-throw",
     "relativePath": "scenarios/open-rows/compensation-targeting/unwaited-throw.bpmn",
-    "sha256": "39f108ddfb955ac616b5f46b658acf91275c77789115c6eb16c111e0b8b161a6",
+    "sha256": "ca3a5fac1f89523a454de34b821bf23a9b1471cb315a73c4aa7be85c40038dea",
     "sourceOverlay": null
   },
   "stimuli": [

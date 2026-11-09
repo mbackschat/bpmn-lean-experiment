@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "transaction-paths-booking",
     "relativePath": "scenarios/open-rows/transaction-paths/booking.bpmn",
-    "sha256": "8ce0b0f109b030e4b34428f4f41147db818122e7a20164f37b3d1177ce8b8b25",
+    "sha256": "d7e9d6c8432fbb1d77ad3669920ae5eeead438b8b4d92f4f7c5f2701561ba309",
     "sourceOverlay": null
   },
   "stimuli": [

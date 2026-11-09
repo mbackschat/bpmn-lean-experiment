@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "transaction-methods-compensate-method",
     "relativePath": "scenarios/open-rows/transaction-methods/compensate-method.bpmn",
-    "sha256": "9a496f737c9fd437efb9d8106f53ea1b3bff46252bd6f44e646f169ae83805e4",
+    "sha256": "7c4af6f4b959b642424539f2782a12124cc8fdd71197b8962ae13890fee9da7c",
     "sourceOverlay": null
   },
   "stimuli": [

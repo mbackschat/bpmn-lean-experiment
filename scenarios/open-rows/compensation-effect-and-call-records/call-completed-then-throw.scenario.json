@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "compensation-effect-and-call-records-call-records",
     "relativePath": "scenarios/open-rows/compensation-effect-and-call-records/call-records.bpmn",
-    "sha256": "929290fac4e3f7372162a47fa46be54b039b107ffaa1870eea0a44e26d03c344",
+    "sha256": "0494d2bf808d5d6a4648dcf55bebcb2dbd008c0a03e3684d55063fde9d346736",
     "sourceOverlay": null
   },
   "stimuli": [

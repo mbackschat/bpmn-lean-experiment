@@ -22,9 +22,9 @@
           </camunda:inputOutput>
         </bpmn:extensionElements>
       </bpmn:userTask>
-      <bpmn:association id="Association_Work" associationDirection="One" sourceRef="Boundary_CompensateWork" targetRef="UserTask_UndoWork" />
       <bpmn:sequenceFlow id="Flow_Work_End" sourceRef="UserTask_Work" targetRef="EndEvent_Visit" />
       <bpmn:endEvent id="EndEvent_Visit" />
+      <bpmn:association id="Association_Work" associationDirection="One" sourceRef="Boundary_CompensateWork" targetRef="UserTask_UndoWork" />
     </bpmn:subProcess>
     <bpmn:sequenceFlow id="Flow_SubProcess_Visits_Pause" sourceRef="SubProcess_Visits" targetRef="UserTask_Pause" />
     <bpmn:userTask id="UserTask_Pause" name="Pause before compensating" />

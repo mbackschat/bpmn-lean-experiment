@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "message-start-event",
     "relativePath": "scenarios/message-start-event/process.bpmn",
-    "sha256": "254823e574c7ba8b69ff3e965a86cc579c3ccfcb42f23f0abb344aacc130099c",
+    "sha256": "41901ab8ce778e33daa143af1d2a23e4ef42916fa5181801cdf3df825f9389a4",
     "sourceOverlay": null
   },
   "stimuli": [

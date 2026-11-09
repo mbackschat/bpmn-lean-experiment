@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "compensation-order-chronology-reverse-order",
     "relativePath": "scenarios/open-rows/compensation-order-chronology/reverse-order.bpmn",
-    "sha256": "e2ae96fa7053679d4c52ce405ed2716f2d6619e48cae639b1bc60dacb250b49f",
+    "sha256": "90d4abe0bf6bb1f31ab790dbbf47233be4f59e01747d43923afb8bc46e8e4d01",
     "sourceOverlay": null
   },
   "stimuli": [

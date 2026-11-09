@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "compensation-handler-failures-failing-handlers",
     "relativePath": "scenarios/open-rows/compensation-handler-failures/failing-handlers.bpmn",
-    "sha256": "0ef76b29f96622ea2cf098d1848c2542cf09b30b12263b83f06b895cdf4f0c72",
+    "sha256": "7921b13adefe1ef4b2be1c2e562f5a4b7f11327e6c6019d634becd4694c398bb",
     "sourceOverlay": null
   },
   "stimuli": [

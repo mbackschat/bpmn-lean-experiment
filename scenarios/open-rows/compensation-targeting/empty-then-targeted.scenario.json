@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "compensation-targeting-empty-throws",
     "relativePath": "scenarios/open-rows/compensation-targeting/empty-throws.bpmn",
-    "sha256": "9bbacef11b02b6ffd729407f971b3459fb56546a37b321be47577f4db4e95148",
+    "sha256": "3154f279bb1ee01996b4805ab3ff1e650a10c3b917b51f18b61421226aea69d0",
     "sourceOverlay": null
   },
   "stimuli": [

@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "reservation-withdrawal",
     "relativePath": "scenarios/transaction-cancellation/reservation-withdrawal.bpmn",
-    "sha256": "1286fe6dd67bcf788f7626297a123ebd8c3d4d403f84a0ea9dcc67abc8edc4d4",
+    "sha256": "9cbf9d029ef1246b55b3429160fafaac4786dd1b99e41a827c8fcf41414632ee",
     "sourceOverlay": null
   },
   "stimuli": [

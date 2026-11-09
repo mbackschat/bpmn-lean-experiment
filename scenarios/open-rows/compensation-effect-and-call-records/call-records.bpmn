@@ -12,7 +12,6 @@
       <bpmn:compensateEventDefinition id="CompensateDefinition_Call" />
     </bpmn:boundaryEvent>
     <bpmn:userTask id="UserTask_UndoCall" name="Undo the call" isForCompensation="true" />
-    <bpmn:association id="Association_Call" associationDirection="One" sourceRef="Boundary_CompensateCall" targetRef="UserTask_UndoCall" />
     <bpmn:sequenceFlow id="Flow_Call_Throw" sourceRef="CallActivity_Child" targetRef="IntermediateThrow_All" />
     <bpmn:intermediateThrowEvent id="IntermediateThrow_All">
       <bpmn:compensateEventDefinition id="CompensateDefinition_All" />
@@ -21,6 +20,7 @@
     <bpmn:userTask id="UserTask_After" name="Continue" />
     <bpmn:sequenceFlow id="Flow_After_End" sourceRef="UserTask_After" targetRef="EndEvent_Done" />
     <bpmn:endEvent id="EndEvent_Done" />
+    <bpmn:association id="Association_Call" associationDirection="One" sourceRef="Boundary_CompensateCall" targetRef="UserTask_UndoCall" />
   </bpmn:process>
   <bpmn:process id="Process_Child" isExecutable="true">
     <bpmn:startEvent id="StartEvent_Child" />
@@ -30,8 +30,8 @@
       <bpmn:compensateEventDefinition id="CompensateDefinition_ChildWork" />
     </bpmn:boundaryEvent>
     <bpmn:userTask id="UserTask_UndoChildWork" name="Undo the child work" isForCompensation="true" />
-    <bpmn:association id="Association_ChildWork" associationDirection="One" sourceRef="Boundary_CompensateChildWork" targetRef="UserTask_UndoChildWork" />
     <bpmn:sequenceFlow id="Flow_ChildWork_End" sourceRef="UserTask_ChildWork" targetRef="EndEvent_Child" />
     <bpmn:endEvent id="EndEvent_Child" />
+    <bpmn:association id="Association_ChildWork" associationDirection="One" sourceRef="Boundary_CompensateChildWork" targetRef="UserTask_UndoChildWork" />
   </bpmn:process>
 </bpmn:definitions>

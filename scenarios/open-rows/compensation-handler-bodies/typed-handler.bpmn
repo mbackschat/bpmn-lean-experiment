@@ -22,7 +22,6 @@
         </camunda:inputOutput>
       </bpmn:extensionElements>
     </bpmn:userTask>
-    <bpmn:association id="Association_Work" associationDirection="One" sourceRef="Boundary_CompensateWork" targetRef="UserTask_UndoWork" />
     <bpmn:sequenceFlow id="Flow_Work_Typed" sourceRef="UserTask_Work" targetRef="SubProcess_Typed" />
 
     <bpmn:subProcess id="SubProcess_Typed" name="Typed parent">
@@ -69,5 +68,6 @@
     <bpmn:userTask id="UserTask_After" name="Continue" />
     <bpmn:sequenceFlow id="Flow_After_End" sourceRef="UserTask_After" targetRef="EndEvent_Done" />
     <bpmn:endEvent id="EndEvent_Done" />
+    <bpmn:association id="Association_Work" associationDirection="One" sourceRef="Boundary_CompensateWork" targetRef="UserTask_UndoWork" />
   </bpmn:process>
 </bpmn:definitions>

@@ -12,7 +12,7 @@
   <bpmn:process id="Process_MessageStart" name="Message start then user task" isExecutable="true">
     <bpmn:startEvent id="MessageStart_ApprovalRequest">
       <bpmn:outgoing>Flow_StartToTask</bpmn:outgoing>
-      <bpmn:messageEventDefinition id="MessageEventDefinition_ApprovalRequest" messageRef="Message_ApprovalRequest" operationRef="Operation_ReceiveApprovalRequest"/>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_ApprovalRequest" messageRef="Message_ApprovalRequest"><bpmn:operationRef>Operation_ReceiveApprovalRequest</bpmn:operationRef></bpmn:messageEventDefinition>
     </bpmn:startEvent>
     <bpmn:userTask id="UserTask_Approve" name="Approve">
       <bpmn:incoming>Flow_StartToTask</bpmn:incoming>

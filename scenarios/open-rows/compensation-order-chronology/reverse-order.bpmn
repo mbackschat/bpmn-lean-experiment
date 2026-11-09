@@ -18,7 +18,6 @@
       <bpmn:compensateEventDefinition id="CompensateDefinition_A" />
     </bpmn:boundaryEvent>
     <bpmn:userTask id="UserTask_UndoA" name="Undo A" isForCompensation="true" />
-    <bpmn:association id="Association_A" associationDirection="One" sourceRef="Boundary_CompensateA" targetRef="UserTask_UndoA" />
     <bpmn:sequenceFlow id="Flow_BookA_BookB" sourceRef="UserTask_BookA" targetRef="UserTask_BookB" />
 
     <bpmn:userTask id="UserTask_BookB" name="Book B, which follows A" />
@@ -26,7 +25,6 @@
       <bpmn:compensateEventDefinition id="CompensateDefinition_B" />
     </bpmn:boundaryEvent>
     <bpmn:userTask id="UserTask_UndoB" name="Undo B" isForCompensation="true" />
-    <bpmn:association id="Association_B" associationDirection="One" sourceRef="Boundary_CompensateB" targetRef="UserTask_UndoB" />
     <bpmn:sequenceFlow id="Flow_BookB_Join" sourceRef="UserTask_BookB" targetRef="Gateway_Join" />
 
     <bpmn:userTask id="UserTask_BookC" name="Book C, independent of A and B" />
@@ -34,7 +32,6 @@
       <bpmn:compensateEventDefinition id="CompensateDefinition_C" />
     </bpmn:boundaryEvent>
     <bpmn:userTask id="UserTask_UndoC" name="Undo C" isForCompensation="true" />
-    <bpmn:association id="Association_C" associationDirection="One" sourceRef="Boundary_CompensateC" targetRef="UserTask_UndoC" />
     <bpmn:sequenceFlow id="Flow_BookC_Join" sourceRef="UserTask_BookC" targetRef="Gateway_Join" />
 
     <bpmn:userTask id="UserTask_Clock" name="Hold the clock open" />
@@ -64,5 +61,8 @@
     <bpmn:userTask id="UserTask_After" name="Continue after compensation" />
     <bpmn:sequenceFlow id="Flow_After_End" sourceRef="UserTask_After" targetRef="EndEvent_Done" />
     <bpmn:endEvent id="EndEvent_Done" />
+    <bpmn:association id="Association_A" associationDirection="One" sourceRef="Boundary_CompensateA" targetRef="UserTask_UndoA" />
+    <bpmn:association id="Association_B" associationDirection="One" sourceRef="Boundary_CompensateB" targetRef="UserTask_UndoB" />
+    <bpmn:association id="Association_C" associationDirection="One" sourceRef="Boundary_CompensateC" targetRef="UserTask_UndoC" />
   </bpmn:process>
 </bpmn:definitions>

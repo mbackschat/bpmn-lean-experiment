@@ -16,7 +16,7 @@
     <bpmn:intermediateCatchEvent id="MessageCatch_ApprovalRequest">
       <bpmn:incoming>Flow_StartToMessage</bpmn:incoming>
       <bpmn:outgoing>Flow_MessageToTask</bpmn:outgoing>
-      <bpmn:messageEventDefinition id="MessageEventDefinition_ApprovalRequest" messageRef="Message_ApprovalRequest" operationRef="Operation_ReceiveApprovalRequest"/>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_ApprovalRequest" messageRef="Message_ApprovalRequest"><bpmn:operationRef>Operation_ReceiveApprovalRequest</bpmn:operationRef></bpmn:messageEventDefinition>
     </bpmn:intermediateCatchEvent>
     <bpmn:userTask id="UserTask_Approve" name="Approve">
       <bpmn:incoming>Flow_MessageToTask</bpmn:incoming>
