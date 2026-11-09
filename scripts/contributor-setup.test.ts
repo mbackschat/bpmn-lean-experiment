@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { glob, mkdtemp, readFile } from "node:fs/promises";
+import { glob, mkdtemp, readdir, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { test } from "node:test";
@@ -489,5 +489,5 @@ test("an external-source selection names only locked sources of its scope and to
       assert.match(run.stderr, new RegExp(`${selected} is not a locked ${scope} source`, "u"));
     }
   }
-  assert.deepEqual(await Array.fromAsync(glob("*", { cwd: root })), []);
+  assert.deepEqual(await readdir(root), []);
 });
