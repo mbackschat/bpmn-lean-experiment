@@ -9,13 +9,33 @@ set -eu
 scope=${1:-verify}
 case "$scope" in
   verify|adoption|research|all) ;;
-  *) echo "usage: $0 [verify|adoption|research|all]" >&2; exit 2 ;;
+  *) echo "usage: $0 [verify|adoption|research|all] [lock path ...]" >&2; exit 2 ;;
 esac
 
 script_dir=${0%/*}
 project_root=$(CDPATH= cd "$script_dir/.." && pwd)
 external_root=${BPMN_EXTERNAL_ROOT:-"$project_root/../oss"}
 lock_path="$script_dir/external-sources.lock"
+
+# Lock paths after the scope narrow it to exactly those sources, each of which the lock must declare in that scope, so
+# a lane provisions only the checkouts it reads and a misspelled path fails before any work.
+if test "$#" -gt 0; then shift; fi
+selected_paths=$*
+for selected in $selected_paths; do
+  if ! awk -F '\t' -v scope="$scope" -v path="$selected" \
+      '($1 == scope || scope == "all") && $2 == path { found = 1 } END { exit !found }' "$lock_path"; then
+    echo "$selected is not a locked $scope source" >&2
+    exit 2
+  fi
+done
+
+path_selected() {
+  test -z "$selected_paths" && return 0
+  for selected in $selected_paths; do
+    test "$selected" = "$1" && return 0
+  done
+  return 1
+}
 
 is_git_checkout_root() {
   candidate=$1
@@ -43,7 +63,7 @@ while IFS="	" read -r source_scope relative_path remote reference revision mater
     verify|adoption|research) ;;
     *) echo "external source lock has invalid scope $source_scope for $relative_path" >&2; exit 1 ;;
   esac
-  if ! scope_selects "$scope" "$source_scope"; then
+  if ! scope_selects "$scope" "$source_scope" || ! path_selected "$relative_path"; then
     continue
   fi
 

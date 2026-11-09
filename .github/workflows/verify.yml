@@ -433,7 +433,8 @@ jobs:
           test: false
           use-mathlib-cache: false
 
-      # The model corpus reads the pinned CIB Seven example models from the external checkout.
+      # The model corpus reads pinned external models: the OMG examples of the verify scope and two research checkouts,
+      # provisioned alone so the lane clones no other research tree.
       - name: Resolve the external source root
         run: printf 'BPMN_EXTERNAL_ROOT=%s\n' "$(cd "$GITHUB_WORKSPACE/.." && pwd)/oss" >> "$GITHUB_ENV"
 
@@ -444,7 +445,9 @@ jobs:
           key: bpmn-corpus-${{ runner.os }}-${{ hashFiles('docs/reference/bpmn-2.0.2/LOCAL-CORPUS.sha256') }}
 
       - name: Provision pinned external inputs
-        run: ./scripts/setup-external-sources.sh verify
+        run: |
+          ./scripts/setup-external-sources.sh verify
+          ./scripts/setup-external-sources.sh research cibseven/cibseven uniba-dsg/betsy
 
       - name: Install workspace dependencies
         run: pnpm install --frozen-lockfile

@@ -476,3 +476,18 @@ test("every cached CI path resolves without a relative segment", async () => {
     }
   }
 });
+
+test("an external-source selection names only locked sources of its scope and touches nothing otherwise", async () => {
+  const root = await mkdtemp(path.join(tmpdir(), "external-selection-"));
+  for (const script of ["setup-external-sources.sh", "check-external-sources.sh"]) {
+    for (const [scope, selected] of [["research", "no/such-source"], ["research", "a12/a12-workflows"]] as const) {
+      const run = spawnSync(path.join(projectRoot, "scripts", script), [scope, selected], {
+        encoding: "utf8",
+        env: { ...process.env, BPMN_EXTERNAL_ROOT: root },
+      });
+      assert.equal(run.status, 2, `${script} ${scope} ${selected}: ${run.stderr}`);
+      assert.match(run.stderr, new RegExp(`${selected} is not a locked ${scope} source`, "u"));
+    }
+  }
+  assert.deepEqual(await Array.fromAsync(glob("*", { cwd: root })), []);
+});
