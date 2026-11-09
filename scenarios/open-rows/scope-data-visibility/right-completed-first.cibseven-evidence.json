@@ -29,15 +29,15 @@
           },
           {
             "name": "slot",
-            "value": "root-slot"
-          },
-          {
-            "name": "slot",
             "value": "left-initial"
           },
           {
             "name": "slot",
             "value": "right-initial"
+          },
+          {
+            "name": "slot",
+            "value": "root-slot"
           }
         ]
       },
@@ -56,15 +56,15 @@
           },
           {
             "name": "slot",
-            "value": "root-slot"
-          },
-          {
-            "name": "slot",
             "value": "left-initial"
           },
           {
             "name": "slot",
             "value": "right-written"
+          },
+          {
+            "name": "slot",
+            "value": "root-slot"
           }
         ]
       },
@@ -87,15 +87,15 @@
           },
           {
             "name": "slot",
-            "value": "root-slot"
-          },
-          {
-            "name": "slot",
             "value": "left-written"
           },
           {
             "name": "slot",
             "value": "right-written"
+          },
+          {
+            "name": "slot",
+            "value": "root-slot"
           }
         ]
       },
@@ -118,15 +118,15 @@
           },
           {
             "name": "slot",
-            "value": "root-slot"
-          },
-          {
-            "name": "slot",
             "value": "left-written"
           },
           {
             "name": "slot",
             "value": "right-written"
+          },
+          {
+            "name": "slot",
+            "value": "root-slot"
           }
         ]
       }
@@ -240,13 +240,6 @@
             "name": "slot",
             "value": {
               "kind": "string",
-              "value": "root-slot"
-            }
-          },
-          {
-            "name": "slot",
-            "value": {
-              "kind": "string",
               "value": "left-initial"
             }
           },
@@ -255,6 +248,13 @@
             "value": {
               "kind": "string",
               "value": "right-initial"
+            }
+          },
+          {
+            "name": "slot",
+            "value": {
+              "kind": "string",
+              "value": "root-slot"
             }
           }
         ],
@@ -364,13 +364,6 @@
             "name": "slot",
             "value": {
               "kind": "string",
-              "value": "root-slot"
-            }
-          },
-          {
-            "name": "slot",
-            "value": {
-              "kind": "string",
               "value": "left-initial"
             }
           },
@@ -379,6 +372,13 @@
             "value": {
               "kind": "string",
               "value": "right-written"
+            }
+          },
+          {
+            "name": "slot",
+            "value": {
+              "kind": "string",
+              "value": "root-slot"
             }
           }
         ],
@@ -458,13 +458,6 @@
             "name": "slot",
             "value": {
               "kind": "string",
-              "value": "root-slot"
-            }
-          },
-          {
-            "name": "slot",
-            "value": {
-              "kind": "string",
               "value": "left-written"
             }
           },
@@ -473,6 +466,13 @@
             "value": {
               "kind": "string",
               "value": "right-written"
+            }
+          },
+          {
+            "name": "slot",
+            "value": {
+              "kind": "string",
+              "value": "root-slot"
             }
           }
         ],
@@ -559,13 +559,6 @@
             "name": "slot",
             "value": {
               "kind": "string",
-              "value": "root-slot"
-            }
-          },
-          {
-            "name": "slot",
-            "value": {
-              "kind": "string",
               "value": "left-written"
             }
           },
@@ -574,6 +567,13 @@
             "value": {
               "kind": "string",
               "value": "right-written"
+            }
+          },
+          {
+            "name": "slot",
+            "value": {
+              "kind": "string",
+              "value": "root-slot"
             }
           }
         ],

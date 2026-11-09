@@ -485,182 +485,6 @@
                   "name": "position",
                   "value": {
                     "kind": "integer",
-                    "value": 0
-                  }
-                },
-                {
-                  "name": "subject",
-                  "value": {
-                    "kind": "string",
-                    "value": "item-01"
-                  }
-                }
-              ]
-            },
-            "input": "command"
-          },
-          {
-            "id": {
-              "processInstanceId": "Instance_1",
-              "elementId": "UserTask_Inspect",
-              "activation": 2
-            },
-            "definition": null,
-            "detail": {
-              "kind": "userTask",
-              "name": "Inspect one item",
-              "assignee": null,
-              "candidateUsers": [],
-              "candidateGroups": [],
-              "formKey": null,
-              "formFields": [],
-              "dueDate": null,
-              "followUpDate": null,
-              "priority": null,
-              "inputs": [
-                {
-                  "name": "instances",
-                  "value": {
-                    "kind": "integer",
-                    "value": 16
-                  }
-                },
-                {
-                  "name": "position",
-                  "value": {
-                    "kind": "integer",
-                    "value": 1
-                  }
-                },
-                {
-                  "name": "subject",
-                  "value": {
-                    "kind": "string",
-                    "value": "item-02"
-                  }
-                }
-              ]
-            },
-            "input": "command"
-          },
-          {
-            "id": {
-              "processInstanceId": "Instance_1",
-              "elementId": "UserTask_Inspect",
-              "activation": 3
-            },
-            "definition": null,
-            "detail": {
-              "kind": "userTask",
-              "name": "Inspect one item",
-              "assignee": null,
-              "candidateUsers": [],
-              "candidateGroups": [],
-              "formKey": null,
-              "formFields": [],
-              "dueDate": null,
-              "followUpDate": null,
-              "priority": null,
-              "inputs": [
-                {
-                  "name": "instances",
-                  "value": {
-                    "kind": "integer",
-                    "value": 16
-                  }
-                },
-                {
-                  "name": "position",
-                  "value": {
-                    "kind": "integer",
-                    "value": 2
-                  }
-                },
-                {
-                  "name": "subject",
-                  "value": {
-                    "kind": "string",
-                    "value": "item-03"
-                  }
-                }
-              ]
-            },
-            "input": "command"
-          },
-          {
-            "id": {
-              "processInstanceId": "Instance_1",
-              "elementId": "UserTask_Inspect",
-              "activation": 4
-            },
-            "definition": null,
-            "detail": {
-              "kind": "userTask",
-              "name": "Inspect one item",
-              "assignee": null,
-              "candidateUsers": [],
-              "candidateGroups": [],
-              "formKey": null,
-              "formFields": [],
-              "dueDate": null,
-              "followUpDate": null,
-              "priority": null,
-              "inputs": [
-                {
-                  "name": "instances",
-                  "value": {
-                    "kind": "integer",
-                    "value": 16
-                  }
-                },
-                {
-                  "name": "position",
-                  "value": {
-                    "kind": "integer",
-                    "value": 3
-                  }
-                },
-                {
-                  "name": "subject",
-                  "value": {
-                    "kind": "string",
-                    "value": "item-04"
-                  }
-                }
-              ]
-            },
-            "input": "command"
-          },
-          {
-            "id": {
-              "processInstanceId": "Instance_1",
-              "elementId": "UserTask_Inspect",
-              "activation": 5
-            },
-            "definition": null,
-            "detail": {
-              "kind": "userTask",
-              "name": "Inspect one item",
-              "assignee": null,
-              "candidateUsers": [],
-              "candidateGroups": [],
-              "formKey": null,
-              "formFields": [],
-              "dueDate": null,
-              "followUpDate": null,
-              "priority": null,
-              "inputs": [
-                {
-                  "name": "instances",
-                  "value": {
-                    "kind": "integer",
-                    "value": 16
-                  }
-                },
-                {
-                  "name": "position",
-                  "value": {
-                    "kind": "integer",
                     "value": 4
                   }
                 },
@@ -679,7 +503,7 @@
             "id": {
               "processInstanceId": "Instance_1",
               "elementId": "UserTask_Inspect",
-              "activation": 6
+              "activation": 2
             },
             "definition": null,
             "detail": {
@@ -723,7 +547,7 @@
             "id": {
               "processInstanceId": "Instance_1",
               "elementId": "UserTask_Inspect",
-              "activation": 7
+              "activation": 3
             },
             "definition": null,
             "detail": {
@@ -767,7 +591,7 @@
             "id": {
               "processInstanceId": "Instance_1",
               "elementId": "UserTask_Inspect",
-              "activation": 8
+              "activation": 4
             },
             "definition": null,
             "detail": {
@@ -811,7 +635,7 @@
             "id": {
               "processInstanceId": "Instance_1",
               "elementId": "UserTask_Inspect",
-              "activation": 9
+              "activation": 5
             },
             "definition": null,
             "detail": {
@@ -855,7 +679,7 @@
             "id": {
               "processInstanceId": "Instance_1",
               "elementId": "UserTask_Inspect",
-              "activation": 10
+              "activation": 6
             },
             "definition": null,
             "detail": {
@@ -899,7 +723,7 @@
             "id": {
               "processInstanceId": "Instance_1",
               "elementId": "UserTask_Inspect",
-              "activation": 11
+              "activation": 7
             },
             "definition": null,
             "detail": {
@@ -943,7 +767,7 @@
             "id": {
               "processInstanceId": "Instance_1",
               "elementId": "UserTask_Inspect",
-              "activation": 12
+              "activation": 8
             },
             "definition": null,
             "detail": {
@@ -987,7 +811,7 @@
             "id": {
               "processInstanceId": "Instance_1",
               "elementId": "UserTask_Inspect",
-              "activation": 13
+              "activation": 9
             },
             "definition": null,
             "detail": {
@@ -1031,7 +855,7 @@
             "id": {
               "processInstanceId": "Instance_1",
               "elementId": "UserTask_Inspect",
-              "activation": 14
+              "activation": 10
             },
             "definition": null,
             "detail": {
@@ -1075,7 +899,7 @@
             "id": {
               "processInstanceId": "Instance_1",
               "elementId": "UserTask_Inspect",
-              "activation": 15
+              "activation": 11
             },
             "definition": null,
             "detail": {
@@ -1119,7 +943,7 @@
             "id": {
               "processInstanceId": "Instance_1",
               "elementId": "UserTask_Inspect",
-              "activation": 16
+              "activation": 12
             },
             "definition": null,
             "detail": {
@@ -1153,6 +977,182 @@
                   "value": {
                     "kind": "string",
                     "value": "item-16"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Inspect",
+              "activation": 13
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Inspect one item",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "instances",
+                  "value": {
+                    "kind": "integer",
+                    "value": 16
+                  }
+                },
+                {
+                  "name": "position",
+                  "value": {
+                    "kind": "integer",
+                    "value": 0
+                  }
+                },
+                {
+                  "name": "subject",
+                  "value": {
+                    "kind": "string",
+                    "value": "item-01"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Inspect",
+              "activation": 14
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Inspect one item",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "instances",
+                  "value": {
+                    "kind": "integer",
+                    "value": 16
+                  }
+                },
+                {
+                  "name": "position",
+                  "value": {
+                    "kind": "integer",
+                    "value": 1
+                  }
+                },
+                {
+                  "name": "subject",
+                  "value": {
+                    "kind": "string",
+                    "value": "item-02"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Inspect",
+              "activation": 15
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Inspect one item",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "instances",
+                  "value": {
+                    "kind": "integer",
+                    "value": 16
+                  }
+                },
+                {
+                  "name": "position",
+                  "value": {
+                    "kind": "integer",
+                    "value": 2
+                  }
+                },
+                {
+                  "name": "subject",
+                  "value": {
+                    "kind": "string",
+                    "value": "item-03"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Inspect",
+              "activation": 16
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Inspect one item",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "instances",
+                  "value": {
+                    "kind": "integer",
+                    "value": 16
+                  }
+                },
+                {
+                  "name": "position",
+                  "value": {
+                    "kind": "integer",
+                    "value": 3
+                  }
+                },
+                {
+                  "name": "subject",
+                  "value": {
+                    "kind": "string",
+                    "value": "item-04"
                   }
                 }
               ]
@@ -1242,138 +1242,6 @@
                   "name": "position",
                   "value": {
                     "kind": "integer",
-                    "value": 0
-                  }
-                },
-                {
-                  "name": "subject",
-                  "value": {
-                    "kind": "string",
-                    "value": "item-01"
-                  }
-                }
-              ]
-            },
-            "input": "command"
-          },
-          {
-            "id": {
-              "processInstanceId": "Instance_1",
-              "elementId": "UserTask_Inspect",
-              "activation": 2
-            },
-            "definition": null,
-            "detail": {
-              "kind": "userTask",
-              "name": "Inspect one item",
-              "assignee": null,
-              "candidateUsers": [],
-              "candidateGroups": [],
-              "formKey": null,
-              "formFields": [],
-              "dueDate": null,
-              "followUpDate": null,
-              "priority": null,
-              "inputs": [
-                {
-                  "name": "instances",
-                  "value": {
-                    "kind": "integer",
-                    "value": 16
-                  }
-                },
-                {
-                  "name": "position",
-                  "value": {
-                    "kind": "integer",
-                    "value": 1
-                  }
-                },
-                {
-                  "name": "subject",
-                  "value": {
-                    "kind": "string",
-                    "value": "item-02"
-                  }
-                }
-              ]
-            },
-            "input": "command"
-          },
-          {
-            "id": {
-              "processInstanceId": "Instance_1",
-              "elementId": "UserTask_Inspect",
-              "activation": 4
-            },
-            "definition": null,
-            "detail": {
-              "kind": "userTask",
-              "name": "Inspect one item",
-              "assignee": null,
-              "candidateUsers": [],
-              "candidateGroups": [],
-              "formKey": null,
-              "formFields": [],
-              "dueDate": null,
-              "followUpDate": null,
-              "priority": null,
-              "inputs": [
-                {
-                  "name": "instances",
-                  "value": {
-                    "kind": "integer",
-                    "value": 16
-                  }
-                },
-                {
-                  "name": "position",
-                  "value": {
-                    "kind": "integer",
-                    "value": 3
-                  }
-                },
-                {
-                  "name": "subject",
-                  "value": {
-                    "kind": "string",
-                    "value": "item-04"
-                  }
-                }
-              ]
-            },
-            "input": "command"
-          },
-          {
-            "id": {
-              "processInstanceId": "Instance_1",
-              "elementId": "UserTask_Inspect",
-              "activation": 5
-            },
-            "definition": null,
-            "detail": {
-              "kind": "userTask",
-              "name": "Inspect one item",
-              "assignee": null,
-              "candidateUsers": [],
-              "candidateGroups": [],
-              "formKey": null,
-              "formFields": [],
-              "dueDate": null,
-              "followUpDate": null,
-              "priority": null,
-              "inputs": [
-                {
-                  "name": "instances",
-                  "value": {
-                    "kind": "integer",
-                    "value": 16
-                  }
-                },
-                {
-                  "name": "position",
-                  "value": {
-                    "kind": "integer",
                     "value": 4
                   }
                 },
@@ -1392,7 +1260,7 @@
             "id": {
               "processInstanceId": "Instance_1",
               "elementId": "UserTask_Inspect",
-              "activation": 6
+              "activation": 2
             },
             "definition": null,
             "detail": {
@@ -1436,51 +1304,7 @@
             "id": {
               "processInstanceId": "Instance_1",
               "elementId": "UserTask_Inspect",
-              "activation": 7
-            },
-            "definition": null,
-            "detail": {
-              "kind": "userTask",
-              "name": "Inspect one item",
-              "assignee": null,
-              "candidateUsers": [],
-              "candidateGroups": [],
-              "formKey": null,
-              "formFields": [],
-              "dueDate": null,
-              "followUpDate": null,
-              "priority": null,
-              "inputs": [
-                {
-                  "name": "instances",
-                  "value": {
-                    "kind": "integer",
-                    "value": 16
-                  }
-                },
-                {
-                  "name": "position",
-                  "value": {
-                    "kind": "integer",
-                    "value": 6
-                  }
-                },
-                {
-                  "name": "subject",
-                  "value": {
-                    "kind": "string",
-                    "value": "item-07"
-                  }
-                }
-              ]
-            },
-            "input": "command"
-          },
-          {
-            "id": {
-              "processInstanceId": "Instance_1",
-              "elementId": "UserTask_Inspect",
-              "activation": 8
+              "activation": 4
             },
             "definition": null,
             "detail": {
@@ -1524,7 +1348,7 @@
             "id": {
               "processInstanceId": "Instance_1",
               "elementId": "UserTask_Inspect",
-              "activation": 9
+              "activation": 5
             },
             "definition": null,
             "detail": {
@@ -1568,7 +1392,7 @@
             "id": {
               "processInstanceId": "Instance_1",
               "elementId": "UserTask_Inspect",
-              "activation": 10
+              "activation": 6
             },
             "definition": null,
             "detail": {
@@ -1612,7 +1436,7 @@
             "id": {
               "processInstanceId": "Instance_1",
               "elementId": "UserTask_Inspect",
-              "activation": 11
+              "activation": 7
             },
             "definition": null,
             "detail": {
@@ -1656,7 +1480,7 @@
             "id": {
               "processInstanceId": "Instance_1",
               "elementId": "UserTask_Inspect",
-              "activation": 12
+              "activation": 8
             },
             "definition": null,
             "detail": {
@@ -1700,7 +1524,7 @@
             "id": {
               "processInstanceId": "Instance_1",
               "elementId": "UserTask_Inspect",
-              "activation": 13
+              "activation": 9
             },
             "definition": null,
             "detail": {
@@ -1744,7 +1568,7 @@
             "id": {
               "processInstanceId": "Instance_1",
               "elementId": "UserTask_Inspect",
-              "activation": 14
+              "activation": 10
             },
             "definition": null,
             "detail": {
@@ -1788,7 +1612,7 @@
             "id": {
               "processInstanceId": "Instance_1",
               "elementId": "UserTask_Inspect",
-              "activation": 15
+              "activation": 11
             },
             "definition": null,
             "detail": {
@@ -1832,7 +1656,7 @@
             "id": {
               "processInstanceId": "Instance_1",
               "elementId": "UserTask_Inspect",
-              "activation": 16
+              "activation": 12
             },
             "definition": null,
             "detail": {
@@ -1866,6 +1690,182 @@
                   "value": {
                     "kind": "string",
                     "value": "item-16"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Inspect",
+              "activation": 13
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Inspect one item",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "instances",
+                  "value": {
+                    "kind": "integer",
+                    "value": 16
+                  }
+                },
+                {
+                  "name": "position",
+                  "value": {
+                    "kind": "integer",
+                    "value": 0
+                  }
+                },
+                {
+                  "name": "subject",
+                  "value": {
+                    "kind": "string",
+                    "value": "item-01"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Inspect",
+              "activation": 14
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Inspect one item",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "instances",
+                  "value": {
+                    "kind": "integer",
+                    "value": 16
+                  }
+                },
+                {
+                  "name": "position",
+                  "value": {
+                    "kind": "integer",
+                    "value": 1
+                  }
+                },
+                {
+                  "name": "subject",
+                  "value": {
+                    "kind": "string",
+                    "value": "item-02"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Inspect",
+              "activation": 15
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Inspect one item",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "instances",
+                  "value": {
+                    "kind": "integer",
+                    "value": 16
+                  }
+                },
+                {
+                  "name": "position",
+                  "value": {
+                    "kind": "integer",
+                    "value": 2
+                  }
+                },
+                {
+                  "name": "subject",
+                  "value": {
+                    "kind": "string",
+                    "value": "item-03"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Inspect",
+              "activation": 16
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Inspect one item",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "instances",
+                  "value": {
+                    "kind": "integer",
+                    "value": 16
+                  }
+                },
+                {
+                  "name": "position",
+                  "value": {
+                    "kind": "integer",
+                    "value": 3
+                  }
+                },
+                {
+                  "name": "subject",
+                  "value": {
+                    "kind": "string",
+                    "value": "item-04"
                   }
                 }
               ]

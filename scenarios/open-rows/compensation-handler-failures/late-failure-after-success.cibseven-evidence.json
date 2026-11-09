@@ -35,6 +35,12 @@
         "processInstanceCount": 1,
         "engineClockTimeMs": 0,
         "variables": []
+      },
+      {
+        "afterCommandId": "s05-complete-UserTask_Recover-1",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": []
       }
     ],
     "taskQueries": [
@@ -64,10 +70,14 @@
         "afterCommandId": "s02-complete-UserTask_Book2-1",
         "tasks": [
           {
-            "elementId": "UserTask_Book2",
-            "name": "Book two"
+            "elementId": "UserTask_Recover",
+            "name": "Recover from the failed release"
           }
         ]
+      },
+      {
+        "afterCommandId": "s05-complete-UserTask_Recover-1",
+        "tasks": []
       }
     ],
     "timerJobs": [
@@ -81,6 +91,10 @@
       },
       {
         "afterCommandId": "s02-complete-UserTask_Book2-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s05-complete-UserTask_Recover-1",
         "jobs": []
       }
     ],
@@ -96,6 +110,10 @@
       {
         "afterCommandId": "s02-complete-UserTask_Book2-1",
         "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s05-complete-UserTask_Recover-1",
+        "state": "COMPLETED"
       }
     ],
     "mappingExecutions": [
@@ -105,6 +123,13 @@
         "arguments": [],
         "localPatch": [],
         "invocations": 1
+      },
+      {
+        "afterCommandId": "s02-complete-UserTask_Book2-1",
+        "handler": "bpmnLeanEffectHandler",
+        "arguments": [],
+        "localPatch": [],
+        "invocations": 2
       }
     ]
   },
@@ -114,7 +139,7 @@
   "result": {
     "outcome": {
       "kind": "semantic",
-      "outcome": "rolledBack"
+      "outcome": "committed"
     },
     "trace": [
       {
@@ -218,7 +243,7 @@
       {
         "kind": "command",
         "commandId": "s02-complete-UserTask_Book2-1",
-        "outcome": "rolledBack"
+        "outcome": "committed"
       },
       {
         "kind": "state",
@@ -230,13 +255,13 @@
           {
             "id": {
               "processInstanceId": "Instance_1",
-              "elementId": "UserTask_Book2",
+              "elementId": "UserTask_Recover",
               "activation": 1
             },
             "definition": null,
             "detail": {
               "kind": "userTask",
-              "name": "Book two",
+              "name": "Recover from the failed release",
               "assignee": null,
               "candidateUsers": [],
               "candidateGroups": [],
@@ -250,6 +275,19 @@
             "input": "command"
           }
         ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s05-complete-UserTask_Recover-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": []
       }
     ]
   }

@@ -25,19 +25,19 @@
         "variables": [
           {
             "name": "memo",
-            "value": "root-memo"
-          },
-          {
-            "name": "memo",
             "value": "sub-memo"
           },
           {
-            "name": "status",
-            "value": "open"
+            "name": "memo",
+            "value": "root-memo"
           },
           {
             "name": "status",
             "value": null
+          },
+          {
+            "name": "status",
+            "value": "open"
           },
           {
             "name": "subOnly",
@@ -56,19 +56,19 @@
         "variables": [
           {
             "name": "memo",
-            "value": "root-memo"
-          },
-          {
-            "name": "memo",
             "value": "sub-memo"
           },
           {
-            "name": "status",
-            "value": "open"
+            "name": "memo",
+            "value": "root-memo"
           },
           {
             "name": "status",
             "value": null
+          },
+          {
+            "name": "status",
+            "value": "open"
           },
           {
             "name": "subOnly",
@@ -150,14 +150,20 @@
             "name": "memo",
             "value": {
               "kind": "string",
-              "value": "root-memo"
+              "value": "sub-memo"
             }
           },
           {
             "name": "memo",
             "value": {
               "kind": "string",
-              "value": "sub-memo"
+              "value": "root-memo"
+            }
+          },
+          {
+            "name": "status",
+            "value": {
+              "kind": "null"
             }
           },
           {
@@ -165,12 +171,6 @@
             "value": {
               "kind": "string",
               "value": "open"
-            }
-          },
-          {
-            "name": "status",
-            "value": {
-              "kind": "null"
             }
           },
           {
@@ -263,14 +263,20 @@
             "name": "memo",
             "value": {
               "kind": "string",
-              "value": "root-memo"
+              "value": "sub-memo"
             }
           },
           {
             "name": "memo",
             "value": {
               "kind": "string",
-              "value": "sub-memo"
+              "value": "root-memo"
+            }
+          },
+          {
+            "name": "status",
+            "value": {
+              "kind": "null"
             }
           },
           {
@@ -278,12 +284,6 @@
             "value": {
               "kind": "string",
               "value": "open"
-            }
-          },
-          {
-            "name": "status",
-            "value": {
-              "kind": "null"
             }
           },
           {

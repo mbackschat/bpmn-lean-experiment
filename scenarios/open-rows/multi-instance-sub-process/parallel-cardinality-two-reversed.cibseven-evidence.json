@@ -212,7 +212,7 @@
                   "name": "position",
                   "value": {
                     "kind": "integer",
-                    "value": 1
+                    "value": 0
                   }
                 }
               ]
@@ -249,7 +249,7 @@
                   "name": "position",
                   "value": {
                     "kind": "integer",
-                    "value": 0
+                    "value": 1
                   }
                 }
               ]
@@ -315,7 +315,7 @@
                   "name": "position",
                   "value": {
                     "kind": "integer",
-                    "value": 1
+                    "value": 0
                   }
                 }
               ]
