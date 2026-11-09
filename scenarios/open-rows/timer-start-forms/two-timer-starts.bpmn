@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             id="Definitions_TwoTimerStarts" targetNamespace="urn:bpmn-lean:scenarios:timer-start-forms:two-timer-starts">
+  <process id="Process_TwoRuns" name="Review a batch at either of two hours" isExecutable="true">
+    <startEvent id="StartMorningRun" name="Morning run">
+      <timerEventDefinition id="StartMorningRun_Timer">
+        <timeDuration xsi:type="tFormalExpression">PT1H</timeDuration>
+      </timerEventDefinition>
+    </startEvent>
+    <startEvent id="StartEveningRun" name="Evening run">
+      <timerEventDefinition id="StartEveningRun_Timer">
+        <timeDuration xsi:type="tFormalExpression">PT2H</timeDuration>
+      </timerEventDefinition>
+    </startEvent>
+    <userTask id="ReviewMorningBatch" name="Review the morning batch" />
+    <userTask id="ReviewEveningBatch" name="Review the evening batch" />
+    <endEvent id="MorningReviewed" name="Morning reviewed" />
+    <endEvent id="EveningReviewed" name="Evening reviewed" />
+    <sequenceFlow id="Flow_MorningStarted" sourceRef="StartMorningRun" targetRef="ReviewMorningBatch" />
+    <sequenceFlow id="Flow_EveningStarted" sourceRef="StartEveningRun" targetRef="ReviewEveningBatch" />
+    <sequenceFlow id="Flow_MorningReviewed" sourceRef="ReviewMorningBatch" targetRef="MorningReviewed" />
+    <sequenceFlow id="Flow_EveningReviewed" sourceRef="ReviewEveningBatch" targetRef="EveningReviewed" />
+  </process>
+</definitions>

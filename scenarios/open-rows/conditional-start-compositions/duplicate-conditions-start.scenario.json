@@ -1,0 +1,61 @@
+{
+  "kind": "scenario",
+  "id": "conditional-start-compositions-duplicate-conditions-start",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "conditional-start-compositions-duplicate-conditions",
+    "relativePath": "scenarios/open-rows/conditional-start-compositions/duplicate-conditions.bpmn",
+    "sha256": "524e2deaebff24d5a5af7e7f43bc97d6a0076cf188e619d6d407bb77343152c1",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "amount",
+          "value": {
+            "kind": "integer",
+            "value": 2500
+          }
+        }
+      ],
+      "startEvent": "StartLargeOrderOnline",
+      "trigger": {
+        "kind": "condition"
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-complete-ReviewOnlineOrder-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "ReviewOnlineOrder",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.5.2",
+      "BPMN 2.0.2 Clause 10.5.5",
+      "BPMN 2.0.2 Clause 13.2",
+      "BPMN 2.0.2 Clause 13.5.1",
+      "BPMN 2.0.2 Table 10.84",
+      "BPMN 2.0.2 Table 10.95"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/runtime/DefaultConditionHandler.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/cmd/EvaluateStartConditionCmd.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/el/UelExpressionCondition.java"
+    ]
+  }
+}

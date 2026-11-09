@@ -1,0 +1,80 @@
+{
+  "kind": "scenario",
+  "id": "signal-start-compositions-race-approved-then-late-rejected",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "signal-start-compositions-approval-race",
+    "relativePath": "scenarios/open-rows/signal-start-compositions/approval-race.bpmn",
+    "sha256": "9a799154860c41db5408c99cbcec5bd7f01fe8e7dda05fb390edd15f19c40d7f",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    },
+    {
+      "kind": "deliver",
+      "commandId": "s02-deliver-CatchApproved-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "CatchApproved",
+        "activation": 1
+      },
+      "trigger": {
+        "kind": "signal",
+        "name": "approved"
+      }
+    },
+    {
+      "kind": "deliver",
+      "commandId": "s03-deliver-CatchRejected-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "CatchRejected",
+        "activation": 1
+      },
+      "trigger": {
+        "kind": "signal",
+        "name": "rejected"
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s04-complete-Proceed-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Proceed",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.5.2",
+      "BPMN 2.0.2 Clause 10.5.4",
+      "BPMN 2.0.2 Clause 10.5.5",
+      "BPMN 2.0.2 Clause 13.2",
+      "BPMN 2.0.2 Clause 13.5.1",
+      "BPMN 2.0.2 Clause 13.5.2",
+      "BPMN 2.0.2 Table 10.84",
+      "BPMN 2.0.2 Table 10.89",
+      "BPMN 2.0.2 Table 10.100",
+      "BPMN 2.0.2 Clause 10.6.6",
+      "BPMN 2.0.2 Clause 13.4.4"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/cmd/SignalEventReceivedCmd.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/deployer/BpmnDeployer.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/EventBasedGatewayActivityBehavior.java"
+    ]
+  }
+}

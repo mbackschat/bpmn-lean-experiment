@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             id="Definitions_ConfirmationPayload" targetNamespace="urn:bpmn-lean:scenarios:message-correlation-criteria:confirmation-payload">
+  <itemDefinition id="ItemDefinition_ConfirmationReference" />
+  <message id="Message_ConfirmationSent" name="confirmation-sent" itemRef="ItemDefinition_ConfirmationReference" />
+  <interface id="Interface_Warehouse" name="Warehouse">
+    <operation id="Operation_ConfirmOrder" name="Confirm order">
+      <inMessageRef>Message_ConfirmationSent</inMessageRef>
+    </operation>
+  </interface>
+  <process id="Process_PayloadConfirmation" name="Fulfil an order once its confirmation reference arrives" isExecutable="true">
+    <property id="Property_ConfirmationReference" />
+    <startEvent id="OrderPlaced" name="Order placed" />
+    <intermediateCatchEvent id="AwaitConfirmation" name="Await confirmation">
+      <incoming>Flow_Placed</incoming>
+      <outgoing>Flow_Confirmed</outgoing>
+      <dataOutput id="DataOutput_ConfirmationReference" name="Confirmation reference" itemSubjectRef="ItemDefinition_ConfirmationReference" />
+      <dataOutputAssociation id="DataOutputAssociation_ConfirmationReference">
+        <sourceRef>DataOutput_ConfirmationReference</sourceRef>
+        <targetRef>Property_ConfirmationReference</targetRef>
+      </dataOutputAssociation>
+      <outputSet id="OutputSet_Confirmation">
+        <dataOutputRefs>DataOutput_ConfirmationReference</dataOutputRefs>
+      </outputSet>
+      <messageEventDefinition id="AwaitConfirmation_Message" messageRef="Message_ConfirmationSent" operationRef="Operation_ConfirmOrder" />
+    </intermediateCatchEvent>
+    <userTask id="FulfilOrder" name="Fulfil the order" />
+    <endEvent id="OrderFulfilled" name="Order fulfilled" />
+    <sequenceFlow id="Flow_Placed" sourceRef="OrderPlaced" targetRef="AwaitConfirmation" />
+    <sequenceFlow id="Flow_Confirmed" sourceRef="AwaitConfirmation" targetRef="FulfilOrder" />
+    <sequenceFlow id="Flow_Fulfilled" sourceRef="FulfilOrder" targetRef="OrderFulfilled" />
+  </process>
+</definitions>

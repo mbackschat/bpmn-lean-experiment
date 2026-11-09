@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             id="Definitions_CycleStart" targetNamespace="urn:bpmn-lean:scenarios:timer-start-forms:cycle-start">
+  <process id="Process_CycleBatch" name="Review a batch every hour" isExecutable="true">
+    <startEvent id="StartEveryHour" name="Every hour">
+      <timerEventDefinition id="StartEveryHour_Timer">
+        <timeCycle xsi:type="tFormalExpression">R/PT1H</timeCycle>
+      </timerEventDefinition>
+    </startEvent>
+    <userTask id="ReviewBatch" name="Review the batch" />
+    <endEvent id="BatchReviewed" name="Batch reviewed" />
+    <sequenceFlow id="Flow_Started" sourceRef="StartEveryHour" targetRef="ReviewBatch" />
+    <sequenceFlow id="Flow_Reviewed" sourceRef="ReviewBatch" targetRef="BatchReviewed" />
+  </process>
+</definitions>

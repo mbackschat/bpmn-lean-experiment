@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             id="Definitions_HandoverRelay" targetNamespace="urn:bpmn-lean:scenarios:signal-start-compositions:handover-relay">
+  <signal id="Signal_HandoverRequested" name="handover-requested" />
+  <signal id="Signal_HandoverAccepted" name="handover-accepted" />
+  <process id="Process_HandoverRelay" name="Hand a shift over when the next shift accepts" isExecutable="true">
+    <startEvent id="StartHandoverRequested" name="Handover requested">
+      <signalEventDefinition id="StartHandoverRequested_Signal" signalRef="Signal_HandoverRequested" />
+    </startEvent>
+    <intermediateCatchEvent id="CatchHandoverAccepted" name="Handover accepted">
+      <signalEventDefinition id="CatchHandoverAccepted_Signal" signalRef="Signal_HandoverAccepted" />
+    </intermediateCatchEvent>
+    <userTask id="ConfirmHandover" name="Confirm the handover" />
+    <endEvent id="HandoverConfirmed" name="Handover confirmed" />
+    <sequenceFlow id="Flow_Requested" sourceRef="StartHandoverRequested" targetRef="CatchHandoverAccepted" />
+    <sequenceFlow id="Flow_Accepted" sourceRef="CatchHandoverAccepted" targetRef="ConfirmHandover" />
+    <sequenceFlow id="Flow_Confirmed" sourceRef="ConfirmHandover" targetRef="HandoverConfirmed" />
+  </process>
+</definitions>

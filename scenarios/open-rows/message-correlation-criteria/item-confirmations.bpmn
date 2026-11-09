@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             id="Definitions_ItemConfirmations" targetNamespace="urn:bpmn-lean:scenarios:message-correlation-criteria:item-confirmations">
+  <message id="Message_ItemConfirmed" name="item-confirmed" />
+  <process id="Process_ItemConfirmations" name="Pack two items, each on its own confirmation" isExecutable="true">
+    <startEvent id="ItemsOrdered" name="Items ordered" />
+    <subProcess id="PackEachItem" name="Pack each item">
+      <multiInstanceLoopCharacteristics isSequential="false">
+        <loopCardinality xsi:type="tFormalExpression">2</loopCardinality>
+      </multiInstanceLoopCharacteristics>
+      <startEvent id="ItemPackingStarted" name="Item packing started" />
+      <intermediateCatchEvent id="AwaitItemConfirmed" name="Await item confirmation">
+        <messageEventDefinition id="AwaitItemConfirmed_Message" messageRef="Message_ItemConfirmed" />
+      </intermediateCatchEvent>
+      <userTask id="PackItem" name="Pack the item" />
+      <endEvent id="ItemPacked" name="Item packed" />
+      <sequenceFlow id="Flow_ItemStarted" sourceRef="ItemPackingStarted" targetRef="AwaitItemConfirmed" />
+      <sequenceFlow id="Flow_ItemConfirmed" sourceRef="AwaitItemConfirmed" targetRef="PackItem" />
+      <sequenceFlow id="Flow_ItemPacked" sourceRef="PackItem" targetRef="ItemPacked" />
+    </subProcess>
+    <endEvent id="ItemsPacked" name="Items packed" />
+    <sequenceFlow id="Flow_Ordered" sourceRef="ItemsOrdered" targetRef="PackEachItem" />
+    <sequenceFlow id="Flow_AllPacked" sourceRef="PackEachItem" targetRef="ItemsPacked" />
+  </process>
+</definitions>

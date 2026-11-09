@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             id="Definitions_DuplicateMessageStarts" targetNamespace="urn:bpmn-lean:scenarios:message-start-compositions:duplicate-message-starts">
+  <message id="Message_OrderPlaced" name="order-placed" />
+  <process id="Process_DuplicateIntake" name="Take in an order from two channels with one message" isExecutable="true">
+    <startEvent id="StartOrderPlacedOnline" name="Order placed online">
+      <messageEventDefinition id="StartOrderPlacedOnline_Message" messageRef="Message_OrderPlaced" />
+    </startEvent>
+    <startEvent id="StartOrderPlacedByPhone" name="Order placed by phone">
+      <messageEventDefinition id="StartOrderPlacedByPhone_Message" messageRef="Message_OrderPlaced" />
+    </startEvent>
+    <userTask id="PickOnlineOrder" name="Pick the online order" />
+    <userTask id="PickPhoneOrder" name="Pick the phone order" />
+    <endEvent id="OnlineOrderPicked" name="Online order picked" />
+    <endEvent id="PhoneOrderPicked" name="Phone order picked" />
+    <sequenceFlow id="Flow_OnlineStarted" sourceRef="StartOrderPlacedOnline" targetRef="PickOnlineOrder" />
+    <sequenceFlow id="Flow_PhoneStarted" sourceRef="StartOrderPlacedByPhone" targetRef="PickPhoneOrder" />
+    <sequenceFlow id="Flow_OnlinePicked" sourceRef="PickOnlineOrder" targetRef="OnlineOrderPicked" />
+    <sequenceFlow id="Flow_PhonePicked" sourceRef="PickPhoneOrder" targetRef="PhoneOrderPicked" />
+  </process>
+</definitions>

@@ -1,0 +1,145 @@
+{
+  "kind": "scenario",
+  "id": "message-correlation-criteria-payload-with-mismatching-criterion",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "message-correlation-criteria-confirmation-payload",
+    "relativePath": "scenarios/open-rows/message-correlation-criteria/confirmation-payload.bpmn",
+    "sha256": "4980b843284dd35cc2173d1c01639e1692dc340698d42d44725f2c2de36ac983",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "orderId",
+          "value": {
+            "kind": "string",
+            "value": "A-1"
+          }
+        },
+        {
+          "name": "region",
+          "value": {
+            "kind": "string",
+            "value": "north"
+          }
+        },
+        {
+          "name": "note",
+          "value": {
+            "kind": "null"
+          }
+        },
+        {
+          "name": "ticket",
+          "value": {
+            "kind": "integer",
+            "value": 41
+          }
+        }
+      ]
+    },
+    {
+      "kind": "deliver",
+      "commandId": "s02-deliver-other-order",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "AwaitConfirmation",
+        "activation": 1
+      },
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "operationMessage",
+          "interfaceId": "Interface_Warehouse",
+          "interfaceOperationId": "Operation_ConfirmOrder",
+          "messageId": "Message_ConfirmationSent"
+        }
+      },
+      "correlation": [
+        {
+          "target": {
+            "kind": "processVariable",
+            "name": "orderId"
+          },
+          "expected": {
+            "kind": "string",
+            "value": "B-2"
+          }
+        }
+      ],
+      "payload": {
+        "kind": "string",
+        "value": "CONF-7"
+      }
+    },
+    {
+      "kind": "deliver",
+      "commandId": "s03-deliver-matching",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "AwaitConfirmation",
+        "activation": 1
+      },
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "operationMessage",
+          "interfaceId": "Interface_Warehouse",
+          "interfaceOperationId": "Operation_ConfirmOrder",
+          "messageId": "Message_ConfirmationSent"
+        }
+      },
+      "correlation": [
+        {
+          "target": {
+            "kind": "processVariable",
+            "name": "orderId"
+          },
+          "expected": {
+            "kind": "string",
+            "value": "A-1"
+          }
+        }
+      ],
+      "payload": {
+        "kind": "string",
+        "value": "CONF-9"
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s04-complete-FulfilOrder-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "FulfilOrder",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 8.4.2",
+      "BPMN 2.0.2 Clause 8.4.11",
+      "BPMN 2.0.2 Clause 10.5.4",
+      "BPMN 2.0.2 Table 8.31",
+      "BPMN 2.0.2 Table 8.35",
+      "BPMN 2.0.2 Table 10.99"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/runtime/DefaultCorrelationHandler.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/MessageCorrelationBuilderImpl.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/cmd/AbstractCorrelateMessageCmd.java"
+    ]
+  }
+}

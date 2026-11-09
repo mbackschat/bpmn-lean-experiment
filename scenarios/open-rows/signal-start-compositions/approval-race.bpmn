@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             id="Definitions_ApprovalRace" targetNamespace="urn:bpmn-lean:scenarios:signal-start-compositions:approval-race">
+  <signal id="Signal_Approved" name="approved" />
+  <signal id="Signal_Rejected" name="rejected" />
+  <process id="Process_ApprovalRace" name="Await an approval signal, a rejection signal or a deadline" isExecutable="true">
+    <startEvent id="StartApprovalRequested" name="Approval requested" />
+    <eventBasedGateway id="AwaitDecision" name="Await decision" />
+    <intermediateCatchEvent id="CatchApproved" name="Approved">
+      <signalEventDefinition id="CatchApproved_Signal" signalRef="Signal_Approved" />
+    </intermediateCatchEvent>
+    <intermediateCatchEvent id="CatchRejected" name="Rejected">
+      <signalEventDefinition id="CatchRejected_Signal" signalRef="Signal_Rejected" />
+    </intermediateCatchEvent>
+    <intermediateCatchEvent id="CatchExpired" name="Deadline passed">
+      <timerEventDefinition id="CatchExpired_Timer">
+        <timeDuration xsi:type="tFormalExpression">PT1H</timeDuration>
+      </timerEventDefinition>
+    </intermediateCatchEvent>
+    <userTask id="Proceed" name="Proceed" />
+    <userTask id="Revise" name="Revise the request" />
+    <userTask id="Lapse" name="Record the lapse" />
+    <endEvent id="Proceeded" name="Proceeded" />
+    <endEvent id="Revised" name="Revised" />
+    <endEvent id="Lapsed" name="Lapsed" />
+    <sequenceFlow id="Flow_Requested" sourceRef="StartApprovalRequested" targetRef="AwaitDecision" />
+    <sequenceFlow id="Flow_ToApproved" sourceRef="AwaitDecision" targetRef="CatchApproved" />
+    <sequenceFlow id="Flow_ToRejected" sourceRef="AwaitDecision" targetRef="CatchRejected" />
+    <sequenceFlow id="Flow_ToExpired" sourceRef="AwaitDecision" targetRef="CatchExpired" />
+    <sequenceFlow id="Flow_Approved" sourceRef="CatchApproved" targetRef="Proceed" />
+    <sequenceFlow id="Flow_Rejected" sourceRef="CatchRejected" targetRef="Revise" />
+    <sequenceFlow id="Flow_Expired" sourceRef="CatchExpired" targetRef="Lapse" />
+    <sequenceFlow id="Flow_Proceeded" sourceRef="Proceed" targetRef="Proceeded" />
+    <sequenceFlow id="Flow_Revised" sourceRef="Revise" targetRef="Revised" />
+    <sequenceFlow id="Flow_Lapsed" sourceRef="Lapse" targetRef="Lapsed" />
+  </process>
+</definitions>

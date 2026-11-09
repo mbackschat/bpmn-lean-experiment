@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             xmlns:other="urn:bpmn-lean:scenarios:call-binding-time:other"
+             id="Definitions_CalleeV2" targetNamespace="urn:bpmn-lean:scenarios:call-binding-time:callee-v2">
+  <process id="Process_Callee" name="Assess a request" camunda:versionTag="next" isExecutable="true">
+    <startEvent id="AssessmentRequested" name="Assessment requested" />
+    <userTask id="AssessRequestRevised" name="Assess the request" />
+    <endEvent id="RequestAssessed" name="Request assessed" />
+    <sequenceFlow id="Flow_AssessmentRequested" sourceRef="AssessmentRequested" targetRef="AssessRequestRevised" />
+    <sequenceFlow id="Flow_Assessed" sourceRef="AssessRequestRevised" targetRef="RequestAssessed" />
+  </process>
+</definitions>

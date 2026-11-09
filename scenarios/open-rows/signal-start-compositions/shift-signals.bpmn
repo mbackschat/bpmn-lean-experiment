@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             id="Definitions_ShiftSignals" targetNamespace="urn:bpmn-lean:scenarios:signal-start-compositions:shift-signals">
+  <signal id="Signal_ShiftOpened" name="shift-opened" />
+  <signal id="Signal_ShiftClosed" name="shift-closed" />
+  <process id="Process_ShiftSignals" name="Open or close the register on a shift signal" isExecutable="true">
+    <startEvent id="StartShiftOpened" name="Shift opened">
+      <signalEventDefinition id="StartShiftOpened_Signal" signalRef="Signal_ShiftOpened" />
+    </startEvent>
+    <startEvent id="StartShiftClosed" name="Shift closed">
+      <signalEventDefinition id="StartShiftClosed_Signal" signalRef="Signal_ShiftClosed" />
+    </startEvent>
+    <userTask id="OpenRegister" name="Open the register" />
+    <userTask id="CloseRegister" name="Close the register" />
+    <endEvent id="RegisterOpened" name="Register opened" />
+    <endEvent id="RegisterClosed" name="Register closed" />
+    <sequenceFlow id="Flow_OpenedStarted" sourceRef="StartShiftOpened" targetRef="OpenRegister" />
+    <sequenceFlow id="Flow_ClosedStarted" sourceRef="StartShiftClosed" targetRef="CloseRegister" />
+    <sequenceFlow id="Flow_RegisterOpened" sourceRef="OpenRegister" targetRef="RegisterOpened" />
+    <sequenceFlow id="Flow_RegisterClosed" sourceRef="CloseRegister" targetRef="RegisterClosed" />
+  </process>
+</definitions>

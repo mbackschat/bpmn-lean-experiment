@@ -1,0 +1,54 @@
+{
+  "kind": "scenario",
+  "id": "timer-start-forms-cycle-start-fires",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "timer-start-forms-cycle-start",
+    "relativePath": "scenarios/open-rows/timer-start-forms/cycle-start.bpmn",
+    "sha256": "23b6628cb06602dd58b333000433389b5b3c4b0c960445dbb8bd06faad2ebb9e",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [],
+      "startEvent": "StartEveryHour",
+      "trigger": {
+        "kind": "timer",
+        "logicalTimeMs": 3600000
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-complete-ReviewBatch-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "ReviewBatch",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.5.2",
+      "BPMN 2.0.2 Clause 10.5.5",
+      "BPMN 2.0.2 Clause 13.2",
+      "BPMN 2.0.2 Clause 13.5.1",
+      "BPMN 2.0.2 Table 10.84",
+      "BPMN 2.0.2 Table 10.101"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/deployer/BpmnDeployer.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/jobexecutor/TimerStartEventJobHandler.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/calendar/DurationHelper.java"
+    ]
+  }
+}

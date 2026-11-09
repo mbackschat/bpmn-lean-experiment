@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             id="Definitions_RequestIntake" targetNamespace="urn:bpmn-lean:scenarios:message-start-compositions:request-intake">
+  <message id="Message_RequestReceived" name="request-received" />
+  <process id="Process_RequestIntake" name="Take in a request by hand or by message" isExecutable="true">
+    <startEvent id="StartManualRequest" name="Request entered by hand" />
+    <startEvent id="StartRequestMessage" name="Request received">
+      <messageEventDefinition id="StartRequestMessage_Message" messageRef="Message_RequestReceived" />
+    </startEvent>
+    <userTask id="HandleManualRequest" name="Handle the manual request" />
+    <userTask id="HandleMessageRequest" name="Handle the message request" />
+    <endEvent id="ManualRequestHandled" name="Manual request handled" />
+    <endEvent id="MessageRequestHandled" name="Message request handled" />
+    <sequenceFlow id="Flow_ManualStarted" sourceRef="StartManualRequest" targetRef="HandleManualRequest" />
+    <sequenceFlow id="Flow_MessageStarted" sourceRef="StartRequestMessage" targetRef="HandleMessageRequest" />
+    <sequenceFlow id="Flow_ManualHandled" sourceRef="HandleManualRequest" targetRef="ManualRequestHandled" />
+    <sequenceFlow id="Flow_MessageHandled" sourceRef="HandleMessageRequest" targetRef="MessageRequestHandled" />
+  </process>
+</definitions>

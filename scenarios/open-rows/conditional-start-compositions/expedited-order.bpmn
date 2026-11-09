@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_ExpeditedOrder" targetNamespace="urn:bpmn-lean:scenarios:conditional-start-compositions:expedited-order">
+  <process id="Process_ExpeditedOrder" name="Ship an order as soon as it is flagged" isExecutable="true">
+    <startEvent id="StartExpedited" name="Order flagged">
+      <conditionalEventDefinition id="StartExpedited_Condition">
+        <condition xsi:type="tFormalExpression">${expedite}</condition>
+      </conditionalEventDefinition>
+    </startEvent>
+    <userTask id="ShipFast" name="Ship the order fast" />
+    <endEvent id="OrderShipped" name="Order shipped" />
+    <sequenceFlow id="Flow_Started" sourceRef="StartExpedited" targetRef="ShipFast" />
+    <sequenceFlow id="Flow_Shipped" sourceRef="ShipFast" targetRef="OrderShipped" />
+  </process>
+</definitions>

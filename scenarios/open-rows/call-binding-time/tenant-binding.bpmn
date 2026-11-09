@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_TenantBinding" targetNamespace="urn:bpmn-lean:scenarios:call-binding-time:tenant-binding">
+  <process id="Process_TenantCaller" name="Assess a request through a callee of another tenant" isExecutable="true">
+    <startEvent id="RequestReceived" name="Request received" />
+    <callActivity id="CallTenantCallee" name="Call the callee of tenant A" calledElement="Process_Callee" camunda:calledElementTenantId="tenant-a" />
+    <userTask id="ConfirmCaller" name="Confirm the request" />
+    <endEvent id="RequestConfirmed" name="Request confirmed" />
+    <sequenceFlow id="Flow_Received" sourceRef="RequestReceived" targetRef="CallTenantCallee" />
+    <sequenceFlow id="Flow_Returned" sourceRef="CallTenantCallee" targetRef="ConfirmCaller" />
+    <sequenceFlow id="Flow_Confirmed" sourceRef="ConfirmCaller" targetRef="RequestConfirmed" />
+  </process>
+  <process id="Process_Callee" name="Assess a request" isExecutable="true">
+    <startEvent id="AssessmentRequested" name="Assessment requested" />
+    <userTask id="AssessRequest" name="Assess the request" />
+    <endEvent id="RequestAssessed" name="Request assessed" />
+    <sequenceFlow id="Flow_AssessmentRequested" sourceRef="AssessmentRequested" targetRef="AssessRequest" />
+    <sequenceFlow id="Flow_Assessed" sourceRef="AssessRequest" targetRef="RequestAssessed" />
+  </process>
+</definitions>

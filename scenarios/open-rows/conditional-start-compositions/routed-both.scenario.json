@@ -1,0 +1,54 @@
+{
+  "kind": "scenario",
+  "id": "conditional-start-compositions-routed-both",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "conditional-start-compositions-routed-orders",
+    "relativePath": "scenarios/open-rows/conditional-start-compositions/routed-orders.bpmn",
+    "sha256": "f661f5c037c14e40ed6cbaaaee20bdd73f73a00e46f239c8198bbcf375e2aaf7",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "amount",
+          "value": {
+            "kind": "integer",
+            "value": 2500
+          }
+        },
+        {
+          "name": "urgent",
+          "value": {
+            "kind": "boolean",
+            "value": true
+          }
+        }
+      ],
+      "trigger": {
+        "kind": "condition"
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.5.2",
+      "BPMN 2.0.2 Clause 10.5.5",
+      "BPMN 2.0.2 Clause 13.2",
+      "BPMN 2.0.2 Clause 13.5.1",
+      "BPMN 2.0.2 Table 10.84",
+      "BPMN 2.0.2 Table 10.95"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/runtime/DefaultConditionHandler.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/cmd/EvaluateStartConditionCmd.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/el/UelExpressionCondition.java"
+    ]
+  }
+}

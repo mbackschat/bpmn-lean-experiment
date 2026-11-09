@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             id="Definitions_ShipmentStart" targetNamespace="urn:bpmn-lean:scenarios:message-start-compositions:shipment-start">
+  <itemDefinition id="ItemDefinition_ManifestReference" />
+  <message id="Message_ShipmentAnnounced" name="shipment-announced" itemRef="ItemDefinition_ManifestReference" />
+  <interface id="Interface_Carrier" name="Carrier">
+    <operation id="Operation_AnnounceShipment" name="Announce shipment">
+      <inMessageRef>Message_ShipmentAnnounced</inMessageRef>
+    </operation>
+  </interface>
+  <process id="Process_ShipmentIntake" name="Take in an announced shipment" isExecutable="true">
+    <property id="Property_ManifestReference" />
+    <startEvent id="StartShipmentAnnounced" name="Shipment announced">
+      <outgoing>Flow_Announced</outgoing>
+      <dataOutput id="DataOutput_ManifestReference" name="Announced manifest reference" itemSubjectRef="ItemDefinition_ManifestReference" />
+      <dataOutputAssociation id="DataOutputAssociation_ManifestReference">
+        <sourceRef>DataOutput_ManifestReference</sourceRef>
+        <targetRef>Property_ManifestReference</targetRef>
+      </dataOutputAssociation>
+      <outputSet id="OutputSet_ShipmentAnnounced">
+        <dataOutputRefs>DataOutput_ManifestReference</dataOutputRefs>
+      </outputSet>
+      <messageEventDefinition id="StartShipmentAnnounced_Message" messageRef="Message_ShipmentAnnounced" operationRef="Operation_AnnounceShipment" />
+    </startEvent>
+    <userTask id="CheckManifest" name="Check the manifest">
+      <incoming>Flow_Announced</incoming>
+      <outgoing>Flow_Checked</outgoing>
+    </userTask>
+    <endEvent id="ManifestChecked" name="Manifest checked">
+      <incoming>Flow_Checked</incoming>
+    </endEvent>
+    <sequenceFlow id="Flow_Announced" sourceRef="StartShipmentAnnounced" targetRef="CheckManifest" />
+    <sequenceFlow id="Flow_Checked" sourceRef="CheckManifest" targetRef="ManifestChecked" />
+  </process>
+</definitions>

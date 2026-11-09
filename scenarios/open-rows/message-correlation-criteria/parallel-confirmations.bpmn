@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             id="Definitions_ParallelConfirmations" targetNamespace="urn:bpmn-lean:scenarios:message-correlation-criteria:parallel-confirmations">
+  <message id="Message_OrderConfirmed" name="order-confirmed" />
+  <process id="Process_ParallelConfirmations" name="Fulfil two parts of an order, each on its own confirmation" isExecutable="true">
+    <startEvent id="OrderPlaced" name="Order placed" />
+    <parallelGateway id="SplitParts" name="Split parts" gatewayDirection="Diverging" />
+    <intermediateCatchEvent id="AwaitConfirmationA" name="Await confirmation of part A">
+      <messageEventDefinition id="AwaitConfirmationA_Message" messageRef="Message_OrderConfirmed" />
+    </intermediateCatchEvent>
+    <intermediateCatchEvent id="AwaitConfirmationB" name="Await confirmation of part B">
+      <messageEventDefinition id="AwaitConfirmationB_Message" messageRef="Message_OrderConfirmed" />
+    </intermediateCatchEvent>
+    <userTask id="FulfilPartA" name="Fulfil part A" />
+    <userTask id="FulfilPartB" name="Fulfil part B" />
+    <parallelGateway id="JoinParts" name="Join parts" gatewayDirection="Converging" />
+    <endEvent id="OrderFulfilled" name="Order fulfilled" />
+    <sequenceFlow id="Flow_Placed" sourceRef="OrderPlaced" targetRef="SplitParts" />
+    <sequenceFlow id="Flow_ToA" sourceRef="SplitParts" targetRef="AwaitConfirmationA" />
+    <sequenceFlow id="Flow_ToB" sourceRef="SplitParts" targetRef="AwaitConfirmationB" />
+    <sequenceFlow id="Flow_ConfirmedA" sourceRef="AwaitConfirmationA" targetRef="FulfilPartA" />
+    <sequenceFlow id="Flow_ConfirmedB" sourceRef="AwaitConfirmationB" targetRef="FulfilPartB" />
+    <sequenceFlow id="Flow_FulfilledA" sourceRef="FulfilPartA" targetRef="JoinParts" />
+    <sequenceFlow id="Flow_FulfilledB" sourceRef="FulfilPartB" targetRef="JoinParts" />
+    <sequenceFlow id="Flow_Joined" sourceRef="JoinParts" targetRef="OrderFulfilled" />
+  </process>
+</definitions>

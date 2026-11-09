@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             id="Definitions_OrderConfirmation" targetNamespace="urn:bpmn-lean:scenarios:message-correlation-criteria:order-confirmation">
+  <message id="Message_OrderConfirmed" name="order-confirmed" />
+  <process id="Process_OrderConfirmation" name="Fulfil an order once it is confirmed" isExecutable="true">
+    <startEvent id="OrderPlaced" name="Order placed" />
+    <intermediateCatchEvent id="AwaitConfirmation" name="Await confirmation">
+      <messageEventDefinition id="AwaitConfirmation_Message" messageRef="Message_OrderConfirmed" />
+    </intermediateCatchEvent>
+    <userTask id="FulfilOrder" name="Fulfil the order" />
+    <endEvent id="OrderFulfilled" name="Order fulfilled" />
+    <sequenceFlow id="Flow_Placed" sourceRef="OrderPlaced" targetRef="AwaitConfirmation" />
+    <sequenceFlow id="Flow_Confirmed" sourceRef="AwaitConfirmation" targetRef="FulfilOrder" />
+    <sequenceFlow id="Flow_Fulfilled" sourceRef="FulfilOrder" targetRef="OrderFulfilled" />
+  </process>
+</definitions>

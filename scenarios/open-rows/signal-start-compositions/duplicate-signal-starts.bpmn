@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             id="Definitions_DuplicateSignalStarts" targetNamespace="urn:bpmn-lean:scenarios:signal-start-compositions:duplicate-signal-starts">
+  <signal id="Signal_ShiftOpened" name="shift-opened" />
+  <process id="Process_DuplicateShift" name="Open the register at the front or the back on one signal" isExecutable="true">
+    <startEvent id="StartShiftOpenedFront" name="Shift opened at the front">
+      <signalEventDefinition id="StartShiftOpenedFront_Signal" signalRef="Signal_ShiftOpened" />
+    </startEvent>
+    <startEvent id="StartShiftOpenedBack" name="Shift opened at the back">
+      <signalEventDefinition id="StartShiftOpenedBack_Signal" signalRef="Signal_ShiftOpened" />
+    </startEvent>
+    <userTask id="OpenFrontRegister" name="Open the front register" />
+    <userTask id="OpenBackRegister" name="Open the back register" />
+    <endEvent id="FrontOpened" name="Front opened" />
+    <endEvent id="BackOpened" name="Back opened" />
+    <sequenceFlow id="Flow_FrontStarted" sourceRef="StartShiftOpenedFront" targetRef="OpenFrontRegister" />
+    <sequenceFlow id="Flow_BackStarted" sourceRef="StartShiftOpenedBack" targetRef="OpenBackRegister" />
+    <sequenceFlow id="Flow_FrontOpened" sourceRef="OpenFrontRegister" targetRef="FrontOpened" />
+    <sequenceFlow id="Flow_BackOpened" sourceRef="OpenBackRegister" targetRef="BackOpened" />
+  </process>
+</definitions>

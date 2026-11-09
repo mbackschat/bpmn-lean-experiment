@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             id="Definitions_DurationStart" targetNamespace="urn:bpmn-lean:scenarios:timer-start-forms:duration-start">
+  <process id="Process_DurationBatch" name="Review a batch an hour after deployment" isExecutable="true">
+    <startEvent id="StartAfterDuration" name="An hour after deployment">
+      <timerEventDefinition id="StartAfterDuration_Timer">
+        <timeDuration xsi:type="tFormalExpression">PT1H</timeDuration>
+      </timerEventDefinition>
+    </startEvent>
+    <userTask id="ReviewBatch" name="Review the batch" />
+    <endEvent id="BatchReviewed" name="Batch reviewed" />
+    <sequenceFlow id="Flow_Started" sourceRef="StartAfterDuration" targetRef="ReviewBatch" />
+    <sequenceFlow id="Flow_Reviewed" sourceRef="ReviewBatch" targetRef="BatchReviewed" />
+  </process>
+</definitions>

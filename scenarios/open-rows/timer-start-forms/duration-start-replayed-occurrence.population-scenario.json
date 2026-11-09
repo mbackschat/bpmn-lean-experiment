@@ -1,0 +1,67 @@
+{
+  "kind": "populationScenario",
+  "id": "timer-start-forms-duration-start-replayed-occurrence",
+  "profile": "cibseven-2.2.0",
+  "definitions": [
+    {
+      "definitionRef": "duration-start",
+      "bpmn": {
+        "id": "timer-start-forms-duration-start",
+        "relativePath": "scenarios/open-rows/timer-start-forms/duration-start.bpmn",
+        "sha256": "038c1e0976297e439590d684716d392502355c798224acd2de932c512ad55cf4",
+        "sourceOverlay": null
+      }
+    }
+  ],
+  "steps": [
+    {
+      "kind": "instance",
+      "definitionRef": "duration-start",
+      "instanceId": "Batch_1",
+      "stimulus": {
+        "kind": "start",
+        "commandId": "s01-start-first",
+        "instanceId": "Batch_1",
+        "variables": [],
+        "startEvent": "StartAfterDuration",
+        "trigger": {
+          "kind": "timer",
+          "logicalTimeMs": 3600000
+        }
+      }
+    },
+    {
+      "kind": "instance",
+      "definitionRef": "duration-start",
+      "instanceId": "Batch_2",
+      "stimulus": {
+        "kind": "start",
+        "commandId": "s02-start-replay",
+        "instanceId": "Batch_2",
+        "variables": [],
+        "startEvent": "StartAfterDuration",
+        "trigger": {
+          "kind": "timer",
+          "logicalTimeMs": 3600000
+        }
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.5.2",
+      "BPMN 2.0.2 Clause 10.5.5",
+      "BPMN 2.0.2 Clause 13.2",
+      "BPMN 2.0.2 Clause 13.5.1",
+      "BPMN 2.0.2 Table 10.84",
+      "BPMN 2.0.2 Table 10.101"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/deployer/BpmnDeployer.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/jobexecutor/TimerStartEventJobHandler.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/calendar/DurationHelper.java"
+    ]
+  }
+}

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             xmlns:other="urn:bpmn-lean:scenarios:call-binding-time:other"
+             id="Definitions_VersionedCaller" targetNamespace="urn:bpmn-lean:scenarios:call-binding-time:versioned-caller">
+  <process id="Process_VersionedCaller" name="Assess a request through a callee deployed in two versions" isExecutable="true">
+    <startEvent id="RequestReceived" name="Request received" />
+    <exclusiveGateway id="SelectRoute" name="Select route" default="Flow_ToCallLatest" />
+    <callActivity id="CallLatest" name="Call the latest version" calledElement="Process_Callee" />
+    <callActivity id="CallVersionOne" name="Call version 1" calledElement="Process_Callee" camunda:calledElementBinding="version" camunda:calledElementVersion="1" />
+    <callActivity id="CallTagStable" name="Call the stable version" calledElement="Process_Callee" camunda:calledElementBinding="versionTag" camunda:calledElementVersionTag="stable" />
+    <callActivity id="CallDeployment" name="Call the deployed version" calledElement="Process_Callee" camunda:calledElementBinding="deployment" />
+    <exclusiveGateway id="MergeCalls" name="Merge calls" />
+    <userTask id="ConfirmCaller" name="Confirm the request" />
+    <endEvent id="RequestConfirmed" name="Request confirmed" />
+    <sequenceFlow id="Flow_Received" sourceRef="RequestReceived" targetRef="SelectRoute" />
+    <sequenceFlow id="Flow_ToCallLatest" sourceRef="SelectRoute" targetRef="CallLatest" />
+    <sequenceFlow id="Flow_CallLatestReturned" sourceRef="CallLatest" targetRef="MergeCalls" />
+    <sequenceFlow id="Flow_ToCallVersionOne" sourceRef="SelectRoute" targetRef="CallVersionOne">
+      <conditionExpression xsi:type="tFormalExpression">${route == 'version-one'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_CallVersionOneReturned" sourceRef="CallVersionOne" targetRef="MergeCalls" />
+    <sequenceFlow id="Flow_ToCallTagStable" sourceRef="SelectRoute" targetRef="CallTagStable">
+      <conditionExpression xsi:type="tFormalExpression">${route == 'tag-stable'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_CallTagStableReturned" sourceRef="CallTagStable" targetRef="MergeCalls" />
+    <sequenceFlow id="Flow_ToCallDeployment" sourceRef="SelectRoute" targetRef="CallDeployment">
+      <conditionExpression xsi:type="tFormalExpression">${route == 'deployment'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_CallDeploymentReturned" sourceRef="CallDeployment" targetRef="MergeCalls" />
+    <sequenceFlow id="Flow_Merged" sourceRef="MergeCalls" targetRef="ConfirmCaller" />
+    <sequenceFlow id="Flow_Confirmed" sourceRef="ConfirmCaller" targetRef="RequestConfirmed" />
+  </process>
+</definitions>

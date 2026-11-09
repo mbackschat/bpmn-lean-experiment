@@ -1,0 +1,58 @@
+{
+  "kind": "scenario",
+  "id": "message-start-compositions-request-message-start",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "message-start-compositions-request-intake",
+    "relativePath": "scenarios/open-rows/message-start-compositions/request-intake.bpmn",
+    "sha256": "981eb10637bba98b178ac347649ddcb291ceaeb8a540692213222b401b104b21",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [],
+      "startEvent": "StartRequestMessage",
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "directMessage",
+          "messageId": "Message_RequestReceived"
+        }
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-complete-HandleMessageRequest-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "HandleMessageRequest",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 8.4.11",
+      "BPMN 2.0.2 Clause 10.5.2",
+      "BPMN 2.0.2 Clause 10.5.5",
+      "BPMN 2.0.2 Clause 13.2",
+      "BPMN 2.0.2 Clause 13.5.1",
+      "BPMN 2.0.2 Table 10.84",
+      "BPMN 2.0.2 Table 10.87",
+      "BPMN 2.0.2 Table 10.99"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/deployer/BpmnDeployer.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/runtime/DefaultCorrelationHandler.java"
+    ]
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "kind": "populationScenario",
+  "id": "signal-start-compositions-broadcast-two-versions",
+  "profile": "cibseven-2.2.0",
+  "definitions": [
+    {
+      "definitionRef": "shift-signals-v1",
+      "bpmn": {
+        "id": "signal-start-compositions-shift-signals",
+        "relativePath": "scenarios/open-rows/signal-start-compositions/shift-signals.bpmn",
+        "sha256": "a51e981813a56f37b5224ae75eefe7243388f43ed28d476b5e84bbfe4b30519e",
+        "sourceOverlay": null
+      }
+    },
+    {
+      "definitionRef": "shift-signals-v2",
+      "bpmn": {
+        "id": "signal-start-compositions-shift-signals-v2",
+        "relativePath": "scenarios/open-rows/signal-start-compositions/shift-signals-v2.bpmn",
+        "sha256": "9c4d693c2740338018d7b4a5bc97592c124a06fa0e307cabb3e63e2abcb2b44b",
+        "sourceOverlay": null
+      }
+    }
+  ],
+  "steps": [
+    {
+      "kind": "broadcast",
+      "commandId": "s01-broadcast-shift-closed",
+      "name": "shift-closed",
+      "variables": []
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.5.2",
+      "BPMN 2.0.2 Clause 10.5.4",
+      "BPMN 2.0.2 Clause 10.5.5",
+      "BPMN 2.0.2 Clause 13.2",
+      "BPMN 2.0.2 Clause 13.5.1",
+      "BPMN 2.0.2 Clause 13.5.2",
+      "BPMN 2.0.2 Table 10.84",
+      "BPMN 2.0.2 Table 10.89",
+      "BPMN 2.0.2 Table 10.100"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/cmd/SignalEventReceivedCmd.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/deployer/BpmnDeployer.java"
+    ]
+  }
+}

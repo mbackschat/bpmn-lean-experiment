@@ -1,0 +1,101 @@
+{
+  "kind": "scenario",
+  "id": "message-correlation-criteria-modeled-key-api-criterion",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "message-key-correlation-process",
+    "relativePath": "scenarios/message-key-correlation/process.bpmn",
+    "sha256": "8d16faca66b00378d4ab02189cdd3270143076a46086b46dff68729d90dba086",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    },
+    {
+      "kind": "deliver",
+      "commandId": "s02-deliver-initial",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "MessageCatch_InitialSettlement",
+        "activation": 1
+      },
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "operationMessage",
+          "interfaceId": "Interface_ClearingHouse",
+          "interfaceOperationId": "Operation_ConfirmSettlement",
+          "messageId": "Message_SettlementConfirmed"
+        }
+      },
+      "payload": {
+        "kind": "string",
+        "value": "settlement-42"
+      }
+    },
+    {
+      "kind": "deliver",
+      "commandId": "s03-deliver-correlated",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "MessageCatch_CorrelatedSettlement",
+        "activation": 1
+      },
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "operationMessage",
+          "interfaceId": "Interface_ClearingHouse",
+          "interfaceOperationId": "Operation_ConfirmSettlement",
+          "messageId": "Message_SettlementConfirmed"
+        }
+      },
+      "correlation": [
+        {
+          "target": {
+            "kind": "processVariable",
+            "name": "Property_SettlementReference"
+          },
+          "expected": {
+            "kind": "string",
+            "value": "settlement-42"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "command",
+      "commandId": "s04-complete-UserTask_ReviewSettlement-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_ReviewSettlement",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 8.4.2",
+      "BPMN 2.0.2 Clause 8.4.11",
+      "BPMN 2.0.2 Clause 10.5.4",
+      "BPMN 2.0.2 Table 8.31",
+      "BPMN 2.0.2 Table 8.35",
+      "BPMN 2.0.2 Table 10.99"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/runtime/DefaultCorrelationHandler.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/MessageCorrelationBuilderImpl.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/cmd/AbstractCorrelateMessageCmd.java"
+    ]
+  }
+}

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             id="Definitions_TimerAndMessageStart" targetNamespace="urn:bpmn-lean:scenarios:timer-start-forms:timer-and-message-start">
+  <message id="Message_BatchReady" name="batch-ready" />
+  <process id="Process_TimedOrAnnounced" name="Review a batch an hour after deployment or when announced" isExecutable="true">
+    <startEvent id="StartOnTimer" name="An hour after deployment">
+      <timerEventDefinition id="StartOnTimer_Timer">
+        <timeDuration xsi:type="tFormalExpression">PT1H</timeDuration>
+      </timerEventDefinition>
+    </startEvent>
+    <startEvent id="StartOnMessage" name="Batch announced">
+      <messageEventDefinition id="StartOnMessage_Message" messageRef="Message_BatchReady" />
+    </startEvent>
+    <userTask id="HandleTimedBatch" name="Handle the timed batch" />
+    <userTask id="HandleAnnouncedBatch" name="Handle the announced batch" />
+    <endEvent id="TimedBatchHandled" name="Timed batch handled" />
+    <endEvent id="AnnouncedBatchHandled" name="Announced batch handled" />
+    <sequenceFlow id="Flow_TimerStarted" sourceRef="StartOnTimer" targetRef="HandleTimedBatch" />
+    <sequenceFlow id="Flow_MessageStarted" sourceRef="StartOnMessage" targetRef="HandleAnnouncedBatch" />
+    <sequenceFlow id="Flow_TimedHandled" sourceRef="HandleTimedBatch" targetRef="TimedBatchHandled" />
+    <sequenceFlow id="Flow_AnnouncedHandled" sourceRef="HandleAnnouncedBatch" targetRef="AnnouncedBatchHandled" />
+  </process>
+</definitions>
