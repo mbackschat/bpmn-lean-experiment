@@ -12,6 +12,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Objects;
 import org.bpmnlean.cibseven.CibSevenCommandExecutor.Execution;
 import org.bpmnlean.cibseven.ScenarioDiagnosticsProtocol.CleanupProjection;
@@ -65,6 +66,8 @@ final class CibSevenEngineScenarioRunner implements AutoCloseable {
   private final ProcessEngineConfigurationImpl configuration;
   private final PvmDefinitionProjector pvmProjector;
   private final CibSevenScriptedEffect effects;
+  private final CibSevenEngineBundleFactory.ScenarioIds ids;
+  private final Map<String, Long> bootTables;
   private final boolean incidentCreationEnabled;
   private final long startupNanos;
   private boolean closed;
@@ -76,6 +79,8 @@ final class CibSevenEngineScenarioRunner implements AutoCloseable {
     this.configuration = bundle.configuration();
     this.pvmProjector = new PvmDefinitionProjector();
     this.effects = bundle.effects();
+    this.ids = bundle.ids();
+    this.bootTables = processEngine.getManagementService().getTableCount();
     this.incidentCreationEnabled = bundle.incidentCreationEnabled();
     this.startupNanos = bundle.startupNanos();
   }
@@ -108,6 +113,12 @@ final class CibSevenEngineScenarioRunner implements AutoCloseable {
       ScenarioDefinition scenario, Path projectRoot, CibEffectExecutionSchedule effectSchedule)
       throws IOException {
     var validated = scenarioValidator.validate(scenario, projectRoot);
+    // Restarting the identifiers reuses ones an earlier scenario issued, which is sound only on the boot database.
+    var tables = processEngine.getManagementService().getTableCount();
+    if (!tables.equals(bootTables)) {
+      throw new IllegalStateException("The engine database is not in its boot state: " + tables);
+    }
+    ids.restart();
     var options = scenario.declaredOptions();
     var projector =
         new CibSevenStateProjector(
