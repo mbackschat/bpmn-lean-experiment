@@ -51,6 +51,7 @@ verify_runtime() {
   ./scripts/pnpm.sh run build:verification-typescript
   ./scripts/pnpm.sh run test:semantic-core:built
   ./scripts/pnpm.sh run test:kernel
+  ./scripts/pnpm.sh run test:temporal-host
   # Guard 15's TypeScript bounds need node_modules, which only this lane installs.
   node scripts/kernel-build-budget.ts typescript
   ./scripts/pnpm.sh run test:bpmn-source:built
@@ -65,6 +66,7 @@ verify_temporal() {
   ./scripts/pnpm.sh run test:temporal:built:components
   ./scripts/pnpm.sh run test:temporal:built:concurrent
   ./scripts/pnpm.sh run test:temporal:built:hosted
+  ./scripts/pnpm.sh run test:temporal-host:hosted
 }
 
 verify_temporal_serial() {

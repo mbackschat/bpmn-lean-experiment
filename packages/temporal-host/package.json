@@ -1,0 +1,42 @@
+{
+  "name": "@bpmn-lean/temporal-host",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "exports": {
+    "./workflow": {
+      "types": "./dist/workflows.d.ts",
+      "import": "./dist/workflows.js"
+    },
+    "./worker": {
+      "types": "./dist/worker.d.ts",
+      "import": "./dist/worker.js"
+    },
+    "./client": {
+      "types": "./dist/client.d.ts",
+      "import": "./dist/client.js"
+    },
+    "./testing": {
+      "types": "./dist/testing.d.ts",
+      "import": "./dist/testing.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@bpmn-lean/kernel": "workspace:*",
+    "@temporalio/activity": "1.21.0",
+    "@temporalio/client": "1.21.0",
+    "@temporalio/testing": "1.21.0",
+    "@temporalio/worker": "1.21.0",
+    "@temporalio/workflow": "1.21.0"
+  },
+  "devDependencies": {
+    "@bpmn-lean/bpmn-source": "workspace:*"
+  }
+}

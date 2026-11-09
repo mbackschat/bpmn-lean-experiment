@@ -54,6 +54,7 @@
     "build:showcase-platform-ui-quality": "pnpm build:platform-web",
     "build:temporal-client": "pnpm --filter @bpmn-lean/temporal-client... --if-present run build",
     "build:temporal-adapter": "pnpm --filter @bpmn-lean/temporal-testkit... --if-present run build",
+    "build:temporal-host": "pnpm --filter @bpmn-lean/temporal-host... --if-present run build",
     "build:temporal": "pnpm build:temporal-adapter",
     "build:verification-typescript": "pnpm --filter @bpmn-lean/differential... --filter @bpmn-lean/temporal-testkit... --if-present run build",
     "check:semantic-types": "tsc -p packages/semantic-core/tsconfig.type-test.json",
@@ -183,6 +184,8 @@
     "test:temporal:built:concurrent": "node --test --test-concurrency=4 packages/temporal-adapter/testkit/test/*.test.ts",
     "test:temporal:built:hosted": "node --test packages/temporal-adapter/testkit/test/*.temporal-test.ts",
     "test:temporal:built:hosted-serial": "node --test --test-concurrency=1 packages/temporal-adapter/testkit/test/*.temporal-serial-test.ts",
+    "test:temporal-host": "pnpm build:temporal-host && tsc -p packages/temporal-host/tsconfig.test.json && node --test --test-concurrency=1 packages/temporal-host/test/*.test.ts",
+    "test:temporal-host:hosted": "pnpm build:temporal-host && node --test --test-concurrency=1 packages/temporal-host/test/*.temporal-test.ts",
     "test:timer-time-skipping": "pnpm build:temporal-adapter && node packages/temporal-adapter/testkit/calibration/timer-time-skipping.ts"
   },
   "devDependencies": {

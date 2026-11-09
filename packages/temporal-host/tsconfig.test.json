@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": ".",
+    "allowImportingTsExtensions": true,
+    "paths": {
+      "@bpmn-lean/temporal-host/client": ["./src/client.ts"],
+      "@bpmn-lean/temporal-host/testing": ["./src/testing.ts"],
+      "@bpmn-lean/temporal-host/worker": ["./src/worker.ts"],
+      "@bpmn-lean/temporal-host/workflow": ["./src/workflows.ts"]
+    }
+  },
+  "include": ["src/**/*.ts", "test/**/*.ts"]
+}
