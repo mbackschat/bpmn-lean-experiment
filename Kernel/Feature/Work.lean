@@ -133,20 +133,28 @@ def completeUserTask (ctx : Ctx) (_ : Header) (payload : ActivityPayload) (item 
 def reopen (state : State) (id : Nat) (kind : OpenKind) : State :=
   { state with openItems := state.openItems.map fun item => if item.id == id then { item with kind } else item }
 
+/-- What an effect result value no output mapping consumes becomes: the profile's rule for an instance of a
+Multi-Instance Activity, whose CIB execution is the instance's own and ends with it; the OutputSet otherwise, since CIB
+makes a task without mappings no scope and its delegate's local reaches the flow execution that continues past it
+(CIB-EXT-0015, `BpmnParse.java:4797-4814`). -/
+def unconsumed (ctx : Ctx) (envelope : Option Envelope) : ResultValues :=
+  if (envelope.bind (·.multiInstance)).isSome then ctx.program.options.effectResultValues else .outputSet
+
 /-- An effect's result patch is its OutputSet. A BPMN error raises from the Activity with the occurrence as host: it
 writes no outputs (BPMN 2.0.2 §13.3.2) unless the profile maps them on the error path (CIB-EXT-0004, -0009, -0016). A
 technical failure has no BPMN meaning (§13.3.3 defines only a fault) and refuses unless the profile opens an incident
 (CIB-EXT-0013, CIB-CFG-0008). -/
 def effectResult (ctx : Ctx) (item : OpenItem) (outcome : EffectOutcome) (state : State) : Outcome :=
   -- A throw Event's effect has no envelope and so no output mappings (PC-MESSAGE-09).
-  let mappings := (((ctx.program.element? item.element).bind (·.envelope?)).map (·.outputs)).getD []
+  let envelope := (ctx.program.element? item.element).bind (·.envelope?)
+  let mappings := (envelope.map (·.outputs)).getD []
   match outcome with
   | .success patch => do
-    let written ← outputs ctx state.logicalTimeMs ctx.program.options.effectResultValues mappings patch
+    let written ← outputs ctx state.logicalTimeMs (unconsumed ctx envelope) mappings patch
     .ok (state.signal (.complete item.occurrence .outgoing written .outward))
   | .businessFailure code message patch => do
     let written ← match ctx.program.options.errorPathOutputs with
-      | .mapped => outputs ctx state.logicalTimeMs ctx.program.options.effectResultValues mappings patch
+      | .mapped => outputs ctx state.logicalTimeMs (unconsumed ctx envelope) mappings patch
       | .none => if patch.isEmpty then .ok [] else .error (.rejected "error-path-outputs-not-accepted")
     let activation := ((state.occurrence? item.occurrence).map (·.activation)).getD 0
     .ok ((state.signal (.complete item.occurrence .raised written .outward)).signal (.raise (.error code message)

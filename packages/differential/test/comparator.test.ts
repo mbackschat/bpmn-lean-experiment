@@ -140,6 +140,28 @@ test("compares a state's variable scopes between the two kernels only, never aga
   );
 });
 
+test("compares an effect wait's arguments only when neither side is retained CIB evidence (CIB-OP-0013)", () => {
+  const effect = (value: string) => recut([{ ...wait("Task_A", "effect"), input: "effectResult",
+    detail: { kind: "effect", protocol: "p", operation: "o", arguments: value === "" ? [] : [{ name: "order", value: { kind: "string", value } }], failures: 0, send: null } }], null);
+  assert.equal(compareTargetResults(evidence(effect("")), [kernel(effect("O-1"))]).kind, ComparisonKind.Agreement);
+  assert.equal(compareTargetResults(kernel(effect("O-1")), [evidence(effect(""))]).kind, ComparisonKind.Agreement);
+  assert.deepEqual(
+    requireDisagreement(compareTargetResults(kernel(effect("O-1")), [{ target: DifferentialTarget.Temporal, result: effect("O-2") }])),
+    { kind: DisagreementKind.ObservationValue, path: "trace[2].openWaits[0].detail.arguments[0].value.value", expected: "O-1", actual: "O-2" },
+  );
+  const failures = effect("");
+  const twice = { ...failures, trace: failures.trace.map((entry) => entry.kind === "state"
+    ? { ...entry, openWaits: [{ ...wait("Task_A", "effect"), input: "effectResult", detail: { kind: "effect", protocol: "p", operation: "o", arguments: [], failures: 1, send: null } }] }
+    : entry) };
+  assert.equal(requireDisagreement(compareTargetResults(evidence(failures), [kernel(twice)])).kind, DisagreementKind.ObservationValue);
+  // The effect an incident wait carries is the failed job's, whose input mappings rolled back with it.
+  const incident = (value: string, failures: number) => recut([{ ...wait("Task_A", "incident"), input: "command",
+    detail: { kind: "incident", effect: { protocol: "p", operation: "o", arguments: value === "" ? [] : [{ name: "order", value: { kind: "string", value } }], failures, send: null }, generation: 1, cancellable: true } }], null);
+  assert.equal(compareTargetResults(evidence(incident("", 1)), [kernel(incident("O-1", 1))]).kind, ComparisonKind.Agreement);
+  assert.equal(requireDisagreement(compareTargetResults(evidence(incident("", 1)), [kernel(incident("O-1", 2))])).kind,
+    DisagreementKind.ObservationValue);
+});
+
 const deployed = { kind: "deployment", outcome: "committed" };
 const state = (status: string, variables: ReadonlyArray<unknown>, openWaits: ReadonlyArray<unknown>) =>
   ({ kind: "state", instanceId: "Instance_1", status, logicalTimeMs: 0, variables, openWaits });

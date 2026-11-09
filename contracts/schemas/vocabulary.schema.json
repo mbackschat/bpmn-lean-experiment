@@ -305,6 +305,7 @@
         "codec.malformed",
         "codec.missingField",
         "codec.unknownField",
+        "compensation.handlerMultiInstance",
         "compensation.handlerWork",
         "compensation.implicit",
         "compensation.recursive",

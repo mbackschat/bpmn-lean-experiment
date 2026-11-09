@@ -105,6 +105,8 @@ def marks (program : Program) (key : OccurrenceKey) : Bool × Bool :=
   | some envelope =>
     match key.role, envelope.multiInstance with
     | .multiInstanceBody, _ => (envelope.asyncBefore, envelope.asyncAfter)
+    -- CIB skips loop marks on a compensation handler (`BpmnParse.java:2416`); admission refuses a Multi-Instance
+    -- handler (`compensation.handlerMultiInstance`).
     | .element, some loop => (loop.asyncBefore, loop.asyncAfter)
     | .element, none => (envelope.asyncBefore, envelope.asyncAfter)
 

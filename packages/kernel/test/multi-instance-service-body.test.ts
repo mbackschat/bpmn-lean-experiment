@@ -29,6 +29,8 @@ type Shape = Readonly<{
   failingSibling?: boolean;
   /** An Exclusive Gateway whose two conditions are false follows the loop. */
   failingAfter?: boolean;
+  /** `T` has no loop characteristics. */
+  plain?: boolean;
 }>;
 
 /**
@@ -51,7 +53,7 @@ function program(shape: Shape = {}): Json {
       payload: {
         work: { service: { payload: { protocol: "urn:p", operation: "urn:o" } } },
         envelope: {
-          incoming: ["To_T"], outgoing: [outOf], inputs: [], outputs: [], boundaries: [], multiInstance: loop,
+          incoming: ["To_T"], outgoing: [outOf], inputs: [], outputs: [], boundaries: [], multiInstance: shape.plain === true ? null : loop,
           compensationHandler: null, defaultFlow: null, asyncBefore: false, asyncAfter: false, ...shape.envelope,
         },
       },
@@ -154,6 +156,12 @@ const patched = { ...result(1), outcome: { kind: "success", outputs: [{ name: "r
 test("an effect result carrying a value the empty instance OutputSet does not declare is rejected", () => {
   assert.deepEqual(journey(run(program({ mode: "sequential" }), [start(items("a")), patched])),
     [["start", "committed", [1]], ["result-1", "rejected", [1]]]);
+});
+
+test("under activity-local results a Service Task that is no instance still rejects a value no mapping consumes", () => {
+  // CIB makes such a task no scope, so its delegate's local reaches the continuing flow execution (CIB-EXT-0015).
+  const trace = run(program({ plain: true, resultValues: "activityLocals" }), [start(items("a")), patched]);
+  assert.deepEqual(journey(trace), [["start", "committed", [1]], ["result-1", "rejected", [1]]]);
 });
 
 test("under activity-local results an effect result value no mapping consumes ends with its instance", () => {

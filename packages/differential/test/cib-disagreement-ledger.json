@@ -276,63 +276,13 @@
   {
     "evidence": "scenarios/open-rows/automation-business-error-routing/route-rejected-unmatched-code.cibseven-evidence.json",
     "owners": [
-      "CIB-LIM-0006",
-      "PC-DATA-05"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/automation-business-error-routing/route-rejected-with-payload.cibseven-evidence.json",
-    "owners": [
-      "PC-DATA-05"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/automation-business-error-routing/route-rejected-without-payload.cibseven-evidence.json",
-    "owners": [
-      "PC-DATA-05"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/automation-business-error-routing/route-success.cibseven-evidence.json",
-    "owners": [
-      "PC-DATA-05"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/automation-business-error-routing/scope-ancestor-handler.cibseven-evidence.json",
-    "owners": [
-      "PC-DATA-05"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/automation-business-error-routing/scope-inner-handler.cibseven-evidence.json",
-    "owners": [
-      "PC-DATA-05"
+      "CIB-LIM-0006"
     ]
   },
   {
     "evidence": "scenarios/open-rows/automation-business-error-routing/scope-non-ancestor-after-completion.cibseven-evidence.json",
     "owners": [
-      "CIB-LIM-0006",
-      "PC-DATA-05"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/automation-business-error-routing/scope-unmatched-code.cibseven-evidence.json",
-    "owners": [
-      "PC-DATA-05"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/automation-handler-reuse/called-effect.cibseven-evidence.json",
-    "owners": [
-      "PC-AUTO-01"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/automation-handler-reuse/captured-inputs-after-change.cibseven-evidence.json",
-    "owners": [
-      "PC-AUTO-01"
+      "CIB-LIM-0006"
     ]
   },
   {
@@ -355,12 +305,6 @@
   },
   {
     "evidence": "scenarios/open-rows/automation-incident-composition/called-incident-cancel.cibseven-evidence.json",
-    "owners": [
-      "PC-AUTO-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/automation-incident-composition/called-incident-retry.cibseven-evidence.json",
     "owners": [
       "PC-AUTO-03"
     ]
@@ -1096,7 +1040,7 @@
   {
     "evidence": "scenarios/open-rows/error-esp-catch-variables/local-shadow-caught.cibseven-evidence.json",
     "owners": [
-      "PC-DATA-05"
+      "PC-DATA-04"
     ]
   },
   {
@@ -2654,24 +2598,6 @@
     ]
   },
   {
-    "evidence": "scenarios/open-rows/parallel-region-compositions/order-fulfilment-checks-first-reversed.cibseven-evidence.json",
-    "owners": [
-      "PC-CF-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/parallel-region-compositions/order-fulfilment-pick-between-checks.cibseven-evidence.json",
-    "owners": [
-      "PC-CF-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/parallel-region-compositions/order-fulfilment-pick-first.cibseven-evidence.json",
-    "owners": [
-      "PC-CF-03"
-    ]
-  },
-  {
     "evidence": "scenarios/open-rows/region-interruption-subtree/abort-both-regions-in-turn.cibseven-evidence.json",
     "owners": [
       "PC-MI-12",
@@ -2759,43 +2685,7 @@
     ]
   },
   {
-    "evidence": "scenarios/open-rows/send-task-configured-send/send-completes.cibseven-evidence.json",
-    "owners": [
-      "PC-AUTO-04"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/send-task-configured-send/send-duplicate-result.cibseven-evidence.json",
-    "owners": [
-      "PC-AUTO-04"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/send-task-configured-send/send-rejected.cibseven-evidence.json",
-    "owners": [
-      "PC-AUTO-04"
-    ]
-  },
-  {
     "evidence": "scenarios/open-rows/send-task-configured-send/send-result-with-output.cibseven-evidence.json",
-    "owners": [
-      "PC-AUTO-04"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/send-task-configured-send/send-snapshot-after-change.cibseven-evidence.json",
-    "owners": [
-      "PC-AUTO-04"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/send-task-configured-send/send-transport-failure.cibseven-evidence.json",
-    "owners": [
-      "PC-AUTO-04"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/send-task-configured-send/send-wrong-occurrence-result.cibseven-evidence.json",
     "owners": [
       "PC-AUTO-04"
     ]

@@ -186,8 +186,10 @@ export function catchEvent(subscription: Subscription): string | null {
  * `transactionHost` says whether the boundary hangs on a Transaction. An Error boundary always interrupts (BPMN 2.0.2
  * Table 10.90) (PC-ERROR-01); a Cancel boundary always interrupts and hangs only on a Transaction (Table 10.90, §10.3.5;
  * `BpmnParse#parseBoundaryCancelEventDefinition`) (PC-TX-02). `seen` holds the codes of the host's Error boundaries
- * before this one, and an admitted Error boundary adds its own: two with one code have no selected order, since CIB
- * takes the first in document order (`BpmnParse:3646`), which BPMN 2.0.2 §10.5.6 does not settle (PC-ERROR-01).
+ * before this one, and an admitted Error boundary adds its own. Two with one code are refused: BPMN 2.0.2 §10.5.6
+ * allows one interrupting handler per Event Declaration and states no precedence between two declarations of one code,
+ * so the kernel restricts a host to one boundary per code, and CIB's first in document order (`BpmnParse:3646`) is not
+ * adopted (PC-ERROR-01).
  */
 function boundary(variables: ErrorCatchVariables, transactionHost: boolean, seen: Set<string>, attached: Boundary): string | null {
   const refused = outputs(attached.subscription);

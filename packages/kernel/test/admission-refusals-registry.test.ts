@@ -7,8 +7,8 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
-  activity, append, base, conditionOn, definitionRef, foreign, mapping, receiveWork, refusalOf, refusalTests, replace, scriptWork,
-  sendWork, task, userWork, variable, withOptions,
+  activity, append, base, conditionOn, definitionRef, foreign, loop, mapping, receiveWork, refusalOf, refusalTests, replace,
+  scriptWork, sendWork, serviceWork, task, userWork, variable, withOptions,
 } from "./admission-refusal-support.ts";
 import type { Json, Row } from "./admission-refusal-support.ts";
 
@@ -33,6 +33,13 @@ export const rows: readonly Row[] = [
     description: "a compensation handler that waits for a Message",
     mutate: handledBy(handler(receiveWork())),
     control: handledBy(handler("manual")),
+  },
+  {
+    // CIB skips a compensation handler's loop marks (`BpmnParse.java:2416`), which `Step.marks` would read.
+    code: "compensation.handlerMultiInstance",
+    description: "a compensation handler with Multi-Instance loop characteristics",
+    mutate: handledBy(handler(serviceWork(), { multiInstance: loop({ outputDataItem: null }) })),
+    control: handledBy(handler(serviceWork())),
   },
   {
     code: "process.definition.binding",

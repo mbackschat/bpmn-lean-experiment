@@ -74,6 +74,12 @@ export type Comparison = Agreement | Disagreement;
 /** Both targets transcribe the same kernel, so only they share the kernel's stable codes and variable scopes. */
 const kernelTargets: ReadonlySet<DifferentialTarget> = new Set([DifferentialTarget.Kernel, DifferentialTarget.KernelTs]);
 
+/**
+ * What two targets both observe beyond the shared canonical result: the kernel-only fields when both are kernels, and an
+ * effect wait's arguments unless one is retained CIB evidence (CIB-OP-0013).
+ */
+type Observed = Readonly<{ kernelFields: boolean; effectArguments: boolean }>;
+
 type OpenWaitKey = readonly [string, string, number, string];
 
 function openWaitKey(wait: unknown): OpenWaitKey {
@@ -95,23 +101,36 @@ function compareOpenWaits(left: unknown, right: unknown): number {
  * kernel-internal, and a state's non-root variable `scopes`, beyond the CIB Seven projection's observation boundary.
  * A target without them, retained CIB Seven evidence among them, omits them.
  */
-function comparable(observation: unknown, kernels: boolean): unknown {
+function comparable(observation: unknown, observed: Observed): unknown {
   if (!isJsonRecord(observation)) return observation;
   const { code, scopes, ...rest } = observation;
-  const kept: Readonly<Record<string, unknown>> = kernels
+  const kept: Readonly<Record<string, unknown>> = observed.kernelFields
     ? { ...rest, ...(code === undefined ? {} : { code }), ...(scopes === undefined ? {} : { scopes }) }
     : rest;
   const waits = kept["openWaits"];
-  return Array.isArray(waits) ? { ...kept, openWaits: waits.map(comparableWait).sort(compareOpenWaits) } : kept;
+  return Array.isArray(waits)
+    ? { ...kept, openWaits: waits.map((wait) => comparableWait(wait, observed)).sort(compareOpenWaits) }
+    : kept;
 }
 
 /**
  * A Human Task's candidate users and groups are multisets: CIB Seven lists its candidate identity links in no stable
- * order (two runs of one scenario in one engine differ), so the order is no semantic claim.
+ * order (two runs of one scenario in one engine differ), so the order is no semantic claim. An effect wait's arguments,
+ * and those of the effect an incident wait carries, are left out against retained CIB evidence, which cannot observe
+ * them before the continuation job runs the input mappings, nor after a failed job rolled them back (CIB-OP-0013).
  */
-function comparableWait(wait: unknown): unknown {
-  if (!isJsonRecord(wait) || !isJsonRecord(wait["detail"]) || wait["detail"]["kind"] !== "userTask") return wait;
+function comparableWait(wait: unknown, observed: Observed): unknown {
+  if (!isJsonRecord(wait) || !isJsonRecord(wait["detail"])) return wait;
   const detail = wait["detail"];
+  if (detail["kind"] === "effect" && !observed.effectArguments) {
+    const { arguments: _unobserved, ...observable } = detail;
+    return { ...wait, detail: observable };
+  }
+  if (detail["kind"] === "incident" && isJsonRecord(detail["effect"]) && !observed.effectArguments) {
+    const { arguments: _unobserved, ...observable } = detail["effect"];
+    return { ...wait, detail: { ...detail, effect: observable } };
+  }
+  if (detail["kind"] !== "userTask") return wait;
   const sorted = (list: unknown) => Array.isArray(list) ? [...list].map(String).sort(compareCanonicalStrings) : list;
   return {
     ...wait,
@@ -122,7 +141,7 @@ function comparableWait(wait: unknown): unknown {
 function compareScenarioResults(
   reference: CanonicalResult,
   candidate: CanonicalResult,
-  kernels: boolean,
+  observed: Observed,
 ): ScenarioDisagreement | null {
   const outcomeDifference = firstValueDisagreement(
     reference.outcome,
@@ -158,8 +177,8 @@ function compareScenarioResults(
       };
     }
     const observationDifference = firstValueDisagreement(
-      comparable(expectedObservation, kernels),
-      comparable(actualObservation, kernels),
+      comparable(expectedObservation, observed),
+      comparable(actualObservation, observed),
       `trace[${index}]`,
     );
     if (observationDifference !== null) {
@@ -182,7 +201,11 @@ export function compareTargetResults(
     const disagreement = compareScenarioResults(
       reference.result,
       candidate.result,
-      kernelTargets.has(reference.target) && kernelTargets.has(candidate.target),
+      {
+        kernelFields: kernelTargets.has(reference.target) && kernelTargets.has(candidate.target),
+        effectArguments: reference.target !== DifferentialTarget.RetainedCibEvidence &&
+          candidate.target !== DifferentialTarget.RetainedCibEvidence,
+      },
     );
     if (disagreement !== null) {
       return {

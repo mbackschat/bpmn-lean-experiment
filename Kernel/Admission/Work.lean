@@ -25,10 +25,10 @@ def mapsData : Work → Bool
   | .rule _ => false
   | .call _ => false
 
-/-- The work one instance of a Multi-Instance Activity may do, `some submits` when it may and `submits` when its
-completion submits the loop's output data item: a User Task does; a Service Task's effect result is the empty OutputSet,
-since a Multi-Instance Activity has no mappings (PC-MI-02). The Multi-Instance shape itself is admitted by
-`Kernel.Admission.MultiInstance`. -/
+/-- The work one instance of a Multi-Instance Activity may do: `some submits`, where `submits` says whether its
+completion submits the loop's output data item, or `none` for work no instance may do. A User Task submits it; a
+Service Task's effect result is the empty OutputSet, since a Multi-Instance Activity has no mappings (PC-MI-02). The
+Multi-Instance shape itself is admitted by `Kernel.Admission.MultiInstance`. -/
 def instanceBody : Work → Option Bool
   | .user _ => some true
   | .service _ => some false

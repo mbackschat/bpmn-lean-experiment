@@ -57,6 +57,7 @@ No register entry governs compensation or Transactions; every compensation accou
 | `activity.compensationHandler` | a handler on anything but a single User or Service Task, or on a Multi-Instance Activity | PC-COMPENSATION-03 |
 | `activity.compensationHandler.input` | a handler with input mappings | PC-COMPENSATION-04 |
 | `compensation.handlerWork` | a handler whose work cannot begin without a token (anything but none, manual, User or Service work) | PC-COMPENSATION-04 |
+| `compensation.handlerMultiInstance` | a handler with Multi-Instance loop characteristics, whose asynchronous marks CIB skips (`BpmnParse.java:2416`) | PC-COMPENSATION-04 |
 | `scope.transaction.method` | a Transaction method other than `##Compensate` | PC-TX-01 |
 | `compensation.implicit`, `compensation.recursive` | a compensable Activity whose records a completed Sub-Process would hand to its parent beside a Compensation throw, or to a handler that throws Compensation | BPMN21-403 open; PC-COMPENSATION-03 |
 | `boundary.cancel.host`, `boundary.cancel.nonInterrupting`, `throw.cancel.outsideTransaction` | a Cancel boundary off a Transaction or non-interrupting, a Cancel throw outside a Transaction | §10.5.5; PC-TX-02 |

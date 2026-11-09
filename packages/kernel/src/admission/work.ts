@@ -47,8 +47,8 @@ function mapsData(work: Work): boolean {
 
 /**
  * The work one instance of a Multi-Instance Activity may do: whether its completion submits the loop's output data
- * item, `null` for work no instance may do. A User Task does; a Service Task's effect result is the empty OutputSet,
- * since a Multi-Instance Activity has no mappings (PC-MI-02). The Multi-Instance shape itself is admitted by
+ * item, or `null` for work no instance may do. A User Task submits it; a Service Task's effect result is the empty
+ * OutputSet, since a Multi-Instance Activity has no mappings (PC-MI-02). The Multi-Instance shape itself is admitted by
  * `admission/multi-instance.ts`.
  */
 export function instanceBody(work: Work): boolean | null {

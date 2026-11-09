@@ -170,6 +170,7 @@ function marks(program: Program, key: OccurrenceKey): readonly [boolean, boolean
   const found = programElement(program, key.element);
   const envelope = found === null ? null : elementEnvelope(found);
   if (envelope === null) return [false, false];
+  // CIB skips loop marks on a compensation handler (`BpmnParse.java:2416`); admission refuses a Multi-Instance handler.
   const loop = key.role === ActivationRole.Element ? envelope.multiInstance : null;
   return loop === null ? [envelope.asyncBefore, envelope.asyncAfter] : [loop.asyncBefore, loop.asyncAfter];
 }

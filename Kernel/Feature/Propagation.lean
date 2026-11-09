@@ -24,8 +24,8 @@ their scope occurrence to `Kernel.Feature.Compensation` through `Signal.compensa
 handlers have completed.
 
 An Error that finds no catcher does what the profile selects (`UnhandledError`): the standards reading fails the
-process instance, CIB ends only the throwing path, which the thrower's own completion already did. An Escalation or a
-Cancel that finds no catcher has no selected meaning.
+process instance, CIB ends only the throwing path, which the thrower's own completion already did, and is refused inside
+a Multi-Instance or called instance. An Escalation or a Cancel that finds no catcher has no selected meaning.
 -/
 
 public section
@@ -61,6 +61,20 @@ def endsInstanceWithOutputs (ctx : Ctx) (origin : Origin) (state : State) : Bool
   let outputs := (((ctx.program.element? origin.element).bind (·.envelope?)).map (·.outputs)).getD []
   !outputs.isEmpty && state.instanceRoot origin.scope == origin.scope && state.idle origin.scope
 
+/-- Refuse an uncaught Error whose path lies inside a Multi-Instance instance or a called instance, walking out from
+`current` to the root. What CIB's `execution.end(true)` does to either enclosing instance is PC-ERROR-03's to settle
+(CIB-INT-0013's boundary). -/
+def enclosingInstances (ctx : Ctx) (state : State) : Nat → ScopeOccurrenceId → Outcome
+  | 0, _ => .ok state
+  | fuel + 1, current =>
+    if ctx.scopeRole state current == .multiInstanceInstance then
+      .error (.unsupported "unhandled-error-leaves-multi-instance-instance") -- dynamic-only: where its thrower runs
+    else if state.calledRoot current then
+      .error (.unsupported "unhandled-error-leaves-called-instance") -- dynamic-only: where its thrower runs
+    else match (state.scopes.find? (·.id == current)).bind (·.parent) with
+      | some parent => enclosingInstances ctx state fuel parent
+      | none => .ok state
+
 /-- An Error no catcher takes. BPMN 2.0.2 Table 10.88 leaves the outcome unspecified, "a common one being termination of
 the Process instance": `failsInstance` ends the instance failed, naming the thrower. `endsThrowingPath` is CIB's
 `execution.end(true)` (`BpmnExceptionHandler#propagateError`, CIB-INT-0013): the thrower's completion already ended its
@@ -68,7 +82,8 @@ path, and the instance goes on or completes as what remains says. -/
 def unhandledError (ctx : Ctx) (code : String) (message : Option String) (origin : Origin) (state : State) : Outcome :=
   match ctx.program.options.unhandledError with
   | .failsInstance => .ok (state.signal (.endInstance .failed (some { code, message, occurrence := trigger state origin })))
-  | .endsThrowingPath =>
+  | .endsThrowingPath => do
+    let state ← enclosingInstances ctx state (state.scopes.length + 1) origin.scope
     if !endsInstanceWithOutputs ctx origin state then .ok state
     else .error (.unsupported "unhandled-error-ends-instance-with-outputs") -- dynamic-only: whether its path is the last
 
@@ -92,16 +107,20 @@ def writeCaught (scope : ScopeOccurrenceId) (writes : List (String × Value)) (s
   if writes.isEmpty then state else state.signal (.write scope writes .outward)
 
 /-- Under `ErrorPathOutputs.mapped` a Scope an Error boundary interrupts writes its output mappings, after the catch
-variables: CIB runs them as it destroys the Scope (`ExecutionEntity.destroy`, `OutputParameter.execute`,
-CIB-EXT-0016). -/
-def interruptedOutputs (ctx : Ctx) (occurrence : ScopeOccurrence) (parent : ScopeOccurrenceId) (state : State) :
-    Outcome :=
+variables `caught`: CIB sets those on the Scope's execution and then runs the mappings as it destroys the Scope
+(`BpmnExceptionHandler#propagateError:146-154`, `ExecutionEntity.destroy`, `OutputParameter.execute`, CIB-EXT-0016).
+The mappings are evaluated before the queued write of `caught` applies, so they read `caught` first: that write goes
+outward from the Scope, which leaves each caught value the one visible from it. -/
+def interruptedOutputs (ctx : Ctx) (occurrence : ScopeOccurrence) (parent : ScopeOccurrenceId)
+    (caught : List (String × Value)) (state : State) : Outcome :=
   let mappings := (((occurrence.element.bind ctx.program.element?).bind (·.scope?)).map (·.2.envelope.outputs)).getD []
   match ctx.program.options.errorPathOutputs with
   | .mapped =>
     if mappings.isEmpty then .ok state
-    else (ctx.requireMappings (state.evalContext occurrence.id) mappings).map fun outputs =>
-      state.signal (.write parent outputs .outward)
+    else
+      let context := state.evalContext occurrence.id
+      (ctx.requireMappings { context with variables := caught ++ context.variables } mappings).map fun outputs =>
+        state.signal (.write parent outputs .outward)
   | .none => .ok state
 
 /-- Leave `occurrence`, held in `parent`, through its caught boundary. A Cancel boundary on a Transaction first
@@ -112,7 +131,8 @@ def leaveOccurrence (ctx : Ctx) (raised : Raised) (origin : Origin) (occurrence 
     (parent : ScopeOccurrenceId) (boundary : Boundary) (writes : List (String × Value)) (state : State) : Outcome :=
   let caught := writeCaught occurrence.id writes state
   match raised with
-  | .error _ _ => (interruptedOutputs ctx occurrence parent caught).map (boundary.fire occurrence.occurrence none parent [])
+  | .error _ _ =>
+    (interruptedOutputs ctx occurrence parent writes caught).map (boundary.fire occurrence.occurrence none parent [])
   | .escalation _ => .ok (boundary.fire occurrence.occurrence none parent [] caught)
   | .cancel =>
     let thrown := trigger state origin

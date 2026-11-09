@@ -23,6 +23,7 @@ import {
   elementEnvelope,
   programElement,
   type ActivityPayload,
+  type Envelope,
   type Header,
   type Mapping,
   type MultiInstance,
@@ -247,6 +248,16 @@ function reopen(state: State, id: number, kind: OpenKind): State {
 }
 
 /**
+ * What an effect result value no output mapping consumes becomes: the profile's rule for an instance of a Multi-Instance
+ * Activity, whose CIB execution is the instance's own and ends with it; the OutputSet otherwise, since CIB makes a task
+ * without mappings no scope and its delegate's local reaches the flow execution that continues past it (CIB-EXT-0015,
+ * `BpmnParse.java:4797-4814`).
+ */
+function unconsumed(ctx: Ctx, envelope: Envelope | null): ResultValues {
+  return envelope === null || envelope.multiInstance === null ? ResultValues.OutputSet : ctx.program.options.effectResultValues;
+}
+
+/**
  * An effect's result patch is its OutputSet. A BPMN error raises from the Activity with the occurrence as host: it
  * writes no outputs (BPMN 2.0.2 §13.3.2) unless the profile maps them on the error path (CIB-EXT-0004, -0009, -0016). A
  * technical failure has no BPMN meaning (§13.3.3 defines only a fault) and refuses unless the profile opens an incident
@@ -255,15 +266,16 @@ function reopen(state: State, id: number, kind: OpenKind): State {
 export function effectResult(ctx: Ctx, item: OpenItem, outcome: EffectOutcome, state: State): Outcome {
   // A throw Event's effect has no envelope and so no output mappings (PC-MESSAGE-09).
   const element = programElement(ctx.program, item.element);
-  const mappings = (element === null ? null : elementEnvelope(element))?.outputs ?? [];
+  const envelope = element === null ? null : elementEnvelope(element);
+  const mappings = envelope?.outputs ?? [];
   switch (outcome.tag) {
     case EffectOutcomeTag.Success: {
-      const written = outputs(ctx, state.logicalTimeMs, ctx.program.options.effectResultValues, mappings, outcome.outputs);
+      const written = outputs(ctx, state.logicalTimeMs, unconsumed(ctx, envelope), mappings, outcome.outputs);
       if (!written.ok) return failedWith(written.failure);
       return committed(signal(state, completeSignal(item.occurrence, leaveOutgoing, written.value, WriteRule.Outward)));
     }
     case EffectOutcomeTag.BusinessFailure: {
-      const written = errorPathWrites(ctx, state, mappings, outcome.outputs);
+      const written = errorPathWrites(ctx, state, unconsumed(ctx, envelope), mappings, outcome.outputs);
       if (!written.ok) return failedWith(written.failure);
       const activation = occurrenceOf(state, item.occurrence)?.activation ?? 0;
       const completed = signal(state, completeSignal(item.occurrence, leaveRaised, written.value, WriteRule.Outward));
@@ -279,10 +291,16 @@ export function effectResult(ctx: Ctx, item: OpenItem, outcome: EffectOutcome, s
   return assertNever(outcome);
 }
 
-function errorPathWrites(ctx: Ctx, state: State, mappings: readonly Mapping[], patch: readonly Binding[]): Result<readonly Binding[]> {
+function errorPathWrites(
+  ctx: Ctx,
+  state: State,
+  rule: ResultValues,
+  mappings: readonly Mapping[],
+  patch: readonly Binding[],
+): Result<readonly Binding[]> {
   switch (ctx.program.options.errorPathOutputs) {
     case ErrorPathOutputs.Mapped:
-      return outputs(ctx, state.logicalTimeMs, ctx.program.options.effectResultValues, mappings, patch);
+      return outputs(ctx, state.logicalTimeMs, rule, mappings, patch);
     case ErrorPathOutputs.None:
       return patch.length === 0 ? committed([]) : failed(FailureTag.Rejected, "error-path-outputs-not-accepted");
   }

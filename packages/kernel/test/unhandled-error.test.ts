@@ -12,8 +12,8 @@ import { decodeProgram, hooks, step, stimulusFromJson } from "@bpmn-lean/kernel"
 import type { State } from "@bpmn-lean/kernel";
 
 import {
-  activity, append, base, boundary, end, errorTrigger, flow, gateway, mapping, serviceWork, task, userWork, variable,
-  withFlows, withOptions, wired,
+  activity, append, base, boundary, callWork, definitionRef, end, errorTrigger, flow, gateway, loop, mapping, serviceWork, start,
+  task, userWork, variable, withFlows, withOptions, wired,
 } from "./admission-refusal-support.ts";
 import type { Json } from "./admission-refusal-support.ts";
 
@@ -83,6 +83,43 @@ test("under CIB's reading an uncaught Error ends only its path, and the instance
 test("under CIB's reading the last path of the instance ending with the thrower's outputs is refused", () => {
   assert.deepEqual(failUnmatched(withOptions(thrower(reservation)(base()), cib), result),
     { ok: false, failure: { tag: "unsupported", code: "unhandled-error-ends-instance-with-outputs" } });
+});
+
+/** Start with `items`, then fail the effect of `T` in `instance` with the code `OTHER`, which no catcher names. */
+function failUnmatchedIn(json: Json, instance: string) {
+  const decoded = decodeProgram(wired(json));
+  assert.ok(decoded.ok, decoded.ok ? "" : decoded.refusal);
+  const items = { name: "items", value: { kind: "stringList", value: ["a", "b"] } };
+  const started = step(hooks, decoded.value, null, stimulus({ kind: "start", instanceId: "I", variables: [items] }));
+  assert.ok(started.ok, JSON.stringify(started));
+  const element = instance === "I" ? "T" : "CT";
+  return step(hooks, decoded.value, started.value, stimulus({
+    kind: "effectResult",
+    occurrence: { processInstanceId: instance, elementId: element, activation: 1 },
+    outcome: { kind: "businessFailure", code: "OTHER", message: "no stock", outputs: [] },
+  }));
+}
+
+// Until PC-ERROR-03 settles what CIB's `execution.end(true)` does to an enclosing Multi-Instance instance or called
+// instance, CIB's reading refuses an uncaught Error whose path lies inside one (CIB-INT-0013's boundary).
+test("under CIB's reading an uncaught Error inside a Multi-Instance instance is refused", () => {
+  for (const mode of ["sequential", "parallel"]) {
+    const program = withOptions(task(activity("T", serviceWork(), {
+      multiInstance: loop({ mode, outputDataItem: null }),
+      boundaries: [boundary("B", errorTrigger({ code: "CAUGHT" }))],
+    }))(base()), cib);
+    assert.deepEqual(failUnmatchedIn(withFlows(program, flow("fb", "B", "E")), "I"),
+      { ok: false, failure: { tag: "unsupported", code: "unhandled-error-leaves-multi-instance-instance" } }, mode);
+  }
+});
+
+test("under CIB's reading an uncaught Error inside a called instance is refused", () => {
+  const called = append(task(activity("T", callWork()))(base()),
+    start("CS", null), activity("CT", serviceWork(), { boundaries: [boundary("CB", errorTrigger({ code: "CAUGHT" }))] }), end("CE"));
+  const program = withFlows({ ...called, processes: [{ definition: definitionRef("Called"), children: ["CS", "CT", "CE"], variables: [] }] },
+    flow("cf1", "CS", "CT"), flow("cf2", "CT", "CE"), flow("cfb", "CB", "CE"));
+  assert.deepEqual(failUnmatchedIn(withOptions(program, cib), "call:1:I:1:T:1"),
+    { ok: false, failure: { tag: "unsupported", code: "unhandled-error-leaves-called-instance" } });
 });
 
 test("an uncaught Error End fails the instance under the standards reading and ends its path under CIB's", () => {

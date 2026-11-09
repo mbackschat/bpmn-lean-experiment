@@ -21,8 +21,8 @@
  * have completed.
  *
  * An Error that finds no catcher does what the profile selects (`UnhandledError`): the standards reading fails the
- * process instance, CIB ends only the throwing path, which the thrower's own completion already did. An Escalation or a
- * Cancel that finds no catcher has no selected meaning.
+ * process instance, CIB ends only the throwing path, which the thrower's own completion already did, and is refused
+ * inside a Multi-Instance or called instance. An Escalation or a Cancel that finds no catcher has no selected meaning.
  */
 import {
   ErrorPathOutputs,
@@ -52,6 +52,7 @@ import {
   SignalTag,
   WriteRule,
   beginRequest,
+  calledRoot,
   clearInside,
   committed,
   completeSignal,
@@ -116,6 +117,26 @@ function endsInstanceWithOutputs(ctx: Ctx, origin: Origin, state: State): boolea
 }
 
 /**
+ * Refuse an uncaught Error whose path lies inside a Multi-Instance instance or a called instance, walking out from
+ * `start` to the root. What CIB's `execution.end(true)` does to either enclosing instance is PC-ERROR-03's to settle
+ * (CIB-INT-0013's boundary).
+ */
+function enclosingInstances(ctx: Ctx, state: State, start: ScopeOccurrenceId): Outcome {
+  let current: ScopeOccurrenceId | null = start;
+  for (let fuel = state.scopes.length + 1; fuel > 0 && current !== null; fuel -= 1) {
+    if (ctx.scopeRole(state, current) === ScopeRole.MultiInstanceInstance) {
+      return failed(FailureTag.Unsupported, "unhandled-error-leaves-multi-instance-instance"); // dynamic-only: where its thrower runs
+    }
+    if (calledRoot(state, current)) {
+      return failed(FailureTag.Unsupported, "unhandled-error-leaves-called-instance"); // dynamic-only: where its thrower runs
+    }
+    const id: ScopeOccurrenceId = current;
+    current = state.scopes.find((scope) => scope.id === id)?.parent ?? null;
+  }
+  return committed(state);
+}
+
+/**
  * An Error no catcher takes. BPMN 2.0.2 Table 10.88 leaves the outcome unspecified, "a common one being termination of
  * the Process instance": `failsInstance` ends the instance failed, naming the thrower. `endsThrowingPath` is CIB's
  * `execution.end(true)` (`BpmnExceptionHandler#propagateError`, CIB-INT-0013): the thrower's completion already ended
@@ -130,9 +151,12 @@ function unhandledError(ctx: Ctx, code: string, message: string | null, origin: 
         status: InstanceStatus.Failed,
         failure: { code, message, occurrence: trigger(state, origin), related: [] },
       }));
-    case UnhandledError.EndsThrowingPath:
+    case UnhandledError.EndsThrowingPath: {
+      const enclosing = enclosingInstances(ctx, state, origin.scope);
+      if (!enclosing.ok) return enclosing;
       if (!endsInstanceWithOutputs(ctx, origin, state)) return committed(state);
       return failed(FailureTag.Unsupported, "unhandled-error-ends-instance-with-outputs"); // dynamic-only: whether its path is the last
+    }
   }
   return assertNever(selected);
 }
@@ -171,17 +195,26 @@ function writeCaught(scope: ScopeOccurrenceId, writes: readonly Binding[], state
 
 /**
  * Under `ErrorPathOutputs.mapped` a Scope an Error boundary interrupts writes its output mappings, after the catch
- * variables: CIB runs them as it destroys the Scope (`ExecutionEntity.destroy`, `OutputParameter.execute`,
- * CIB-EXT-0016).
+ * variables `caught`: CIB sets those on the Scope's execution and then runs the mappings as it destroys the Scope
+ * (`BpmnExceptionHandler#propagateError:146-154`, `ExecutionEntity.destroy`, `OutputParameter.execute`, CIB-EXT-0016).
+ * The mappings are evaluated before the queued write of `caught` applies, so they read `caught` first: that write goes
+ * outward from the Scope, which leaves each caught value the one visible from it.
  */
-function interruptedOutputs(ctx: Ctx, occurrence: ScopeOccurrence, parent: ScopeOccurrenceId, state: State): Outcome {
+function interruptedOutputs(
+  ctx: Ctx,
+  occurrence: ScopeOccurrence,
+  parent: ScopeOccurrenceId,
+  caught: readonly Binding[],
+  state: State,
+): Outcome {
   const element = occurrence.element === null ? null : programElement(ctx.program, occurrence.element);
   const mappings = (element === null ? null : elementScope(element))?.[1].envelope.outputs ?? [];
   const selected = ctx.program.options.errorPathOutputs;
   switch (selected) {
     case ErrorPathOutputs.Mapped: {
       if (mappings.length === 0) return committed(state);
-      const outputs = ctxRequireMappings(ctx, evalContext(state, occurrence.id), mappings);
+      const context = evalContext(state, occurrence.id);
+      const outputs = ctxRequireMappings(ctx, { ...context, variables: [...caught, ...context.variables] }, mappings);
       if (!outputs.ok) return outputs;
       return committed(signal(state, { tag: SignalTag.Write, scope: parent, writes: outputs.value, rule: WriteRule.Outward }));
     }
@@ -210,7 +243,7 @@ function leaveOccurrence(
   const caught = writeCaught(occurrence.id, writes, state);
   switch (raised.tag) {
     case RaisedTag.Error: {
-      const written = interruptedOutputs(ctx, occurrence, parent, caught);
+      const written = interruptedOutputs(ctx, occurrence, parent, writes, caught);
       if (!written.ok) return written;
       return committed(boundaryFire(boundary, occurrence.occurrence, null, parent, [], written.value));
     }

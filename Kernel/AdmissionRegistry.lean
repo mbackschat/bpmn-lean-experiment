@@ -24,6 +24,8 @@ def activityOrigin (program : Program) (header : Header) (payload : ActivityPayl
   let handler := isHandler program header.id
   if handler && !payload.envelope.inputs.isEmpty then some "activity.compensationHandler.input"
   else if handler && !Admission.Work.beginsWithoutToken payload.work then some "compensation.handlerWork"
+  -- CIB skips a compensation handler's loop marks (`BpmnParse.java:2416`), which `Step.marks` would read.
+  else if handler && payload.envelope.multiInstance.isSome then some "compensation.handlerMultiInstance"
   else if Admission.Scopes.implicitChild program header && !Admission.Work.beginsWithoutToken payload.work then
     some "scope.implicitStart"
   else none
