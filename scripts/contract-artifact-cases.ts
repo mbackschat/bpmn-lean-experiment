@@ -51,13 +51,16 @@ export const artifactCases: ReadonlyArray<ArtifactCase> = Object.freeze(
 );
 
 /**
- * Every scenario whose profile names a CIB oracle, with or without evidence yet: the set an evidence production run
- * covers, since a profile that claims an oracle claims it for each scenario it binds.
+ * Every scenario whose profile names a CIB oracle and whose provenance names a CIB revision, with or without evidence
+ * yet: the set an evidence production run covers, since a profile that claims an oracle claims it for each scenario it
+ * binds. A `not-applicable` revision declares a standards-only schedule with no CIB counterpart.
  */
 export const oracleEvidenceCases: ReadonlyArray<ArtifactCase> = Object.freeze(
   scenarioRelativePaths
     .filter((scenarioRelativePath) => {
-      const scenario = JSON.parse(readFileSync(path.join(projectRoot, scenarioRelativePath), "utf8")) as { profile: string };
+      const scenario = JSON.parse(readFileSync(path.join(projectRoot, scenarioRelativePath), "utf8")) as
+        { profile: string; provenance: { cibRevision: string } };
+      if (scenario.provenance.cibRevision === "not-applicable") return false;
       const profile = JSON.parse(readFileSync(path.join(projectRoot, "profiles", scenario.profile, "profile.json"), "utf8")) as
         { oracle?: unknown };
       return profile.oracle !== undefined;

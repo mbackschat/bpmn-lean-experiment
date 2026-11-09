@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
+import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
@@ -283,4 +284,23 @@ test("scenario provenance separates absent CIB evidence from a pinned CIB source
     { normativeRefs, cibRevision: "a".repeat(40), cibRefs: [] },
     { normativeRefs, cibRevision: "unknown", cibRefs: [] },
   ]) assert.equal(artifact.validator.validate(schema, provenance), false, JSON.stringify(provenance));
+});
+
+// A scenario's `cibRevision` names the CIB release a runner executes it on, which only a profile's oracle pins; a
+// source-reading snapshot or a retired release leaves the scenario runnable by no oracle (profile consolidation, 3a10a909).
+test("targets every CIB-referencing scenario at an oracle revision of the profile catalog", async () => {
+  const profiles = (await readdir(path.join(projectRoot, "profiles"), { withFileTypes: true }))
+    .filter((entry) => entry.isDirectory()).map((entry) => entry.name);
+  const oracleRevisions = new Set(await Promise.all(profiles.map(async (profile) =>
+    (JSON.parse(await readFile(path.join(projectRoot, "profiles", profile, "profile.json"), "utf8")) as
+      { oracle?: { revision: string } }).oracle?.revision)));
+  const stale: string[] = [];
+  for (const { scenarioRelativePath } of [...artifactCases, ...normativeArtifactCases]) {
+    const { provenance } = JSON.parse(await readFile(path.join(projectRoot, scenarioRelativePath), "utf8")) as
+      { provenance: { cibRevision: string } };
+    if (provenance.cibRevision !== "not-applicable" && !oracleRevisions.has(provenance.cibRevision)) {
+      stale.push(`${scenarioRelativePath}: ${provenance.cibRevision}`);
+    }
+  }
+  assert.deepEqual(stale, []);
 });
