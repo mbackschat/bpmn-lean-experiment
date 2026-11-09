@@ -8,12 +8,15 @@ import java.util.List;
 import java.util.Map;
 import org.bpmnlean.cibseven.ScenarioProtocol.DefinitionRef;
 import org.cibseven.bpm.engine.ProcessEngine;
+import org.cibseven.bpm.engine.impl.bpmn.parser.BpmnParse;
 import org.cibseven.bpm.engine.runtime.ActivityInstance;
 import org.cibseven.bpm.engine.runtime.TransitionInstance;
 import org.cibseven.bpm.model.bpmn.BpmnModelInstance;
+import org.cibseven.bpm.model.bpmn.instance.Activity;
 import org.cibseven.bpm.model.bpmn.instance.BoundaryEvent;
 import org.cibseven.bpm.model.bpmn.instance.EventBasedGateway;
 import org.cibseven.bpm.model.bpmn.instance.FlowNode;
+import org.cibseven.bpm.model.bpmn.instance.MultiInstanceLoopCharacteristics;
 import org.cibseven.bpm.model.bpmn.instance.StartEvent;
 import org.cibseven.bpm.model.bpmn.instance.SubProcess;
 
@@ -29,6 +32,8 @@ import org.cibseven.bpm.model.bpmn.instance.SubProcess;
  * one arming per host activation, which a repeatedly firing non-interrupting subscription would break.
  */
 final class CibSevenOccurrences {
+
+  private static final String LOOP_COUNTER = "loopCounter";
 
   private final ProcessEngine engine;
   private final Map<String, List<String>> ordinals = new HashMap<>();
@@ -142,10 +147,17 @@ final class CibSevenOccurrences {
   }
 
   /**
-   * The activation of an asynchronous continuation that has not begun its activity instance: one more than the
-   * element's begun activations. Two such waits of one element cannot be ordered and fail the projection.
+   * The activation of an asynchronous continuation that has not begun its activity instance. An inner instance of a
+   * Multi-Instance Activity takes its generation order, `loopCounter + 1` (the instance's own sequence number, BPMN
+   * 2.0.2 Table 10.30), because CIB begins an asynchronous instance only when the runner releases its job, so a begin
+   * order would follow the result schedule. Any other element takes one more than its begun activations, and two such
+   * waits of one element cannot be ordered and fail the projection.
    */
-  long pendingActivation(Instance instance, String activityId) {
+  long pendingActivation(Instance instance, String activityId, String executionId) {
+    if (instance.model().getModelElementById(activityId) instanceof Activity activity
+        && activity.getLoopCharacteristics() instanceof MultiInstanceLoopCharacteristics) {
+      return generatedInstanceActivation(instance, activityId, executionId);
+    }
     var waiting = transitionInstances(instance.tree(), activityId);
     if (waiting.size() != 1) {
       throw new IllegalStateException(
@@ -154,6 +166,27 @@ final class CibSevenOccurrences {
     return engine.getHistoryService().createHistoricActivityInstanceQuery()
             .processInstanceId(instance.engineId()).activityId(activityId).count()
         + 1;
+  }
+
+  /**
+   * A later entry of the same body would continue the numbering after every instance an earlier entry generated, and
+   * CIB keeps no history of a generated instance that never began, so a re-entered body fails the projection
+   * (PC-MI-11) rather than guessing its offset.
+   */
+  private long generatedInstanceActivation(Instance instance, String activityId, String executionId) {
+    var entries =
+        engine.getHistoryService().createHistoricActivityInstanceQuery()
+            .processInstanceId(instance.engineId())
+            .activityId(activityId + BpmnParse.MULTI_INSTANCE_BODY_ID_SUFFIX)
+            .count();
+    if (entries != 1) {
+      throw new IllegalStateException(
+          "Generated instances of " + activityId + " cannot be numbered across " + entries + " body entries");
+    }
+    if (!(engine.getRuntimeService().getVariable(executionId, LOOP_COUNTER) instanceof Integer counter)) {
+      throw new IllegalStateException("Generated instance of " + activityId + " has no loopCounter");
+    }
+    return counter + 1L;
   }
 
   /** The element a subscription without an activity instance hangs on; `null` for the process itself. */

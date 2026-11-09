@@ -353,7 +353,7 @@ final class CibSevenOpenWaitProjector {
         || !CibSevenScriptedEffect.HANDLER_BEANS.contains(handler)) {
       throw new IllegalStateException("Task " + task.id() + " has no effect binding in this runner");
     }
-    var activation = occurrences.pendingActivation(instance, task.id());
+    var activation = occurrences.pendingActivation(instance, task.id(), job.getExecutionId());
     projection.effects().add(
         new EffectJob(
             task.id(), activation, protocol, handler, job.getRetries(), executable, job.getDuedate() != null));
