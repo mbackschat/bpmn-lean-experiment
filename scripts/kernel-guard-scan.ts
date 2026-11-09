@@ -1,5 +1,5 @@
 /**
- * The scan vocabulary the kernel guards share (docs/LEAN-KERNEL-REWRITE-PROPOSAL.md#guardrails-against-degradation):
+ * The scan vocabulary the kernel guards share (docs/kernel/ARCHITECTURE-SPEC.md#guardrails-against-degradation):
  * tokenizers for Lean and TypeScript that drop comments and strings, the source tree a guard reads, and the empty-input
  * rule of guard 23: a guard whose input is empty fails, because a renamed directory or type must never read as clean.
  *

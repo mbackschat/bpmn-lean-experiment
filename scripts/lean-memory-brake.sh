@@ -4,8 +4,8 @@
 #
 # Ordinary Lean builds run natively, and macOS has no hard process-tree memory ceiling, so on
 # 2026-10-14 a kernel-reduced conformance module reached a 13 GB footprint and filled the host's swap
-# (docs/PROCESS-ASSESSMENT-LEDGER.md, Finding 78). This is an emergency brake, not a measurement: the
-# memory-bounded measurement rules in docs/CONTRIBUTOR-SETUP-GUIDE.md still own cost evidence.
+# (Finding 78 of the retired process assessment ledger). This is an emergency brake, not a measurement; the
+# Lean build rules in docs/kernel/ENGINEERING-POLICY.md#local-loop own the resource bounds.
 #
 # It sums the physical footprint of the wrapper's descendants every two seconds and, above the limit,
 # records the total in the marker and terminates them. macOS reads `phys_footprint`, which includes

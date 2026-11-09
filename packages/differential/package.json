@@ -14,13 +14,9 @@
   "scripts": {
     "build": "tsc -p tsconfig.json"
   },
-  "dependencies": {
-    "@bpmn-lean/semantic-core": "workspace:*"
-  },
   "devDependencies": {
     "@bpmn-lean/bpmn-source": "workspace:*",
     "@bpmn-lean/kernel": "workspace:*",
-    "@bpmn-lean/temporal-protocol": "workspace:*",
-    "@bpmn-lean/temporal-testkit": "workspace:*"
+    "@bpmn-lean/temporal-host": "workspace:*"
   }
 }

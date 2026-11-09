@@ -1,6 +1,6 @@
 /**
  * The measured half of guard 15 and the growth probe of guard 22
- * (docs/LEAN-KERNEL-REWRITE-PROPOSAL.md#guardrails-against-degradation), for the hosted lanes.
+ * (docs/kernel/ARCHITECTURE-SPEC.md#guardrails-against-degradation), for the hosted lanes.
  *
  * `lean` builds a fresh clone of HEAD and fails on a clean executable build above 3 minutes, a body or interface edit of
  * the largest feature or admission module above 30 seconds, or any single module above 30 seconds. It also proves

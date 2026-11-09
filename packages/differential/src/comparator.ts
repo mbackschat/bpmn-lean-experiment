@@ -1,7 +1,5 @@
-import { compareCanonicalStrings } from "@bpmn-lean/semantic-core";
-
 import type { ValueDisagreement } from "./structural-diff.js";
-import { firstValueDisagreement, isJsonRecord } from "./structural-diff.js";
+import { compareCanonicalStrings, firstValueDisagreement, isJsonRecord } from "./structural-diff.js";
 
 /**
  * A canonical result (`contracts/schemas/canonical-result.schema.json`) as the comparator reads it: the outcome and
@@ -14,7 +12,6 @@ export type CanonicalResult = Readonly<{
 
 export enum DifferentialTarget {
   RetainedCibEvidence = "retainedCibEvidence",
-  CibSeven = "cibSeven",
   Kernel = "kernel",
   KernelTs = "kernelTs",
   Temporal = "temporal",
@@ -96,7 +93,7 @@ function compareOpenWaits(left: unknown, right: unknown): number {
  * The comparable form of one observation. Open waits are sorted by the schema's canonical key, since their order is not
  * a semantic claim. Two fields are compared only when both targets are kernels: a command's or deployment's `code`,
  * kernel-internal, and a state's non-root variable `scopes`, beyond the CIB Seven projection's observation boundary.
- * A target without them, CIB Seven among them, omits them.
+ * A target without them, retained CIB Seven evidence among them, omits them.
  */
 function comparable(observation: unknown, kernels: boolean): unknown {
   if (!isJsonRecord(observation)) return observation;

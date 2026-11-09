@@ -7,110 +7,22 @@ import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
-import { processFindingSections } from "./process-assessment-ledger.ts";
-import { withoutBackticks } from "./markdown-tables.ts";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 
-test("requires source-grounded Product 2 UI/UX decisions before implementation", async () => {
-  const [guide, projectDesign, uiDesign, testingSpec, research, sources, processLedger] =
-    await Promise.all([
-      read("CLAUDE.md"),
-      read("docs/PROJECT-DESIGN.md"),
-      read("docs/BPM-PLATFORM-UI-DESIGN-SPEC.md"),
-      read("docs/PLATFORM-VERIFICATION-POLICY.md"),
-      read("docs/research/BPM-PLATFORM-UI-UX-INFORMATION-ARCHITECTURE-RESEARCH.md"),
-      read("docs/SOURCES.md"),
-      read("docs/PROCESS-ASSESSMENT-LEDGER.md"),
-    ]);
-
-  assert.deepEqual(productUiPreflightViolations({
-    guide,
-    processLedger,
-    projectDesign,
-    research,
-    sources,
-    testingSpec,
-    uiDesign,
-  }), []);
-});
-
-const completeUiPreflight = {
-  guide: "Product 2 UI/UX source preflight. Inspect CIB Seven first before production code.",
-  processLedger: "## Findings\n\n### Finding 1\n\nUI/UX precedent was postponed until after implementation\n\nInstances\n: 2\n\nDisposition\n: `executable guard`\n\nEvidence\n: [preflight](../scripts/ui-quality-boundary.platform-test.ts)\n\n**First observed:** retained UI work\n\n## Update rule\n",
-  projectDesign: "## Source-grounded Product 2 interaction design\nBefore production code, inspect the pristine pinned source and current documentation. Record adopt, deliberately deviate, and exclude decisions. Do not copy source code.",
-  research: "Current 2.2 Process Definition View and Process Instance View. The matching implementation was inspected in the pristine pinned checkout recorded by SOURCES.md#cib-seven.",
-  sources: "CIB Seven Tasklist and Cockpit | Process Definition View | Process Instance View",
-  testingSpec: "The source-grounded UI/UX preflight runs ./scripts/doctor.sh research before the first production edit.",
-  uiDesign: "## Source-grounded design preflight\nBefore production code, inspect current documentation and the pinned source checkout. Record adopt, deliberately deviate, and exclude decisions, then name the acceptance oracle. Do not copy source code.",
-} as const;
-
-test("rejects a UI/UX process that postpones precedent research or leaves deviations unexplained", () => {
-  const complete = completeUiPreflight;
-  assert.deepEqual(productUiPreflightViolations(complete), []);
-  assert.deepEqual(productUiPreflightViolations({
-    ...complete,
-    projectDesign: "## Source-grounded Product 2 interaction design\nLook at a screenshot later.",
-    uiDesign: "## Source-grounded design preflight\nVisual review follows implementation.",
-  }), [
-    "project-design-preflight",
-    "ui-design-preflight",
-  ]);
-});
-
-test("accepts further UI/UX recurrences without duplicating the ledger count", () => {
-  assert.deepEqual(productUiPreflightViolations({
-    ...completeUiPreflight,
-    processLedger: completeUiPreflight.processLedger.replace("Instances\n: 2", "Instances\n: 3"),
-  }), []);
-});
-
-test("binds UI/UX recurrence and executable evidence to the same finding", () => {
-  const ledger = completeUiPreflight.processLedger;
-  for (const invalid of [
-    ledger.replace("UI/UX precedent was postponed until after implementation", "Unrelated finding"),
-    ledger.replace("Instances\n: 2", "Instances\n: 1"),
-    ledger.replace("`executable guard`", "`accepted risk`"),
-    ledger.replace("ui-quality-boundary.platform-test.ts", "unrelated.test.ts"),
-    ledger.replace("[preflight](../scripts/ui-quality-boundary.platform-test.ts)",
-      "ui-quality-boundary.platform-test.ts"),
-    ledger.replace("[preflight](../scripts/ui-quality-boundary.platform-test.ts)",
-      "[unrelated](../scripts/unrelated.test.ts)")
-      .replace("\n## Update rule", "\n### Finding 2\n\nUnrelated finding\n\nInstances\n: 2\n\nDisposition\n: `executable guard`\n\nEvidence\n: [preflight](../scripts/ui-quality-boundary.platform-test.ts)\n\n**First observed:** unrelated work\n\nHistorical table: | 2 | `executable guard` | ui-quality-boundary.platform-test.ts\n\n## Update rule"),
-  ]) {
-    assert.deepEqual(productUiPreflightViolations({
-      ...completeUiPreflight,
-      processLedger: invalid,
-    }), ["process-finding"]);
-  }
-});
-
 test("requires two-sided mutation evidence inside production-backed user journeys", async () => {
   const [
-    testingSpec,
-    uiDesign,
-    humanWorkSpec,
-    processLedger,
     fixedFixtureJourney,
     productionJourney,
     workInbox,
     completionOperation,
   ] = await Promise.all([
-    read("docs/PLATFORM-VERIFICATION-POLICY.md"),
-    read("docs/BPM-PLATFORM-UI-DESIGN-SPEC.md"),
-    read("docs/BPM-PLATFORM-HUMAN-WORK-SPEC.md"),
-    read("docs/PROCESS-ASSESSMENT-LEDGER.md"),
     read("showcase/platform-ui-quality/e2e/ui-quality.spec.ts"),
     read("showcase/m3-human-work/e2e/human-work.spec.ts"),
     read("platform/apps/web/src/work-inbox-panel.tsx"),
     read("platform/apps/web/src/work-completion-operation.ts"),
   ]);
 
-  assert.match(testingSpec, /every user-visible mutation precondition[\s\S]*hold the precondition false[\s\S]*definite HTTP refusal[\s\S]*positive script alone is insufficient/u);
-  assert.match(uiDesign, /production-backed headless-Chromium user journeys/u);
-  assert.match(uiDesign, /false side of every user-visible mutation precondition/u);
-  assert.match(humanWorkSpec, /observe the task as unclaimed with no completion entry point[\s\S]*definite 409 refusal/u);
-  assert.match(processLedger, /mutation invariant was translated into a successful browser script[\s\S]*stale-generation instance[\s\S]*`executable guard`/u);
   assert.match(fixedFixtureJourney, /test\("unclaimed tasks cannot enter the completion flow"/u);
   assert.match(fixedFixtureJourney, /test\("known completion conflicts are not presented as unknown delivery"/u);
   assert.match(workInbox, /cell: \(row\) => <span>\{row\.task\.name \?\? row\.task\.id\.elementId\}<\/span>/u);
@@ -155,7 +67,6 @@ test("keeps Product 2 UI quality outside every Product 1 feedback loop", async (
   const [
     verify,
     hostedVerify,
-    testingSpec,
     workflow,
     showcaseManifest,
     playwrightConfig,
@@ -163,7 +74,6 @@ test("keeps Product 2 UI quality outside every Product 1 feedback loop", async (
     await Promise.all([
       read("scripts/verify.sh"),
       read(".github/workflows/verify.yml"),
-      read("docs/PLATFORM-VERIFICATION-POLICY.md"),
       read(".github/workflows/ui-quality.yml"),
       read("showcase/platform-ui-quality/package.json"),
       read("showcase/platform-ui-quality/playwright.config.ts"),
@@ -198,8 +108,6 @@ test("keeps Product 2 UI quality outside every Product 1 feedback loop", async (
   assert.doesNotMatch(hostedVerify, /test:showcase:m[123]/u);
   assert.doesNotMatch(hostedVerify, /test:platform-m1|test:platform-web/u);
   assert.match(workflow, /test:pre-push:ui/u);
-  assert.match(testingSpec, /Product 2 browser work remains outside `verify\.sh`/u);
-  assert.doesNotMatch(testingSpec, /Linux matrix leg also installs Playwright/u);
 
   const showcase = JSON.parse(showcaseManifest) as Readonly<{
     dependencies?: Readonly<Record<string, string>>;
@@ -251,35 +159,6 @@ test("keeps Product 2 UI quality outside every Product 1 feedback loop", async (
   assert.deepEqual(snapshots, [
     "execution-publication-ui-quality.spec.ts/chromium-1600/process-execution-diagram.png",
   ]);
-});
-
-test("keeps the Product 2 browser contract desktop-only", async () => {
-  const productUiOwners = [
-    "docs/ARCHITECTURE.md",
-    "docs/BPM-PLATFORM-HUMAN-WORK-SPEC.md",
-    "docs/BPM-PLATFORM-INCIDENT-OPERATIONS-SPEC.md",
-    "docs/BPM-PLATFORM-INFORMATION-ARCHITECTURE-SPEC.md",
-    "docs/BPM-PLATFORM-UI-DESIGN-SPEC.md",
-    "docs/BPM-PLATFORM-IMPLEMENTATION-MAP.md",
-    "docs/IMPLEMENTATION-MAP.md",
-    "docs/PLAN.md",
-    "docs/TESTING-SPEC.md",
-    "docs/capsules/COMMITTED-EXECUTION-PUBLICATION-SPEC.md",
-    "docs/research/BPM-PLATFORM-UI-UX-INFORMATION-ARCHITECTURE-RESEARCH.md",
-    "platform/README.md",
-    "platform/apps/web/README.md",
-    "showcase/platform-ui-quality/README.md",
-  ] as const;
-
-  for (const owner of productUiOwners) {
-    const source = await read(owner);
-    assert.doesNotMatch(source, /\bm\u006fbile\b/iu, `${owner} must not claim a small-screen product surface`);
-    assert.doesNotMatch(
-      source,
-      /four[- ]width|four exact widths|all four widths|(?:768|1024)[×x]900|chromium-(?:768|1024)/iu,
-      `${owner} must not retain the retired four-width browser contract`,
-    );
-  }
 });
 
 test("keeps feature styling inside CSS Modules and the exact UI token vocabulary", async () => {
@@ -586,45 +465,4 @@ function primaryNavigationViolations(appShell: string, specs: readonly string[])
     ),
     (match) => match[1] ?? "",
   )).filter((label) => !labels.has(label));
-}
-
-function productUiPreflightViolations(documents: Readonly<{
-  guide: string;
-  processLedger: string;
-  projectDesign: string;
-  research: string;
-  sources: string;
-  testingSpec: string;
-  uiDesign: string;
-}>): readonly string[] {
-  const violations: string[] = [];
-  if (!/Product 2 UI\/UX source preflight[\s\S]*inspect CIB Seven first[\s\S]*before production code/iu.test(documents.guide)) {
-    violations.push("contributor-preflight");
-  }
-  if (!/## Source-grounded Product 2 interaction design[\s\S]*before production code[\s\S]*pristine pinned source[\s\S]*current documentation[\s\S]*adopt[\s\S]*deliberately deviate[\s\S]*exclude[\s\S]*do not copy source code/iu.test(documents.projectDesign)) {
-    violations.push("project-design-preflight");
-  }
-  if (!/## Source-grounded design preflight[\s\S]*before production code[\s\S]*current documentation[\s\S]*pinned source checkout[\s\S]*adopt[\s\S]*deliberately deviate[\s\S]*exclude[\s\S]*acceptance oracle[\s\S]*do not copy source code/iu.test(documents.uiDesign)) {
-    violations.push("ui-design-preflight");
-  }
-  if (!/source-grounded UI\/UX preflight[\s\S]*\.\/scripts\/doctor\.sh research[\s\S]*before the first production edit/iu.test(documents.testingSpec)) {
-    violations.push("testing-preflight");
-  }
-  if (!/Process Definition View[\s\S]*Process Instance View[\s\S]*pristine pinned checkout[\s\S]*SOURCES\.md#cib-seven/iu.test(documents.research)) {
-    violations.push("research-evidence");
-  }
-  if (!/CIB Seven Tasklist and Cockpit[\s\S]*Process Definition View[\s\S]*Process Instance View/iu.test(documents.sources)) {
-    violations.push("source-registry");
-  }
-  const findings = processFindingSections(documents.processLedger).filter(({ finding }) =>
-    finding.startsWith("UI/UX precedent was postponed until after implementation")
-  );
-  const finding = findings[0];
-  if (findings.length !== 1 || finding === undefined ||
-    !Number.isSafeInteger(Number(finding.instances)) || Number(finding.instances) < 2 ||
-    withoutBackticks(finding.disposition) !== "executable guard" ||
-    !finding.evidence.includes("](../scripts/ui-quality-boundary.platform-test.ts)")) {
-    violations.push("process-finding");
-  }
-  return violations;
 }

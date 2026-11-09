@@ -94,7 +94,7 @@ function collectDiscriminators(node: unknown, found: Set<string>): void {
 }
 
 /**
- * Reads an enum's declared string values straight from the semantic-core source.
+ * Reads an enum's declared string values straight from the TypeScript source.
  *
  * The contracts gate deliberately does not build the packages, so resolving the enum through
  * `dist/` would make this guard report on stale output. Source text has no such dependency; the

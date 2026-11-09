@@ -23,7 +23,6 @@ const derivedConsumers = [
 const documentedPins = [
   "README.md",
   "docs/CONTRIBUTOR-SETUP-GUIDE.md",
-  "docs/ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md",
   "docs/SOURCES.md",
 ] as const;
 
@@ -102,7 +101,7 @@ test("keeps every machine-readable pin copy on the owner's versions", async () =
   }
 });
 
-// Locks the owner's development-host bound (2026-10-25, docs/VERIFICATION-INFRASTRUCTURE-POLICY.md): local Lean
+// Locks the owner's development-host bound (2026-10-25, docs/kernel/ENGINEERING-POLICY.md#local-loop): local Lean
 // work stays within 5 GB, and the threads that Lake runs concurrently, each capped by the lakefile's `-M`, must
 // fit below the brake with room left for Lake itself, so a full build stops at Lean's limit before the brake.
 test("keeps concurrent local Lean processes below the brake and the brake within 5 GB", async () => {

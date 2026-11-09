@@ -1,0 +1,15 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "discovery-control-unbound",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0-user-task-process-data-draft",
+    "sha256": "08d6e70e497d0eb2ca24b4bb52e7c03f464dc4703061512ba557c5e724b6a38f"
+  },
+  "result": {
+    "outcome": { "kind": "semantic", "outcome": "committed" },
+    "trace": []
+  }
+}

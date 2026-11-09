@@ -4,6 +4,7 @@ import { createServer } from "node:net";
 import { test } from "node:test";
 
 import { createPlatformServer, createSharedPlatformServer, PlatformStorageMode, readPlatformServerConfig } from "@bpmn-lean/platform-server";
+import { showcaseEngineDeploymentEnvironment } from "../../engine-deployment.ts";
 import { DefinitionApiClient, DefinitionApiError } from "../../../platform/apps/web/src/definitions-api.ts";
 
 const source = new TextEncoder().encode("<bpmn/>");
@@ -36,7 +37,7 @@ for (const [name, id] of [["bare LF", "literal\nID"], ["bare CR", "literal\rID"]
     const port = address.port;
     const origin = `http://127.0.0.1:${port}`;
     const runtime = await createPlatformServer({
-      ...readPlatformServerConfig({}), host: "127.0.0.1", port, publicOrigin: origin,
+      ...readPlatformServerConfig(showcaseEngineDeploymentEnvironment()), host: "127.0.0.1", port, publicOrigin: origin,
       storageMode: PlatformStorageMode.Shared, postgresqlRuntimeUrl: "postgresql://unused/platform",
       projectionMaxAgeMs: 5_000, maxSourceBytes: 64,
     }, {

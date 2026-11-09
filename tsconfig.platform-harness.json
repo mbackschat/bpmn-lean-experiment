@@ -14,6 +14,9 @@
       "@bpmn-lean/engine-api": [
         "./packages/engine-api/src/index.ts"
       ],
+      "@bpmn-lean/engine-api/testing": [
+        "./packages/engine-api/src/testing.ts"
+      ],
       "@bpmn-lean/platform-engine-gateway": [
         "./platform/foundation/engine-gateway/src/index.ts"
       ],
@@ -56,41 +59,26 @@
       "@bpmn-lean/platform-work": [
         "./platform/modules/work/src/index.ts"
       ],
-      "@bpmn-lean/semantic-core": [
-        "./packages/semantic-core/src/index.ts"
+      "@bpmn-lean/kernel": [
+        "./packages/kernel/src/index.ts"
       ],
-      "@bpmn-lean/temporal-client": [
-        "./packages/temporal-adapter/client/src/index.ts"
+      "@bpmn-lean/temporal-host/client": [
+        "./packages/temporal-host/src/client.ts"
       ],
-      "@bpmn-lean/temporal-client/correlation-ingress": [
-        "./packages/temporal-adapter/client/src/correlation-ingress-client.ts"
+      "@bpmn-lean/temporal-host/host": [
+        "./packages/temporal-host/src/host.ts"
       ],
-      "@bpmn-lean/temporal-client/correlation-publication": [
-        "./packages/temporal-adapter/client/src/correlation-publication-client.ts"
+      "@bpmn-lean/temporal-host/memory-host": [
+        "./packages/temporal-host/src/memory-host.ts"
       ],
-      "@bpmn-lean/temporal-client/execution-publication": [
-        "./packages/temporal-adapter/client/src/execution-publication-client.ts"
+      "@bpmn-lean/temporal-host/testing": [
+        "./packages/temporal-host/src/testing.ts"
       ],
-      "@bpmn-lean/temporal-client/flow-node-occurrence-publication": [
-        "./packages/temporal-adapter/client/src/flow-node-occurrence-publication-client.ts"
+      "@bpmn-lean/temporal-host/worker": [
+        "./packages/temporal-host/src/worker.ts"
       ],
-      "@bpmn-lean/temporal-client/definition-start": [
-        "./packages/temporal-adapter/client/src/definition-start-client.ts"
-      ],
-      "@bpmn-lean/temporal-client/definition-schedule": [
-        "./packages/temporal-adapter/client/src/definition-schedule-client.ts"
-      ],
-      "@bpmn-lean/temporal-client/message-start": [
-        "./packages/temporal-adapter/client/src/message-start-client.ts"
-      ],
-      "@bpmn-lean/temporal-client/process-work": [
-        "./packages/temporal-adapter/client/src/process-work-client.ts"
-      ],
-      "@bpmn-lean/temporal-client/process-operations": [
-        "./packages/temporal-adapter/client/src/process-operations-client.ts"
-      ],
-      "@bpmn-lean/temporal-protocol": [
-        "./packages/temporal-adapter/protocol/src/index.ts"
+      "@bpmn-lean/temporal-host/workflow": [
+        "./packages/temporal-host/src/workflows.ts"
       ]
     }
   },

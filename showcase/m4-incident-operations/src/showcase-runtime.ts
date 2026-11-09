@@ -7,24 +7,21 @@ import {
   readPlatformServerConfig,
 } from "@bpmn-lean/platform-server";
 import type { PlatformServerRuntime } from "@bpmn-lean/platform-server";
-import {
-  EffectActivityResultKind,
-  EffectExecutionResultKind,
-  ExternalTemporalRuntime,
-  createCachedLocalEnvironment,
-  withDeadline,
-} from "@bpmn-lean/temporal-testkit";
-import type {
-  EffectActivityImplementations,
-  EffectRequest,
-} from "@bpmn-lean/temporal-testkit";
+import { EffectResultKind } from "@bpmn-lean/temporal-host/worker";
 
+import { showcaseEngineDeploymentEnvironment } from "../../engine-deployment.ts";
 import {
   verifyIncidentTerminalEvidence,
 } from "../test/temporal-evidence.ts";
 import type { ShowcaseEvidence } from "../test/temporal-evidence.ts";
+import {
+  ShowcaseWorker,
+  createCachedLocalEnvironment,
+  environmentNamespace,
+  withDeadline,
+} from "./host-worker.ts";
+import type { EffectHandler } from "./host-worker.ts";
 
-const namespace = "bpmn-m4-incident-operations";
 const operationDeadlineMs = 10_000;
 const environmentStartupDeadlineMs = 40_000;
 
@@ -39,9 +36,9 @@ type VerificationRequest = Readonly<{
 export class IncidentOperationsShowcaseRuntime {
   readonly #dataDirectory: string;
   readonly #temporalCacheDirectory: string;
-  readonly #effectActivities = new IncidentEffectActivities();
+  readonly #effects = new IncidentEffects();
   #environment: Environment | undefined;
-  #worker: ExternalTemporalRuntime | undefined;
+  #worker: ShowcaseWorker | undefined;
   #platform: PlatformServerRuntime | undefined;
   #controlServer: Server | undefined;
 
@@ -62,16 +59,7 @@ export class IncidentOperationsShowcaseRuntime {
       environmentStartupDeadlineMs,
       "M4 incident operations Temporal environment startup",
     );
-    this.#worker = await withDeadline(
-      ExternalTemporalRuntime.initializeFreshNamespace({
-        address: this.#environment.address,
-        namespace,
-        taskQueue: readPlatformServerConfig().temporalTaskQueue,
-        identity: `bpmn-m4-incident-operations-worker-${process.pid}`,
-      }, this.#effectActivities.activities, 86_400),
-      operationDeadlineMs,
-      "M4 incident operations native initialization",
-    );
+    await this.startWorker();
     await this.#startPlatform();
     await this.#startControlServer();
   }
@@ -91,12 +79,11 @@ export class IncidentOperationsShowcaseRuntime {
     if (this.#worker !== undefined) return;
     const environment = this.#requireEnvironment();
     this.#worker = await withDeadline(
-      ExternalTemporalRuntime.connect({
-        address: environment.address,
-        namespace,
-        taskQueue: readPlatformServerConfig().temporalTaskQueue,
+      ShowcaseWorker.start(environment, {
+        taskQueue: readPlatformServerConfig({ ...process.env, ...showcaseEngineDeploymentEnvironment() }).temporalTaskQueue,
         identity: `bpmn-m4-incident-operations-worker-${process.pid}`,
-      }, this.#effectActivities.activities),
+        effects: this.#effects.handler,
+      }),
       operationDeadlineMs,
       "M4 incident operations Worker startup",
     );
@@ -105,10 +92,9 @@ export class IncidentOperationsShowcaseRuntime {
   async verifyAndReplay(request: VerificationRequest): Promise<ShowcaseEvidence> {
     if (this.#worker === undefined) throw new Error("M4 Worker must be running for evidence inspection");
     return verifyIncidentTerminalEvidence({
-      client: this.#worker.workflowClient,
+      client: this.#requireEnvironment().client,
       retryProcessInstanceId: request.retryProcessInstanceId,
       cancelledProcessInstanceId: request.cancelledProcessInstanceId,
-      temporalCacheDirectory: this.#temporalCacheDirectory,
     });
   }
 
@@ -138,12 +124,12 @@ export class IncidentOperationsShowcaseRuntime {
 
   async #startPlatform(): Promise<void> {
     const environment = this.#requireEnvironment();
-    const configured = readPlatformServerConfig();
+    const configured = readPlatformServerConfig({ ...process.env, ...showcaseEngineDeploymentEnvironment() });
     this.#platform = await createPlatformServer({
       ...configured,
       dataDirectory: this.#dataDirectory,
       temporalAddress: environment.address,
-      temporalNamespace: namespace,
+      temporalNamespace: environmentNamespace(environment),
     });
     try {
       await withDeadline(
@@ -211,17 +197,26 @@ export class IncidentOperationsShowcaseRuntime {
 
 }
 
-class IncidentEffectActivities {
+/**
+ * Fails each effect occurrence's first execution technically, opening an incident, and succeeds on every later one.
+ * Executions are counted per occurrence rather than per idempotency key: the host's key also names the failure count
+ * (`effectKey` in `packages/temporal-host/src/host-machine.ts`), so an operator's retry arrives under a new key for the
+ * same occurrence.
+ */
+class IncidentEffects {
   readonly #invocations = new Map<string, number>();
 
-  readonly activities: EffectActivityImplementations = {
-    executeBpmnEffect: async (request: EffectRequest) => {
-      const prior = this.#invocations.get(request.idempotencyKey) ?? 0;
-      this.#invocations.set(request.idempotencyKey, prior + 1);
-      return prior === 0
-        ? { kind: EffectActivityResultKind.TechnicalFailure }
-        : { kind: EffectExecutionResultKind.Success, localPatch: [] };
-    },
+  readonly handler: EffectHandler = async (request) => {
+    const occurrence = JSON.stringify([
+      request.occurrence.processInstanceId,
+      request.occurrence.elementId,
+      request.occurrence.activation,
+    ]);
+    const prior = this.#invocations.get(occurrence) ?? 0;
+    this.#invocations.set(occurrence, prior + 1);
+    return prior === 0
+      ? { kind: EffectResultKind.TechnicalFailure }
+      : { kind: EffectResultKind.Success, outputs: [] };
   };
 }
 

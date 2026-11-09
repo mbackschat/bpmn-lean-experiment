@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 
 import {
   assessPlatformProductBoundary,
+  packageExportsFromManifests,
   packageRootsFromManifests,
   repositoryProductBoundary,
 } from "./platform-product-boundary.ts";
@@ -315,29 +316,47 @@ test("classifies only contract-types as a neutral cross-product package", () => 
 });
 
 test("lets showcases drive exact public packages while rejecting engine internals", () => {
-  const packageRoots = packageRootsFromManifests([
+  const manifests = [
     {
-      path: "packages/temporal-adapter/client/package.json",
-      source: '{"name":"@bpmn-lean/temporal-client"}',
+      path: "packages/temporal-host/package.json",
+      source: '{"name":"@bpmn-lean/temporal-host","exports":{"./testing":{},"./worker":{}}}',
     },
     {
-      path: "packages/temporal-adapter/testkit/package.json",
-      source: '{"name":"@bpmn-lean/temporal-testkit"}',
+      path: "packages/engine-api/package.json",
+      source: '{"name":"@bpmn-lean/engine-api","exports":{".":{}}}',
     },
-  ]);
+  ];
   assert.deepEqual(
     assessPlatformProductBoundary([
       {
         path: "showcase/m1-definition-deployment/src/host.ts",
-        source: 'import { createCachedLocalEnvironment } from "@bpmn-lean/temporal-testkit";',
+        source: 'import { createCachedLocalEnvironment } from "@bpmn-lean/temporal-host/testing";',
+      },
+      {
+        path: "showcase/m1-definition-deployment/src/address.ts",
+        source: 'import { engineDefinitionMessageStartWorkflowId } from "@bpmn-lean/engine-api";',
       },
       {
         path: "showcase/m1-definition-deployment/src/deep-import.ts",
-        source: 'import { start } from "@bpmn-lean/temporal-client/src/process-client.js";',
+        source: 'import { createHostWorker } from "@bpmn-lean/temporal-host/src/worker.js";',
       },
-    ], { packageRoots }),
+      {
+        path: "showcase/m1-definition-deployment/src/undeclared.ts",
+        source: 'import { kernelPort } from "@bpmn-lean/temporal-host/kernel-port";',
+      },
+      {
+        path: "platform/apps/server/src/escape.ts",
+        source: 'import { engineDefinitionMessageStartWorkflowId } from "@bpmn-lean/engine-api";',
+      },
+    ], {
+      allowedEngineImports: new Set(["@bpmn-lean/engine-api"]),
+      packageRoots: packageRootsFromManifests(manifests),
+      packageExports: packageExportsFromManifests(manifests),
+    }),
     [
-      "showcase/m1-definition-deployment/src/deep-import.ts: engine internal import @bpmn-lean/temporal-client/src/process-client.js",
+      "platform/apps/server/src/escape.ts: public engine import outside engine gateway @bpmn-lean/engine-api",
+      "showcase/m1-definition-deployment/src/deep-import.ts: engine internal import @bpmn-lean/temporal-host/src/worker.js",
+      "showcase/m1-definition-deployment/src/undeclared.ts: engine internal import @bpmn-lean/temporal-host/kernel-port",
     ],
   );
 });
@@ -436,11 +455,10 @@ test("keeps tracked and pending sources and manifests inside the product boundar
     assessPlatformProductBoundary(repository.sources, {
       allowedEngineImports: new Set([
         "@bpmn-lean/engine-api",
-        "@bpmn-lean/temporal-client/definition-schedule",
-        "@bpmn-lean/temporal-client/definition-start",
-        "@bpmn-lean/temporal-client/process-work",
+        "@bpmn-lean/engine-api/testing",
       ]),
       packageRoots: repository.packageRoots,
+      packageExports: repository.packageExports,
     }),
     [],
   );

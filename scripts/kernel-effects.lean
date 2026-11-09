@@ -1,7 +1,7 @@
 import Lean
 
 /-!
-Guards 17, 18 and 19 of the [kernel rewrite proposal](../docs/LEAN-KERNEL-REWRITE-PROPOSAL.md#guardrails-against-degradation),
+Guards 17, 18 and 19 of the [kernel architecture](../docs/kernel/ARCHITECTURE-SPEC.md#guardrails-against-degradation),
 read from the built environment because who calls what, which state field a structure update writes and which field a
 pattern reads are only visible after elaboration. The dispatch guards see matches and miss effects: nine completers
 passed guards 1 and 2 (hence guard 17), so this scan reads calls and writes rather than matches.

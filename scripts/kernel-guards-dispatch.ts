@@ -1,6 +1,6 @@
 /**
  * TypeScript halves of closed dispatch and no catch-all (guards 1 and 2), mirror enumerations in both languages
- * (guard 3) and the seam fan-out budget (guard 18) of docs/LEAN-KERNEL-REWRITE-PROPOSAL.md#guardrails-against-degradation.
+ * (guard 3) and the seam fan-out budget (guard 18) of docs/kernel/ARCHITECTURE-SPEC.md#guardrails-against-degradation.
  *
  * The owner table is read from `scripts/kernel-dispatch.lean`, the Lean guard's one copy of it, so the two languages
  * cannot drift (and guard 3 forbids a second copy). A Lean type maps to the TypeScript enum of the same name plus an

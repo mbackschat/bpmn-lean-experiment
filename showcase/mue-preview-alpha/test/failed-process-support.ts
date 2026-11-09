@@ -8,11 +8,12 @@ import {
   definitionVersionStartPath, definitionsCollectionPath,
 } from "@bpmn-lean/platform-contracts";
 import type { DeployedDefinitionVersion, PublicProcessInstanceIdentity } from "@bpmn-lean/platform-contracts";
-import { CommandOutcome, EffectExecutionResultKind, EffectOperation, EffectProtocol, StimulusKind } from "@bpmn-lean/semantic-core";
-import {
-  listOpenUserTasks, submitUserTaskCompletion,
-} from "@bpmn-lean/temporal-testkit";
-import type { EffectActivityImplementations, TemporalWorkflowClient } from "@bpmn-lean/temporal-testkit";
+import type { EngineStateObservation } from "@bpmn-lean/engine-api";
+import type { ProcessClient } from "@bpmn-lean/temporal-host/client";
+import { EffectResultKind } from "@bpmn-lean/temporal-host/worker";
+
+import type { EffectHandler } from "../src/host-worker.ts";
+import { processWorkflowId } from "../src/process-address.ts";
 
 export const compensationProfile = "bpmn-2.0.2-compensation-source-checkpoint-draft";
 export const compensationSourceSha256 = "516073af27fbe95c319918b248c2563c2505263e7542db6f3e8d981f82d8dc93";
@@ -20,17 +21,16 @@ export const failureCode = "undo-failed";
 export const failureMessage = "Travel cancellation handler failed — réservation 😀";
 const failedTravelDetails = "Decline ground-travel cancellation TRAVEL-4711";
 
-/** Explicit test Activity configuration; the retained Sub-Process snapshot supplies its published input. */
-export const compensationTestActivities: EffectActivityImplementations = {
-  executeBpmnEffect: async (request) => {
-    assert.equal(request.protocol, EffectProtocol.Activity);
-    assert.equal(request.operation, EffectOperation.CompensationSingleEffect);
-    const argument = request.arguments.find(({ name }) => name === "DataInput_TravelDetails");
-    if (argument?.value.kind === "string" && argument.value.value === failedTravelDetails) {
-      return { kind: EffectExecutionResultKind.BpmnError, code: failureCode, message: failureMessage, localPatch: [] };
-    }
-    return { kind: EffectExecutionResultKind.Success, localPatch: [] };
-  },
+/** Explicit test effect configuration; the retained Sub-Process snapshot supplies its published input. */
+export const compensationTestEffects: EffectHandler = async (request) => {
+  assert.equal(request.protocol, "urn:bpmn-lean:effect-protocol:activity-v1");
+  assert.equal(request.operation, "urn:bpmn-lean:effect-operation:compensation-single-effect-v1");
+  const value = request.arguments.find(({ name }) => name === "DataInput_TravelDetails")?.value as
+    Readonly<{ kind?: unknown; value?: unknown }> | null | undefined;
+  if (value?.kind === "string" && value.value === failedTravelDetails) {
+    return { kind: EffectResultKind.BusinessFailure, code: failureCode, message: failureMessage, outputs: [] };
+  }
+  return { kind: EffectResultKind.Success, outputs: [] };
 };
 
 export async function deployCompensation(request: APIRequestContext): Promise<DeployedDefinitionVersion> {
@@ -67,22 +67,22 @@ export async function startCompensation(
 }
 
 /** Labelled test actor uses current published identities; these tasks have no Product 2 Human Work metadata. */
-export async function completeCompensationTasks(client: TemporalWorkflowClient, instance: PublicProcessInstanceIdentity): Promise<void> {
+export async function completeCompensationTasks(processes: ProcessClient, instance: PublicProcessInstanceIdentity): Promise<void> {
+  const workflowId = processWorkflowId(instance.processInstanceId);
   for (const elementId of ["Task_ReserveHotel", "Task_ArrangeGroundTravel", "Task_IssueInsurance"]) {
     const deadline = Date.now() + 10_000;
     while (true) {
-      const tasks = await listOpenUserTasks(client, instance.processInstanceId);
-      const task = tasks.find(({ id }) => id.elementId === elementId);
+      const state = await processes.observation(workflowId) as unknown as EngineStateObservation;
+      const task = state.openWaits.find(({ id, detail }) => detail.kind === "userTask" && id.elementId === elementId);
       if (task !== undefined) {
         assert.equal(task.id.processInstanceId, instance.processInstanceId);
-        const result = await submitUserTaskCompletion(client, instance.processInstanceId, {
-          kind: StimulusKind.CompleteUserTaskInstance,
+        const result = await processes.command(workflowId, {
+          kind: "command",
           commandId: `failed-process-test-actor:${elementId}`,
-          taskId: task.id,
-          submittedValues: [],
+          occurrence: task.id,
+          action: { kind: "completeUserTask", values: [] },
         });
-        assert.equal(result.kind, "semantic");
-        assert.equal(result.kind === "semantic" && result.outcome, CommandOutcome.Committed);
+        assert.equal(result.outcome, "committed");
         break;
       }
       if (Date.now() >= deadline) throw new Error(`Published task did not appear: ${elementId}`);

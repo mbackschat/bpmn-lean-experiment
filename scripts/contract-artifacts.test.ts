@@ -4,25 +4,20 @@ import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
 import {
-  compareCanonicalStrings,
   readAndVerifyArtifactSets,
   readAndVerifyNormativeArtifactSets,
   verifyArtifactSet,
-  verifyDefinitionArtifacts,
   verifyNormativeArtifactSet,
 } from "./contract-artifacts.ts";
 import {
+  artifactSetAt,
   bindScenarioBytes,
-  checkedNodeKind,
   cloneArtifactSet,
   collectIntegerSchemas,
   collectPropertyNames,
-  parallelDefinitionArtifacts,
   requiredAt,
-  requireAwaitUserTask,
-  requireCheckedUserTask,
   requireOccurrenceStimulus,
-  semanticOperationKind,
+  userTaskDiscoveryScenario,
 } from "./contract-artifact-test-fixtures.ts";
 import {
   artifactCases,
@@ -125,11 +120,7 @@ test("keeps every target scenario answer-free and binds retained CIB evidence by
 });
 
 test("rejects a semantic answer smuggled into target input", async () => {
-  const artifactSet = requiredAt(
-    await readAndVerifyArtifactSets(projectRoot),
-    0,
-    "artifact sets",
-  );
+  const artifactSet = artifactSetAt(await readAndVerifyArtifactSets(projectRoot), userTaskDiscoveryScenario);
   const mutated = cloneArtifactSet(artifactSet);
   (
     mutated.scenario as unknown as Record<string, unknown>
@@ -151,8 +142,7 @@ test("pins every JSON integer to the JavaScript-safe domain", async () => {
     "canonical-result.schema.json",
     "semantic-profile.schema.json",
     "cibseven-evidence.schema.json",
-    "checked-process.schema.json",
-    "semantic-process.schema.json",
+    "engine-population-scenario.schema.json",
     "semantic-publication.schema.json",
     "flow-node-occurrence-publication.schema.json",
   ]) {
@@ -171,11 +161,7 @@ test("pins every JSON integer to the JavaScript-safe domain", async () => {
     }
   }
 
-  const artifactSet = requiredAt(
-    await readAndVerifyArtifactSets(projectRoot),
-    0,
-    "artifact sets",
-  );
+  const artifactSet = artifactSetAt(await readAndVerifyArtifactSets(projectRoot), userTaskDiscoveryScenario);
   const unsafe = cloneArtifactSet(artifactSet);
   requireOccurrenceStimulus(unsafe.scenario.stimuli[1]).occurrence.activation =
     Number.MAX_SAFE_INTEGER + 1;
@@ -202,22 +188,8 @@ test("pins every JSON integer to the JavaScript-safe domain", async () => {
   );
 });
 
-test("uses Unicode scalar-value order without normalization", () => {
-  assert.ok(compareCanonicalStrings("\u{E000}", "\u{10000}") < 0);
-  assert.ok(compareCanonicalStrings("e\u{301}", "\u{E9}") < 0);
-  assert.notEqual("e\u{301}", "\u{E9}");
-  assert.throws(
-    () => compareCanonicalStrings("\uD800", "valid"),
-    /unpaired Unicode surrogate/,
-  );
-});
-
 test("rejects duplicate keys and unpaired surrogates in exact JSON bytes", async () => {
-  const artifactSet = requiredAt(
-    await readAndVerifyArtifactSets(projectRoot),
-    0,
-    "artifact sets",
-  );
+  const artifactSet = artifactSetAt(await readAndVerifyArtifactSets(projectRoot), userTaskDiscoveryScenario);
 
   const duplicate = cloneArtifactSet(artifactSet);
   const duplicateBytes = JSON.stringify(duplicate.scenario, null, 2).replace(
@@ -244,7 +216,7 @@ test("rejects duplicate keys and unpaired surrogates in exact JSON bytes", async
 });
 
 test("rejects noncanonical integer tokens before exact artifact bytes lose precision", async () => {
-  const artifactSet = requiredAt(await readAndVerifyArtifactSets(projectRoot), 0, "artifact sets");
+  const artifactSet = artifactSetAt(await readAndVerifyArtifactSets(projectRoot), userTaskDiscoveryScenario);
   for (const token of ["1.0000000000000001", "9007199254740991.1", "1e-400", "1e400", "1.0", "1e1", "-0", "9007199254740992", "9007199254740993"]) {
     const mutated = cloneArtifactSet(artifactSet);
     const completion = requireOccurrenceStimulus(mutated.scenario.stimuli[1]);
@@ -258,7 +230,7 @@ test("rejects noncanonical integer tokens before exact artifact bytes lose preci
 });
 
 test("rejects malformed UTF-8 instead of accepting replacement characters in artifact bytes", async () => {
-  const mutated = cloneArtifactSet(requiredAt(await readAndVerifyArtifactSets(projectRoot), 0, "artifact sets"));
+  const mutated = cloneArtifactSet(artifactSetAt(await readAndVerifyArtifactSets(projectRoot), userTaskDiscoveryScenario));
   mutated.scenario.id = "invalid-\uFFFD";
   mutated.evidence.scenario.id = mutated.scenario.id;
   const bytes = Buffer.from(JSON.stringify(mutated.scenario));
@@ -268,12 +240,10 @@ test("rejects malformed UTF-8 instead of accepting replacement characters in art
   assert.throws(() => verifyArtifactSet(mutated), /UTF-8|encoded data/u);
 });
 
-test("distinguishes unknown, missing, closed-enum, null, and absent fields", async () => {
-  const artifactSet = requiredAt(
-    await readAndVerifyArtifactSets(projectRoot),
-    0,
-    "artifact sets",
-  );
+// Null versus absent members are the kernel codec's strict decoding (packages/kernel/test/strict-decoding.test.ts); the
+// checked-process half of this test went with that schema's producer.
+test("rejects a missing scenario member and an unknown closed-enum value", async () => {
+  const artifactSet = artifactSetAt(await readAndVerifyArtifactSets(projectRoot), userTaskDiscoveryScenario);
 
   const missing = cloneArtifactSet(artifactSet);
   delete (
@@ -298,45 +268,10 @@ test("distinguishes unknown, missing, closed-enum, null, and absent fields", asy
     () => verifyArtifactSet(closedEnum),
     /scenario schema validation failed/,
   );
-
-  const nullName = parallelDefinitionArtifacts();
-  const checkedTask = requireCheckedUserTask(
-    nullName.checkedProcess.nodes.find(
-      ({ kind }) => kind === checkedNodeKind.UserTask,
-    ),
-  );
-  const programTask = requireAwaitUserTask(
-    nullName.semanticProcess.operations.find(
-      ({ kind }) => kind === semanticOperationKind.AwaitUserTask,
-    ),
-  );
-  checkedTask.name = null;
-  programTask.task.name = null;
-  await assert.doesNotReject(
-    verifyDefinitionArtifacts(projectRoot, nullName),
-  );
-
-  const absentName = parallelDefinitionArtifacts();
-  const absentCheckedTask = requireCheckedUserTask(
-    absentName.checkedProcess.nodes.find(
-      ({ kind }) => kind === checkedNodeKind.UserTask,
-    ),
-  );
-  delete (
-    absentCheckedTask as Partial<{ name: string | null }>
-  ).name;
-  await assert.rejects(
-    verifyDefinitionArtifacts(projectRoot, absentName),
-    /checked process schema validation failed/,
-  );
 });
 
 test("rejects retained evidence after its neutral scenario changes", async () => {
-  const artifactSet = requiredAt(
-    await readAndVerifyArtifactSets(projectRoot),
-    0,
-    "artifact sets",
-  );
+  const artifactSet = artifactSetAt(await readAndVerifyArtifactSets(projectRoot), userTaskDiscoveryScenario);
   const mutated = cloneArtifactSet(artifactSet);
   requiredAt(
     mutated.scenario.stimuli,
@@ -355,8 +290,7 @@ test("rejects retained evidence after its neutral scenario changes", async () =>
 
 
 test("scenario provenance separates absent CIB evidence from a pinned CIB source", async () => {
-  const [artifact] = await readAndVerifyArtifactSets(projectRoot);
-  assert.ok(artifact);
+  const artifact = artifactSetAt(await readAndVerifyArtifactSets(projectRoot), userTaskDiscoveryScenario);
   const schema = "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/provenance";
   const normativeRefs = ["BPMN 2.0.2 Clause 10.3.5"];
   assert.equal(artifact.validator.validate(schema, { normativeRefs, cibRevision: "not-applicable", cibRefs: [] }), true);

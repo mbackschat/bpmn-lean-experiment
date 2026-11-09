@@ -17,18 +17,20 @@ import {
   readPlatformServerConfig,
 } from "@bpmn-lean/platform-server";
 import type { PlatformServerRuntime } from "@bpmn-lean/platform-server";
-import {
-  bpmnOpenUserTasksQueryName,
-  ExternalTemporalRuntime,
-  TemporalScenarioRunner,
-  createCachedLocalEnvironment,
-  createHostEffectActivities,
-  withDeadline,
-} from "@bpmn-lean/temporal-testkit";
-import type {
-  BpmnProcessWorkflow,
-} from "@bpmn-lean/temporal-testkit";
+import { replayHistory as replayHostHistory } from "@bpmn-lean/temporal-host/worker";
 
+import { showcaseEngineDeploymentEnvironment } from "../../engine-deployment.ts";
+import {
+  ShowcaseWorker,
+  noEffects,
+  withDeadline,
+} from "../src/host-worker.ts";
+import type { TemporalEnvironment } from "../src/host-worker.ts";
+
+/**
+ * One open User Task wait of the canonical state observation. `metadata` is present exactly when the task's detail
+ * carries an assignment or a form, which is what separates a policy-visible task from a metadata-free one.
+ */
 type OpenUserTask = Readonly<{
   id: Readonly<{
     processInstanceId: string;
@@ -36,16 +38,14 @@ type OpenUserTask = Readonly<{
     activation: number;
   }>;
   name: string | null;
-  state: "active";
   metadata?: Readonly<{
-    assignment: Readonly<{
-      candidates: readonly Readonly<{ kind: "group"; id: string }>[];
-    }>;
-    form: Readonly<{
-      fields: readonly Readonly<{ key: string; type: "string" | "boolean" }>[];
-    }>;
+    candidateGroups: readonly string[];
+    formFields: readonly Readonly<{ key: string; type: string }>[];
   }>;
 }>;
+
+/** The canonical state query of the host's process Workflow (`packages/temporal-host/src/protocol.ts`). */
+const observationQueryName = "observation";
 
 import {
   getDefinitionSchedule,
@@ -58,7 +58,7 @@ export const temporalCacheDirectory = fileURLToPath(
   new URL("../../../.cache/temporal-cli/", import.meta.url),
 );
 
-export type TemporalEnvironment = Awaited<ReturnType<typeof createCachedLocalEnvironment>>;
+export type { TemporalEnvironment };
 type TemporalClient = TemporalEnvironment["client"];
 
 export type TemporalWorkflowExecution = Readonly<{
@@ -67,13 +67,11 @@ export type TemporalWorkflowExecution = Readonly<{
 }>;
 
 export function startWorker(
-  address: string,
-  namespace: string,
+  environment: TemporalEnvironment,
   identity: string,
-): Promise<ExternalTemporalRuntime> {
+): Promise<ShowcaseWorker> {
   return withDeadline(
-    ExternalTemporalRuntime.connect({ address, namespace, taskQueue, identity },
-      createHostEffectActivities([])),
+    ShowcaseWorker.start(environment, { taskQueue, identity, effects: noEffects }),
     20_000,
     "M3 Human Work Worker startup",
   );
@@ -87,7 +85,7 @@ export async function startPlatform(
   temporalNamespace: string,
 ): Promise<PlatformServerRuntime> {
   const runtime = await createPlatformServer({
-    ...readPlatformServerConfig({}),
+    ...readPlatformServerConfig(showcaseEngineDeploymentEnvironment()),
     host: "127.0.0.1",
     port,
     publicOrigin: origin,
@@ -177,18 +175,18 @@ export async function waitForOneOpenTask(
   execution: TemporalWorkflowExecution,
   expectedName: string,
 ): Promise<OpenUserTask> {
-  const handle = client.workflow.getHandle<BpmnProcessWorkflow>(
+  const handle = client.workflow.getHandle(
     execution.workflowId,
     execution.runId,
   );
   let latest: readonly OpenUserTask[] = [];
   for (let attempt = 0; attempt < 200; attempt += 1) {
     try {
-      latest = await withDeadline(
-        handle.query<readonly OpenUserTask[]>(bpmnOpenUserTasksQueryName),
+      latest = openUserTasks(await withDeadline(
+        handle.query<unknown>(observationQueryName),
         1_000,
-        `${expectedName} open-task Query`,
-      );
+        `${expectedName} state observation Query`,
+      ));
       if (latest.length === 1 && latest[0]?.name === expectedName) return latest[0];
     } catch {
       // Visibility can expose a start before its first Workflow task is queryable.
@@ -218,20 +216,26 @@ export async function allocatePort(): Promise<number> {
 }
 
 export async function replayHistory(history: unknown, workflowId: string): Promise<void> {
-  const runner = await withDeadline(
-    TemporalScenarioRunner.create({ downloadDirectory: temporalCacheDirectory }),
+  await withDeadline(
+    replayHostHistory(history, workflowId),
     30_000,
-    "M3 Human Work replay runner startup",
+    "M3 Human Work history replay",
   );
-  try {
-    await withDeadline(
-      runner.replayHistory(history, workflowId),
-      operationDeadlineMs,
-      "M3 Human Work history replay",
-    );
-  } finally {
-    await runner.shutdown();
-  }
+}
+
+/** The open User Task waits of a canonical state observation (`canonical-result.schema.json#/$defs/state`). */
+function openUserTasks(observation: unknown): readonly OpenUserTask[] {
+  const state = observation as Readonly<{ openWaits?: readonly Readonly<{ id: OpenUserTask["id"]; detail: Record<string, unknown> }>[] }>;
+  return (state.openWaits ?? []).filter(({ detail }) => detail.kind === "userTask").map(({ id, detail }) => {
+    const candidateGroups = detail.candidateGroups as readonly string[];
+    const formFields = detail.formFields as readonly Readonly<{ key: string; type: string }>[];
+    const name = detail.name as string | null;
+    const assigned = detail.assignee !== null || (detail.candidateUsers as readonly string[]).length > 0 ||
+      candidateGroups.length > 0;
+    return assigned || detail.formKey !== null || formFields.length > 0
+      ? { id, name, metadata: { candidateGroups, formFields } }
+      : { id, name };
+  });
 }
 
 async function collectWorkflowExecutions(

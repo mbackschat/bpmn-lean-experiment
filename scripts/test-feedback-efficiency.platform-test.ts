@@ -21,20 +21,18 @@ test("skips the heavy Product 1 matrix only for Product 2-only paths", () => {
   assert.equal(requiresProduct1Verification(["scripts/ui-quality-boundary.platform-test.ts"]), false);
   assert.equal(requiresProduct1Verification([".github/workflows/platform-postgresql-quality.yml"]), false);
   assert.equal(requiresProduct1Verification(["tsconfig.platform-postgresql-harness.json"]), false);
-  assert.equal(requiresProduct1Verification(["packages/semantic-core/src/index.ts"]), true);
-  assert.equal(requiresProduct1Verification(["docs/TESTING-SPEC.md"]), true);
+  assert.equal(requiresProduct1Verification(["packages/kernel/src/index.ts"]), true);
+  assert.equal(requiresProduct1Verification(["docs/PLAN.md"]), true);
   assert.equal(requiresProduct1Verification(["package.json"]), true);
   assert.equal(requiresProduct1Verification([]), true);
   assert.equal(requiresProduct1Verification([
     "platform/apps/web/src/app.tsx",
-    "packages/semantic-core/src/index.ts",
+    "packages/kernel/src/index.ts",
   ]), true);
 });
 
 test("builds feedback graphs once and keeps independent lanes parallel", async () => {
-  const [guide, testingSpec, verifyWorkflow, uiWorkflow, platformWorkflow, postgresqlWorkflow, showcaseWorkflow, rootSource, postgresqlRunner, webSource, uiKitSource, playwrightConfig, verifyScript, pipelineScript] = await Promise.all([
-    read("CLAUDE.md"),
-    read("docs/TESTING-SPEC.md"),
+  const [verifyWorkflow, uiWorkflow, platformWorkflow, postgresqlWorkflow, showcaseWorkflow, rootSource, postgresqlRunner, webSource, uiKitSource, playwrightConfig, verifyScript, pipelineScript] = await Promise.all([
     read(".github/workflows/verify.yml"),
     read(".github/workflows/ui-quality.yml"),
     read(".github/workflows/platform-quality.yml"),
@@ -49,25 +47,17 @@ test("builds feedback graphs once and keeps independent lanes parallel", async (
     read("scripts/test-pipeline.ts"),
   ]);
 
-  assert.match(guide, /feedback efficiency and development speed as non-negotiable engineering constraints/u);
-  assert.match(guide, /builds a dependency graph once and reuses its artifacts/u);
-  assert.match(testingSpec, /Feedback latency is a maintained engineering invariant/u);
-  assert.match(testingSpec, /builds each dependency graph at most once/u);
-  assert.match(testingSpec, /GitHub runs those jobs in parallel/u);
-
   assert.match(platformWorkflow, /test:pre-push:platform/u);
   assert.match(postgresqlWorkflow, /test:pre-push:platform-postgresql/u);
   assert.match(showcaseWorkflow, /test:pre-push:showcase/u);
   assert.match(uiWorkflow, /test:pre-push:ui/u);
   assert.match(verifyWorkflow, /node scripts\/ci-change-selection\.ts/u);
-  assert.equal(matches(verifyWorkflow, /if: needs\.changes\.outputs\.product1 == 'true'/gu), 6);
+  assert.equal(matches(verifyWorkflow, /if: needs\.changes\.outputs\.product1 == 'true'/gu), 5);
   assert.match(verifyWorkflow, /^  verify_lean:$/mu);
   assert.match(verifyWorkflow, /^  verify_lean_checks:$/mu);
   assert.match(verifyWorkflow, /^  verify_runtime:$/mu);
   assert.match(verifyWorkflow, /^  verify_temporal:$/mu);
   assert.match(verifyWorkflow, /verify_temporal:[\s\S]*?needs:\n      - changes\n      - verify_runtime\n/u);
-  assert.match(verifyWorkflow, /^  verify_temporal_serial:$/mu);
-  assert.match(verifyWorkflow, /verify_temporal_serial:[\s\S]*?needs:\n      - changes\n      - verify_runtime\n/u);
   assert.match(verifyWorkflow, /^  verify_pipeline:$/mu);
   assert.match(verifyWorkflow, /verify_lean_checks:[\s\S]*?needs:\n      - changes\n      - verify_lean/u);
   assert.match(verifyWorkflow, /verify_pipeline:[\s\S]*?needs:\n      - changes\n      - verify_lean_checks\n      - verify_runtime/u);
@@ -78,10 +68,9 @@ test("builds feedback graphs once and keeps independent lanes parallel", async (
   assert.match(verifyWorkflow, /run: \.\/scripts\/verify\.sh lean-checks/u);
   assert.match(verifyWorkflow, /run: \.\/scripts\/verify\.sh runtime/u);
   assert.match(verifyWorkflow, /run: \.\/scripts\/verify\.sh temporal\n/u);
-  assert.match(verifyWorkflow, /run: \.\/scripts\/verify\.sh temporal-serial\n/u);
   assert.match(verifyWorkflow, /run: \.\/scripts\/verify\.sh pipeline\n/u);
   assert.match(verifyWorkflow, /name: verify-complete/u);
-  assert.match(verifyWorkflow, /test "\$\{\{ needs\.changes\.outputs\.product1 \}\}" = "false" \|\| \{\n            test "\$\{\{ needs\.verify_lean\.result \}\}" = "success"\n            test "\$\{\{ needs\.verify_lean_checks\.result \}\}" = "success"\n            test "\$\{\{ needs\.verify_runtime\.result \}\}" = "success"\n            test "\$\{\{ needs\.verify_temporal\.result \}\}" = "success"\n            test "\$\{\{ needs\.verify_temporal_serial\.result \}\}" = "success"\n            test "\$\{\{ needs\.verify_pipeline\.result \}\}" = "success"\n          \}/u);
+  assert.match(verifyWorkflow, /test "\$\{\{ needs\.changes\.outputs\.product1 \}\}" = "false" \|\| \{\n            test "\$\{\{ needs\.verify_lean\.result \}\}" = "success"\n            test "\$\{\{ needs\.verify_lean_checks\.result \}\}" = "success"\n            test "\$\{\{ needs\.verify_runtime\.result \}\}" = "success"\n            test "\$\{\{ needs\.verify_temporal\.result \}\}" = "success"\n            test "\$\{\{ needs\.verify_pipeline\.result \}\}" = "success"\n          \}/u);
   assert.doesNotMatch(uiWorkflow, /test:platform-operations-checkpoint/u);
   assert.doesNotMatch(platformWorkflow, /playwright|chromium|test:ui-quality/iu);
   assert.doesNotMatch(platformWorkflow, /postgres(?:ql)?:18\.4|BPMN_TEST_POSTGRES_URL/iu);
@@ -106,14 +95,12 @@ test("builds feedback graphs once and keeps independent lanes parallel", async (
   const web = scripts(webSource);
   const uiKit = scripts(uiKitSource);
   assert.equal(root["test:infrastructure:runtime"], "node --test --test-concurrency=2 scripts/*.test.ts");
-  assert.equal(root["test:temporal:built"], "pnpm test:temporal:built:components && pnpm test:temporal:built:concurrent && pnpm test:temporal:built:hosted && pnpm test:temporal:built:hosted-serial");
-  // Server-free component contracts run first so a break fails before any Temporal server starts,
-  // and each lane globs the convention deciding its membership rather than naming files by hand.
-  assert.equal(root["test:temporal:built:components"], "node --test --test-concurrency=4 packages/temporal-adapter/protocol/test/*.test.ts packages/temporal-adapter/workflow/test/*.test.ts packages/temporal-adapter/worker/test/*.test.ts");
-  assert.equal(root["test:temporal:built:concurrent"], "node --test --test-concurrency=4 packages/temporal-adapter/testkit/test/*.test.ts");
-  assert.equal(root["test:temporal:built:hosted"], "node --test packages/temporal-adapter/testkit/test/*.temporal-test.ts");
-  assert.equal(root["test:temporal:built:hosted-serial"], "node --test --test-concurrency=1 packages/temporal-adapter/testkit/test/*.temporal-serial-test.ts");
-  for (const lane of ["test:temporal:built:components", "test:temporal:built:concurrent", "test:temporal:built:hosted", "test:temporal:built:hosted-serial"]) {
+  // The server-free component tests run first so a break fails before any Temporal server starts, and each hosted
+  // lane globs the file convention deciding its membership rather than naming files by hand.
+  assert.equal(root["test:temporal-host"], "pnpm build:temporal-host && tsc -p packages/temporal-host/tsconfig.test.json && node --test --test-concurrency=1 packages/temporal-host/test/*.test.ts");
+  assert.equal(root["test:temporal-host:hosted:built"], "node --test --test-concurrency=1 packages/temporal-host/test/*.temporal-test.ts");
+  assert.equal(root["test:differential:hosted:built"], "node --test --test-concurrency=1 packages/differential/test/*.temporal-test.ts");
+  for (const lane of ["test:temporal-host:hosted:built", "test:differential:hosted:built"]) {
     assert.doesNotMatch(root[lane] ?? "", /(?:^|\s)(?:pnpm\s+)?(?:run\s+)?build(?::|\s)/u, `${lane} must reuse prepared artifacts`);
   }
   assert.equal(root["test:pre-push:platform"], "pnpm check:clean-head && pnpm test:platform-operations-checkpoint");
@@ -134,10 +121,10 @@ test("builds feedback graphs once and keeps independent lanes parallel", async (
   assert.equal(root["test:platform-web:built"], "pnpm --filter @bpmn-lean/platform-ui-kit test:built && pnpm --filter @bpmn-lean/platform-web test:built");
   assert.equal(root["test:ui-quality:built"], "env PLAYWRIGHT_PREBUILT_WEB=true pnpm --filter @bpmn-lean/showcase-platform-ui-quality test:e2e:functional");
   assert.equal(root["test:platform-operations-checkpoint"], "pnpm build:platform-checkpoint && pnpm test:platform-operations-checkpoint:built");
-  assert.equal(root["build:showcase-types"], "pnpm --filter @bpmn-lean/platform-server... --filter @bpmn-lean/temporal-testkit... --if-present run build");
-  assert.equal(root["build:showcase-runtime"], "pnpm --filter @bpmn-lean/platform-server... --filter @bpmn-lean/temporal-testkit... --filter @bpmn-lean/platform-ui-kit... --if-present run build");
+  assert.equal(root["build:showcase-types"], "pnpm --filter @bpmn-lean/platform-server... --filter @bpmn-lean/temporal-host... --if-present run build");
+  assert.equal(root["build:showcase-runtime"], "pnpm --filter @bpmn-lean/platform-server... --filter @bpmn-lean/temporal-host... --filter @bpmn-lean/platform-ui-kit... --if-present run build");
   assert.equal(root["build:showcase-mue-preview-alpha"], "pnpm build:release-product2");
-  assert.equal(root["build:release-product2"], "pnpm --filter @bpmn-lean/platform-server... --filter @bpmn-lean/temporal-testkit... --filter @bpmn-lean/platform-web... --if-present run build");
+  assert.equal(root["build:release-product2"], "pnpm --filter @bpmn-lean/platform-server... --filter @bpmn-lean/temporal-host... --filter @bpmn-lean/platform-web... --if-present run build");
   assert.doesNotMatch(root["build:showcase-types"] ?? "", /platform-web/u);
   assert.doesNotMatch(root["build:showcase-runtime"] ?? "", /platform-web/u);
   assert.equal(root["test:showcase:types"], "pnpm build:showcase-types && pnpm --filter './showcase/**' --if-present run type-test");
@@ -191,29 +178,25 @@ test("builds feedback graphs once and keeps independent lanes parallel", async (
   assert.match(playwrightConfig, /PLAYWRIGHT_PREBUILT_WEB/u);
   assert.equal(linesContaining(verifyScript, "test:infrastructure"), 1);
   assert.equal(linesContaining(verifyScript, "build:verification-typescript"), 1);
-  for (const command of ["test:semantic-core:built", "test:bpmn-source:built", "test:differential:built"]) {
+  assert.equal(matches(verifyScript, /run test:kernel$/gmu), 1);
+  for (const command of ["test:bpmn-source:built", "test:differential:built", "test:temporal-host:hosted:built", "test:differential:hosted:built"]) {
     assert.equal(linesContaining(verifyScript, command), 1);
   }
   assert.doesNotMatch(verifyScript, /test:contracts|check:source-hygiene|test:infrastructure:runtime/u);
   assert.doesNotMatch(verifyScript, /lake\.sh build checkCheckedSourceRelationExperiment/u);
-  for (const stage of ["verify_common", "verify_lean_library", "verify_lean_checks", "verify_runtime", "verify_temporal", "verify_temporal_serial", "verify_pipeline"]) {
+  for (const stage of ["verify_common", "verify_lean_library", "verify_lean_checks", "verify_runtime", "verify_temporal", "verify_pipeline"]) {
     assert.notEqual(shellFunction(verifyScript, stage), null, `${stage} must own one verification stage`);
   }
-  assert.match(verifyScript, /all\)\n\s+verify_common\n\s+verify_lean_library\n\s+verify_lean_checks\n\s+verify_runtime\n\s+verify_temporal\n\s+verify_temporal_serial\n\s+verify_pipeline\n\s+;;/u);
+  assert.match(verifyScript, /all\)\n\s+verify_common\n\s+verify_lean_library\n\s+verify_lean_checks\n\s+verify_runtime\n\s+verify_temporal\n\s+verify_pipeline\n\s+;;/u);
   assert.match(verifyScript, /lean-library\) verify_lean_library ;;/u);
   assert.match(verifyScript, /lean-checks\) verify_lean_checks ;;/u);
   assert.match(verifyScript, /runtime\) verify_common; verify_runtime ;;/u);
   assert.match(verifyScript, /temporal\) verify_temporal ;;/u);
-  assert.match(verifyScript, /temporal-serial\) verify_temporal_serial ;;/u);
   assert.match(verifyScript, /pipeline\) verify_pipeline ;;/u);
-  assert.match(pipelineScript, /build:verification-typescript/u);
+  assert.match(pipelineScript, /build:differential/u);
   assert.match(
     pipelineScript,
     /"kernelRun"/u,
-  );
-  assert.match(
-    pipelineScript,
-    /message-key-correlation-refinement\.temporal-serial-test\.ts/u,
   );
   assert.doesNotMatch(pipelineScript, /--no-parallel-scavenge|--no-sparkplug/u);
   assert.doesNotMatch(pipelineScript, /runProjectCommand\("tsc"/u);
@@ -241,37 +224,14 @@ test("serves every real-host showcase from the production web build", async () =
   assert.deepEqual(nonProductionConfigs, []);
 });
 
-test("keeps MUE Preview acceptance owners aligned with the executable release graph", async () => {
-  const [rootSource, architecture, webSourceMap, uiQualityGuide, contributorGuide, rootGuide, uiResearch] = await Promise.all([
-    read("package.json"),
-    read("docs/ARCHITECTURE.md"),
-    read("platform/apps/web/SOURCE-MAP.md"),
-    read("showcase/platform-ui-quality/README.md"),
-    read("docs/CONTRIBUTOR-SETUP-GUIDE.md"),
-    read("CLAUDE.md"),
-    read("docs/research/BPM-PLATFORM-UI-UX-INFORMATION-ARCHITECTURE-RESEARCH.md"),
-  ]);
-  const root = scripts(rootSource);
+test("keeps the MUE Preview release graphs build-once", async () => {
+  const root = scripts(await read("package.json"));
 
   assert.equal(
     root["test:release:mue-preview-alpha"],
     "pnpm build:release-product2 && pnpm test:showcase:mue-preview-alpha:built && pnpm test:ui-quality:built",
   );
-  assert.match(architecture, /registered real-host showcase and preview acceptance packages/u);
-  assert.match(architecture, /test:release:mue-preview-alpha/u);
-  assert.doesNotMatch(architecture, /currently extending through `showcase\/m4-incident-operations\/`/u);
-  assert.doesNotMatch(architecture, /M1, M2, M3, and M4 acceptance floors/u);
-  assert.match(webSourceMap, /mue-preview-alpha-start\.ts/u);
-  assert.match(uiQualityGuide, /test:release:mue-preview-alpha/u);
-  assert.match(contributorGuide, /test:showcase:mue-preview-alpha/u);
-  assert.match(contributorGuide, /test:release:mue-preview-alpha/u);
-  assert.match(uiResearch, /without waiting on intermediate browser polling/u);
   assert.equal(matches(root["test:release:mue-preview-beta"] ?? "", /\bbuild:/gu), 1);
-  assert.match(architecture, /test:release:mue-preview-beta/u);
-  assert.match(webSourceMap, /mue-preview-beta-checkpoints\.ts/u);
-  assert.match(uiQualityGuide, /test:release:mue-preview-beta/u);
-  assert.match(contributorGuide, /test:release:mue-preview-beta/u);
-  assert.match(rootGuide, /test:release:mue-preview-beta/u);
 });
 
 function scripts(source: string): Readonly<Record<string, string>> {

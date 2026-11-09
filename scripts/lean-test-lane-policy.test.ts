@@ -196,9 +196,9 @@ test("package tests run tracked Lean drivers rather than generating Lean source"
   assert.deepEqual(generatedLeanSourceFindings(await codeSurfaces(worktreePaths())), []);
   assert.deepEqual(
     generatedLeanSourceFindings([
-      { relativePath: "packages/example/test/targets.ts", source: "await writeFile(driver, `import BpmnSemantics.Example\ndef main : IO Unit := pure ()`);" },
-      { relativePath: "packages/example/test/module.ts", source: "const header = 'module\\npublic import all BpmnSemantics.Example';" },
-      { relativePath: "scripts/example.test.ts", source: "const fixture = `import BpmnSemantics.Example`;" },
+      { relativePath: "packages/example/test/targets.ts", source: "await writeFile(driver, `import Kernel.Example\ndef main : IO Unit := pure ()`);" },
+      { relativePath: "packages/example/test/module.ts", source: "const header = 'module\\npublic import all Kernel.Example';" },
+      { relativePath: "scripts/example.test.ts", source: "const fixture = `import Kernel.Example`;" },
     ]),
     ["packages/example/test/targets.ts", "packages/example/test/module.ts"],
   );
@@ -207,11 +207,12 @@ test("package tests run tracked Lean drivers rather than generating Lean source"
 test("driver entry discovery reads package source paths and the Lean-checks build line", () => {
   assert.deepEqual(
     leanDriverEntryModules([
-      { relativePath: "packages/example/test/targets.ts", source: 'runLeanDriver("BpmnSemantics/ExampleMain.lean", [], 1);' },
-      { relativePath: "packages/example/test/other.ts", source: "const program = 'BpmnSemantics/Nested/OtherMain.lean';" },
-      { relativePath: "scripts/source-analysis.ts", source: 'readFile("BpmnSemantics/NotAnEntry.lean");' },
+      { relativePath: "packages/example/test/targets.ts", source: 'runLeanDriver("Kernel/ExampleMain.lean", [], 1);' },
+      { relativePath: "packages/example/test/other.ts", source: "const program = 'Kernel/Nested/OtherMain.lean';" },
+      { relativePath: "packages/example/test/comment.ts", source: "/** Transcribes `Kernel/Step.lean`. */" },
+      { relativePath: "scripts/source-analysis.ts", source: 'readFile("Kernel/NotAnEntry.lean");' },
     ]),
-    ["BpmnSemantics.ExampleMain", "BpmnSemantics.Nested.OtherMain"],
+    ["Kernel.ExampleMain", "Kernel.Nested.OtherMain"],
   );
   assert.deepEqual(
     leanCheckBuildModules("\n  ./scripts/lake.sh build A.Main B.Main\n  ./scripts/lake.sh run A/Main.lean\n"),

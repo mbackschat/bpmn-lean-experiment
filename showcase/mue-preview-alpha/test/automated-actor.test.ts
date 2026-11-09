@@ -1,27 +1,14 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import {
-  CanonicalObservationKind,
-  CommandOutcome,
-  ProcessStatus,
-  MultiInstanceBodyKind,
-  StimulusKind,
-  UserTaskLifecycleState,
-  VariableValueKind,
-} from "@bpmn-lean/semantic-core";
-import type {
-  CompleteUserTaskInstanceStimulus,
-  OccurrenceId,
-  StateObservation,
-} from "@bpmn-lean/semantic-core";
-import { ProcessCommandResultKind } from "@bpmn-lean/temporal-testkit";
-import type { HostInteractionPort } from "@bpmn-lean/temporal-testkit";
+import type { EngineOccurrenceId, EngineOpenWait } from "@bpmn-lean/engine-api";
 
 import {
   AlphaJourney,
   MuePreviewAlphaActor,
 } from "../src/automated-actor.ts";
+import type { AlphaState } from "../src/automated-actor.ts";
+import type { InteractionPort } from "../src/host-interactions.ts";
 import {
   completionBindingName,
   currentItemBindingName,
@@ -38,6 +25,11 @@ import {
   sha256,
 } from "./fixture.ts";
 
+type SubmittedCommand = Readonly<{
+  occurrence: EngineOccurrenceId;
+  action: Readonly<{ kind: string; values: readonly unknown[] }>;
+}>;
+
 test("binds the Alpha preview to the exact retained BPMN source bytes", async () => {
   assert.equal(sha256(await exactSequentialMultiInstanceSource()), exactSourceSha256);
 });
@@ -50,16 +42,53 @@ test("drives the exact three current iterations into the ordered natural result"
     journey: AlphaJourney.Natural,
     submitted: 3,
   });
-  assert.deepEqual(harness.submitted.map(({ taskId, submittedValues }) => ({
-    activation: taskId.activation,
-    submittedValues,
+  assert.deepEqual(harness.submitted.map(({ occurrence, action }) => ({
+    activation: occurrence.activation,
+    action,
   })), exactNaturalResults.map((value, index) => ({
     activation: index + 1,
-    submittedValues: [{
-      name: completionBindingName,
-      value: { kind: VariableValueKind.String, value },
-    }],
+    action: {
+      kind: "completeUserTask",
+      values: [{ name: completionBindingName, value: { kind: "string", value } }],
+    },
   })));
+});
+
+test("accepts the host's Workflow epoch time with the Timer due five seconds after the observed start", async () => {
+  const startMs = 1_800_000_000_000;
+  const processInstanceId = "Instance_Natural";
+  const harness = sequencedPort([
+    alphaReviewState(processInstanceId, 0, startMs),
+    alphaReviewState(processInstanceId, 1, startMs, startMs + 1_000),
+    alphaReviewState(processInstanceId, 2, startMs, startMs + 2_000),
+    alphaTerminalState(processInstanceId, AlphaJourney.Natural),
+  ]);
+
+  assert.deepEqual(
+    await new MuePreviewAlphaActor(async () => undefined).runNatural(publicInstance(processInstanceId), harness.port),
+    { journey: AlphaJourney.Natural, submitted: 3 },
+  );
+});
+
+test("refuses a lifetime Timer that is not due five seconds after the observed start", async () => {
+  const processInstanceId = "Instance_LateTimer";
+  const valid = alphaReviewState(processInstanceId, 0);
+  const wrong: AlphaState = {
+    ...valid,
+    openWaits: valid.openWaits.map((wait) => wait.detail.kind === "timer"
+      ? { ...wait, detail: { ...wait.detail, deadlineMs: 6_000 } }
+      : wait),
+  };
+  let submissions = 0;
+
+  await assert.rejects(
+    new MuePreviewAlphaActor(async () => undefined).runNatural(
+      publicInstance(processInstanceId),
+      staticPort(wrong, () => { submissions += 1; }),
+    ),
+    /invalid Sequential Multi-Instance lifetime Timer/u,
+  );
+  assert.equal(submissions, 0);
 });
 
 test("waits at the observed escalation occurrence and submits its exact empty patch", async () => {
@@ -81,30 +110,26 @@ test("waits at the observed escalation occurrence and submits its exact empty pa
   });
   assert.equal(ready, 1);
   assert.equal(released, 1);
-  assert.deepEqual(harness.submitted.map(({ taskId, submittedValues }) => ({
-    elementId: taskId.elementId,
-    submittedValues,
+  assert.deepEqual(harness.submitted.map(({ occurrence, action }) => ({
+    elementId: occurrence.elementId,
+    values: action.values,
   })), [{
     elementId: reviewElementId,
-    submittedValues: [{
-      name: completionBindingName,
-      value: { kind: VariableValueKind.String, value: exactNaturalResults[0] },
-    }],
+    values: [{ name: completionBindingName, value: { kind: "string", value: exactNaturalResults[0] } }],
   }, {
     elementId: escalationElementId,
-    submittedValues: [],
+    values: [],
   }]);
 });
 
 test("refuses a cached task identity even when the advertised element still matches", async () => {
   const processInstanceId = "Instance_Cached";
   const valid = alphaReviewState(processInstanceId, 1);
-  const wrong: StateObservation = {
+  const wrong: AlphaState = {
     ...valid,
-    enabledInteractions: [{
-      kind: StimulusKind.CompleteUserTaskInstance,
-      taskId: { ...valid.openUserTasks[0]!.id, activation: 1 },
-    }],
+    openWaits: valid.openWaits.map((wait) => wait.detail.kind === "userTask"
+      ? { ...wait, id: { ...wait.id, activation: 1 } }
+      : wait),
   };
   let submissions = 0;
 
@@ -148,21 +173,9 @@ for (const sourceOverlay of [
 test("refuses a result bound to the wrong current business item", async () => {
   const processInstanceId = "Instance_WrongItem";
   const valid = alphaReviewState(processInstanceId, 1);
-  const controller = valid.openMultiInstances![0]!;
-  assert.ok(controller.mode === "sequential" && controller.bodyKind === MultiInstanceBodyKind.UserTask);
-  const iteration = controller.activeIterations[0]!;
-  const wrong: StateObservation = {
+  const wrong: AlphaState = {
     ...valid,
-    openMultiInstances: [{
-      ...controller,
-      activeIterations: [{
-        ...iteration,
-        taskInput: {
-          name: currentItemBindingName,
-          value: { kind: VariableValueKind.String, value: exactInputItems[0] },
-        },
-      }],
-    }],
+    scopes: [iterationScope(processInstanceId, reviewElementId, 2, exactInputItems[0])],
   };
   let submissions = 0;
 
@@ -179,19 +192,16 @@ test("refuses a result bound to the wrong current business item", async () => {
 test("refuses a Parallel Multi-Instance controller at the Alpha boundary", async () => {
   const processInstanceId = "Instance_Parallel";
   const valid = alphaReviewState(processInstanceId, 1);
-  const controller = valid.openMultiInstances![0]!;
-  assert.ok(controller.mode === "sequential" && controller.bodyKind === MultiInstanceBodyKind.UserTask);
-  const wrong: StateObservation = {
+  const wrong: AlphaState = {
     ...valid,
-    openMultiInstances: [{
-      ...controller,
-      mode: "parallel",
-      pendingItemCount: 0,
-      numberOfInstances: controller.plannedInstanceCount,
-      numberOfActiveInstances:
-        controller.plannedInstanceCount - controller.numberOfCompletedInstances,
-      numberOfTerminatedInstances: 0,
-    }],
+    scopes: [
+      iterationScope(processInstanceId, reviewElementId, 2, exactInputItems[1]),
+      iterationScope(processInstanceId, reviewElementId, 3, exactInputItems[2]),
+    ],
+    openWaits: [
+      ...valid.openWaits,
+      userTaskWait(occurrence(processInstanceId, reviewElementId, 3), "Review item"),
+    ],
   };
   let submissions = 0;
 
@@ -208,23 +218,9 @@ test("refuses a Parallel Multi-Instance controller at the Alpha boundary", async
 test("refuses a Sub-Process iteration before submitting a User Task command", async () => {
   const processInstanceId = "Instance_SubProcess";
   const valid = alphaReviewState(processInstanceId, 1);
-  const controller = valid.openMultiInstances![0]!;
-  assert.ok(controller.mode === "sequential" && controller.bodyKind === MultiInstanceBodyKind.UserTask);
-  const iteration = controller.activeIterations[0]!;
-  const wrong: StateObservation = {
+  const wrong: AlphaState = {
     ...valid,
-    openMultiInstances: [{
-      ...controller,
-      bodyKind: MultiInstanceBodyKind.SubProcess,
-      activeIterations: [{
-        loopCounter: iteration.loopCounter,
-        body: { processInstanceId, definitionScopeId: "body", activation: 2 },
-        item: iteration.taskInput,
-        bindings: [],
-        userTaskIds: [iteration.taskId],
-        effectIds: [],
-      }],
-    }],
+    scopes: [iterationScope(processInstanceId, "SubProcess_Body", 2, exactInputItems[1])],
   };
   let submissions = 0;
   await assert.rejects(
@@ -239,7 +235,7 @@ test("refuses a Sub-Process iteration before submitting a User Task command", as
 
 test("refuses escalation without the committed Timer state", async () => {
   const processInstanceId = "Instance_EarlyEscalation";
-  const wrong: StateObservation = {
+  const wrong: AlphaState = {
     ...alphaEscalationState(processInstanceId),
     logicalTimeMs: 0,
   };
@@ -259,21 +255,40 @@ test("refuses escalation without the committed Timer state", async () => {
   assert.equal(submissions, 0);
 });
 
+test("refuses escalation published before the Timer's deadline", async () => {
+  const processInstanceId = "Instance_EarlyDeadline";
+  const harness = sequencedPort([
+    alphaReviewState(processInstanceId, 0),
+    alphaReviewState(processInstanceId, 1),
+    { ...alphaEscalationState(processInstanceId), logicalTimeMs: 4_999 },
+  ], true);
+
+  await assert.rejects(
+    new MuePreviewAlphaActor(async () => undefined).runInterrupted(publicInstance(processInstanceId), harness.port, {
+      onEscalationReady: () => undefined,
+      waitForEscalationRelease: async () => undefined,
+    }),
+    /outside its exact preview contract/u,
+  );
+  assert.equal(harness.submitted.length, 1);
+});
+
 for (const journey of Object.values(AlphaJourney)) {
   test(`refuses failed ${journey} termination after all configured responses are consumed`, async () => {
     const processInstanceId = `Instance_${journey}_Failed`;
-    const failed: StateObservation = {
+    const failed: AlphaState = {
       ...alphaTerminalState(processInstanceId, journey),
-      status: ProcessStatus.Failed,
+      status: "failed",
       failure: {
-        kind: "compensationHandlerFailure",
-        triggerId: occurrence(processInstanceId, "Throw_Compensation", 1),
-        handlerId: occurrence(processInstanceId, "Handler_Compensation", 1),
-        effectId: occurrence(processInstanceId, "Effect_Compensation", 1),
         code: "unexpectedFailure",
         message: null,
+        occurrence: occurrence(processInstanceId, "Effect_Compensation", 1),
+        related: [
+          { name: "trigger", occurrence: occurrence(processInstanceId, "Throw_Compensation", 1) },
+          { name: "handler", occurrence: occurrence(processInstanceId, "Handler_Compensation", 1) },
+        ],
       },
-    };
+    } as AlphaState;
     const prefix = journey === AlphaJourney.Natural
       ? [0, 1, 2].map((index) => alphaReviewState(processInstanceId, index))
       : [
@@ -316,149 +331,105 @@ function interruptedPort() {
   ], true);
 }
 
-function sequencedPort(states: StateObservation[], advanceHostWait = false) {
+/** Advances one state per committed command; `advanceHostWait` lets the Timer fire while the second review is open. */
+function sequencedPort(states: AlphaState[], advanceHostWait = false) {
   let index = 0;
   let readsAtIndex = 0;
-  const submitted: CompleteUserTaskInstanceStimulus[] = [];
-  const port: HostInteractionPort = {
+  const submitted: SubmittedCommand[] = [];
+  const port: InteractionPort = {
     readState: async () => {
       if (advanceHostWait && index === 1 && readsAtIndex > 0) index += 1;
       readsAtIndex += 1;
       return states[index]!;
     },
-    readUserTaskDetail: async () => ({
-      task: states[index]!.openUserTasks[0]!,
-      inputVariables: [],
-    }),
-    submitCompletion: async (stimulus) => {
-      submitted.push(stimulus);
+    command: async (stimulus) => {
+      submitted.push(stimulus as unknown as SubmittedCommand);
       index += 1;
       readsAtIndex = 0;
-      return {
-        kind: ProcessCommandResultKind.Semantic,
-        commandId: stimulus.commandId,
-        outcome: CommandOutcome.Committed,
-      };
+      return { outcome: "committed", code: null, revision: index };
     },
-    submitMessage: async () => { throw new Error("Alpha actor must not submit Message stimuli"); },
-    publishCorrelated: async () => { throw new Error("Alpha actor must not publish correlated Message stimuli"); },
-    submitCancellation: async () => { throw new Error("Alpha actor must not submit cancellation stimuli"); },
+    deliver: async () => { throw new Error("Alpha actor must not deliver Messages"); },
   };
   return { port, submitted };
 }
 
-function staticPort(state: StateObservation, onSubmit: () => void): HostInteractionPort {
+function staticPort(state: AlphaState, onSubmit: () => void): InteractionPort {
   return {
     readState: async () => state,
-    readUserTaskDetail: async () => ({ task: state.openUserTasks[0]!, inputVariables: [] }),
-    submitCompletion: async (stimulus) => {
+    command: async () => {
       onSubmit();
-      return {
-        kind: ProcessCommandResultKind.Semantic,
-        commandId: stimulus.commandId,
-        outcome: CommandOutcome.Committed,
-      };
+      return { outcome: "committed", code: null, revision: 1 };
     },
-    submitMessage: async () => { throw new Error("unexpected Message submission"); },
-    publishCorrelated: async () => { throw new Error("unexpected correlated Message publication"); },
-    submitCancellation: async () => { throw new Error("unexpected cancellation submission"); },
+    deliver: async () => { throw new Error("unexpected Message delivery"); },
   };
 }
 
-function alphaReviewState(processInstanceId: string, loopCounter: number): StateObservation {
-  const taskId = occurrence(processInstanceId, reviewElementId, loopCounter + 1);
+/** The review state as `Kernel.Run.observationJson` publishes it (`scenarios/sequential-multi-instance`). */
+function alphaReviewState(processInstanceId: string, loopCounter: number, startMs = 0, logicalTimeMs = startMs): AlphaState {
   return baseState(processInstanceId, {
-    openUserTasks: [{
-      id: taskId,
-      name: "Review item",
-      state: UserTaskLifecycleState.Active,
-    }],
-    openTimers: [{
-      id: occurrence(processInstanceId, lifetimeTimerElementId, 1),
-      deadlineMs: 5_000,
-    }],
-    openMultiInstances: [{
-      id: {
-        processInstanceId,
-        activityElementId: reviewElementId,
-        activation: 1,
+    logicalTimeMs,
+    scopes: [iterationScope(processInstanceId, reviewElementId, loopCounter + 1, exactInputItems[loopCounter]!)],
+    openWaits: [
+      {
+        id: occurrence(processInstanceId, lifetimeTimerElementId, 1),
+        definition: null,
+        input: "timerFire",
+        detail: { kind: "timer", deadlineMs: startMs + 5_000, recurrence: null },
       },
-      mode: "sequential",
-      bodyKind: MultiInstanceBodyKind.UserTask,
-      plannedInstanceCount: exactInputItems.length,
-      pendingItemCount: exactInputItems.length - loopCounter - 1,
-      numberOfInstances: loopCounter + 1,
-      numberOfActiveInstances: 1,
-      numberOfCompletedInstances: loopCounter,
-      numberOfTerminatedInstances: 0,
-      activeIterations: [{
-        loopCounter,
-        taskId,
-        taskInput: {
-          name: currentItemBindingName,
-          value: { kind: VariableValueKind.String, value: exactInputItems[loopCounter]! },
-        },
-        completionBindingName,
-      }],
-    }],
-    enabledInteractions: [{ kind: StimulusKind.CompleteUserTaskInstance, taskId }],
+      userTaskWait(occurrence(processInstanceId, reviewElementId, loopCounter + 1), "Review item"),
+    ],
   });
 }
 
-function alphaEscalationState(processInstanceId: string): StateObservation {
-  const taskId = occurrence(processInstanceId, escalationElementId, 1);
+function alphaEscalationState(processInstanceId: string): AlphaState {
   return baseState(processInstanceId, {
     logicalTimeMs: 5_000,
-    openUserTasks: [{
-      id: taskId,
-      name: "Escalate review",
-      state: UserTaskLifecycleState.Active,
-    }],
-    enabledInteractions: [{ kind: StimulusKind.CompleteUserTaskInstance, taskId }],
+    openWaits: [userTaskWait(occurrence(processInstanceId, escalationElementId, 1), "Handle interrupted review")],
   });
 }
 
-function alphaTerminalState(
-  processInstanceId: string,
-  journey: AlphaJourney,
-): StateObservation {
+function alphaTerminalState(processInstanceId: string, journey: AlphaJourney): AlphaState {
   return baseState(processInstanceId, {
-    status: ProcessStatus.Completed,
+    status: "completed",
     logicalTimeMs: journey === AlphaJourney.Interrupted ? 5_000 : 0,
-    variables: journey === AlphaJourney.Natural ? [{
-      name: outputBindingName,
-      value: { kind: VariableValueKind.StringList, value: [...exactNaturalResults] },
-    }] : [],
+    variables: journey === AlphaJourney.Natural
+      ? [{ name: outputBindingName, value: { kind: "stringList", value: [...exactNaturalResults] } }]
+      : [],
   });
 }
 
-function baseState(
-  processInstanceId: string,
-  overrides: Partial<Exclude<StateObservation, { readonly status: ProcessStatus.Failed }>>,
-): StateObservation {
+function baseState(processInstanceId: string, overrides: Partial<AlphaState>): AlphaState {
   return {
-    kind: CanonicalObservationKind.State,
     instanceId: processInstanceId,
-    status: ProcessStatus.Running,
-    activeWaits: [],
-    openUserTasks: [],
-    openMessageSubscriptions: [],
-    openTimers: [],
-    openEffects: [],
-    openIncidents: [],
-    openMultiInstances: [],
-    variables: [],
-    enabledInteractions: [],
+    status: "running",
     logicalTimeMs: 0,
+    variables: [],
+    scopes: [],
+    openWaits: [],
     ...overrides,
   };
 }
 
-function occurrence(
-  processInstanceId: string,
-  elementId: string,
-  activation: number,
-): OccurrenceId {
+function iterationScope(processInstanceId: string, elementId: string, activation: number, item: string) {
+  return {
+    scope: { processInstanceId, role: "multiInstanceInstance", elementId, activation },
+    variables: [{ name: currentItemBindingName, value: { kind: "string" as const, value: item } }],
+  };
+}
+
+function userTaskWait(id: EngineOccurrenceId, name: string): EngineOpenWait {
+  return {
+    id,
+    definition: null,
+    input: "command",
+    detail: {
+      kind: "userTask", name, assignee: null, candidateUsers: [], candidateGroups: [], formKey: null, formFields: [],
+      dueDate: null, followUpDate: null, priority: null, inputs: [],
+    },
+  };
+}
+
+function occurrence(processInstanceId: string, elementId: string, activation: number): EngineOccurrenceId {
   return { processInstanceId, elementId, activation };
 }
 

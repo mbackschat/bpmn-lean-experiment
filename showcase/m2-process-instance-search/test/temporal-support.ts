@@ -2,20 +2,16 @@
 import assert from "node:assert/strict";
 import { setTimeout as delay } from "node:timers/promises";
 
-import {
-  bpmnOpenUserTasksQueryName,
-  withDeadline,
-} from "@bpmn-lean/temporal-testkit";
-import type {
-  BpmnProcessWorkflow,
-  createCachedLocalEnvironment,
-} from "@bpmn-lean/temporal-testkit";
+import { withDeadline } from "../src/host-worker.ts";
+import type { TemporalEnvironment } from "../src/host-worker.ts";
 
 const operationDeadlineMs = 10_000;
 
-type TemporalEnvironment = Awaited<ReturnType<typeof createCachedLocalEnvironment>>;
 type TemporalClient = TemporalEnvironment["client"];
 type ProcessHandle = ReturnType<TemporalClient["workflow"]["getHandle"]>;
+
+/** The canonical state query of the host's process Workflow (`packages/temporal-host/src/protocol.ts`). */
+const observationQueryName = "observation";
 
 export type TemporalWorkflowExecution = Readonly<{
   workflowId: string;
@@ -65,9 +61,9 @@ export async function assertWorkflowHostsInstance(
   for (let attempt = 0; attempt < 200; attempt += 1) {
     try {
       latest = await withDeadline(
-        handle.query(bpmnOpenUserTasksQueryName),
+        handle.query(observationQueryName),
         1_000,
-        `${expectedTaskName} open User Task Query`,
+        `${expectedTaskName} state observation Query`,
       );
       const tasks = decodeOpenUserTasks(latest);
       if (tasks.length === 1 && tasks[0]?.name === expectedTaskName) {
@@ -115,7 +111,7 @@ function processHandle(
   client: TemporalClient["workflow"],
   execution: TemporalWorkflowExecution,
 ): ProcessHandle {
-  return client.getHandle<BpmnProcessWorkflow>(execution.workflowId, execution.runId);
+  return client.getHandle(execution.workflowId, execution.runId);
 }
 
 async function collectWorkflowExecutions(
@@ -143,14 +139,19 @@ async function collectScheduleIds(client: TemporalClient): Promise<string[]> {
   return identities.sort();
 }
 
+/** The open User Task waits of a canonical state observation (`canonical-result.schema.json#/$defs/state`). */
 function decodeOpenUserTasks(
   value: unknown,
 ): ReadonlyArray<Readonly<{ processInstanceId: string; name: string | null }>> {
-  if (!Array.isArray(value)) {
-    throw new TypeError("open User Task Query must return an array");
+  const openWaits = requireRecord(value, "state observation").openWaits;
+  if (!Array.isArray(openWaits)) {
+    throw new TypeError("state observation openWaits must be an array");
   }
-  return value.map((candidate, index) => {
-    const task = requireRecord(candidate, `open User Task ${index}`);
+  return openWaits.filter((candidate) =>
+    requireRecord(requireRecord(candidate, "open wait").detail, "open wait detail").kind === "userTask"
+  ).map((candidate, index) => {
+    const wait = requireRecord(candidate, `open User Task ${index}`);
+    const task: Record<string, unknown> = { ...requireRecord(wait.detail, `open User Task ${index} detail`), id: wait.id };
     const id = requireRecord(task.id, `open User Task ${index} identity`);
     const processInstanceId = requireNonemptyString(
       id.processInstanceId,

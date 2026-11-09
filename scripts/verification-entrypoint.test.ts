@@ -7,8 +7,6 @@ import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
-import { leanHeader } from "./lean-source-analysis.ts";
-
 const verifyScriptPath = fileURLToPath(
   new URL("./verify.sh", import.meta.url),
 );
@@ -21,62 +19,14 @@ const verificationWorkflowPath = fileURLToPath(
 const cibOracleScriptPath = fileURLToPath(
   new URL("./test-cibseven-oracle.sh", import.meta.url),
 );
-const contributorGuidePath = fileURLToPath(
-  new URL("../CLAUDE.md", import.meta.url),
-);
-const testingSpecPath = fileURLToPath(
-  new URL("../docs/TESTING-SPEC.md", import.meta.url),
-);
 const rootPackageManifestPath = fileURLToPath(
   new URL("../package.json", import.meta.url),
-);
-const checkedSourceRelationMainPath = fileURLToPath(
-  new URL(
-    "../BpmnSemantics/Experiments/CheckedSourceRelationMain.lean",
-    import.meta.url,
-  ),
-);
-const checkedSourceFrontierConformancePath = fileURLToPath(
-  new URL(
-    "../BpmnSemantics/Experiments/CheckedSourceFrontierConformance.lean",
-    import.meta.url,
-  ),
 );
 const documentedInstructionSurfaces = [
   "CLAUDE.md",
   "README.md",
-  "docs/TESTING-SPEC.md",
-  "docs/experiments/README.md",
-  "docs/experiments/SEMANTIC-REPRESENTATION-EXPERIMENT.md",
-  "docs/experiments/CHECKED-SOURCE-RELATION-EXPERIMENT.md",
 ] as const;
 const bareLeanCommand = /(?<![\w./-])lake\s+(?:build|test|exe|env|update|clean)\b/u;
-
-function assertLeanGateCadence(testing: string, review: string): void {
-  assert.match(testing, /Local Lean commits require focused module\/consumer builds and regression tests; the full library is not a commit prerequisite\./u,
-    "local Lean commits must use focused verification");
-  assert.match(testing, /Before semantic-batch acceptance[^\n]*`LEAN_FULL_GATE=<batch-id> \.\/scripts\/lake\.sh test`/u,
-    "full Lean qualification must remain required at semantic-batch acceptance");
-  assert.match(testing, /Lean semantic definition or law[^\n]*`\.\/scripts\/lake\.sh build <module target>\.\.\.`/u,
-    "the Lean matrix must expose the focused entry point");
-  for (const owner of [review]) {
-    assert.match(owner, /Local Lean commits use focused module\/consumer builds and regression tests/u,
-      "review and contributor instructions must preserve focused local Lean commits");
-    assert.doesNotMatch(owner, /Pass focused\/affected-package gates[^\n]*before committing/u,
-      "the blanket pre-commit gate must not override the Lean cadence");
-  }
-}
-
-test("keeps local Lean commits focused and full qualification at semantic-batch acceptance", async () => {
-  const [testing, review] = await Promise.all([
-    readFile(testingSpecPath, "utf8"),
-    readFile(new URL("../docs/REVIEW-POLICY.md", import.meta.url), "utf8"),
-  ]);
-  assertLeanGateCadence(testing, review);
-  assert.throws(() => assertLeanGateCadence(testing.replace("the full library is not a commit prerequisite", "the full library is a commit prerequisite"), review), /focused verification/u);
-  assert.throws(() => assertLeanGateCadence(testing.replace(/^\| Before semantic-batch acceptance.*\n/mu, ""), review), /full Lean qualification/u);
-  assert.throws(() => assertLeanGateCadence(testing, `${review}\nPass focused/affected-package gates before committing.`), /blanket pre-commit gate/u);
-});
 
 test("publication schema gates run without workspace build output", () => {
   const result = spawnSync(process.execPath, ["--input-type=module", "-e", `
@@ -192,12 +142,6 @@ async function readNonemptyLines(path: string): Promise<readonly string[]> {
     .filter((line) => line.length > 0);
 }
 
-/** Asserts that the Lean file at `path` imports `module` exactly once, in any header form. */
-async function assertImportsOnce(path: string, module: string): Promise<void> {
-  const imports = leanHeader(await readFile(path, "utf8")).imports;
-  assert.equal(imports.filter((candidate) => candidate.module === module).length, 1, `${path} imports ${module}`);
-}
-
 async function assertLineOccursOnce(
   path: string,
   expected: string,
@@ -209,45 +153,24 @@ async function assertLineOccursOnce(
   );
 }
 
-test("default verification runs every part of the focused Temporal gate exactly once", async () => {
+test("default verification runs every hosted Temporal gate exactly once, on prepared output", async () => {
   const manifest = JSON.parse(
     await readFile(rootPackageManifestPath, "utf8"),
   ) as { scripts?: Record<string, string> };
-  const parts = (manifest.scripts?.["test:temporal:built"] ?? "").split(" && ")
-    .map((command) => /^pnpm (test:temporal:built:[\w-]+)$/u.exec(command)?.[1]);
-  assert.ok(parts.length > 1 && parts.every((part) => part !== undefined), "test:temporal:built must compose named parts");
-  for (const part of parts) {
-    await assertLineOccursOnce(verifyScriptPath, `./scripts/pnpm.sh run ${part}`);
+  for (const gate of ["test:temporal-host:hosted:built", "test:differential:hosted:built"]) {
+    await assertLineOccursOnce(verifyScriptPath, `./scripts/pnpm.sh run ${gate}`);
+    assert.match(manifest.scripts?.[gate] ?? "", /^node --test --test-concurrency=1 packages\/[\w-]+\/test\/\*\.temporal-test\.ts$/u, gate);
   }
 });
 
-test("the Temporal source gate typechecks directly executed harnesses first", async () => {
+test("the Temporal host gate typechecks its tests before running them", async () => {
   const manifest = JSON.parse(
     await readFile(rootPackageManifestPath, "utf8"),
   ) as { scripts?: Record<string, string> };
   assert.equal(
-    manifest.scripts?.["test:temporal"],
-    "pnpm check:harness-types && pnpm build:temporal-adapter && pnpm test:temporal:built",
+    manifest.scripts?.["test:temporal-host"],
+    "pnpm build:temporal-host && tsc -p packages/temporal-host/tsconfig.test.json && node --test --test-concurrency=1 packages/temporal-host/test/*.test.ts",
   );
-});
-
-test("the semantic package gate uses the library test driver without a duplicate build", async () => {
-  const manifest = JSON.parse(
-    await readFile(rootPackageManifestPath, "utf8"),
-  ) as { scripts?: Record<string, string> };
-  assert.equal(
-    manifest.scripts?.["test:semantic"],
-    "LEAN_FULL_GATE=test-semantic ./scripts/lake.sh test && LEAN_FULL_GATE=test-semantic ./scripts/lake.sh build BpmnConformance && ./scripts/lake.sh run scripts/lean-realized-leaks.lean BpmnSemantics.RealizedLeakFixtures scripts/lean-realized-leaks.tsv BpmnSemantics BpmnConformance && pnpm build:semantic-core && tsc -p packages/semantic-core/tsconfig.type-test.json && node --test --test-concurrency=1 packages/semantic-core/test/*.test.ts",
-  );
-});
-
-test("Lake testing builds the semantic library instead of a native executable", async () => {
-  const lakefile = await readFile(
-    fileURLToPath(new URL("../lakefile.toml", import.meta.url)),
-    "utf8",
-  );
-  assert.match(lakefile, /^testDriver = "BpmnSemantics"$/mu);
-  assert.doesNotMatch(lakefile, /name = "checkConformance"/u);
 });
 
 function synchronousPackageElaboration(lakefile: string): boolean {
@@ -307,14 +230,21 @@ test("hosted cold Lean builds have recovery headroom instead of a 30-minute cuto
 
 test("the hosted Lean cache identity includes every library root and nested sources", async () => {
   const workflow = await readFile(verificationWorkflowPath, "utf8");
-  assert.match(
-    workflow,
-    /hashFiles\('lean-toolchain', 'lakefile\.toml', 'lake-manifest\.json', 'BpmnSemantics\.lean', 'BpmnConformance\.lean', 'BpmnSemantics\/\*\*\/\*\.lean', 'Kernel\.lean', 'Kernel\/\*\*\/\*\.lean'\)/u,
-  );
+  // Derived from the lakefile, so a new library cannot be built under a cache key that ignores its sources.
   const libraries = [...(await readFile("lakefile.toml", "utf8")).matchAll(/^\[\[lean_lib\]\]\nname = "([^"]+)"$/gmu)]
     .map((match) => match[1]!);
-  assert.deepEqual(libraries, ["BpmnSemantics", "BpmnConformance", "Kernel"]);
-  for (const library of libraries) assert.match(workflow, new RegExp(`hashFiles\\([^)]*'${library}\\.lean'`, "u"), library);
+  assert.ok(libraries.length > 0, "the lakefile declares no Lean library");
+  const identities = [...workflow.matchAll(/hashFiles\(([^)]*'lakefile\.toml'[^)]*)\)/gu)].map((match) => match[1]!);
+  assert.ok(identities.length > 0, "no hosted Lean cache identity was found");
+  for (const identity of identities) {
+    for (const input of ["lean-toolchain", "lakefile.toml", "lake-manifest.json"]) {
+      assert.ok(identity.includes(`'${input}'`), `${input} in ${identity}`);
+    }
+    for (const library of libraries) {
+      assert.ok(identity.includes(`'${library}.lean'`), `${library}.lean in ${identity}`);
+      assert.ok(identity.includes(`'${library}/**/*.lean'`), `${library}/**/*.lean in ${identity}`);
+    }
+  }
 });
 
 test("hosted Lean checks consume the completed library output in a separate bounded job", async () => {
@@ -339,7 +269,9 @@ test("hosted Lean checks consume the completed library output in a separate boun
 test("staged job handoffs restore an earlier attempt of the same run", async () => {
   const workflow = await readFile(verificationWorkflowPath, "utf8");
   const consumers = workflow.split(/\n      - name: /u).filter((step) => /fail-on-cache-miss: true/u.test(step));
-  assert.ok(consumers.length >= 5, "every staged-output consumer is checked");
+  // Every staged handoff a job saves is restored somewhere, so this set equality also proves the scan saw them all.
+  const consumed = new Set(consumers.map((step) => step.match(/key: (verify-[a-z-]+)-/u)?.[1]));
+  assert.deepEqual([...consumed].sort(), stagedHandoffs(workflow));
   for (const step of consumers) {
     const stage = step.match(/key: (verify-[a-z-]+)-\$\{\{ runner\.os \}\}-\$\{\{ github\.run_id \}\}-\$\{\{ github\.run_attempt \}\}/u)?.[1];
     assert.ok(stage !== undefined, step);
@@ -352,18 +284,23 @@ test("staged job handoffs restore an earlier attempt of the same run", async () 
 // repository's 10 GB Actions cache budget (measured 2026-10-27: 9.3 of 10.1 GiB), where LRU
 // eviction then removes the incremental `lake-` caches every run does restore. Deleting them only
 // after `verify-complete` succeeds keeps them for a partial rerun of a failed run.
+/** The staged handoff keys the workflow's jobs save, sorted. */
+function stagedHandoffs(workflow: string): string[] {
+  return [...new Set([...workflow.matchAll(/uses: actions\/cache@\S+[^\n]*\n(?: {8}[^\n]*\n)*? {10}key: (verify-[a-z-]+)-\$\{\{ runner\.os \}\}-\$\{\{ github\.run_id \}\}-\$\{\{ github\.run_attempt \}\}/gu)]
+    .map((match) => match[1]!))].sort();
+}
+
 test("a verified run releases exactly its own staged handoffs", async () => {
   const workflow = await readFile(verificationWorkflowPath, "utf8");
-  const staged = [...workflow.matchAll(/uses: actions\/cache@\S+[^\n]*\n(?: {8}[^\n]*\n)*? {10}key: (verify-[a-z-]+)-\$\{\{ runner\.os \}\}-\$\{\{ github\.run_id \}\}-\$\{\{ github\.run_attempt \}\}/gu)]
-    .map((match) => match[1]);
-  assert.deepEqual([...new Set(staged)].sort(), ["verify-lean-checks", "verify-lean-library", "verify-runtime"]);
+  const staged = stagedHandoffs(workflow);
+  assert.deepEqual(staged, ["verify-lean-checks", "verify-lean-library", "verify-runtime"]);
   const release = workflow.match(/\n  release_staged_outputs:\n[\s\S]*$/u)?.[0];
   assert.ok(release !== undefined, "the workflow releases its staged handoffs");
   assert.match(release, /needs:\n      - verify-complete\n/u);
   assert.match(release, /if: always\(\) && needs\.verify-complete\.result == 'success'\n/u);
   assert.match(release, /permissions:\n      actions: write\n/u);
   const prefixes = release.match(/for stage in ([a-z -]+); do/u)?.[1]?.split(" ");
-  assert.deepEqual(prefixes?.sort(), [...new Set(staged)].sort());
+  assert.deepEqual(prefixes?.sort(), staged);
   assert.match(release, /--key "\$stage-\$RUNNER_OS-\$\{\{ github\.run_id \}\}-"/u);
 });
 
@@ -415,37 +352,6 @@ test("the ordinary-package Lean guard reaches a second package", () => {
   );
 });
 
-test("concrete Lean fixture bindings run in the restored-output integration lane", async () => {
-  const [manifest, verifyScript] = await Promise.all([
-    readFile(fileURLToPath(new URL("../package.json", import.meta.url)), "utf8"),
-    readFile(verifyScriptPath, "utf8"),
-  ]);
-  const scripts = (JSON.parse(manifest) as { scripts: Record<string, string> }).scripts;
-  assert.equal(scripts["test:lean-fixture-bindings:built"],
-    "node --test --test-concurrency=1 packages/bpmn-source/test/lean-fixture-bindings.integration-test.ts");
-  assert.match(verifyScript,
-    /verify_lean_checks\(\) \{\n[^\n]*\.\/scripts\/lake\.sh build[^\n]* BpmnSemantics\.FixtureBindingJsonMain(?: |\n)/u);
-  assert.match(verifyScript,
-    /verify_pipeline\(\) \{[^}]*\.\/scripts\/pnpm\.sh run test:lean-fixture-bindings:built/u);
-});
-
-test("committed-publication parity runs in the restored-output integration lane", async () => {
-  const [manifest, verifyScript] = await Promise.all([
-    readFile(fileURLToPath(new URL("../package.json", import.meta.url)), "utf8"),
-    readFile(verifyScriptPath, "utf8"),
-  ]);
-  assert.match(
-    manifest,
-    /"test:committed-execution-publication-parity:built": "node --test --test-concurrency=1 packages\/bpmn-source\/test\/committed-execution-publication-parity\.integration-test\.ts"/u,
-  );
-  assert.equal(
-    verifyScript.split("\n").filter((line) =>
-      line.trim() === "./scripts/pnpm.sh run test:committed-execution-publication-parity:built"
-    ).length,
-    1,
-  );
-});
-
 test("the kernel behavior oracle runs in the restored-output integration lane", async () => {
   const [manifest, verifyScript] = await Promise.all([
     readFile(fileURLToPath(new URL("../package.json", import.meta.url)), "utf8"),
@@ -494,19 +400,6 @@ test("the runtime-import guard reaches helper and URL wrapped build paths", () =
   );
 });
 
-test("managed-sandbox guidance preauthorizes every loopback-listener gate", async () => {
-  const contributorGuide = await readFile(contributorGuidePath, "utf8");
-  const testingSpec = await readFile(testingSpecPath, "utf8");
-  for (const source of [contributorGuide, testingSpec]) {
-    assert.match(source, /managed sandbox/i);
-    assert.match(source, /before (?:the )?first attempt/i);
-    assert.match(source, /`\.\/scripts\/verify\.sh`/);
-    assert.match(source, /`\.\/scripts\/pnpm\.sh run test:infrastructure`/);
-    assert.match(source, /`\.\/scripts\/pnpm\.sh run test:temporal`/);
-    assert.match(source, /`\.\/scripts\/pnpm\.sh run test:pipeline`/);
-  }
-});
-
 test("verification scripts validate BPMN XML through one preflighting owner", async () => {
   for (const path of [verifyScriptPath, cibOracleScriptPath]) {
     const source = await readFile(path, "utf8");
@@ -546,39 +439,11 @@ test("default verification XSD-validates the Activity boundary Message source", 
   );
 });
 
-test("Lean checks interpret their own witnesses and build package drivers natively, outside test deadlines", async () => {
+test("Lean checks build the kernel runner natively, outside test deadlines", async () => {
   const source = await readFile(verifyScriptPath, "utf8");
-  await assertLineOccursOnce(
-    verifyScriptPath,
-    "./scripts/lake.sh build BpmnSemantics.Experiments.CheckedSourceRelationMain BpmnSemantics.CommittedExecutionPublicationJsonMain BpmnSemantics.FixtureBindingJsonMain",
-  );
-  await assertLineOccursOnce(
-    verifyScriptPath,
-    "./scripts/lake.sh build emitSemanticProcessResults emitEnginePopulationResults emitCommittedExecutionPublication emitInternalChoiceSchedules emitDefinitionAdmissions emitParallelScopeAdmissions emitParallelScopeStartAdmissions emitParallelScopeReservations emitScenarioSupport checkCallFamilyFixtures checkConformanceFixtures",
-  );
-  for (const path of [
-    "BpmnSemantics/Experiments/CheckedSourceRelationMain.lean",
-    "BpmnSemantics/CommittedExecutionPublicationJsonMain.lean",
-  ]) {
-    await assertLineOccursOnce(
-      verifyScriptPath,
-      `./scripts/lake.sh run ${path}`,
-    );
-  }
-  await assertLineOccursOnce(verifyScriptPath, ".lake/build/bin/checkCallFamilyFixtures");
-  await assertLineOccursOnce(verifyScriptPath, ".lake/build/bin/checkConformanceFixtures");
-  // The realized-constant check reads the `.olean` files both roots built, so it follows the second build directly.
-  assert.match(source, /LEAN_FULL_GATE=verify-lean-conformance \.\/scripts\/lake\.sh build BpmnConformance\n {2}\.\/scripts\/lake\.sh run scripts\/lean-realized-leaks\.lean BpmnSemantics\.RealizedLeakFixtures scripts\/lean-realized-leaks\.tsv BpmnSemantics BpmnConformance\n/u);
+  const checks = source.match(/^verify_lean_checks\(\) \{\n([\s\S]*?)^\}/mu)?.[1] ?? "";
+  assert.match(checks, /^ {2}\.\/scripts\/lake\.sh build kernelRun$/mu);
   assert.doesNotMatch(source, /lake\.sh exe/u);
-});
-
-test("the checked-source proof target imports both Stage 3a frontier modules", async () => {
-  await assertImportsOnce(checkedSourceRelationMainPath, "BpmnSemantics.Experiments.CheckedSourceFrontier");
-  await assertImportsOnce(checkedSourceRelationMainPath, "BpmnSemantics.Experiments.CheckedSourceFrontierConformance");
-});
-
-test("frontier conformance imports the Stage 3b parallel-frontier module", async () => {
-  await assertImportsOnce(checkedSourceFrontierConformancePath, "BpmnSemantics.Experiments.CheckedSourceParallelFrontier");
 });
 
 /**
@@ -652,7 +517,7 @@ test("the Lean wrapper witness preserves another build's lock", async (context) 
   }
 });
 
-test("the Lean wrapper clamps concurrency, rejects umbrella mixing, and refuses a second build tree", async () => {
+test("the Lean wrapper clamps concurrency and refuses a second build tree", async () => {
   const fakeBin = await mkdtemp(path.join(tmpdir(), "bpmn-lean-fake-lake-"));
   const fakeLake = path.join(fakeBin, "lake");
   const lockOwner = path.basename(fakeBin);
@@ -683,22 +548,14 @@ test("the Lean wrapper clamps concurrency, rejects umbrella mixing, and refuses 
 
     const interpreted = spawnSync(
       lakeWrapperPath,
-      ["run", "BpmnSemantics/SemanticProcessJsonMain.lean", "input.jsonl"],
+      ["run", "Kernel/Run.lean", "input.jsonl"],
       { encoding: "utf8", env: environment },
     );
     assert.equal(interpreted.status, 0, interpreted.stderr);
     assert.equal(
       interpreted.stdout.trim(),
-      `${pinnedThreads}\nenv lean --run BpmnSemantics/SemanticProcessJsonMain.lean input.jsonl`,
+      `${pinnedThreads}\nenv lean --run Kernel/Run.lean input.jsonl`,
     );
-
-    const broadFocused = spawnSync(
-      lakeWrapperPath,
-      ["build", "BpmnSemantics.SemanticProcess.ProfileAdmission", "BpmnSemantics"],
-      { encoding: "utf8", env: environment },
-    );
-    assert.notEqual(broadFocused.status, 0);
-    assert.match(broadFocused.stderr, /umbrella/u);
 
     await mkdir(lockPath);
     const concurrent = spawnSync(lakeWrapperPath, ["--version"], {

@@ -14,7 +14,7 @@
 **/node_modules
 **/dist
 **/test
-BpmnSemantics
+Kernel
 adoption
 runners
 showcase

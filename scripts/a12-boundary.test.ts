@@ -57,13 +57,13 @@ test("rejects downstream A12 bean identities in lower semantic layers", () => {
   assert.deepEqual(
     assessA12Boundary([
       {
-        path: "packages/semantic-core/src/effect.ts",
+        path: "packages/kernel/src/effect.ts",
         bytes: Buffer.from('const operation = "createDocumentDelegate";'),
       },
     ]),
     [
-      "packages/semantic-core/src/effect.ts: downstream A12 bean identity createDocumentDelegate",
-      "packages/semantic-core/src/effect.ts: legacy A12 product decision createDocumentDelegate",
+      "packages/kernel/src/effect.ts: downstream A12 bean identity createDocumentDelegate",
+      "packages/kernel/src/effect.ts: legacy A12 product decision createDocumentDelegate",
     ],
   );
 });
@@ -72,7 +72,7 @@ test("rejects legacy A12 profile and business decisions across product roots", (
   assert.deepEqual(
     assessA12Boundary([
       {
-        path: "BpmnSemantics.lean",
+        path: "Kernel.lean",
         bytes: Buffer.from('def profile := "A12BoundaryError"'),
       },
       {
@@ -101,8 +101,8 @@ test("rejects legacy A12 profile and business decisions across product roots", (
       },
     ]),
     [
-      "BpmnSemantics.lean: legacy A12 product decision A12",
-      "BpmnSemantics.lean: legacy A12 product decision A12BoundaryError",
+      "Kernel.lean: legacy A12 product decision A12",
+      "Kernel.lean: legacy A12 product decision A12BoundaryError",
       "contracts/schemas/semantic-process.schema.json: legacy A12 product decision Error_LinkLimitReached",
       "packages/bpmn-source/src/legacy-locus.ts: legacy A12 product decision a12-create-document-definitions-locus",
       "packages/bpmn-source/src/reader.ts: legacy A12 product decision CreateDocument",
@@ -115,7 +115,7 @@ test("rejects retained business values and script-owned catalog decisions", () =
   assert.deepEqual(
     assessA12Boundary([
       {
-        path: "packages/semantic-core/src/hidden.ts",
+        path: "packages/kernel/src/hidden.ts",
         bytes: Buffer.from(
           'const results = ["Document:42", "Link limit reached"];',
         ),
@@ -130,8 +130,8 @@ test("rejects retained business values and script-owned catalog decisions", () =
       },
     ]),
     [
-      "packages/semantic-core/src/hidden.ts: legacy A12 product decision Document:42",
-      "packages/semantic-core/src/hidden.ts: legacy A12 product decision Link limit reached",
+      "packages/kernel/src/hidden.ts: legacy A12 product decision Document:42",
+      "packages/kernel/src/hidden.ts: legacy A12 product decision Link limit reached",
       "scripts/contract-artifact-cases.ts: legacy A12 product decision A12",
       "scripts/contract-artifact-cases.ts: legacy A12 product decision A12BoundaryError",
     ],
@@ -183,7 +183,7 @@ test("rejects an add-on reader or adoption-root import in product compilation di
         ),
       },
       {
-        path: "packages/semantic-core/src/index.ts",
+        path: "packages/kernel/src/index.ts",
         bytes: Buffer.from(
           'export * from "../../../adoption/a12/current/plugin.js";',
         ),
@@ -192,7 +192,7 @@ test("rejects an add-on reader or adoption-root import in product compilation di
     [
       "packages/bpmn-source/src/compilation-dispatch.ts: legacy A12 product decision A12",
       "packages/bpmn-source/src/compilation-dispatch.ts: legacy A12 product decision A12BoundaryError",
-      "packages/semantic-core/src/index.ts: product dependency on the optional A12 adoption root",
+      "packages/kernel/src/index.ts: product dependency on the optional A12 adoption root",
     ],
   );
 });

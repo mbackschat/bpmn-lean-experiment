@@ -42,15 +42,11 @@ test("keeps the official fetch set equal to the verified corpus manifest", async
 });
 
 test("defaults executable consumers to the external corpus with explicit overrides", async () => {
-  const [validator, metamodelCheck, referenceReadme, verifyScript] =
+  const [validator, metamodelCheck, verifyScript] =
     await Promise.all([
       readFile(path.join(projectRoot, "scripts/validate-bpmn-xml.sh"), "utf8"),
       readFile(
         path.join(projectRoot, "scripts/check-bpmn-semantic-process-metamodel.ts"),
-        "utf8",
-      ),
-      readFile(
-        path.join(projectRoot, "docs/reference/bpmn-2.0.2/README.md"),
         "utf8",
       ),
       readFile(path.join(projectRoot, "scripts/verify-bpmn-corpus.sh"), "utf8"),
@@ -61,21 +57,16 @@ test("defaults executable consumers to the external corpus with explicit overrid
   assert.match(metamodelCheck, /BPMN_CMOF_PATH/u);
   assert.match(metamodelCheck, /BPMN_SEMANTIC_XSD_PATH/u);
   assert.match(metamodelCheck, /BPMN_EXTERNAL_ROOT/u);
-  assert.match(referenceReadme, /\.\.\/\.\.\/\.\.\/\.\.\/oss\/omg-bpmn-2\.0\.2/u);
-  assert.match(referenceReadme, /scripts\/fetch-bpmn-corpus\.sh/u);
   assert.match(verifyScript, /LOCAL-CORPUS\.sha256/u);
 });
 
 test("keeps PDF originals outside ordinary corpus discovery", async () => {
-  const [ignore, fetchScript, instructions] = await Promise.all([
+  const [ignore, fetchScript] = await Promise.all([
     readFile(path.join(projectRoot, "docs/reference/bpmn-2.0.2/.ignore"), "utf8"),
     readFile(path.join(projectRoot, "scripts/fetch-bpmn-corpus.sh"), "utf8"),
-    readFile(path.join(projectRoot, "CLAUDE.md"), "utf8"),
   ]);
   assert.deepEqual(ignore.split("\n").filter((line) => line !== "" && !line.startsWith("#")), ["*.[pP][dD][fF]"]);
   assert.match(fetchScript, /cp "\$project_root\/docs\/reference\/bpmn-2\.0\.2\/\.ignore" "\$download_root\/\.ignore"/u);
-  assert.match(instructions, /Before opening a PDF, name the specific gap/u);
-  assert.match(instructions, /Do not bypass the search exclusions for routine reading/u);
 });
 
 test("the CMOF calibration fails rather than skipping missing evidence", () => {

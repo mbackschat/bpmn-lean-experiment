@@ -15,22 +15,17 @@ import {
 import type {
   PlatformServerRuntime,
 } from "@bpmn-lean/platform-server";
+import { ProcessClient, ResultKind, workflowType } from "@bpmn-lean/temporal-host/client";
+import { replayHistory } from "@bpmn-lean/temporal-host/worker";
+
+import { showcaseEngineDeploymentEnvironment } from "../../engine-deployment.ts";
 import {
-  ExternalTemporalRuntime,
-  ProcessCommandResultKind,
-  TemporalScenarioRunner,
-  bpmnProcessWorkflowType,
+  ShowcaseWorker,
   createCachedLocalEnvironment,
-  createTemporalClient,
-  createHostEffectActivities,
-  isCompletedProcessReceipt,
-  readTestProcessTerminalResult,
-  submitUserTaskCompletionAtWorkflowId,
+  environmentNamespace,
+  noEffects,
   withDeadline,
-} from "@bpmn-lean/temporal-testkit";
-import type {
-  TemporalHistory,
-} from "@bpmn-lean/temporal-testkit";
+} from "../src/host-worker.ts";
 
 import {
   deleteDefinitionSchedule,
@@ -55,14 +50,12 @@ import {
   waitForOpenUserTask,
   waitForScheduleCleanup,
 } from "./temporal-support.ts";
+import type { TemporalHistory } from "./temporal-support.ts";
 
 const profileId = "bpmn-2.0.2-timer-start-event-draft";
 const taskQueue = "bpmn-m2-definition-scheduling";
 const operationDeadlineMs = 10_000;
 const environmentStartupDeadlineMs = 40_000;
-type UserTaskCompletion = Parameters<
-  typeof submitUserTaskCompletionAtWorkflowId
->[3];
 const temporalCacheDirectory = fileURLToPath(
   new URL("../../../.cache/temporal-cli/", import.meta.url),
 );
@@ -83,26 +76,13 @@ test("M2 schedules exact version 1, decides cancellation races, and replays", as
     environmentStartupDeadlineMs,
     "M2 Temporal environment startup",
   );
-  const namespace = "m2-definition-scheduling-acceptance";
-  const client = createTemporalClient({ connection: environment.client.connection, namespace });
+  // No Worker polls until the Schedule has acted, so the action's history shows a start no Worker has taken yet.
+  const namespace = environmentNamespace(environment);
+  const client = environment.client;
   let platform: PlatformServerRuntime | undefined;
-  let initialWorker: ExternalTemporalRuntime | undefined;
-  let replacementWorker: ExternalTemporalRuntime | undefined;
-  let replayRunner: TemporalScenarioRunner | undefined;
+  let replacementWorker: ShowcaseWorker | undefined;
 
   try {
-    initialWorker = await withDeadline(
-      ExternalTemporalRuntime.initializeFreshNamespace({
-        address: environment.address, namespace, taskQueue,
-        identity: `bpmn-m2-scheduling-initial-${process.pid}`,
-      }, createHostEffectActivities([]), 86_400),
-      20_000, "M2 scheduling native initialization",
-    );
-    await delay(100);
-    await initialWorker.shutdown();
-    initialWorker = undefined;
-    await delay(100);
-
     platform = await startPlatform(
       origin,
       port,
@@ -189,7 +169,7 @@ test("M2 schedules exact version 1, decides cancellation races, and replays", as
       primaryPut.value.dueAt,
     );
     assert.equal(action.description.action.taskQueue, taskQueue);
-    assertProgramSource(action.actionArgs[1], versionOne.value.source.sha256);
+    assertDefinitionSource(action.description.action.memo, versionOne.value.source.sha256);
     assert.notEqual(action.workflowId, action.description.action.workflowId);
     const absentHistory = await withDeadline(
       client.workflow
@@ -223,15 +203,9 @@ test("M2 schedules exact version 1, decides cancellation races, and replays", as
     assert.deepEqual(versionOneList.value.schedules, [started.value]);
     await waitForScheduleCleanup(client, privateScheduleId);
 
-    replacementWorker = await startWorker(
-      environment.address,
-      namespace,
-      "replacement",
-    );
-    const handle = replacementWorker.workflowClient.getHandle(
-      action.workflowId,
-      action.firstExecutionRunId,
-    );
+    replacementWorker = await startWorker(environment, "replacement");
+    const processes = new ProcessClient(client, taskQueue);
+    const handle = processHandle(client.workflow, action.workflowId, action.firstExecutionRunId);
     const task = await waitForOpenUserTask(
       processHandle(
         client.workflow,
@@ -242,36 +216,38 @@ test("M2 schedules exact version 1, decides cancellation races, and replays", as
     );
     assert.equal(task.id.processInstanceId, started.value.instance.processInstanceId);
     assert.notEqual(task.name, "Review version 2");
-    const completion = {
-      kind: "completeUserTaskInstance" as UserTaskCompletion["kind"],
-      commandId: `complete-scheduled-version-1-${process.pid}`,
-      taskId: task.id,
-      submittedValues: [],
-    } as const satisfies UserTaskCompletion;
-    const command = await submitUserTaskCompletionAtWorkflowId(
-      replacementWorker.workflowClient,
-      action.workflowId,
-      started.value.instance.processInstanceId,
-      completion,
+    const command = await withDeadline(
+      processes.command(action.workflowId, {
+        kind: "command",
+        commandId: `complete-scheduled-version-1-${process.pid}`,
+        occurrence: task.id,
+        action: { kind: "completeUserTask", values: [] },
+      }),
+      operationDeadlineMs,
+      "scheduled Process User Task completion",
     );
-    assert.equal(command.kind, ProcessCommandResultKind.Semantic);
-    if (command.kind !== ProcessCommandResultKind.Semantic) {
-      throw new TypeError("scheduled Process completion did not return a semantic command result");
-    }
     assert.equal(command.outcome, "committed");
-    const { receipt } = await withDeadline(
-      readTestProcessTerminalResult(handle),
+    const terminal = await withDeadline(
+      handle.result(),
       operationDeadlineMs,
       "scheduled version-1 Process completion",
     );
-    assert.equal(isCompletedProcessReceipt(receipt), true);
-    if (!isCompletedProcessReceipt(receipt)) {
-      throw new TypeError("scheduled Process returned a malformed completion receipt");
-    }
-    assert.equal(receipt.processInstanceId, started.value.instance.processInstanceId);
-    assert.equal(receipt.definition.sourceSha256, versionOne.value.source.sha256);
-    assert.notEqual(receipt.definition.sourceSha256, versionTwo.value.source.sha256);
-    assert.equal(receipt.finalState.status, "completed");
+    assert.equal(terminal.kind, ResultKind.Ended);
+    assert.equal(terminal.kind === ResultKind.Ended ? terminal.status : null, "completed");
+    const finalState = requireRecord(
+      await withDeadline(processes.observation(action.workflowId), operationDeadlineMs, "completed Process observation"),
+      "completed Process observation",
+    );
+    assert.equal(finalState.instanceId, started.value.instance.processInstanceId);
+    assert.equal(finalState.status, "completed");
+    const completedDescription = await processes.describe(action.workflowId);
+    assert.ok(completedDescription !== null);
+    assertDefinitionSource(completedDescription.memo, versionOne.value.source.sha256);
+    assert.equal(
+      definitionSha256(completedDescription.memo) === versionTwo.value.source.sha256,
+      false,
+      "the scheduled instance must run version 1, never the latest version",
+    );
     const completedHistory = await withDeadline(
       handle.fetchHistory(),
       operationDeadlineMs,
@@ -281,28 +257,20 @@ test("M2 schedules exact version 1, decides cancellation races, and replays", as
 
     await replacementWorker.shutdown();
     replacementWorker = undefined;
-    replayRunner = await withDeadline(
-      TemporalScenarioRunner.create({ downloadDirectory: temporalCacheDirectory }),
-      30_000,
-      "M2 replay runner startup",
-    );
     await withDeadline(
-      replayRunner.replayHistory(completedHistory, action.workflowId),
-      operationDeadlineMs,
+      replayHistory(completedHistory, action.workflowId),
+      30_000,
       "scheduled version-1 history replay",
     );
-    await replayRunner.shutdown();
-    replayRunner = undefined;
 
     const schedulesBeforeDirectStart = await listScheduleIds(client);
-    const directInput = directWorkflowInput(action.actionArgs[0]);
     const directWorkflowId = `direct-start-mutation-${process.pid}`;
     await withDeadline(
-      client.workflow.start(bpmnProcessWorkflowType, {
+      client.workflow.start(workflowType, {
         taskQueue,
         workflowId: directWorkflowId,
         workflowIdReusePolicy: "REJECT_DUPLICATE",
-        args: [directInput, action.actionArgs[1], action.actionArgs[2]],
+        args: [directWorkflowArgs(action.actionArgs[0])],
       }),
       operationDeadlineMs,
       "direct Workflow-start mutation",
@@ -379,9 +347,7 @@ test("M2 schedules exact version 1, decides cancellation races, and replays", as
   } finally {
     const cleanupFailures: unknown[] = [];
     for (const cleanup of [
-      replayRunner === undefined ? undefined : () => replayRunner?.shutdown(),
       replacementWorker === undefined ? undefined : () => replacementWorker?.shutdown(),
-      initialWorker === undefined ? undefined : () => initialWorker?.shutdown(),
       platform === undefined ? undefined : () => platform?.close(),
       () => environment.teardown(),
       () => rm(dataDirectory, { recursive: true, force: true }),
@@ -399,19 +365,17 @@ test("M2 schedules exact version 1, decides cancellation races, and replays", as
 });
 
 async function startWorker(
-  address: string,
-  namespace: string,
+  environment: Awaited<ReturnType<typeof createCachedLocalEnvironment>>,
   role: string,
-): Promise<ExternalTemporalRuntime> {
+): Promise<ShowcaseWorker> {
   return await withDeadline(
-    ExternalTemporalRuntime.connect({
-      address,
-      namespace,
+    ShowcaseWorker.start(environment, {
       taskQueue,
       identity: `bpmn-m2-scheduling-${role}-${process.pid}`,
-    }, createHostEffectActivities([])),
+      effects: noEffects,
+    }),
     20_000,
-    `${role} production Worker startup`,
+    `${role} host Worker startup`,
   );
 }
 
@@ -423,7 +387,7 @@ async function startPlatform(
   temporalNamespace: string,
 ): Promise<PlatformServerRuntime> {
   const runtime = await createPlatformServer({
-    ...readPlatformServerConfig({}),
+    ...readPlatformServerConfig(showcaseEngineDeploymentEnvironment()),
     host: "127.0.0.1",
     port,
     publicOrigin: origin,
@@ -467,19 +431,29 @@ async function allocatePort(): Promise<number> {
   return address.port;
 }
 
-function assertProgramSource(value: unknown, sourceSha256: string): void {
-  const program = requireRecord(value, "Schedule semantic program");
-  const identity = requireRecord(program.identity, "Schedule semantic program identity");
-  assert.equal(identity.sourceSha256, sourceSha256);
+/** The source digest of the definition a start memo names (`packages/engine-api/src/start-dispatch.ts`). */
+function definitionSha256(memo: unknown): unknown {
+  const definition = requireRecord(requireRecord(memo, "start memo").definition, "start memo definition");
+  return requireRecord(definition.ref, "start memo definition ref").sha256;
 }
 
-function directWorkflowInput(value: unknown): Record<string, unknown> {
-  const start = requireRecord(value, "Schedule start stimulus");
-  assert.equal(start.kind, "triggerTimerStart");
+function assertDefinitionSource(memo: unknown, sourceSha256: string): void {
+  assert.equal(definitionSha256(memo), sourceSha256);
+}
+
+/** The Schedule's own start arguments with a fresh command and instance, as a direct Workflow start would send them. */
+function directWorkflowArgs(value: unknown): Record<string, unknown> {
+  const args = requireRecord(value, "Schedule start arguments");
+  const start = requireRecord(args.start, "Schedule start stimulus");
+  assert.equal(start.kind, "start");
+  assert.equal(requireRecord(start.trigger, "Schedule start trigger").kind, "timer");
   return {
-    ...start,
-    commandId: `direct-start-mutation-command-${process.pid}`,
-    instanceId: `DirectStartMutation_${process.pid}`,
+    ...args,
+    start: {
+      ...start,
+      commandId: `direct-start-mutation-command-${process.pid}`,
+      instanceId: `DirectStartMutation_${process.pid}`,
+    },
   };
 }
 

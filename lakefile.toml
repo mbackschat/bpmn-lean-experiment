@@ -1,8 +1,7 @@
 name = "bpmn-lean-experiment"
 version = "0.1.0"
 license = "MIT"
-defaultTargets = ["BpmnSemantics"]
-testDriver = "BpmnSemantics"
+defaultTargets = ["Kernel", "kernelRun"]
 # Sparse case splits stay off (owner-delegated workaround, 2026-10-30): Lean v4.34.1 exports the name of every one,
 # a private owner's included (`sparseCasesOnExt`, AuxRecursor.lean:53, unlike `sparseCasesOnInfoExt`, which keeps
 # hidden bodies' entries private), so a body edit adding or removing one rebuilt the module's public cone. Remove the
@@ -14,66 +13,8 @@ leanOptions = { Elab.async = false, backward.match.sparseCases = false }
 moreLeanArgs = ["-M2048"]
 
 [[lean_lib]]
-name = "BpmnSemantics"
-
-[[lean_lib]]
-name = "BpmnConformance"
-
-[[lean_lib]]
 name = "Kernel"
 
 [[lean_exe]]
 name = "kernelRun"
 root = "Kernel.Run"
-
-[[lean_exe]]
-name = "checkSemanticRepresentationSpike"
-root = "BpmnSemantics.Experiments.SemanticRepresentationsMain"
-
-[[lean_exe]]
-name = "checkCheckedSourceRelationExperiment"
-root = "BpmnSemantics.Experiments.CheckedSourceRelationMain"
-
-[[lean_exe]]
-name = "emitSemanticProcessResults"
-root = "BpmnSemantics.SemanticProcessJsonMain"
-
-[[lean_exe]]
-name = "emitEnginePopulationResults"
-root = "BpmnSemantics.EnginePopulationScenarioJsonMain"
-
-[[lean_exe]]
-name = "emitCommittedExecutionPublication"
-root = "BpmnSemantics.CommittedExecutionPublicationJsonMain"
-
-[[lean_exe]]
-name = "emitInternalChoiceSchedules"
-root = "BpmnSemantics.InternalChoiceScheduleJsonMain"
-
-[[lean_exe]]
-name = "emitDefinitionAdmissions"
-root = "BpmnSemantics.DefinitionAdmissionJsonMain"
-
-[[lean_exe]]
-name = "emitParallelScopeAdmissions"
-root = "BpmnSemantics.ParallelScopeAdmissionMain"
-
-[[lean_exe]]
-name = "emitParallelScopeStartAdmissions"
-root = "BpmnSemantics.ParallelScopeStartAdmissionMain"
-
-[[lean_exe]]
-name = "emitParallelScopeReservations"
-root = "BpmnSemantics.ParallelScopeReservationMain"
-
-[[lean_exe]]
-name = "emitScenarioSupport"
-root = "BpmnSemantics.ScenarioSupportJsonMain"
-
-[[lean_exe]]
-name = "checkCallFamilyFixtures"
-root = "BpmnSemantics.CallFamilyChecksMain"
-
-[[lean_exe]]
-name = "checkConformanceFixtures"
-root = "BpmnSemantics.ConformanceChecksMain"

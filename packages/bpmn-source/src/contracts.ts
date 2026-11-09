@@ -1,13 +1,7 @@
-import type {
-  CheckedProcess,
-  DeepReadonly,
-  SemanticProcessProgram,
-} from "@bpmn-lean/semantic-core";
-
-export enum BpmnCompilationStatus {
-  Accepted = "accepted",
-  Rejected = "rejected",
-}
+/** Read-only all the way down; a diagnostic is a value, never shared mutable state. */
+type DeepReadonly<T> = T extends (infer Item)[] ? ReadonlyArray<DeepReadonly<Item>>
+  : T extends object ? { readonly [Key in keyof T]: DeepReadonly<T[Key]> }
+  : T;
 
 export enum BpmnSourceDiagnosticCode {
   SourceTooLarge = "sourceTooLarge",
@@ -92,82 +86,3 @@ export type BpmnSourceDiagnostic = DeepReadonly<{
   element: BpmnSourceElement | null;
   evidence: string;
 }>;
-
-/**
- * What one profile compiler produced from an admitted `bpmn:Definitions`.
- *
- * Package-internal: the published result is `BpmnCompilationResult`, whose accepted case cannot
- * carry a diagnostic at all. The refusal side is a list rather than one record because a source can
- * fail in several places at once, and telling its author about one of them is the behavior
- * per-element diagnostics exist to replace.
- */
-export type CheckedCompilationProjection =
-  | Readonly<{
-    checkedProcess: CheckedProcess;
-    diagnostics: readonly [];
-  }>
-  | Readonly<{
-    checkedProcess: undefined;
-    diagnostics: ReadonlyArray<BpmnSourceDiagnostic>;
-  }>;
-
-export type BpmnSourceIdentity = DeepReadonly<{
-  kind: "bpmnSource";
-  id: string;
-  sha256: string;
-  byteLength: number;
-  declaredEncoding: string | null;
-  decodedAs: "UTF-8" | null;
-}>;
-
-export type BpmnSourceLimits = DeepReadonly<{
-  maxBytes: number;
-  parserDeadlineMs: number;
-}>;
-
-/** Exact registered overlay identity and bytes selected for one compilation. */
-export type SourceOverlaySelection = Readonly<{
-  id: string;
-  sha256: string;
-  bytes: Uint8Array;
-}>;
-
-/**
- * Compilation snapshots BPMN and selected overlay `bytes` before asynchronous work.
- *
- * This contract is intentionally shallow: TypeScript cannot make a
- * `Uint8Array` deeply immutable because its mutation methods remain callable.
- */
-export type CompileBpmnToSemanticProcessRequest = Readonly<{
-  bytes: Uint8Array;
-  sourceId: string;
-  expectedSha256: string | undefined;
-  semanticProfile: string;
-  sourceOverlay: SourceOverlaySelection | null;
-  limits: BpmnSourceLimits;
-}>;
-
-type ExactSourceCapture = DeepReadonly<{
-  source: BpmnSourceIdentity;
-  copyExactBytes: () => Uint8Array;
-}>;
-
-export type AcceptedBpmnCompilation = ExactSourceCapture &
-  DeepReadonly<{
-    status: BpmnCompilationStatus.Accepted;
-    diagnostics: readonly [];
-    checkedProcess: CheckedProcess;
-    semanticProcess: SemanticProcessProgram;
-  }>;
-
-export type RejectedBpmnCompilation = ExactSourceCapture &
-  DeepReadonly<{
-    status: BpmnCompilationStatus.Rejected;
-    diagnostics: BpmnSourceDiagnostic[];
-    checkedProcess: undefined;
-    semanticProcess: undefined;
-  }>;
-
-export type BpmnCompilationResult =
-  | AcceptedBpmnCompilation
-  | RejectedBpmnCompilation;

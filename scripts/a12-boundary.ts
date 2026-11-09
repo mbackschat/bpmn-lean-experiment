@@ -39,14 +39,15 @@ const inspectedExtensions = new Set([
   ".yml",
 ]);
 
+// The kernel in both languages and its Temporal host: the layers below every product (CLAUDE.md dependency direction).
 const lowerSemanticRoots = [
-  "BpmnSemantics/",
-  "packages/semantic-core/",
-  "packages/temporal-adapter/",
+  "Kernel/",
+  "packages/kernel/",
+  "packages/temporal-host/",
 ];
 
 const productDecisionRoots = [
-  "BpmnSemantics/",
+  "Kernel/",
   "contracts/",
   "examples/",
   "packages/",
@@ -56,8 +57,7 @@ const productDecisionRoots = [
 ];
 
 const productDecisionEntryFiles = new Set([
-  "BpmnConformance.lean",
-  "BpmnSemantics.lean",
+  "Kernel.lean",
   "scripts/contract-artifacts.ts",
 ]);
 

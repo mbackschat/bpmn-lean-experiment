@@ -11,23 +11,24 @@ import { readWorktreeSources } from "./worktree-source-read.ts";
  * AA-17 oracle: maintained Lean carries no proof escape and declares no axiom of its own.
  *
  * Lean reports `sorry` as a warning, so a build with a `sorry` or `admit` stays green, and an
- * `axiom` declaration silently widens every dependent theorem's footprint. The sibling ratchet in
- * [Lean source contracts](lean-source-contracts.test.ts) already records `native_decide` sites
- * exactly; this guard has no recorded exceptions because no maintained site exists. Provisional
- * `BpmnSemantics/Experiments/` keep their separate gate and are not scanned.
+ * `axiom` declaration silently widens every dependent theorem's footprint. Guard 6 of the kernel
+ * rewrite proposal rejects `native_decide` in the kernel; this guard has no recorded exceptions
+ * because no maintained site exists. Lean outside the kernel (the scan scripts, the retained A12
+ * legacy tree) is not maintained proof and is not scanned.
  */
 export type ProofEscape = Readonly<{ line: number; token: string }>;
 
 const identifierCharacter = String.raw`[\p{L}\p{N}_'!?]`;
+// A name a declaration binds is an identifier, not the tactic: the kernel's admission entry point is `def admit`.
 const proofEscapeToken = new RegExp(
-  String.raw`(?<!${identifierCharacter}|\.)(sorryAx|sorry|admit|axiom)(?!${identifierCharacter})`,
+  String.raw`(?<!${identifierCharacter}|\.|\b(?:def|abbrev|opaque|theorem)\s+)(sorryAx|sorry|admit|axiom)(?!${identifierCharacter})`,
   "gu",
 );
 
-/** Maintained sources: `BpmnSemantics/**` outside the experiments, plus root Lean entry points. */
+/** Maintained sources: `Kernel/**`, plus root Lean entry points. */
 export function isMaintainedLeanPath(sourcePath: string): boolean {
   return sourcePath.includes("/")
-    ? sourcePath.startsWith("BpmnSemantics/") && !sourcePath.startsWith("BpmnSemantics/Experiments/")
+    ? sourcePath.startsWith("Kernel/")
     : sourcePath.endsWith(".lean");
 }
 
@@ -50,6 +51,7 @@ test("seeded proof escapes and axiom declarations are reported with their line",
     "@[simp] noncomputable axiom e : Nat",
     "theorem f : True := sorryAx _ false",
     "theorem g : True := by simp <;> sorry",
+    "def admitted : True := by admit",
   ].join("\n");
   assert.deepEqual(proofEscapes(source), [
     { line: 1, token: "sorry" },
@@ -59,6 +61,7 @@ test("seeded proof escapes and axiom declarations are reported with their line",
     { line: 6, token: "axiom" },
     { line: 7, token: "sorryAx" },
     { line: 8, token: "sorry" },
+    { line: 9, token: "admit" },
   ]);
 });
 
@@ -74,24 +77,28 @@ test("comments, strings, longer identifiers and axiom queries create no finding"
     "theorem j : True := admits_nothing",
     "theorem k : True := axiomatic_form",
     "theorem α_sorry : True := trivial",
+    "def admit (program : Nat) : Option String := none",
   ].join("\n");
   assert.deepEqual(proofEscapes(source), []);
 });
 
-test("maintained scope covers the library and root entry points and excludes experiments", () => {
+test("maintained scope covers the kernel and root entry points and excludes other Lean", () => {
   for (const maintained of [
-    "BpmnSemantics.lean",
-    "BpmnSemantics/Contract.lean",
-    "BpmnSemantics/SemanticProcess/Execution.lean",
+    "Kernel.lean",
+    "Kernel/Step.lean",
+    "Kernel/Proofs/Step.lean",
   ]) assert.equal(isMaintainedLeanPath(maintained), true, maintained);
-  for (const provisional of [
-    "BpmnSemantics/Experiments/CheckedSourceAdmission.lean",
+  for (const outside of [
+    "scripts/kernel-dispatch.lean",
     "adoption/a12/legacy/source-tree/BpmnSemantics/Data.lean",
-  ]) assert.equal(isMaintainedLeanPath(provisional), false, provisional);
+  ]) assert.equal(isMaintainedLeanPath(outside), false, outside);
 });
 
 test("maintained Lean contains no sorry, admit or project axiom", () => {
-  const findings = readWorktreeSources(worktreeLeanSourceFiles().filter(isMaintainedLeanPath))
+  const maintained = worktreeLeanSourceFiles().filter(isMaintainedLeanPath);
+  // A renamed kernel root would empty the scan; it must fail rather than pass on nothing (guard 23).
+  assert.ok(maintained.includes("Kernel/Step.lean"), `maintained Lean enumeration missed the kernel: ${maintained.length}`);
+  const findings = readWorktreeSources(maintained)
     .flatMap(({ path, source }) =>
       proofEscapes(source).map(({ line, token }) => `${path}:${line} ${token}`));
   assert.deepEqual(

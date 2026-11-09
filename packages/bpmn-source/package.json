@@ -18,7 +18,6 @@
     "test": "node --test --test-concurrency=1 test/*.test.ts"
   },
   "dependencies": {
-    "@bpmn-lean/semantic-core": "workspace:*",
     "bpmn-moddle": "10.0.0"
   },
   "devDependencies": {

@@ -1,7 +1,7 @@
 /**
  * Source scans for proof placement (guard 6), shape (guard 9), single entry (guard 13), discovery by convention
  * (guard 14), the kernel's option and derivation limits (guard 15) and justified rules (guard 24) of
- * docs/LEAN-KERNEL-REWRITE-PROPOSAL.md#guardrails-against-degradation, plus the size reports of guard 10.
+ * docs/kernel/ARCHITECTURE-SPEC.md#guardrails-against-degradation, plus the size reports of guard 10.
  */
 import { existsSync, readdirSync } from "node:fs";
 import path from "node:path";
@@ -230,8 +230,10 @@ export function singleEntryFindings(tree: KernelTree): string[] {
   return findings;
 }
 
+/** The kernel's own tests, plus the differential modules that feed it: its targets and the scenario discovery. */
 function isDiscoverySurface(file: string): boolean {
-  return /^packages\/kernel\/test\/[^/]+\.ts$/u.test(file) || /^packages\/differential\/test\/kernel-[^/]+\.ts$/u.test(file);
+  return /^packages\/kernel\/test\/[^/]+\.ts$/u.test(file) ||
+    /^packages\/differential\/test\/(?:kernel|scenario)-[^/]+\.ts$/u.test(file);
 }
 
 const countedCollection = /scenario|case|model|corpus|fixture/iu;

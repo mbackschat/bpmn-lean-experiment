@@ -9,14 +9,10 @@ import { decodeProcessInstanceSearchPage, processInstancesPath } from "@bpmn-lea
 import type { PublicProcessInstanceIdentity } from "@bpmn-lean/platform-contracts";
 import { createPlatformServer, readPlatformServerConfig } from "@bpmn-lean/platform-server";
 import type { PlatformServerRuntime } from "@bpmn-lean/platform-server";
-import { CanonicalObservationKind } from "@bpmn-lean/semantic-core";
-import {
-  ExternalTemporalRuntime, createCachedLocalEnvironment, createHostEffectActivities,
-  readBpmnProcessTrace, readUserTaskDetail, submitMessageDelivery, submitUserTaskCompletion,
-  withDeadline,
-} from "@bpmn-lean/temporal-testkit";
-import type { HostInteractionPort } from "@bpmn-lean/temporal-testkit";
+import { ProcessClient } from "@bpmn-lean/temporal-host/client";
+import type { JsonValue } from "@bpmn-lean/temporal-host/client";
 
+import { showcaseEngineDeploymentEnvironment } from "../../engine-deployment.ts";
 import { allocatePlaywrightLoopbackPort } from "../../../scripts/playwright-loopback-ports.ts";
 import { buildProcessShowcaseCatalog } from "../../../scripts/rc-showcase-catalog.ts";
 import { prepareRcShowcases } from "./rc-showcase-preparation.ts";
@@ -24,8 +20,11 @@ import {
   RcShowcaseActors, driveRcShowcaseActor, loadRcShowcaseBindings, mergeRcEffectHandlers,
 } from "./rc-showcase-actor.ts";
 import type { RcShowcaseBinding } from "./rc-showcase-actor.ts";
-
-type Environment = Awaited<ReturnType<typeof createCachedLocalEnvironment>>;
+import { configuredEffectHandler } from "./host-interactions.ts";
+import type { InteractionPort } from "./host-interactions.ts";
+import { ShowcaseWorker, createCachedLocalEnvironment, environmentNamespace, withDeadline } from "./host-worker.ts";
+import type { TemporalEnvironment } from "./host-worker.ts";
+import { processWorkflowId } from "./process-address.ts";
 export type RcShowcaseRuntimeOptions = Readonly<{
   port?: number;
   webAssetDirectory?: string;
@@ -42,8 +41,9 @@ export class RcShowcaseRuntime {
   readonly #bindings: readonly RcShowcaseBinding[];
   readonly #stop = new AbortController();
   readonly #actors: RcShowcaseActors | undefined;
-  #environment: Environment | undefined;
-  #worker: ExternalTemporalRuntime | undefined;
+  #environment: TemporalEnvironment | undefined;
+  #worker: ShowcaseWorker | undefined;
+  #processes: ProcessClient | undefined;
   #platform: PlatformServerRuntime | undefined;
   #origin: string | undefined;
   #polling: Promise<void> | undefined;
@@ -105,16 +105,18 @@ export class RcShowcaseRuntime {
       this.#environment = await withDeadline(createCachedLocalEnvironment({
         identity, downloadDirectory: temporalCacheDirectory,
       }), 40_000, "RC showcase Temporal startup");
-      this.#worker = await ExternalTemporalRuntime.initializeFreshNamespace({
-        address: this.#environment.address, namespace: identity, taskQueue: identity, identity,
-      }, createHostEffectActivities(mergeRcEffectHandlers(this.#bindings)), 86_400);
+      this.#worker = await ShowcaseWorker.start(this.#environment, {
+        taskQueue: identity, identity, effects: configuredEffectHandler(mergeRcEffectHandlers(this.#bindings)),
+      });
+      this.#processes = new ProcessClient(this.#environment.client, identity);
       const origin = `http://127.0.0.1:${this.#port}`;
       this.#platform = await createPlatformServer({
-        ...readPlatformServerConfig({}),
+        ...readPlatformServerConfig(showcaseEngineDeploymentEnvironment()),
         host: "127.0.0.1", port: this.#port, publicOrigin: origin,
         dataDirectory: join(this.#directory, "data"), webAssetDirectory: join(this.#directory, "web"),
         maxSourceBytes: 1024 * 1024, parserDeadlineMs: 5_000,
-        temporalAddress: this.#environment.address, temporalNamespace: identity, temporalTaskQueue: identity,
+        temporalAddress: this.#environment.address, temporalNamespace: environmentNamespace(this.#environment),
+        temporalTaskQueue: identity,
         temporalConnectTimeoutMs: 5_000,
         fakeActorId: "demo-user", fakeActorGroups: ["reviewers", "operators"],
         maxWorkProcesses: 100, maxWorkTasks: 1_000,
@@ -198,32 +200,26 @@ export class RcShowcaseRuntime {
     }
   }
 
-  #interactionPort(instance: PublicProcessInstanceIdentity): HostInteractionPort {
-    const client = this.#worker!.workflowClient;
+  #interactionPort(instance: PublicProcessInstanceIdentity): InteractionPort {
+    const processes = this.#processes!;
     const id = instance.processInstanceId;
+    const workflowId = processWorkflowId(id);
     const signal = this.#stop.signal;
     return {
       readState: async () => {
         signal.throwIfAborted();
-        const trace = await readBpmnProcessTrace(client, id);
-        const state = trace.findLast((entry) => entry.kind === CanonicalObservationKind.State);
-        if (state === undefined || state.instanceId !== id) throw new Error("RC actor requires its published instance state");
-        return state;
+        const state = await processes.observation(workflowId) as Readonly<{ instanceId?: unknown }> | null;
+        if (state === null || state.instanceId !== id) throw new Error("RC actor requires its published instance state");
+        return state as unknown as Awaited<ReturnType<InteractionPort["readState"]>>;
       },
-      readUserTaskDetail: async (request) => {
+      command: async (stimulus) => {
         signal.throwIfAborted();
-        return readUserTaskDetail(client, id, request);
+        return processes.command(workflowId, stimulus as JsonValue);
       },
-      submitCompletion: async (stimulus) => {
+      deliver: async (stimulus) => {
         signal.throwIfAborted();
-        return submitUserTaskCompletion(client, id, stimulus);
+        return processes.deliver(workflowId, stimulus as JsonValue);
       },
-      submitMessage: async (stimulus) => {
-        signal.throwIfAborted();
-        return submitMessageDelivery(client, id, stimulus);
-      },
-      publishCorrelated: async () => { throw new Error("RC showcase selects no correlated-message actor"); },
-      submitCancellation: async () => { throw new Error("RC showcase selects no incident-cancellation actor"); },
     };
   }
 

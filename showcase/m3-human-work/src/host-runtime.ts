@@ -7,12 +7,15 @@ import {
   createPlatformServer,
   readPlatformServerConfig,
 } from "@bpmn-lean/platform-server";
+
+import { showcaseEngineDeploymentEnvironment } from "../../engine-deployment.ts";
 import {
-  ExternalTemporalRuntime,
+  ShowcaseWorker,
   createCachedLocalEnvironment,
+  environmentNamespace,
   withDeadline,
-} from "@bpmn-lean/temporal-testkit";
-import type { EffectActivityImplementations } from "@bpmn-lean/temporal-runner";
+} from "./host-worker.ts";
+import type { EffectHandler } from "./host-worker.ts";
 
 const operationDeadlineMs = 10_000;
 const environmentStartupDeadlineMs = 40_000;
@@ -20,12 +23,12 @@ const temporalCacheDirectory = fileURLToPath(
   new URL("../../../.cache/temporal-cli/", import.meta.url),
 );
 
-export async function runShowcaseHost(activities: EffectActivityImplementations): Promise<void> {
-  const configured = readPlatformServerConfig();
+export async function runShowcaseHost(effects: EffectHandler): Promise<void> {
+  const configured = readPlatformServerConfig({ ...process.env, ...showcaseEngineDeploymentEnvironment() });
   const dataDirectory = await mkdtemp(join(tmpdir(), "bpmn-lean-m3-human-work-"));
   const identity = `bpmn-m3-human-work-${process.pid}`;
   let environment: Awaited<ReturnType<typeof createCachedLocalEnvironment>> | undefined;
-  let worker: ExternalTemporalRuntime | undefined;
+  let worker: ShowcaseWorker | undefined;
   let platform: Awaited<ReturnType<typeof createPlatformServer>> | undefined;
   try {
     environment = await withDeadline(
@@ -37,12 +40,11 @@ export async function runShowcaseHost(activities: EffectActivityImplementations)
       "M3 Human Work browser Temporal environment startup",
     );
     worker = await withDeadline(
-      ExternalTemporalRuntime.initializeFreshNamespace({
-        address: environment.address,
-        namespace: identity,
+      ShowcaseWorker.start(environment, {
         taskQueue: configured.temporalTaskQueue,
         identity: `${identity}-worker`,
-      }, activities, 86_400),
+        effects,
+      }),
       operationDeadlineMs,
       "M3 Human Work browser Worker startup",
     );
@@ -50,7 +52,7 @@ export async function runShowcaseHost(activities: EffectActivityImplementations)
       ...configured,
       dataDirectory,
       temporalAddress: environment.address,
-      temporalNamespace: identity,
+      temporalNamespace: environmentNamespace(environment),
     });
     const origin = await withDeadline(
       platform.listen(),
@@ -77,7 +79,7 @@ function terminationSignal(): Promise<void> {
 
 async function closeShowcase(
   platform: Awaited<ReturnType<typeof createPlatformServer>> | undefined,
-  worker: ExternalTemporalRuntime | undefined,
+  worker: ShowcaseWorker | undefined,
   environment: Awaited<ReturnType<typeof createCachedLocalEnvironment>> | undefined,
 ): Promise<void> {
   let firstFailure: unknown;

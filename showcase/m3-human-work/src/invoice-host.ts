@@ -1,9 +1,8 @@
-import { createInvoiceEffectActivities } from "@bpmn-lean/temporal-runner";
-
 import { reportM3HostFailure } from "./host-log.ts";
 import { runShowcaseHost } from "./host-runtime.ts";
+import { invoiceEffects } from "./invoice-effects.ts";
 
-await runShowcaseHost(createInvoiceEffectActivities()).catch((error: unknown) => {
+await runShowcaseHost(invoiceEffects).catch((error: unknown) => {
   reportM3HostFailure(error);
   process.exitCode = 1;
 });

@@ -73,8 +73,8 @@ test("shows both exact Alpha branches through the production browser and replays
   try {
     await escalationReady.promise;
     await expect(interruptedPreview.getByRole("list", {
-      name: "Committed Timer commands",
-    })).toContainText("fireTimer");
+      name: "Committed Timer firings",
+    })).toContainText("timerFire");
     await expect(interruptedPreview.getByRole("list", {
       name: "Published completion interactions",
     })).toContainText("UserTask_Escalation / activation 1");
@@ -164,7 +164,7 @@ async function openInitialExecution(
   await workerStart;
   await expect(preview(page)).toBeVisible();
   await expect(preview(page).getByRole("heading", {
-    name: "Sequential Multi-Instance progress",
+    name: "Committed progress",
   })).toBeVisible();
 }
 

@@ -1,6 +1,6 @@
 /**
  * Admission refusal tests (guard 12), refusal parity (guard 20) and shape sufficiency (guard 21) of
- * docs/LEAN-KERNEL-REWRITE-PROPOSAL.md#guardrails-against-degradation.
+ * docs/kernel/ARCHITECTURE-SPEC.md#guardrails-against-degradation.
  *
  * Guard 21 is built but not wired to fail: `docs/kernel/ROW-TRACEABILITY-MAP.md` names the fixtures and they do not exist
  * yet (root direction, 2026-11-08). Its decoders are parameters because a TypeScript decode needs the built kernel

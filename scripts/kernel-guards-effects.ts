@@ -1,6 +1,6 @@
 /**
  * TypeScript halves of one writer per effect (guard 17) and field liveness (guard 19) of
- * docs/LEAN-KERNEL-REWRITE-PROPOSAL.md#guardrails-against-degradation; `scripts/kernel-effects.lean` is the Lean half.
+ * docs/kernel/ARCHITECTURE-SPEC.md#guardrails-against-degradation; `scripts/kernel-effects.lean` is the Lean half.
  *
  * Dispatch guards see matches and miss effects: nine completers passed guards 1 and 2. So this scan reads who calls the
  * effect primitives, and which state fields a spread update writes. Liveness is by field name, which is coarser than the

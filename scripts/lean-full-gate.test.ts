@@ -14,9 +14,9 @@ const lakeWrapperPath = fileURLToPath(new URL("./lake.sh", import.meta.url));
  * Lake rebuilds every module downstream of an edit, so a full build during development of a widely
  * imported owner costs up to the cold library time per run, while a narrow build compiles only the
  * named targets' import closure. Full builds started as consumer discovery or as "is it still red"
- * probes recur as [Finding 75](../docs/PROCESS-ASSESSMENT-LEDGER.md#finding-75), which a self-assessment
- * question alone did not stop. Classification is fail-closed: only a `BpmnSemantics.` submodule or a
- * declared `lean_exe` is narrow, so a package, facet or umbrella spelling cannot slip past as focused,
+ * probes recurred (Finding 75 of the retired process assessment ledger), which a self-assessment
+ * question alone did not stop. Classification is fail-closed: only the `Kernel` library, one of its modules or a
+ * declared `lean_exe` is narrow, so a package, facet or default-target spelling cannot slip past as focused,
  * and more than 16 narrow targets are a wide build, so enumerating a reverse closure cannot either.
  * The pass-through stays silent because retained memory receipts hash the build output.
  */
@@ -40,9 +40,9 @@ test("the Lean wrapper requires a declared gate for every full-library build", a
       ["build", "-v"],
       ["test"],
       ["build", "@bpmn-lean-experiment"],
-      ["build", "+BpmnSemantics"],
-      ["build", "BpmnSemantics:olean"],
-      ["build", "BpmnSemantics.SemanticProcess.Data", ":default"],
+      ["build", "+Kernel"],
+      ["build", "Kernel:olean"],
+      ["build", "Kernel.Step", ":default"],
     ]) {
       const refused = run(args);
       assert.equal(refused.status, 64, `${args.join(" ")}: ${refused.stdout}${refused.stderr}`);
@@ -57,8 +57,8 @@ test("the Lean wrapper requires a declared gate for every full-library build", a
     for (const [args, gate] of [
       [["build"], "effect-data-shared-batch"],
       [["test"], "verify-lean-library"],
-      [["build", "BpmnSemantics.SemanticProcess.Data", "+BpmnSemantics.Scenario:olean"], undefined],
-      [["build", "emitSemanticProcessResults"], undefined],
+      [["build", "Kernel.Step", "+Kernel.State:olean"], undefined],
+      [["build", "Kernel", "kernelRun"], undefined],
       [["--version"], undefined],
     ] as const) {
       const allowed = run(args, gate);
@@ -67,7 +67,7 @@ test("the Lean wrapper requires a declared gate for every full-library build", a
       assert.equal(allowed.stderr, "", "a permitted invocation must add no output");
     }
     const submodules = (count: number) =>
-      ["build", ...Array.from({ length: count }, (_, index) => `BpmnSemantics.Module${index}`)];
+      ["build", ...Array.from({ length: count }, (_, index) => `Kernel.Module${index}`)];
     const enumerated = run(submodules(17));
     assert.equal(enumerated.status, 64, `17 narrow targets: ${enumerated.stdout}${enumerated.stderr}`);
     assert.equal(enumerated.stdout, "", "an enumerated wide build reached Lake");
@@ -77,9 +77,6 @@ test("the Lean wrapper requires a declared gate for every full-library build", a
       assert.equal(allowed.status, 0, `${args.length - 1} targets: ${allowed.stderr}`);
       assert.equal(allowed.stderr, "", "a permitted invocation must add no output");
     }
-    const umbrella = run(["build", "BpmnSemantics"], "effect-data-shared-batch");
-    assert.equal(umbrella.status, 64);
-    assert.match(umbrella.stderr, /umbrella/u);
   } finally {
     await rm(lockPath, { recursive: true, force: true });
     await rm(fakeBin, { recursive: true, force: true });

@@ -1,19 +1,18 @@
 import assert from "node:assert/strict";
 
-import { CommandOutcome } from "@bpmn-lean/semantic-core";
-import {
-  TemporalScenarioRunner,
-  durableUpdateOutcomes,
-  historyEvents,
-  isCompletedProcessReceipt,
-  processWorkflowId,
-  readTestProcessTerminalResult,
-  withDeadline,
-} from "@bpmn-lean/temporal-testkit";
-import type { TemporalHistory, TemporalWorkflowClient } from "@bpmn-lean/temporal-testkit";
+import { ResultKind } from "@bpmn-lean/temporal-host/client";
+import { replayHistory } from "@bpmn-lean/temporal-host/worker";
+
+import { withDeadline } from "../src/host-worker.ts";
+import type { TemporalEnvironment } from "../src/host-worker.ts";
+import { processWorkflowId } from "../src/process-address.ts";
 
 const operationDeadlineMs = 20_000;
-const replayStartupDeadlineMs = 30_000;
+const replayDeadlineMs = 30_000;
+
+type TemporalClient = TemporalEnvironment["client"];
+export type TemporalHistory = Awaited<ReturnType<ReturnType<TemporalClient["workflow"]["getHandle"]>["fetchHistory"]>>;
+type HistoryEntry = NonNullable<TemporalHistory["events"]>[number];
 
 type JourneyEvidence = Readonly<{
   status: "completed";
@@ -30,113 +29,72 @@ export type MuePreviewAlphaEvidence = Readonly<{
   interrupted: JourneyEvidence;
 }>;
 
-/** Reads Event History only after both journeys terminate, then replays every exact Run. */
+/**
+ * Reads Event History only after both journeys terminate, then replays every exact Run. The host arms one durable
+ * Timer per open Timer wait and cancels it when the wait closes (`packages/temporal-host/src/workflow-host.ts`), so the
+ * natural journey cancels the lifetime Timer and the interrupted one fires it.
+ */
 export async function verifyMuePreviewAlphaEvidence(input: Readonly<{
-  client: TemporalWorkflowClient;
+  client: TemporalClient;
   naturalProcessInstanceId: string;
   interruptedProcessInstanceId: string;
-  temporalCacheDirectory: string;
 }>): Promise<MuePreviewAlphaEvidence> {
   const [natural, interrupted] = await Promise.all([
     collectJourney(input.client, input.naturalProcessInstanceId),
     collectJourney(input.client, input.interruptedProcessInstanceId),
   ]);
-  const runner = await withDeadline(
-    TemporalScenarioRunner.create({ downloadDirectory: input.temporalCacheDirectory }),
-    replayStartupDeadlineMs,
-    "MUE Preview Alpha replay runner startup",
-  );
-  try {
-    const naturalReplayed = await replayEveryRun(runner, "natural", natural.histories);
-    const interruptedReplayed = await replayEveryRun(
-      runner,
-      "interrupted",
-      interrupted.histories,
-    );
-    const naturalEvidence = evidenceFor(natural.histories, naturalReplayed);
-    const interruptedEvidence = evidenceFor(interrupted.histories, interruptedReplayed);
-    assert.equal(naturalEvidence.committedUpdates, 3);
-    assert.equal(naturalEvidence.timerStarts, 1);
-    assert.equal(naturalEvidence.timerFirings, 0);
-    assert.equal(naturalEvidence.timerCancellations, 1);
-    assert.equal(interruptedEvidence.committedUpdates, 2);
-    assert.equal(interruptedEvidence.timerStarts, 1);
-    assert.equal(interruptedEvidence.timerFirings, 1);
-    assert.equal(interruptedEvidence.timerCancellations, 0);
-    return { natural: naturalEvidence, interrupted: interruptedEvidence };
-  } finally {
-    await runner.shutdown();
-  }
+  const naturalEvidence = evidenceFor(natural, await replayEveryRun("natural", natural));
+  const interruptedEvidence = evidenceFor(interrupted, await replayEveryRun("interrupted", interrupted));
+  assert.equal(naturalEvidence.committedUpdates, 3);
+  assert.equal(naturalEvidence.timerStarts, 1);
+  assert.equal(naturalEvidence.timerFirings, 0);
+  assert.equal(naturalEvidence.timerCancellations, 1);
+  assert.equal(interruptedEvidence.committedUpdates, 2);
+  assert.equal(interruptedEvidence.timerStarts, 1);
+  assert.equal(interruptedEvidence.timerFirings, 1);
+  assert.equal(interruptedEvidence.timerCancellations, 0);
+  return { natural: naturalEvidence, interrupted: interruptedEvidence };
 }
 
-async function collectJourney(
-  client: TemporalWorkflowClient,
-  processInstanceId: string,
-): Promise<Readonly<{ histories: readonly TemporalHistory[] }>> {
-  const workflowId = processWorkflowId(processInstanceId);
-  const terminal = await withDeadline(
-    readTestProcessTerminalResult(client.getHandle(workflowId)),
+async function collectJourney(client: TemporalClient, processInstanceId: string): Promise<readonly TemporalHistory[]> {
+  const result = await withDeadline(
+    client.workflow.getHandle(processWorkflowId(processInstanceId)).result(),
     operationDeadlineMs,
     `MUE Preview Alpha ${processInstanceId} terminal result`,
   );
-  assert.equal(isCompletedProcessReceipt(terminal.receipt), true);
-  if (!isCompletedProcessReceipt(terminal.receipt)) {
-    throw new Error(`MUE Preview Alpha ${processInstanceId} did not complete`);
+  if (result.kind !== ResultKind.Ended || result.status !== "completed") {
+    throw new Error(`MUE Preview Alpha ${processInstanceId} did not complete: ${JSON.stringify(result)}`);
   }
-  return { histories: await collectProcessRunHistories(client, processInstanceId) };
+  return collectProcessRunHistories(client, processInstanceId);
 }
 
+/** Every Run of the instance's Workflow chain, oldest first. */
 export async function collectProcessRunHistories(
-  client: TemporalWorkflowClient,
+  client: TemporalClient,
   processInstanceId: string,
 ): Promise<readonly TemporalHistory[]> {
   const workflowId = processWorkflowId(processInstanceId);
-  const runs = await workflowChainRuns(client, workflowId);
-  if (runs.length === 0) {
-    throw new Error(`MUE Preview Alpha ${processInstanceId} has no visible Workflow Runs`);
-  }
-  const histories = await Promise.all(runs.map(async ({ runId }) => {
-    const history = await withDeadline(
-      client.getHandle(workflowId, runId).fetchHistory(),
-      operationDeadlineMs,
-      `MUE Preview Alpha ${runId} history fetch`,
-    );
-    if (!Array.isArray(history.events)) {
-      throw new Error(`MUE Preview Alpha ${runId} history has no events`);
+  const runs = await withDeadline((async () => {
+    const found: Array<Readonly<{ runId: string; startedAt: number }>> = [];
+    for await (const execution of client.workflow.list()) {
+      if (execution.workflowId === workflowId) found.push({ runId: execution.runId, startedAt: execution.startTime.getTime() });
     }
-    return history as TemporalHistory;
-  }));
-  return histories;
-}
-
-async function workflowChainRuns(
-  client: TemporalWorkflowClient,
-  workflowId: string,
-): Promise<readonly Readonly<{ runId: string; startedAt: number }>[]> {
-  return withDeadline((async () => {
-    const runs: Array<Readonly<{ runId: string; startedAt: number }>> = [];
-    for await (const execution of client.list()) {
-      if (execution.workflowId === workflowId) {
-        runs.push({
-          runId: execution.runId,
-          startedAt: execution.startTime.getTime(),
-        });
-      }
-    }
-    return runs.sort((left, right) => left.startedAt - right.startedAt);
+    return found.sort((left, right) => left.startedAt - right.startedAt);
   })(), operationDeadlineMs, `MUE Preview Alpha ${workflowId} Run listing`);
+  if (runs.length === 0) throw new Error(`MUE Preview Alpha ${processInstanceId} has no visible Workflow Runs`);
+  return Promise.all(runs.map(({ runId }) => withDeadline(
+    client.workflow.getHandle(workflowId, runId).fetchHistory(),
+    operationDeadlineMs,
+    `MUE Preview Alpha ${runId} history fetch`,
+  )));
 }
 
-async function replayEveryRun(
-  runner: TemporalScenarioRunner,
-  journey: string,
-  histories: readonly TemporalHistory[],
-): Promise<number> {
+export async function replayEveryRun(journey: string, histories: readonly TemporalHistory[]): Promise<number> {
   let replayed = 0;
   for (const [index, history] of histories.entries()) {
     await withDeadline(
-      runner.replayHistory(history, `mue-preview-alpha-${journey}-run-${index + 1}`),
-      operationDeadlineMs,
+      replayHistory(history, `mue-preview-alpha-${journey}-run-${index + 1}`),
+      replayDeadlineMs,
       `MUE Preview Alpha ${journey} Run ${index + 1} replay`,
     );
     replayed += 1;
@@ -144,29 +102,35 @@ async function replayEveryRun(
   return replayed;
 }
 
-function evidenceFor(
-  histories: readonly TemporalHistory[],
-  replayedRuns: number,
-): JourneyEvidence {
-  const updates = histories.flatMap((history) => [...durableUpdateOutcomes(history).values()]);
-  assert.equal(updates.every((outcome) => outcome === CommandOutcome.Committed), true);
+function evidenceFor(histories: readonly TemporalHistory[], replayedRuns: number): JourneyEvidence {
+  const outcomes = histories.flatMap(updateOutcomes);
+  assert.equal(outcomes.every((outcome) => outcome === "committed"), true);
   return {
     status: "completed",
     runs: histories.length,
     replayedRuns,
-    committedUpdates: updates.length,
+    committedUpdates: outcomes.length,
     timerStarts: countEvents(histories, "timerStartedEventAttributes"),
     timerFirings: countEvents(histories, "timerFiredEventAttributes"),
     timerCancellations: countEvents(histories, "timerCanceledEventAttributes"),
   };
 }
 
-function countEvents(
-  histories: readonly TemporalHistory[],
-  attribute: Parameters<typeof historyEvents>[1],
-): number {
-  return histories.reduce(
-    (count, history) => count + historyEvents(history, attribute).length,
-    0,
-  );
+function countEvents(histories: readonly TemporalHistory[], attribute: keyof HistoryEntry): number {
+  return histories.reduce((count, history) => count + historyEvents(history, attribute).length, 0);
+}
+
+function historyEvents(history: TemporalHistory, attribute: keyof HistoryEntry): readonly HistoryEntry[] {
+  return (history.events ?? []).filter((event) => event[attribute] !== undefined && event[attribute] !== null);
+}
+
+/** The kernel outcome of every completed Update, from its `CommandResult` (`packages/temporal-host/src/host-contract.ts`). */
+function updateOutcomes(history: TemporalHistory): readonly string[] {
+  return historyEvents(history, "workflowExecutionUpdateCompletedEventAttributes").map((event) => {
+    const data = event.workflowExecutionUpdateCompletedEventAttributes?.outcome?.success?.payloads?.[0]?.data;
+    if (!(data instanceof Uint8Array)) throw new TypeError("completed Update carries no JSON result payload");
+    const result = JSON.parse(Buffer.from(data).toString("utf8")) as Readonly<{ outcome?: unknown }>;
+    if (typeof result.outcome !== "string") throw new TypeError("completed Update result has no outcome");
+    return result.outcome;
+  });
 }

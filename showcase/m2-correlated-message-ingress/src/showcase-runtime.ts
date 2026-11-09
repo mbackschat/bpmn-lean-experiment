@@ -11,36 +11,23 @@ import {
 import type {
   PlatformServerRuntime,
 } from "@bpmn-lean/platform-server";
+import { engineDefinitionMessageStartWorkflowId } from "@bpmn-lean/engine-api";
+import type { EngineBinding, EngineOpenWait, EngineStateObservation } from "@bpmn-lean/engine-api";
+import { ProcessClient } from "@bpmn-lean/temporal-host/client";
+
+import { showcaseEngineDeploymentEnvironment } from "../../engine-deployment.ts";
 import {
-  CanonicalObservationKind,
-  CommandOutcome,
-  CorrelatedMessageInteractionKind,
-  isCorrelatedMessageCandidate,
-  ProcessStatus,
-  StimulusKind,
-  VariableValueKind,
-} from "@bpmn-lean/semantic-core";
-import type {
-  CorrelatedMessageCandidate,
-  StateObservation,
-} from "@bpmn-lean/semantic-core";
-import {
-  ExternalTemporalRuntime,
-  ProcessCommandResultKind,
+  ShowcaseWorker,
   createCachedLocalEnvironment,
-  createHostEffectActivities,
-  bpmnProcessCorrelationCandidateQueryName,
-  processWorkflowId,
-  readBpmnProcessTrace,
-  submitMessageDelivery,
+  environmentNamespace,
+  noEffects,
   withDeadline,
-} from "@bpmn-lean/temporal-testkit";
+} from "./host-worker.ts";
 
 const operationDeadlineMs = 20_000;
 const environmentStartupDeadlineMs = 40_000;
 const stateDeadlineMs = 30_000;
 const taskQueue = "bpmn-m2-correlated-message-ingress";
-const namespace = "bpmn-m2-correlated-message-ingress";
 const directCatchEventId = "MessageCatch_InitialSettlement";
 const correlatedCatchEventId = "MessageCatch_CorrelatedSettlement";
 const reviewTaskId = "UserTask_ReviewSettlement";
@@ -56,11 +43,27 @@ const temporalCacheDirectory = fileURLToPath(
 
 type Environment = Awaited<ReturnType<typeof createCachedLocalEnvironment>>;
 
+/**
+ * The host Workflow ID engine-api gives a directly started instance: engine-api exports its instance-address rule only
+ * under the Message Start name, and both starts derive the address from the instance alone.
+ */
+const processWorkflowId = engineDefinitionMessageStartWorkflowId;
+
+/**
+ * What a Process waiting for the correlated Message publishes: the wait's channel and the correlation key it is
+ * correlated by, and the instance variables that hold that key's value. The old adapter's candidate query, which
+ * paired an address with the key value, has no host counterpart until correlation-key registration lands.
+ */
+export type CorrelatedWait = Readonly<{
+  wait: EngineOpenWait;
+  variables: readonly EngineBinding[];
+}>;
+
 /** Real Temporal and production-platform composition for the browser witness. */
 export class CorrelatedMessageShowcaseRuntime {
   readonly #dataDirectory: string;
   #environment: Environment | undefined;
-  #worker: ExternalTemporalRuntime | undefined;
+  #worker: ShowcaseWorker | undefined;
   #platform: PlatformServerRuntime | undefined;
 
   private constructor(dataDirectory: string) {
@@ -87,12 +90,11 @@ export class CorrelatedMessageShowcaseRuntime {
     );
     const environment = this.#requireEnvironment();
     this.#worker = await withDeadline(
-      ExternalTemporalRuntime.initializeFreshNamespace({
-        address: environment.address,
-        namespace,
+      ShowcaseWorker.start(environment, {
         taskQueue,
         identity: `bpmn-m2-correlated-message-worker-${process.pid}`,
-      }, createHostEffectActivities([]), 86_400),
+        effects: noEffects,
+      }),
       operationDeadlineMs,
       "M2 correlated Message Worker startup",
     );
@@ -104,79 +106,39 @@ export class CorrelatedMessageShowcaseRuntime {
     processInstanceId: string,
     commandId: string,
     value: string,
-  ): Promise<CorrelatedMessageCandidate> {
+  ): Promise<CorrelatedWait> {
     await this.#waitForState(
       processInstanceId,
-      (state) => state.openMessageSubscriptions.some(({ id }) =>
-        id.elementId === directCatchEventId
-      ),
+      (state) => messageWaits(state).some(({ id }) => id.elementId === directCatchEventId),
       "direct Message wait",
     );
     const stimulus = {
-      kind: StimulusKind.DeliverPayloadMessage,
+      kind: "deliver",
       commandId,
-      subscriptionId: {
-        processInstanceId,
-        elementId: directCatchEventId,
-        activation: 1,
-      },
-      channel,
-      payload: { kind: VariableValueKind.String, value },
+      occurrence: { processInstanceId, elementId: directCatchEventId, activation: 1 },
+      trigger: { kind: "message", channel },
+      payload: { kind: "string", value },
     } as const;
+    const workflowId = processWorkflowId(processInstanceId);
     let result;
     try {
-      result = await submitMessageDelivery(
-        this.#requireWorkflowClient(),
-        processInstanceId,
-        stimulus,
-      );
+      result = await this.#processes().deliver(workflowId, stimulus);
     } catch {
-      result = await submitMessageDelivery(
-        this.#requireWorkflowClient(),
-        processInstanceId,
-        stimulus,
-      );
+      result = await this.#processes().deliver(workflowId, stimulus);
     }
-    if (
-      result.kind !== ProcessCommandResultKind.Semantic ||
-      result.commandId !== commandId ||
-      result.outcome !== CommandOutcome.Committed
-    ) {
-      throw new Error(
-        `showcase actor did not commit direct Message ${commandId}`,
-      );
+    if (result.outcome !== "committed") {
+      throw new Error(`showcase actor did not commit direct Message ${commandId}: ${result.outcome} ${result.code}`);
     }
     const state = await this.#waitForState(
       processInstanceId,
       isAtCorrelatedWait,
       "correlated Message wait",
     );
-    const interactions = state.enabledInteractions.filter((interaction) =>
-      interaction.kind ===
-        CorrelatedMessageInteractionKind.PublishCorrelatedPayloadMessage
-    );
-    const interaction = interactions[0];
-    if (
-      interactions.length !== 1 ||
-      interaction?.kind !==
-        CorrelatedMessageInteractionKind.PublishCorrelatedPayloadMessage
-    ) {
-      throw new Error("correlated Message wait did not publish one exact address");
+    const [wait] = messageWaits(state);
+    if (wait === undefined) {
+      throw new Error("correlated Message wait lost its occurrence identity");
     }
-    const subscriptionId = state.openMessageSubscriptions[0]?.id;
-    if (subscriptionId === undefined) {
-      throw new Error("correlated Message wait lost its subscription identity");
-    }
-    const candidate = await this.#requireWorkflowClient().getHandle(
-      processWorkflowId(processInstanceId),
-    ).query(bpmnProcessCorrelationCandidateQueryName, {
-      address: interaction.address,
-      subscriptionId,
-    });
-    if (!isCorrelatedMessageCandidate(candidate)) {
-      throw new Error("Process did not publish its exact correlation candidate");
-    }
-    return structuredClone(candidate);
+    return structuredClone({ wait, variables: state.variables });
   }
 
   async assertOnlyReviewTask(
@@ -186,10 +148,10 @@ export class CorrelatedMessageShowcaseRuntime {
     await this.#waitForState(
       reviewProcessInstanceId,
       (state) =>
-        state.status === ProcessStatus.Running &&
-        state.openUserTasks.length === 1 &&
-        state.openUserTasks[0]?.id.elementId === reviewTaskId &&
-        state.openMessageSubscriptions.length === 0,
+        state.status === "running" &&
+        state.openWaits.length === 1 &&
+        state.openWaits[0]?.detail.kind === "userTask" &&
+        state.openWaits[0]?.id.elementId === reviewTaskId,
       "unique Process review task",
     );
     for (const processInstanceId of waitingProcessInstanceIds) {
@@ -231,7 +193,7 @@ export class CorrelatedMessageShowcaseRuntime {
   async #startPlatform(): Promise<void> {
     const environment = this.#requireEnvironment();
     const api = requireApiOrigin();
-    const configured = readPlatformServerConfig({});
+    const configured = readPlatformServerConfig(showcaseEngineDeploymentEnvironment());
     this.#platform = await createPlatformServer({
       ...configured,
       host: api.hostname,
@@ -241,7 +203,7 @@ export class CorrelatedMessageShowcaseRuntime {
       maxSourceBytes: 1024 * 1024,
       parserDeadlineMs: 5_000,
       temporalAddress: environment.address,
-      temporalNamespace: namespace,
+      temporalNamespace: environmentNamespace(environment),
       temporalTaskQueue: taskQueue,
       temporalConnectTimeoutMs: 5_000,
     });
@@ -265,20 +227,19 @@ export class CorrelatedMessageShowcaseRuntime {
 
   async #waitForState(
     processInstanceId: string,
-    predicate: (state: StateObservation) => boolean,
+    predicate: (state: EngineStateObservation) => boolean,
     label: string,
-  ): Promise<StateObservation> {
+  ): Promise<EngineStateObservation> {
     const deadline = Date.now() + stateDeadlineMs;
-    let latest: StateObservation | undefined;
+    let latest: EngineStateObservation | undefined;
     while (Date.now() < deadline) {
-      const trace = await readBpmnProcessTrace(
-        this.#requireWorkflowClient(),
-        processInstanceId,
-      );
-      latest = trace.findLast(
-        (observation): observation is StateObservation =>
-          observation.kind === CanonicalObservationKind.State,
-      );
+      try {
+        const observed = await this.#processes().observation(processWorkflowId(processInstanceId));
+        latest = observed === null ? undefined : observed as unknown as EngineStateObservation;
+      } catch {
+        // The start can be visible before its first Workflow task answers a Query.
+        latest = undefined;
+      }
       if (latest !== undefined && predicate(latest)) return latest;
       await delay(25);
     }
@@ -287,11 +248,11 @@ export class CorrelatedMessageShowcaseRuntime {
     );
   }
 
-  #requireWorkflowClient() {
+  #processes(): ProcessClient {
     if (this.#worker === undefined) {
       throw new Error("correlated Message showcase Worker is not running");
     }
-    return this.#worker.workflowClient;
+    return new ProcessClient(this.#requireEnvironment().client, taskQueue);
   }
 
   #requireEnvironment(): Environment {
@@ -302,15 +263,19 @@ export class CorrelatedMessageShowcaseRuntime {
   }
 }
 
-function isAtCorrelatedWait(state: StateObservation): boolean {
-  return state.status === ProcessStatus.Running &&
-    state.openUserTasks.length === 0 &&
-    state.openMessageSubscriptions.length === 1 &&
-    state.openMessageSubscriptions[0]?.id.elementId === correlatedCatchEventId &&
-    state.enabledInteractions.some((interaction) =>
-      interaction.kind ===
-        CorrelatedMessageInteractionKind.PublishCorrelatedPayloadMessage
-    );
+function messageWaits(state: EngineStateObservation): readonly EngineOpenWait[] {
+  return state.openWaits.filter(({ detail }) => detail.kind === "message");
+}
+
+/** One open wait, the correlated Message catch, correlated by exactly one key. */
+function isAtCorrelatedWait(state: EngineStateObservation): boolean {
+  const [wait] = state.openWaits;
+  const criteria = wait?.detail.criteria;
+  return state.status === "running" &&
+    state.openWaits.length === 1 &&
+    wait?.detail.kind === "message" &&
+    wait.id.elementId === correlatedCatchEventId &&
+    Array.isArray(criteria) && criteria.length === 1;
 }
 
 function requireApiOrigin(): URL {

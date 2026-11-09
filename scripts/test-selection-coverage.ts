@@ -39,7 +39,8 @@ const typeScriptPathToken = /[A-Za-z0-9_@./*-]*\.ts\b/gu;
 
 const legacyManifestPath = "adoption/a12/legacy/manifest.json";
 
-function workingTreeFiles(root = projectRoot): ReadonlyArray<string> {
+/** Tracked and pending files that exist, so a deletion or addition before commit counts as it will after it. */
+export function workingTreeFiles(root = projectRoot): ReadonlyArray<string> {
   return execFileSync("git", ["ls-files", "--cached", "--others", "--exclude-standard", "-z"], { cwd: root, encoding: "utf8" })
     .split("\0")
     .filter((file) => file.length > 0 && existsSync(path.join(root, file)));

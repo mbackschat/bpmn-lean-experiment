@@ -1,307 +1,149 @@
+/**
+ * The executable model corpus against the kernel: every manifest model's exact bytes and inventory, the kernel's own
+ * admission of each (the kernel reader, then `admit`), the MVP capability catalog against what the discovered scenarios
+ * exercise, and the generated corpus map. Retained models bind the scenarios the differential discovers, so a corpus
+ * model's scenario runs in the kernel oracle; nothing here registers a case or writes a count.
+ */
 import assert from "node:assert/strict";
-import { createHash } from "node:crypto";
-import { copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
-import { pipelineCases } from "../../packages/differential/test/pipeline-cases.ts";
+import { kernelAdmission, readCaseSource } from "../../packages/differential/test/kernel-program.ts";
 import {
-  messageKeyCorrelationPopulationCases,
-} from "../../packages/differential/test/message-key-correlation-population-cases.ts";
-import {
-  compileCorpusModel,
-} from "../../packages/bpmn-source/test/executable-model-corpus-compiler.ts";
+  DiscoveredKind,
+  discoverScenarios,
+  readSourceFor,
+} from "../../packages/differential/test/scenario-discovery.ts";
+import type { DiscoveredScenario } from "../../packages/differential/test/scenario-discovery.ts";
 import {
   inspectExecutableModelCorpus,
   renderExecutableModelCorpusMap,
   requireExecutableModelCorpusManifest,
 } from "../../scripts/executable-model-corpus.ts";
+import type {
+  CorpusAdmitter,
+  CorpusScenario,
+  ExecutableModelCorpusManifest,
+} from "../../scripts/executable-model-corpus.ts";
 
 const projectRoot = fileURLToPath(new URL("../../", import.meta.url));
+const externalRoot = process.env["BPMN_EXTERNAL_ROOT"] ?? path.resolve(projectRoot, "../oss");
 const manifestPath = path.join(projectRoot, "model-corpus/manifest.json");
-const corpusMapPath = path.join(
-  projectRoot,
-  "model-corpus/EXECUTABLE-MODEL-CORPUS-MAP.md",
-);
+const corpusMapPath = path.join(projectRoot, "model-corpus/EXECUTABLE-MODEL-CORPUS-MAP.md");
 
 async function loadManifest(): Promise<unknown> {
   return JSON.parse(await readFile(manifestPath, "utf8"));
 }
 
-test("binds every retained and external model to exact local evidence", async () => {
-  const manifest = requireExecutableModelCorpusManifest(await loadManifest());
-  const report = await inspectExecutableModelCorpus(manifest, {
-    projectRoot,
-    externalRoot: process.env["BPMN_EXTERNAL_ROOT"] ??
-      path.resolve(projectRoot, "../oss"),
-    pipelineCases,
-    populationCases: messageKeyCorrelationPopulationCases,
-    compileModel: compileCorpusModel,
-  });
+const discovered = await discoverScenarios();
 
-  assert.equal(report.models.length, 110);
-  assert.equal(report.retainedModels, 103);
-  assert.equal(report.externalModels, 7);
-  assert.equal(report.acceptedModels, 103);
-  assert.equal(report.rejectedModels, 7);
-  assert.equal(report.catalogReadyModels, 12);
-  assert.equal(report.models.filter(({ product2 }) => product2 === "journeyBacked").length, 3);
-  assert.equal(report.models.filter(({ product2 }) => product2 === "guidedJourneyBacked").length, 9);
-  assert.equal(report.mvpCapabilities.length, 53);
+function corpusScenario(scenario: DiscoveredScenario): CorpusScenario {
+  switch (scenario.kind) {
+    case DiscoveredKind.Scenario:
+      return {
+        id: scenario.document.id,
+        relativePath: scenario.relativePath,
+        kind: scenario.kind,
+        profile: scenario.document.profile,
+        sources: [scenario.document.bpmn],
+        retainedEvidenceVersion: scenario.evidence?.engineVersion ?? null,
+      };
+    case DiscoveredKind.PopulationScenario:
+      return {
+        id: scenario.document.id,
+        relativePath: scenario.relativePath,
+        kind: scenario.kind,
+        profile: scenario.document.profile,
+        sources: scenario.document.definitions.map(({ bpmn }) => bpmn),
+        retainedEvidenceVersion: null,
+      };
+  }
+}
+
+const scenarios = discovered.map(corpusScenario);
+
+/** Retained models read through the differential's own source path, bound overlay included; external ones bare. */
+const admitModel: CorpusAdmitter = async (model, bytes, scenario) => {
+  if (scenario === null) {
+    return kernelAdmission(await readCaseSource({ relativePath: model.id, bytes, sha256: model.source.sha256, overlay: null },
+      model.profile));
+  }
+  const found = discovered.find(({ relativePath }) => relativePath === scenario.relativePath);
+  assert.ok(found !== undefined);
+  const sources = found.kind === DiscoveredKind.Scenario
+    ? [found.document.bpmn]
+    : found.document.definitions.map(({ bpmn }) => bpmn);
+  const source = sources.find(({ relativePath }) =>
+    model.source.kind === "retainedScenario" && relativePath === model.source.bpmnRelativePath);
+  assert.ok(source !== undefined);
+  return kernelAdmission(await readSourceFor(found.relativePath, source, found.document.profile));
+};
+
+const inspect = (manifest: ExecutableModelCorpusManifest, selected: ReadonlyArray<CorpusScenario> = scenarios) =>
+  inspectExecutableModelCorpus(manifest, { projectRoot, externalRoot, scenarios: selected, admitModel });
+
+test("the kernel admits every model exactly as the corpus records it", async () => {
+  const report = await inspect(requireExecutableModelCorpusManifest(await loadManifest()));
   assert.deepEqual(report.uncoveredMvpCapabilities, []);
-  assert.equal(report.models[0]?.product2, "journeyBacked");
+  assert.equal(report.models.length, report.retainedModels + report.externalModels);
   assert.deepEqual(
-    report.models.filter(({ sourceKind }) => sourceKind === "retainedScenario")
-      .map(({ pipelineCaseId }) => pipelineCaseId),
-    [
-      "user-task-assignment-form-metadata",
-      "parallel-user-task-metadata-content-then-risk",
-      "parallel-fork-join-a-then-b",
-      "expense-exception-review-approve",
-      "exclusive-gateway-simple-boolean-first-true",
-      "called-process-call-activity",
-      "call-data-supplier-string",
-      "structured-composition-invoice-approve",
-      "structured-composition-serial-string",
-      "portable-handoff-order-nested",
-      "effect-data-credit-assessed",
-      "nested-scope-data-order-approved",
-      "nested-scope-data-claim-limits",
-      "nested-scope-data-quote-signed",
-      "call-variable-mapping-loan-approved",
-      "service-task-effect-success",
-      "embedded-subprocess-completion-a-then-b",
-      "nested-scope-control-onboarding-setup-first",
-      "nested-scope-control-audit-early-and-stale",
-      "concurrent-activations-audit-interleaved-and-stale",
-      "concurrent-activations-intake-reverse-assessments",
-      "concurrent-scope-effects-supplier-review-first",
-      "concurrent-scope-effects-claim-price-two-first",
-      "concurrent-scope-data-claim-fetch-one-first",
-      "concurrent-scope-data-facility-inspection",
-      "concurrent-mapped-calls-supplier-compliance-first",
-      "concurrent-mapped-calls-travel-request",
-      "concurrent-structured-scope-data-order-review-first",
-      "concurrent-structured-scope-data-loan-credit-first",
-      "scope-reentry-claim-rework-then-approve",
-      "scope-reentry-contract-revise-then-sign",
-      "pass-through-task-equipment-return",
-      "pass-through-task-intake-illegible-twice-then-paper",
-      "root-parallel-forks-onboarding-documents-while-laptop-open",
-      "terminal-forks-offboarding-equipment-first",
-      "terminal-forks-office-move",
-      "data-declaring-terminal-branches-expense-claim",
-      "inclusive-gateway-regions-account-residency-only",
-      "inclusive-gateway-regions-booking-no-extras",
-      "exclusive-choice-arity-complaint-delivery",
-      "none-end-fan-in-travel-booked",
-      "pass-through-parallel-branches-relocation-packing-first",
-      "pass-through-parallel-branches-invoice-settled",
-      "none-intermediate-throw-warranty-passed",
-      "none-intermediate-throw-onboarding-account-first",
-      "pass-through-implicit-split-merge-claim-approved",
-      "pass-through-implicit-split-merge-dispatch-packed-first",
-      "link-events-warranty-rework",
-      "link-events-onboarding-laptop-first",
-      "activity-host-merge-claim-expert",
-      "scope-host-split-onboarding-register-first",
-      "activity-host-split-intake-archive-first",
-      "single-scope-models-purchase-approval-first",
-      "single-scope-models-invoice-valid",
-      "send-task-shipping-notice",
-      "send-task-claim-assessed-first",
-      "exclusive-choice-without-default-urgent-travel",
-      "exclusive-choice-without-default-medium-triage",
-      "repeated-nested-calls-natural-order",
-      "repeated-nested-calls-guarantor-verified",
-      "subprocess-error-propagation-trigger-first",
-      "timer-user-task-composition",
-      "intermediate-catch-message",
-      "message-payload-catch-supplied-scalar",
-      "portable-message-payload-manifest-delivered",
-      "message-key-correlation-unique",
-      "message-addressed-receive-task",
-      "addressless-receive-task",
-      "inclusive-gateway-both-true-a-then-b",
-      "event-based-gateway-message-wins",
-      "activity-boundary-timer-deadline-wins",
-      "activity-boundary-message-message-wins",
-      "subprocess-boundary-timer-deadline-wins",
-      "non-interrupting-boundary-timer-deadline-then-both-branches",
-      "user-task-cycle-repeat-rework-exit",
-      "message-start-event",
-      "timer-start-event",
-      "terminate-end-event-trigger-first",
-      "configured-task",
-      "mapped-success-service-task",
-      "mapped-boundary-error-service-task-caught",
-      "sequential-multi-instance-natural",
-      "sequential-multi-instance-interrupted",
-      "parallel-multi-instance-all",
-      "parallel-multi-instance-first",
-      "parallel-multi-instance-interrupted",
-      "activity-data-input-present",
-      "activity-data-output-supplied",
-      "activity-data-input-output-present",
-      "subscription-boundary-message-repeat",
-      "subscription-boundary-timer-repeat",
-      "subscription-subprocess-boundary-timer-repeat",
-      "subscription-subprocess-boundary-one-shot-fire",
-      "subscription-message-host-with-child-entry-repeat",
-      "subscription-catch-message-resume",
-      "subscription-catch-timer-resume",
-      "subscription-receive-task-resume",
-      "compensation-success-b-c-a",
-      "transaction-cancellation-retained-active",
-      "classification",
-      "invoice-rework",
-      "invoice-business-error-recovery",
-      "intermediate-catch-timer-alarm-debounce",
-    ],
-  );
-});
-
-test("reclassifies external CIB models under the closest interchange profile", async () => {
-  const manifest = requireExecutableModelCorpusManifest(await loadManifest());
-  const cibModels = manifest.models.filter(
-    ({ source }) =>
-      source.kind === "externalGit" &&
-      source.externalSourceId === "cibseven-2.2.0",
-  );
-  assert.equal(cibModels.length, 5);
-  assert.deepEqual(
-    [...new Set(cibModels.map(({ profile }) => profile))],
-    ["cibseven-2.2.0-user-task-process-data-preserved-notation-draft"],
-  );
-
-  const report = await inspectExecutableModelCorpus(manifest, {
-    projectRoot,
-    externalRoot: process.env["BPMN_EXTERNAL_ROOT"] ??
-      path.resolve(projectRoot, "../oss"),
-    pipelineCases,
-    populationCases: messageKeyCorrelationPopulationCases,
-    compileModel: compileCorpusModel,
-  });
-  const reportsById = new Map(report.models.map((model) => [model.id, model]));
-  const admittedNotationBlockers = new Set([
-    "preserveProperty:bpmn:Definitions:diagrams",
-    "preserveProperty:bpmn:Definitions:exporter",
-    "preserveProperty:bpmn:Definitions:exporterVersion",
-    "preserveProperty:bpmn:UserTask:documentation",
-  ]);
-  for (const model of cibModels) {
-    const modelReport = reportsById.get(model.id);
-    assert.ok(modelReport !== undefined);
-    assert.equal(modelReport.admission, "rejected");
-    assert.ok(modelReport.blockers.length > 0);
-    assert.equal(
-      modelReport.blockers.some((blocker) => admittedNotationBlockers.has(blocker)),
-      false,
-    );
-  }
-
-  assert.deepEqual(
-    report.unsupportedMechanisms.filter(({ key }) =>
-      key === "diagramInterchange" ||
-      key === "collaborationPresentation" ||
-      key === "lanePresentation"
-    ),
-    [
-      { key: "diagramInterchange", cloneFamilies: 4, models: 5 },
-      { key: "collaborationPresentation", cloneFamilies: 3, models: 4 },
-      { key: "lanePresentation", cloneFamilies: 2, models: 3 },
-    ],
-  );
-});
-
-test("requires every retained model to state a business purpose", async () => {
-  const manifest = requireExecutableModelCorpusManifest(await loadManifest());
-  for (const model of manifest.models.filter(
-    ({ source }) => source.kind === "retainedScenario",
-  )) {
-    assert.ok(model.businessPurpose !== null);
-    assert.ok(model.businessPurpose.length >= 20);
-  }
-});
-
-test("rejects a retained population model without its protected population route", async () => {
-  const manifest = requireExecutableModelCorpusManifest(await loadManifest());
-  const populationCases = messageKeyCorrelationPopulationCases.filter(
-    ({ id }) => id !== "message-key-correlation-unique",
-  );
-
-  await assert.rejects(
-    inspectExecutableModelCorpus(manifest, {
-      projectRoot,
-      externalRoot: process.env["BPMN_EXTERNAL_ROOT"] ??
-        path.resolve(projectRoot, "../oss"),
-      pipelineCases,
-      populationCases,
-      compileModel: compileCorpusModel,
-    }),
-    /model correlated-settlement-confirmation has no exact protected population route/u,
-  );
-});
-
-test("rejects a supported element variant without a retained MVP model", async () => {
-  const manifest = structuredClone(
-    requireExecutableModelCorpusManifest(await loadManifest()),
-  );
-  const index = manifest.models.findIndex(({ id }) => id === "scheduled-review-start");
-  assert.notEqual(index, -1);
-  manifest.models.splice(index, 1);
-
-  await assert.rejects(
-    inspectExecutableModelCorpus(manifest, {
-      projectRoot,
-      externalRoot: process.env["BPMN_EXTERNAL_ROOT"] ??
-        path.resolve(projectRoot, "../oss"),
-      pipelineCases,
-      populationCases: messageKeyCorrelationPopulationCases,
-      compileModel: compileCorpusModel,
-    }),
-    /retained MVP models do not cover timerStartEvent/u,
+    report.admissionMismatches,
+    [],
+    report.admissionMismatches.map((mismatch) => JSON.stringify(mismatch)).join("\n"),
   );
 });
 
 test("keeps the generated corpus map exact", async () => {
-  const manifest = requireExecutableModelCorpusManifest(await loadManifest());
-  const report = await inspectExecutableModelCorpus(manifest, {
-    projectRoot,
-    externalRoot: process.env["BPMN_EXTERNAL_ROOT"] ??
-      path.resolve(projectRoot, "../oss"),
-    pipelineCases,
-    populationCases: messageKeyCorrelationPopulationCases,
-    compileModel: compileCorpusModel,
-  });
+  const report = await inspect(requireExecutableModelCorpusManifest(await loadManifest()));
+  assert.equal(await readFile(corpusMapPath, "utf8"), renderExecutableModelCorpusMap(report));
+});
 
-  assert.equal(
-    await readFile(corpusMapPath, "utf8"),
-    renderExecutableModelCorpusMap(report),
+test("every retained model binds a discovered scenario of its own identity", async () => {
+  const manifest = requireExecutableModelCorpusManifest(await loadManifest());
+  for (const model of manifest.models) {
+    if (model.source.kind !== "retainedScenario") continue;
+    assert.ok(model.businessPurpose !== null && model.businessPurpose.length >= 20, `${model.id} needs a business purpose`);
+    const source = model.source;
+    const scenario = scenarios.find(({ relativePath }) => relativePath === source.scenarioRelativePath);
+    assert.equal(scenario?.id, model.pipelineCaseId, model.id);
+  }
+});
+
+test("rejects a retained population model whose scenario is not discovered", async () => {
+  const manifest = requireExecutableModelCorpusManifest(await loadManifest());
+  const model = manifest.models.find(({ id }) => id === "correlated-settlement-confirmation");
+  assert.ok(model?.source.kind === "retainedScenario");
+  const scenarioPath = model.source.scenarioRelativePath;
+  await assert.rejects(
+    inspect(manifest, scenarios.filter(({ relativePath }) => relativePath !== scenarioPath)),
+    /model correlated-settlement-confirmation has no discovered scenario/u,
   );
 });
 
+test("rejects a supported element variant without a retained MVP model", async () => {
+  const manifest = structuredClone(requireExecutableModelCorpusManifest(await loadManifest()));
+  const index = manifest.models.findIndex(({ id }) => id === "scheduled-review-start");
+  assert.notEqual(index, -1);
+  manifest.models.splice(index, 1);
+  await assert.rejects(inspect(manifest), /retained MVP models do not cover timerStartEvent/u);
+});
+
+test("rejects a catalog variant no discovered scenario exercises", async () => {
+  const manifest = requireExecutableModelCorpusManifest(await loadManifest());
+  const withoutTimerStart = scenarios.filter(({ sources }) =>
+    !sources.some(({ relativePath }) => relativePath.startsWith("scenarios/timer-start-event/")));
+  await assert.rejects(inspect(manifest, withoutTimerStart), /MVP capability catalog differs from the discovered scenarios/u);
+});
+
 test("rejects source clones split across different clone families", async () => {
-  const manifest = structuredClone(
-    requireExecutableModelCorpusManifest(await loadManifest()),
-  );
+  const manifest = structuredClone(requireExecutableModelCorpusManifest(await loadManifest()));
   const first = manifest.models[0];
   const second = manifest.models[1];
   assert.ok(first !== undefined && second !== undefined);
   second.source = structuredClone(first.source);
-
-  await assert.rejects(
-    inspectExecutableModelCorpus(manifest, {
-      projectRoot,
-      externalRoot: path.resolve(projectRoot, "../oss"),
-      pipelineCases,
-      populationCases: messageKeyCorrelationPopulationCases,
-      compileModel: compileCorpusModel,
-    }),
-    /identical source bytes use different clone families/u,
-  );
+  await assert.rejects(inspect(manifest), /identical source bytes use different clone families/u);
 });
 
 test("rejects a browser catalog claim without a production journey", () => {
@@ -360,15 +202,9 @@ test("rejects external paths that escape the registered checkout", () => {
           sha256: "a".repeat(64),
         },
         profile: "profile",
-        admission: {
-          kind: "rejected",
-          diagnosticDigest: "c".repeat(64),
-        },
+        admission: { kind: "rejected", diagnosticDigest: "c".repeat(64) },
         pipelineCaseId: null,
-        product2: {
-          kind: "notCatalogReady",
-          reason: "External reference bytes are not deployable.",
-        },
+        product2: { kind: "notCatalogReady", reason: "External reference bytes are not deployable." },
       }],
     }),
     /external model path must stay inside its checkout/u,
@@ -402,13 +238,9 @@ test("accepts exact external archive entries and rejects entry escapes", () => {
       profile: "profile",
       admission: { kind: "rejected", diagnosticDigest: "c".repeat(64) },
       pipelineCaseId: null,
-      product2: {
-        kind: "notCatalogReady",
-        reason: "The official external example is not admitted.",
-      },
+      product2: { kind: "notCatalogReady", reason: "The official external example is not admitted." },
     }],
   };
-
   assert.doesNotThrow(() => requireExecutableModelCorpusManifest(candidate));
   candidate.models[0]!.source.relativePath = "../outside.bpmn";
   assert.throws(
@@ -418,12 +250,8 @@ test("accepts exact external archive entries and rejects entry escapes", () => {
 });
 
 test("rejects external archive or entry byte drift before admission", async () => {
-  const kindDrift = structuredClone(
-    requireExecutableModelCorpusManifest(await loadManifest()),
-  );
-  const archiveEntry = kindDrift.models.find(
-    ({ source }) => source.kind === "externalArchiveEntry",
-  );
+  const kindDrift = structuredClone(requireExecutableModelCorpusManifest(await loadManifest()));
+  const archiveEntry = kindDrift.models.find(({ source }) => source.kind === "externalArchiveEntry");
   assert.ok(archiveEntry?.source.kind === "externalArchiveEntry");
   archiveEntry.source.externalSourceId = "betsy";
   assert.throws(
@@ -431,183 +259,42 @@ test("rejects external archive or entry byte drift before admission", async () =
     /external archive source kind does not match its registry/u,
   );
 
-  const archiveDrift = structuredClone(
-    requireExecutableModelCorpusManifest(await loadManifest()),
-  );
-  const archive = archiveDrift.externalSources.find(
-    ({ kind }) => kind === "archive",
-  );
+  const archiveDrift = structuredClone(requireExecutableModelCorpusManifest(await loadManifest()));
+  const archive = archiveDrift.externalSources.find(({ kind }) => kind === "archive");
   assert.ok(archive?.kind === "archive");
   archive.sha256 = "0".repeat(64);
-  await assert.rejects(
-    inspectExecutableModelCorpus(archiveDrift, {
-      projectRoot,
-      externalRoot: path.resolve(projectRoot, "../oss"),
-      pipelineCases,
-      populationCases: messageKeyCorrelationPopulationCases,
-      compileModel: compileCorpusModel,
-    }),
-    /external archive .* expected SHA-256/u,
-  );
+  await assert.rejects(inspect(archiveDrift), /external archive .* expected SHA-256/u);
 
-  const entryDrift = structuredClone(
-    requireExecutableModelCorpusManifest(await loadManifest()),
-  );
-  const entry = entryDrift.models.find(
-    ({ source }) => source.kind === "externalArchiveEntry",
-  );
+  const entryDrift = structuredClone(requireExecutableModelCorpusManifest(await loadManifest()));
+  const entry = entryDrift.models.find(({ source }) => source.kind === "externalArchiveEntry");
   assert.ok(entry?.source.kind === "externalArchiveEntry");
   entry.source.sha256 = "0".repeat(64);
-  await assert.rejects(
-    inspectExecutableModelCorpus(entryDrift, {
-      projectRoot,
-      externalRoot: path.resolve(projectRoot, "../oss"),
-      pipelineCases,
-      populationCases: messageKeyCorrelationPopulationCases,
-      compileModel: compileCorpusModel,
-    }),
-    /model .* expected source SHA-256/u,
-  );
+  await assert.rejects(inspect(entryDrift), /model .* expected source SHA-256/u);
 });
 
 test("rejects unknown mechanism labels before they can split the ranking", async () => {
-  const manifest = await loadManifest() as {
-    models: Array<{ mechanisms: Array<string> }>;
-  };
+  const manifest = await loadManifest() as { models: Array<{ mechanisms: Array<string> }> };
   const first = manifest.models[0];
   assert.ok(first !== undefined);
   first.mechanisms.push("userTaskCompletino");
-
-  assert.throws(
-    () => requireExecutableModelCorpusManifest(manifest),
-    /unknown mechanism userTaskCompletino/u,
-  );
+  assert.throws(() => requireExecutableModelCorpusManifest(manifest), /unknown mechanism userTaskCompletino/u);
 });
 
-test("deduplicates blocker ranks by clone family rather than file count", async () => {
-  const manifest = requireExecutableModelCorpusManifest(await loadManifest());
-  const report = await inspectExecutableModelCorpus(manifest, {
-    projectRoot,
-    externalRoot: process.env["BPMN_EXTERNAL_ROOT"] ??
-      path.resolve(projectRoot, "../oss"),
-    pipelineCases,
-    populationCases: messageKeyCorrelationPopulationCases,
-    compileModel: compileCorpusModel,
-  });
-  const versionTag = report.blockers.find(
-    ({ key }) => key === "consumeForeignAttribute:bpmn:Process:camunda:versionTag",
-  );
-
-  assert.ok(versionTag !== undefined);
-  assert.equal(versionTag.models, 2);
-  assert.equal(versionTag.cloneFamilies, 1);
-});
-
-test("ranks reusable mechanism gaps by independent model family", async () => {
-  const manifest = requireExecutableModelCorpusManifest(await loadManifest());
-  const report = await inspectExecutableModelCorpus(manifest, {
-    projectRoot,
-    externalRoot: process.env["BPMN_EXTERNAL_ROOT"] ??
-      path.resolve(projectRoot, "../oss"),
-    pipelineCases,
-    populationCases: messageKeyCorrelationPopulationCases,
-    compileModel: compileCorpusModel,
-  });
-  const vendorMetadata = report.unsupportedMechanisms.find(
-    ({ key }) => key === "vendorRuntimeMetadata",
-  );
-
-  assert.deepEqual(vendorMetadata, {
-    key: "vendorRuntimeMetadata",
-    cloneFamilies: 4,
-    models: 5,
-  });
-});
-
-
-test("corpus compilation preserves exact scenario overlays and rejects incomplete bindings", async t => {
-  const manifest = requireExecutableModelCorpusManifest(await loadManifest());
-  const directory = await mkdtemp(path.join(tmpdir(), "bpmn-corpus-overlay-"));
-  const relativePaths = new Set(pipelineCases.flatMap(c => [c.bpmnRelativePath, c.scenarioRelativePath,
-    ...("sourceOverlayRelativePath" in c && typeof c.sourceOverlayRelativePath === "string"
-      ? [c.sourceOverlayRelativePath] : [])]));
-  for (const c of messageKeyCorrelationPopulationCases) {
-    relativePaths.add(c.scenarioRelativePath);
-    const scenario = JSON.parse(await readFile(path.join(projectRoot, c.scenarioRelativePath), "utf8"));
-    for (const definition of scenario.definitions) relativePaths.add(definition.relativePath);
-  }
-  for (const model of manifest.models) {
-    if (model.source.kind === "retainedScenario") {
-      relativePaths.add(model.source.bpmnRelativePath);
-      relativePaths.add(model.source.scenarioRelativePath);
+test("ranks refusals and mechanism gaps by independent clone family before file count", async () => {
+  const report = await inspect(requireExecutableModelCorpusManifest(await loadManifest()));
+  for (const ranking of [report.blockers, report.unsupportedMechanisms]) {
+    for (const [index, entry] of ranking.entries()) {
+      assert.ok(entry.cloneFamilies <= entry.models, entry.key);
+      const next = ranking[index + 1];
+      if (next === undefined) continue;
+      assert.ok(entry.cloneFamilies > next.cloneFamilies ||
+        (entry.cloneFamilies === next.cloneFamilies && entry.models >= next.models), `${entry.key} before ${next.key}`);
     }
-    if (model.product2.kind !== "notCatalogReady") relativePaths.add(model.product2.journeyTestRelativePath);
   }
-  try {
-    await Promise.all([...relativePaths].map(async relativePath => {
-      const destination = path.join(directory, relativePath);
-      await mkdir(path.dirname(destination), { recursive: true });
-      await copyFile(path.join(projectRoot, relativePath), destination);
-    }));
-    for (const caseId of ["mapped-success-service-task", "mapped-boundary-error-service-task-caught"]) {
-      const selected = pipelineCases.find(c => c.id === caseId);
-      assert.ok(selected !== undefined);
-      const scenarioPath = path.join(directory, selected.scenarioRelativePath);
-      const originalScenario = await readFile(scenarioPath, "utf8");
-      const scenario = JSON.parse(originalScenario);
-      // Built-in bindings remain executable, so acceptance alone cannot hide dropped overlay provenance.
-      const overlay = { kind: "bpmnSourceOverlay", id: `corpus-${caseId}`, semanticProfile: scenario.profile,
-        effectBindings: [], inertAttributes: [] };
-      const bytes = new TextEncoder().encode(JSON.stringify(overlay));
-      const identity = { id: overlay.id, sha256: createHash("sha256").update(bytes).digest("hex") };
-      const sourceOverlayRelativePath = `${selected.scenarioRelativePath}.overlay.json`;
-      const overlayPath = path.join(directory, sourceOverlayRelativePath);
-      await writeFile(overlayPath, bytes);
-      scenario.bpmn.sourceOverlay = identity;
-      const inspect = (cases: ReadonlyArray<(typeof pipelineCases)[number] & { sourceOverlayRelativePath?: string }>, observe = false) =>
-        inspectExecutableModelCorpus(manifest, {
-          projectRoot: directory,
-          externalRoot: process.env["BPMN_EXTERNAL_ROOT"] ?? path.resolve(projectRoot, "../oss"),
-          pipelineCases: cases,
-          populationCases: messageKeyCorrelationPopulationCases,
-          compileModel: async request => {
-            if (observe && request.semanticProfile === scenario.profile) {
-              assert.deepEqual(request.sourceOverlay, { ...identity, bytes: Buffer.from(bytes) });
-            }
-            return compileCorpusModel(request);
-          },
-        });
-      const selectedCases = pipelineCases.map(c => c.id === caseId ? { ...c, sourceOverlayRelativePath } : c);
-      await t.test(`${caseId}: exact identity and bytes reach the production compiler`, async () => {
-        await writeFile(scenarioPath, JSON.stringify(scenario));
-        const report = await inspect(selectedCases, true);
-        assert.equal(report.acceptedModels, 103);
-      });
-      await t.test(`${caseId}: declared identity requires its selected path`, async () => {
-        await assert.rejects(inspect(pipelineCases), /source overlay.*path/i);
-      });
-      await t.test(`${caseId}: selected path requires a scenario identity`, async () => {
-        await writeFile(scenarioPath, originalScenario);
-        await assert.rejects(inspect(selectedCases), /source overlay.*identity/i);
-        await writeFile(scenarioPath, JSON.stringify(scenario));
-      });
-      for (const [name, changed] of [
-        ["digest", { ...identity, sha256: "0".repeat(64) }],
-        ["ID", { ...identity, id: "another-overlay" }],
-      ] as const) {
-        await t.test(`${caseId}: ${name} drift cannot fall back to built-in bindings`, async () => {
-          await writeFile(scenarioPath, JSON.stringify({ ...scenario, bpmn: { ...scenario.bpmn, sourceOverlay: changed } }));
-          await assert.rejects(inspect(selectedCases), /expected accepted admission but was rejected/);
-        });
-      }
-      await t.test(`${caseId}: absent identity is malformed rather than null`, async () => {
-        const { sourceOverlay: _ignored, ...bpmn } = scenario.bpmn;
-        await writeFile(scenarioPath, JSON.stringify({ ...scenario, bpmn }));
-        await assert.rejects(inspect(pipelineCases), /sourceOverlay/);
-      });
-      await writeFile(scenarioPath, originalScenario);
-    }
-  } finally {
-    await rm(directory, { recursive: true, force: true });
-  }
+  const refused = report.models.filter(({ admission }) => admission === "rejected");
+  assert.deepEqual(
+    report.blockers.reduce((total, { models }) => total + models, 0),
+    refused.length,
+    "each refused model carries exactly one stable refusal code",
+  );
 });

@@ -6,6 +6,7 @@ import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { runInNewContext } from "node:vm";
+import { showcaseEngineDeployment } from "../showcase/engine-deployment.ts";
 import { buildProcessShowcaseCatalog } from "./rc-showcase-catalog.ts";
 import { writeEvaluationShowcases } from "./write-evaluation-showcases.ts";
 
@@ -167,6 +168,18 @@ test("evaluation distribution has the closed healthy topology", async () => {
   assert.doesNotMatch(serviceBlock(compose, "temporal"), /^\s+ports:/mu);
 });
 
+test("the API and the recovery Worker read one engine deployment, the repository's profile catalog", async () => {
+  const compose = await readFile(composePath, "utf8");
+  const anchor = /^x-engine-deployment: &engine-deployment '(?<json>[^'\n]+)'$/mu.exec(compose);
+  assert.ok(anchor?.groups?.json, "compose.yaml must define the engine deployment once, as a YAML anchor");
+  // The evaluation BPMN Worker, like a showcase Worker, serves every capability with its own effect handler, so
+  // the showcase deployment is the expected value and profiles/ stays its only source.
+  assert.deepEqual(JSON.parse(anchor.groups.json), showcaseEngineDeployment());
+  for (const service of ["platform-api", "platform-recovery-worker"]) {
+    assert.match(serviceBlock(compose, service), /^ {6}PLATFORM_ENGINE_DEPLOYMENT_JSON: \*engine-deployment$/mu);
+  }
+});
+
 test("runtime images contain only deployed production closures", async () => {
   const [dockerfile, dockerignore] = await Promise.all([
     readFile(dockerfilePath, "utf8"),
@@ -182,7 +195,7 @@ test("runtime images contain only deployed production closures", async () => {
     const stage = runtimeStage(dockerfile, target);
     assert.match(stage, /COPY --from=packager/u);
     assert.doesNotMatch(stage, /^COPY\s+\.\s/u);
-    assert.doesNotMatch(stage, /(?:testkit|showcase|BpmnSemantics|runners\/cibseven|docs\/research)/u);
+    assert.doesNotMatch(stage, /(?:testkit|showcase|Kernel\/|runners\/cibseven|docs\/research)/u);
   }
   assert.match(dockerfile, /--config\.inject-workspace-packages=true/u);
   assert.match(
@@ -192,7 +205,7 @@ test("runtime images contain only deployed production closures", async () => {
   assert.match(dockerfile, /pnpm install --frozen-lockfile --prefer-offline/u);
   assert.doesNotMatch(dockerfile, /deploy .*--legacy/u);
   for (const ignored of [
-    "BpmnSemantics",
+    "Kernel",
     ".pnpm-store",
     ".uv-cache",
     "runners",

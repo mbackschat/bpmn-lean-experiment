@@ -6,32 +6,32 @@ import { declaredLeanExecutables, nativeLeanDriverFor } from "./lean-native-driv
 const lakefile = `name = "example"
 
 [[lean_lib]]
-name = "BpmnSemantics"
+name = "Kernel"
 
 [[lean_exe]]
-name = "emitExample"
-root = "BpmnSemantics.ExampleMain"
+name = "kernelRun"
+root = "Kernel.Run"
 
 [[lean_exe]]
-root = "BpmnSemantics.Nested.OtherMain"
+root = "Kernel.Nested.OtherMain"
 name = "emitOther"
 `;
 
 test("declared executables map each driver root module to its executable name", () => {
   assert.deepEqual([...declaredLeanExecutables(lakefile)], [
-    ["BpmnSemantics.ExampleMain", "emitExample"],
-    ["BpmnSemantics.Nested.OtherMain", "emitOther"],
+    ["Kernel.Run", "kernelRun"],
+    ["Kernel.Nested.OtherMain", "emitOther"],
   ]);
 });
 
 test("a driver source resolves to the executable whose root is its module", () => {
-  assert.equal(nativeLeanDriverFor(lakefile, "BpmnSemantics/ExampleMain.lean"), "emitExample");
-  assert.equal(nativeLeanDriverFor(lakefile, "BpmnSemantics/Nested/OtherMain.lean"), "emitOther");
-  assert.equal(nativeLeanDriverFor(`[[lean_exe]]\nname = "kernelRun"\nroot = "Kernel.Run"\n`, "Kernel/Run.lean"), "kernelRun");
+  assert.equal(nativeLeanDriverFor(lakefile, "Kernel/Run.lean"), "kernelRun");
+  assert.equal(nativeLeanDriverFor(lakefile, "Kernel/Nested/OtherMain.lean"), "emitOther");
 });
 
 test("an undeclared driver or a non-driver path is refused rather than interpreted", () => {
-  assert.throws(() => nativeLeanDriverFor(lakefile, "BpmnSemantics/MissingMain.lean"),
-    /BpmnSemantics\/MissingMain\.lean has no \[\[lean_exe\]\] whose root is BpmnSemantics\.MissingMain/u);
-  assert.throws(() => nativeLeanDriverFor(lakefile, "scripts/ExampleMain.lean"), /not a BpmnSemantics or Kernel driver source/u);
+  assert.throws(() => nativeLeanDriverFor(lakefile, "Kernel/MissingMain.lean"),
+    /Kernel\/MissingMain\.lean has no \[\[lean_exe\]\] whose root is Kernel\.MissingMain/u);
+  assert.throws(() => nativeLeanDriverFor(lakefile, "scripts/ExampleMain.lean"), /not a Kernel driver source/u);
+  assert.throws(() => nativeLeanDriverFor(lakefile, "BpmnSemantics/ExampleMain.lean"), /not a Kernel driver source/u);
 });

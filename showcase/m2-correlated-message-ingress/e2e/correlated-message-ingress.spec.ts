@@ -50,24 +50,28 @@ test("shows unique, zero, and ambiguous correlation without a Process locator", 
   await runtime.initializeCandidate(other.processInstanceId, `open-other-${token}`, "settlement-other");
   await runtime.initializeCandidate(ambiguousA.processInstanceId, `open-ambiguous-a-${token}`, "settlement-ambiguous");
   await runtime.initializeCandidate(ambiguousB.processInstanceId, `open-ambiguous-b-${token}`, "settlement-ambiguous");
-  expect(candidate.address).toEqual({
-    definition: {
-      compiler: "bpmn-source-semantic-process",
-      semanticProfile: unique.definition.semanticProfile,
-      sourceId: unique.definition.source.id,
-      sourceSha256: unique.definition.source.sha256,
-      sourceOverlay: null,
-    },
-    processId,
+  // The waiting Process publishes the channel and the correlation key it waits by; the key's value is the
+  // correlation Property the direct Message's payload wrote.
+  expect(candidate.wait.id).toEqual({
+    processInstanceId: unique.processInstanceId,
+    elementId: "MessageCatch_CorrelatedSettlement",
+    activation: 1,
+  });
+  expect(candidate.wait.detail).toEqual({
+    kind: "message",
     channel: {
       kind: "operationMessage",
       interfaceId: "Interface_ClearingHouse",
       interfaceOperationId: "Operation_ConfirmSettlement",
       messageId: "Message_SettlementConfirmed",
     },
-    correlationKeyId: "CorrelationKey_SettlementReference",
+    payload: false,
+    criteria: ["CorrelationKey_SettlementReference"],
   });
-  expect(candidate.key).toEqual({ kind: "string", value: "settlement-unique" });
+  expect(candidate.variables).toContainEqual({
+    name: "Property_SettlementReference",
+    value: { kind: "string", value: "settlement-unique" },
+  });
 
   await page.getByRole("button", { name: "Show Triggers", exact: true }).click();
   const panel = page.getByRole("region", {

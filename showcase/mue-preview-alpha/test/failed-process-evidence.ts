@@ -1,87 +1,81 @@
 import assert from "node:assert/strict";
-import { fileURLToPath } from "node:url";
 import {
   decodeExecutionPublicationExport, executionPublicationExportFormat,
-  executionPublicationIdentityForPublicProcessInstance,
+  publicationIdentityForPublicProcessInstance,
 } from "@bpmn-lean/platform-contracts";
 import type { ExecutionPublicationExport, PublicProcessInstanceIdentity } from "@bpmn-lean/platform-contracts";
-import { SemanticProcessCompilerId } from "@bpmn-lean/semantic-core";
-import {
-  TemporalScenarioRunner, observeTemporalExecutionPublication,
-  processWorkflowId, readTestProcessTerminalResult, withDeadline,
-} from "@bpmn-lean/temporal-testkit";
-import type { TemporalWorkflowClient, TemporalExecutionPublicationClient } from "@bpmn-lean/temporal-testkit";
-import { failureCode, failureMessage } from "./failed-process-support.ts";
-import { collectProcessRunHistories } from "./temporal-evidence.ts";
+import { PageKind, ResultKind } from "@bpmn-lean/temporal-host/client";
+import type { Batch, ExecutionTransition, ProcessClient } from "@bpmn-lean/temporal-host/client";
 
+import { withDeadline } from "../src/host-worker.ts";
+import type { TemporalEnvironment } from "../src/host-worker.ts";
+import { failureCode, failureMessage } from "./failed-process-support.ts";
+import { processWorkflowId } from "../src/process-address.ts";
+import { collectProcessRunHistories, replayEveryRun } from "./temporal-evidence.ts";
+
+/**
+ * The producer's own publication, read from the host's queries rather than through Product 2: every execution batch the
+ * chain retains and, at the head, its committed state. The platform's export must be exactly this value, since the
+ * engine gateway passes the host's batches through unchanged
+ * (`platform/foundation/engine-gateway/src/process-publication-gateway.ts`).
+ */
 export async function collectCompensationPublication(
-  client: TemporalWorkflowClient,
+  client: TemporalEnvironment["client"],
+  processes: ProcessClient,
   instance: PublicProcessInstanceIdentity,
   failed: boolean,
 ): Promise<ExecutionPublicationExport> {
   const workflowId = processWorkflowId(instance.processInstanceId);
-  const terminal = await withDeadline(readTestProcessTerminalResult(client.getHandle(workflowId)), 20_000, "Compensation test terminal receipt");
-  assert.equal(terminal.receipt.finalState.status, failed ? "failed" : "completed");
-  const identity = executionPublicationIdentityForPublicProcessInstance(instance);
-  const producerIdentity = {
-    ...identity,
-    definition: { ...identity.definition, compiler: SemanticProcessCompilerId.BpmnSourceSemanticProcess },
-  };
-  const batches: unknown[] = [];
+  const terminal = await withDeadline(client.workflow.getHandle(workflowId).result(), 20_000, "Compensation test terminal result");
+  assert.equal(terminal.kind, ResultKind.Ended);
+  assert.equal(terminal.status, failed ? "failed" : "completed");
+  const identity = publicationIdentityForPublicProcessInstance(instance);
+  const batches: Batch<ExecutionTransition>[] = [];
   let afterRevision = 0;
   while (true) {
-    const observation = await observeTemporalExecutionPublication(client as unknown as TemporalExecutionPublicationClient, workflowId, producerIdentity, { afterRevision, limit: 100 });
-    assert.equal(observation.kind, "available");
-    if (observation.kind !== "available") throw new Error("Terminal producer publication is unavailable");
-    const page = observation.page;
-    batches.push(...page.batches);
-    if (page.pageThroughRevision === page.headRevision) {
+    const page = await processes.publication(workflowId, afterRevision, 100);
+    assert.equal(page.kind, PageKind.Available);
+    if (page.kind !== PageKind.Available) throw new Error("Terminal producer publication has a gap");
+    batches.push(...page.execution);
+    const through = page.execution.at(-1)?.throughRevision ?? afterRevision;
+    if (through === page.headRevision) {
+      const state = await processes.observation(workflowId);
       const publication = decodeExecutionPublicationExport({
         ...identity, format: executionPublicationExportFormat,
-        headRevision: page.headRevision, batches, current: page.current,
+        headRevision: page.headRevision, batches, current: { revision: page.headRevision, state },
       }, identity);
-      const publicState: unknown = publication.current.state;
-      assert.deepEqual(publicState, terminal.receipt.finalState);
-      assert.deepEqual(publication.current.controlTokens, []);
-      assert.deepEqual(publication.current.scopes, []);
+      assert.equal(terminal.revision, page.headRevision);
+      assert.equal(publication.current.state.status, failed ? "failed" : "completed");
+      assert.deepEqual(publication.current.state.scopes, []);
+      assert.deepEqual(publication.current.state.openWaits, []);
       if (failed) {
-        assert.equal(publication.current.state.status, "failed");
-        if (publication.current.state.status !== "failed") throw new Error("Expected failed Process");
         const occurrence = (elementId: string) => ({ processInstanceId: instance.processInstanceId, elementId, activation: 1 });
         assert.deepEqual(publication.current.state.failure, {
-          kind: "compensationHandlerFailure",
-          triggerId: occurrence("operation:Throw_Compensate"),
-          handlerId: occurrence("EventSubProcess_UndoGroundTravel"),
-          effectId: occurrence("Task_UndoGroundTravel"),
           code: failureCode,
           message: failureMessage,
+          occurrence: occurrence("Task_UndoGroundTravel"),
+          related: [
+            { name: "trigger", occurrence: occurrence("Throw_Compensate") },
+            { name: "handler", occurrence: occurrence("EventSubProcess_UndoGroundTravel") },
+          ],
         });
       }
       return publication;
     }
-    assert.ok(page.pageThroughRevision > afterRevision);
-    afterRevision = page.pageThroughRevision;
+    assert.ok(through > afterRevision);
+    afterRevision = through;
   }
 }
 
 /** Host-only evidence starts after public terminal outcomes; no product fact is derived from history. */
 export async function replayCompensationRuns(
-  client: TemporalWorkflowClient,
+  client: TemporalEnvironment["client"],
   instances: readonly PublicProcessInstanceIdentity[],
 ): Promise<number> {
-  const runner = await TemporalScenarioRunner.create({
-    downloadDirectory: fileURLToPath(new URL("../../../.cache/temporal-cli/", import.meta.url)),
-  });
   let replayed = 0;
-  try {
-    for (const instance of instances) {
-      const histories = await collectProcessRunHistories(client, instance.processInstanceId);
-      for (const history of histories) {
-        await withDeadline(runner.replayHistory(history, `platform-compensation-${++replayed}`), 20_000, "Compensation Run replay");
-      }
-    }
-    return replayed;
-  } finally {
-    await runner.shutdown();
+  for (const [index, instance] of instances.entries()) {
+    replayed += await replayEveryRun(`platform-compensation-${index + 1}`,
+      await collectProcessRunHistories(client, instance.processInstanceId));
   }
+  return replayed;
 }

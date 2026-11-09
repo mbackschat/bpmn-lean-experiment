@@ -2,75 +2,16 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
-  CanonicalObservationKind,
-  CommandOutcome,
-  ProcessStatus,
-  ScenarioOutcomeKind,
-  WaitKind,
-} from "@bpmn-lean/semantic-core";
-import type { ScenarioResult } from "@bpmn-lean/semantic-core";
-import {
   ComparisonKind,
   DifferentialTarget,
   DisagreementKind,
   compareTargetResults,
 } from "@bpmn-lean/differential";
 import type {
+  CanonicalResult,
   Comparison,
   ScenarioDisagreement,
-  TargetScenarioResult,
 } from "@bpmn-lean/differential";
-
-import type {
-  MutableScenarioResult,
-} from "./pipeline-types.ts";
-
-const calibratedResult: ScenarioResult = {
-  outcome: {
-    kind: ScenarioOutcomeKind.Semantic,
-    outcome: CommandOutcome.Committed,
-  },
-  trace: [
-    {
-      kind: CanonicalObservationKind.Deployment,
-      outcome: CommandOutcome.Committed,
-    },
-    {
-      kind: CanonicalObservationKind.State,
-      instanceId: "Instance_1",
-      status: ProcessStatus.Running,
-      activeWaits: [
-        {
-          elementId: "UserTask_Approve",
-          kind: WaitKind.UserTask,
-          multiplicity: 1,
-        },
-      ],
-      openUserTasks: [],
-      openMessageSubscriptions: [],
-      openTimers: [],
-      openEffects: [],
-      openIncidents: [],
-      variables: [],
-      enabledInteractions: [],
-      logicalTimeMs: 0,
-    },
-  ],
-};
-
-function target(
-  targetName: DifferentialTarget,
-  result: ScenarioResult = calibratedResult,
-): TargetScenarioResult {
-  return {
-    target: targetName,
-    result,
-  };
-}
-
-function mutableResult(): MutableScenarioResult {
-  return structuredClone(calibratedResult) as MutableScenarioResult;
-}
 
 function requireDisagreement(comparison: Comparison): ScenarioDisagreement {
   assert.ok(
@@ -79,106 +20,6 @@ function requireDisagreement(comparison: Comparison): ScenarioDisagreement {
   );
   return comparison.disagreement;
 }
-
-function stateObservation(
-  result: MutableScenarioResult,
-  index: number,
-): Extract<
-  MutableScenarioResult["trace"][number],
-  { kind: CanonicalObservationKind.State }
-> {
-  const observation = result.trace[index];
-  assert.ok(
-    observation?.kind === CanonicalObservationKind.State,
-    `trace[${index}] must be a state observation`,
-  );
-  return observation;
-}
-
-test("accepts exact canonical agreement across all declared targets", () => {
-  const comparison = compareTargetResults(
-    target(DifferentialTarget.CibSeven),
-    [
-      target(DifferentialTarget.Kernel),
-      target(DifferentialTarget.KernelTs),
-      target(DifferentialTarget.Temporal),
-    ],
-  );
-
-  assert.deepEqual(comparison, {
-    kind: ComparisonKind.Agreement,
-    targets: [
-      DifferentialTarget.CibSeven,
-      DifferentialTarget.Kernel,
-      DifferentialTarget.KernelTs,
-      DifferentialTarget.Temporal,
-    ],
-  });
-});
-
-test("classifies an injected observation-value disagreement at its first path", () => {
-  const mutatedResult = mutableResult();
-  stateObservation(mutatedResult, 1).status = ProcessStatus.Completed;
-
-  const comparison = compareTargetResults(
-    target(DifferentialTarget.CibSeven),
-    [target(DifferentialTarget.KernelTs, mutatedResult)],
-  );
-
-  assert.deepEqual(comparison, {
-    kind: ComparisonKind.Disagreement,
-    referenceTarget: DifferentialTarget.CibSeven,
-    candidateTarget: DifferentialTarget.KernelTs,
-    disagreement: {
-      kind: DisagreementKind.ObservationValue,
-      path: "trace[1].status",
-      expected: "running",
-      actual: "completed",
-    },
-  });
-});
-
-test("distinguishes outcome, trace-length, and observation-kind disagreements", () => {
-  const outcomeMutation = mutableResult();
-  outcomeMutation.outcome = {
-    kind: ScenarioOutcomeKind.Semantic,
-    outcome: CommandOutcome.Rejected,
-  };
-  assert.equal(
-    requireDisagreement(
-      compareTargetResults(target(DifferentialTarget.CibSeven), [
-        target(DifferentialTarget.Kernel, outcomeMutation),
-      ]),
-    ).kind,
-    DisagreementKind.Outcome,
-  );
-
-  const lengthMutation = mutableResult();
-  lengthMutation.trace.pop();
-  assert.equal(
-    requireDisagreement(
-      compareTargetResults(target(DifferentialTarget.CibSeven), [
-        target(DifferentialTarget.Kernel, lengthMutation),
-      ]),
-    ).kind,
-    DisagreementKind.TraceLength,
-  );
-
-  const kindMutation = mutableResult();
-  kindMutation.trace[1] = {
-    kind: CanonicalObservationKind.Command,
-    commandId: "start-process",
-    outcome: CommandOutcome.Committed,
-  };
-  assert.equal(
-    requireDisagreement(
-      compareTargetResults(target(DifferentialTarget.CibSeven), [
-        target(DifferentialTarget.Kernel, kindMutation),
-      ]),
-    ).kind,
-    DisagreementKind.ObservationKind,
-  );
-});
 
 const wait = (elementId: string, kind: string) => ({
   id: { processInstanceId: "Instance_1", elementId, activation: 1 },
@@ -197,19 +38,71 @@ const recut = (openWaits: ReadonlyArray<unknown>, code: string | null) => ({
   ],
 });
 
+const evidence = (result: CanonicalResult = recut([wait("Task_A", "userTask")], null)) =>
+  ({ target: DifferentialTarget.RetainedCibEvidence, result });
+const kernel = (result: CanonicalResult = recut([wait("Task_A", "userTask")], null)) =>
+  ({ target: DifferentialTarget.Kernel, result });
+
+test("accepts exact canonical agreement across all declared targets", () => {
+  const comparison = compareTargetResults(evidence(), [
+    kernel(),
+    { target: DifferentialTarget.KernelTs, result: recut([wait("Task_A", "userTask")], null) },
+    { target: DifferentialTarget.Temporal, result: recut([wait("Task_A", "userTask")], null) },
+  ]);
+  assert.deepEqual(comparison, {
+    kind: ComparisonKind.Agreement,
+    targets: [
+      DifferentialTarget.RetainedCibEvidence,
+      DifferentialTarget.Kernel,
+      DifferentialTarget.KernelTs,
+      DifferentialTarget.Temporal,
+    ],
+  });
+});
+
+test("classifies an injected observation-value disagreement at its first path", () => {
+  const mutated = recut([wait("Task_A", "userTask")], null);
+  const trace = mutated.trace.map((entry) => entry.kind === "state" ? { ...entry, status: "completed" } : entry);
+  assert.deepEqual(compareTargetResults(evidence(), [{ target: DifferentialTarget.KernelTs, result: { ...mutated, trace } }]), {
+    kind: ComparisonKind.Disagreement,
+    referenceTarget: DifferentialTarget.RetainedCibEvidence,
+    candidateTarget: DifferentialTarget.KernelTs,
+    disagreement: {
+      kind: DisagreementKind.ObservationValue,
+      path: "trace[2].status",
+      expected: "running",
+      actual: "completed",
+    },
+  });
+});
+
+test("distinguishes outcome, trace-length, and observation-kind disagreements", () => {
+  const base = recut([wait("Task_A", "userTask")], null);
+  assert.equal(requireDisagreement(compareTargetResults(evidence(), [
+    kernel({ ...base, outcome: { kind: "semantic", outcome: "committed" } }),
+  ])).kind, DisagreementKind.Outcome);
+  assert.equal(requireDisagreement(compareTargetResults(evidence(), [
+    kernel({ ...base, trace: base.trace.slice(0, -1) }),
+  ])).kind, DisagreementKind.TraceLength);
+  assert.equal(requireDisagreement(compareTargetResults(evidence(), [
+    kernel({ ...base, trace: base.trace.map((entry, index) =>
+      index === 2 ? { kind: "command", commandId: "start", outcome: "committed" } : entry) }),
+  ])).kind, DisagreementKind.ObservationKind);
+});
+
 test("compares open waits in the schema's canonical order, never in the order a target lists them", () => {
   const listed = recut([wait("Task_B", "userTask"), wait("Task_A", "timer"), wait("Task_A", "incident")], null);
   const reordered = recut([wait("Task_A", "incident"), wait("Task_B", "userTask"), wait("Task_A", "timer")], null);
-  assert.equal(compareTargetResults({ target: DifferentialTarget.CibSeven, result: listed },
+  assert.equal(compareTargetResults({ target: DifferentialTarget.RetainedCibEvidence, result: listed },
     [{ target: DifferentialTarget.Kernel, result: reordered }]).kind, ComparisonKind.Agreement);
   const changed = recut([wait("Task_A", "incident"), wait("Task_B", "userTask"), wait("Task_C", "timer")], null);
-  assert.equal(requireDisagreement(compareTargetResults({ target: DifferentialTarget.CibSeven, result: listed },
+  assert.equal(requireDisagreement(compareTargetResults({ target: DifferentialTarget.RetainedCibEvidence, result: listed },
     [{ target: DifferentialTarget.Kernel, result: changed }])).kind, DisagreementKind.ObservationValue);
 });
 
-test("compares a command's code between the two kernels only, never against CIB Seven", () => {
+test("compares a command's code between the two kernels only, never against retained CIB evidence", () => {
   const lean = { target: DifferentialTarget.Kernel, result: recut([], "unknown-task") };
-  assert.equal(compareTargetResults({ target: DifferentialTarget.CibSeven, result: recut([], null) }, [lean]).kind,
+  assert.equal(compareTargetResults({ target: DifferentialTarget.RetainedCibEvidence, result: recut([], null) }, [lean]).kind,
     ComparisonKind.Agreement);
   assert.deepEqual(
     requireDisagreement(compareTargetResults(lean, [{ target: DifferentialTarget.KernelTs, result: recut([], "stale-task") }])),
@@ -217,7 +110,7 @@ test("compares a command's code between the two kernels only, never against CIB 
   );
 });
 
-test("compares a state's variable scopes between the two kernels only, never against CIB Seven", () => {
+test("compares a state's variable scopes between the two kernels only, never against retained CIB evidence", () => {
   const scoped = (value: number) => {
     const result = recut([], null);
     const scope = { scope: { processInstanceId: "Instance_1", role: "activity", elementId: "Sub", activation: 1 },
@@ -225,7 +118,7 @@ test("compares a state's variable scopes between the two kernels only, never aga
     return { ...result, trace: result.trace.map((entry) => entry.kind === "state" ? { ...entry, scopes: [scope] } : entry) };
   };
   const lean = { target: DifferentialTarget.Kernel, result: scoped(1) };
-  assert.equal(compareTargetResults({ target: DifferentialTarget.CibSeven, result: recut([], null) }, [lean]).kind,
+  assert.equal(compareTargetResults({ target: DifferentialTarget.RetainedCibEvidence, result: recut([], null) }, [lean]).kind,
     ComparisonKind.Agreement);
   assert.deepEqual(
     requireDisagreement(compareTargetResults(lean, [{ target: DifferentialTarget.KernelTs, result: scoped(2) }])),

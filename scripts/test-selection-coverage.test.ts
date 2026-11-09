@@ -27,18 +27,6 @@ test("selection includes pending tests before commit and excludes ignored, delet
   }
 });
 
-test("host-clock winner witnesses with Worker replacement stay in the serial lane", () => {
-  const files = readdirSync(new URL("../packages/temporal-adapter/testkit/test/", import.meta.url));
-  for (const stem of [
-    "event-based-gateway",
-    "sequential-multi-instance-refinement",
-    "parallel-multi-instance-refinement",
-  ]) {
-    assert.ok(files.includes(`${stem}.temporal-serial-test.ts`),
-      `${stem} must not race concurrent suite startup against its native Timer`);
-  }
-});
-
 /**
  * Every tracked or pending test file must be reachable from a tracked gate.
  *
@@ -60,7 +48,7 @@ test("the runnable inventory includes integration witnesses from distinct semant
   const runnable = new Set(runnableTestFiles());
   for (const file of [
     "packages/differential/test/kernel-behavior-oracle.integration-test.ts",
-    "packages/bpmn-source/test/lean-fixture-bindings.integration-test.ts",
+    "packages/temporal-host/test/host.temporal-test.ts",
   ]) {
     assert.equal(runnable.has(file), true, file);
   }
@@ -87,7 +75,13 @@ test("the runnable set excludes frozen legacy evidence and still covers the repo
 
   // A path-matching mistake in the frozen-manifest lookup, or a collapsed runnable set, would make
   // every assertion above pass for the wrong reason.
-  assert.ok(runnable.length > 400, `expected the full test corpus, found ${runnable.length}`);
+  // The file system is the independent oracle here: git and the frozen manifest decide `runnable`, not readdir.
+  const guards = readdirSync(new URL("./", import.meta.url)).filter((name) => name.endsWith(".test.ts"));
+  assert.ok(guards.includes("test-selection-coverage.test.ts"), "readdir must see this guard's own directory");
+  assert.deepEqual(guards.filter((name) => !runnable.includes(`scripts/${name}`)), []);
+  for (const root of ["packages/", "platform/", "scripts/", "showcase/"]) {
+    assert.ok(runnable.some((file) => file.startsWith(root)), `expected test files under ${root}`);
+  }
   assert.equal(
     runnable.some((file) => file.startsWith("adoption/a12/legacy/source-tree/")),
     false,
@@ -99,10 +93,8 @@ test("the runnable set excludes frozen legacy evidence and still covers the repo
     "this guard must be inside the set it enforces",
   );
   assert.equal(
-    runnable.includes(
-      "packages/temporal-adapter/testkit/test/workflow-chain-recovery-capacity.temporal-serial-test.ts",
-    ),
+    runnable.includes("packages/differential/test/temporal-host-target.temporal-test.ts"),
     true,
-    "serialized live-service tests must remain inside the runnable set",
+    "live-service tests must remain inside the runnable set",
   );
 });

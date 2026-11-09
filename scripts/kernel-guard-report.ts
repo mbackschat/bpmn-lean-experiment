@@ -1,5 +1,5 @@
 /**
- * The non-blocking reports of the kernel guards (docs/LEAN-KERNEL-REWRITE-PROPOSAL.md#guardrails-against-degradation):
+ * The non-blocking reports of the kernel guards (docs/kernel/ARCHITECTURE-SPEC.md#guardrails-against-degradation):
  * shape edits per branch (guards 9 and 15), oversize files and functions (guard 10), and growth and modules changed per
  * delivered row (guards 15 and 18). A report prints as CI output and never blocks; run as
  * `node scripts/kernel-guard-report.ts`, and `kernel-build-budget.ts` prints it in the hosted Lean lane.

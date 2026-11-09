@@ -1,7 +1,7 @@
 import Lean
 
 /-!
-Guards 1 and 2 of the [kernel rewrite proposal](../docs/LEAN-KERNEL-REWRITE-PROPOSAL.md#guardrails-against-degradation):
+Guards 1 and 2 of the [kernel architecture](../docs/kernel/ARCHITECTURE-SPEC.md#guardrails-against-degradation):
 closed dispatch and no catch-all, read from the built environment because only the elaborated matchers show which
 type a `match`, `if let` or `matches` discriminates and which alternatives cover which constructors.
 

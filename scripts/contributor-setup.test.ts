@@ -157,13 +157,9 @@ test("owns setup, fail-closed scoped preflights, doctor, and CI provisioning", a
     preflight,
     doctor,
     verification,
-    adoptionGate,
-    adoptionCheck,
     corpusFetch,
     workflow,
     uiQualityWorkflow,
-    guide,
-    readme,
     packageManifest,
     webPackageManifest,
     m1ShowcasePackageManifest,
@@ -177,13 +173,9 @@ test("owns setup, fail-closed scoped preflights, doctor, and CI provisioning", a
       readFile(path.join(projectRoot, "scripts/check-external-sources.sh"), "utf8"),
       readFile(path.join(projectRoot, "scripts/doctor.sh"), "utf8"),
       readFile(path.join(projectRoot, "scripts/verify.sh"), "utf8"),
-      readFile(path.join(projectRoot, "scripts/test-a12-adoption.sh"), "utf8"),
-      readFile(path.join(projectRoot, "packages/bpmn-source/calibration/a12-adoption-source.ts"), "utf8"),
       readFile(path.join(projectRoot, "scripts/fetch-bpmn-corpus.sh"), "utf8"),
       readFile(path.join(projectRoot, ".github/workflows/verify.yml"), "utf8"),
       readFile(path.join(projectRoot, ".github/workflows/ui-quality.yml"), "utf8"),
-      readFile(path.join(projectRoot, "docs/CONTRIBUTOR-SETUP-GUIDE.md"), "utf8"),
-      readFile(path.join(projectRoot, "README.md"), "utf8"),
       readFile(path.join(projectRoot, "package.json"), "utf8"),
       readFile(path.join(projectRoot, "platform/apps/web/package.json"), "utf8"),
       readFile(path.join(projectRoot, "showcase/m1-definition-deployment/package.json"), "utf8"),
@@ -220,14 +212,8 @@ test("owns setup, fail-closed scoped preflights, doctor, and CI provisioning", a
   assert.match(doctor, /check_command unzip/u);
   assert.match(doctor, /2e181515ce8ae14b7a904c40bb4794831f5fd1d9641107a13b916af15af4001a/u);
   assert.match(verification, /doctor\.sh verify/u);
-  assert.match(verification, /A12_ADOPTION_EVIDENCE status=not-run/u);
-  assert.doesNotMatch(verification, /^\.\/scripts\/test-a12-adoption\.sh$/mu);
-  assert.match(adoptionGate, /check-external-sources\.sh" adoption/u);
-  assert.match(adoptionGate, /a12-adoption-source\.ts/u);
-  assert.match(adoptionCheck, /CreateDocument\.bpmn/u);
-  assert.match(adoptionCheck, /TestProcessWithRelationshipModeledDocumentModels_DocRef\.bpmn/u);
-  assert.match(adoptionCheck, /BPMN_EXTERNAL_ROOT/u);
-  assert.match(packageManifest, /"test:a12-adoption"/u);
+  // The A12 checkout is a research input only; no default or optional gate reads it (CLAUDE.md licence boundary).
+  assert.doesNotMatch(verification, /a12/iu);
   assert.match(corpusFetch, /mktemp -d "\$corpus_parent\/\.bpmn-corpus-fetch\.XXXXXX"/u);
   assert.match(workflow, /setup-external-sources\.sh verify/u);
   assert.doesNotMatch(workflow, /playwright|chromium|test:showcase:m\d+/iu);
@@ -239,17 +225,6 @@ test("owns setup, fail-closed scoped preflights, doctor, and CI provisioning", a
   // only see the template. `pwd` is what makes the exported root absolute, and absolute is what
   // actions/cache requires; without it the expansion reintroduces the segment the guard rejects.
   assert.match(workflow, /BPMN_EXTERNAL_ROOT=[^\n]*pwd\)[^\n]*>> "\$GITHUB_ENV"/u);
-  assert.match(guide, /setup-external-sources\.sh adoption/u);
-  assert.match(guide, /doctor\.sh research/u);
-  assert.match(guide, /workspace meta-repository/u);
-  assert.match(readme, /CONTRIBUTOR-SETUP-GUIDE\.md/u);
-  assert.match(readme, /test:pre-push:verify/u);
-  assert.match(readme, /unzip/u);
-  assert.match(guide, /playwright install chromium/u);
-  assert.match(guide, /test:showcase:m1/u);
-  assert.match(guide, /test:showcase:m2/u);
-  assert.match(guide, /test:showcase:m3-human-work/u);
-  assert.match(guide, /test:showcase:m4-incident-operations/u);
   assert.match(packageManifest, /"test:showcase:m1"/u);
   assert.match(packageManifest, /"test:showcase:m2"/u);
   assert.match(packageManifest, /"test:showcase:m3-human-work"/u);
@@ -273,7 +248,7 @@ test("owns setup, fail-closed scoped preflights, doctor, and CI provisioning", a
     assert.equal(showcaseManifest.dependencies?.["@playwright/test"], undefined);
     assert.match(showcaseManifest.devDependencies?.["@playwright/test"] ?? "", /^\d+\.\d+\.\d+$/u);
     assert.equal(
-      showcaseManifest.devDependencies?.["@bpmn-lean/temporal-testkit"],
+      showcaseManifest.devDependencies?.["@bpmn-lean/temporal-host"],
       "workspace:*",
     );
   }
@@ -374,8 +349,6 @@ test("doctor derives every workspace dependency owner and build cache from pnpm"
 
 test("external evidence consumers fail closed and honor the shared root", async () => {
   const [
-    sourceTest,
-    adoptionCheck,
     metamodel,
     miwg,
     breadth,
@@ -383,8 +356,6 @@ test("external evidence consumers fail closed and honor the shared root", async 
     cibTests,
     validator,
   ] = await Promise.all([
-    readFile(path.join(projectRoot, "packages/bpmn-source/test/bpmn-source.test.ts"), "utf8"),
-    readFile(path.join(projectRoot, "packages/bpmn-source/calibration/a12-adoption-source.ts"), "utf8"),
     readFile(path.join(projectRoot, "scripts/check-bpmn-semantic-process-metamodel.ts"), "utf8"),
     readFile(path.join(projectRoot, "packages/bpmn-source/calibration/miwg-observation.ts"), "utf8"),
     readFile(path.join(projectRoot, "scripts/cib-bpmn-breadth.ts"), "utf8"),
@@ -393,11 +364,9 @@ test("external evidence consumers fail closed and honor the shared root", async 
     readFile(path.join(projectRoot, "scripts/validate-bpmn-xml.sh"), "utf8"),
   ]);
 
-  for (const consumer of [adoptionCheck, metamodel, miwg, breadth, validator]) {
+  for (const consumer of [metamodel, miwg, breadth, validator]) {
     assert.match(consumer, /BPMN_EXTERNAL_ROOT/u);
   }
-  assert.doesNotMatch(sourceTest, /context\.skip/u);
-  assert.doesNotMatch(sourceTest, /a12\/a12-workflows/u);
   assert.doesNotMatch(metamodel, /METAMODEL_CHECK skipped/u);
   assert.doesNotMatch(miwg, /BPMN_MIWG_IMPORT skipped/u);
   assert.match(cibGate, /check-external-sources\.sh" verify/u);

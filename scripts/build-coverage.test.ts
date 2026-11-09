@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
+
+import { workingTreeFiles } from "./test-selection-coverage.ts";
 
 /**
  * Every workspace package must be compiled by a gate that needs no database.
@@ -48,10 +49,10 @@ function stringMap(value: unknown): ReadonlyMap<string, string> {
 }
 
 function manifests(): ReadonlyMap<string, Manifest> {
-  const tracked = execFileSync("git", ["ls-files", "*package.json"], {
-    cwd: projectRoot,
-    encoding: "utf8",
-  }).split("\n").filter((line) => line.length > 0 && !line.startsWith(frozenLegacyPrefix));
+  // The working tree, not the index: a package deleted or added before commit must count as it will after it.
+  const tracked = workingTreeFiles().filter((file) =>
+    path.basename(file) === "package.json" && !file.startsWith(frozenLegacyPrefix)
+  );
   const byName = new Map<string, Manifest>();
   for (const file of tracked) {
     const parsed = readJson(file);

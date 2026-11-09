@@ -15,8 +15,6 @@
  * is stable under adding a rule and comparable between two compilations of identical bytes. Segments
  * compare positionally, array indices numerically, so `flowElements[2]` precedes `flowElements[10]`.
  */
-import { compareCanonicalStrings } from "@bpmn-lean/semantic-core";
-
 import { BpmnSourceDiagnosticCode } from "./contracts.js";
 import type {
   BpmnAdmissionCapability,
@@ -243,4 +241,15 @@ function describe(
     default:
       return `${named} was refused with reason ${code}.`;
   }
+}
+
+/** Lexicographic order by Unicode scalar value, with no normalization and no host locale. */
+function compareCanonicalStrings(left: string, right: string): number {
+  const leftScalars = Array.from(left, (char) => char.codePointAt(0) ?? 0);
+  const rightScalars = Array.from(right, (char) => char.codePointAt(0) ?? 0);
+  for (let index = 0; index < Math.min(leftScalars.length, rightScalars.length); index += 1) {
+    const difference = (leftScalars[index] ?? 0) - (rightScalars[index] ?? 0);
+    if (difference !== 0) return Math.sign(difference);
+  }
+  return Math.sign(leftScalars.length - rightScalars.length);
 }

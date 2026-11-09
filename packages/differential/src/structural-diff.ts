@@ -7,7 +7,17 @@
  * disagreements at different granularities.
  */
 
-import { compareCanonicalStrings } from "@bpmn-lean/semantic-core";
+
+/** Lexicographic order by Unicode scalar value, with no normalization and no host locale. */
+export function compareCanonicalStrings(left: string, right: string): number {
+  const leftScalars = Array.from(left, (char) => char.codePointAt(0) ?? 0);
+  const rightScalars = Array.from(right, (char) => char.codePointAt(0) ?? 0);
+  for (let index = 0; index < Math.min(leftScalars.length, rightScalars.length); index += 1) {
+    const difference = (leftScalars[index] ?? 0) - (rightScalars[index] ?? 0);
+    if (difference !== 0) return Math.sign(difference);
+  }
+  return Math.sign(leftScalars.length - rightScalars.length);
+}
 
 export type ValueDisagreement = Readonly<{
   path: string;

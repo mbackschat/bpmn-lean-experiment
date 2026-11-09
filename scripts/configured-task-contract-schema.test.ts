@@ -1,5 +1,5 @@
 /**
- * Locks the distinct checked Configured Task and closed profile source binding.
+ * Locks the closed profile source binding of configured and Service Task effects.
  */
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
@@ -14,28 +14,6 @@ const descriptor = {
   protocol: "urn:bpmn-lean:effect-protocol:activity-v1",
   operation: "urn:bpmn-lean:effect-operation:probe-v1",
 } as const;
-
-test("admits only the exact checked Configured Task shape", async () => {
-  const schema = await readSchema("checked-process.schema.json");
-  const validate = compileDefinition(schema, "node");
-  const exact = {
-    kind: "configuredTask",
-    id: "ConfiguredTask_Probe",
-    descriptor,
-  } as const;
-
-  assert.equal(validate(exact), true, JSON.stringify(validate.errors));
-  assert.equal(validate({ ...exact, id: "" }), false);
-  assert.equal(validate({ kind: exact.kind, id: exact.id }), false);
-  assert.equal(validate({
-    ...exact,
-    inputMappings: [],
-  }), false);
-  assert.equal(validate({
-    ...exact,
-    descriptor: { ...descriptor, operation: "" },
-  }), false);
-});
 
 test("keeps configured and Service Task effect sources on one closed union", async () => {
   const schema = await readSchema("semantic-profile.schema.json");
@@ -73,17 +51,6 @@ async function readSchema(name: string): Promise<Record<string, unknown>> {
   return JSON.parse(
     await readFile(`${projectRoot}/contracts/schemas/${name}`, "utf8"),
   ) as Record<string, unknown>;
-}
-
-function compileDefinition(
-  schema: Record<string, unknown>,
-  definition: string,
-) {
-  return new Ajv2020({ strict: true }).compile({
-    $schema: "https://json-schema.org/draft/2020-12/schema",
-    $defs: schema.$defs,
-    $ref: `#/$defs/${definition}`,
-  });
 }
 
 function compileProperty(

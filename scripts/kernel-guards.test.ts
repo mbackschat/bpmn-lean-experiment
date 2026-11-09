@@ -1,5 +1,5 @@
 /**
- * Guard 23 of docs/LEAN-KERNEL-REWRITE-PROPOSAL.md#guardrails-against-degradation: every guard is held against a clean
+ * Guard 23 of docs/kernel/ARCHITECTURE-SPEC.md#guardrails-against-degradation: every guard is held against a clean
  * self-contained tree, a seeded violation and an empty input, so none can pass by matching nothing. The "tree passes"
  * tests read the real repository and are the guards themselves. Guard 21 only reports for now (root direction,
  * 2026-11-08): its fixtures do not exist yet.

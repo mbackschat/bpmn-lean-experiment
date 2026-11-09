@@ -7,39 +7,41 @@ import {
   createPlatformServer,
   readPlatformServerConfig,
 } from "@bpmn-lean/platform-server";
+
+import { showcaseEngineDeploymentEnvironment } from "../../engine-deployment.ts";
 import {
-  ExternalTemporalRuntime,
+  ShowcaseWorker,
   createCachedLocalEnvironment,
-  createHostEffectActivities,
-} from "@bpmn-lean/temporal-testkit";
+  environmentNamespace,
+  noEffects,
+} from "./host-worker.ts";
 
 const temporalCacheDirectory = fileURLToPath(
   new URL("../../../.cache/temporal-cli/", import.meta.url),
 );
 
 async function runShowcaseHost(): Promise<void> {
-  const configured = readPlatformServerConfig();
+  const configured = readPlatformServerConfig({ ...process.env, ...showcaseEngineDeploymentEnvironment() });
   const dataDirectory = await mkdtemp(join(tmpdir(), "bpmn-lean-m1-showcase-"));
   const identity = `bpmn-m1-showcase-${process.pid}`;
   let environment: Awaited<ReturnType<typeof createCachedLocalEnvironment>> | undefined;
-  let worker: ExternalTemporalRuntime | undefined;
+  let worker: ShowcaseWorker | undefined;
   let platform: Awaited<ReturnType<typeof createPlatformServer>> | undefined;
   try {
     environment = await createCachedLocalEnvironment({
       identity: `${identity}-server`,
       downloadDirectory: temporalCacheDirectory,
     });
-    worker = await ExternalTemporalRuntime.initializeFreshNamespace({
-      address: environment.address,
-      namespace: identity,
+    worker = await ShowcaseWorker.start(environment, {
       taskQueue: configured.temporalTaskQueue,
       identity: `${identity}-worker`,
-    }, createHostEffectActivities([]), 86_400);
+      effects: noEffects,
+    });
     platform = await createPlatformServer({
       ...configured,
       dataDirectory,
       temporalAddress: environment.address,
-      temporalNamespace: identity,
+      temporalNamespace: environmentNamespace(environment),
     });
     const origin = await platform.listen();
     process.stdout.write(`M1 showcase ready at ${origin}\n`);
@@ -62,7 +64,7 @@ function terminationSignal(): Promise<void> {
 
 async function closeShowcase(
   platform: Awaited<ReturnType<typeof createPlatformServer>> | undefined,
-  worker: ExternalTemporalRuntime | undefined,
+  worker: ShowcaseWorker | undefined,
   environment: Awaited<ReturnType<typeof createCachedLocalEnvironment>> | undefined,
 ): Promise<void> {
   let firstFailure: unknown;

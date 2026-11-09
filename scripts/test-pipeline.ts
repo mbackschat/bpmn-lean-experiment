@@ -1,102 +1,44 @@
-import { performance } from "node:perf_hooks";
+/**
+ * The differential pipeline: builds the TypeScript packages and Lean `kernelRun` once, then runs the kernel oracle
+ * over every discovered scenario (Lean = TypeScript, kernel = retained CIB Seven evidence) under the deadline the
+ * discovered scenario count derives (`pipeline-budget.ts`). `--model-corpus` runs the corpus inspection instead.
+ *
+ * No CIB Seven build: the pipeline compares retained evidence, and the runtime lane's oracle script reproduces that
+ * evidence with the pinned engine. No Temporal server: the host target is the hosted differential lane.
+ * `BPMN_PIPELINE_PREBUILT=1` skips the build when an earlier stage produced it.
+ */
 import { fileURLToPath } from "node:url";
 
 import { runCommand } from "./run-command.ts";
-import { resolveJavaHome } from "./java-home.ts";
 import { nativeLeanDriverBuildTimeoutMs } from "./lean-native-driver.ts";
-import { warmPipelineCommandTimeoutMs } from "./pipeline-budget.ts";
+import { pipelineCommandTimeoutMs } from "./pipeline-budget.ts";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
-const javaHome = resolveJavaHome();
 
-function runProjectCommand(
-  command: string,
-  args: ReadonlyArray<string>,
-  options: Readonly<{
-    env?: NodeJS.ProcessEnv;
-    timeoutMs: number;
-  }>,
-) {
-  return runCommand(command, args, {
-    cwd: projectRoot,
-    env: options.env ?? process.env,
-    timeoutMs: options.timeoutMs,
-  });
+function runProjectCommand(command: string, args: ReadonlyArray<string>, timeoutMs: number) {
+  return runCommand(command, args, { cwd: projectRoot, env: process.env, timeoutMs });
 }
 
-async function buildPipeline() {
+const modelCorpusOnly = process.argv.slice(2).includes("--model-corpus");
+const unknownArguments = process.argv.slice(2).filter((argument) => argument !== "--model-corpus");
+if (unknownArguments.length > 0) {
+  throw new TypeError(`unsupported pipeline arguments: ${unknownArguments.join(", ")}`);
+}
+if (process.env.BPMN_PIPELINE_PREBUILT !== "1") {
   await Promise.all([
-    runProjectCommand("./scripts/pnpm.sh", ["run", "build:verification-typescript"], {
-      timeoutMs: 120_000,
-    }),
-    runProjectCommand(
-      "./scripts/lake.sh",
-      ["build", "kernelRun"],
-      { timeoutMs: nativeLeanDriverBuildTimeoutMs },
-    ),
-    runProjectCommand(
-      "runners/cibseven/mvnw",
-      [
-        "-s",
-        "runners/cibseven/maven-settings.xml",
-        "-f",
-        "runners/cibseven/pom.xml",
-        "--no-transfer-progress",
-        "-Dstyle.color=never",
-        "-DskipTests",
-        "test-compile",
-      ],
-      {
-        env: { ...process.env, JAVA_HOME: javaHome },
-        timeoutMs: 120_000,
-      },
-    ),
+    runProjectCommand("./scripts/pnpm.sh", ["run", "build:differential"], 120_000),
+    runProjectCommand("./scripts/lake.sh", ["build", "kernelRun"], nativeLeanDriverBuildTimeoutMs),
   ]);
 }
 
-const isPrebuilt = process.env.BPMN_PIPELINE_PREBUILT === "1";
-const modelCorpusOnly = process.argv.slice(2).includes("--model-corpus");
-const unknownArguments = process.argv.slice(2).filter(
-  (argument) => argument !== "--model-corpus",
-);
-if (unknownArguments.length > 0) {
-  throw new TypeError(
-    `unsupported pipeline arguments: ${unknownArguments.join(", ")}`,
-  );
-}
-// The corpus run selects its own cases, while the warm deadline derives from the cases a hosted leg selects.
-if (modelCorpusOnly && (process.env.BPMN_PIPELINE_PARTITION ?? "") !== "") {
-  throw new TypeError("--model-corpus selects its own cases; unset BPMN_PIPELINE_PARTITION");
-}
-const buildStarted = performance.now();
-if (!isPrebuilt) {
-  await buildPipeline();
-}
-const buildMs = isPrebuilt ? 0 : performance.now() - buildStarted;
 const testFiles = modelCorpusOnly
-  ? [
-      "model-corpus/test/executable-model-corpus.test.ts",
-      "packages/differential/test/executable-model-corpus.test.ts",
-      "packages/temporal-adapter/testkit/test/message-key-correlation-refinement.temporal-serial-test.ts",
-    ]
-  : ["packages/differential/test/pipeline.test.ts"];
+  ? ["model-corpus/test/executable-model-corpus.test.ts"]
+  : ["packages/differential/test/kernel-behavior-oracle.integration-test.ts"];
 
 const testRun = await runProjectCommand(
   process.execPath,
-  [
-    "--test",
-    "--test-concurrency=1",
-    ...testFiles,
-  ],
-  {
-    env: {
-      ...process.env,
-      BPMN_PIPELINE_BUILD_MS: buildMs.toFixed(3),
-      BPMN_PIPELINE_BUILD_MODE: isPrebuilt ? "prebuilt" : "measured",
-      BPMN_JAVA_HOME: javaHome,
-    },
-    timeoutMs: warmPipelineCommandTimeoutMs(process.env),
-  },
+  ["--test", "--test-concurrency=1", ...testFiles],
+  pipelineCommandTimeoutMs(),
 );
 
 process.stdout.write(testRun.stdout);

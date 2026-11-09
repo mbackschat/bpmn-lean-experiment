@@ -24,13 +24,18 @@ export type ProjectSource = {
 
 export type PackageRootMap = ReadonlyMap<string, string>;
 
+/** Package name to the subpaths its manifest's `exports` declares (`"."`, `"./testing"`, ...). */
+export type PackageExportMap = ReadonlyMap<string, ReadonlySet<string>>;
+
 export type PlatformBoundaryAssessmentOptions = {
   readonly allowedEngineImports?: ReadonlySet<string>;
   readonly packageRoots?: PackageRootMap;
+  readonly packageExports?: PackageExportMap;
 };
 
 export type RepositoryProductBoundary = {
   readonly packageRoots: PackageRootMap;
+  readonly packageExports: PackageExportMap;
   readonly sources: ReadonlyArray<ProjectSource>;
 };
 
@@ -266,6 +271,18 @@ function isWithinRoot(relativePath: string, roots: ReadonlyArray<string>): boole
   return roots.some((root) => relativePath === root || relativePath.startsWith(`${root}/`));
 }
 
+/**
+ * Whether `specifier` names a package root or a subpath its manifest exports. A showcase drives the engine only
+ * through these declared entries; any other subpath reaches into the package's files.
+ */
+function isDeclaredPackageEntry(specifier: string, packageRoots: PackageRootMap, packageExports: PackageExportMap): boolean {
+  if (packageRoots.has(specifier)) return true;
+  for (const [name, subpaths] of packageExports) {
+    if (specifier.startsWith(`${name}/`) && subpaths.has(`./${specifier.slice(name.length + 1)}`)) return true;
+  }
+  return false;
+}
+
 function packageTarget(specifier: string, packageRoots: PackageRootMap): string | null {
   const packageName = [...packageRoots.keys()]
     .filter((candidate) => specifier === candidate || specifier.startsWith(`${candidate}/`))
@@ -422,6 +439,7 @@ export function assessPlatformProductBoundary(
 ): string[] {
   const allowedEngineImports = options.allowedEngineImports ?? new Set<string>();
   const packageRoots = options.packageRoots ?? new Map<string, string>();
+  const packageExports = options.packageExports ?? new Map<string, ReadonlySet<string>>();
   const findings = new Set<string>();
   for (const input of sources) {
     const relativePath = input.path.replaceAll("\\", "/").replace(/^\.\//u, "");
@@ -455,7 +473,7 @@ export function assessPlatformProductBoundary(
         const neutralImport = target !== null &&
           isWithinRoot(target, neutralPackageRoots);
         const publicShowcaseEngineImport = isShowcase &&
-          packageRoots.has(specifier) &&
+          isDeclaredPackageEntry(specifier, packageRoots, packageExports) &&
           target !== null &&
           isWithinRoot(target, engineRoots);
         const packageInternal = specifier.startsWith("@bpmn-lean/") &&
@@ -463,7 +481,9 @@ export function assessPlatformProductBoundary(
           !neutralImport &&
           !approvedEngineImport &&
           !publicShowcaseEngineImport;
-        const publicEngineOutsideGateway = approvedEngineImport && !isEngineGateway;
+        // Showcases are acceptance hosts outside the product: they wire the engine themselves, so the gateway rule
+        // binds Product 2 code only.
+        const publicEngineOutsideGateway = approvedEngineImport && !isEngineGateway && !isShowcase;
         const relativeInternal = target !== null &&
           isWithinRoot(target, engineRoots) &&
           !neutralImport &&
@@ -549,6 +569,22 @@ export function packageRootsFromManifests(manifests: ReadonlyArray<ProjectSource
   return packageRoots;
 }
 
+/** The `exports` subpaths of every named manifest; a manifest without `exports` declares only its root. */
+export function packageExportsFromManifests(manifests: ReadonlyArray<ProjectSource>): PackageExportMap {
+  const exports = new Map<string, ReadonlySet<string>>();
+  for (const manifest of manifests) {
+    const decoded = JSON.parse(manifest.source) as { readonly name?: unknown; readonly exports?: unknown };
+    if (typeof decoded.name !== "string" || decoded.name === "") continue;
+    const declared = decoded.exports;
+    exports.set(decoded.name, new Set(
+      declared !== null && typeof declared === "object" && !Array.isArray(declared)
+        ? Object.keys(declared).filter((key) => key.startsWith("."))
+        : ["."],
+    ));
+  }
+  return exports;
+}
+
 function repositoryPaths(root: string): string[] {
   const output = execFileSync(
     "git",
@@ -584,6 +620,7 @@ export async function repositoryProductBoundary(root: string): Promise<Repositor
   );
   return {
     packageRoots: packageRootsFromManifests(manifests),
+    packageExports: packageExportsFromManifests(manifests),
     sources,
   };
 }

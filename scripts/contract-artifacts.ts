@@ -5,19 +5,6 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import {
-  compareCanonicalStrings,
-  verifyCanonicalDefinitionOrder,
-  verifyDefinitionReferences,
-} from "./contract-artifact-consistency.ts";
-import { verifyConfiguredTaskProfileBinding } from "./configured-task-profile-consistency.ts";
-import {
-  verifyServiceTaskIncidentArtifactBinding,
-} from "./service-task-incident-profile-consistency.ts";
-import {
-  verifyServiceTaskIncidentCancellationArtifactBinding,
-} from "./service-task-incident-cancellation-profile-consistency.ts";
-export { compareCanonicalStrings } from "./contract-artifact-consistency.ts";
-import {
   artifactCases,
   normativeArtifactCases,
 } from "./contract-artifact-cases.ts";
@@ -30,13 +17,6 @@ import type {
   AnySchema,
 } from "ajv/dist/2020.js";
 
-// `Scenario` stays the frozen semantic-core type only because the frozen differential tests read artifact sets through
-// it; every value read here is a new-shape scenario, whose structure `scenario.schema.json` alone owns.
-import type {
-  CheckedProcess,
-  Scenario,
-  SemanticProcessProgram,
-} from "../packages/semantic-core/src/index.ts";
 import type {
   CibSevenEvidence,
 } from "./contract-cib-evidence.ts";
@@ -52,12 +32,32 @@ export {
   verifyScenarioVariableValueContract,
 } from "./scenario-variable-value-contract.ts";
 
+/**
+ * A scenario as the artifact reader sees it: only the members this module and its tests read.
+ * `contracts/schemas/scenario.schema.json` owns the whole shape, and every value read here has passed it.
+ */
+export type ScenarioDocument = Readonly<{
+  kind: "scenario";
+  id: string;
+  profile: string;
+  bpmn: Readonly<{
+    id: string;
+    relativePath: string;
+    sha256: string;
+    sourceOverlay: unknown;
+  }>;
+  stimuli: ReadonlyArray<Readonly<{ kind: string; commandId: string } & Record<string, unknown>>>;
+  provenance: Readonly<{
+    normativeRefs: ReadonlyArray<string>;
+    cibRevision: string;
+    cibRefs: ReadonlyArray<string>;
+  }>;
+}>;
+
 const schemaBaseId = "https://bpmn-lean.local/schemas";
 const scenarioSchemaId = `${schemaBaseId}/scenario.schema.json`;
 const evidenceSchemaId = `${schemaBaseId}/cibseven-evidence.schema.json`;
 const profileSchemaId = `${schemaBaseId}/semantic-profile.schema.json`;
-const checkedProcessSchemaId = `${schemaBaseId}/checked-process.schema.json`;
-const semanticProcessSchemaId = `${schemaBaseId}/semantic-process.schema.json`;
 
 type JsonDocument<Value> = Readonly<{
   bytes: Buffer;
@@ -92,17 +92,12 @@ type NormativeSemanticProfile = SemanticProfileBase & Readonly<{
 
 type SemanticProfile = CibSemanticProfile | NormativeSemanticProfile;
 
-export type DefinitionArtifacts = Readonly<{
-  checkedProcess: CheckedProcess;
-  semanticProcess: SemanticProcessProgram;
-}>;
-
 export type ArtifactSet = ArtifactCase & Readonly<{
   validator: Ajv2020;
   registeredRelationshipIds: ReadonlySet<string>;
   profile: CibSemanticProfile;
   profileBytes: Buffer;
-  scenario: Scenario;
+  scenario: ScenarioDocument;
   scenarioBytes: Buffer;
   evidence: CibSevenEvidence;
   bpmnBytes: Buffer;
@@ -115,7 +110,7 @@ export type NormativeArtifactSet =
     // A cumulative CIB profile grown with standards-only schedules binds evidence-free scenarios too,
     // so evidence absence does not imply normative authority (contracts/README.md, cumulative profiles).
     profile: SemanticProfile;
-    scenario: Scenario;
+    scenario: ScenarioDocument;
     scenarioBytes: Buffer;
     bpmnBytes: Buffer;
   }>;
@@ -162,8 +157,6 @@ async function createValidator(projectRoot: string): Promise<Ajv2020> {
     "semantic-profile.schema.json",
     "bpmn-source-overlay.schema.json",
     "cibseven-evidence.schema.json",
-    "checked-process.schema.json",
-    "semantic-process.schema.json",
   ];
   const schemas = await Promise.all(
     schemaNames.map(async (name) => {
@@ -226,45 +219,6 @@ function validateWith(
   }
 }
 
-export async function verifyDefinitionArtifacts(
-  projectRoot: string,
-  artifacts: DefinitionArtifacts,
-): Promise<DefinitionArtifacts> {
-  const validator = await validatorFor(projectRoot);
-  const { checkedProcess, semanticProcess } = artifacts;
-  validateWith(
-    validator,
-    checkedProcessSchemaId,
-    "checked process",
-    checkedProcess,
-  );
-  validateWith(
-    validator,
-    semanticProcessSchemaId,
-    "semantic process",
-    semanticProcess,
-  );
-
-  const checkedIdentity = {
-    ...checkedProcess.identity,
-    processId: checkedProcess.processId,
-  };
-  const programIdentity = {
-    semanticProfile: semanticProcess.identity.semanticProfile,
-    sourceOverlay: semanticProcess.identity.sourceOverlay,
-    sourceId: semanticProcess.identity.sourceId,
-    sourceSha256: semanticProcess.identity.sourceSha256,
-    processId: semanticProcess.processId,
-  };
-  if (!isDeepStrictEqual(checkedIdentity, programIdentity)) {
-    throw new Error("checked process and semantic process identities differ");
-  }
-
-  verifyCanonicalDefinitionOrder(checkedProcess, semanticProcess);
-  verifyDefinitionReferences(checkedProcess, semanticProcess);
-  return artifacts;
-}
-
 export function verifyArtifactSet(artifactSet: ArtifactSet): ArtifactSet {
   const {
     validator,
@@ -318,9 +272,6 @@ function verifyProfile(
   profile: SemanticProfile,
 ): void {
   validateWith(validator, profileSchemaId, "profile", profile);
-  verifyConfiguredTaskProfileBinding(profile);
-  verifyServiceTaskIncidentArtifactBinding(profile);
-  verifyServiceTaskIncidentCancellationArtifactBinding(profile);
   for (const relationshipId of profile.bpmn.relationships) {
     if (!registeredRelationshipIds.has(relationshipId)) {
       throw new Error(
@@ -333,7 +284,7 @@ function verifyProfile(
 function verifyScenarioSourceBinding(
   validator: Ajv2020,
   profile: SemanticProfile,
-  scenario: Scenario,
+  scenario: ScenarioDocument,
   scenarioBytes: Buffer,
   bpmnBytes: Buffer,
 ): void {
@@ -341,7 +292,7 @@ function verifyScenarioSourceBinding(
   verifyScenarioVariableValueContract(scenario);
   if (
     !isDeepStrictEqual(
-      parseWireJsonBytes<Scenario>(
+      parseWireJsonBytes<ScenarioDocument>(
         scenarioBytes,
         "scenario source bytes",
       ),
@@ -353,8 +304,6 @@ function verifyScenarioSourceBinding(
   if (profile.id !== scenario.profile) {
     throw new Error("profile identity does not match scenario");
   }
-  verifyServiceTaskIncidentArtifactBinding(profile, scenario);
-  verifyServiceTaskIncidentCancellationArtifactBinding(profile, scenario);
   if (scenario.bpmn.sha256 !== sha256(bpmnBytes)) {
     throw new Error("BPMN resource digest does not match scenario");
   }
@@ -391,7 +340,7 @@ async function readArtifactSet(
     projectRoot,
     artifactCase.evidenceRelativePath,
   );
-  const scenarioDocument = await readJsonDocument<Scenario>(
+  const scenarioDocument = await readJsonDocument<ScenarioDocument>(
     scenarioPath,
   );
   const evidenceDocument = await readJsonDocument<CibSevenEvidence>(
@@ -448,7 +397,7 @@ async function readNormativeArtifactSet(
     projectRoot,
     artifactCase.scenarioRelativePath,
   );
-  const scenarioDocument = await readJsonDocument<Scenario>(
+  const scenarioDocument = await readJsonDocument<ScenarioDocument>(
     scenarioPath,
   );
   const profilePath = resolveInside(

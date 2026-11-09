@@ -26,11 +26,7 @@ import {
 } from "./source-measure.ts";
 import {
   assessSourceHygiene,
-  baselineReviewedLargeFileApprovals,
-  ownerApprovalsIn,
-  ownerApprovedLargeFiles,
-  reviewedLargeFiles,
-  sourceHygieneApprovalFindings,
+  sizeExceptionReason,
 } from "./source-hygiene-policy.ts";
 import {
   erasableSyntaxDiagnostics,
@@ -38,15 +34,7 @@ import {
 } from "./harness-source-policy.ts";
 
 const leanUmbrellaModules = [
-  "BpmnConformance.lean",
-  "BpmnSemantics.lean",
-  "BpmnSemantics/FlowNodeOccurrenceLifecycleConformance.lean",
-  "BpmnSemantics/ParallelUserTaskMetadataCompositionConformance.lean",
-  "BpmnSemantics/RuntimeStateActivityConformance.lean",
-  "BpmnSemantics/RuntimeStateWellFormedConformance.lean",
-  "BpmnSemantics/SemanticProcess.lean",
-  "BpmnSemantics/SemanticProcessJson.lean",
-  "BpmnSemantics/SequentialMultiInstanceConformance.lean",
+  "Kernel.lean",
 ] as const;
 
 test("the source-hygiene thresholds match the owner-approved limits", () => {
@@ -150,7 +138,7 @@ const separatorTemplatePattern =
  * Two host schedulers shipped a durable timer key joined on `U+0000` under a comment asserting that
  * the separator made forgery impossible. It did not: `isWellFormedWireString` admits that scalar, so
  * moving the separator into an identifier produced a byte-identical key for two different committed
- * timers. `canonicalTypedTupleEncoding` owns composite identity and delimits structurally instead.
+ * timers. A composite identity delimits structurally instead, for example as the JSON encoding of a tuple.
  */
 function separatorComposites(path: string, source: string): string[] {
   return source
@@ -191,44 +179,14 @@ test("the source-hygiene policy rejects every regression class", () => {
   ]);
 });
 
-test("rejects a large-source exception absent from owner approval", () => {
-  assert.deepEqual(
-    sourceHygieneApprovalFindings(
-      new Map([["large.ts", "one cohesive boundary"]]),
-      new Map(),
-    ),
-    ["large.ts: exception lacks owner approval"],
-  );
-});
-
-// An approval is recorded in its own commit, which a later commit names as the baseline, so no commit approves the
-// exceptions it activates; a baseline that records none approves none.
-test("reads the owner approvals a baseline policy records", () => {
-  assert.deepEqual(ownerApprovalsIn("export const reviewedLargeFiles: ReadonlyMap<string, string> = new Map();\n"), new Map());
-  assert.deepEqual(ownerApprovalsIn([
-    "export const ownerApprovedLargeFiles: ReadonlyMap<string, string> = new Map([",
-    '  ["Pkg/Large.lean", "header growth, \\"quoted\\""],',
-    '  ["Pkg/Other.lean", "second"],',
-    "]);",
-  ].join("\n")), new Map([["Pkg/Large.lean", 'header growth, "quoted"'], ["Pkg/Other.lean", "second"]]));
-  assert.throws(() => ownerApprovalsIn("export const ownerApprovedLargeFiles: ReadonlyMap<string, string> = new Map([\n  [path, rationale],\n]);"),
-    /unreadable owner approval/u);
-});
-
-// A later commit reads these approvals from this file's text, so the text must read back as the declared map.
-test("the recorded owner approvals read back from the policy text as declared", () => {
-  assert.deepEqual(ownerApprovalsIn(readFileSync("scripts/source-hygiene-policy.ts", "utf8")), ownerApprovedLargeFiles);
-});
-
-test("binds large-source exceptions to the owner-approved baseline", () => {
-  assert.deepEqual(
-    sourceHygieneApprovalFindings(
-      reviewedLargeFiles,
-      baselineReviewedLargeFileApprovals(),
-    ),
-    [],
-    "agents may not add or change reviewed-large-file exceptions without owner approval",
-  );
+test("a size exception is a reasoned comment at its own site, in any project comment syntax", () => {
+  assert.equal(sizeExceptionReason("// size-exception: one cohesive codec table\nexport {};\n"), "one cohesive codec table");
+  assert.equal(sizeExceptionReason("-- size-exception: one cohesive proof\n"), "one cohesive proof");
+  assert.equal(sizeExceptionReason("/* size-exception: generated vocabulary */\n"), "generated vocabulary");
+  assert.equal(sizeExceptionReason(" * size-exception: one record\n"), "one record");
+  assert.equal(sizeExceptionReason("// size-exception:\n"), null);
+  assert.equal(sizeExceptionReason('const text = "size-exception: in a string";\n'), null);
+  assert.equal(sizeExceptionReason("export {};\n"), null);
 });
 
 test("source enumeration includes non-ignored files before commit", (context) => {
@@ -417,20 +375,22 @@ test("no shipped composite value is built with an unescaped separator", () => {
       separatorComposites(path, readFileSync(path, "utf8")),
     ),
     [],
-    "build a composite identity with canonicalTypedTupleEncoding; no separator character is reserved in the shared wire domain",
+    "build a composite identity structurally (for example the JSON encoding of a tuple); no separator character is reserved in the shared wire domain",
   );
 });
 
 test("hand-written source respects reviewed module-size boundaries", () => {
   const sourceFiles = worktreeSourceFiles();
-  const measurements = readWorktreeSources(sourceFiles).map(({ path, source }) => ({
+  const sources = readWorktreeSources(sourceFiles);
+  const measurements = sources.map(({ path, source }) => ({
     path,
     lines: nonblankLines(source),
   }));
-  const assessment = assessSourceHygiene(
-    measurements,
-    reviewedLargeFiles,
-  );
+  const reviews = new Map(sources.flatMap(({ path, source }) => {
+    const reason = sizeExceptionReason(source);
+    return reason === null ? [] : [[path, reason] as const];
+  }));
+  const assessment = assessSourceHygiene(measurements, reviews);
 
   assert.deepEqual(
     assessment.hardViolations,
@@ -445,7 +405,7 @@ test("hand-written source respects reviewed module-size boundaries", () => {
   assert.deepEqual(
     assessment.invalidReviews,
     [],
-    "reviewed-large-file entries must be current, necessary, and below the hard ceiling",
+    "a size-exception comment stands only in a file above the review target and below the hard ceiling",
   );
   for (const line of headroomReportLines(measurements)) {
     process.stdout.write(`${line}\n`);
@@ -480,7 +440,7 @@ test("hand-written source respects reviewed module-size boundaries", () => {
  *
  * Deliberately narrow. It matches only tactic position, so the Bool-valued `decide (…)` application
  * and `Decidable.decide` are untouched, and it says nothing about whether a finite decided fixture is
- * the right evidence for a claim — [the capsule rules](../CLAUDE.md) own that question.
+ * the right evidence for a claim — [guard 6](../docs/kernel/ARCHITECTURE-SPEC.md#guardrails-against-degradation) owns that question.
  */
 function unkernelledDecideSites(path: string, source: string): string[] {
   // Both bounds are load-bearing and each was refuted by a live site rather than reasoned about.
@@ -517,7 +477,8 @@ function unkernelledDecideSites(path: string, source: string): string[] {
 
 test("every Lean tactic-position decide reduces once, in the kernel", () => {
   const leanSources = worktreeSourceFiles().filter((path) => path.endsWith(".lean"));
-  assert.ok(leanSources.length > 50, `Lean enumeration returned ${leanSources.length} files`);
+  // A renamed kernel root must empty this scan loudly, never pass it by matching nothing (guard 23).
+  assert.ok(leanSources.includes("Kernel/Step.lean"), `Lean enumeration missed the kernel: ${leanSources.length} files`);
 
   assert.deepEqual(
     readWorktreeSources(leanSources).flatMap(({ path, source }) =>

@@ -19,22 +19,17 @@ import {
 import type {
   PlatformServerRuntime,
 } from "@bpmn-lean/platform-server";
+import { ProcessClient, ResultKind, workflowType } from "@bpmn-lean/temporal-host/client";
+import { replayHistory } from "@bpmn-lean/temporal-host/worker";
+
+import { showcaseEngineDeploymentEnvironment } from "../../engine-deployment.ts";
 import {
-  ExternalTemporalRuntime,
-  ProcessCommandResultKind,
-  TemporalScenarioRunner,
-  bpmnProcessWorkflowType,
+  ShowcaseWorker,
   createCachedLocalEnvironment,
-  createTemporalClient,
-  createHostEffectActivities,
-  isCompletedProcessReceipt,
-  readTestProcessTerminalResult,
-  submitUserTaskCompletionAtWorkflowId,
+  environmentNamespace,
+  noEffects,
   withDeadline,
-} from "@bpmn-lean/temporal-testkit";
-import type {
-  TemporalHistory,
-} from "@bpmn-lean/temporal-testkit";
+} from "../src/host-worker.ts";
 
 import {
   beginDiscardedPublication,
@@ -56,14 +51,12 @@ import {
   waitForOpenUserTask,
   workflowStartArguments,
 } from "./temporal-support.ts";
+import type { TemporalHistory } from "./temporal-support.ts";
 
 const profileId = "bpmn-2.0.2-message-start-event-draft";
 const taskQueue = "bpmn-m2-message-start-ingress";
 const operationDeadlineMs = 10_000;
 const environmentStartupDeadlineMs = 40_000;
-type UserTaskCompletion = Parameters<
-  typeof submitUserTaskCompletionAtWorkflowId
->[3];
 const temporalCacheDirectory = fileURLToPath(
   new URL("../../../.cache/temporal-cli/", import.meta.url),
 );
@@ -84,23 +77,13 @@ test("M2 publishes one exact Message Start after response loss and replays", asy
     environmentStartupDeadlineMs,
     "M2 Message Start Temporal environment startup",
   );
-  const namespace = "m2-message-start-ingress-acceptance";
-  const client = createTemporalClient({ connection: environment.client.connection, namespace });
+  // No Worker polls until the publication has started its Workflow, so its history shows a start no Worker took yet.
+  const namespace = environmentNamespace(environment);
+  const client = environment.client;
   let platform: PlatformServerRuntime | undefined;
-  let initialWorker: ExternalTemporalRuntime | undefined;
-  let replacementWorker: ExternalTemporalRuntime | undefined;
-  let replayRunner: TemporalScenarioRunner | undefined;
+  let replacementWorker: ShowcaseWorker | undefined;
 
   try {
-    initialWorker = await withDeadline(
-      ExternalTemporalRuntime.initializeFreshNamespace({
-        address: environment.address, namespace, taskQueue,
-        identity: `bpmn-m2-message-initial-${process.pid}`,
-      }, createHostEffectActivities([]), 86_400),
-      20_000, "M2 Message Start native initialization",
-    );
-    await initialWorker.shutdown();
-    initialWorker = undefined;
     platform = await startPlatform(
       origin,
       port,
@@ -183,7 +166,7 @@ test("M2 publishes one exact Message Start after response loss and replays", asy
       }
     });
     await delay(50);
-    assert.equal(execution.type, bpmnProcessWorkflowType);
+    assert.equal(execution.type, workflowType);
     assert.equal(execution.taskQueue, taskQueue);
     assert.deepEqual(await listScheduleIds(client), schedulesBefore);
     assert.equal((await listWorkflowExecutions(client)).length, workflowsBefore.length + 1);
@@ -196,7 +179,7 @@ test("M2 publishes one exact Message Start after response loss and replays", asy
     ) as TemporalHistory;
     assertWorkerAbsentHistory(absentHistory);
     const startArguments = workflowStartArguments(absentHistory);
-    assertVersionStart(startArguments, versionOne.value.source.sha256, versionOneOperation);
+    assertVersionStart(startArguments, execution.memo, versionOne.value.source.sha256, versionOneOperation);
     assertNoSemanticInstanceFanout([startArguments]);
 
     await withDeadline(platform.close(), operationDeadlineMs, "response-loss platform close");
@@ -226,62 +209,45 @@ test("M2 publishes one exact Message Start after response loss and replays", asy
     assert.deepEqual(retry.value, recovered.value);
     assert.equal((await listWorkflowExecutions(client)).length, workflowsBefore.length + 1);
 
-    replacementWorker = await startWorker(
-      environment.address,
-      namespace,
-    );
+    replacementWorker = await startWorker(environment);
+    const processes = new ProcessClient(client, taskQueue);
     const task = await waitForOpenUserTask(handle, versionOneTask);
     assert.notEqual(task.name, versionTwoTask);
     assert.equal(task.id.processInstanceId, recovered.value.instance.processInstanceId);
     const completion = {
-      kind: "completeUserTaskInstance" as UserTaskCompletion["kind"],
+      kind: "command",
       commandId: `complete-message-start-${token}`,
-      taskId: task.id,
-      submittedValues: [],
-    } as const satisfies UserTaskCompletion;
-    const command = await submitUserTaskCompletionAtWorkflowId(
-      replacementWorker.workflowClient,
-      execution.workflowId,
-      recovered.value.instance.processInstanceId,
-      completion,
+      occurrence: task.id,
+      action: { kind: "completeUserTask", values: [] },
+    } as const;
+    const command = await withDeadline(
+      processes.command(execution.workflowId, completion),
+      operationDeadlineMs,
+      "Message Start User Task completion",
     );
-    assert.equal(command.kind, ProcessCommandResultKind.Semantic);
-    if (command.kind !== ProcessCommandResultKind.Semantic) {
-      throw new TypeError("Message Start completion did not return a semantic command result");
-    }
     assert.equal(command.outcome, "committed");
-    const { receipt } = await withDeadline(
-      readTestProcessTerminalResult(handle),
+    const terminal = await withDeadline(
+      handle.result(),
       operationDeadlineMs,
       "published Process completion",
     );
-    assert.equal(isCompletedProcessReceipt(receipt), true);
-    if (!isCompletedProcessReceipt(receipt)) {
-      throw new TypeError("published Process returned a malformed completion receipt");
-    }
-    assert.deepEqual(receipt.definition, {
-      compiler: "bpmn-source-semantic-process",
-      semanticProfile: profileId,
-      sourceId: versionOne.value.source.id,
-      sourceSha256: versionOne.value.source.sha256,
+    assert.equal(terminal.kind, ResultKind.Ended);
+    assert.equal(terminal.kind === ResultKind.Ended ? terminal.status : null, "completed");
+    assert.deepEqual(requireRecord(execution.memo, "start memo").definition, {
+      ref: { definitionKey: processId, version: 1, sha256: versionOne.value.source.sha256 },
+      profile: profileId,
       sourceOverlay: null,
     });
-    assert.equal(receipt.processId, processId);
-    assert.equal(receipt.processInstanceId, recovered.value.instance.processInstanceId);
-    assert.notEqual(receipt.definition.sourceSha256, versionTwo.value.source.sha256);
-    assert.deepEqual(receipt.finalState, {
+    // Under durable scheduling the host stamps every input with Workflow epoch time (packages/temporal-host/src/workflow-host.ts).
+    const { logicalTimeMs, ...terminalState } = requireRecord(await processes.observation(execution.workflowId), "terminal state");
+    assert.ok(Number.isSafeInteger(logicalTimeMs) && (logicalTimeMs as number) > 0);
+    assert.deepEqual(terminalState, {
       kind: "state",
       instanceId: recovered.value.instance.processInstanceId,
       status: "completed",
-      activeWaits: [],
-      openUserTasks: [],
-      openMessageSubscriptions: [],
-      openTimers: [],
-      openEffects: [],
-      openIncidents: [],
       variables: [],
-      enabledInteractions: [],
-      logicalTimeMs: 0,
+      scopes: [],
+      openWaits: [],
     });
     const completedHistory = await withDeadline(
       handle.fetchHistory(),
@@ -292,18 +258,11 @@ test("M2 publishes one exact Message Start after response loss and replays", asy
 
     await replacementWorker.shutdown();
     replacementWorker = undefined;
-    replayRunner = await withDeadline(
-      TemporalScenarioRunner.create({ downloadDirectory: temporalCacheDirectory }),
-      30_000,
-      "M2 Message Start replay runner startup",
-    );
     await withDeadline(
-      replayRunner.replayHistory(completedHistory, execution.workflowId),
-      operationDeadlineMs,
+      replayHistory(completedHistory, execution.workflowId),
+      30_000,
       "published Process history replay",
     );
-    await replayRunner.shutdown();
-    replayRunner = undefined;
 
     const versionTwoReferencePublicationId = `version-two-reference-${token}`;
     const referenceWorkflowsBefore = await listWorkflowExecutions(client);
@@ -326,6 +285,7 @@ test("M2 publishes one exact Message Start after response loss and replays", asy
     const versionTwoArguments = workflowStartArguments(versionTwoHistory);
     assertVersionStart(
       versionTwoArguments,
+      versionTwoExecution.memo,
       versionTwo.value.source.sha256,
       versionTwoOperation,
     );
@@ -334,17 +294,17 @@ test("M2 publishes one exact Message Start after response loss and replays", asy
     const fanoutWorkflowId = `direct-message-start-fanout-mutation-${token}`;
     const fanoutWorkflowsBefore = await listWorkflowExecutions(client);
     const directSchedulesBefore = await listScheduleIds(client);
-    const fanoutStimulus = fanoutStartInput(
-      versionTwoArguments[0],
+    const fanoutArguments = fanoutStartArguments(
+      versionTwoArguments,
       recovered.value.instance.processInstanceId,
       `fanout-message-start-${token}`,
     );
     await withDeadline(
-      client.workflow.start(bpmnProcessWorkflowType, {
+      client.workflow.start(workflowType, {
         taskQueue,
         workflowId: fanoutWorkflowId,
         workflowIdReusePolicy: "REJECT_DUPLICATE",
-        args: [fanoutStimulus, versionTwoArguments[1], versionTwoArguments[2]],
+        args: [fanoutArguments],
       }),
       operationDeadlineMs,
       "additional matching-version Workflow-start mutation",
@@ -361,11 +321,7 @@ test("M2 publishes one exact Message Start after response loss and replays", asy
       "additional matching-version Workflow history",
     ) as TemporalHistory;
     const recordedFanoutArguments = workflowStartArguments(fanoutHistory);
-    assert.deepEqual(recordedFanoutArguments, [
-      fanoutStimulus,
-      versionTwoArguments[1],
-      versionTwoArguments[2],
-    ]);
+    assert.deepEqual(recordedFanoutArguments, fanoutArguments);
     assert.throws(
       () => assertNoSemanticInstanceFanout([startArguments, recordedFanoutArguments]),
       /semantic Process instance fanout/u,
@@ -375,15 +331,11 @@ test("M2 publishes one exact Message Start after response loss and replays", asy
     const directWorkflowId = `direct-message-start-mutation-${token}`;
     const directWorkflowsBefore = await listWorkflowExecutions(client);
     await withDeadline(
-      client.workflow.start(bpmnProcessWorkflowType, {
+      client.workflow.start(workflowType, {
         taskQueue,
         workflowId: directWorkflowId,
         workflowIdReusePolicy: "REJECT_DUPLICATE",
-        args: [
-          directStartInput(startArguments[0], directPublicationId),
-          startArguments[1],
-          startArguments[2],
-        ],
+        args: [directStartArguments(startArguments, directPublicationId)],
       }),
       operationDeadlineMs,
       "publication-linked direct Workflow-start mutation",
@@ -408,13 +360,12 @@ test("M2 publishes one exact Message Start after response loss and replays", asy
       directExecution.workflowId,
       directExecution.runId,
       completion.commandId,
-      ...stringLeaves(execution.memo),
+      // The memo's definition identity and instance identity are public facts; its start intent is not.
+      ...stringLeaves(requireRecord(execution.memo, "start memo").intent),
     ]);
   } finally {
     const cleanupFailures: unknown[] = [];
     for (const cleanup of [
-      replayRunner === undefined ? undefined : () => replayRunner?.shutdown(),
-      initialWorker === undefined ? undefined : () => initialWorker?.shutdown(),
       replacementWorker === undefined ? undefined : () => replacementWorker?.shutdown(),
       platform === undefined ? undefined : () => platform?.close(),
       () => environment.teardown(),
@@ -433,18 +384,16 @@ test("M2 publishes one exact Message Start after response loss and replays", asy
 });
 
 async function startWorker(
-  address: string,
-  namespace: string,
-): Promise<ExternalTemporalRuntime> {
+  environment: Awaited<ReturnType<typeof createCachedLocalEnvironment>>,
+): Promise<ShowcaseWorker> {
   return await withDeadline(
-    ExternalTemporalRuntime.connect({
-      address,
-      namespace,
+    ShowcaseWorker.start(environment, {
       taskQueue,
       identity: `bpmn-m2-message-ingress-replacement-${process.pid}`,
-    }, createHostEffectActivities([])),
+      effects: noEffects,
+    }),
     20_000,
-    "replacement production Worker startup",
+    "replacement host Worker startup",
   );
 }
 
@@ -456,7 +405,7 @@ async function startPlatform(
   temporalNamespace: string,
 ): Promise<PlatformServerRuntime> {
   const runtime = await createPlatformServer({
-    ...readPlatformServerConfig({}),
+    ...readPlatformServerConfig(showcaseEngineDeploymentEnvironment()),
     host: "127.0.0.1",
     port,
     publicOrigin: origin,
@@ -519,26 +468,33 @@ function sourceRevision(
     );
 }
 
+/** The start stimulus a host Workflow's start arguments carry, in the scenario contract's form. */
+function startStimulus(args: Record<string, unknown>): Record<string, unknown> {
+  assert.equal(args.kind, "start");
+  const start = requireRecord(args.start, "Message Start stimulus");
+  assert.equal(start.kind, "start");
+  return start;
+}
+
+/** The definition the start memo names (`packages/engine-api/src/start-dispatch.ts`) and the Message the start carries. */
 function assertVersionStart(
-  args: readonly [unknown, unknown, unknown],
+  args: Record<string, unknown>,
+  memo: unknown,
   sourceSha256: string,
   interfaceOperationId: string,
 ): void {
-  const start = requireRecord(args[0], "Message Start stimulus");
-  const channel = requireRecord(start.channel, "Message Start channel");
-  assert.equal(start.kind, "triggerMessageStart");
+  const trigger = requireRecord(startStimulus(args).trigger, "Message Start trigger");
+  assert.equal(trigger.kind, "message");
+  const channel = requireRecord(trigger.channel, "Message Start channel");
   assert.equal(channel.interfaceOperationId, interfaceOperationId);
-  const program = requireRecord(args[1], "Message Start semantic program");
-  const identity = requireRecord(program.identity, "Message Start semantic program identity");
-  assert.equal(identity.sourceSha256, sourceSha256);
+  const definition = requireRecord(requireRecord(memo, "start memo").definition, "start memo definition");
+  assert.equal(requireRecord(definition.ref, "start memo definition ref").sha256, sourceSha256);
 }
 
-function assertNoSemanticInstanceFanout(
-  starts: readonly (readonly [unknown, unknown, unknown])[],
-): void {
+function assertNoSemanticInstanceFanout(starts: readonly Record<string, unknown>[]): void {
   const instances = new Set<string>();
-  for (const [stimulus] of starts) {
-    const start = requireRecord(stimulus, "Message Start stimulus");
+  for (const args of starts) {
+    const start = startStimulus(args);
     const instanceId = start.instanceId;
     if (typeof instanceId !== "string" || instanceId.length === 0) {
       throw new TypeError("Message Start stimulus needs a semantic Process instance identity");
@@ -550,18 +506,16 @@ function assertNoSemanticInstanceFanout(
   }
 }
 
-function fanoutStartInput(
-  value: unknown,
+function fanoutStartArguments(
+  args: Record<string, unknown>,
   instanceId: string,
   commandId: string,
 ): Record<string, unknown> {
-  const start = requireRecord(value, "Message Start stimulus");
-  assert.equal(start.kind, "triggerMessageStart");
-  return { ...start, commandId, instanceId };
+  return { ...args, start: { ...startStimulus(args), commandId, instanceId } };
 }
 
-function directStartInput(value: unknown, identity: string): Record<string, unknown> {
-  return fanoutStartInput(value, `${identity}-instance`, `${identity}-command`);
+function directStartArguments(args: Record<string, unknown>, identity: string): Record<string, unknown> {
+  return fanoutStartArguments(args, `${identity}-instance`, `${identity}-command`);
 }
 
 function assertPublicResponsesHidePrivateFacts(

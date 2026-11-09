@@ -38,7 +38,7 @@ async function withFakeLake(
 
 function runWrapper(fakeBin: string, brakeMib: string, extra: Readonly<Record<string, string>> = {}) {
   const { LEAN_FULL_GATE: _gate, LEAN_MEMORY_BRAKE_MIB: _brake, LEAN_MEMORY_PEAK_FILE: _peak, ...ambient } = process.env;
-  return spawnSync(lakeWrapperPath, ["build", "BpmnSemantics.Fake"], {
+  return spawnSync(lakeWrapperPath, ["build", "Kernel.Fake"], {
     encoding: "utf8",
     timeout: 60_000,
     env: { ...ambient, ...extra, LEAN_MEMORY_BRAKE_MIB: brakeMib, PATH: `${fakeBin}:${process.env.PATH ?? ""}` },
@@ -65,7 +65,7 @@ test("the Lean wrapper passes an ordinary process tree through the brake silentl
   await withFakeLake("printf '%s\\n' \"$*\"", async (fakeBin) => {
     const ordinary = runWrapper(fakeBin, "100");
     assert.equal(ordinary.status, 0, ordinary.stderr);
-    assert.equal(ordinary.stdout, "build BpmnSemantics.Fake\n");
+    assert.equal(ordinary.stdout, "build Kernel.Fake\n");
     assert.equal(ordinary.stderr, "");
   });
 });

@@ -102,7 +102,7 @@ test("derives every Product 2 pre-push boundary from its real push path filters"
     ["test:pre-push:ui"],
   );
   assert.deepEqual(
-    selected(["docs/TESTING-SPEC.md"]),
+    selected(["docs/PLAN.md"]),
     ["test:pre-push:verify"],
   );
 });

@@ -336,17 +336,11 @@ test("requires successful verification receipts for the exact tagged HEAD", asyn
   }
 });
 
-test("publishes the maintained commands and convention", async () => {
-  const [manifestSource, guidance] = await Promise.all([
-    readFile(path.join(projectRoot, "package.json"), "utf8"),
-    readFile(path.join(projectRoot, "CLAUDE.md"), "utf8"),
-  ]);
+test("publishes the maintained commands", async () => {
+  const manifestSource = await readFile(path.join(projectRoot, "package.json"), "utf8");
   const manifest = JSON.parse(manifestSource) as Readonly<{
     scripts?: Readonly<Record<string, string>>;
   }>;
   assert.equal(manifest.scripts?.["tag:create"], "node scripts/project-tags.ts create");
   assert.equal(manifest.scripts?.["tag:push"], "node scripts/project-tags.ts push");
-  assert.match(guidance, /`phase\/<kebab-case>`/u);
-  assert.match(guidance, /`vMAJOR\.MINOR\.PATCH\[-prerelease\]`/u);
-  assert.match(guidance, /never force or move/iu);
 });

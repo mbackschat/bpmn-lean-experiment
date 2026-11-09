@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import type { PublicProcessInstanceIdentity } from "@bpmn-lean/platform-contracts";
-import { EffectExecutionResultKind, VariableValueKind } from "@bpmn-lean/semantic-core";
 import {
   RcShowcaseActors,
   loadRcShowcaseBindings,
@@ -98,7 +97,7 @@ test("shared effect descriptors require identical results", async () => {
   assert.throws(() => mergeRcEffectHandlers([compensation, {
     ...transaction,
     config: { ...transaction.config, effectHandlers: [{ ...handler,
-      result: { kind: EffectExecutionResultKind.Success, localPatch: [{ name: "different", value: { kind: VariableValueKind.String, value: "result" } }] },
+      result: { kind: "success", localPatch: [{ name: "different", value: { kind: "string", value: "result" } }] },
     }] },
   }]), /Conflicting.*effect/);
 });

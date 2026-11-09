@@ -1,478 +1,18 @@
 /**
- * Exact scenario registries for retained CIB evidence and normative-only
- * profile validation.
+ * The scenario artifact sets, discovered from `scenarios/` rather than listed (guard 14 of the kernel rewrite proposal:
+ * scenarios are discovered from directories and counts are derived, never written).
+ *
+ * A scenario file is `scenario.json` or `<name>.scenario.json`; its retained CIB evidence, when it has any, is the
+ * sibling file with `scenario.json` replaced by `cibseven-evidence.json`. A scenario with evidence is a CIB artifact case;
+ * one without is a normative case. Most normative cases bind a normative profile; a cumulative CIB profile grown with
+ * standards-only schedules also appears there, provided a CIB artifact case still binds it.
+ * `capsule-roundtrip.ts` holds the other direction: every evidence file and profile is reached from a scenario.
  */
-import {
-  serviceTaskIncidentArtifactCases,
-} from "./contract-incident-artifact-case.ts";
-import {
-  serviceTaskIncidentCancellationArtifactCases,
-} from "./contract-incident-cancellation-artifact-case.ts";
-import { parallelUserTaskMetadataArtifactCases } from "./contract-parallel-user-task-metadata-artifact-case.ts";
+import { existsSync, readdirSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-export const artifactCases = Object.freeze([
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/user-task-discovery-completion/scenario.json",
-    evidenceRelativePath:
-      "scenarios/user-task-discovery-completion/cibseven-evidence.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/user-task-discovery-completion/wrong-activation.scenario.json",
-    evidenceRelativePath:
-      "scenarios/user-task-discovery-completion/wrong-activation.cibseven-evidence.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/user-task-discovery-completion/stale-completion.scenario.json",
-    evidenceRelativePath:
-      "scenarios/user-task-discovery-completion/stale-completion.cibseven-evidence.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/user-task-process-data-preserved-notation/scenario.json",
-    evidenceRelativePath:
-      "scenarios/user-task-process-data-preserved-notation/cibseven-evidence.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/parallel-fork-join/a-then-b.scenario.json",
-    evidenceRelativePath:
-      "scenarios/parallel-fork-join/a-then-b.cibseven-evidence.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/parallel-fork-join/b-then-a.scenario.json",
-    evidenceRelativePath:
-      "scenarios/parallel-fork-join/b-then-a.cibseven-evidence.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/parallel-fork-join/stale-a-while-b-active.scenario.json",
-    evidenceRelativePath:
-      "scenarios/parallel-fork-join/stale-a-while-b-active.cibseven-evidence.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/intermediate-catch-timer/scenario.json",
-    evidenceRelativePath:
-      "scenarios/intermediate-catch-timer/cibseven-evidence.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/message-addressed-receive-task/scenario.json",
-    evidenceRelativePath:
-      "scenarios/message-addressed-receive-task/cibseven-evidence.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/addressless-receive-task/scenario.json",
-    evidenceRelativePath:
-      "scenarios/addressless-receive-task/cibseven-evidence.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/addressless-receive-task/named-delivery-first.scenario.json",
-    evidenceRelativePath:
-      "scenarios/addressless-receive-task/named-delivery-first.cibseven-evidence.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/service-task-effect/scenario.json",
-    evidenceRelativePath:
-      "scenarios/service-task-effect/cibseven-evidence.json",
-  }),
-  ...serviceTaskIncidentArtifactCases,
-  ...serviceTaskIncidentCancellationArtifactCases,
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/mapped-success-service-task/scenario.json",
-    evidenceRelativePath:
-      "scenarios/mapped-success-service-task/cibseven-evidence.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/mapped-boundary-error-service-task/scenario.json",
-    evidenceRelativePath:
-      "scenarios/mapped-boundary-error-service-task/cibseven-evidence.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/embedded-subprocess-completion/a-then-b.scenario.json",
-    evidenceRelativePath:
-      "scenarios/embedded-subprocess-completion/a-then-b.cibseven-evidence.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/embedded-subprocess-completion/b-then-a.scenario.json",
-    evidenceRelativePath:
-      "scenarios/embedded-subprocess-completion/b-then-a.cibseven-evidence.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/embedded-subprocess-completion/stale-a-while-b-active.scenario.json",
-    evidenceRelativePath:
-      "scenarios/embedded-subprocess-completion/stale-a-while-b-active.cibseven-evidence.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/embedded-subprocess-completion/stale-a-after-scope.scenario.json",
-    evidenceRelativePath:
-      "scenarios/embedded-subprocess-completion/stale-a-after-scope.cibseven-evidence.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/subprocess-error-propagation/trigger-first.scenario.json",
-    evidenceRelativePath:
-      "scenarios/subprocess-error-propagation/trigger-first.cibseven-evidence.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/subprocess-error-propagation/sibling-first.scenario.json",
-    evidenceRelativePath:
-      "scenarios/subprocess-error-propagation/sibling-first.cibseven-evidence.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/subprocess-error-propagation/stale-sibling-after-error.scenario.json",
-    evidenceRelativePath:
-      "scenarios/subprocess-error-propagation/stale-sibling-after-error.cibseven-evidence.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/user-task-boolean-completion/scenario.json",
-    evidenceRelativePath:
-      "scenarios/user-task-boolean-completion/cibseven-evidence.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/user-task-assignment-form-metadata/scenario.json",
-    evidenceRelativePath:
-      "scenarios/user-task-assignment-form-metadata/cibseven-evidence.json",
-  }),
-  ...parallelUserTaskMetadataArtifactCases,
-]);
-
-/**
- * Scenarios without retained CIB evidence. Most bind a normative profile; a cumulative CIB profile
- * grown with standards-only schedules also appears here, provided `artifactCases` still binds it.
- */
-export const normativeArtifactCases = Object.freeze([
-  ...["invoice-approve", "invoice-reject", "invoice-manual", "serial-string", "serial-null"].map(name => Object.freeze({
-    scenarioRelativePath: `scenarios/structured-process-composition/${name}.scenario.json`,
-  })),
-  ...["order-nested", "order-revised", "order-null"].map(name => Object.freeze({
-    scenarioRelativePath: `scenarios/portable-business-values-handoff/${name}.scenario.json`,
-  })),
-  ...["credit-assessed", "credit-null"].map(name => Object.freeze({
-    scenarioRelativePath: `scenarios/portable-business-effect-data/${name}.scenario.json`,
-  })),
-  ...["order-approved", "order-null-risk", "claim-limits", "quote-signed"].map(name => Object.freeze({
-    scenarioRelativePath: `scenarios/nested-embedded-scope-data/${name}.scenario.json`,
-  })),
-  ...["loan-approved", "loan-null-applicant", "loan-unset-verdict"].map(name => Object.freeze({
-    scenarioRelativePath: `scenarios/call-variable-mapping/${name}.scenario.json`,
-  })),
-  ...["onboarding-setup-first", "onboarding-equipment-first", "audit-early-and-stale"].map(name => Object.freeze({
-    scenarioRelativePath: `scenarios/nested-embedded-scope-control/${name}.scenario.json`,
-  })),
-  ...["audit-interleaved-and-stale", "audit-reversed", "intake-reverse-assessments"].map(name => Object.freeze({
-    scenarioRelativePath: `scenarios/concurrent-embedded-activations/${name}.scenario.json`,
-  })),
-  ...["supplier-review-first", "supplier-effects-first", "claim-price-two-first", "claim-fetch-first"].map(name => Object.freeze({
-    scenarioRelativePath: `scenarios/concurrent-scope-service-tasks/${name}.scenario.json`,
-  })),
-  ...["claim-fetch-one-first", "claim-fetch-two-first", "facility-inspection"].map(name => Object.freeze({
-    scenarioRelativePath: `scenarios/concurrent-scope-data/${name}.scenario.json`,
-  })),
-  ...["supplier-compliance-first", "supplier-financial-first", "travel-request"].map(name => Object.freeze({
-    scenarioRelativePath: `scenarios/concurrent-mapped-calls/${name}.scenario.json`,
-  })),
-  ...["order-review-first", "order-pick-first", "loan-valuation-first", "loan-credit-first"].map(name => Object.freeze({
-    scenarioRelativePath: `scenarios/concurrent-structured-scope-data/${name}.scenario.json`,
-  })),
-  ...["claim-rework-then-approve", "claim-rework-then-reject", "contract-revise-then-sign",
-    "contract-revise-then-withdraw"].map(name => Object.freeze({
-    scenarioRelativePath: `scenarios/scope-reentry/${name}.scenario.json`,
-  })),
-  ...["equipment-return", "intake-illegible-twice-then-paper", "intake-digital"].map(name => Object.freeze({
-    scenarioRelativePath: `scenarios/pass-through-task/${name}.scenario.json`,
-  })),
-  ...["onboarding-documents-while-laptop-open", "onboarding-documents-first", "onboarding-laptop-first"].map(name => Object.freeze({
-    scenarioRelativePath: `scenarios/root-parallel-forks/${name}.scenario.json`,
-  })),
-  ...["complaint-urgent-billing", "complaint-delivery", "complaint-product"].map(name => Object.freeze({
-    scenarioRelativePath: `scenarios/exclusive-choice-arity/${name}.scenario.json`,
-  })),
-  ...["travel-rejected", "travel-by-phone", "travel-booked"].map(name => Object.freeze({
-    scenarioRelativePath: `scenarios/none-end-fan-in/${name}.scenario.json`,
-  })),
-  ...["relocation-packing-first", "relocation-movers-first", "invoice-settled"].map(name => Object.freeze({
-    scenarioRelativePath: `scenarios/pass-through-parallel-branches/${name}.scenario.json`,
-  })),
-  ...["warranty-passed", "warranty-rework", "onboarding-account-first", "onboarding-laptop-first"].map(name => Object.freeze({
-    scenarioRelativePath: `scenarios/none-intermediate-throw/${name}.scenario.json`,
-  })),
-  ...["claim-approved", "claim-rejected", "dispatch-packed-first", "dispatch-courier-first"].map(name => Object.freeze({
-    scenarioRelativePath: `scenarios/pass-through-implicit-split-merge/${name}.scenario.json`,
-  })),
-  ...["warranty-passed", "warranty-rework", "onboarding-account-first", "onboarding-laptop-first"].map(name => Object.freeze({
-    scenarioRelativePath: `scenarios/link-events/${name}.scenario.json`,
-  })),
-  ...["claim-direct", "claim-expert", "claim-direct-reopened"].map(name => Object.freeze({
-    scenarioRelativePath: `scenarios/activity-host-merge/${name}.scenario.json`,
-  })),
-  ...["onboarding-register-first", "onboarding-workstation-first"].map(name => Object.freeze({
-    scenarioRelativePath: `scenarios/scope-host-split/${name}.scenario.json`,
-  })),
-  ...["intake-archive-first", "intake-broker-first"].map(name => Object.freeze({
-    scenarioRelativePath: `scenarios/activity-host-split/${name}.scenario.json`,
-  })),
-  ...["purchase-approval-first", "purchase-budget-first", "invoice-valid", "invoice-corrected"].map(name => Object.freeze({
-    scenarioRelativePath: `scenarios/single-scope-models/${name}.scenario.json`,
-  })),
-  ...["offboarding-equipment-first", "offboarding-access-first", "office-move"].map(name => Object.freeze({
-    scenarioRelativePath: `scenarios/terminal-forks/${name}.scenario.json`,
-  })),
-  Object.freeze({ scenarioRelativePath: "scenarios/data-declaring-terminal-branches/expense-claim.scenario.json" }),
-  ...["account-all-checks-funds-last", "account-all-checks-identity-last", "account-residency-only", "account-standard-only",
-    "account-risk-and-online", "booking-extras-venue-first", "booking-extras-venue-last", "booking-no-extras"].map(name =>
-    Object.freeze({ scenarioRelativePath: `scenarios/inclusive-gateway-regions/${name}.scenario.json` })),
-  ...["shipping-notice", "claim-assessed-first", "claim-acknowledged-first"].map(name => Object.freeze({
-    scenarioRelativePath: `scenarios/send-task/${name}.scenario.json`,
-  })),
-  ...["urgent-travel", "medium-triage"].map(name => Object.freeze({
-    scenarioRelativePath: `scenarios/exclusive-choice-without-default/${name}.scenario.json`,
-  })),
-  ...["natural-order", "reverse-order-stale-and-cross-addressed", "guarantor-verified", "guarantor-absent"].map(name => Object.freeze({
-    scenarioRelativePath: `scenarios/repeated-nested-concurrent-calls/${name}.scenario.json`,
-  })),
-  ...["manifest-delivered", "manifest-payload-free-refused"].map(name => Object.freeze({
-    scenarioRelativePath: `scenarios/portable-business-message-payload/${name}.scenario.json`,
-  })),
-  Object.freeze({ scenarioRelativePath: "scenarios/call-activity-data-boundaries/string.scenario.json" }),
-  Object.freeze({ scenarioRelativePath: "scenarios/call-activity-data-boundaries/null.scenario.json" }),
-  ...["success-b-c-a", "success-b-a-c", "success-c-b-a", "failure-a", "failure-b", "failure-c"].map((name) => Object.freeze({
-    scenarioRelativePath: `scenarios/compensation/${name}.scenario.json`,
-  })),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/exclusive-gateway-simple-boolean/scenario.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/timer-user-task-composition/scenario.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/intermediate-catch-timer-alarm-debounce/scenario.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/intermediate-catch-message/scenario.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/message-payload-catch/supplied-scalar.scenario.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/message-payload-catch/supplied-null.scenario.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/message-payload-catch/absent-payload.scenario.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/inclusive-gateway-selected-branches/one-true.scenario.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/inclusive-gateway-selected-branches/both-true-a-then-b.scenario.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/inclusive-gateway-selected-branches/both-true-b-then-a.scenario.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/inclusive-gateway-selected-branches/default.scenario.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/event-based-gateway-message-timer/message-wins.scenario.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/event-based-gateway-message-timer/timer-wins.scenario.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/called-process-call-activity/scenario.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/activity-boundary-timer/activity-wins.scenario.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/activity-boundary-timer/deadline-wins.scenario.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/activity-boundary-message/task-wins.scenario.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/activity-boundary-message/message-wins.scenario.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/subprocess-boundary-timer/scope-completes.scenario.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/subprocess-boundary-timer/deadline-wins.scenario.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/non-interrupting-boundary-timer/deadline-then-both-branches.scenario.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/non-interrupting-boundary-timer/completion-before-the-deadline.scenario.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/user-task-preserved-notation/scenario.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/user-task-cycle/scenario.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/message-start-event/scenario.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/timer-start-event/scenario.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/terminate-end-event/trigger-first.scenario.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/terminate-end-event/sibling-first.scenario.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/terminate-end-event/stale-sibling-after-termination.scenario.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/configured-task/scenario.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/expense-exception-review/approve.scenario.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/expense-exception-review/request-changes.scenario.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/expense-exception-review/abort.scenario.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/sequential-multi-instance/natural.scenario.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/sequential-multi-instance/interrupted.scenario.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/parallel-multi-instance/all.scenario.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/parallel-multi-instance/first.scenario.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/parallel-multi-instance/interrupted.scenario.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/activity-data-input-user-task/absent.scenario.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/activity-data-input-user-task/present.scenario.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/activity-data-input-user-task/null.scenario.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/activity-data-output-user-task/supplied.scenario.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/activity-data-output-user-task/null.scenario.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/activity-data-output-user-task/omitted.scenario.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/activity-data-input-output-user-task/present.scenario.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/activity-data-input-output-user-task/null.scenario.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/activity-data-input-output-user-task/absent.scenario.json",
-  }),
-  Object.freeze({
-    scenarioRelativePath:
-      "scenarios/activity-data-input-output-user-task/omitted.scenario.json",
-  }),
-  Object.freeze({ scenarioRelativePath: "scenarios/repeatable-event-subscriptions/boundary-message-repeat.scenario.json" }),
-  Object.freeze({ scenarioRelativePath: "scenarios/repeatable-event-subscriptions/boundary-message-completion-first.scenario.json" }),
-  Object.freeze({ scenarioRelativePath: "scenarios/repeatable-event-subscriptions/boundary-timer-repeat.scenario.json" }),
-  Object.freeze({ scenarioRelativePath: "scenarios/repeatable-event-subscriptions/boundary-timer-completion-first.scenario.json" }),
-  Object.freeze({ scenarioRelativePath: "scenarios/repeatable-event-subscriptions/subprocess-boundary-timer-repeat.scenario.json" }),
-  Object.freeze({ scenarioRelativePath: "scenarios/repeatable-event-subscriptions/subprocess-boundary-timer-completion-first.scenario.json" }),
-  Object.freeze({ scenarioRelativePath: "scenarios/repeatable-event-subscriptions/subprocess-boundary-one-shot-fire.scenario.json" }),
-  Object.freeze({ scenarioRelativePath: "scenarios/repeatable-event-subscriptions/message-host-with-child-entry-repeat.scenario.json" }),
-  Object.freeze({ scenarioRelativePath: "scenarios/repeatable-event-subscriptions/catch-message-resume.scenario.json" }),
-  Object.freeze({ scenarioRelativePath: "scenarios/repeatable-event-subscriptions/catch-message-cancel.scenario.json" }),
-  Object.freeze({ scenarioRelativePath: "scenarios/repeatable-event-subscriptions/catch-timer-resume.scenario.json" }),
-  Object.freeze({ scenarioRelativePath: "scenarios/repeatable-event-subscriptions/catch-timer-cancel.scenario.json" }),
-  Object.freeze({ scenarioRelativePath: "scenarios/repeatable-event-subscriptions/receive-task-resume.scenario.json" }),
-  Object.freeze({ scenarioRelativePath: "scenarios/repeatable-event-subscriptions/receive-task-cancel.scenario.json" }),
-  Object.freeze({ scenarioRelativePath: "scenarios/transaction-cancellation/empty.scenario.json" }),
-  Object.freeze({ scenarioRelativePath: "scenarios/transaction-cancellation/retained-active.scenario.json" }),
-  Object.freeze({ scenarioRelativePath: "scenarios/transaction-cancellation/retained-ended.scenario.json" }),
-  Object.freeze({ scenarioRelativePath: "scenarios/transaction-cancellation/handler-failed.scenario.json" }),
-  Object.freeze({ scenarioRelativePath: "scenarios/serial-business-task-composition/scenario.json" }),
-  Object.freeze({ scenarioRelativePath: "scenarios/mixed-task-control-flow/scenario.json" }),
-  Object.freeze({ scenarioRelativePath: "scenarios/mixed-task-business-error/scenario.json" }),
-  Object.freeze({ scenarioRelativePath: "scenarios/serial-business-task-composition/public-delivery.scenario.json" }),
-  Object.freeze({ scenarioRelativePath: "scenarios/mixed-task-control-flow/public-delivery.scenario.json" }),
-  Object.freeze({ scenarioRelativePath: "scenarios/mixed-task-business-error/public-delivery.scenario.json" }),
-]);
+import { compareCanonicalStrings } from "./strict-json.ts";
 
 export type ArtifactCase = Readonly<{
   scenarioRelativePath: string;
@@ -482,3 +22,36 @@ export type ArtifactCase = Readonly<{
 export type NormativeArtifactCase = Readonly<{
   scenarioRelativePath: string;
 }>;
+
+const projectRoot = fileURLToPath(new URL("../", import.meta.url));
+
+/** The evidence path a scenario path pairs with, whether or not that file exists. */
+export function evidenceRelativePathFor(scenarioRelativePath: string): string {
+  return scenarioRelativePath.replace(/scenario\.json$/u, "cibseven-evidence.json");
+}
+
+function discoveredScenarioRelativePaths(): ReadonlyArray<string> {
+  const entries = readdirSync(path.join(projectRoot, "scenarios"), { recursive: true, withFileTypes: true });
+  return entries
+    .filter((entry) => entry.isFile() && (entry.name === "scenario.json" || entry.name.endsWith(".scenario.json")))
+    .map((entry) =>
+      path.posix.join("scenarios", path.relative(path.join(projectRoot, "scenarios"), entry.parentPath).split(path.sep).join("/"), entry.name))
+    .sort(compareCanonicalStrings);
+}
+
+const scenarioRelativePaths = discoveredScenarioRelativePaths();
+
+export const artifactCases: ReadonlyArray<ArtifactCase> = Object.freeze(
+  scenarioRelativePaths
+    .filter((scenarioRelativePath) => existsSync(path.join(projectRoot, evidenceRelativePathFor(scenarioRelativePath))))
+    .map((scenarioRelativePath) => Object.freeze({
+      scenarioRelativePath,
+      evidenceRelativePath: evidenceRelativePathFor(scenarioRelativePath),
+    })),
+);
+
+export const normativeArtifactCases: ReadonlyArray<NormativeArtifactCase> = Object.freeze(
+  scenarioRelativePaths
+    .filter((scenarioRelativePath) => !existsSync(path.join(projectRoot, evidenceRelativePathFor(scenarioRelativePath))))
+    .map((scenarioRelativePath) => Object.freeze({ scenarioRelativePath })),
+);

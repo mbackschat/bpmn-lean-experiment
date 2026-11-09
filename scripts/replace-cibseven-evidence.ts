@@ -13,10 +13,7 @@ import { artifactCases } from "./contract-artifact-cases.ts";
 import { resolveJavaHome } from "./java-home.ts";
 import { runCommand } from "./run-command.ts";
 import { parseWireJson, parseWireJsonBytes } from "./strict-json.ts";
-import type {
-  Scenario,
-  ScenarioResult,
-} from "../packages/semantic-core/src/index.ts";
+import type { CibSevenEvidence, ScenarioDocument } from "./contract-artifacts.ts";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 
@@ -39,8 +36,8 @@ type SemanticProfile = Readonly<{
 
 type CibRunnerResult = Readonly<{
   scenarioId: string;
-  outcome: ScenarioResult["outcome"];
-  trace: ScenarioResult["trace"];
+  outcome: CibSevenEvidence["result"]["outcome"];
+  trace: CibSevenEvidence["result"]["trace"];
   diagnostics: Readonly<{
     engineVersion: string;
     databaseVersion: string;
@@ -139,7 +136,7 @@ function requireCleanDiagnostics(
 }
 
 async function runCibBatch(
-  scenarios: ReadonlyArray<Scenario>,
+  scenarios: ReadonlyArray<ScenarioDocument>,
   temporaryDirectory: string,
   engineVersion: string,
   effectSchedule:
@@ -220,7 +217,7 @@ export function cibEvidenceEffectSchedule(
 async function replaceEvidence() {
   const sources = await Promise.all(
     artifactCases.map(async (artifactCase) => {
-      const scenario = await readJsonWithBytes<Scenario>(
+      const scenario = await readJsonWithBytes<ScenarioDocument>(
         artifactCase.scenarioRelativePath,
       );
       const profile = await readJsonWithBytes<SemanticProfile>(

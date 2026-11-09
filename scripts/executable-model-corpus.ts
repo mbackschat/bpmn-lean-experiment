@@ -1,10 +1,19 @@
+/**
+ * The executable BPMN model corpus inspection: every manifest model's exact source bytes, construct inventory, clone
+ * family and admission, the MVP capability catalog against what the discovered scenarios exercise, and the generated
+ * corpus map.
+ *
+ * Scenarios are discovered from directories, not registered (guard 14 of the kernel rewrite proposal): a retained model
+ * binds the discovered scenario at its `scenarioRelativePath`, whose identifier is the model's `pipelineCaseId`.
+ * Admission is the kernel's own decision (the kernel reader, then `Kernel.Admission`), supplied by the caller so this
+ * module stays free of package code; a model whose recorded admission differs from the kernel's is listed in
+ * `admissionMismatches`, never reconciled here. A rejected model's recorded digest is the SHA-256 of the kernel's
+ * stable refusal code.
+ */
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 
-import { compareCanonicalStrings, isWellFormedWireString } from "../packages/semantic-core/src/wire.ts";
-import type { SourceOverlayIdentity } from "../packages/semantic-core/src/source-overlay-identity.ts";
-import type { SourceOverlaySelection } from "../packages/bpmn-source/src/contracts.ts";
 import {
   CibCapabilityEvidenceKind,
   mvpBpmnCapabilities,
@@ -18,10 +27,10 @@ import {
   parseXmlElements,
 } from "./minimal-xml-tree.ts";
 import { detectExecutableBpmnCapabilities } from "./executable-model-capabilities.ts";
+import { compareCanonicalStrings } from "./strict-json.ts";
 import type {
   CorpusModel,
   ExecutableModelCorpusManifest,
-  ExternalCorpusSource,
 } from "./executable-model-corpus-manifest.ts";
 import {
   readExternalCorpusModel,
@@ -37,43 +46,26 @@ export type {
   ExternalCorpusSource,
 } from "./executable-model-corpus-manifest.ts";
 
-type PipelineCase = Readonly<{
+/** One discovered scenario as the corpus reads it. */
+export type CorpusScenario = Readonly<{
   id: string;
-  scenarioRelativePath: string;
-  bpmnRelativePath: string;
-  sourceOverlayRelativePath?: string;
-  cib: Readonly<{ version: "2.0.0" | "2.2.0" }> | null;
-  temporalRelation: string;
-  injectMutation: unknown;
+  relativePath: string;
+  kind: "scenario" | "populationScenario";
+  profile: string;
+  /** Each bound BPMN source, in scenario order. */
+  sources: ReadonlyArray<Readonly<{ relativePath: string; sha256: string }>>;
+  /** The CIB Seven release of the retained evidence beside the scenario, or `null` when none is retained. */
+  retainedEvidenceVersion: string | null;
 }>;
 
-type PopulationCase = Readonly<{
-  id: string;
-  scenarioRelativePath: string;
-}>;
+export type CorpusAdmission = Readonly<{ status: "accepted" } | { status: "rejected"; refusal: string }>;
 
-export type CorpusCompilerDiagnostic = Readonly<{
-  code: string;
-  element: Readonly<{
-    type: string | null;
-    subject: string | null;
-    requiredCapability: string | null;
-  }> | null;
-}>;
-
-export type CorpusCompiler = (
-  request: Readonly<{
-    bytes: Uint8Array;
-    sourceId: string;
-    expectedSha256: string;
-    semanticProfile: string;
-    sourceOverlay: SourceOverlaySelection | null;
-    limits: Readonly<{ maxBytes: number; parserDeadlineMs: number }>;
-  }>,
-) => Promise<Readonly<{
-  status: "accepted" | "rejected";
-  diagnostics: ReadonlyArray<CorpusCompilerDiagnostic>;
-}>>;
+/** Reads and admits one model: a retained model with the scenario it binds, an external one with `null`. */
+export type CorpusAdmitter = (
+  model: CorpusModel,
+  bytes: Uint8Array,
+  scenario: CorpusScenario | null,
+) => Promise<CorpusAdmission>;
 
 export type CorpusBlocker = Readonly<{
   key: string;
@@ -87,6 +79,12 @@ export type CorpusMechanismGap = Readonly<{
   models: number;
 }>;
 
+export type CorpusAdmissionMismatch = Readonly<{
+  model: string;
+  recorded: CorpusModel["admission"]["kind"];
+  kernel: CorpusAdmission;
+}>;
+
 export type CorpusModelReport = Readonly<{
   id: string;
   title: string;
@@ -96,9 +94,10 @@ export type CorpusModelReport = Readonly<{
   sourcePath: string;
   license: string;
   profile: string;
-  admission: CorpusModel["admission"]["kind"];
+  /** The kernel's admission decision. */
+  admission: CorpusAdmission["status"];
   pipelineCaseId: string | null;
-  cibRelation: "pipeline" | "notSelected" | "notApplicable";
+  cibRelation: "retainedEvidence" | "notSelected" | "notApplicable";
   product2: CorpusModel["product2"]["kind"];
   constructs: ReadonlyArray<string>;
   mechanisms: ReadonlyArray<string>;
@@ -113,6 +112,7 @@ export type MvpCapabilityReport = MvpBpmnCapability & Readonly<{
 export type ExecutableModelCorpusReport = Readonly<{
   kind: "executableBpmnModelCorpusReport";
   models: ReadonlyArray<CorpusModelReport>;
+  admissionMismatches: ReadonlyArray<CorpusAdmissionMismatch>;
   unsupportedMechanisms: ReadonlyArray<CorpusMechanismGap>;
   blockers: ReadonlyArray<CorpusBlocker>;
   mvpCapabilities: ReadonlyArray<MvpCapabilityReport>;
@@ -123,6 +123,11 @@ export type ExecutableModelCorpusReport = Readonly<{
   rejectedModels: number;
   catalogReadyModels: number;
 }>;
+
+/** The recorded digest of a rejected model: the SHA-256 of the kernel's stable refusal code. */
+export function refusalDigest(refusal: string): string {
+  return sha256(refusal);
+}
 
 const corpusConstructs = new Set([
   "boundaryEvent",
@@ -158,37 +163,8 @@ const corpusConstructs = new Set([
   "userTask",
 ]);
 
-const maxCorpusModelBytes = 1024 * 1024;
-
 function sha256(bytes: Uint8Array | string): string {
   return createHash("sha256").update(bytes).digest("hex");
-}
-
-function normalizedDiagnosticDigest(
-  diagnostics: ReadonlyArray<CorpusCompilerDiagnostic>,
-): string {
-  const normalized = diagnostics.map(({ code, element }) => ({
-    code,
-    element: element === null
-      ? null
-      : {
-          type: element.type,
-          subject: element.subject,
-          requiredCapability: element.requiredCapability,
-        },
-  }));
-  return sha256(JSON.stringify(normalized));
-}
-
-function blockerKey(diagnostic: CorpusCompilerDiagnostic): string {
-  if (diagnostic.element === null) {
-    return `${diagnostic.code}:document`;
-  }
-  return [
-    diagnostic.element.requiredCapability ?? diagnostic.code,
-    diagnostic.element.type ?? "unknown",
-    diagnostic.element.subject ?? "element",
-  ].join(":");
 }
 
 function detectedConstructs(xml: string): ReadonlyArray<string> {
@@ -200,137 +176,45 @@ function detectedConstructs(xml: string): ReadonlyArray<string> {
   return [...names].sort();
 }
 
-type BpmnBinding = Readonly<{
-  relativePath: string;
-  sha256: string;
-  sourceOverlay: SourceOverlayIdentity | null;
-}>;
-
-type ScenarioBinding =
-  | Readonly<{
-    kind: "scenario";
-    id: string;
-    profile: string;
-    bpmn: BpmnBinding;
-  }>
-  | Readonly<{
-    kind: "enginePopulationScenario";
-    id: string;
-    profile: string;
-    definitions: ReadonlyArray<BpmnBinding>;
-    executionTargets: Readonly<{
-      lean: true;
-      typeScriptCore: true;
-      temporal: true;
-      cib: null;
-    }>;
-  }>;
-
-function bpmnBinding(value: unknown, label: string): BpmnBinding {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) {
-    throw new TypeError(`${label} must be an object`);
-  }
-  const bpmn = value as Record<string, unknown>;
-  const relativePath = bpmn.relativePath;
-  const sha256 = bpmn.sha256;
-  if (typeof relativePath !== "string" || relativePath.length === 0) {
-    throw new TypeError(`${label}.relativePath must be a nonempty string`);
-  }
-  if (typeof sha256 !== "string" || !/^[a-f0-9]{64}$/u.test(sha256)) {
-    throw new TypeError(`${label}.sha256 must be a lowercase SHA-256 digest`);
-  }
-  const sourceOverlay = bpmn.sourceOverlay;
-  if (sourceOverlay === null) return { relativePath, sha256, sourceOverlay };
-  if (typeof sourceOverlay !== "object" || sourceOverlay === null || Array.isArray(sourceOverlay)) {
-    throw new TypeError(`${label}.sourceOverlay must be null or an exact identity`);
-  }
-  const overlay = sourceOverlay as Record<string, unknown>;
-  if (Object.keys(overlay).length !== 2 || !isWellFormedWireString(overlay.id) || overlay.id.length === 0 ||
-      typeof overlay.sha256 !== "string" || !/^[a-f0-9]{64}$/u.test(overlay.sha256)) {
-    throw new TypeError(`${label}.sourceOverlay must be null or an exact identity`);
-  }
-  return { relativePath, sha256, sourceOverlay: { id: overlay.id, sha256: overlay.sha256 } };
-}
-
-async function readBoundSourceOverlay(
-  binding: BpmnBinding,
-  selectedPath: string | undefined,
-  projectRoot: string,
-  modelId: string,
-): Promise<SourceOverlaySelection | null> {
-  if (binding.sourceOverlay === null) {
-    if (selectedPath !== undefined) throw new Error(`model ${modelId} source overlay path requires a scenario identity`);
-    return null;
-  }
-  if (selectedPath === undefined) throw new Error(`model ${modelId} source overlay requires a selected pipeline path`);
-  return { ...binding.sourceOverlay, bytes: await readFile(path.join(projectRoot, selectedPath)) };
-}
-
-function populationExecutionTargets(
-  value: unknown,
-  label: string,
-): Extract<ScenarioBinding, { kind: "enginePopulationScenario" }>["executionTargets"] {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) {
-    throw new TypeError(`${label} must be an object`);
-  }
-  const targets = value as Record<string, unknown>;
-  if (
-    targets.lean !== true ||
-    targets.typeScriptCore !== true ||
-    targets.temporal !== true ||
-    targets.cib !== null
-  ) {
-    throw new TypeError(
-      `${label} must select Lean, TypeScript, and Temporal with CIB absent`,
+function ranked(
+  occurrences: ReadonlyMap<string, Readonly<{ models: ReadonlySet<string>; cloneFamilies: ReadonlySet<string> }>>,
+): ReadonlyArray<CorpusBlocker> {
+  return [...occurrences.entries()]
+    .map(([key, occurrence]) => Object.freeze({
+      key,
+      cloneFamilies: occurrence.cloneFamilies.size,
+      models: occurrence.models.size,
+    }))
+    .sort((left, right) =>
+      right.cloneFamilies - left.cloneFamilies ||
+      right.models - left.models ||
+      compareCanonicalStrings(left.key, right.key)
     );
-  }
-  return { lean: true, typeScriptCore: true, temporal: true, cib: null };
 }
 
-function scenarioBinding(value: unknown, relativePath: string): ScenarioBinding {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) {
-    throw new TypeError(`scenario ${relativePath} must be an object`);
+function count(
+  occurrences: Map<string, { models: Set<string>; cloneFamilies: Set<string> }>,
+  key: string,
+  model: CorpusModel,
+): void {
+  const occurrence = occurrences.get(key) ?? { models: new Set<string>(), cloneFamilies: new Set<string>() };
+  occurrence.models.add(model.id);
+  occurrence.cloneFamilies.add(model.cloneFamily);
+  occurrences.set(key, occurrence);
+}
+
+/** The discovered scenario a retained model binds, checked against the model's recorded identity and source. */
+function boundScenario(model: CorpusModel, scenarios: ReadonlyArray<CorpusScenario>): CorpusScenario {
+  if (model.source.kind !== "retainedScenario") throw new TypeError(`model ${model.id} is not retained`);
+  const source = model.source;
+  const scenario = scenarios.find(({ relativePath }) => relativePath === source.scenarioRelativePath);
+  if (scenario === undefined) throw new Error(`model ${model.id} has no discovered scenario at ${source.scenarioRelativePath}`);
+  const matching = scenario.sources.filter(({ relativePath, sha256: digest }) =>
+    relativePath === source.bpmnRelativePath && digest === source.sha256);
+  if (scenario.id !== model.pipelineCaseId || scenario.profile !== model.profile || matching.length !== 1) {
+    throw new Error(`model ${model.id} differs from its discovered scenario ${scenario.relativePath}`);
   }
-  const scenario = value as Record<string, unknown>;
-  const id = scenario.id;
-  const profile = scenario.profile;
-  if (typeof id !== "string" || id.length === 0) {
-    throw new TypeError(`scenario ${relativePath}.id must be a nonempty string`);
-  }
-  if (typeof profile !== "string" || profile.length === 0) {
-    throw new TypeError(`scenario ${relativePath}.profile must be a nonempty string`);
-  }
-  if (scenario.kind === "enginePopulationScenario") {
-    if (!Array.isArray(scenario.definitions) || scenario.definitions.length === 0) {
-      throw new TypeError(
-        `scenario ${relativePath}.definitions must be a nonempty array`,
-      );
-    }
-    return {
-      kind: "enginePopulationScenario",
-      id,
-      profile,
-      definitions: scenario.definitions.map((definition, index) =>
-        bpmnBinding(
-          definition,
-          `scenario ${relativePath}.definitions[${index}]`,
-        )
-      ),
-      executionTargets: populationExecutionTargets(
-        scenario.executionTargets,
-        `scenario ${relativePath}.executionTargets`,
-      ),
-    };
-  }
-  if (scenario.kind !== "scenario") {
-    throw new TypeError(`scenario ${relativePath}.kind is unsupported`);
-  }
-  return {
-    kind: "scenario",
-    id,
-    profile,
-    bpmn: bpmnBinding(scenario.bpmn, `scenario ${relativePath}.bpmn`),
-  };
+  return scenario;
 }
 
 export async function inspectExecutableModelCorpus(
@@ -338,9 +222,8 @@ export async function inspectExecutableModelCorpus(
   options: Readonly<{
     projectRoot: string;
     externalRoot: string;
-    pipelineCases: ReadonlyArray<PipelineCase>;
-    populationCases: ReadonlyArray<PopulationCase>;
-    compileModel: CorpusCompiler;
+    scenarios: ReadonlyArray<CorpusScenario>;
+    admitModel: CorpusAdmitter;
   }>,
 ): Promise<ExecutableModelCorpusReport> {
   const externalById = new Map(
@@ -350,82 +233,33 @@ export async function inspectExecutableModelCorpus(
     await verifyExternalCorpusSource(source, options.externalRoot);
   }
 
-  const ordinaryCaseIds = new Set(options.pipelineCases.map(({ id }) => id));
-  const populationBindings = new Map<
-    string,
-    Extract<ScenarioBinding, { kind: "enginePopulationScenario" }>
-  >();
-  for (const populationCase of options.populationCases) {
-    if (
-      ordinaryCaseIds.has(populationCase.id) ||
-      populationBindings.has(populationCase.id)
-    ) {
-      throw new Error(`duplicate protected pipeline case ${populationCase.id}`);
-    }
-    const binding = scenarioBinding(
-      JSON.parse(
-        await readFile(
-          path.join(options.projectRoot, populationCase.scenarioRelativePath),
-          "utf8",
-        ),
-      ),
-      populationCase.scenarioRelativePath,
-    );
-    if (
-      binding.kind !== "enginePopulationScenario" ||
-      binding.id !== populationCase.id
-    ) {
-      throw new Error(
-        `population case ${populationCase.id} has no exact population scenario`,
-      );
-    }
-    populationBindings.set(populationCase.id, binding);
-  }
-
-  const supportedCapabilities = new Set<MvpBpmnCapabilityId>();
-  for (const relativePath of new Set(
-    [
-      ...options.pipelineCases.map(({ bpmnRelativePath }) => bpmnRelativePath),
-      ...[...populationBindings.values()].flatMap(({ definitions }) =>
-        definitions.map(({ relativePath }) => relativePath)
-      ),
-    ],
-  )) {
+  // The catalog states what the discovered scenarios exercise, no more and no less.
+  const exercised = new Set<MvpBpmnCapabilityId>();
+  for (const relativePath of new Set(options.scenarios.flatMap(({ sources }) => sources.map((source) => source.relativePath)))) {
     const xml = await readFile(path.join(options.projectRoot, relativePath), "utf8");
-    for (const capability of detectExecutableBpmnCapabilities(xml)) {
-      supportedCapabilities.add(capability);
-    }
+    for (const capability of detectExecutableBpmnCapabilities(xml)) exercised.add(capability);
   }
-  const catalogCapabilities = new Set(
-    mvpBpmnCapabilities.map(({ id }) => id),
-  );
-  const catalogDrift = [...new Set([...supportedCapabilities, ...catalogCapabilities])]
-    .filter((id) => supportedCapabilities.has(id) !== catalogCapabilities.has(id));
+  const catalogCapabilities = new Set(mvpBpmnCapabilities.map(({ id }) => id));
+  const catalogDrift = [...new Set([...exercised, ...catalogCapabilities])]
+    .filter((id) => exercised.has(id) !== catalogCapabilities.has(id))
+    .sort(compareCanonicalStrings);
   if (catalogDrift.length > 0) {
-    throw new Error(`MVP capability catalog differs from registered support: ${catalogDrift.join(", ")}`);
+    throw new Error(`MVP capability catalog differs from the discovered scenarios: ${catalogDrift.join(", ")}`);
   }
   for (const capability of mvpBpmnCapabilities) {
     const cibEvidence = capability.cibEvidence;
-    if (cibEvidence.kind !== CibCapabilityEvidenceKind.ExactSelectedProfile) {
-      continue;
-    }
-    const pipelineCase = options.pipelineCases.find(
-      ({ id }) => id === cibEvidence.pipelineCaseId,
-    );
-    if (
-      pipelineCase?.cib === null ||
-      pipelineCase?.cib?.version !== cibEvidence.version
-    ) {
-      throw new Error(`MVP capability ${capability.id} has no exact CIB pipeline evidence`);
+    if (cibEvidence.kind !== CibCapabilityEvidenceKind.ExactSelectedProfile) continue;
+    const scenario = options.scenarios.find(({ id, kind }) => id === cibEvidence.pipelineCaseId && kind === "scenario");
+    if (scenario?.retainedEvidenceVersion !== cibEvidence.version) {
+      throw new Error(`MVP capability ${capability.id} has no retained CIB Seven ${cibEvidence.version} evidence`);
     }
   }
 
   const reports: Array<CorpusModelReport> = [];
-  const blockerOccurrences = new Map<
-    string,
-    { models: Set<string>; cloneFamilies: Set<string> }
-  >();
+  const mismatches: Array<CorpusAdmissionMismatch> = [];
+  const blockerOccurrences = new Map<string, { models: Set<string>; cloneFamilies: Set<string> }>();
   const cloneFamilyBySha = new Map<string, string>();
+  const admittedIds = new Set<string>();
 
   for (const model of manifest.models) {
     const bytes = model.source.kind === "retainedScenario"
@@ -445,136 +279,36 @@ export async function inspectExecutableModelCorpus(
     }
     cloneFamilyBySha.set(actualSha, model.cloneFamily);
 
-    const actualConstructs = detectedConstructs(
-      new TextDecoder("utf-8", { fatal: true }).decode(bytes),
-    );
+    const xml = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+    const actualConstructs = detectedConstructs(xml);
     if (JSON.stringify(actualConstructs) !== JSON.stringify([...model.constructs].sort())) {
       throw new Error(
         `model ${model.id} construct inventory differs: expected ${model.constructs.join(", ")} but found ${actualConstructs.join(", ")}`,
       );
     }
-    const capabilities = model.source.kind === "retainedScenario"
-      ? detectExecutableBpmnCapabilities(new TextDecoder("utf-8", { fatal: true }).decode(bytes))
-      : [];
 
-    let sourceOverlay: SourceOverlaySelection | null = null;
-    let pipelineCase: PipelineCase | undefined;
-    let populationCase: PopulationCase | undefined;
+    let scenario: CorpusScenario | null = null;
     let license: string;
     if (model.source.kind === "retainedScenario") {
-      const retainedSource = model.source;
-      license = retainedSource.license;
-      const scenario = scenarioBinding(
-        JSON.parse(
-          await readFile(
-            path.join(options.projectRoot, retainedSource.scenarioRelativePath),
-            "utf8",
-          ),
-        ),
-        retainedSource.scenarioRelativePath,
-      );
-      const evidenceCaseId = model.pipelineCaseId;
-      if (
-        evidenceCaseId === null ||
-        scenario.profile !== model.profile ||
-        scenario.id !== evidenceCaseId
-      ) {
-        throw new Error(`model ${model.id} differs from its retained scenario binding`);
-      }
-      switch (scenario.kind) {
-        case "scenario":
-          pipelineCase = options.pipelineCases.find(
-            ({ id }) => id === evidenceCaseId,
-          );
-          if (
-            scenario.bpmn.relativePath !== retainedSource.bpmnRelativePath ||
-            scenario.bpmn.sha256 !== retainedSource.sha256 ||
-            pipelineCase === undefined ||
-            pipelineCase.scenarioRelativePath !==
-              retainedSource.scenarioRelativePath ||
-            pipelineCase.bpmnRelativePath !== retainedSource.bpmnRelativePath ||
-            typeof pipelineCase.injectMutation !== "function" ||
-            pipelineCase.temporalRelation.length === 0
-          ) {
-            throw new Error(`model ${model.id} has no exact protected pipeline route`);
-          }
-          sourceOverlay = await readBoundSourceOverlay(
-            scenario.bpmn, pipelineCase.sourceOverlayRelativePath, options.projectRoot, model.id,
-          );
-          break;
-        case "enginePopulationScenario": {
-          populationCase = options.populationCases.find(
-            ({ id }) => id === evidenceCaseId,
-          );
-          const registeredBinding = populationBindings.get(evidenceCaseId);
-          const matchingDefinitions = scenario.definitions.filter(
-            (definition) =>
-              definition.relativePath === retainedSource.bpmnRelativePath &&
-              definition.sha256 === retainedSource.sha256,
-          );
-          if (
-            populationCase === undefined ||
-            populationCase.scenarioRelativePath !==
-              retainedSource.scenarioRelativePath ||
-            registeredBinding?.profile !== scenario.profile ||
-            matchingDefinitions.length !== 1
-          ) {
-            throw new Error(
-              `model ${model.id} has no exact protected population route`,
-            );
-          }
-          const definition = matchingDefinitions[0];
-          if (definition === undefined) throw new Error(`model ${model.id} has no bound definition`);
-          sourceOverlay = await readBoundSourceOverlay(definition, undefined, options.projectRoot, model.id);
-          break;
-        }
-      }
+      scenario = boundScenario(model, options.scenarios);
+      license = model.source.license;
     } else {
       const external = externalById.get(model.source.externalSourceId);
-      if (external === undefined) {
-        throw new Error(`model ${model.id} external source is absent`);
-      }
+      if (external === undefined) throw new Error(`model ${model.id} external source is absent`);
       license = external.license;
     }
 
-    const compilation = await options.compileModel({
-      bytes,
-      sourceId: model.id,
-      expectedSha256: model.source.sha256,
-      semanticProfile: model.profile,
-      sourceOverlay,
-      limits: { maxBytes: maxCorpusModelBytes, parserDeadlineMs: 1_000 },
-    });
-    const expectedStatus = model.admission.kind;
-    if (compilation.status !== expectedStatus) {
-      throw new Error(
-        `model ${model.id} expected ${expectedStatus} admission but was ${compilation.status}`,
-      );
+    const admission = await options.admitModel(model, bytes, scenario);
+    const recordedDigestDiffers = model.admission.kind === "rejected" && admission.status === "rejected" &&
+      model.admission.diagnosticDigest !== refusalDigest(admission.refusal);
+    if (admission.status !== model.admission.kind || recordedDigestDiffers) {
+      mismatches.push({ model: model.id, recorded: model.admission.kind, kernel: admission });
     }
-    if (
-      model.admission.kind === "rejected" &&
-      normalizedDiagnosticDigest(compilation.diagnostics) !==
-        model.admission.diagnosticDigest
-    ) {
-      throw new Error(`model ${model.id} admission diagnostics changed`);
-    }
-    const blockers = compilation.status === "rejected"
-      ? [...new Set(compilation.diagnostics.map(blockerKey))].sort()
-      : [];
-    for (const key of blockers) {
-      const occurrence = blockerOccurrences.get(key) ?? {
-        models: new Set<string>(),
-        cloneFamilies: new Set<string>(),
-      };
-      occurrence.models.add(model.id);
-      occurrence.cloneFamilies.add(model.cloneFamily);
-      blockerOccurrences.set(key, occurrence);
-    }
+    if (admission.status === "accepted") admittedIds.add(model.id);
+    const blockers = admission.status === "rejected" ? [admission.refusal] : [];
+    for (const key of blockers) count(blockerOccurrences, key, model);
     if (model.product2.kind === "journeyBacked" || model.product2.kind === "guidedJourneyBacked") {
-      await readFile(path.join(
-        options.projectRoot,
-        model.product2.journeyTestRelativePath as string,
-      ));
+      await readFile(path.join(options.projectRoot, model.product2.journeyTestRelativePath as string));
     }
 
     reports.push(Object.freeze({
@@ -583,22 +317,18 @@ export async function inspectExecutableModelCorpus(
       businessPurpose: model.businessPurpose,
       cloneFamily: model.cloneFamily,
       sourceKind: model.source.kind,
-      sourcePath: model.source.kind === "retainedScenario"
-        ? model.source.bpmnRelativePath
-        : model.source.relativePath,
+      sourcePath: model.source.kind === "retainedScenario" ? model.source.bpmnRelativePath : model.source.relativePath,
       license,
       profile: model.profile,
-      admission: model.admission.kind,
+      admission: admission.status,
       pipelineCaseId: model.pipelineCaseId,
-      cibRelation: populationCase !== undefined
-        ? "notSelected"
-        : pipelineCase === undefined
+      cibRelation: scenario === null
         ? "notApplicable"
-        : pipelineCase.cib === null ? "notSelected" : "pipeline",
+        : scenario.retainedEvidenceVersion === null ? "notSelected" : "retainedEvidence",
       product2: model.product2.kind,
       constructs: Object.freeze([...model.constructs]),
       mechanisms: Object.freeze([...model.mechanisms]),
-      capabilities,
+      capabilities: model.source.kind === "retainedScenario" ? detectExecutableBpmnCapabilities(xml) : [],
       blockers: Object.freeze(blockers),
     }));
   }
@@ -613,70 +343,28 @@ export async function inspectExecutableModelCorpus(
     .filter(({ retainedModelIds }) => retainedModelIds.length === 0)
     .map(({ id }) => id);
   if (uncoveredMvpCapabilities.length > 0) {
-    throw new Error(
-      `retained MVP models do not cover ${uncoveredMvpCapabilities.join(", ")}`,
-    );
+    throw new Error(`retained MVP models do not cover ${uncoveredMvpCapabilities.join(", ")}`);
   }
 
-  const blockers = [...blockerOccurrences.entries()]
-    .map(([key, occurrence]) => Object.freeze({
-      key,
-      cloneFamilies: occurrence.cloneFamilies.size,
-      models: occurrence.models.size,
-    }))
-    .sort((left, right) =>
-      right.cloneFamilies - left.cloneFamilies ||
-      right.models - left.models ||
-      compareCanonicalStrings(left.key, right.key)
-    );
   const supportedMechanisms = new Set(
-    manifest.models
-      .filter(({ admission }) => admission.kind === "accepted")
-      .flatMap(({ mechanisms }) => mechanisms),
+    manifest.models.filter(({ id }) => admittedIds.has(id)).flatMap(({ mechanisms }) => mechanisms),
   );
-  const mechanismGaps = new Map<
-    string,
-    { models: Set<string>; cloneFamilies: Set<string> }
-  >();
-  for (const model of manifest.models.filter(
-    ({ admission }) => admission.kind === "rejected",
-  )) {
-    for (const key of model.mechanisms.filter(
-      (mechanism) => !supportedMechanisms.has(mechanism),
-    )) {
-      const gap = mechanismGaps.get(key) ?? {
-        models: new Set<string>(),
-        cloneFamilies: new Set<string>(),
-      };
-      gap.models.add(model.id);
-      gap.cloneFamilies.add(model.cloneFamily);
-      mechanismGaps.set(key, gap);
+  const mechanismGaps = new Map<string, { models: Set<string>; cloneFamilies: Set<string> }>();
+  for (const model of manifest.models.filter(({ id }) => !admittedIds.has(id))) {
+    for (const key of model.mechanisms.filter((mechanism) => !supportedMechanisms.has(mechanism))) {
+      count(mechanismGaps, key, model);
     }
   }
-  const unsupportedMechanisms = [...mechanismGaps.entries()]
-    .map(([key, occurrence]) => Object.freeze({
-      key,
-      cloneFamilies: occurrence.cloneFamilies.size,
-      models: occurrence.models.size,
-    }))
-    .sort((left, right) =>
-      right.cloneFamilies - left.cloneFamilies ||
-      right.models - left.models ||
-      compareCanonicalStrings(left.key, right.key)
-    );
   return Object.freeze({
     kind: "executableBpmnModelCorpusReport",
     models: Object.freeze(reports),
-    unsupportedMechanisms: Object.freeze(unsupportedMechanisms),
-    blockers: Object.freeze(blockers),
+    admissionMismatches: Object.freeze(mismatches),
+    unsupportedMechanisms: ranked(mechanismGaps),
+    blockers: ranked(blockerOccurrences),
     mvpCapabilities: Object.freeze(mvpCapabilities),
     uncoveredMvpCapabilities: Object.freeze(uncoveredMvpCapabilities),
-    retainedModels: reports.filter(({ sourceKind }) =>
-      sourceKind === "retainedScenario"
-    ).length,
-    externalModels: reports.filter(({ sourceKind }) =>
-      sourceKind !== "retainedScenario"
-    ).length,
+    retainedModels: reports.filter(({ sourceKind }) => sourceKind === "retainedScenario").length,
+    externalModels: reports.filter(({ sourceKind }) => sourceKind !== "retainedScenario").length,
     acceptedModels: reports.filter(({ admission }) => admission === "accepted").length,
     rejectedModels: reports.filter(({ admission }) => admission === "rejected").length,
     catalogReadyModels: reports.filter(({ product2 }) =>
@@ -699,13 +387,13 @@ export function renderExecutableModelCorpusMap(
     "",
     "## Current result",
     "",
-    `The first tranche contains ${report.retainedModels} retained executable models and ${report.externalModels} exact external candidates. ${report.acceptedModels} are admitted, ${report.rejectedModels} are rejected, and ${report.catalogReadyModels} ${report.catalogReadyModels === 1 ? "is" : "are"} eligible for the browser catalog.`,
+    `The first tranche contains ${report.retainedModels} retained executable models and ${report.externalModels} exact external candidates. The kernel admits ${report.acceptedModels} and refuses ${report.rejectedModels}; ${report.admissionMismatches.length} differ from their recorded admission, and ${report.catalogReadyModels} ${report.catalogReadyModels === 1 ? "is" : "are"} eligible for the browser catalog.`,
     `The retained MVP suite covers all ${report.mvpCapabilities.length} registered executable BPMN element or semantic variants.`,
     `Browser eligibility separates ${report.models.filter((model) => model.product2 === "journeyBacked").length} human-work journeys from ${report.models.filter((model) => model.product2 === "guidedJourneyBacked").length} guided simulations with explicit host participants.`,
     "",
     "## Models",
     "",
-    "| Model | Source | Clone family | Admission | Pipeline | CIB | Product 2 |",
+    "| Model | Source | Clone family | Kernel admission | Scenario | CIB | Product 2 |",
     "|---|---|---|---|---|---|---|",
     ...report.models.map((model) =>
       `| ${tableCell(model.title)} | ${tableCell(model.sourceKind)} | ${tableCell(model.cloneFamily)} | ${model.admission} | ${model.pipelineCaseId ?? "none"} | ${model.cibRelation} | ${model.product2} |`
@@ -731,9 +419,9 @@ export function renderExecutableModelCorpusMap(
     "",
     "## Deduplicated admission blockers",
     "",
-    "Blockers are ranked by independent clone families first and physical model files second. They are compiler admission facts, not BPMN requirement priorities or conformance percentages.",
+    "Blockers are ranked by independent clone families first and physical model files second. They are the kernel reader's and `Kernel.Admission`'s stable refusal codes, not BPMN requirement priorities or conformance percentages.",
     "",
-    "| Rank | Compiler mechanism | Clone families | Model files |",
+    "| Rank | Refusal code | Clone families | Model files |",
     "|---:|---|---:|---:|",
     ...report.blockers.map((blocker, index) =>
       `| ${index + 1} | \`${blocker.key}\` | ${blocker.cloneFamilies} | ${blocker.models} |`

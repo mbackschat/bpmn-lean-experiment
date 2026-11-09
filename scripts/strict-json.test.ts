@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { parseStrictJson, parseWireJson, parseWireJsonBytes } from "./strict-json.ts";
+import { compareCanonicalStrings, parseStrictJson, parseWireJson, parseWireJsonBytes } from "./strict-json.ts";
 
 test("generic strict JSON retains ordinary numeric values outside the wire policy", () => {
   const decoded = parseStrictJson<{ values: number[] }>('{"values":[-0,1.25e+2,1e-400,1e400]}');
@@ -44,4 +44,12 @@ test("wire byte admission rejects malformed UTF-8 without replacing source chara
     assert.throws(() => parseWireJsonBytes(bytes));
   }
   assert.deepEqual(parseWireJsonBytes(new TextEncoder().encode('{"value":"𝄞"}')), { value: "𝄞" });
+});
+
+test("canonical string order follows Unicode scalar values, not UTF-16 code units, and refuses a lone surrogate", () => {
+  // U+FF5E sorts before U+1F600 by scalar value but after its UTF-16 lead surrogate 0xD83D by code unit.
+  assert.equal(compareCanonicalStrings("～", "\u{1F600}"), -1);
+  assert.equal(compareCanonicalStrings("ab", "a"), 1);
+  assert.equal(compareCanonicalStrings("same", "same"), 0);
+  assert.throws(() => compareCanonicalStrings("\uD800", "a"), /unpaired Unicode surrogate/u);
 });

@@ -13,12 +13,7 @@ import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import {
-  BpmnCompilationStatus,
-  BpmnSourceDiagnosticCode,
-  compileBpmnToSemanticProcess,
-} from "@bpmn-lean/bpmn-source";
-import { compareCanonicalStrings } from "@bpmn-lean/semantic-core";
+import { readKernelProgram, ReadRefusalCode } from "@bpmn-lean/bpmn-source";
 
 const projectRoot = fileURLToPath(new URL("../../../", import.meta.url));
 const externalRoot = process.env["BPMN_EXTERNAL_ROOT"] ?? path.resolve(
@@ -53,44 +48,40 @@ const modelNames = (await readdir(referenceDirectory))
   .sort();
 assert.equal(modelNames.length, 21);
 
-const forbiddenDiagnosticCodes = new Set<string>([
-  BpmnSourceDiagnosticCode.SourceTooLarge,
-  BpmnSourceDiagnosticCode.InvalidUtf8,
-  BpmnSourceDiagnosticCode.DoctypeForbidden,
-  BpmnSourceDiagnosticCode.ParserFailure,
-  BpmnSourceDiagnosticCode.SourceIdentityMismatch,
+// Refusals before the interchange boundary: the suite is valid interchange, so a size, DOCTYPE or parser refusal is an
+// infrastructure defect, while an unknown element, attribute or extension is the expected boundary. `source.encoding`
+// stays admissible because it also names a declared non-UTF-8 encoding, which the suite uses and the reader refuses by
+// design (the earlier compile path classified it apart from malformed UTF-8 for the same reason).
+const forbiddenRefusalCodes = new Set<string>([
+  ReadRefusalCode.SourceTooLarge,
+  ReadRefusalCode.SourceDoctype,
+  ReadRefusalCode.ParserFailure,
+  ReadRefusalCode.SourceIdentityMismatch,
 ]);
 const outcomeCounts = new Map<string, number>();
 
 for (const modelName of modelNames) {
   const bytes = await readFile(path.join(referenceDirectory, modelName));
-  const result = await compileBpmnToSemanticProcess({
+  const result = await readKernelProgram({
     bytes,
-    sourceId: `miwg-${modelName}`,
-    expectedSha256: undefined,
-    sourceOverlay: null,
-    semanticProfile: "miwg-interchange-observation-only",
+    overlay: null,
+    profile: "miwg-interchange-observation-only",
     limits: {
       maxBytes: 10 * 1024 * 1024,
       parserDeadlineMs: 2_000,
     },
   });
-  assert.deepEqual([...result.copyExactBytes()], [...bytes]);
-  const outcome: string | undefined =
-    result.status === BpmnCompilationStatus.Accepted
-      ? result.status
-      : result.diagnostics[0]?.code;
-  assert.ok(
-    outcome !== undefined,
-    `${modelName} produced neither an accepted status nor a diagnostic`,
-  );
+  const outcome = result.kind === "read" ? result.kind : result.code;
   assert.equal(
-    forbiddenDiagnosticCodes.has(outcome),
+    forbiddenRefusalCodes.has(outcome),
     false,
-    `${modelName} failed before the expected interchange/profile boundary: ${JSON.stringify(result.diagnostics)}`,
+    `${modelName} failed before the expected interchange boundary: ${JSON.stringify(result)}`,
   );
   outcomeCounts.set(outcome, (outcomeCounts.get(outcome) ?? 0) + 1);
 }
+
+/** UTF-16 code-unit order, host-independent; the outcome names are ASCII, so it equals scalar order. */
+const compareCodePoints = (left: string, right: string): number => (left < right ? -1 : left > right ? 1 : 0);
 
 console.log(
   `BPMN_MIWG_IMPORT ${JSON.stringify({
@@ -98,7 +89,7 @@ console.log(
     models: modelNames.length,
     outcomes: Object.fromEntries(
       [...outcomeCounts.entries()].sort(([left], [right]) =>
-        compareCanonicalStrings(left, right)),
+        compareCodePoints(left, right)),
     ),
   })}`,
 );

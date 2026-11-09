@@ -3,8 +3,6 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { CanonicalObservationKind } from "@bpmn-lean/semantic-core";
-import type { StateObservation } from "@bpmn-lean/semantic-core";
 import {
   createPlatformServer,
   readPlatformServerConfig,
@@ -15,28 +13,28 @@ import type {
 import type {
   PublicProcessInstanceIdentity,
 } from "@bpmn-lean/platform-contracts";
-import {
-  ExternalTemporalRuntime,
-  createCachedLocalEnvironment,
-  createHostEffectActivities,
-  readBpmnProcessTrace,
-  readUserTaskDetail,
-  submitUserTaskCompletion,
-  withDeadline,
-} from "@bpmn-lean/temporal-testkit";
-import type {
-  EffectActivityImplementations,
-  HostInteractionPort,
-  TemporalWorkflowClient,
-} from "@bpmn-lean/temporal-testkit";
+import { ProcessClient } from "@bpmn-lean/temporal-host/client";
+import type { JsonValue } from "@bpmn-lean/temporal-host/client";
 
+import { showcaseEngineDeploymentEnvironment } from "../../engine-deployment.ts";
 import {
   MuePreviewAlphaActor,
 } from "./automated-actor.ts";
 import type {
   AlphaInterruptionGate,
   AlphaJourneyResult,
+  AlphaState,
 } from "./automated-actor.ts";
+import type { InteractionPort } from "./host-interactions.ts";
+import {
+  ShowcaseWorker,
+  createCachedLocalEnvironment,
+  environmentNamespace,
+  noEffects,
+  withDeadline,
+} from "./host-worker.ts";
+import type { EffectHandler, TemporalEnvironment } from "./host-worker.ts";
+import { processWorkflowId } from "./process-address.ts";
 import {
   verifyMuePreviewAlphaEvidence,
 } from "../test/temporal-evidence.ts";
@@ -47,31 +45,28 @@ import type {
 const operationDeadlineMs = 20_000;
 const environmentStartupDeadlineMs = 40_000;
 const taskQueue = "bpmn-mue-preview-alpha";
-const namespace = "bpmn-mue-preview-alpha";
 const temporalCacheDirectory = fileURLToPath(
   new URL("../../../.cache/temporal-cli/", import.meta.url),
 );
-
-type Environment = Awaited<ReturnType<typeof createCachedLocalEnvironment>>;
 
 /** Owns the real Alpha platform and Temporal processes inside the Playwright worker. */
 export class MuePreviewAlphaShowcaseRuntime {
   readonly #dataDirectory: string;
   readonly #actor = new MuePreviewAlphaActor();
-  #environment: Environment | undefined;
-  #worker: ExternalTemporalRuntime | undefined;
+  readonly #effects: EffectHandler;
+  #environment: TemporalEnvironment | undefined;
+  #worker: ShowcaseWorker | undefined;
   #platform: PlatformServerRuntime | undefined;
 
-  private constructor(dataDirectory: string, private readonly activities: EffectActivityImplementations) {
+  private constructor(dataDirectory: string, effects: EffectHandler) {
     this.#dataDirectory = dataDirectory;
+    this.#effects = effects;
   }
 
-  static async create(
-    activities: EffectActivityImplementations = createHostEffectActivities([]),
-  ): Promise<MuePreviewAlphaShowcaseRuntime> {
+  static async create(effects: EffectHandler = noEffects): Promise<MuePreviewAlphaShowcaseRuntime> {
     return new MuePreviewAlphaShowcaseRuntime(
       await mkdtemp(join(tmpdir(), "bpmn-lean-mue-preview-alpha-")),
-      activities,
+      effects,
     );
   }
 
@@ -87,13 +82,6 @@ export class MuePreviewAlphaShowcaseRuntime {
       environmentStartupDeadlineMs,
       "MUE Preview Alpha Temporal environment startup",
     );
-    const initializedWorker = await ExternalTemporalRuntime.initializeFreshNamespace({
-      address: this.#environment.address,
-      namespace,
-      taskQueue,
-      identity: `bpmn-mue-preview-alpha-initializer-${process.pid}`,
-    }, this.activities, 86_400);
-    await initializedWorker.shutdown();
     await this.#startPlatform();
   }
 
@@ -101,12 +89,11 @@ export class MuePreviewAlphaShowcaseRuntime {
     if (this.#worker !== undefined) return;
     const environment = this.#requireEnvironment();
     this.#worker = await withDeadline(
-      ExternalTemporalRuntime.connect({
-        address: environment.address,
-        namespace,
+      ShowcaseWorker.start(environment, {
         taskQueue,
         identity: `bpmn-mue-preview-alpha-worker-${process.pid}`,
-      }, this.activities),
+        effects: this.#effects,
+      }),
       operationDeadlineMs,
       "MUE Preview Alpha Worker startup",
     );
@@ -117,8 +104,13 @@ export class MuePreviewAlphaShowcaseRuntime {
     this.#worker = undefined;
   }
 
-  get workflowClient(): TemporalWorkflowClient {
-    return this.#requireWorker().workflowClient;
+  /** The showcase server's Temporal Client, for host-only evidence and test actors. */
+  get temporalClient(): TemporalEnvironment["client"] {
+    return this.#requireEnvironment().client;
+  }
+
+  get processes(): ProcessClient {
+    return new ProcessClient(this.#requireEnvironment().client, taskQueue);
   }
 
   async restartPlatform(): Promise<void> {
@@ -144,11 +136,11 @@ export class MuePreviewAlphaShowcaseRuntime {
     naturalProcessInstanceId: string,
     interruptedProcessInstanceId: string,
   ): Promise<MuePreviewAlphaEvidence> {
+    this.#requireWorker();
     return verifyMuePreviewAlphaEvidence({
-      client: this.#requireWorker().workflowClient,
+      client: this.#requireEnvironment().client,
       naturalProcessInstanceId,
       interruptedProcessInstanceId,
-      temporalCacheDirectory,
     });
   }
 
@@ -179,7 +171,7 @@ export class MuePreviewAlphaShowcaseRuntime {
   async #startPlatform(): Promise<void> {
     const environment = this.#requireEnvironment();
     const api = requireApiOrigin();
-    const configured = readPlatformServerConfig({});
+    const configured = readPlatformServerConfig(showcaseEngineDeploymentEnvironment());
     this.#platform = await createPlatformServer({
       ...configured,
       host: api.hostname,
@@ -189,7 +181,7 @@ export class MuePreviewAlphaShowcaseRuntime {
       maxSourceBytes: 1024 * 1024,
       parserDeadlineMs: 5_000,
       temporalAddress: environment.address,
-      temporalNamespace: namespace,
+      temporalNamespace: environmentNamespace(environment),
       temporalTaskQueue: taskQueue,
       temporalConnectTimeoutMs: 5_000,
       fakeActorId: "alpha-preview-actor",
@@ -213,54 +205,32 @@ export class MuePreviewAlphaShowcaseRuntime {
     }
   }
 
-  #interactionPort(instance: PublicProcessInstanceIdentity): HostInteractionPort {
-    const client = this.#requireWorker().workflowClient;
-    const processInstanceId = instance.processInstanceId;
+  #interactionPort(instance: PublicProcessInstanceIdentity): InteractionPort {
+    this.#requireWorker();
+    const processes = this.processes;
+    const workflowId = processWorkflowId(instance.processInstanceId);
     return {
-      readState: async () => latestState(
-        await readBpmnProcessTrace(client, processInstanceId),
-      ),
-      readUserTaskDetail: async (request) =>
-        readUserTaskDetail(client, processInstanceId, request),
-      submitCompletion: async (stimulus) =>
-        submitUserTaskCompletion(client, processInstanceId, stimulus),
-      submitMessage: async () => {
-        throw new Error("MUE Preview Alpha actor must not submit Message stimuli");
-      },
-      publishCorrelated: async () => {
-        throw new Error("MUE Preview Alpha actor must not publish correlated Message stimuli");
-      },
-      submitCancellation: async () => {
-        throw new Error("MUE Preview Alpha actor must not submit cancellation stimuli");
+      readState: async () => await processes.observation(workflowId) as unknown as AlphaState,
+      command: async (stimulus) => processes.command(workflowId, stimulus as JsonValue),
+      deliver: async () => {
+        throw new Error("MUE Preview Alpha actor must not deliver Messages");
       },
     };
   }
 
-  #requireWorker(): ExternalTemporalRuntime {
+  #requireWorker(): ShowcaseWorker {
     if (this.#worker === undefined) {
       throw new Error("MUE Preview Alpha Worker is not running");
     }
     return this.#worker;
   }
 
-  #requireEnvironment(): Environment {
+  #requireEnvironment(): TemporalEnvironment {
     if (this.#environment === undefined) {
       throw new Error("MUE Preview Alpha Temporal environment is not running");
     }
     return this.#environment;
   }
-}
-
-function latestState(
-  trace: Awaited<ReturnType<typeof readBpmnProcessTrace>>,
-): StateObservation {
-  const observation = trace.findLast(
-    (candidate) => candidate.kind === CanonicalObservationKind.State,
-  );
-  if (observation?.kind !== CanonicalObservationKind.State) {
-    throw new Error("MUE Preview Alpha trace contains no committed state");
-  }
-  return observation;
 }
 
 function requireApiOrigin(): URL {

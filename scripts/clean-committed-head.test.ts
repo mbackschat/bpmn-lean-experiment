@@ -88,9 +88,12 @@ test("makes clean committed HEAD the shared local and GitHub pre-push boundary",
     manifest.scripts?.["test:pre-push:showcase"],
     "pnpm check:clean-head && pnpm test:feedback-policy && pnpm test:showcase:types",
   );
+  // Derived rather than counted: each hosted slice runs one `verify.sh` stage, so the two counts must agree.
+  const hostedSlices = verifyWorkflow.match(/run: \.\/scripts\/verify\.sh [a-z-]+/gu)?.length ?? 0;
+  assert.ok(hostedSlices > 0, "no hosted Product 1 slice was found");
   assert.equal(
     verifyWorkflow.match(/run: node scripts\/clean-committed-head\.ts/gu)?.length,
-    6,
+    hostedSlices,
     "every hosted Product 1 slice must bind itself to the exact checkout",
   );
   assert.match(verifyWorkflow, /run: \.\/scripts\/verify\.sh lean-library/u);

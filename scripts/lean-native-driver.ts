@@ -1,15 +1,10 @@
 /**
  * Native Lean test drivers.
  *
- * A package test that needs Lean's answer runs the driver's `main` as a native executable built once
- * per source change, not through `lake run`, which interprets the whole semantic core on every call:
- * on the hosted runner (2026-10-22) twelve parallel-scope cases took 15.5 s interpreted and 0.51 s
- * native, with byte-identical output. A driver's executable is the `[[lean_exe]]` whose `root` is the
- * driver module, so `lakefile.toml` stays the one list of drivers.
- *
- * A driver that binds scenarios owned by proof-bearing conformance modules, such as the fixture-binding
- * driver, stays interpreted through `./scripts/lake.sh run`: an executable root must not import proof
- * modules (`scripts/lean-import-boundaries.test.ts`), so a proof change never re-compiles native code.
+ * A package test that needs Lean's answer runs the driver's `main` as a native executable built once per source
+ * change, not through `lake run`, which interprets the whole kernel on every call: on the hosted runner (2026-10-22)
+ * twelve cases took 15.5 s interpreted and 0.51 s native, with byte-identical output. A driver's executable is the
+ * `[[lean_exe]]` whose `root` is the driver module, so `lakefile.toml` stays the one list of drivers.
  *
  * The build never runs inside a test's deadline: {@link prepareNativeLeanDriver} builds once per
  * process under {@link nativeLeanDriverBuildTimeoutMs}, and the caller executes the binary directly.
@@ -27,8 +22,8 @@ const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 /**
  * Allowance for one focused native driver build.
  *
- * A cold build of the parallel-scope driver's closure took 3 min 36 s at one Lean thread on the hosted
- * runner (2026-10-22); later builds recompile only changed modules.
+ * Measured on the old library: a cold build of one driver's closure took 3 min 36 s at one Lean thread on the hosted
+ * runner (2026-10-22); the kernel's clean executable build is bounded by guard 15's 3 minutes.
  */
 export const nativeLeanDriverBuildTimeoutMs = 600_000;
 
@@ -47,11 +42,11 @@ export function declaredLeanExecutables(lakefile: string): ReadonlyMap<string, s
   return executables;
 }
 
-/** The declared executable for a `BpmnSemantics/<Module>.lean` or `Kernel/<Module>.lean` driver source. */
+/** The declared executable for a `Kernel/<Module>.lean` driver source. */
 export function nativeLeanDriverFor(lakefile: string, sourcePath: string): string {
-  const relative = /^(?:BpmnSemantics|Kernel)\/[\w/]+(?=\.lean$)/u.exec(sourcePath)?.[0];
+  const relative = /^Kernel\/[\w/]+(?=\.lean$)/u.exec(sourcePath)?.[0];
   if (relative === undefined) {
-    throw new TypeError(`${sourcePath} is not a BpmnSemantics or Kernel driver source`);
+    throw new TypeError(`${sourcePath} is not a Kernel driver source`);
   }
   const module = relative.replaceAll("/", ".");
   const name = declaredLeanExecutables(lakefile).get(module);

@@ -13,10 +13,14 @@ const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 const documentRoots = [
   "contracts",
   "docs",
+  "model-corpus",
   "packages",
+  "platform",
   "profiles",
   "runners",
   "scenarios",
+  "scripts",
+  "showcase",
 ];
 
 async function markdownFiles(
@@ -270,7 +274,6 @@ test("keeps maintained documentation indexed and role-named", async () => {
 
   const reservedSingletons = new Set([
     "ARCHITECTURE.md",
-    "DOC-DISCIPLINE.md",
     "INFOGRAPHICS.md",
     "PLAN.md",
     "PROJECT-DESIGN.md",
@@ -278,7 +281,7 @@ test("keeps maintained documentation indexed and role-named", async () => {
     "SOURCES.md",
   ]);
   const roleSuffix =
-    /-(?:DECISION|EXPERIMENT|GAPS|GUIDE|HANDOFF|LEDGER|MAP|POLICY|PROPOSAL|REGISTER|RESEARCH|SPEC|TARGET|WALKTHROUGH)\.md$/u;
+    /-(?:DECISION|EXPERIMENT|GUIDE|LEDGER|MAP|POLICY|PROPOSAL|REGISTER|RESEARCH|SPEC|TARGET|WALKTHROUGH)\.md$/u;
   const roleViolations = documentationFiles
     .filter(
       (relativePath) =>
@@ -288,52 +291,4 @@ test("keeps maintained documentation indexed and role-named", async () => {
     .sort();
 
   assert.deepEqual(roleViolations, []);
-});
-
-test("status-bearing document roles declare Status near the beginning", async () => {
-  const documentationFiles = await markdownFiles("docs");
-  const statusRole = /-(?:DECISION|EXPERIMENT|HANDOFF|POLICY|PROPOSAL|RESEARCH|SPEC|TARGET)\.md$/u;
-  const missing: string[] = [];
-  for (const relativePath of documentationFiles) {
-    if (
-      !statusRole.test(relativePath) ||
-      relativePath.startsWith("docs/archived/") ||
-      relativePath.startsWith("docs/reference/")
-    ) {
-      continue;
-    }
-    const firstNonblank = (await readFile(path.join(projectRoot, relativePath), "utf8"))
-      .split("\n")
-      .filter((line) => line.trim() !== "")
-      .slice(0, 15);
-    if (!firstNonblank.includes("## Status")) {
-      missing.push(relativePath);
-    }
-  }
-  assert.deepEqual(missing, []);
-});
-
-test("documents the exact suffixless singleton exceptions", async () => {
-  const discipline = await readFile(
-    path.join(projectRoot, "docs/DOC-DISCIPLINE.md"),
-    "utf8",
-  );
-  const section = /^### Suffixless singleton exceptions\s*$([\s\S]*?)(?=^#{2,3}\s|(?![\s\S]))/mu.exec(
-    discipline,
-  );
-  assert.ok(section, "documentation discipline must own the suffixless exceptions");
-  const sectionBody = section[1];
-  assert.ok(sectionBody);
-  const documented = [...sectionBody.matchAll(/^- `([^`]+)`/gmu)]
-    .map((match) => match[1])
-    .sort();
-  assert.deepEqual(documented, [
-    "ARCHITECTURE.md",
-    "DOC-DISCIPLINE.md",
-    "INFOGRAPHICS.md",
-    "PLAN.md",
-    "PROJECT-DESIGN.md",
-    "README.md",
-    "SOURCES.md",
-  ]);
 });

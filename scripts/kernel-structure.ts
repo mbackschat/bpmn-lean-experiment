@@ -1,6 +1,6 @@
 /**
  * Source scans for the structural guards of the kernel rewrite proposal
- * (docs/LEAN-KERNEL-REWRITE-PROPOSAL.md#guardrails-against-degradation): layering (guard 4), the shape and size
+ * (docs/kernel/ARCHITECTURE-SPEC.md#guardrails-against-degradation): layering (guard 4), the shape and size
  * ceilings (guards 9 and 10) and profiles as data (guard 7), over the Lean kernel and its TypeScript transcription.
  * Closed dispatch and no catch-all (guards 1 and 2) read the built environment instead (`kernel-dispatch.lean`).
  */

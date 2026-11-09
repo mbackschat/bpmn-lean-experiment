@@ -12,7 +12,7 @@
   "devDependencies": {
     "@bpmn-lean/platform-server": "workspace:*",
     "@bpmn-lean/platform-web": "workspace:*",
-    "@bpmn-lean/temporal-testkit": "workspace:*",
+    "@bpmn-lean/temporal-host": "workspace:*",
     "@playwright/test": "1.62.1"
   }
 }

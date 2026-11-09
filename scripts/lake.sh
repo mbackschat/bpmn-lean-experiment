@@ -48,21 +48,11 @@ if [ "${1:-}" = "run" ]; then
   set -- env lean --run "$@"
 fi
 
-if [ "${1:-}" = "build" ]; then
-  for target in "$@"; do
-    if [ "$target" = "BpmnSemantics" ]; then
-      echo "LEAN_BUILD_REFUSED explicit BpmnSemantics umbrella target; use 'LEAN_FULL_GATE=<gate-or-batch-id> ./scripts/lake.sh build' only for the root-owned full gate" >&2
-      exit 64
-    fi
-  done
-fi
-
 # A full-library build recompiles every module downstream of an edit, so it must name the gate or
 # Lean batch that owns it; full builds started as consumer discovery or "still red?" probes are
-# Finding 75 in docs/PROCESS-ASSESSMENT-LEDGER.md. Classification fails closed: only a
-# `BpmnSemantics.` submodule, the whole `Kernel` library (bounded by the kernel's 3-minute clean build) or one of its
-# modules, or a declared `lean_exe` is narrow, so package, facet and umbrella
-# spellings count as full. A target list longer than 16 needs the same declaration, so an enumerated
+# Finding 75 of the retired process assessment ledger. Classification fails closed: only the whole `Kernel` library
+# (bounded by the kernel's 3-minute clean build), one of its modules, or a declared `lean_exe` is narrow, so package,
+# facet and default-target spellings count as full. A target list longer than 16 needs the same declaration, so an enumerated
 # reverse closure (877 modules, 1434 s, run as consumer discovery on 2026-11-07) cannot pass as
 # focused; the cap refuses lists, it does not measure the rebuild set. It admits the largest maintained
 # invocation (11 targets in scripts/verify.sh) and refuses enumerating a hub's direct importers (106 to
@@ -85,7 +75,7 @@ elif [ "${1:-}" = "build" ]; then
     fi
     case "$target" in
       -*) continue ;;
-      BpmnSemantics.?* | +BpmnSemantics.?* | Kernel | Kernel.?* | +Kernel.?*) ;;
+      Kernel | Kernel.?* | +Kernel.?*) ;;
       *)
         if ! printf '%s\n' "$declared_executables" | grep -Fqx -- "$target"; then
           full_gate_required=true
@@ -100,7 +90,7 @@ elif [ "${1:-}" = "build" ]; then
 fi
 if [ "$full_gate_required" = true ] &&
   ! printf '%s' "${LEAN_FULL_GATE:-}" | grep -Eqx '[A-Za-z0-9][A-Za-z0-9_.:/-]{0,127}'; then
-  echo "LEAN_BUILD_REFUSED a full-library build, or one naming more than $wide_build_targets targets, requires LEAN_FULL_GATE=<gate-or-batch-id>; during development build only the changed modules and the direct importers the TESTING-SPEC Lean row selects" >&2
+  echo "LEAN_BUILD_REFUSED a full-library build, or one naming more than $wide_build_targets targets, requires LEAN_FULL_GATE=<gate-or-batch-id>; during development build only the changed modules and their direct importers" >&2
   exit 64
 fi
 

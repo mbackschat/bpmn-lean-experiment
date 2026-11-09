@@ -1,27 +1,7 @@
 import { setTimeout as hostDelay } from "node:timers/promises";
 
 import type { PublicProcessInstanceIdentity } from "@bpmn-lean/platform-contracts";
-import {
-  ProcessStatus,
-  MultiInstanceBodyKind,
-  StimulusKind,
-  VariableValueKind,
-} from "@bpmn-lean/semantic-core";
-import type {
-  OpenSequentialMultiInstance,
-  OccurrenceId,
-  StateObservation,
-} from "@bpmn-lean/semantic-core";
-import {
-  HostInteractionEventKind,
-  HostInteractionResultKind,
-  driveHostInteractions,
-} from "@bpmn-lean/temporal-testkit";
-import type {
-  HostInteractionEvent,
-  HostInteractionPort,
-  HostInteractionResponse,
-} from "@bpmn-lean/temporal-testkit";
+import type { EngineBinding, EngineOccurrenceId, EngineOpenWait, EngineStateObservation } from "@bpmn-lean/engine-api";
 
 import {
   completionBindingName,
@@ -33,11 +13,21 @@ import {
   outputBindingName,
   reviewElementId,
 } from "./alpha-contract.ts";
+import {
+  InteractionEventKind,
+  InteractionResponseKind,
+  InteractionResultKind,
+  driveInteractions,
+  waitsOf,
+} from "./host-interactions.ts";
+import type { InteractionEvent, InteractionPort, InteractionResponse } from "./host-interactions.ts";
 
 const alphaProcessId = "Process_SequentialMultiInstanceReview";
 const alphaSemanticProfile = "bpmn-2.0.2-sequential-multi-instance-user-task-draft";
 const alphaSourceSha256 = "982f77f7fcca2d01bd2357c11057c5fdb6aaf3b383ac351a93aa32ab1bbca3ff";
 const interactionDelayMs = 1;
+/** The Timer's duration in the retained source (`PT5S`); the host states deadlines in Workflow epoch time. */
+const lifetimeTimerDurationMs = 5_000;
 
 export const AlphaJourney = {
   Natural: "natural",
@@ -56,6 +46,129 @@ export type AlphaJourneyResult = Readonly<{
   submitted: number;
 }>;
 
+/** One published variable scope of the canonical observation (`Kernel.Run.observationJson`). */
+type ObservedScope = Readonly<{
+  scope: Readonly<{ processInstanceId: string; role: string; elementId?: string; activation?: number }>;
+  variables: readonly EngineBinding[];
+}>;
+
+/** `EngineStateObservation` leaves the observation's `scopes` untyped; the Alpha contract reads the iteration's. */
+export type AlphaState = EngineStateObservation & Readonly<{ scopes?: readonly ObservedScope[] }>;
+
+/**
+ * Checks every committed state the journey observes against the Alpha preview contract. The host owns logical time
+ * (Workflow epoch milliseconds under durable scheduling, `packages/temporal-host/src/workflow-host.ts`), so the
+ * contract fixes the Timer's deadline relative to the first state the journey observes, which precedes every input
+ * the actor submits, never as an absolute instant.
+ */
+class AlphaContract {
+  readonly journey: AlphaJourney;
+  readonly processInstanceId: string;
+  #startMs: number | undefined;
+  #deadlineMs: number | undefined;
+
+  constructor(journey: AlphaJourney, processInstanceId: string) {
+    this.journey = journey;
+    this.processInstanceId = processInstanceId;
+  }
+
+  require(state: AlphaState): void {
+    if (state.instanceId !== this.processInstanceId) {
+      throw new Error("Alpha publication changed Process-instance identity");
+    }
+    switch (state.status) {
+      case "running":
+        this.#requireRunning(state);
+        return;
+      case "completed":
+        requireTerminalAlphaState(this.journey, state);
+        return;
+      default:
+        throw new Error(`Alpha ${this.journey} journey reached unexpected status ${state.status}`);
+    }
+  }
+
+  #requireRunning(state: AlphaState): void {
+    const iterations = (state.scopes ?? []).filter(({ scope }) => scope.role === "multiInstanceInstance");
+    if (iterations.length > 0) {
+      const loopCounter = this.#requireExactIteration(iterations, state);
+      if (this.journey === AlphaJourney.Interrupted && loopCounter > 1) {
+        throw new Error("Interrupted Alpha advanced beyond the Timer-risk checkpoint");
+      }
+      this.#requireLifetimeTimer(state);
+      requireOutputAbsent(state);
+      return;
+    }
+    if (this.journey === AlphaJourney.Interrupted && this.#isExactEscalationState(state)) {
+      requireOutputAbsent(state);
+      return;
+    }
+    throw new Error(`Alpha ${this.journey} published a running state outside its exact preview contract`);
+  }
+
+  /**
+   * A Sequential User Task controller publishes exactly one open iteration, scoped at the review task itself. Several
+   * open iterations are a Parallel controller; an iteration scoped elsewhere has another body.
+   */
+  #requireExactIteration(iterations: readonly ObservedScope[], state: AlphaState): number {
+    const [iteration] = iterations;
+    if (iterations.length !== 1 || iteration === undefined || iteration.scope.elementId !== reviewElementId) {
+      throw new Error("Alpha publication requires a Sequential Multi-Instance User Task controller");
+    }
+    const activation = iteration.scope.activation ?? 0;
+    const loopCounter = activation - 1;
+    const [item] = iteration.variables;
+    if (
+      iteration.scope.processInstanceId !== this.processInstanceId ||
+      loopCounter < 0 ||
+      loopCounter >= exactInputItems.length ||
+      iteration.variables.length !== 1 ||
+      item === undefined ||
+      item.name !== currentItemBindingName ||
+      !isStringValue(item.value, exactInputItems[loopCounter]!)
+    ) {
+      throw new Error("Alpha publication has an invalid current Sequential Multi-Instance iteration");
+    }
+    requireOnePublishedTask(state, { processInstanceId: this.processInstanceId, elementId: reviewElementId, activation });
+    return loopCounter;
+  }
+
+  #requireLifetimeTimer(state: AlphaState): void {
+    const timers = waitsOf(state, "timer");
+    const [timer] = timers;
+    const deadlineMs = timer?.detail.deadlineMs;
+    this.#startMs ??= state.logicalTimeMs;
+    if (
+      timers.length !== 1 ||
+      timer === undefined ||
+      !sameOccurrence(timer.id, { processInstanceId: this.processInstanceId, elementId: lifetimeTimerElementId, activation: 1 }) ||
+      deadlineMs !== this.#startMs + lifetimeTimerDurationMs ||
+      timer.detail.recurrence !== null ||
+      state.logicalTimeMs >= deadlineMs
+    ) {
+      throw new Error("Alpha publication has an invalid Sequential Multi-Instance lifetime Timer");
+    }
+    this.#deadlineMs = deadlineMs;
+  }
+
+  /** The escalation follows only the committed Timer: its deadline was published and logical time has reached it. */
+  #isExactEscalationState(state: AlphaState): boolean {
+    const [task] = waitsOf(state, "userTask");
+    if (
+      (state.scopes ?? []).some(({ scope }) => scope.role === "multiInstanceInstance") ||
+      waitsOf(state, "timer").length !== 0 ||
+      this.#deadlineMs === undefined ||
+      state.logicalTimeMs < this.#deadlineMs ||
+      task === undefined ||
+      !sameOccurrence(task.id, { processInstanceId: this.processInstanceId, elementId: escalationElementId, activation: 1 })
+    ) {
+      return false;
+    }
+    requireOnePublishedTask(state, task.id);
+    return true;
+  }
+}
+
 export class MuePreviewAlphaActor {
   readonly #delay: (delayMs: number) => Promise<void>;
 
@@ -63,43 +176,30 @@ export class MuePreviewAlphaActor {
     this.#delay = delay;
   }
 
-  async runNatural(
-    instance: PublicProcessInstanceIdentity,
-    port: HostInteractionPort,
-  ): Promise<AlphaJourneyResult> {
+  async runNatural(instance: PublicProcessInstanceIdentity, port: InteractionPort): Promise<AlphaJourneyResult> {
     requireExactAlphaInstance(instance);
-    return await this.#drive(
-      AlphaJourney.Natural,
-      naturalResponses,
-      instance,
-      port,
-    );
+    return await this.#drive(AlphaJourney.Natural, naturalResponses, instance, port);
   }
 
   async runInterrupted(
     instance: PublicProcessInstanceIdentity,
-    port: HostInteractionPort,
+    port: InteractionPort,
     gate: AlphaInterruptionGate,
   ): Promise<AlphaJourneyResult> {
     requireExactAlphaInstance(instance);
-    return await this.#drive(
-      AlphaJourney.Interrupted,
-      interruptedResponses,
-      instance,
-      port,
-      gate,
-    );
+    return await this.#drive(AlphaJourney.Interrupted, interruptedResponses, instance, port, gate);
   }
 
   async #drive(
     journey: AlphaJourney,
-    responses: ReadonlyArray<HostInteractionResponse>,
+    responses: readonly InteractionResponse[],
     instance: PublicProcessInstanceIdentity,
-    port: HostInteractionPort,
+    port: InteractionPort,
     gate?: AlphaInterruptionGate,
   ): Promise<AlphaJourneyResult> {
+    const contract = new AlphaContract(journey, instance.processInstanceId);
     let escalationReady = false;
-    const result = await driveHostInteractions(
+    const result = await driveInteractions(
       responses,
       port,
       async (delayMs) => {
@@ -111,15 +211,11 @@ export class MuePreviewAlphaActor {
         await this.#delay(delayMs);
       },
       (event) => {
-        if (event.kind === HostInteractionEventKind.StateObserved) {
-          requireExactAlphaState(journey, instance.processInstanceId, event.state);
-        }
-        if (journey === AlphaJourney.Interrupted && isEscalationReady(event)) {
-          escalationReady = true;
-        }
+        if (event.kind === InteractionEventKind.StateObserved) contract.require(event.state);
+        if (journey === AlphaJourney.Interrupted && isEscalationReady(event)) escalationReady = true;
       },
     );
-    if (result.kind !== HostInteractionResultKind.Driven) {
+    if (result.kind !== InteractionResultKind.Driven) {
       throw new Error(`Alpha ${journey} actor refused: ${result.code}: ${result.evidence}`);
     }
     if (result.submitted !== responses.length) {
@@ -129,33 +225,27 @@ export class MuePreviewAlphaActor {
   }
 }
 
-const naturalResponses = exactInputItems.map((_item, index) => ({
-  kind: StimulusKind.CompleteUserTaskInstance,
+const naturalResponses: readonly InteractionResponse[] = exactInputItems.map((_item, index) => ({
+  kind: InteractionResponseKind.CompleteUserTask,
   elementId: reviewElementId,
   delayMs: interactionDelayMs,
   inputVariableNames: [],
-  submittedValues: [{
-    name: completionBindingName,
-    value: { kind: VariableValueKind.String, value: exactNaturalResults[index]! },
-  }],
-})) satisfies ReadonlyArray<HostInteractionResponse>;
+  submittedValues: [{ name: completionBindingName, value: { kind: "string", value: exactNaturalResults[index]! } }],
+}));
 
-const interruptedResponses = [{
-  kind: StimulusKind.CompleteUserTaskInstance,
+const interruptedResponses: readonly InteractionResponse[] = [{
+  kind: InteractionResponseKind.CompleteUserTask,
   elementId: reviewElementId,
   delayMs: interactionDelayMs,
   inputVariableNames: [],
-  submittedValues: [{
-    name: completionBindingName,
-    value: { kind: VariableValueKind.String, value: exactNaturalResults[0] },
-  }],
+  submittedValues: [{ name: completionBindingName, value: { kind: "string", value: exactNaturalResults[0] } }],
 }, {
-  kind: StimulusKind.CompleteUserTaskInstance,
+  kind: InteractionResponseKind.CompleteUserTask,
   elementId: escalationElementId,
   delayMs: interactionDelayMs,
   inputVariableNames: [],
   submittedValues: [],
-}] satisfies ReadonlyArray<HostInteractionResponse>;
+}];
 
 function requireExactAlphaInstance(instance: PublicProcessInstanceIdentity): void {
   if (
@@ -168,161 +258,17 @@ function requireExactAlphaInstance(instance: PublicProcessInstanceIdentity): voi
   }
 }
 
-function requireExactAlphaState(
-  journey: AlphaJourney,
-  processInstanceId: string,
-  state: StateObservation,
-): void {
-  if (state.instanceId !== processInstanceId) {
-    throw new Error("Alpha publication changed Process-instance identity");
-  }
-  switch (state.status) {
-    case ProcessStatus.Running:
-      requireRunningAlphaState(journey, processInstanceId, state);
-      return;
-    case ProcessStatus.Completed:
-      requireTerminalAlphaState(journey, state);
-      return;
-    case ProcessStatus.NotStarted:
-    case ProcessStatus.Cancelled:
-    case ProcessStatus.Failed:
-    default:
-      throw new Error(`Alpha ${journey} journey reached unexpected status ${state.status}`);
-  }
-}
-
-function requireRunningAlphaState(
-  journey: AlphaJourney,
-  processInstanceId: string,
-  state: StateObservation,
-): void {
-  const controllers = state.openMultiInstances ?? [];
-  if (controllers.length === 1) {
-    const controller = controllers[0]!;
-    if (controller.mode !== "sequential" || controller.bodyKind !== MultiInstanceBodyKind.UserTask) {
-      throw new Error("Alpha publication requires a Sequential Multi-Instance User Task controller");
-    }
-    const loopCounter = requireExactController(processInstanceId, controller, state);
-    if (journey === AlphaJourney.Interrupted && loopCounter > 1) {
-      throw new Error("Interrupted Alpha advanced beyond the Timer-risk checkpoint");
-    }
-    requireLifetimeTimer(processInstanceId, state);
-    requireOutputAbsent(state);
-    return;
-  }
-  if (journey === AlphaJourney.Interrupted && isExactEscalationState(processInstanceId, state)) {
-    requireOutputAbsent(state);
-    return;
-  }
-  throw new Error(`Alpha ${journey} published a running state outside its exact preview contract`);
-}
-
-function requireExactController(
-  processInstanceId: string,
-  controller: OpenSequentialMultiInstance,
-  state: StateObservation,
-): number {
-  const [iteration] = controller.activeIterations;
-  if (iteration === undefined) {
-    throw new Error("Alpha publication has no active Sequential Multi-Instance iteration");
-  }
-  const loopCounter = iteration.loopCounter;
-  if (
-    controller.id.processInstanceId !== processInstanceId ||
-    controller.id.activityElementId !== reviewElementId ||
-    controller.id.activation !== 1 ||
-    controller.mode !== "sequential" ||
-    controller.plannedInstanceCount !== exactInputItems.length ||
-    controller.numberOfInstances !== loopCounter + 1 ||
-    controller.numberOfActiveInstances !== 1 ||
-    controller.numberOfCompletedInstances !== loopCounter ||
-    controller.numberOfTerminatedInstances !== 0 ||
-    controller.numberOfInstances !==
-      controller.numberOfActiveInstances +
-        controller.numberOfCompletedInstances +
-        controller.numberOfTerminatedInstances ||
-    controller.pendingItemCount !==
-      controller.plannedInstanceCount - controller.numberOfInstances ||
-    controller.activeIterations.length !== 1 ||
-    loopCounter < 0 ||
-    loopCounter >= exactInputItems.length ||
-    iteration.taskInput.name !== currentItemBindingName ||
-    iteration.taskInput.value.kind !== VariableValueKind.String ||
-    iteration.taskInput.value.value !== exactInputItems[loopCounter] ||
-    iteration.completionBindingName !== completionBindingName ||
-    iteration.taskId.processInstanceId !== processInstanceId ||
-    iteration.taskId.elementId !== reviewElementId ||
-    iteration.taskId.activation !== loopCounter + 1
-  ) {
-    throw new Error("Alpha publication has an invalid current Sequential Multi-Instance iteration");
-  }
-  requireOnePublishedTask(state, iteration.taskId);
-  return loopCounter;
-}
-
-function requireLifetimeTimer(
-  processInstanceId: string,
-  state: StateObservation,
-): void {
-  const [timer] = state.openTimers;
-  if (
-    state.openTimers.length !== 1 ||
-    timer === undefined ||
-    timer.id.processInstanceId !== processInstanceId ||
-    timer.id.elementId !== lifetimeTimerElementId ||
-    timer.id.activation !== 1 ||
-    timer.deadlineMs !== 5_000 ||
-    state.logicalTimeMs !== 0
-  ) {
-    throw new Error("Alpha publication has an invalid Sequential Multi-Instance lifetime Timer");
-  }
-}
-
-function isExactEscalationState(
-  processInstanceId: string,
-  state: StateObservation,
-): boolean {
-  const [task] = state.openUserTasks;
-  if (
-    (state.openMultiInstances ?? []).length !== 0 ||
-    state.openTimers.length !== 0 ||
-    state.logicalTimeMs !== 5_000 ||
-    state.openUserTasks.length !== 1 ||
-    task === undefined ||
-    task.id.processInstanceId !== processInstanceId ||
-    task.id.elementId !== escalationElementId ||
-    task.id.activation !== 1
-  ) {
-    return false;
-  }
-  requireOnePublishedTask(state, task.id);
-  return true;
-}
-
-function requireOnePublishedTask(state: StateObservation, taskId: OccurrenceId): void {
-  const [task] = state.openUserTasks;
-  const completions = state.enabledInteractions.filter(
-    (interaction) => interaction.kind === StimulusKind.CompleteUserTaskInstance,
-  );
-  if (
-    state.openUserTasks.length !== 1 ||
-    task === undefined ||
-    !sameOccurrence(task.id, taskId) ||
-    state.enabledInteractions.length !== 1 ||
-    completions.length !== 1 ||
-    !sameOccurrence(completions[0]!.taskId, taskId)
-  ) {
+/** The task's wait is the state's only answerable wait, so the actor cannot complete another occurrence. */
+function requireOnePublishedTask(state: AlphaState, taskId: EngineOccurrenceId): void {
+  const answerable = state.openWaits.filter((wait) => wait.detail.kind !== "timer" && wait.detail.kind !== "effect");
+  const [task] = answerable;
+  if (answerable.length !== 1 || task === undefined || task.detail.kind !== "userTask" || !sameOccurrence(task.id, taskId)) {
     throw new Error("Alpha task, iteration, and completion publication identities disagree");
   }
 }
 
-function requireTerminalAlphaState(journey: AlphaJourney, state: StateObservation): void {
-  if (
-    (state.openMultiInstances ?? []).length !== 0 ||
-    state.openUserTasks.length !== 0 ||
-    state.openTimers.length !== 0 ||
-    state.enabledInteractions.length !== 0
-  ) {
+function requireTerminalAlphaState(journey: AlphaJourney, state: AlphaState): void {
+  if ((state.scopes ?? []).length !== 0 || state.openWaits.length !== 0) {
     throw new Error(`Alpha ${journey} terminal state retained open work`);
   }
   if (journey === AlphaJourney.Interrupted) {
@@ -330,34 +276,39 @@ function requireTerminalAlphaState(journey: AlphaJourney, state: StateObservatio
     return;
   }
   const output = state.variables.find(({ name }) => name === outputBindingName);
-  if (
-    output?.value.kind !== VariableValueKind.StringList ||
-    !sameStrings(output.value.value, exactNaturalResults)
-  ) {
+  if (!isStringListValue(output?.value, exactNaturalResults)) {
     throw new Error("Natural Alpha terminal output does not contain the exact ordered aggregation");
   }
 }
 
-function requireOutputAbsent(state: StateObservation): void {
+function requireOutputAbsent(state: AlphaState): void {
   if (state.variables.some(({ name }) => name === outputBindingName)) {
     throw new Error("Interrupted Alpha must not publish a partial aggregate output");
   }
 }
 
-function isEscalationReady(event: HostInteractionEvent): boolean {
-  return event.kind === HostInteractionEventKind.InteractionReady &&
-    event.interaction.kind === StimulusKind.CompleteUserTaskInstance &&
-    event.interaction.taskId.elementId === escalationElementId;
+function isEscalationReady(event: InteractionEvent): boolean {
+  return event.kind === InteractionEventKind.InteractionReady && isEscalationWait(event.wait);
 }
 
-function sameOccurrence(left: OccurrenceId, right: OccurrenceId): boolean {
-  return left.processInstanceId === right.processInstanceId &&
-    left.elementId === right.elementId &&
+function isEscalationWait(wait: EngineOpenWait): boolean {
+  return wait.detail.kind === "userTask" && wait.id.elementId === escalationElementId;
+}
+
+function isStringValue(value: unknown, expected: string): boolean {
+  const typed = value as { kind?: unknown; value?: unknown } | null;
+  return typed?.kind === "string" && typed.value === expected;
+}
+
+function isStringListValue(value: unknown, expected: readonly string[]): boolean {
+  const typed = value as { kind?: unknown; value?: unknown } | null | undefined;
+  return typed?.kind === "stringList" && Array.isArray(typed.value) &&
+    typed.value.length === expected.length && typed.value.every((item, index) => item === expected[index]);
+}
+
+function sameOccurrence(left: EngineOccurrenceId, right: EngineOccurrenceId): boolean {
+  return left.processInstanceId === right.processInstanceId && left.elementId === right.elementId &&
     left.activation === right.activation;
-}
-
-function sameStrings(left: ReadonlyArray<string>, right: ReadonlyArray<string>): boolean {
-  return left.length === right.length && left.every((value, index) => value === right[index]);
 }
 
 async function waitForHostDelay(delayMs: number): Promise<void> {

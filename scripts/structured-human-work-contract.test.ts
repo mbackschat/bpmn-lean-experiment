@@ -70,37 +70,6 @@ test("adds exact integer and ordered string-list arms to the generic value schem
   }
 });
 
-test("keeps assignment-only metadata closed beside byte-identical legacy metadata", async () => {
-  const assignment = {
-    candidates: [{ kind: "group", id: "reviewers" }],
-  };
-  const legacy = {
-    assignment,
-    form: { fields: [{ key: "approved", type: "boolean" }] },
-  };
-  const assignmentOnly = { assignment };
-  for (const schemaName of [
-    "checked-process.schema.json",
-    "semantic-process.schema.json",
-  ]) {
-    const metadata = await schemaDefinition(schemaName, "userTaskMetadata");
-    assert.equal(validateDefinition(metadata, legacy), true, schemaName);
-    assert.equal(
-      validateDefinition(metadata, assignmentOnly),
-      true,
-      schemaName,
-    );
-    for (const invalid of [
-      {},
-      { form: legacy.form },
-      { assignment, unexpected: true },
-      { assignment, form: legacy.form, unexpected: true },
-    ]) {
-      assert.equal(validateDefinition(metadata, invalid), false, schemaName);
-    }
-  }
-});
-
 test("semantic stimulus validation rejects negative zero and new values on every wrong surface or profile", () => {
   assert.throws(
     () => verifyScenarioVariableValueContract(completionScenario([

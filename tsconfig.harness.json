@@ -24,59 +24,29 @@
       "@bpmn-lean/engine-api": [
         "./packages/engine-api/src/index.ts"
       ],
+      "@bpmn-lean/engine-api/testing": [
+        "./packages/engine-api/src/testing.ts"
+      ],
       "@bpmn-lean/kernel": [
         "./packages/kernel/src/index.ts"
       ],
-      "@bpmn-lean/semantic-core": [
-        "./packages/semantic-core/src/index.ts"
+      "@bpmn-lean/temporal-host/client": [
+        "./packages/temporal-host/src/client.ts"
       ],
-      "@bpmn-lean/temporal-client": [
-        "./packages/temporal-adapter/client/src/index.ts"
+      "@bpmn-lean/temporal-host/host": [
+        "./packages/temporal-host/src/host.ts"
       ],
-      "@bpmn-lean/temporal-client/correlation-ingress": [
-        "./packages/temporal-adapter/client/src/correlation-ingress-client.ts"
+      "@bpmn-lean/temporal-host/memory-host": [
+        "./packages/temporal-host/src/memory-host.ts"
       ],
-      "@bpmn-lean/temporal-client/correlation-publication": [
-        "./packages/temporal-adapter/client/src/correlation-publication-client.ts"
+      "@bpmn-lean/temporal-host/testing": [
+        "./packages/temporal-host/src/testing.ts"
       ],
-      "@bpmn-lean/temporal-client/execution-publication": [
-        "./packages/temporal-adapter/client/src/execution-publication-client.ts"
+      "@bpmn-lean/temporal-host/worker": [
+        "./packages/temporal-host/src/worker.ts"
       ],
-      "@bpmn-lean/temporal-client/flow-node-occurrence-publication": [
-        "./packages/temporal-adapter/client/src/flow-node-occurrence-publication-client.ts"
-      ],
-      "@bpmn-lean/temporal-client/definition-start": [
-        "./packages/temporal-adapter/client/src/definition-start-client.ts"
-      ],
-      "@bpmn-lean/temporal-client/definition-schedule": [
-        "./packages/temporal-adapter/client/src/definition-schedule-client.ts"
-      ],
-      "@bpmn-lean/temporal-client/message-start": [
-        "./packages/temporal-adapter/client/src/message-start-client.ts"
-      ],
-      "@bpmn-lean/temporal-client/process-work": [
-        "./packages/temporal-adapter/client/src/process-work-client.ts"
-      ],
-      "@bpmn-lean/temporal-client/process-operations": [
-        "./packages/temporal-adapter/client/src/process-operations-client.ts"
-      ],
-      "@bpmn-lean/temporal-protocol": [
-        "./packages/temporal-adapter/protocol/src/index.ts"
-      ],
-      "@bpmn-lean/temporal-runner": [
-        "./packages/temporal-adapter/runner/src/index.ts"
-      ],
-      "@bpmn-lean/temporal-testkit": [
-        "./packages/temporal-adapter/testkit/src/index.ts"
-      ],
-      "@bpmn-lean/temporal-worker": [
-        "./packages/temporal-adapter/worker/src/index.ts"
-      ],
-      "@bpmn-lean/temporal-workflow": [
-        "./packages/temporal-adapter/workflow/src/index.ts"
-      ],
-      "@bpmn-lean/temporal-workflow/workflows": [
-        "./packages/temporal-adapter/workflow/src/workflows.ts"
+      "@bpmn-lean/temporal-host/workflow": [
+        "./packages/temporal-host/src/workflows.ts"
       ]
     },
     "skipLibCheck": true,
@@ -95,19 +65,6 @@
     "packages/differential/test/*.ts",
     "packages/engine-api/test/*.ts",
     "packages/kernel/test/*.ts",
-    "packages/semantic-core/test/*.ts",
-    "packages/temporal-adapter/client/test/worker-deployment-enrollment.test.ts",
-    "packages/temporal-adapter/client/test/worker-deployment-creation-readiness.test.ts",
-    "packages/temporal-adapter/runner/cli/*.ts",
-    "packages/temporal-adapter/testkit/calibration/*.ts",
-    "packages/temporal-adapter/testkit/test/*.ts",
-    "packages/temporal-adapter/worker/test/external-temporal-runtime-options.test.ts",
-    "packages/temporal-adapter/worker/test/workflow-deployment-initialization.test.ts",
-    "packages/temporal-adapter/workflow/test/closure-failure-classification*.ts",
-    "packages/temporal-adapter/workflow/test/parallel-scope-recovery.test.ts",
-    "packages/temporal-adapter/workflow/test/parallel-scope-continuation.test.ts",
-    "packages/temporal-adapter/workflow/test/workflow-chain-update-capacity.test.ts",
-    "packages/temporal-adapter/workflow/test/workflow-semantic-candidate.test.ts",
     "scripts/*.ts"
   ],
   "exclude": [

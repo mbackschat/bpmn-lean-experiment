@@ -126,9 +126,9 @@ jobs:
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .lake
-          key: lake-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain', 'lakefile.toml', 'lake-manifest.json', 'BpmnSemantics.lean', 'BpmnConformance.lean', 'BpmnSemantics/**/*.lean', 'Kernel.lean', 'Kernel/**/*.lean') }}
+          key: lake-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain', 'lakefile.toml', 'lake-manifest.json', 'Kernel.lean', 'Kernel/**/*.lean') }}
           restore-keys: |
-            lake-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain', 'lakefile.toml', 'lake-manifest.json', 'BpmnSemantics.lean', 'BpmnConformance.lean', 'BpmnSemantics/**/*.lean', 'Kernel.lean', 'Kernel/**/*.lean') }}-partial-
+            lake-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain', 'lakefile.toml', 'lake-manifest.json', 'Kernel.lean', 'Kernel/**/*.lean') }}-partial-
             lake-${{ runner.os }}-${{ runner.arch }}-
 
       - name: Require clean committed HEAD
@@ -309,7 +309,6 @@ jobs:
         with:
           path: |
             packages/*/dist
-            packages/temporal-adapter/*/dist
             runners/cibseven/target
             .cache/temporal-cli
             .cache/temporal-test-server
@@ -357,7 +356,6 @@ jobs:
         with:
           path: |
             packages/*/dist
-            packages/temporal-adapter/*/dist
             runners/cibseven/target
             .cache/temporal-cli
             .cache/temporal-test-server
@@ -373,64 +371,6 @@ jobs:
           CI: "true"
         run: ./scripts/verify.sh temporal
 
-  verify_temporal_serial:
-    name: verify Temporal serial
-    needs:
-      - changes
-      - verify_runtime
-    if: needs.changes.outputs.product1 == 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - name: Check out source
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
-
-      - name: Resolve pinned toolchain versions
-        id: pins
-        run: |
-          eval "$(./scripts/pinned-toolchain.sh)"
-          {
-            printf 'node=%s\n' "$required_node_version"
-            printf 'pnpm=%s\n' "$required_pnpm_version"
-          } >> "$GITHUB_OUTPUT"
-
-      - name: Set up pnpm
-        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
-        with:
-          version: ${{ steps.pins.outputs.pnpm }}
-
-      - name: Set up Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version: ${{ steps.pins.outputs.node }}
-          cache: pnpm
-
-      - name: Install workspace dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Restore runtime output
-        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: |
-            packages/*/dist
-            packages/temporal-adapter/*/dist
-            runners/cibseven/target
-            .cache/temporal-cli
-            .cache/temporal-test-server
-          key: verify-runtime-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
-          restore-keys: verify-runtime-${{ runner.os }}-${{ github.run_id }}-
-          fail-on-cache-miss: true
-
-      - name: Require clean committed HEAD
-        run: node scripts/clean-committed-head.ts
-
-      - name: Verify Temporal serial witnesses
-        env:
-          CI: "true"
-        run: ./scripts/verify.sh temporal-serial
-
   verify_pipeline:
     name: verify integration pipeline
     needs:
@@ -440,15 +380,6 @@ jobs:
     if: needs.changes.outputs.product1 == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    # One leg per registered case partition (`pipelineCaseIdsFor`), split by each case's Temporal execution schedule;
-    # each leg's deadline derives from its own cases, and the pipeline budget guard requires these legs to equal the
-    # registry's partitions.
-    strategy:
-      fail-fast: false
-      matrix:
-        partition:
-          - stimulus-order
-          - other-schedules
     steps:
       - name: Check out source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -474,14 +405,6 @@ jobs:
         with:
           node-version: ${{ steps.pins.outputs.node }}
           cache: pnpm
-
-      - name: Set up Java
-        uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5.6.0
-        with:
-          distribution: temurin
-          java-version: "21"
-          cache: maven
-          cache-dependency-path: runners/cibseven/pom.xml
 
       - name: Set up Lean
         uses: leanprover/lean-action@38fbc41a8c28c4cbaec22d7f7de508ec2e7c0dd9 # v1.5.0
@@ -507,7 +430,6 @@ jobs:
         with:
           path: |
             packages/*/dist
-            packages/temporal-adapter/*/dist
             runners/cibseven/target
             .cache/temporal-cli
             .cache/temporal-test-server
@@ -521,8 +443,6 @@ jobs:
       - name: Verify integration pipeline
         env:
           CI: "true"
-          BPMN_PIPELINE_WARM_BUDGET_FACTOR: "1.5"
-          BPMN_PIPELINE_PARTITION: ${{ matrix.partition }}
         run: ./scripts/verify.sh pipeline
 
   # One stable check name for branch protection. `always()` is required:
@@ -536,7 +456,6 @@ jobs:
       - verify_lean_checks
       - verify_runtime
       - verify_temporal
-      - verify_temporal_serial
       - verify_pipeline
     if: always()
     runs-on: ubuntu-latest
@@ -549,14 +468,12 @@ jobs:
           echo "Lean executable checks result: ${{ needs.verify_lean_checks.result }}"
           echo "runtime verification result: ${{ needs.verify_runtime.result }}"
           echo "Temporal verification result: ${{ needs.verify_temporal.result }}"
-          echo "Temporal serial verification result: ${{ needs.verify_temporal_serial.result }}"
           echo "integration verification result: ${{ needs.verify_pipeline.result }}"
           test "${{ needs.changes.outputs.product1 }}" = "false" || {
             test "${{ needs.verify_lean.result }}" = "success"
             test "${{ needs.verify_lean_checks.result }}" = "success"
             test "${{ needs.verify_runtime.result }}" = "success"
             test "${{ needs.verify_temporal.result }}" = "success"
-            test "${{ needs.verify_temporal_serial.result }}" = "success"
             test "${{ needs.verify_pipeline.result }}" = "success"
           }
 

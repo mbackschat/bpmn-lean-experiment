@@ -100,7 +100,7 @@ for (const automatedParticipants of [false, true]) test.describe(automatedPartic
       await expect(detail.locator('[data-ui="execution-overview"]')).toContainText("completed");
       await detail.getByRole("tab", { name: "History", exact: true }).click();
       const history = detail.locator('[data-ui="execution-history"]');
-      await expect(history).toContainText("startProcess");
+      await expect(history.locator('[data-revision="1"]')).toContainText("start");
       const revisions = await history.locator("[data-revision]").evaluateAll((rows) =>
         rows.map((row) => Number(row.getAttribute("data-revision"))));
       expect(revisions.length).toBeGreaterThan(1);
@@ -134,7 +134,7 @@ for (const automatedParticipants of [false, true]) test.describe(automatedPartic
     const execution = new ProcessExecutionApiClient(runtime.origin);
     const before = await execution.getComplete(result.instance);
     expect(before.current.state.status).toBe("running");
-    expect(before.current.state.openUserTasks).toHaveLength(1);
+    expect(before.current.state.openWaits.filter(({ detail }) => detail.kind === "userTask")).toHaveLength(1);
     // The actor polls every 250 ms; four discovery cycles must leave the published task untouched.
     await delay(1_000);
     const after = await execution.getComplete(result.instance);

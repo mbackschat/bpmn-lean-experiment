@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { test } from "node:test";
 
 import { missingWorkspaceSourceMappings } from "./harness-source-policy.ts";
+import { workingTreeFiles } from "./test-selection-coverage.ts";
 
 type WorkspacePackage = {
   manifest: unknown;
@@ -13,12 +13,7 @@ type WorkspacePackage = {
 };
 
 function workspacePackages(): WorkspacePackage[] {
-  return execFileSync(
-    "git",
-    ["ls-files", "--cached", "--others", "--exclude-standard"],
-    { encoding: "utf8" },
-  )
-    .split("\n")
+  return workingTreeFiles()
     .filter((path) => path === "package.json" || path.endsWith("/package.json"))
     .map((path) => {
       const manifest: unknown = JSON.parse(readFileSync(path, "utf8"));

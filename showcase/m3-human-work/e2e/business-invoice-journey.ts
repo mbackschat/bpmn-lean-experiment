@@ -10,7 +10,7 @@ import {
   decodeProcessInstanceStartResult,
   definitionVersionStartPath,
   executionPublicationExportPath,
-  executionPublicationIdentityForPublicProcessInstance,
+  publicationIdentityForPublicProcessInstance,
   workTaskPath,
   workTaskReleasePath,
 } from "@bpmn-lean/platform-contracts";
@@ -191,23 +191,18 @@ async function proveCompletion(
     signal: AbortSignal.timeout(5_000),
   });
   expect(response.status).toBe(200);
-  const publication = decodeExecutionPublicationExport(await response.json(), executionPublicationIdentityForPublicProcessInstance(instance));
+  const publication = decodeExecutionPublicationExport(await response.json(), publicationIdentityForPublicProcessInstance(instance));
   expect(publication.current.state.status).toBe("completed");
-  expect(publication.current.state.openIncidents).toEqual([]);
+  expect(publication.current.state.openWaits.filter(({ detail }) => detail.kind === "incident")).toEqual([]);
   expect(publication.current.state.variables).toEqual(bindings(journey.finalVariables));
-  const stimuli = publication.batches.flatMap((batch) => batch.transitions.flatMap(({ transition }) =>
-    transition.kind === "externalStimulus" ? [transition.stimulus] : []
+  // The kernel publication names the input kind each committed batch began with, not the input's contents: the start's
+  // variables, each completion's submitted values and each effect's result kind are no longer published.
+  const inputs = publication.batches.flatMap((batch) => batch.transitions.flatMap(({ role }) =>
+    role.kind === "input" ? [role.input] : []
   ));
-  expect(stimuli.filter((stimulus) => stimulus.kind === "startProcess").map((stimulus) => stimulus.initialVariables))
-    .toEqual([bindings(journey.initialVariables)]);
-  expect(stimuli.filter((stimulus) => stimulus.kind === "completeUserTaskInstance").map(({ taskId, submittedValues }) =>
-    ({ taskId, submittedValues })
-  )).toEqual(completed.map((taskId, index) => ({
-    taskId, submittedValues: bindings([["request", journey.tasks[index]!.submitted]]),
-  })));
-  expect(stimuli.filter((stimulus) => stimulus.kind === "completeEffect").map(({ effectId, result }) =>
-    [effectId.elementId, effectId.activation, result.kind]
-  )).toEqual(journey.effects);
+  expect(inputs.filter((input) => input === "start")).toHaveLength(1);
+  expect(inputs.filter((input) => input === "command")).toHaveLength(completed.length);
+  expect(inputs.filter((input) => input === "effectResult")).toHaveLength(journey.effects.length);
 
   await navigate(page, "Operations");
   await page.getByLabel("Process-instance ID").fill(instance.processInstanceId);

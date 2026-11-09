@@ -1,6 +1,6 @@
 /**
  * The static rebuild-set model of guard 15 over both languages' import graphs
- * (docs/LEAN-KERNEL-REWRITE-PROPOSAL.md#guardrails-against-degradation): a feature or admission edit rebuilds only the
+ * (docs/kernel/ARCHITECTURE-SPEC.md#guardrails-against-degradation): a feature or admission edit rebuilds only the
  * cone the proposal's module table states, and only `IL.Types`, `State` and `Hooks` have more than five direct
  * importers. It builds its own graph because `kernel-structure.ts` classifies only the executable layers and the model
  * must also see `Laws` and `Proofs`.

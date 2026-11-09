@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
+
+import { workingTreeFiles } from "./test-selection-coverage.ts";
 
 /**
  * Every migration composition must be the whole catalog or a prefix of it.
@@ -24,10 +25,7 @@ const migrationFilePattern = /^(\d{4})_/u;
 
 /** Packages owning migrations, with the ordinals each owns. */
 function migrationOwners(): ReadonlyMap<string, ReadonlyArray<number>> {
-  const tracked = execFileSync("git", ["ls-files", "platform/*/*/migrations/*.sql"], {
-    cwd: projectRoot,
-    encoding: "utf8",
-  }).split("\n").filter((line) => line.length > 0);
+  const tracked = workingTreeFiles().filter((file) => /^platform\/[^/]+\/[^/]+\/migrations\/[^/]+\.sql$/u.test(file));
   const owners = new Map<string, number[]>();
   for (const file of tracked) {
     const ordinal = migrationFilePattern.exec(path.basename(file));
@@ -46,10 +44,9 @@ function migrationOwners(): ReadonlyMap<string, ReadonlyArray<number>> {
  * requirement here; counting every occurrence of the word instead reported those as empty subsets.
  */
 function catalogCompositions(): ReadonlyArray<Readonly<{ file: string; directories: number }>> {
-  const tracked = execFileSync("git", ["ls-files", "platform/**/*.ts", "scripts/*.ts"], {
-    cwd: projectRoot,
-    encoding: "utf8",
-  }).split("\n").filter((line) => line.endsWith(".ts") && !line.includes("/dist/"));
+  const tracked = workingTreeFiles().filter((file) =>
+    /^(?:platform|scripts)\/.*\.ts$/u.test(file) && !file.includes("/dist/")
+  );
   const compositions: Array<{ file: string; directories: number }> = [];
   for (const file of tracked) {
     const body = readFileSync(path.join(projectRoot, file), "utf8");
@@ -106,10 +103,10 @@ test("the readiness epoch a worker demands matches the catalog it will find", ()
   // correctly migrated database reports is the final ordinal. A worker that demands a stale epoch
   // refuses to start against exactly the schema it was migrated to, which is a production refusal
   // and not merely a failing test.
-  const finalSql = execFileSync("git", ["ls-files", `${finalMigration}/*.sql`], {
-    cwd: projectRoot,
-    encoding: "utf8",
-  }).split("\n").filter((line) => line.includes(`/${String(finalOrdinal).padStart(4, "0")}_`))[0];
+  const finalSql = workingTreeFiles().filter((file) =>
+    file.startsWith(`${finalMigration}/`) && file.endsWith(".sql") &&
+    file.includes(`/${String(finalOrdinal).padStart(4, "0")}_`)
+  )[0];
   assert.ok(finalSql !== undefined, "the final ordinal must have a migration file");
   const pinned = /CHECK \(epoch = (\d+)\)/u.exec(
     readFileSync(path.join(projectRoot, finalSql), "utf8"),

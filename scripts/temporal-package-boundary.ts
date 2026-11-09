@@ -1,84 +1,70 @@
+/**
+ * The Temporal boundary of the kernel rewrite: one host package owns every Temporal SDK dependency, each of its
+ * execution environments reaches only the SDK that environment may load, and Product 2 reaches Temporal only through
+ * `@bpmn-lean/engine-api`.
+ *
+ * The environments are module closures, not packages: `@bpmn-lean/temporal-host` is one package with one entry per
+ * environment, so a closure that crosses environments (a Workflow module importing a Node built-in, the production
+ * client reaching the test server) is visible only by following the relative imports from each entry.
+ */
 import { readdir, readFile } from "node:fs/promises";
 import { isBuiltin } from "node:module";
 import path from "node:path";
 
 import { typeScriptModuleSpecifiersFromSource } from "./platform-product-boundary.ts";
 
-const PackageRole = {
-  Protocol: "protocol",
-  Client: "client",
+const hostPackageName = "@bpmn-lean/temporal-host";
+const hostRoot = "packages/temporal-host";
+
+/** The workspace packages the host may depend on; the kernel is the only lower layer it executes. */
+const hostWorkspaceDependencies: ReadonlySet<string> = new Set(["@bpmn-lean/kernel"]);
+
+/** Every SDK package the host may declare; anything else would widen the deployed closure unreviewed. */
+const hostSdkDependencies: ReadonlySet<string> = new Set([
+  "@temporalio/activity",
+  "@temporalio/client",
+  "@temporalio/testing",
+  "@temporalio/worker",
+  "@temporalio/workflow",
+]);
+
+const Environment = {
   Workflow: "workflow",
+  Client: "client",
+  Host: "host",
   Worker: "worker",
-  Runner: "runner",
-  Testkit: "testkit",
 } as const;
 
-type PackageRole = typeof PackageRole[keyof typeof PackageRole];
+type Environment = typeof Environment[keyof typeof Environment];
 
-type PackagePolicy = Readonly<{
-  name: string;
-  internalDependencies: ReadonlyArray<PackageRole>;
-  requiredSdkDependencies: ReadonlyArray<string>;
-  allowedSdkDependencies: ReadonlyArray<string>;
+type EnvironmentPolicy = Readonly<{
+  entry: string;
+  /** Workflow code runs in the SDK's deterministic sandbox, which has no Node built-ins. */
+  nodeBuiltins: boolean;
+  allowedSdk: ReadonlySet<string>;
 }>;
 
-const packagePolicies: Readonly<Record<PackageRole, PackagePolicy>> = {
-  [PackageRole.Protocol]: {
-    name: "@bpmn-lean/temporal-protocol",
-    internalDependencies: [],
-    requiredSdkDependencies: [],
-    allowedSdkDependencies: [],
+const environmentPolicies: Readonly<Record<Environment, EnvironmentPolicy>> = {
+  [Environment.Workflow]: {
+    entry: "src/workflows.ts",
+    nodeBuiltins: false,
+    allowedSdk: new Set(["@temporalio/workflow"]),
   },
-  [PackageRole.Client]: {
-    name: "@bpmn-lean/temporal-client",
-    internalDependencies: [PackageRole.Protocol],
-    requiredSdkDependencies: ["@temporalio/client"],
-    allowedSdkDependencies: ["@temporalio/client", "@temporalio/proto"],
+  // The production client and the engine host it serves never reach the Worker, Activity or test-server SDKs.
+  [Environment.Client]: {
+    entry: "src/client.ts",
+    nodeBuiltins: true,
+    allowedSdk: new Set(["@temporalio/client", "@temporalio/workflow"]),
   },
-  [PackageRole.Workflow]: {
-    name: "@bpmn-lean/temporal-workflow",
-    internalDependencies: [PackageRole.Protocol],
-    requiredSdkDependencies: ["@temporalio/workflow"],
-    allowedSdkDependencies: ["@temporalio/workflow"],
+  [Environment.Host]: {
+    entry: "src/host.ts",
+    nodeBuiltins: true,
+    allowedSdk: new Set(["@temporalio/client", "@temporalio/workflow"]),
   },
-  [PackageRole.Worker]: {
-    name: "@bpmn-lean/temporal-worker",
-    internalDependencies: [
-      PackageRole.Protocol,
-      PackageRole.Client,
-      PackageRole.Workflow,
-    ],
-    requiredSdkDependencies: ["@temporalio/worker"],
-    allowedSdkDependencies: ["@temporalio/worker", "@temporalio/proto", "@temporalio/common"],
-  },
-  [PackageRole.Runner]: {
-    name: "@bpmn-lean/temporal-runner",
-    internalDependencies: [
-      PackageRole.Protocol,
-      PackageRole.Client,
-      PackageRole.Worker,
-    ],
-    requiredSdkDependencies: [],
-    allowedSdkDependencies: [],
-  },
-  [PackageRole.Testkit]: {
-    name: "@bpmn-lean/temporal-testkit",
-    internalDependencies: [
-      PackageRole.Protocol,
-      PackageRole.Client,
-      PackageRole.Workflow,
-      PackageRole.Worker,
-      PackageRole.Runner,
-    ],
-    requiredSdkDependencies: ["@temporalio/testing"],
-    allowedSdkDependencies: [
-      "@temporalio/activity",
-      "@temporalio/client",
-      "@temporalio/proto",
-      "@temporalio/testing",
-      "@temporalio/worker",
-      "@temporalio/workflow",
-    ],
+  [Environment.Worker]: {
+    entry: "src/worker.ts",
+    nodeBuiltins: true,
+    allowedSdk: new Set(["@temporalio/activity", "@temporalio/client", "@temporalio/worker", "@temporalio/workflow"]),
   },
 };
 
@@ -86,261 +72,141 @@ export async function assessTemporalPackageBoundary(
   repositoryRoot: string,
 ): Promise<ReadonlyArray<string>> {
   const findings: string[] = [];
-  const subsystemRoot = path.join(
-    repositoryRoot,
-    "packages",
-    "temporal-adapter",
-  );
-  if (await fileExists(path.join(subsystemRoot, "package.json"))) {
-    findings.push(
-      "packages/temporal-adapter/package.json: production umbrella package is forbidden",
-    );
+  await assessHostManifest(repositoryRoot, findings);
+  for (const environment of Object.values(Environment)) {
+    await assessEnvironment(repositoryRoot, environment, findings);
   }
-
-  for (const role of Object.values(PackageRole)) {
-    const policy = packagePolicies[role];
-    const manifestPath = path.join(subsystemRoot, role, "package.json");
-    const manifest = await readManifest(manifestPath, findings);
-    if (manifest === undefined) {
-      continue;
-    }
-    if (manifest.name !== policy.name) {
-      findings.push(
-        `${relative(repositoryRoot, manifestPath)}: expected package name ${policy.name}`,
-      );
-    }
-    if (manifest.private !== true) {
-      findings.push(
-        `${relative(repositoryRoot, manifestPath)}: package must remain private before release packaging exists`,
-      );
-    }
-    assessDependencies(
-      repositoryRoot,
-      manifestPath,
-      manifest.dependencies,
-      policy,
-      findings,
-    );
-  }
-  await assessWorkflowSafeSources(repositoryRoot, subsystemRoot, findings);
-  await assessProduct2TemporalDependencies(repositoryRoot, findings);
+  await assessProduct2TemporalReach(repositoryRoot, findings);
   return findings.sort(compareCodeUnits);
 }
 
-async function assessProduct2TemporalDependencies(
-  repositoryRoot: string,
-  findings: string[],
-): Promise<void> {
-  const allowedManifest = "platform/foundation/engine-gateway/package.json";
-  const platformRoot = path.join(repositoryRoot, "platform");
-  for (const manifestPath of await packageManifestPaths(
-    platformRoot,
-  )) {
-    const manifest = await readManifest(manifestPath, findings);
-    if (manifest === undefined) {
+async function assessHostManifest(repositoryRoot: string, findings: string[]): Promise<void> {
+  const manifestPath = path.join(repositoryRoot, hostRoot, "package.json");
+  const manifest = await readManifest(repositoryRoot, manifestPath, findings);
+  if (manifest === undefined) return;
+  const label = relative(repositoryRoot, manifestPath);
+  if (manifest.name !== hostPackageName) findings.push(`${label}: expected package name ${hostPackageName}`);
+  if (manifest.private !== true) {
+    findings.push(`${label}: package must remain private before release packaging exists`);
+  }
+  const dependencies = isRecord(manifest.dependencies) ? manifest.dependencies : {};
+  for (const [name, range] of Object.entries(dependencies)) {
+    if (name.startsWith("@temporalio/")) {
+      if (!hostSdkDependencies.has(name)) findings.push(`${label}: forbidden Temporal SDK dependency ${name}`);
       continue;
     }
-    const dependencies = isRecord(manifest.dependencies)
-      ? manifest.dependencies
-      : {};
-    const manifestRelativePath = relative(repositoryRoot, manifestPath);
-    for (const dependencyName of Object.keys(dependencies)) {
-      if (dependencyName.startsWith("@temporalio/")) {
-        findings.push(
-          `${manifestRelativePath}: forbidden Product 2 Temporal SDK dependency ${dependencyName}`,
-        );
-        continue;
-      }
-      if (!dependencyName.startsWith("@bpmn-lean/temporal-")) {
-        continue;
-      }
-      if (
-        dependencyName === "@bpmn-lean/temporal-client" &&
-        manifestRelativePath === allowedManifest
-      ) {
-        if (dependencies[dependencyName] !== "workspace:*") {
-          findings.push(
-            `${manifestRelativePath}: @bpmn-lean/temporal-client must be an exact workspace dependency`,
-          );
-        }
-        continue;
-      }
-      if (dependencyName === "@bpmn-lean/temporal-client") {
-        findings.push(
-          `${manifestRelativePath}: Product 2 Temporal dependency ${dependencyName} is allowed only in ${allowedManifest}`,
-        );
-        continue;
-      }
-      findings.push(
-        `${manifestRelativePath}: forbidden Product 2 Temporal dependency ${dependencyName}`,
-      );
+    if (name.startsWith("@bpmn-lean/")) {
+      if (!hostWorkspaceDependencies.has(name)) findings.push(`${label}: forbidden workspace dependency ${name}`);
+      else if (range !== "workspace:*") findings.push(`${label}: ${name} must be an exact workspace dependency`);
     }
   }
-  for (const sourcePath of await typeScriptSources(platformRoot)) {
-    const sourceRelativePath = relative(repositoryRoot, sourcePath);
-    const isEngineGatewaySource = sourceRelativePath.startsWith(
-      "platform/foundation/engine-gateway/src/",
-    );
-    const source = await readFile(sourcePath, "utf8");
-    for (const specifier of typeScriptModuleSpecifiersFromSource(source)) {
-      if (specifier.startsWith("@temporalio/")) {
-        findings.push(
-          `${sourceRelativePath}: forbidden Product 2 Temporal SDK import ${specifier}`,
-        );
-        continue;
-      }
-      if (!specifier.startsWith("@bpmn-lean/temporal-")) {
-        continue;
-      }
-      if (
-        isEngineGatewaySource &&
-        allowedProduct2TemporalClientImports.has(specifier)
-      ) {
-        continue;
-      }
-      findings.push(
-        `${sourceRelativePath}: forbidden Product 2 Temporal import ${specifier}`,
-      );
-    }
+  for (const name of hostWorkspaceDependencies) {
+    if (!(name in dependencies)) findings.push(`${label}: missing workspace dependency ${name}`);
   }
 }
 
-const allowedProduct2TemporalClientImports = new Set([
-  "@bpmn-lean/temporal-client/definition-schedule",
-  "@bpmn-lean/temporal-client/definition-start",
-  "@bpmn-lean/temporal-client/process-work",
-]);
-
-async function assessWorkflowSafeSources(
+async function assessEnvironment(
   repositoryRoot: string,
-  subsystemRoot: string,
+  environment: Environment,
   findings: string[],
 ): Promise<void> {
-  for (const role of [PackageRole.Protocol, PackageRole.Workflow]) {
-    const sourceRoot = path.join(subsystemRoot, role, "src");
-    for (const sourcePath of await typeScriptSources(sourceRoot)) {
-      const source = await readFile(sourcePath, "utf8");
-      for (const specifier of typeScriptModuleSpecifiersFromSource(source)) {
-        if (isBuiltin(specifier)) {
-          findings.push(
-            `${relative(repositoryRoot, sourcePath)}: Workflow-reachable Node built-in ${specifier}`,
-          );
-        }
+  const policy = environmentPolicies[environment];
+  const entry = path.join(repositoryRoot, hostRoot, policy.entry);
+  const pending = [entry];
+  const seen = new Set<string>();
+  while (pending.length > 0) {
+    const modulePath = pending.pop();
+    if (modulePath === undefined || seen.has(modulePath)) continue;
+    seen.add(modulePath);
+    let source: string;
+    try {
+      source = await readFile(modulePath, "utf8");
+    } catch (error: unknown) {
+      if (isNodeError(error) && error.code === "ENOENT") {
+        findings.push(`${relative(repositoryRoot, modulePath)}: ${environment} entry or module is missing`);
+        continue;
+      }
+      throw error;
+    }
+    const label = relative(repositoryRoot, modulePath);
+    for (const specifier of typeScriptModuleSpecifiersFromSource(source)) {
+      if (specifier.startsWith("./") || specifier.startsWith("../")) {
+        pending.push(path.resolve(path.dirname(modulePath), specifier.replace(/\.js$/u, ".ts")));
+        continue;
+      }
+      if (!policy.nodeBuiltins && isBuiltin(specifier)) {
+        findings.push(`${label}: ${environment}-reachable Node built-in ${specifier}`);
+      }
+      if (specifier.startsWith("@temporalio/") && !policy.allowedSdk.has(sdkPackage(specifier))) {
+        findings.push(`${label}: ${environment}-reachable Temporal SDK ${specifier}`);
       }
     }
   }
 }
 
-async function typeScriptSources(directory: string): Promise<ReadonlyArray<string>> {
+/** Product 2 consumes the engine's published contract only, so no platform package names Temporal at all. */
+async function assessProduct2TemporalReach(repositoryRoot: string, findings: string[]): Promise<void> {
+  const platformRoot = path.join(repositoryRoot, "platform");
+  for (const manifestPath of await filesNamed(platformRoot, (name) => name === "package.json")) {
+    const manifest = await readManifest(repositoryRoot, manifestPath, findings);
+    if (manifest === undefined) continue;
+    const label = relative(repositoryRoot, manifestPath);
+    for (const field of ["dependencies", "devDependencies"]) {
+      const dependencies = isRecord(manifest[field]) ? manifest[field] : {};
+      for (const name of Object.keys(dependencies)) {
+        if (isTemporalSpecifier(name)) findings.push(`${label}: forbidden Product 2 Temporal dependency ${name}`);
+      }
+    }
+  }
+  for (const sourcePath of await filesNamed(platformRoot, (name) => /\.(?:cts|mts|tsx?)$/u.test(name))) {
+    const source = await readFile(sourcePath, "utf8");
+    for (const specifier of typeScriptModuleSpecifiersFromSource(source)) {
+      if (isTemporalSpecifier(specifier)) {
+        findings.push(`${relative(repositoryRoot, sourcePath)}: forbidden Product 2 Temporal import ${specifier}`);
+      }
+    }
+  }
+}
+
+function isTemporalSpecifier(specifier: string): boolean {
+  return specifier.startsWith("@temporalio/") || specifier === hostPackageName ||
+    specifier.startsWith(`${hostPackageName}/`);
+}
+
+/** `@temporalio/workflow/lib/x` belongs to `@temporalio/workflow`. */
+function sdkPackage(specifier: string): string {
+  return specifier.split("/").slice(0, 2).join("/");
+}
+
+async function filesNamed(directory: string, accepts: (name: string) => boolean): Promise<ReadonlyArray<string>> {
   let entries;
   try {
     entries = await readdir(directory, { withFileTypes: true });
   } catch (error: unknown) {
-    if (isNodeError(error) && error.code === "ENOENT") {
-      return [];
-    }
+    if (isNodeError(error) && error.code === "ENOENT") return [];
     throw error;
   }
   const nested = await Promise.all(entries.map(async (entry) => {
+    if (entry.name === "dist" || entry.name === "node_modules") return [];
     const entryPath = path.join(directory, entry.name);
-    if (entry.name === "dist" || entry.name === "node_modules") {
-      return [];
-    }
-    if (entry.isDirectory()) {
-      return typeScriptSources(entryPath);
-    }
-    return entry.isFile() && /\.(?:cts|mts|tsx?)$/u.test(entry.name)
-      ? [entryPath]
-      : [];
+    if (entry.isDirectory()) return filesNamed(entryPath, accepts);
+    return entry.isFile() && accepts(entry.name) ? [entryPath] : [];
   }));
   return nested.flat().sort(compareCodeUnits);
-}
-
-async function packageManifestPaths(
-  directory: string,
-): Promise<ReadonlyArray<string>> {
-  let entries;
-  try {
-    entries = await readdir(directory, { withFileTypes: true });
-  } catch (error: unknown) {
-    if (isNodeError(error) && error.code === "ENOENT") {
-      return [];
-    }
-    throw error;
-  }
-  const nested = await Promise.all(entries.map(async (entry) => {
-    if (entry.name === "dist" || entry.name === "node_modules") {
-      return [];
-    }
-    const entryPath = path.join(directory, entry.name);
-    if (entry.isDirectory()) {
-      return packageManifestPaths(entryPath);
-    }
-    return entry.isFile() && entry.name === "package.json"
-      ? [entryPath]
-      : [];
-  }));
-  return nested.flat().sort(compareCodeUnits);
-}
-
-function assessDependencies(
-  repositoryRoot: string,
-  manifestPath: string,
-  value: unknown,
-  policy: PackagePolicy,
-  findings: string[],
-): void {
-  const dependencies = isRecord(value) ? value : {};
-  const dependencyNames = Object.keys(dependencies);
-  const allowedInternalNames = new Set(
-    policy.internalDependencies.map((role) => packagePolicies[role].name),
-  );
-  for (const dependencyName of dependencyNames) {
-    if (
-      dependencyName.startsWith("@bpmn-lean/temporal-") &&
-      !allowedInternalNames.has(dependencyName)
-    ) {
-      findings.push(
-        `${relative(repositoryRoot, manifestPath)}: forbidden Temporal subsystem dependency ${dependencyName}`,
-      );
-    }
-    if (
-      dependencyName.startsWith("@temporalio/") &&
-      !policy.allowedSdkDependencies.includes(dependencyName)
-    ) {
-      findings.push(
-        `${relative(repositoryRoot, manifestPath)}: forbidden Temporal SDK dependency ${dependencyName}`,
-      );
-    }
-  }
-  for (const role of policy.internalDependencies) {
-    const dependencyName = packagePolicies[role].name;
-    if (dependencies[dependencyName] !== "workspace:*") {
-      findings.push(
-        `${relative(repositoryRoot, manifestPath)}: missing workspace dependency ${dependencyName}`,
-      );
-    }
-  }
-  for (const dependencyName of policy.requiredSdkDependencies) {
-    const declaredVersion = dependencies[dependencyName];
-    if (typeof declaredVersion !== "string" || declaredVersion.length === 0) {
-      findings.push(
-        `${relative(repositoryRoot, manifestPath)}: missing required SDK dependency ${dependencyName}`,
-      );
-    }
-  }
 }
 
 async function readManifest(
+  repositoryRoot: string,
   manifestPath: string,
   findings: string[],
 ): Promise<Record<string, unknown> | undefined> {
+  const label = relative(repositoryRoot, manifestPath);
   let source: string;
   try {
     source = await readFile(manifestPath, "utf8");
   } catch (error: unknown) {
     if (isNodeError(error) && error.code === "ENOENT") {
-      findings.push(`${manifestPath}: required package manifest is missing`);
+      findings.push(`${label}: required package manifest is missing`);
       return undefined;
     }
     throw error;
@@ -349,26 +215,14 @@ async function readManifest(
   try {
     value = JSON.parse(source);
   } catch {
-    findings.push(`${manifestPath}: package manifest is not valid JSON`);
+    findings.push(`${label}: package manifest is not valid JSON`);
     return undefined;
   }
   if (!isRecord(value)) {
-    findings.push(`${manifestPath}: package manifest must be an object`);
+    findings.push(`${label}: package manifest must be an object`);
     return undefined;
   }
   return value;
-}
-
-async function fileExists(filePath: string): Promise<boolean> {
-  try {
-    await readFile(filePath);
-    return true;
-  } catch (error: unknown) {
-    if (isNodeError(error) && error.code === "ENOENT") {
-      return false;
-    }
-    throw error;
-  }
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

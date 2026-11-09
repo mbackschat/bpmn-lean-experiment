@@ -22,17 +22,16 @@ import {
   readPlatformServerConfig,
 } from "@bpmn-lean/platform-server";
 import type { PlatformServerRuntime } from "@bpmn-lean/platform-server";
+import { workflowType } from "@bpmn-lean/temporal-host/client";
+
+import { showcaseEngineDeploymentEnvironment } from "../../engine-deployment.ts";
 import {
-  ExternalTemporalRuntime,
-  bpmnProcessWorkflowType,
+  ShowcaseWorker,
   createCachedLocalEnvironment,
-  createTemporalClient,
-  createHostEffectActivities,
-  decodeJsonPayload,
-  historyEvents,
+  environmentNamespace,
+  noEffects,
   withDeadline,
-} from "@bpmn-lean/temporal-testkit";
-import type { TemporalHistory } from "@bpmn-lean/temporal-testkit";
+} from "../src/host-worker.ts";
 
 import {
   deployDefinition,
@@ -88,14 +87,14 @@ test("searches three confirmed Product 2 starts without discovering private Temp
     environmentStartupDeadlineMs,
     "M2 Process-instance search Temporal environment startup",
   );
-  const namespace = "m2-process-instance-search-acceptance";
-  const client = createTemporalClient({ connection: environment.client.connection, namespace });
+  const namespace = environmentNamespace(environment);
+  const client = environment.client;
   let platform: PlatformServerRuntime | undefined;
-  let worker: ExternalTemporalRuntime | undefined;
+  let worker: ShowcaseWorker | undefined;
   const searchCaptures: CapturedJson<ProcessInstanceSearchPage>[] = [];
 
   try {
-    worker = await startWorker(environment.address, namespace);
+    worker = await startWorker(environment);
     platform = await startPlatform(
       origin,
       port,
@@ -344,31 +343,29 @@ async function startOutsideProductTwo(
     sourceHandle.fetchHistory(),
     operationDeadlineMs,
     "source Workflow history inspection",
-  ) as TemporalHistory;
-  const started = historyEvents(history, "workflowExecutionStartedEventAttributes");
-  assert.equal(started.length, 1);
-  const attributes = started[0]?.attributes;
-  const input = requireRecord(attributes?.input, "Workflow start input");
-  if (!Array.isArray(input.payloads) || input.payloads.length !== 3) {
-    throw new TypeError("production Workflow start must retain exactly three argument payloads");
-  }
-  const start = requireRecord(
-    decodeJsonPayload(input.payloads[0], "Workflow start stimulus"),
-    "Workflow start stimulus",
   );
-  const program = decodeJsonPayload(input.payloads[1], "Workflow start semantic program");
-  const hostInput = decodeJsonPayload(input.payloads[2], "Workflow start host input");
+  const started = (history.events ?? []).filter((event) => event.workflowExecutionStartedEventAttributes != null);
+  assert.equal(started.length, 1);
+  const input = requireRecord(started[0]?.workflowExecutionStartedEventAttributes?.input, "Workflow start input");
+  if (!Array.isArray(input.payloads) || input.payloads.length !== 1) {
+    throw new TypeError("a host Workflow start must retain exactly one argument payload");
+  }
+  const args = requireRecord(decodeJsonPayload(input.payloads[0], "Workflow start arguments"), "Workflow start arguments");
+  const start = requireRecord(args.start, "Workflow start stimulus");
   const before = await listWorkflowExecutions(client);
   await withDeadline(
-    client.workflow.start(bpmnProcessWorkflowType, {
+    client.workflow.start(workflowType, {
       taskQueue,
       workflowId,
       workflowIdReusePolicy: "REJECT_DUPLICATE",
       args: [{
-        ...start,
-        commandId: `outside-product-two-command-${process.pid}`,
-        instanceId: processInstanceId,
-      }, program, hostInput],
+        ...args,
+        start: {
+          ...start,
+          commandId: `outside-product-two-command-${process.pid}`,
+          instanceId: processInstanceId,
+        },
+      }],
     }),
     operationDeadlineMs,
     "outside-Product-2 direct Workflow start",
@@ -552,19 +549,26 @@ async function runtimeSources(
 }
 
 async function startWorker(
-  address: string,
-  namespace: string,
-): Promise<ExternalTemporalRuntime> {
+  environment: Awaited<ReturnType<typeof createCachedLocalEnvironment>>,
+): Promise<ShowcaseWorker> {
   return await withDeadline(
-    ExternalTemporalRuntime.initializeFreshNamespace({
-      address,
-      namespace,
+    ShowcaseWorker.start(environment, {
       taskQueue,
       identity: `bpmn-m2-process-search-worker-${process.pid}`,
-    }, createHostEffectActivities([]), 86_400),
+      effects: noEffects,
+    }),
     20_000,
-    "M2 Process-instance search production Worker startup",
+    "M2 Process-instance search host Worker startup",
   );
+}
+
+/** A Temporal payload of the SDK's default JSON converter: UTF-8 JSON bytes. */
+function decodeJsonPayload(value: unknown, description: string): unknown {
+  const data = requireRecord(value, description).data;
+  if (typeof data !== "string" && !(data instanceof Uint8Array)) {
+    throw new TypeError(`${description} has no JSON payload data`);
+  }
+  return JSON.parse(typeof data === "string" ? Buffer.from(data, "base64").toString("utf8") : Buffer.from(data).toString("utf8"));
 }
 
 async function startPlatform(
@@ -575,7 +579,7 @@ async function startPlatform(
   temporalNamespace: string,
 ): Promise<PlatformServerRuntime> {
   const runtime = await createPlatformServer({
-    ...readPlatformServerConfig({}),
+    ...readPlatformServerConfig(showcaseEngineDeploymentEnvironment()),
     host: "127.0.0.1",
     port,
     publicOrigin: origin,

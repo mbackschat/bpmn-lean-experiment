@@ -2,24 +2,20 @@
 import assert from "node:assert/strict";
 import { setTimeout as delay } from "node:timers/promises";
 
-import {
-  bpmnOpenUserTasksQueryName,
-  createCachedLocalEnvironment,
-  historyEvents,
-  withDeadline,
-} from "@bpmn-lean/temporal-testkit";
-import type {
-  BpmnProcessWorkflow,
-  TemporalHistory,
-} from "@bpmn-lean/temporal-testkit";
+import { withDeadline } from "../src/host-worker.ts";
+import type { TemporalEnvironment } from "../src/host-worker.ts";
 
 const operationDeadlineMs = 10_000;
 
-type TemporalEnvironment = Awaited<ReturnType<typeof createCachedLocalEnvironment>>;
 type TemporalClient = TemporalEnvironment["client"];
 type ScheduleHandle = ReturnType<TemporalClient["schedule"]["getHandle"]>;
 type ScheduleDescription = Awaited<ReturnType<ScheduleHandle["describe"]>>;
 type ProcessHandle = ReturnType<TemporalClient["workflow"]["getHandle"]>;
+export type TemporalHistory = Awaited<ReturnType<ProcessHandle["fetchHistory"]>>;
+type HistoryEntry = NonNullable<TemporalHistory["events"]>[number];
+
+/** The canonical state query of the host's process Workflow (`packages/temporal-host/src/protocol.ts`). */
+const observationQueryName = "observation";
 
 export type ObservedScheduleAction = Readonly<{
   hostScheduleId: string;
@@ -36,7 +32,6 @@ export type OpenUserTaskSnapshot = Readonly<{
     activation: number;
   }>;
   name: string | null;
-  state: string;
 }>;
 
 export function nextWholeSecond(offsetSeconds: number, nowMs = Date.now()): string {
@@ -113,7 +108,7 @@ export async function waitForExactScheduleAction(
       assert.equal(latest.action.type, "startWorkflow");
       const actionArgs = latest.action.args;
       assert.ok(Array.isArray(actionArgs));
-      assert.equal(actionArgs.length, 3);
+      assert.equal(actionArgs.length, 1);
       return {
         hostScheduleId,
         workflowId: execution.workflowId,
@@ -150,9 +145,9 @@ export async function waitForOpenUserTask(
   for (let attempt = 0; attempt < 160; attempt += 1) {
     try {
       latest = await withDeadline(
-        handle.query(bpmnOpenUserTasksQueryName),
+        handle.query(observationQueryName),
         1_000,
-        "scheduled Process open User Task Query",
+        "scheduled Process state observation Query",
       );
       const tasks = decodeOpenUserTasks(latest);
       if (tasks.length === 1 && tasks[0]?.name === expectedName) {
@@ -179,19 +174,24 @@ export function assertWorkerAbsentHistory(history: TemporalHistory): void {
   );
 }
 
+/**
+ * One Run, one Update, no timer and no Signal: the timer-started User Task Process commits its start and its one
+ * completion and ends. The old adapter's exact event total (14, with its markers and search-attribute upserts) was the
+ * shape of that Workflow; the host's own total is not pinned here.
+ */
 export function assertCompletedTimerStartHistory(history: TemporalHistory): void {
-  assert.equal(history.events.length, 14);
   assert.equal(historyEvents(history, "workflowExecutionStartedEventAttributes").length, 1);
   assert.equal(historyEvents(history, "workflowExecutionCompletedEventAttributes").length, 1);
+  assert.equal(historyEvents(history, "workflowExecutionContinuedAsNewEventAttributes").length, 0);
   assert.equal(historyEvents(history, "workflowExecutionUpdateAcceptedEventAttributes").length, 1);
   assert.equal(historyEvents(history, "workflowExecutionUpdateCompletedEventAttributes").length, 1);
-  assert.equal(historyEvents(history, "markerRecordedEventAttributes").length, 2);
-  assert.equal(
-    historyEvents(history, "upsertWorkflowSearchAttributesEventAttributes").length,
-    2,
-  );
   assert.equal(historyEvents(history, "timerStartedEventAttributes").length, 0);
+  assert.equal(historyEvents(history, "activityTaskScheduledEventAttributes").length, 0);
   assert.equal(historyEvents(history, "workflowExecutionSignaledEventAttributes").length, 0);
+}
+
+export function historyEvents(history: TemporalHistory, attribute: keyof HistoryEntry): readonly HistoryEntry[] {
+  return (history.events ?? []).filter((event) => event[attribute] !== undefined && event[attribute] !== null);
 }
 
 export function processHandle(
@@ -199,7 +199,7 @@ export function processHandle(
   workflowId: string,
   firstExecutionRunId: string,
 ): ProcessHandle {
-  return client.getHandle<BpmnProcessWorkflow>(workflowId, firstExecutionRunId);
+  return client.getHandle(workflowId, firstExecutionRunId);
 }
 
 async function collectScheduleIds(client: TemporalClient): Promise<string[]> {
@@ -218,12 +218,17 @@ async function collectWorkflowIds(client: TemporalClient): Promise<string[]> {
   return identities.sort();
 }
 
+/** The open User Task waits of a canonical state observation (`canonical-result.schema.json#/$defs/state`). */
 function decodeOpenUserTasks(value: unknown): OpenUserTaskSnapshot[] {
-  if (!Array.isArray(value)) {
-    throw new TypeError("open User Task Query must return an array");
+  const openWaits = requireRecord(value, "state observation").openWaits;
+  if (!Array.isArray(openWaits)) {
+    throw new TypeError("state observation openWaits must be an array");
   }
-  return value.map((candidate, index) => {
-    const task = requireRecord(candidate, `open User Task ${index}`);
+  return openWaits.filter((candidate) =>
+    requireRecord(requireRecord(candidate, "open wait").detail, "open wait detail").kind === "userTask"
+  ).map((candidate, index) => {
+    const wait = requireRecord(candidate, `open User Task ${index}`);
+    const task: Record<string, unknown> = { ...requireRecord(wait.detail, `open User Task ${index} detail`), id: wait.id };
     const id = requireRecord(task.id, `open User Task ${index} identity`);
     const processInstanceId = requireNonemptyString(
       id.processInstanceId,
@@ -242,7 +247,6 @@ function decodeOpenUserTasks(value: unknown): OpenUserTaskSnapshot[] {
     return {
       id: { processInstanceId, elementId, activation: Number(id.activation) },
       name: task.name,
-      state: requireNonemptyString(task.state, `open User Task ${index} state`),
     };
   });
 }

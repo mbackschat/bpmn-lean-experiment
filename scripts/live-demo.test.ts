@@ -36,11 +36,8 @@ const applicationImages = Object.freeze([
   "bpmn-lean/evaluation-platform-recovery-worker:local",
 ]);
 
-test("publishes the four demo lifecycle commands through the script registry", async () => {
-  const [manifestSource, registry] = await Promise.all([
-    readFile(new URL("../package.json", import.meta.url), "utf8"),
-    readFile(new URL("./README.md", import.meta.url), "utf8"),
-  ]);
+test("publishes the four demo lifecycle commands", async () => {
+  const manifestSource = await readFile(new URL("../package.json", import.meta.url), "utf8");
   const manifest = JSON.parse(manifestSource) as Readonly<{
     scripts?: Readonly<Record<string, string>>;
   }>;
@@ -49,7 +46,6 @@ test("publishes the four demo lifecycle commands through the script registry", a
   assert.equal(manifest.scripts?.["demo:start"], "node scripts/live-demo.ts start");
   assert.equal(manifest.scripts?.["demo:status"], "node scripts/live-demo.ts status");
   assert.equal(manifest.scripts?.["demo:stop"], "node scripts/live-demo.ts stop");
-  assert.match(registry, /\[`live-demo\.ts`\]\(live-demo\.ts\)/u);
 });
 
 test("prepares one fresh isolated evaluation stack and reports exact public demo inputs", async () => {

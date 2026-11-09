@@ -14,51 +14,10 @@ const channel = {
   messageId: "Message_CreateOrder",
 } as const;
 
-test("admits only exact triggered Start checked, IL, and stimulus wire shapes", async () => {
-  const [checkedSchema, programSchema, scenarioSchema] = await Promise.all([
-    readSchema("checked-process.schema.json"),
-    readSchema("semantic-process.schema.json"),
-    readSchema("scenario.schema.json"),
-  ]);
-  const checkedNode = compileDefinition(checkedSchema, "node");
-  const operation = compileDefinition(programSchema, "operation");
-  const stimulus = compileDefinition(scenarioSchema, "start");
+test("admits only exact triggered Start stimulus wire shapes", async () => {
+  const stimulus = compileDefinition(await readSchema("scenario.schema.json"), "start");
 
   const values = [
-    {
-      validate: checkedNode,
-      exact: {
-        kind: "messageStartEvent",
-        id: "Start_Message",
-        channel,
-      },
-      missing: {
-        kind: "messageStartEvent",
-        id: "Start_Message",
-      },
-    },
-    {
-      validate: operation,
-      exact: {
-        kind: "initiateMessage",
-        id: "operation:Start_Message",
-        origin: {
-          kind: "bpmnElement",
-          elementId: "Start_Message",
-        },
-        channel,
-        outputs: ["place:Flow_Start_User"],
-      },
-      missing: {
-        kind: "initiateMessage",
-        id: "operation:Start_Message",
-        origin: {
-          kind: "bpmnElement",
-          elementId: "Start_Message",
-        },
-        outputs: ["place:Flow_Start_User"],
-      },
-    },
     {
       validate: stimulus,
       exact: {
@@ -76,42 +35,6 @@ test("admits only exact triggered Start checked, IL, and stimulus wire shapes", 
         variables: [],
         startEvent: "Start_Message",
         trigger: { kind: "message" },
-      },
-    },
-    {
-      validate: checkedNode,
-      exact: {
-        kind: "timerStartEvent",
-        id: "Start_Timer",
-        durationLiteral: "PT1S",
-      },
-      missing: {
-        kind: "timerStartEvent",
-        id: "Start_Timer",
-      },
-    },
-    {
-      validate: operation,
-      exact: {
-        kind: "initiateTimer",
-        id: "operation:Start_Timer",
-        origin: {
-          kind: "bpmnElement",
-          elementId: "Start_Timer",
-        },
-        timer: {
-          durationMs: 1000,
-        },
-        outputs: ["place:Flow_Timer_User"],
-      },
-      missing: {
-        kind: "initiateTimer",
-        id: "operation:Start_Timer",
-        origin: {
-          kind: "bpmnElement",
-          elementId: "Start_Timer",
-        },
-        outputs: ["place:Flow_Timer_User"],
       },
     },
     {

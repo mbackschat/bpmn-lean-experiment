@@ -9,8 +9,9 @@ import {
   verifyArtifactSet,
 } from "./contract-artifacts.ts";
 import {
+  artifactSetAt,
   cloneArtifactSet,
-  requiredAt,
+  userTaskDiscoveryScenario,
 } from "./contract-artifact-test-fixtures.ts";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
@@ -25,11 +26,7 @@ test("requires every semantic profile to identify its reviewed CIB-BPMN relation
     }
   }
 
-  const firstArtifactSet = requiredAt(
-    artifactSets,
-    0,
-    "artifact sets",
-  );
+  const firstArtifactSet = artifactSetAt(artifactSets, userTaskDiscoveryScenario);
   const mutated = cloneArtifactSet(firstArtifactSet);
   delete (
     mutated.profile.bpmn as Partial<{
@@ -53,7 +50,7 @@ test("requires every semantic profile to identify its reviewed CIB-BPMN relation
 });
 
 test("binds business mapping and Error relationships to the live register", async () => {
-  const artifact = cloneArtifactSet(requiredAt(await readAndVerifyArtifactSets(projectRoot), 0, "artifact sets"));
+  const artifact = cloneArtifactSet(artifactSetAt(await readAndVerifyArtifactSets(projectRoot), userTaskDiscoveryScenario));
   for (const relationship of ["CIB-EXT-0015", "CIB-EXT-0016", "CIB-AGR-0012"]) {
     assert.ok(artifact.registeredRelationshipIds.has(relationship), relationship);
     artifact.profile.bpmn.relationships = [relationship];
@@ -65,7 +62,7 @@ test("binds business mapping and Error relationships to the live register", asyn
 });
 
 test("binds repeated Sub-Process relationships to the live register", async () => {
-  const artifact = cloneArtifactSet(requiredAt(await readAndVerifyArtifactSets(projectRoot), 0, "artifact sets"));
+  const artifact = cloneArtifactSet(artifactSetAt(await readAndVerifyArtifactSets(projectRoot), userTaskDiscoveryScenario));
   for (const relationship of ["CIB-AGR-0013", "CIB-EXT-0017", "CIB-AGR-0014", "CIB-EXT-0018"]) {
     assert.ok(artifact.registeredRelationshipIds.has(relationship), relationship);
     artifact.profile.bpmn.relationships = [relationship];

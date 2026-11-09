@@ -3,8 +3,8 @@
  * scenario profile closed to them (`PBV-INGRESS-01`, `PBV-IDENTITY-01`).
  *
  * The schema is a necessary filter only: it cannot express Map key order, signed 64-bit range, container depth, node
- * count or canonical bytes. The semantic-core schema test owns the comparison against the TypeScript validator, which
- * stays the single owner of those rules.
+ * count or canonical bytes. The kernel's value codec (`packages/kernel/src/il/codec.ts`) stays the single owner of those
+ * rules.
  */
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
@@ -55,14 +55,25 @@ const revision = map(
   ["total", decimal("-125", 2)],
 );
 
-test("every declared value kind has a reachable schema branch", async () => {
-  const [{ $defs }, source] = await Promise.all([
+/** The wire kinds the kernel's value codec decodes: the keys of its `valueKinds` lookup table. */
+function kernelWireValueKinds(codecSource: string): ReadonlyArray<string> {
+  const start = codecSource.indexOf("const valueKinds:");
+  assert.notEqual(start, -1, "the kernel codec has no valueKinds table");
+  const end = codecSource.indexOf("\n]);", start);
+  assert.notEqual(end, -1, "the kernel codec's valueKinds table has no end");
+  return [...codecSource.slice(start, end).matchAll(/^ {2}\[\s*"([A-Za-z]+)",/gmu)].map((match) => match[1] ?? "");
+}
+
+test("every kernel value kind has a reachable schema branch", async () => {
+  const [{ $defs }, codec, types] = await Promise.all([
     schemaDocument(),
-    readFile(new URL("packages/semantic-core/src/contract.ts", projectRoot), "utf8"),
+    readFile(new URL("packages/kernel/src/il/codec.ts", projectRoot), "utf8"),
+    readFile(new URL("packages/kernel/src/il/types.ts", projectRoot), "utf8"),
   ]);
   assert.ok(isRecord($defs));
-  const kinds = declaredEnumValues(source, "VariableValueKind");
-  // Anti-vacuity: the three recursive arms were added to an enum that previously held five members.
+  const kinds = kernelWireValueKinds(codec);
+  // Anti-vacuity: one wire kind per kernel value tag, and the three recursive arms among them.
+  assert.equal(kinds.length, declaredEnumValues(types, "ValueTag").length);
   assert.deepEqual(
     [...kinds].sort(),
     ["boolean", "decimal", "integer", "list", "map", "null", "string", "stringList"],

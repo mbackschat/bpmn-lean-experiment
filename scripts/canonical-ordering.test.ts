@@ -84,13 +84,13 @@ test("the inventory is not vacuous", () => {
     `expected the executable TypeScript inventory to be substantial, saw ${files.length}`,
   );
   for (const required of [
-    "packages/semantic-core/src/wire.ts",
+    "packages/kernel/src/step.ts",
+    "packages/temporal-host/src/client.ts",
     "packages/bpmn-source/calibration/miwg-observation.ts",
-    "packages/bpmn-source/test/projected-flow-element-keys.test.ts",
+    "packages/bpmn-source/test/kernel-reader.test.ts",
     "platform/modules/operate/src/flow-node-occurrence-projection.ts",
-    "scripts/start-operation-artifact-consistency.test.ts",
+    "scripts/strict-json.ts",
     "scripts/project-tags.ts",
-    "showcase/m3-human-work/test/runtime-support.ts",
   ]) {
     assert.ok(files.includes(required), `executable inventory must include ${required}`);
   }

@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
+
+import { workingTreeFiles } from "./test-selection-coverage.ts";
 
 /**
  * Names the Maven-wrapper launchers that leave the wrapper on the inherited host `JAVA_HOME`.
@@ -20,9 +21,8 @@ export function unresolvedMavenJavaHomeFindings(
 }
 
 test("every CIB Maven-wrapper launcher sets JAVA_HOME to the resolved Java 21 home", () => {
-  const surfaces = execFileSync("git", ["ls-files", "--cached", "--others", "--exclude-standard", "scripts", "packages"],
-    { encoding: "utf8" })
-    .split("\n")
+  const surfaces = workingTreeFiles()
+    .filter((relativePath) => /^(?:scripts|packages)\//u.test(relativePath))
     .filter((relativePath) => /\.ts$/u.test(relativePath) && !/\.test\.ts$/u.test(relativePath))
     .map((relativePath) => ({ relativePath, source: readFileSync(relativePath, "utf8") }));
   assert.deepEqual(unresolvedMavenJavaHomeFindings(surfaces), []);

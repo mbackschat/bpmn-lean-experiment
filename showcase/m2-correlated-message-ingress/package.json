@@ -10,11 +10,11 @@
     "test:e2e": "pnpm run type-test && pnpm run test:e2e:built"
   },
   "devDependencies": {
+    "@bpmn-lean/engine-api": "workspace:*",
     "@bpmn-lean/platform-contracts": "workspace:*",
     "@bpmn-lean/platform-server": "workspace:*",
     "@bpmn-lean/platform-web": "workspace:*",
-    "@bpmn-lean/semantic-core": "workspace:*",
-    "@bpmn-lean/temporal-testkit": "workspace:*",
+    "@bpmn-lean/temporal-host": "workspace:*",
     "@playwright/test": "1.62.1"
   }
 }

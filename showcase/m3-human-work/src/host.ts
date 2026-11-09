@@ -1,9 +1,8 @@
-import { createHostEffectActivities } from "@bpmn-lean/temporal-runner";
-
+import { noEffects } from "./host-worker.ts";
 import { reportM3HostFailure } from "./host-log.ts";
 import { runShowcaseHost } from "./host-runtime.ts";
 
-await runShowcaseHost(createHostEffectActivities([])).catch((error: unknown) => {
+await runShowcaseHost(noEffects).catch((error: unknown) => {
   reportM3HostFailure(error);
   process.exitCode = 1;
 });

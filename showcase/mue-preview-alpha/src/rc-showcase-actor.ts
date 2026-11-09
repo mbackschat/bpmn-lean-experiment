@@ -6,18 +6,18 @@ import { fileURLToPath } from "node:url";
 import { isDeepStrictEqual } from "node:util";
 
 import type { PublicProcessInstanceIdentity } from "@bpmn-lean/platform-contracts";
-import {
-  HostInteractionResultKind, driveHostInteractions, validateHostEffectHandlers, validateHostInteractionPlan,
-} from "@bpmn-lean/temporal-testkit";
-import type { HostEffectHandler, HostInteractionPort, HostInteractionResponse } from "@bpmn-lean/temporal-testkit";
 
 import { rcShowcases } from "../../../model-corpus/rc-showcases.ts";
+import {
+  InteractionResultKind, driveInteractions, validateConfiguredEffects, validateInteractionPlan,
+} from "./host-interactions.ts";
+import type { ConfiguredEffect, InteractionPort, InteractionResponse } from "./host-interactions.ts";
 
 const repositoryRoot = fileURLToPath(new URL("../../../", import.meta.url));
 
 type RcActorConfig = Readonly<{
-  interactions: readonly HostInteractionResponse[];
-  effectHandlers: readonly HostEffectHandler[];
+  interactions: readonly InteractionResponse[];
+  effectHandlers: readonly ConfiguredEffect[];
 }>;
 
 export type RcShowcaseBinding = Readonly<{
@@ -47,8 +47,8 @@ export async function loadRcShowcaseBindings(): Promise<readonly RcShowcaseBindi
       throw new TypeError(`RC showcase ${selection.modelId} requires a neutral runnable-MVP config`);
     }
     const { interactions, effectHandlers } = value;
-    validateHostInteractionPlan(interactions);
-    validateHostEffectHandlers(effectHandlers);
+    validateInteractionPlan(interactions);
+    validateConfiguredEffects(effectHandlers);
     const sourceFile = resolve(configDirectory, value.bpmn.file);
     const digest = createHash("sha256").update(await readFile(sourceFile)).digest("hex");
     if (sourceFile !== resolve(repositoryRoot, model.source.bpmnRelativePath)
@@ -64,8 +64,8 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-export function mergeRcEffectHandlers(bindings: readonly RcShowcaseBinding[]): readonly HostEffectHandler[] {
-  const handlers = new Map<string, HostEffectHandler>();
+export function mergeRcEffectHandlers(bindings: readonly RcShowcaseBinding[]): readonly ConfiguredEffect[] {
+  const handlers = new Map<string, ConfiguredEffect>();
   for (const binding of bindings) {
     if (binding.mode !== "guided") continue;
     for (const handler of binding.config.effectHandlers) {
@@ -117,13 +117,13 @@ export class RcShowcaseActors {
 }
 
 export async function driveRcShowcaseActor(
-  binding: RcShowcaseBinding, port: HostInteractionPort, signal: AbortSignal,
+  binding: RcShowcaseBinding, port: InteractionPort, signal: AbortSignal,
 ): Promise<void> {
   if (binding.mode !== "guided") throw new Error("Human RC showcases cannot acquire an actor");
   signal.throwIfAborted();
-  const result = await driveHostInteractions(binding.config.interactions, port,
+  const result = await driveInteractions(binding.config.interactions, port,
     async (milliseconds) => { await delay(milliseconds, undefined, { signal }); });
-  if (result.kind !== HostInteractionResultKind.Driven) {
+  if (result.kind !== InteractionResultKind.Driven) {
     throw new Error(`RC ${binding.modelId} actor refused: ${result.code}: ${result.evidence}`);
   }
 }

@@ -2,23 +2,18 @@
 import assert from "node:assert/strict";
 import { setTimeout as delay } from "node:timers/promises";
 
-import {
-  bpmnOpenUserTasksQueryName,
-  createCachedLocalEnvironment,
-  decodeJsonPayload,
-  historyEvents,
-  withDeadline,
-} from "@bpmn-lean/temporal-testkit";
-import type {
-  BpmnProcessWorkflow,
-  TemporalHistory,
-} from "@bpmn-lean/temporal-testkit";
+import { withDeadline } from "../src/host-worker.ts";
+import type { TemporalEnvironment } from "../src/host-worker.ts";
 
 const operationDeadlineMs = 10_000;
 
-type TemporalEnvironment = Awaited<ReturnType<typeof createCachedLocalEnvironment>>;
 type TemporalClient = TemporalEnvironment["client"];
 type ProcessHandle = ReturnType<TemporalClient["workflow"]["getHandle"]>;
+export type TemporalHistory = Awaited<ReturnType<ProcessHandle["fetchHistory"]>>;
+type HistoryEntry = NonNullable<TemporalHistory["events"]>[number];
+
+/** The canonical state query of the host's process Workflow (`packages/temporal-host/src/protocol.ts`). */
+const observationQueryName = "observation";
 
 export type TemporalWorkflowExecution = Readonly<{
   workflowId: string;
@@ -35,7 +30,6 @@ export type OpenUserTaskSnapshot = Readonly<{
     activation: number;
   }>;
   name: string | null;
-  state: string;
 }>;
 
 export async function listWorkflowExecutions(
@@ -78,7 +72,7 @@ export function processHandle(
   client: TemporalClient["workflow"],
   execution: TemporalWorkflowExecution,
 ): ProcessHandle {
-  return client.getHandle<BpmnProcessWorkflow>(execution.workflowId, execution.runId);
+  return client.getHandle(execution.workflowId, execution.runId);
 }
 
 export async function waitForOpenUserTask(
@@ -89,9 +83,9 @@ export async function waitForOpenUserTask(
   for (let attempt = 0; attempt < 160; attempt += 1) {
     try {
       latest = await withDeadline(
-        handle.query(bpmnOpenUserTasksQueryName),
+        handle.query(observationQueryName),
         1_000,
-        "Message Start open User Task Query",
+        "Message Start state observation Query",
       );
       const tasks = decodeOpenUserTasks(latest);
       if (tasks.length === 1 && tasks[0]?.name === expectedName) {
@@ -112,35 +106,30 @@ export function assertWorkerAbsentHistory(history: TemporalHistory): void {
   assert.equal(historyEvents(history, "workflowTaskStartedEventAttributes").length, 0);
 }
 
-export function workflowStartArguments(
-  history: TemporalHistory,
-): readonly [unknown, unknown, unknown] {
+/** The host Workflow's one start argument (`RunProcessArgs` of `packages/temporal-host/src/host-contract.ts`). */
+export function workflowStartArguments(history: TemporalHistory): Record<string, unknown> {
   const started = historyEvents(history, "workflowExecutionStartedEventAttributes");
   assert.equal(started.length, 1);
-  const attributes = started[0]?.attributes;
+  const attributes = started[0]?.workflowExecutionStartedEventAttributes;
   const input = requireRecord(attributes?.input, "Workflow start input");
-  if (!Array.isArray(input.payloads) || input.payloads.length !== 3) {
-    throw new TypeError("production Workflow start must retain exactly three argument payloads");
+  if (!Array.isArray(input.payloads) || input.payloads.length !== 1) {
+    throw new TypeError("a host Workflow start must retain exactly one argument payload");
   }
-  return [
-    decodeJsonPayload(input.payloads[0], "Workflow start stimulus"),
-    decodeJsonPayload(input.payloads[1], "Workflow start semantic program"),
-    decodeJsonPayload(input.payloads[2], "Workflow start host input"),
-  ];
+  return requireRecord(decodeJsonPayload(input.payloads[0], "Workflow start arguments"), "Workflow start arguments");
 }
 
+/**
+ * One Run, one Update, and none of the cross-Workflow, timer or Activity events: the Message-started User Task Process
+ * commits its start and its one completion and ends. The old adapter's exact event total (14, with its markers and
+ * search-attribute upserts) was the shape of that Workflow; the host's own total is not pinned here.
+ */
 export function assertCompletedMessageStartHistory(history: TemporalHistory): void {
-  assert.equal(history.events.length, 14);
   assert.equal(historyEvents(history, "workflowExecutionStartedEventAttributes").length, 1);
   assert.equal(historyEvents(history, "workflowExecutionCompletedEventAttributes").length, 1);
   assert.equal(historyEvents(history, "workflowExecutionUpdateAcceptedEventAttributes").length, 1);
   assert.equal(historyEvents(history, "workflowExecutionUpdateCompletedEventAttributes").length, 1);
-  assert.equal(historyEvents(history, "markerRecordedEventAttributes").length, 2);
-  assert.equal(
-    historyEvents(history, "upsertWorkflowSearchAttributesEventAttributes").length,
-    2,
-  );
   for (const attributes of [
+    "workflowExecutionContinuedAsNewEventAttributes",
     "workflowExecutionSignaledEventAttributes",
     "signalExternalWorkflowExecutionInitiatedEventAttributes",
     "externalWorkflowExecutionSignaledEventAttributes",
@@ -150,11 +139,24 @@ export function assertCompletedMessageStartHistory(history: TemporalHistory): vo
     "childWorkflowExecutionStartedEventAttributes",
   ]) {
     assert.equal(
-      historyEvents(history, attributes).length,
+      historyEvents(history, attributes as keyof HistoryEntry).length,
       0,
       `Message Start history unexpectedly contains ${attributes}`,
     );
   }
+}
+
+export function historyEvents(history: TemporalHistory, attribute: keyof HistoryEntry): readonly HistoryEntry[] {
+  return (history.events ?? []).filter((event) => event[attribute] !== undefined && event[attribute] !== null);
+}
+
+/** A Temporal payload of the SDK's default JSON converter: UTF-8 JSON bytes. */
+function decodeJsonPayload(value: unknown, description: string): unknown {
+  const data = requireRecord(value, description).data;
+  if (typeof data !== "string" && !(data instanceof Uint8Array)) {
+    throw new TypeError(`${description} has no JSON payload data`);
+  }
+  return JSON.parse(typeof data === "string" ? Buffer.from(data, "base64").toString("utf8") : Buffer.from(data).toString("utf8"));
 }
 
 async function collectWorkflowExecutions(
@@ -182,12 +184,17 @@ async function collectScheduleIds(client: TemporalClient): Promise<string[]> {
   return identities.sort();
 }
 
+/** The open User Task waits of a canonical state observation (`canonical-result.schema.json#/$defs/state`). */
 function decodeOpenUserTasks(value: unknown): OpenUserTaskSnapshot[] {
-  if (!Array.isArray(value)) {
-    throw new TypeError("open User Task Query must return an array");
+  const openWaits = requireRecord(value, "state observation").openWaits;
+  if (!Array.isArray(openWaits)) {
+    throw new TypeError("state observation openWaits must be an array");
   }
-  return value.map((candidate, index) => {
-    const task = requireRecord(candidate, `open User Task ${index}`);
+  return openWaits.filter((candidate) =>
+    requireRecord(requireRecord(candidate, "open wait").detail, "open wait detail").kind === "userTask"
+  ).map((candidate, index) => {
+    const wait = requireRecord(candidate, `open User Task ${index}`);
+    const task: Record<string, unknown> = { ...requireRecord(wait.detail, `open User Task ${index} detail`), id: wait.id };
     const id = requireRecord(task.id, `open User Task ${index} identity`);
     const processInstanceId = requireNonemptyString(
       id.processInstanceId,
@@ -206,7 +213,6 @@ function decodeOpenUserTasks(value: unknown): OpenUserTaskSnapshot[] {
     return {
       id: { processInstanceId, elementId, activation: Number(id.activation) },
       name: task.name,
-      state: requireNonemptyString(task.state, `open User Task ${index} state`),
     };
   });
 }

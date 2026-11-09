@@ -1,7 +1,13 @@
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 
-/** Filesystem inventory used to prove that artifact registration is complete. */
+import { compareCanonicalStrings } from "./strict-json.ts";
+
+/**
+ * Filesystem inventory used to prove that artifact registration is complete. The registry is itself discovered
+ * (contract-artifact-cases.ts), so this direction catches an evidence file without its scenario and a profile no
+ * scenario references.
+ */
 export type ArtifactInventory = Readonly<{
   scenarioRelativePaths: ReadonlyArray<string>;
   evidenceRelativePaths: ReadonlyArray<string>;
@@ -18,16 +24,8 @@ type NormativeArtifactRegistration = Readonly<{
   scenarioRelativePath: string;
 }>;
 
-type PipelineRegistration = Readonly<{
-  scenarioRelativePath: string;
-  cib: Readonly<{ evidenceRelativePath: string }> | null;
-  injectMutation?: unknown;
-}>;
-
 function sorted(values: ReadonlyArray<string>): ReadonlyArray<string> {
-  return [...values].sort((left, right) =>
-    left < right ? -1 : left > right ? 1 : 0
-  );
+  return [...values].sort(compareCanonicalStrings);
 }
 
 function duplicates(values: ReadonlyArray<string>): ReadonlyArray<string> {
@@ -85,9 +83,7 @@ async function discoverFiles(
 ): Promise<ReadonlyArray<string>> {
   const entries = await readdir(absoluteDirectory, { withFileTypes: true });
   const files: Array<string> = [];
-  for (const entry of entries.sort((left, right) =>
-    left.name < right.name ? -1 : left.name > right.name ? 1 : 0
-  )) {
+  for (const entry of entries.sort((left, right) => compareCanonicalStrings(left.name, right.name))) {
     const relativePath = path.posix.join(relativeDirectory, entry.name);
     if (entry.isDirectory()) {
       files.push(
@@ -207,66 +203,5 @@ export function verifyArtifactRegistration(
     throw new Error(
       `referenced profile artifact missing from repository: ${absentProfiles.join(", ")}`,
     );
-  }
-}
-
-/** Requires the executable pipeline to preserve every registered evidence obligation. */
-export function verifyPipelineRegistration(
-  cibArtifacts: ReadonlyArray<CibArtifactRegistration>,
-  normativeArtifacts: ReadonlyArray<NormativeArtifactRegistration>,
-  pipeline: ReadonlyArray<PipelineRegistration>,
-): void {
-  const registeredScenarios = [
-    ...cibArtifacts.map(({ scenarioRelativePath }) => scenarioRelativePath),
-    ...normativeArtifacts.map(({ scenarioRelativePath }) => scenarioRelativePath),
-  ];
-  requireNoDuplicates("registered scenarios", registeredScenarios);
-  const pipelineScenarios = pipeline.map(
-    ({ scenarioRelativePath }) => scenarioRelativePath,
-  );
-  requireNoDuplicates("pipeline scenarios", pipelineScenarios);
-  const pipelineByScenario = new Map(
-    pipeline.map((entry) => [entry.scenarioRelativePath, entry] as const),
-  );
-  const pipelineSet = new Set(pipelineScenarios);
-  const registeredSet = new Set(registeredScenarios);
-  const missingFromPipeline = sorted(
-    registeredScenarios.filter((relativePath) => !pipelineSet.has(relativePath)),
-  );
-  if (missingFromPipeline.length > 0) {
-    throw new Error(
-      `registered scenario missing from pipeline: ${missingFromPipeline.join(", ")}`,
-    );
-  }
-  const unknownPipelineCases = sorted(
-    pipelineScenarios.filter((relativePath) => !registeredSet.has(relativePath)),
-  );
-  if (unknownPipelineCases.length > 0) {
-    throw new Error(
-      `pipeline scenario missing from artifact registry: ${unknownPipelineCases.join(", ")}`,
-    );
-  }
-  for (const artifact of cibArtifacts) {
-    const pipelineCase = pipelineByScenario.get(artifact.scenarioRelativePath);
-    if (pipelineCase?.cib?.evidenceRelativePath !== artifact.evidenceRelativePath) {
-      throw new Error(
-        `pipeline CIB evidence route differs from registry for ${artifact.scenarioRelativePath}`,
-      );
-    }
-  }
-  for (const artifact of normativeArtifacts) {
-    const pipelineCase = pipelineByScenario.get(artifact.scenarioRelativePath);
-    if (pipelineCase?.cib !== null) {
-      throw new Error(
-        `normative-only pipeline case declares CIB evidence: ${artifact.scenarioRelativePath}`,
-      );
-    }
-  }
-  for (const pipelineCase of pipeline) {
-    if (typeof pipelineCase.injectMutation !== "function") {
-      throw new Error(
-        `pipeline case has no seeded mutation: ${pipelineCase.scenarioRelativePath}`,
-      );
-    }
   }
 }

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -9,311 +9,122 @@ import { assessTemporalPackageBoundary } from "./temporal-package-boundary.ts";
 const repositoryRoot = path.resolve(import.meta.dirname, "..");
 const fixtureSdkVersion = "9.9.9-fixture";
 
-test("keeps Temporal execution environments in separate package closures", async () => {
+test("keeps the Temporal host's execution environments and Product 2 inside their boundaries", async () => {
   assert.deepEqual(await assessTemporalPackageBoundary(repositoryRoot), []);
 });
 
-test("rejects the broad umbrella package and absent subsystem packages", async () => {
+test("reports an absent host package and absent environment entries", async () => {
   const root = await mkdtemp(path.join(tmpdir(), "temporal-package-boundary-"));
-  const subsystem = path.join(root, "packages", "temporal-adapter");
-  await mkdir(subsystem, { recursive: true });
-  await writeManifest(path.join(subsystem, "package.json"), {
-    name: "@bpmn-lean/temporal-adapter",
-    private: true,
-  });
-
-  const findings = await assessTemporalPackageBoundary(root);
-  assert(findings.some((finding) => finding.includes("production umbrella")));
-  assert.equal(
-    findings.filter((finding) => finding.includes("required package manifest is missing")).length,
-    6,
-  );
+  assert.deepEqual(await assessTemporalPackageBoundary(root), [
+    "packages/temporal-host/package.json: required package manifest is missing",
+    "packages/temporal-host/src/client.ts: client entry or module is missing",
+    "packages/temporal-host/src/host.ts: host entry or module is missing",
+    "packages/temporal-host/src/worker.ts: worker entry or module is missing",
+    "packages/temporal-host/src/workflows.ts: workflow entry or module is missing",
+  ]);
 });
 
-test("rejects test-server reachability from the production client", async () => {
-  const root = await createValidBoundaryFixture();
-  const clientManifest = path.join(
-    root,
-    "packages",
-    "temporal-adapter",
-    "client",
-    "package.json",
-  );
-  await writeManifest(clientManifest, {
-    name: "@bpmn-lean/temporal-client",
+test("accepts the minimal valid host", async () => {
+  assert.deepEqual(await assessTemporalPackageBoundary(await createValidHostFixture()), []);
+});
+
+test("rejects unreviewed SDK and workspace dependencies of the host", async () => {
+  const root = await createValidHostFixture();
+  await writeManifest(path.join(root, "packages/temporal-host/package.json"), {
+    name: "@bpmn-lean/temporal-host",
+    dependencies: {
+      "@bpmn-lean/kernel": "^0.1.0",
+      "@bpmn-lean/platform-server": "workspace:*",
+      "@temporalio/client": fixtureSdkVersion,
+      "@temporalio/interceptors-opentelemetry": fixtureSdkVersion,
+    },
+  });
+
+  assert.deepEqual(await assessTemporalPackageBoundary(root), [
+    "packages/temporal-host/package.json: @bpmn-lean/kernel must be an exact workspace dependency",
+    "packages/temporal-host/package.json: forbidden Temporal SDK dependency @temporalio/interceptors-opentelemetry",
+    "packages/temporal-host/package.json: forbidden workspace dependency @bpmn-lean/platform-server",
+    "packages/temporal-host/package.json: package must remain private before release packaging exists",
+  ]);
+});
+
+test("follows relative imports to a Workflow-reachable Node built-in or non-Workflow SDK", async () => {
+  const root = await createValidHostFixture();
+  await writeSource(root, "src/workflows.ts", 'import { run } from "./workflow-host.js";\n');
+  await writeSource(root, "src/workflow-host.ts", [
+    'import { proxyActivities } from "@temporalio/workflow";',
+    'import { createHash } from "node:crypto";',
+    'import { Context } from "@temporalio/activity";',
+  ].join("\n"));
+
+  assert.deepEqual(await assessTemporalPackageBoundary(root), [
+    "packages/temporal-host/src/workflow-host.ts: workflow-reachable Node built-in node:crypto",
+    "packages/temporal-host/src/workflow-host.ts: workflow-reachable Temporal SDK @temporalio/activity",
+  ]);
+});
+
+test("rejects test-server reachability from the production client and the engine host", async () => {
+  const root = await createValidHostFixture();
+  await writeSource(root, "src/client.ts", 'import { Client } from "@temporalio/client";\nimport "./shared.js";\n');
+  await writeSource(root, "src/host.ts", 'import "./shared.js";\n');
+  await writeSource(root, "src/shared.ts", 'import { TestWorkflowEnvironment } from "@temporalio/testing";\n');
+
+  assert.deepEqual(await assessTemporalPackageBoundary(root), [
+    "packages/temporal-host/src/shared.ts: client-reachable Temporal SDK @temporalio/testing",
+    "packages/temporal-host/src/shared.ts: host-reachable Temporal SDK @temporalio/testing",
+  ]);
+});
+
+test("keeps Product 2 off the Temporal SDK and the host package", async () => {
+  const root = await createValidHostFixture();
+  await writeManifest(path.join(root, "platform/foundation/engine-gateway/package.json"), {
+    name: "@example/engine-gateway",
+    private: true,
+    dependencies: { "@bpmn-lean/engine-api": "workspace:*", "@bpmn-lean/temporal-host": "workspace:*" },
+    devDependencies: { "@temporalio/testing": fixtureSdkVersion },
+  });
+  await mkdir(path.join(root, "platform/apps/server/src"), { recursive: true });
+  await writeFile(path.join(root, "platform/apps/server/src/direct.ts"), [
+    'import { Client } from "@temporalio/client";',
+    'import { createProcessHost } from "@bpmn-lean/temporal-host/host";',
+    'import type { EngineHost } from "@bpmn-lean/engine-api";',
+  ].join("\n"));
+
+  assert.deepEqual(await assessTemporalPackageBoundary(root), [
+    "platform/apps/server/src/direct.ts: forbidden Product 2 Temporal import @bpmn-lean/temporal-host/host",
+    "platform/apps/server/src/direct.ts: forbidden Product 2 Temporal import @temporalio/client",
+    "platform/foundation/engine-gateway/package.json: forbidden Product 2 Temporal dependency @bpmn-lean/temporal-host",
+    "platform/foundation/engine-gateway/package.json: forbidden Product 2 Temporal dependency @temporalio/testing",
+  ]);
+});
+
+async function createValidHostFixture(): Promise<string> {
+  const root = await mkdtemp(path.join(tmpdir(), "temporal-package-boundary-"));
+  await writeManifest(path.join(root, "packages/temporal-host/package.json"), {
+    name: "@bpmn-lean/temporal-host",
     private: true,
     dependencies: {
-      "@bpmn-lean/temporal-protocol": "workspace:*",
+      "@bpmn-lean/kernel": "workspace:*",
       "@temporalio/client": fixtureSdkVersion,
       "@temporalio/testing": fixtureSdkVersion,
+      "@temporalio/worker": fixtureSdkVersion,
+      "@temporalio/workflow": fixtureSdkVersion,
     },
   });
-
-  assert.deepEqual(await assessTemporalPackageBoundary(root), [
-    "packages/temporal-adapter/client/package.json: forbidden Temporal SDK dependency @temporalio/testing",
-  ]);
-});
-
-test("leaves SDK version resolution to package manifests and the lockfile", async () => {
-  const root = await createValidBoundaryFixture();
-  await writeManifest(
-    path.join(root, "packages", "temporal-adapter", "client", "package.json"),
-    {
-      name: "@bpmn-lean/temporal-client",
-      private: true,
-      dependencies: {
-        "@bpmn-lean/temporal-protocol": "workspace:*",
-        "@temporalio/client": fixtureSdkVersion,
-      },
-    },
-  );
-
-  assert.deepEqual(await assessTemporalPackageBoundary(root), []);
-});
-
-test("permits Activity Context only in testkit Activity implementations", async () => {
-  const root = await createValidBoundaryFixture();
-  await writeManifest(
-    path.join(root, "packages", "temporal-adapter", "testkit", "package.json"),
-    {
-      name: "@bpmn-lean/temporal-testkit",
-      private: true,
-      dependencies: {
-        "@bpmn-lean/temporal-protocol": "workspace:*",
-        "@bpmn-lean/temporal-client": "workspace:*",
-        "@bpmn-lean/temporal-workflow": "workspace:*",
-        "@bpmn-lean/temporal-worker": "workspace:*",
-        "@bpmn-lean/temporal-runner": "workspace:*",
-        "@temporalio/activity": fixtureSdkVersion,
-        "@temporalio/testing": fixtureSdkVersion,
-      },
-    },
-  );
-  await writeManifest(
-    path.join(root, "packages", "temporal-adapter", "client", "package.json"),
-    {
-      name: "@bpmn-lean/temporal-client",
-      private: true,
-      dependencies: {
-        "@bpmn-lean/temporal-protocol": "workspace:*",
-        "@temporalio/activity": fixtureSdkVersion,
-        "@temporalio/client": fixtureSdkVersion,
-      },
-    },
-  );
-
-  assert.deepEqual(await assessTemporalPackageBoundary(root), [
-    "packages/temporal-adapter/client/package.json: forbidden Temporal SDK dependency @temporalio/activity",
-  ]);
-});
-
-test("still requires each execution environment's SDK dependency", async () => {
-  const root = await createValidBoundaryFixture();
-  await writeManifest(
-    path.join(root, "packages", "temporal-adapter", "client", "package.json"),
-    {
-      name: "@bpmn-lean/temporal-client",
-      private: true,
-      dependencies: {
-        "@bpmn-lean/temporal-protocol": "workspace:*",
-      },
-    },
-  );
-
-  assert.deepEqual(await assessTemporalPackageBoundary(root), [
-    "packages/temporal-adapter/client/package.json: missing required SDK dependency @temporalio/client",
-  ]);
-});
-
-test("permits the approved native failure dependency only in the Worker", async () => {
-  const root = await createValidBoundaryFixture();
-  for (const role of ["client", "worker", "workflow", "protocol"]) {
-    const manifestPath = path.join(root, "packages", "temporal-adapter", role, "package.json");
-    const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
-    manifest.dependencies["@temporalio/common"] = fixtureSdkVersion;
-    await writeManifest(manifestPath, manifest);
-  }
-  assert.deepEqual(await assessTemporalPackageBoundary(root), [
-    "packages/temporal-adapter/client/package.json: forbidden Temporal SDK dependency @temporalio/common",
-    "packages/temporal-adapter/protocol/package.json: forbidden Temporal SDK dependency @temporalio/common",
-    "packages/temporal-adapter/workflow/package.json: forbidden Temporal SDK dependency @temporalio/common",
-  ]);
-});
-
-test("permits native deployment protocol access in the client, Worker, and testkit", async () => {
-  const root = await createValidBoundaryFixture();
-  for (const role of ["client", "worker", "testkit", "workflow"]) {
-    const manifestPath = path.join(root, "packages", "temporal-adapter", role, "package.json");
-    const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
-    manifest.dependencies["@temporalio/proto"] = fixtureSdkVersion;
-    await writeManifest(manifestPath, manifest);
-  }
-  assert.deepEqual(await assessTemporalPackageBoundary(root), [
-    "packages/temporal-adapter/workflow/package.json: forbidden Temporal SDK dependency @temporalio/proto",
-  ]);
-});
-
-test("permits only the concrete client through the Product 2 engine gateway", async () => {
-  const root = await createValidBoundaryFixture();
-  await writeManifest(
-    path.join(root, "platform", "foundation", "engine-gateway", "package.json"),
-    {
-      name: "@example/engine-gateway",
-      private: true,
-      dependencies: {
-        "@bpmn-lean/temporal-client": "workspace:*",
-        "@bpmn-lean/temporal-worker": "workspace:*",
-        "@temporalio/client": fixtureSdkVersion,
-      },
-    },
-  );
-  await writeManifest(
-    path.join(root, "platform", "apps", "server", "package.json"),
-    {
-      name: "@example/server",
-      private: true,
-      dependencies: {
-        "@bpmn-lean/temporal-client": "workspace:*",
-      },
-    },
-  );
-  await mkdir(path.join(root, "platform", "apps", "server", "src"), {
-    recursive: true,
-  });
-  await writeFile(
-    path.join(root, "platform", "apps", "server", "src", "direct.ts"),
-    [
-      'import { WorkflowClient } from "@temporalio/client";',
-      'import { schedule } from "@bpmn-lean/temporal-client/definition-schedule";',
-    ].join("\n"),
-  );
-  await mkdir(
-    path.join(root, "platform", "foundation", "engine-gateway", "src"),
-    { recursive: true },
-  );
-  await writeFile(
-    path.join(root, "platform", "foundation", "engine-gateway", "src", "worker.ts"),
-    [
-      'import { Worker } from "@bpmn-lean/temporal-worker";',
-      'import { schedule } from "@bpmn-lean/temporal-client/definition-schedule";',
-      'import { work } from "@bpmn-lean/temporal-client/process-work";',
-      'import { broad } from "@bpmn-lean/temporal-client";',
-    ].join("\n"),
-  );
-
-  assert.deepEqual(await assessTemporalPackageBoundary(root), [
-    "platform/apps/server/package.json: Product 2 Temporal dependency @bpmn-lean/temporal-client is allowed only in platform/foundation/engine-gateway/package.json",
-    "platform/apps/server/src/direct.ts: forbidden Product 2 Temporal SDK import @temporalio/client",
-    "platform/apps/server/src/direct.ts: forbidden Product 2 Temporal import @bpmn-lean/temporal-client/definition-schedule",
-    "platform/foundation/engine-gateway/package.json: forbidden Product 2 Temporal SDK dependency @temporalio/client",
-    "platform/foundation/engine-gateway/package.json: forbidden Product 2 Temporal dependency @bpmn-lean/temporal-worker",
-    "platform/foundation/engine-gateway/src/worker.ts: forbidden Product 2 Temporal import @bpmn-lean/temporal-client",
-    "platform/foundation/engine-gateway/src/worker.ts: forbidden Product 2 Temporal import @bpmn-lean/temporal-worker",
-  ]);
-});
-
-test("rejects Node built-ins from Workflow-reachable protocol code", async () => {
-  const root = await createValidBoundaryFixture();
-  const protocolSource = path.join(
-    root,
-    "packages",
-    "temporal-adapter",
-    "protocol",
-    "src",
-  );
-  const workflowSource = path.join(
-    root,
-    "packages",
-    "temporal-adapter",
-    "workflow",
-    "src",
-  );
-  await mkdir(protocolSource, { recursive: true });
-  await mkdir(workflowSource, { recursive: true });
-  await writeFile(
-    path.join(protocolSource, "command-identity.ts"),
-    'import { createHash } from "node:crypto";\n',
-  );
-  await writeFile(
-    path.join(workflowSource, "workflow.ts"),
-    'import { readFile } from "node:fs/promises";\n',
-  );
-
-  assert.deepEqual(await assessTemporalPackageBoundary(root), [
-    "packages/temporal-adapter/protocol/src/command-identity.ts: Workflow-reachable Node built-in node:crypto",
-    "packages/temporal-adapter/workflow/src/workflow.ts: Workflow-reachable Node built-in node:fs/promises",
-  ]);
-});
-
-async function createValidBoundaryFixture(): Promise<string> {
-  const root = await mkdtemp(path.join(tmpdir(), "temporal-package-boundary-"));
-  const manifests = {
-    protocol: {
-      name: "@bpmn-lean/temporal-protocol",
-      private: true,
-      dependencies: {},
-    },
-    client: {
-      name: "@bpmn-lean/temporal-client",
-      private: true,
-      dependencies: {
-        "@bpmn-lean/temporal-protocol": "workspace:*",
-        "@temporalio/client": fixtureSdkVersion,
-      },
-    },
-    workflow: {
-      name: "@bpmn-lean/temporal-workflow",
-      private: true,
-      dependencies: {
-        "@bpmn-lean/temporal-protocol": "workspace:*",
-        "@temporalio/workflow": fixtureSdkVersion,
-      },
-    },
-    worker: {
-      name: "@bpmn-lean/temporal-worker",
-      private: true,
-      dependencies: {
-        "@bpmn-lean/temporal-protocol": "workspace:*",
-        "@bpmn-lean/temporal-client": "workspace:*",
-        "@bpmn-lean/temporal-workflow": "workspace:*",
-        "@temporalio/worker": fixtureSdkVersion,
-      },
-    },
-    runner: {
-      name: "@bpmn-lean/temporal-runner",
-      private: true,
-      dependencies: {
-        "@bpmn-lean/temporal-protocol": "workspace:*",
-        "@bpmn-lean/temporal-client": "workspace:*",
-        "@bpmn-lean/temporal-worker": "workspace:*",
-      },
-    },
-    testkit: {
-      name: "@bpmn-lean/temporal-testkit",
-      private: true,
-      dependencies: {
-        "@bpmn-lean/temporal-protocol": "workspace:*",
-        "@bpmn-lean/temporal-client": "workspace:*",
-        "@bpmn-lean/temporal-workflow": "workspace:*",
-        "@bpmn-lean/temporal-worker": "workspace:*",
-        "@bpmn-lean/temporal-runner": "workspace:*",
-        "@temporalio/testing": fixtureSdkVersion,
-      },
-    },
-  } as const;
-  for (const [role, manifest] of Object.entries(manifests)) {
-    await writeManifest(
-      path.join(root, "packages", "temporal-adapter", role, "package.json"),
-      manifest,
-    );
-  }
+  await writeSource(root, "src/workflows.ts", 'import { defineQuery } from "@temporalio/workflow";\n');
+  await writeSource(root, "src/client.ts", 'import { Client } from "@temporalio/client";\n');
+  await writeSource(root, "src/host.ts", 'import { createClient } from "./client.js";\n');
+  await writeSource(root, "src/worker.ts", 'import { Worker } from "@temporalio/worker";\nimport { fileURLToPath } from "node:url";\n');
   return root;
 }
 
-async function writeManifest(
-  filePath: string,
-  manifest: unknown,
-): Promise<void> {
+async function writeSource(root: string, relativePath: string, source: string): Promise<void> {
+  const filePath = path.join(root, "packages/temporal-host", relativePath);
+  await mkdir(path.dirname(filePath), { recursive: true });
+  await writeFile(filePath, source);
+}
+
+async function writeManifest(filePath: string, manifest: unknown): Promise<void> {
   await mkdir(path.dirname(filePath), { recursive: true });
   await writeFile(filePath, `${JSON.stringify(manifest, null, 2)}\n`);
 }

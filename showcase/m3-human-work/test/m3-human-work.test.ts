@@ -12,18 +12,16 @@ import type {
   WorkCompletionRequest,
 } from "@bpmn-lean/platform-contracts";
 import type { PlatformServerRuntime } from "@bpmn-lean/platform-server";
+import { engineDefinitionMessageStartWorkflowId } from "@bpmn-lean/engine-api";
+import { ResultKind } from "@bpmn-lean/temporal-host/client";
+
 import {
-  ExternalTemporalRuntime,
+  ShowcaseWorker,
   createCachedLocalEnvironment,
-  createTemporalClient,
-  createHostEffectActivities,
-  historyEvents,
-  isCompletedProcessReceipt,
-  processWorkflowId,
-  readTestProcessTerminalResult,
+  environmentNamespace,
+  noEffects,
   withDeadline,
-} from "@bpmn-lean/temporal-testkit";
-import type { TemporalHistory } from "@bpmn-lean/temporal-testkit";
+} from "../src/host-worker.ts";
 
 import {
   claimTask,
@@ -60,6 +58,12 @@ import {
   waitForStartedSchedule,
 } from "./runtime-support.ts";
 
+/**
+ * The host Workflow ID engine-api gives a directly or Message-started instance: engine-api exports its instance-address
+ * rule only under the Message Start name, and both starts derive the address from the instance alone.
+ */
+const processWorkflowId = engineDefinitionMessageStartWorkflowId;
+
 test("runs the complete durable Human Work slice", async () => {
   const dataDirectory = await mkdtemp(join(tmpdir(), "bpmn-lean-m3-human-work-"));
   const port = await allocatePort();
@@ -72,19 +76,20 @@ test("runs the complete durable Human Work slice", async () => {
     40_000,
     "M3 Human Work Temporal environment startup",
   );
-  const namespace = "m3-human-work-acceptance";
-  const client = createTemporalClient({ connection: environment.client.connection, namespace });
+  const namespace = environmentNamespace(environment);
+  const client = environment.client;
   let platform: PlatformServerRuntime | undefined;
-  let worker: ExternalTemporalRuntime | undefined;
+  let worker: ShowcaseWorker | undefined;
   const publicCaptures: CapturedJson<unknown>[] = [];
 
   try {
     worker = await withDeadline(
-      ExternalTemporalRuntime.initializeFreshNamespace({
-        address: environment.address, namespace, taskQueue,
+      ShowcaseWorker.start(environment, {
+        taskQueue,
         identity: `bpmn-m3-human-work-worker-${process.pid}`,
-      }, createHostEffectActivities([]), 86_400),
-      20_000, "M3 Human Work native initialization",
+        effects: noEffects,
+      }),
+      20_000, "M3 Human Work Worker startup",
     );
     platform = await startPlatform(
       origin,
@@ -202,8 +207,7 @@ test("runs the complete durable Human Work slice", async () => {
     await worker.shutdown();
     worker = undefined;
     worker = await startWorker(
-      environment.address,
-      namespace,
+      environment,
       `bpmn-m3-human-work-replacement-${process.pid}`,
     );
     platform = await startPlatform(
@@ -233,21 +237,20 @@ test("runs the complete durable Human Work slice", async () => {
       completionActionId,
       completionRequest,
     );
-    const { receipt } = await withDeadline(
-      readTestProcessTerminalResult(handle),
+    const terminal = await withDeadline(
+      handle.result(),
       operationDeadlineMs,
-      "M3 Human Work completed Process receipt",
+      "M3 Human Work completed Process result",
     );
-    assert.equal(
-      isCompletedProcessReceipt(receipt),
-      true,
-      "decoded terminal result must carry a completed Process receipt",
+    assert.equal(terminal.kind, ResultKind.Ended);
+    assert.equal(terminal.kind === ResultKind.Ended ? terminal.status : null, "completed");
+    const finalState = await withDeadline(
+      handle.query<Readonly<{ variables: readonly Readonly<{ name: string; value: unknown }>[] }>>("observation"),
+      operationDeadlineMs,
+      "M3 Human Work completed Process observation",
     );
-    if (!isCompletedProcessReceipt(receipt)) {
-      throw new TypeError("M3 Human Work Workflow returned no completion receipt");
-    }
     assert.deepEqual(
-      receipt.finalState.variables.find(({ name }) => name === "approved"),
+      finalState.variables.find(({ name }) => name === "approved"),
       { name: "approved", value: { kind: "boolean", value: true } },
     );
     await platform.close();
@@ -296,12 +299,14 @@ test("runs the complete durable Human Work slice", async () => {
       handle.fetchHistory(),
       operationDeadlineMs,
       "M3 Human Work completed history",
-    ) as TemporalHistory;
-    assert.equal(historyEvents(history, "workflowExecutionStartedEventAttributes").length, 1);
-    assert.equal(historyEvents(history, "workflowExecutionUpdateAcceptedEventAttributes").length, 1);
-    assert.equal(historyEvents(history, "workflowExecutionUpdateCompletedEventAttributes").length, 1);
-    assert.equal(historyEvents(history, "workflowExecutionCompletedEventAttributes").length, 1);
-    assert.equal(historyEvents(history, "activityTaskScheduledEventAttributes").length, 0);
+    );
+    const historyEvents = (attribute: keyof NonNullable<typeof history.events>[number]) =>
+      (history.events ?? []).filter((event) => event[attribute] != null);
+    assert.equal(historyEvents("workflowExecutionStartedEventAttributes").length, 1);
+    assert.equal(historyEvents("workflowExecutionUpdateAcceptedEventAttributes").length, 1);
+    assert.equal(historyEvents("workflowExecutionUpdateCompletedEventAttributes").length, 1);
+    assert.equal(historyEvents("workflowExecutionCompletedEventAttributes").length, 1);
+    assert.equal(historyEvents("activityTaskScheduledEventAttributes").length, 0);
     await worker.shutdown();
     worker = undefined;
     await replayHistory(history, handle.workflowId);

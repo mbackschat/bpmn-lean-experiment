@@ -20,9 +20,6 @@ importers:
 
   packages/bpmn-source:
     dependencies:
-      '@bpmn-lean/semantic-core':
-        specifier: workspace:*
-        version: link:../semantic-core
       bpmn-moddle:
         specifier: 10.0.0
         version: 10.0.0
@@ -37,10 +34,6 @@ importers:
   packages/contract-types: {}
 
   packages/differential:
-    dependencies:
-      '@bpmn-lean/semantic-core':
-        specifier: workspace:*
-        version: link:../semantic-core
     devDependencies:
       '@bpmn-lean/bpmn-source':
         specifier: workspace:*
@@ -48,178 +41,23 @@ importers:
       '@bpmn-lean/kernel':
         specifier: workspace:*
         version: link:../kernel
-      '@bpmn-lean/temporal-protocol':
+      '@bpmn-lean/temporal-host':
         specifier: workspace:*
-        version: link:../temporal-adapter/protocol
-      '@bpmn-lean/temporal-testkit':
-        specifier: workspace:*
-        version: link:../temporal-adapter/testkit
+        version: link:../temporal-host
 
   packages/engine-api:
     dependencies:
       '@bpmn-lean/bpmn-source':
         specifier: workspace:*
         version: link:../bpmn-source
-      '@bpmn-lean/semantic-core':
+      '@bpmn-lean/kernel':
         specifier: workspace:*
-        version: link:../semantic-core
-      '@bpmn-lean/temporal-client':
+        version: link:../kernel
+      '@bpmn-lean/temporal-host':
         specifier: workspace:*
-        version: link:../temporal-adapter/client
-    devDependencies:
-      '@bpmn-lean/temporal-protocol':
-        specifier: workspace:*
-        version: link:../temporal-adapter/protocol
+        version: link:../temporal-host
 
   packages/kernel: {}
-
-  packages/semantic-core:
-    dependencies:
-      '@bpmn-lean/contract-types':
-        specifier: workspace:*
-        version: link:../contract-types
-    devDependencies:
-      ajv:
-        specifier: 8.20.0
-        version: 8.20.0
-
-  packages/temporal-adapter/client:
-    dependencies:
-      '@bpmn-lean/semantic-core':
-        specifier: workspace:*
-        version: link:../../semantic-core
-      '@bpmn-lean/temporal-protocol':
-        specifier: workspace:*
-        version: link:../protocol
-      '@temporalio/client':
-        specifier: 1.21.0
-        version: 1.21.0
-      '@temporalio/proto':
-        specifier: 1.21.0
-        version: 1.21.0
-
-  packages/temporal-adapter/protocol:
-    dependencies:
-      '@bpmn-lean/semantic-core':
-        specifier: workspace:*
-        version: link:../../semantic-core
-    devDependencies:
-      '@bpmn-lean/bpmn-source':
-        specifier: workspace:*
-        version: link:../../bpmn-source
-
-  packages/temporal-adapter/runner:
-    dependencies:
-      '@bpmn-lean/bpmn-source':
-        specifier: workspace:*
-        version: link:../../bpmn-source
-      '@bpmn-lean/engine-api':
-        specifier: workspace:*
-        version: link:../../engine-api
-      '@bpmn-lean/semantic-core':
-        specifier: workspace:*
-        version: link:../../semantic-core
-      '@bpmn-lean/temporal-client':
-        specifier: workspace:*
-        version: link:../client
-      '@bpmn-lean/temporal-protocol':
-        specifier: workspace:*
-        version: link:../protocol
-      '@bpmn-lean/temporal-worker':
-        specifier: workspace:*
-        version: link:../worker
-
-  packages/temporal-adapter/testkit:
-    dependencies:
-      '@bpmn-lean/bpmn-source':
-        specifier: workspace:*
-        version: link:../../bpmn-source
-      '@bpmn-lean/engine-api':
-        specifier: workspace:*
-        version: link:../../engine-api
-      '@bpmn-lean/semantic-core':
-        specifier: workspace:*
-        version: link:../../semantic-core
-      '@bpmn-lean/temporal-client':
-        specifier: workspace:*
-        version: link:../client
-      '@bpmn-lean/temporal-protocol':
-        specifier: workspace:*
-        version: link:../protocol
-      '@bpmn-lean/temporal-runner':
-        specifier: workspace:*
-        version: link:../runner
-      '@bpmn-lean/temporal-worker':
-        specifier: workspace:*
-        version: link:../worker
-      '@bpmn-lean/temporal-workflow':
-        specifier: workspace:*
-        version: link:../workflow
-      '@temporalio/activity':
-        specifier: 1.21.0
-        version: 1.21.0
-      '@temporalio/client':
-        specifier: 1.21.0
-        version: 1.21.0
-      '@temporalio/proto':
-        specifier: 1.21.0
-        version: 1.21.0
-      '@temporalio/testing':
-        specifier: 1.21.0
-        version: 1.21.0(@swc/helpers@0.5.23)(esbuild@0.28.2)(postcss@8.5.26)(tslib@2.8.1)
-      '@temporalio/worker':
-        specifier: 1.21.0
-        version: 1.21.0(@swc/helpers@0.5.23)(esbuild@0.28.2)(postcss@8.5.26)(tslib@2.8.1)
-      '@temporalio/workflow':
-        specifier: 1.21.0
-        version: 1.21.0
-
-  packages/temporal-adapter/worker:
-    dependencies:
-      '@bpmn-lean/semantic-core':
-        specifier: workspace:*
-        version: link:../../semantic-core
-      '@bpmn-lean/temporal-client':
-        specifier: workspace:*
-        version: link:../client
-      '@bpmn-lean/temporal-protocol':
-        specifier: workspace:*
-        version: link:../protocol
-      '@bpmn-lean/temporal-workflow':
-        specifier: workspace:*
-        version: link:../workflow
-      '@grpc/grpc-js':
-        specifier: 1.14.5
-        version: 1.14.5
-      '@temporalio/common':
-        specifier: 1.21.0
-        version: 1.21.0
-      '@temporalio/proto':
-        specifier: 1.21.0
-        version: 1.21.0
-      '@temporalio/worker':
-        specifier: 1.21.0
-        version: 1.21.0(@swc/helpers@0.5.23)(esbuild@0.28.2)(postcss@8.5.26)(tslib@2.8.1)
-    devDependencies:
-      '@temporalio/client':
-        specifier: 1.21.0
-        version: 1.21.0
-
-  packages/temporal-adapter/workflow:
-    dependencies:
-      '@bpmn-lean/semantic-core':
-        specifier: workspace:*
-        version: link:../../semantic-core
-      '@bpmn-lean/temporal-protocol':
-        specifier: workspace:*
-        version: link:../protocol
-      '@temporalio/workflow':
-        specifier: 1.21.0
-        version: 1.21.0
-    devDependencies:
-      '@bpmn-lean/bpmn-source':
-        specifier: workspace:*
-        version: link:../../bpmn-source
 
   packages/temporal-host:
     dependencies:
@@ -414,9 +252,6 @@ importers:
       '@bpmn-lean/platform-contracts':
         specifier: workspace:*
         version: link:../../contracts
-      '@bpmn-lean/temporal-client':
-        specifier: workspace:*
-        version: link:../../../packages/temporal-adapter/client
 
   platform/foundation/identity-policy:
     dependencies:
@@ -527,15 +362,18 @@ importers:
       '@bpmn-lean/platform-web':
         specifier: workspace:*
         version: link:../../platform/apps/web
-      '@bpmn-lean/temporal-testkit':
+      '@bpmn-lean/temporal-host':
         specifier: workspace:*
-        version: link:../../packages/temporal-adapter/testkit
+        version: link:../../packages/temporal-host
       '@playwright/test':
         specifier: 1.62.1
         version: 1.62.1
 
   showcase/m2-correlated-message-ingress:
     devDependencies:
+      '@bpmn-lean/engine-api':
+        specifier: workspace:*
+        version: link:../../packages/engine-api
       '@bpmn-lean/platform-contracts':
         specifier: workspace:*
         version: link:../../platform/contracts
@@ -545,12 +383,9 @@ importers:
       '@bpmn-lean/platform-web':
         specifier: workspace:*
         version: link:../../platform/apps/web
-      '@bpmn-lean/semantic-core':
+      '@bpmn-lean/temporal-host':
         specifier: workspace:*
-        version: link:../../packages/semantic-core
-      '@bpmn-lean/temporal-testkit':
-        specifier: workspace:*
-        version: link:../../packages/temporal-adapter/testkit
+        version: link:../../packages/temporal-host
       '@playwright/test':
         specifier: 1.62.1
         version: 1.62.1
@@ -566,9 +401,9 @@ importers:
       '@bpmn-lean/platform-web':
         specifier: workspace:*
         version: link:../../platform/apps/web
-      '@bpmn-lean/temporal-testkit':
+      '@bpmn-lean/temporal-host':
         specifier: workspace:*
-        version: link:../../packages/temporal-adapter/testkit
+        version: link:../../packages/temporal-host
       '@playwright/test':
         specifier: 1.62.1
         version: 1.62.1
@@ -584,9 +419,9 @@ importers:
       '@bpmn-lean/platform-web':
         specifier: workspace:*
         version: link:../../platform/apps/web
-      '@bpmn-lean/temporal-testkit':
+      '@bpmn-lean/temporal-host':
         specifier: workspace:*
-        version: link:../../packages/temporal-adapter/testkit
+        version: link:../../packages/temporal-host
       '@playwright/test':
         specifier: 1.62.1
         version: 1.62.1
@@ -602,15 +437,18 @@ importers:
       '@bpmn-lean/platform-web':
         specifier: workspace:*
         version: link:../../platform/apps/web
-      '@bpmn-lean/temporal-testkit':
+      '@bpmn-lean/temporal-host':
         specifier: workspace:*
-        version: link:../../packages/temporal-adapter/testkit
+        version: link:../../packages/temporal-host
       '@playwright/test':
         specifier: 1.62.1
         version: 1.62.1
 
   showcase/m3-human-work:
     devDependencies:
+      '@bpmn-lean/engine-api':
+        specifier: workspace:*
+        version: link:../../packages/engine-api
       '@bpmn-lean/platform-contracts':
         specifier: workspace:*
         version: link:../../platform/contracts
@@ -620,18 +458,18 @@ importers:
       '@bpmn-lean/platform-web':
         specifier: workspace:*
         version: link:../../platform/apps/web
-      '@bpmn-lean/temporal-runner':
+      '@bpmn-lean/temporal-host':
         specifier: workspace:*
-        version: link:../../packages/temporal-adapter/runner
-      '@bpmn-lean/temporal-testkit':
-        specifier: workspace:*
-        version: link:../../packages/temporal-adapter/testkit
+        version: link:../../packages/temporal-host
       '@playwright/test':
         specifier: 1.62.1
         version: 1.62.1
 
   showcase/m4-incident-operations:
     devDependencies:
+      '@bpmn-lean/engine-api':
+        specifier: workspace:*
+        version: link:../../packages/engine-api
       '@bpmn-lean/platform-contracts':
         specifier: workspace:*
         version: link:../../platform/contracts
@@ -641,15 +479,18 @@ importers:
       '@bpmn-lean/platform-web':
         specifier: workspace:*
         version: link:../../platform/apps/web
-      '@bpmn-lean/temporal-testkit':
+      '@bpmn-lean/temporal-host':
         specifier: workspace:*
-        version: link:../../packages/temporal-adapter/testkit
+        version: link:../../packages/temporal-host
       '@playwright/test':
         specifier: 1.62.1
         version: 1.62.1
 
   showcase/mue-preview-alpha:
     devDependencies:
+      '@bpmn-lean/engine-api':
+        specifier: workspace:*
+        version: link:../../packages/engine-api
       '@bpmn-lean/platform-contracts':
         specifier: workspace:*
         version: link:../../platform/contracts
@@ -659,12 +500,9 @@ importers:
       '@bpmn-lean/platform-web':
         specifier: workspace:*
         version: link:../../platform/apps/web
-      '@bpmn-lean/semantic-core':
+      '@bpmn-lean/temporal-host':
         specifier: workspace:*
-        version: link:../../packages/semantic-core
-      '@bpmn-lean/temporal-testkit':
-        specifier: workspace:*
-        version: link:../../packages/temporal-adapter/testkit
+        version: link:../../packages/temporal-host
       '@playwright/test':
         specifier: 1.62.1
         version: 1.62.1

@@ -12,7 +12,6 @@ activity_boundary_message_bpmn_path="scenarios/activity-boundary-message/process
 
 verify_common() {
   ./scripts/doctor.sh verify
-  echo "A12_ADOPTION_EVIDENCE status=not-run command=./scripts/test-a12-adoption.sh"
   ./scripts/pnpm.sh run test:infrastructure
   ./scripts/validate-bpmn-xml.sh \
     "$representative_bpmn_path" \
@@ -22,26 +21,17 @@ verify_common() {
 }
 
 verify_lean_library() {
-  LEAN_FULL_GATE=verify-lean-library ./scripts/lake.sh test
-  LEAN_FULL_GATE=verify-lean-conformance ./scripts/lake.sh build BpmnConformance
-  ./scripts/lake.sh run scripts/lean-realized-leaks.lean BpmnSemantics.RealizedLeakFixtures scripts/lean-realized-leaks.tsv BpmnSemantics BpmnConformance
-}
-
-verify_lean_checks() {
-  ./scripts/lake.sh build BpmnSemantics.Experiments.CheckedSourceRelationMain BpmnSemantics.CommittedExecutionPublicationJsonMain BpmnSemantics.FixtureBindingJsonMain
-  ./scripts/lake.sh build emitSemanticProcessResults emitEnginePopulationResults emitCommittedExecutionPublication emitInternalChoiceSchedules emitDefinitionAdmissions emitParallelScopeAdmissions emitParallelScopeStartAdmissions emitParallelScopeReservations emitScenarioSupport checkCallFamilyFixtures checkConformanceFixtures
-  ./scripts/lake.sh run BpmnSemantics/Experiments/CheckedSourceRelationMain.lean
-  ./scripts/lake.sh run BpmnSemantics/CommittedExecutionPublicationJsonMain.lean
-  # The executable checks run as the binary built above, because the wrapper's forbidden exe subcommand
-  # re-checks the closure on every call (scripts/lean-native-driver.ts).
-  .lake/build/bin/checkCallFamilyFixtures
-  .lake/build/bin/checkConformanceFixtures
-  # Guards 1 and 2 of the kernel rewrite proposal read the built kernel's environment.
   ./scripts/lake.sh build Kernel kernelRun
+  # Guards 1 and 2 of the kernel rewrite proposal read the built kernel's environment.
   ./scripts/lake.sh run scripts/kernel-dispatch.lean
   # Guards 17, 18 and 19 read it too; the self-test first shows the scan rejects its seeded violations (guard 23).
   ./scripts/lake.sh run scripts/kernel-effects.lean --self-test
   ./scripts/lake.sh run scripts/kernel-effects.lean
+}
+
+# The integration lane restores this stage's output, so it builds every native driver a package test runs.
+verify_lean_checks() {
+  ./scripts/lake.sh build kernelRun
   # Guards 15 and 22: each builds a fresh clone of HEAD, so neither touches this checkout.
   node scripts/kernel-build-budget.ts lean
   node scripts/kernel-build-budget.ts growth
@@ -49,7 +39,6 @@ verify_lean_checks() {
 
 verify_runtime() {
   ./scripts/pnpm.sh run build:verification-typescript
-  ./scripts/pnpm.sh run test:semantic-core:built
   ./scripts/pnpm.sh run test:kernel
   ./scripts/pnpm.sh run test:temporal-host
   # Guard 15's TypeScript bounds need node_modules, which only this lane installs.
@@ -59,37 +48,16 @@ verify_runtime() {
   ./scripts/pnpm.sh run test:differential:built
 }
 
-# The Temporal suite runs as two hosted jobs after runtime: inside runtime it reached 16 of 20
-# minutes, and as one job it needed about 14 of 15, the serial witnesses alone 5.3 minutes (hosted
-# 2026-10-22). Together the two stages run every part of test:temporal:built.
 verify_temporal() {
-  ./scripts/pnpm.sh run test:temporal:built:components
-  ./scripts/pnpm.sh run test:temporal:built:concurrent
-  ./scripts/pnpm.sh run test:temporal:built:hosted
-  ./scripts/pnpm.sh run test:temporal-host:hosted
+  ./scripts/pnpm.sh run test:temporal-host:hosted:built
+  ./scripts/pnpm.sh run test:differential:hosted:built
 }
 
-verify_temporal_serial() {
-  ./scripts/pnpm.sh run test:temporal:built:hosted-serial
-}
-
-# The hosted job runs one leg per case partition (`pipelineCaseIdsFor`); the catalog-wide Lean integration suites run
-# once, in the other-schedules leg, and a local run without a partition runs everything. A leg not named here runs none
-# of them.
-pipeline_leg_runs_lean_suites() {
-  case "${BPMN_PIPELINE_PARTITION:-}" in
-    "" | other-schedules) return 0 ;;
-    *) return 1 ;;
-  esac
-}
-
+# The oracle runs as its own gate so the Lean lane guard sees it here, after the restored `.lake`; `test:pipeline` is
+# the same oracle behind a local build, and running both would run it twice.
 verify_pipeline() {
-  if pipeline_leg_runs_lean_suites; then
-    ./scripts/pnpm.sh run test:lean-fixture-bindings:built
-    ./scripts/pnpm.sh run test:committed-execution-publication-parity:built
-    ./scripts/pnpm.sh run test:kernel-behavior-oracle:built
-  fi
-  env BPMN_PIPELINE_PREBUILT=1 ./scripts/pnpm.sh run test:pipeline
+  ./scripts/pnpm.sh run test:kernel-behavior-oracle:built
+  ./scripts/pnpm.sh run test:model-corpus:built
   git diff --check
 }
 
@@ -100,14 +68,12 @@ case "${1:-all}" in
     verify_lean_checks
     verify_runtime
     verify_temporal
-    verify_temporal_serial
     verify_pipeline
     ;;
   lean-library) verify_lean_library ;;
   lean-checks) verify_lean_checks ;;
   runtime) verify_common; verify_runtime ;;
   temporal) verify_temporal ;;
-  temporal-serial) verify_temporal_serial ;;
   pipeline) verify_pipeline ;;
-  *) echo "usage: $0 [all|lean-library|lean-checks|runtime|temporal|temporal-serial|pipeline]" >&2; exit 2 ;;
+  *) echo "usage: $0 [all|lean-library|lean-checks|runtime|temporal|pipeline]" >&2; exit 2 ;;
 esac

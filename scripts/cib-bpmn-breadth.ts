@@ -2,7 +2,6 @@ import { access, readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-import { compareCanonicalStrings } from "../packages/semantic-core/src/wire.ts";
 import {
   flattenElements,
   hasDirectChild,
@@ -10,6 +9,7 @@ import {
   parseXmlElements,
   type XmlElement,
 } from "./minimal-xml-tree.ts";
+import { compareCanonicalStrings } from "./strict-json.ts";
 
 type CandidateCounts = {
   boundaryEvent: {

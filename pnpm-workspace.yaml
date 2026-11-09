@@ -1,6 +1,5 @@
 packages:
   - packages/*
-  - packages/temporal-adapter/*
   - platform/*
   - platform/apps/*
   - platform/foundation/*
