@@ -16,7 +16,7 @@ export type CibCapabilityEvidence =
   | Readonly<{
     kind: typeof CibCapabilityEvidenceKind.ExactSelectedProfile;
     pipelineCaseId: string;
-    version: "2.0.0" | "2.2.0";
+    version: "2.2.0";
   }>
   | Readonly<{
     kind:
@@ -33,13 +33,10 @@ export type MvpBpmnCapability = Readonly<{
   cibEvidence: CibCapabilityEvidence;
 }>;
 
-const exactCib = (
-  pipelineCaseId: string,
-  version: "2.0.0" | "2.2.0" = "2.2.0",
-): CibCapabilityEvidence => Object.freeze({
+const exactCib = (pipelineCaseId: string): CibCapabilityEvidence => Object.freeze({
   kind: CibCapabilityEvidenceKind.ExactSelectedProfile,
   pipelineCaseId,
-  version,
+  version: "2.2.0",
 });
 
 const notSelected = Object.freeze({
@@ -465,7 +462,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     element: "Error Boundary Event on Service Task",
     support: BpmnCapabilitySupport.BoundedStandard,
     restriction: "The legacy mapped Service Task binding or single-control mixed task graphs with at most one interrupting exact-code Error boundary per Service Task. Match only the active occurrence's attached route, require complete String/null local results on success and Error, and clean its exact owner atomically. No catch-all, ancestor propagation or technical-failure conversion.",
-    cibEvidence: exactCib("mapped-boundary-error-service-task-caught", "2.0.0"),
+    cibEvidence: exactCib("mapped-boundary-error-service-task-caught"),
   },
   {
     id: "subProcessBoundaryErrorEvent",
