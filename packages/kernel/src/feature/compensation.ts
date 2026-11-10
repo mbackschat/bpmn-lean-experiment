@@ -41,7 +41,6 @@ import {
   failed,
   instanceOf,
   issue,
-  leaveScope,
   signal,
   visible,
   type Compensable,
@@ -58,7 +57,7 @@ import {
   type ScopeOccurrenceId,
   type State,
 } from "../state.js";
-import type { Ctx } from "../hooks.js";
+import { leaveScope, type Ctx } from "../hooks.js";
 
 function store(state: State, compensation: Compensations): State {
   return { ...state, slots: { ...state.slots, compensation } };

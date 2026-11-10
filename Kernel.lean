@@ -43,6 +43,7 @@ public import Kernel.State
 public import Kernel.State.Input
 public import Kernel.State.Journal
 public import Kernel.State.Raise
+public import Kernel.State.Removal
 public import Kernel.State.Slots
 public import Kernel.State.Wait
 public import Kernel.Step

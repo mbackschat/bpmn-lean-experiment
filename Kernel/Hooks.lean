@@ -1,6 +1,7 @@
 module
 
 public import Kernel.State
+public import Kernel.State.Removal
 
 /-! # Kernel hooks
 

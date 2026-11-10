@@ -9,7 +9,7 @@ every begun flow-node occurrence is one `Occurrence`, and every open interaction
 shape is fixed; a feature keeps its own data in its slot of `FeatureSlots`, which is always present and empty by
 default, so the state codec never varies by program.
 
-Occurrences and activations are created and removed only here and in `Kernel.Step`; variables are written only
+Occurrences and activations are created and removed only here, in `Kernel.State.Removal` and in `Kernel.Step`; variables are written only
 through `setVariable`, whose one caller is `Kernel.Feature.Data`; flow tokens are added only by `emit`, whose one caller
 is `Kernel.Feature.Flow`, and deferred begins only by `deferBegins`, whose one caller is `Kernel.Feature.MultiInstance`
 (guard 17).
@@ -454,61 +454,6 @@ def subtree (state : State) (scope : ScopeOccurrenceId) : List ScopeOccurrenceId
       let children := (state.scopes.filter (·.parent == some next)).map (·.id)
       go fuel (rest ++ children) (seen ++ [next])
   go (state.scopes.length + 1) [scope] []
-
-/-- The journal facts of removing the begun `occurrences`, cancelled. -/
-private def recordCancelled (state : State) (occurrences : List Occurrence) : State :=
-  let begun := occurrences.filter (·.begun)
-  let ended := begun.map fun occurrence => (state.keyOf occurrence, Terminal.cancelled)
-  { state with draft := { state.draft with
-      ended := state.draft.ended ++ ended, cancelled := state.draft.cancelled ++ begun } }
-
-/-- Remove every token, item, occurrence, slot entry, variable set and child scope occurrence inside `scope`, keeping
-`scope` itself and the occurrences `keep` names. Each begun occurrence is journalled cancelled, deepest scope first,
-then by id; `Hooks.cancelled` tells the owning features afterwards. -/
-def clearInside (state : State) (scope : ScopeOccurrenceId) (keep : List Nat := []) : State :=
-  let inside := state.subtree scope
-  let nested := inside.filter (· != scope)
-  let removed := inside.reverse.flatMap fun current =>
-    state.occurrences.filter fun occurrence => occurrence.scope == current && !keep.contains occurrence.id
-  let journalled := recordCancelled state removed
-  { journalled with
-      tokens := journalled.tokens.filter (!inside.contains ·.busyScope)
-      openItems := journalled.openItems.filter fun item => !inside.contains item.scope || keep.contains item.occurrence
-      occurrences := journalled.occurrences.filter fun occurrence => !inside.contains occurrence.scope || keep.contains occurrence.id
-      scopes := journalled.scopes.filter (!nested.contains ·.id)
-      variables := journalled.variables.filter (!nested.contains ·.scope)
-      slots := journalled.slots.clear inside nested }
-
-/-- Leave `scope`: clear it and remove the occurrence, its variables and the compensation records it retains, so the
-Activities completed in a Sub-Process left before its own completion are never compensated: compensation is for
-completed Activities only ([BPMN 2.0.2 §13.5.5](../docs/reference/bpmn-2.0.2/README.md), "presumed abort"). -/
-def leaveScope (state : State) (scope : ScopeOccurrenceId) : State :=
-  let cleared := state.clearInside scope
-  { cleared with
-      scopes := cleared.scopes.filter (·.id != scope)
-      variables := cleared.variables.filter (·.scope != scope)
-      slots := { cleared.slots with compensation := { cleared.slots.compensation with
-        retained := cleared.slots.compensation.retained.filter (·.scope != scope) } } }
-
-/-- Remove the occurrence record `id` and the scope occurrences it owns, if any. The record goes first, so that
-leaving a scope does not cancel the occurrence that owns it. -/
-def removeOccurrence (state : State) (id : Nat) : State :=
-  let removed := { state with occurrences := state.occurrences.filter (·.id != id) }
-  (removed.scopes.filter (·.occurrence == some id)).foldl (fun state scope => state.leaveScope scope.id) removed
-
-/-- Cancel the occurrence `id` wherever it stands: its items and subscriptions go, the scope occurrence it owns is
-left, and it is journalled cancelled. -/
-def cancelOccurrence (state : State) (id : Nat) : State :=
-  match state.occurrence? id with
-  | none => state
-  | some occurrence =>
-    let closed := (state.closeOwnItems id).disarm id
-    (recordCancelled (closed.removeOccurrence id) [occurrence])
-
-/-- Whether `scope` would be idle once the occurrence `id`, its items, what is attached to it and the scope occurrence
-it owns were gone: nothing else remains there. -/
-def idleWithout (state : State) (scope : ScopeOccurrenceId) (id : Nat) : Bool :=
-  (((state.closeOwnItems id).disarm id).removeOccurrence id).idle scope
 
 /-- Variables visible from `scope`, innermost first, up to the root of its process instance. -/
 def visible (state : State) (scope : ScopeOccurrenceId) : List (String × Value) :=

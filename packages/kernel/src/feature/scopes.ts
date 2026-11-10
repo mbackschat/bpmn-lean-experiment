@@ -30,7 +30,6 @@ import {
   SignalTag,
   WriteRule,
   beginRequest,
-  clearInside,
   committed,
   completeSignal,
   enterScope,
@@ -44,7 +43,10 @@ import {
   type ScopeOccurrence,
   type State,
 } from "../state.js";
-import { ctxOutputReads, ctxRequireMappings, ctxRequireMappingsWith, evalContext, ownVariables, type Ctx, type ScopeEntry } from "../hooks.js";
+import {
+  clearInside, ctxOutputReads, ctxRequireMappings, ctxRequireMappingsWith, evalContext, ownVariables, type Ctx,
+  type ScopeEntry,
+} from "../hooks.js";
 
 /** `Ctx.eventStart`: the start subscription and interrupting flag of an Event Sub-Process. */
 export function eventStart(payload: ScopePayload): readonly [Subscription, boolean] | null {

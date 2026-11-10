@@ -71,6 +71,11 @@ import {
   type State,
   type WriteEvent,
 } from "./state.js";
+// Lean's `Kernel.Hooks` re-exports `Kernel.State.Removal` to the features and `Kernel.Step`; so does this module, which
+// keeps the removal module's direct importers to this hub (guard 15).
+export {
+  cancelOccurrence, clearInside, idleWithout, leaveScope, removeOccurrence,
+} from "./state/removal.js";
 
 /**
  * An in-kernel evaluation. A failure is an absent reference (`unknown-variable`), which `Mapping.dialect` reads, or a

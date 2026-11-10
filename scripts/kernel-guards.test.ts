@@ -389,6 +389,23 @@ test("guard 17 gives each Token case one writer: deferred begins are stacked onl
   }, /deferBegins called outside its writer \(deferred begins are stacked only by MultiInstance\)/u);
 });
 
+// The Lean twin admits a writer's sub-modules by name prefix (`allowedFor` in scripts/kernel-effects.lean), so a State
+// sub-module such as `state/removal.ts` is State here too, while a feature stays outside.
+test("guard 17 reads a State sub-module as State, as the Lean rule does", () => {
+  const removal = `import { removeOccurrence } from "../state.js";
+export function removeOccurrence(state, id) { return { ...state, occurrences: [] }; }
+export function cancelOccurrence(state, id) { return removeOccurrence(state, id); }
+`;
+  assert.deepEqual(effectWriterFindings(fixture({
+    "packages/kernel/src/state/removal.ts": removal,
+    "packages/kernel/src/step.ts": `import { cancelOccurrence } from "./state/removal.js";\nexport function step(state) { return cancelOccurrence(state, 1); }\n`,
+  })).filter((line) => !line.startsWith("G17:")), []);
+  seeded(effectWriterFindings, {
+    "packages/kernel/src/state/removal.ts": removal,
+    "packages/kernel/src/feature/scopes.ts": `import { cancelOccurrence } from "../state/removal.js";\nexport function leave(state) { return cancelOccurrence(state, 1); }\n`,
+  }, /cancelOccurrence called outside its writer/u);
+});
+
 holdsItsGround("guard 19 (field liveness)", fieldLivenessFindings, {
   "packages/kernel/src/feature/data.ts": `import { setVariable } from "../state.js";\nexport function store(state) { return setVariable(state, "x"); }\n`,
 }, /IL field assignee is read by no non-codec module/u);

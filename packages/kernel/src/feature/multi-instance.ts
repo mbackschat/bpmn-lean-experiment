@@ -54,7 +54,6 @@ import {
   enterScope,
   failed,
   leaveOutgoing,
-  leaveScope,
   root,
   signal,
   type BeginRequest,
@@ -67,7 +66,9 @@ import {
   type Result,
   type State,
 } from "../state.js";
-import { EvaluationTag, collectionItems, evalContext, hold, multiInstanceRunItems, ownVariables, type Ctx } from "../hooks.js";
+import {
+  EvaluationTag, collectionItems, evalContext, hold, leaveScope, multiInstanceRunItems, ownVariables, type Ctx,
+} from "../hooks.js";
 
 function waitingIndex(slot: Iteration, index: number): readonly number[] {
   switch (slot.tag) {

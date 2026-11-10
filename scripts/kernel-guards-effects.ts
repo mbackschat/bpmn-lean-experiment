@@ -43,6 +43,11 @@ function moduleOf(source: Source): string {
   return source.file.slice(kernelPrefix.length).replace(/\.ts$/u, "");
 }
 
+/** Whether `module` is `writer` or one of its sub-modules, as the Lean rule's name prefix reads it (`allowedFor`). */
+function within(module: string, writer: string): boolean {
+  return module === writer || module.startsWith(`${writer}/`);
+}
+
 /** Guard 17: each effect primitive is called only from its writer, and `State`'s effect fields are spread-updated only there. */
 export function effectWriterFindings(tree: KernelTree): string[] {
   if (tree.typeScript.length === 0) return [emptyInputFinding(17, "TypeScript kernel modules")];
@@ -56,11 +61,11 @@ export function effectWriterFindings(tree: KernelTree): string[] {
       const token = tokens[i];
       if (token === undefined) continue;
       const isCall = tokens[i + 1]?.text === "(" && tokens[i - 1]?.text !== ".";
-      if (module === "state" && tokens[i - 1]?.text === "function") declared.add(token.text);
+      if (within(module, "state") && tokens[i - 1]?.text === "function") declared.add(token.text);
       const rule = callRules.find((candidate) => candidate.name === token.text);
       if (rule !== undefined && isCall && tokens[i - 1]?.text !== "function") {
-        if (rule.callers.includes(module)) called.add(rule.name);
-        else if (module !== "state" && !isJustified(source, token.line, 17)) {
+        if (rule.callers.some((writer) => within(module, writer))) called.add(rule.name);
+        else if (!within(module, "state") && !isJustified(source, token.line, 17)) {
           findings.push(finding(17, source, token.line, `${rule.name} called outside its writer (${rule.label})`));
         }
       }
@@ -78,7 +83,7 @@ export function effectWriterFindings(tree: KernelTree): string[] {
             depth -= 1;
           }
           const allowed = stateFieldWriters[text];
-          if (depth === 0 && allowed !== undefined && tokens[k + 1]?.text === ":" && !allowed.includes(module) && !isJustified(source, tokens[k]?.line ?? 0, 17)) {
+          if (depth === 0 && allowed !== undefined && tokens[k + 1]?.text === ":" && !allowed.some((writer) => within(module, writer)) && !isJustified(source, tokens[k]?.line ?? 0, 17)) {
             findings.push(finding(17, source, tokens[k]?.line ?? 0, `spread update writes State.${text} outside ${allowed.join(" and ")}`));
           }
         }

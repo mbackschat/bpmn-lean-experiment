@@ -57,7 +57,6 @@ import {
   WriteRule,
   beginRequest,
   calledRoot,
-  clearInside,
   committed,
   completeSignal,
   failed,
@@ -82,9 +81,11 @@ import {
   type ScopeOccurrenceId,
   type State,
   childrenOf,
-  idleWithout,
 } from "../state.js";
-import { ScopeRole, boundaryFire, ctxOutputReads, ctxRequireMappingsWith, lastWrites, ownVariables, type Ctx } from "../hooks.js";
+import {
+  ScopeRole, boundaryFire, clearInside, ctxOutputReads, ctxRequireMappingsWith, idleWithout, lastWrites, ownVariables,
+  type Ctx,
+} from "../hooks.js";
 
 /** The catcher with the lowest precedence among `candidates`, the first in document order on a tie, with what it writes. */
 function best<T>(ctx: Ctx, raised: Raised, trigger: (candidate: T) => Trigger, candidates: readonly T[]): readonly [T, readonly Binding[]] | null {

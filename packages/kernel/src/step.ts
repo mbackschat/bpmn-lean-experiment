@@ -24,15 +24,17 @@ import {
 import {
   ActivationRole, CauseTag, CommandActionTag, ContinuationTag, DeliveryTriggerTag, EffectOutcomeTag, FailureTag,
   FiredTag, InputTag, InstanceStatus, IterationTag, LeaveTag, SignalTag, Terminal, TokenTag, WriteRule, beginOccurrence,
-  beginRequest, busyScopes, cancelOccurrence, clearInside, closeOwnItems, committed, crossed, emptyDraft, entryCount, failed, idle,
-  initial, instanceOf, keyOf, occurrenceOf, openKindView, recordEnd, removeOccurrence, reserve, root, signal as enqueue,
+  beginRequest, busyScopes, closeOwnItems, committed, crossed, emptyDraft, entryCount, failed, idle,
+  initial, instanceOf, keyOf, occurrenceOf, openKindView, recordEnd, reserve, root, signal as enqueue,
   startReserved,
   type BeginRequest, type Binding, type Cause, type CommandAction, type CommandInput, type EffectInput, type Fired,
   type Input, type InstanceFailure, type Iteration, type Leave, type Occurrence, type OccurrenceRef,
   type OpenItem, type Outcome, type Result, type ScopeOccurrence, type ScopeOccurrenceId, type Signal, type StartTrigger, type State,
   type Token, type Transition, type WaitView,
 } from "./state.js";
-import { ScopeRole, admitThen, type Ctx, type Hooks, type ScopeEntry } from "./hooks.js";
+import {
+  ScopeRole, admitThen, cancelOccurrence, clearInside, removeOccurrence, type Ctx, type Hooks, type ScopeEntry,
+} from "./hooks.js";
 
 /** The name a transition records for a signal: its tag, which spells the Lean constructor. */
 export function signalName(next: Signal): string {
