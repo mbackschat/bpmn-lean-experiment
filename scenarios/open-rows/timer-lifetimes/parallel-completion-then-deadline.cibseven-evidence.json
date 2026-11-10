@@ -1,0 +1,1575 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "timer-lifetimes-parallel-completion-then-deadline",
+    "sha256": "3deb3603b208813447aa49b13e71e8636761617e1039b9ee386c9578cb4df1b3"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "186794b9b170bcdbc8353972e4902d2cedcd9c120f9bf3dc53b7e6256964547c"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b",
+                "c"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-complete-Inspect",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b",
+                "c"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-fire-Body_Deadline",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b",
+                "c"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-fire-Start_Body_Note",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 3000,
+        "variables": [
+          {
+            "name": "items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b",
+                "c"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-fire-Body_Deadline",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 5000,
+        "variables": [
+          {
+            "name": "items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b",
+                "c"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s06-complete-Body_Note",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 5000,
+        "variables": [
+          {
+            "name": "items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b",
+                "c"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s07-complete-Body_Late",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 5000,
+        "variables": [
+          {
+            "name": "items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b",
+                "c"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s08-complete-Inspect",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 5000,
+        "variables": [
+          {
+            "name": "items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b",
+                "c"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s09-complete-Publish",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 5000,
+        "variables": [
+          {
+            "name": "items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b",
+                "c"
+              ]
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "tasks": [
+          {
+            "elementId": "Inspect",
+            "name": "Inspect one lot"
+          },
+          {
+            "elementId": "Inspect",
+            "name": "Inspect one lot"
+          },
+          {
+            "elementId": "Inspect",
+            "name": "Inspect one lot"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-complete-Inspect",
+        "tasks": [
+          {
+            "elementId": "Inspect",
+            "name": "Inspect one lot"
+          },
+          {
+            "elementId": "Inspect",
+            "name": "Inspect one lot"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-fire-Body_Deadline",
+        "tasks": [
+          {
+            "elementId": "Inspect",
+            "name": "Inspect one lot"
+          },
+          {
+            "elementId": "Inspect",
+            "name": "Inspect one lot"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-fire-Start_Body_Note",
+        "tasks": [
+          {
+            "elementId": "Inspect",
+            "name": "Inspect one lot"
+          },
+          {
+            "elementId": "Inspect",
+            "name": "Inspect one lot"
+          },
+          {
+            "elementId": "Body_Note",
+            "name": "Note the slow lot"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-fire-Body_Deadline",
+        "tasks": [
+          {
+            "elementId": "Inspect",
+            "name": "Inspect one lot"
+          },
+          {
+            "elementId": "Body_Note",
+            "name": "Note the slow lot"
+          },
+          {
+            "elementId": "Body_Late",
+            "name": "Handle the late lot"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s06-complete-Body_Note",
+        "tasks": [
+          {
+            "elementId": "Inspect",
+            "name": "Inspect one lot"
+          },
+          {
+            "elementId": "Body_Late",
+            "name": "Handle the late lot"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s07-complete-Body_Late",
+        "tasks": [
+          {
+            "elementId": "Inspect",
+            "name": "Inspect one lot"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s08-complete-Inspect",
+        "tasks": [
+          {
+            "elementId": "Publish",
+            "name": "Publish the inspection"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s09-complete-Publish",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": [
+          {
+            "elementId": "Body_Deadline",
+            "dueDateDeltaMs": 5000,
+            "executable": false
+          },
+          {
+            "elementId": "Body_Deadline",
+            "dueDateDeltaMs": 5000,
+            "executable": false
+          },
+          {
+            "elementId": "Body_Deadline",
+            "dueDateDeltaMs": 5000,
+            "executable": false
+          },
+          {
+            "elementId": "Outer_Deadline",
+            "dueDateDeltaMs": 50000,
+            "executable": false
+          },
+          {
+            "elementId": "Start_Body_Note",
+            "dueDateDeltaMs": 3000,
+            "executable": false
+          },
+          {
+            "elementId": "Start_Body_Note",
+            "dueDateDeltaMs": 3000,
+            "executable": false
+          },
+          {
+            "elementId": "Start_Body_Note",
+            "dueDateDeltaMs": 3000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-complete-Inspect",
+        "jobs": [
+          {
+            "elementId": "Body_Deadline",
+            "dueDateDeltaMs": 5000,
+            "executable": false
+          },
+          {
+            "elementId": "Body_Deadline",
+            "dueDateDeltaMs": 5000,
+            "executable": false
+          },
+          {
+            "elementId": "Outer_Deadline",
+            "dueDateDeltaMs": 50000,
+            "executable": false
+          },
+          {
+            "elementId": "Start_Body_Note",
+            "dueDateDeltaMs": 3000,
+            "executable": false
+          },
+          {
+            "elementId": "Start_Body_Note",
+            "dueDateDeltaMs": 3000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-fire-Body_Deadline",
+        "jobs": [
+          {
+            "elementId": "Body_Deadline",
+            "dueDateDeltaMs": 5000,
+            "executable": false
+          },
+          {
+            "elementId": "Body_Deadline",
+            "dueDateDeltaMs": 5000,
+            "executable": false
+          },
+          {
+            "elementId": "Outer_Deadline",
+            "dueDateDeltaMs": 50000,
+            "executable": false
+          },
+          {
+            "elementId": "Start_Body_Note",
+            "dueDateDeltaMs": 3000,
+            "executable": false
+          },
+          {
+            "elementId": "Start_Body_Note",
+            "dueDateDeltaMs": 3000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-fire-Start_Body_Note",
+        "jobs": [
+          {
+            "elementId": "Body_Deadline",
+            "dueDateDeltaMs": 5000,
+            "executable": false
+          },
+          {
+            "elementId": "Body_Deadline",
+            "dueDateDeltaMs": 5000,
+            "executable": false
+          },
+          {
+            "elementId": "Outer_Deadline",
+            "dueDateDeltaMs": 50000,
+            "executable": false
+          },
+          {
+            "elementId": "Start_Body_Note",
+            "dueDateDeltaMs": 3000,
+            "executable": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-fire-Body_Deadline",
+        "jobs": [
+          {
+            "elementId": "Body_Deadline",
+            "dueDateDeltaMs": 5000,
+            "executable": true
+          },
+          {
+            "elementId": "Outer_Deadline",
+            "dueDateDeltaMs": 50000,
+            "executable": false
+          },
+          {
+            "elementId": "Start_Body_Note",
+            "dueDateDeltaMs": 3000,
+            "executable": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s06-complete-Body_Note",
+        "jobs": [
+          {
+            "elementId": "Body_Deadline",
+            "dueDateDeltaMs": 5000,
+            "executable": true
+          },
+          {
+            "elementId": "Outer_Deadline",
+            "dueDateDeltaMs": 50000,
+            "executable": false
+          },
+          {
+            "elementId": "Start_Body_Note",
+            "dueDateDeltaMs": 3000,
+            "executable": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s07-complete-Body_Late",
+        "jobs": [
+          {
+            "elementId": "Body_Deadline",
+            "dueDateDeltaMs": 5000,
+            "executable": true
+          },
+          {
+            "elementId": "Outer_Deadline",
+            "dueDateDeltaMs": 50000,
+            "executable": false
+          },
+          {
+            "elementId": "Start_Body_Note",
+            "dueDateDeltaMs": 3000,
+            "executable": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s08-complete-Inspect",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s09-complete-Publish",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "s01-start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s02-complete-Inspect",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s03-fire-Body_Deadline",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s04-fire-Start_Body_Note",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s05-fire-Body_Deadline",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s06-complete-Body_Note",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s07-complete-Body_Late",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s08-complete-Inspect",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s09-complete-Publish",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b",
+                "c"
+              ]
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Body_Deadline",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 5000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Body_Deadline",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 5000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Body_Deadline",
+              "activation": 3
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 5000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Inspect",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Inspect one lot",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Inspect",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Inspect one lot",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Inspect",
+              "activation": 3
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Inspect one lot",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Outer_Deadline",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 50000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Start_Body_Note",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 3000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Start_Body_Note",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 3000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Start_Body_Note",
+              "activation": 3
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 3000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s02-complete-Inspect",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b",
+                "c"
+              ]
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Body_Deadline",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 5000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Body_Deadline",
+              "activation": 3
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 5000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Inspect",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Inspect one lot",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Inspect",
+              "activation": 3
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Inspect one lot",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Outer_Deadline",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 50000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Start_Body_Note",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 3000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Start_Body_Note",
+              "activation": 3
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 3000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s03-fire-Body_Deadline",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b",
+                "c"
+              ]
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Body_Deadline",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 5000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Body_Deadline",
+              "activation": 3
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 5000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Inspect",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Inspect one lot",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Inspect",
+              "activation": 3
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Inspect one lot",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Outer_Deadline",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 50000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Start_Body_Note",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 3000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Start_Body_Note",
+              "activation": 3
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 3000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s04-fire-Start_Body_Note",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 3000,
+        "variables": [
+          {
+            "name": "items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b",
+                "c"
+              ]
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Body_Deadline",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 5000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Body_Deadline",
+              "activation": 3
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 5000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Body_Note",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Note the slow lot",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Inspect",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Inspect one lot",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Inspect",
+              "activation": 3
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Inspect one lot",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Outer_Deadline",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 50000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Start_Body_Note",
+              "activation": 3
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 3000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s05-fire-Body_Deadline",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 5000,
+        "variables": [
+          {
+            "name": "items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b",
+                "c"
+              ]
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Body_Deadline",
+              "activation": 3
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 5000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Body_Late",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Handle the late lot",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Body_Note",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Note the slow lot",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Inspect",
+              "activation": 3
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Inspect one lot",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Outer_Deadline",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 50000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Start_Body_Note",
+              "activation": 3
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 3000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s06-complete-Body_Note",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 5000,
+        "variables": [
+          {
+            "name": "items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b",
+                "c"
+              ]
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Body_Deadline",
+              "activation": 3
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 5000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Body_Late",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Handle the late lot",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Inspect",
+              "activation": 3
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Inspect one lot",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Outer_Deadline",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 50000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Start_Body_Note",
+              "activation": 3
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 3000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s07-complete-Body_Late",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 5000,
+        "variables": [
+          {
+            "name": "items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b",
+                "c"
+              ]
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Body_Deadline",
+              "activation": 3
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 5000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Inspect",
+              "activation": 3
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Inspect one lot",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Outer_Deadline",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 50000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Start_Body_Note",
+              "activation": 3
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 3000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s08-complete-Inspect",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 5000,
+        "variables": [
+          {
+            "name": "items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b",
+                "c"
+              ]
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Publish",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Publish the inspection",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s09-complete-Publish",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "completed",
+        "logicalTimeMs": 5000,
+        "variables": [
+          {
+            "name": "items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b",
+                "c"
+              ]
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}

@@ -6,7 +6,7 @@
   },
   "profile": {
     "id": "cibseven-2.2.0",
-    "sha256": "4cfc533e2831fe656c1595971f9a1308d8cc9f41f6725798a949d2c6a5a49214"
+    "sha256": "186794b9b170bcdbc8353972e4902d2cedcd9c120f9bf3dc53b7e6256964547c"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -14,7 +14,8 @@
     "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
     "runner": "cibseven-oracle",
     "java": "21",
-    "database": "H2 2.3.232"
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
   },
   "producerObservations": {
     "stateQueries": [
@@ -33,7 +34,7 @@
       {
         "afterCommandId": "s03-fire-Remind_Call",
         "processInstanceCount": 1,
-        "engineClockTimeMs": 7000,
+        "engineClockTimeMs": 14000,
         "variables": []
       },
       {
@@ -146,6 +147,10 @@
             "name": "Ping the checker"
           },
           {
+            "elementId": "Ping_Call",
+            "name": "Ping the checker"
+          },
+          {
             "elementId": "Child_Work",
             "name": "Carry out the check"
           }
@@ -169,6 +174,10 @@
           {
             "elementId": "Host_Loop",
             "name": "Collect the signature"
+          },
+          {
+            "elementId": "Ping_Call",
+            "name": "Ping the checker"
           },
           {
             "elementId": "Ping_Call",
@@ -204,6 +213,10 @@
             "name": "Ping the checker"
           },
           {
+            "elementId": "Ping_Call",
+            "name": "Ping the checker"
+          },
+          {
             "elementId": "Chase_Call",
             "name": "Chase the checker"
           }
@@ -231,6 +244,10 @@
           {
             "elementId": "Ping_Call",
             "name": "Ping the checker"
+          },
+          {
+            "elementId": "Ping_Call",
+            "name": "Ping the checker"
           }
         ]
       },
@@ -252,6 +269,10 @@
           {
             "elementId": "Host_Loop",
             "name": "Collect the signature"
+          },
+          {
+            "elementId": "Ping_Call",
+            "name": "Ping the checker"
           }
         ]
       },
@@ -492,7 +513,7 @@
           {
             "elementId": "Deadline_Loop",
             "dueDateDeltaMs": 10000,
-            "executable": false
+            "executable": true
           },
           {
             "elementId": "Final_User",
@@ -507,7 +528,7 @@
           {
             "elementId": "Hard_User",
             "dueDateDeltaMs": 10000,
-            "executable": false
+            "executable": true
           },
           {
             "elementId": "Late_Call",
@@ -517,12 +538,12 @@
           {
             "elementId": "Late_Receive",
             "dueDateDeltaMs": 12000,
-            "executable": false
+            "executable": true
           },
           {
             "elementId": "Remind_Call",
             "dueDateDeltaMs": 14000,
-            "executable": false
+            "executable": true
           },
           {
             "elementId": "Remind_Receive",
@@ -532,7 +553,7 @@
           {
             "elementId": "Soft_Scope",
             "dueDateDeltaMs": 9000,
-            "executable": false
+            "executable": true
           },
           {
             "elementId": "Soft_User",
@@ -923,7 +944,7 @@
   "result": {
     "outcome": {
       "kind": "semantic",
-      "outcome": "rejected"
+      "outcome": "committed"
     },
     "trace": [
       {
@@ -1441,7 +1462,7 @@
             "id": {
               "processInstanceId": "Instance_1",
               "elementId": "Remind_Call",
-              "activation": 1
+              "activation": 2
             },
             "definition": null,
             "detail": {
@@ -1450,7 +1471,7 @@
               "recurrence": {
                 "periodMs": 7000,
                 "cron": null,
-                "remaining": 2
+                "remaining": 1
               }
             },
             "input": "timerFire"
@@ -1575,13 +1596,13 @@
       {
         "kind": "command",
         "commandId": "s03-fire-Remind_Call",
-        "outcome": "rejected"
+        "outcome": "committed"
       },
       {
         "kind": "state",
         "instanceId": "Instance_1",
         "status": "running",
-        "logicalTimeMs": 7000,
+        "logicalTimeMs": 14000,
         "variables": [],
         "openWaits": [
           {
@@ -1772,8 +1793,30 @@
           {
             "id": {
               "processInstanceId": "Instance_1",
+              "elementId": "Ping_Call",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Ping the checker",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
               "elementId": "Remind_Call",
-              "activation": 1
+              "activation": 3
             },
             "definition": null,
             "detail": {
@@ -1782,7 +1825,7 @@
               "recurrence": {
                 "periodMs": 7000,
                 "cron": null,
-                "remaining": 2
+                "remaining": 0
               }
             },
             "input": "timerFire"
@@ -2112,6 +2155,28 @@
           {
             "id": {
               "processInstanceId": "Instance_1",
+              "elementId": "Ping_Call",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Ping the checker",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
               "elementId": "Remind_Receive",
               "activation": 1
             },
@@ -2405,6 +2470,28 @@
           {
             "id": {
               "processInstanceId": "Instance_1",
+              "elementId": "Ping_Call",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Ping the checker",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
               "elementId": "Remind_Receive",
               "activation": 1
             },
@@ -2676,6 +2763,28 @@
           {
             "id": {
               "processInstanceId": "Instance_1",
+              "elementId": "Ping_Call",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Ping the checker",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
               "elementId": "Remind_Receive",
               "activation": 1
             },
@@ -2925,6 +3034,28 @@
           {
             "id": {
               "processInstanceId": "Instance_1",
+              "elementId": "Ping_Call",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Ping the checker",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
               "elementId": "Remind_Receive",
               "activation": 1
             },
@@ -3013,7 +3144,7 @@
       {
         "kind": "command",
         "commandId": "s08-complete-Ping_Call",
-        "outcome": "rejected"
+        "outcome": "committed"
       },
       {
         "kind": "state",

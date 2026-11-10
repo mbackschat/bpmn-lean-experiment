@@ -6,7 +6,7 @@
   },
   "profile": {
     "id": "cibseven-2.2.0",
-    "sha256": "4cfc533e2831fe656c1595971f9a1308d8cc9f41f6725798a949d2c6a5a49214"
+    "sha256": "186794b9b170bcdbc8353972e4902d2cedcd9c120f9bf3dc53b7e6256964547c"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -14,7 +14,8 @@
     "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
     "runner": "cibseven-oracle",
     "java": "21",
-    "database": "H2 2.3.232"
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
   },
   "producerObservations": {
     "stateQueries": [
@@ -51,25 +52,25 @@
       {
         "afterCommandId": "s06-fire-Start_Reminder",
         "processInstanceCount": 1,
-        "engineClockTimeMs": 10000,
+        "engineClockTimeMs": 20000,
         "variables": []
       },
       {
         "afterCommandId": "s07-complete-Remind",
-        "processInstanceCount": 0,
-        "engineClockTimeMs": 10000,
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 20000,
         "variables": []
       },
       {
         "afterCommandId": "s08-complete-Remind",
         "processInstanceCount": 0,
-        "engineClockTimeMs": 10000,
+        "engineClockTimeMs": 20000,
         "variables": []
       },
       {
         "afterCommandId": "s09-fire-Start_Reminder",
         "processInstanceCount": 0,
-        "engineClockTimeMs": 10000,
+        "engineClockTimeMs": 20000,
         "variables": []
       }
     ],
@@ -137,12 +138,21 @@
           {
             "elementId": "Remind",
             "name": "Remind the carrier"
+          },
+          {
+            "elementId": "Remind",
+            "name": "Remind the carrier"
           }
         ]
       },
       {
         "afterCommandId": "s07-complete-Remind",
-        "tasks": []
+        "tasks": [
+          {
+            "elementId": "Remind",
+            "name": "Remind the carrier"
+          }
+        ]
       },
       {
         "afterCommandId": "s08-complete-Remind",
@@ -270,18 +280,34 @@
           {
             "elementId": "Start_Dated",
             "dueDateDeltaMs": 12000,
-            "executable": false
+            "executable": true
           },
           {
             "elementId": "Start_Reminder",
-            "dueDateDeltaMs": 20000,
+            "dueDateDeltaMs": 30000,
             "executable": false
           }
         ]
       },
       {
         "afterCommandId": "s07-complete-Remind",
-        "jobs": []
+        "jobs": [
+          {
+            "elementId": "Start_Abort",
+            "dueDateDeltaMs": 25000,
+            "executable": false
+          },
+          {
+            "elementId": "Start_Dated",
+            "dueDateDeltaMs": 12000,
+            "executable": true
+          },
+          {
+            "elementId": "Start_Reminder",
+            "dueDateDeltaMs": 30000,
+            "executable": false
+          }
+        ]
       },
       {
         "afterCommandId": "s08-complete-Remind",
@@ -319,7 +345,7 @@
       },
       {
         "afterCommandId": "s07-complete-Remind",
-        "state": "COMPLETED"
+        "state": "ACTIVE"
       },
       {
         "afterCommandId": "s08-complete-Remind",
@@ -492,7 +518,7 @@
             "id": {
               "processInstanceId": "Instance_1",
               "elementId": "Start_Reminder",
-              "activation": 1
+              "activation": 2
             },
             "definition": null,
             "detail": {
@@ -501,7 +527,7 @@
               "recurrence": {
                 "periodMs": 10000,
                 "cron": null,
-                "remaining": 3
+                "remaining": 2
               }
             },
             "input": "timerFire"
@@ -632,7 +658,7 @@
             "id": {
               "processInstanceId": "Instance_1",
               "elementId": "Start_Reminder",
-              "activation": 1
+              "activation": 2
             },
             "definition": null,
             "detail": {
@@ -641,7 +667,7 @@
               "recurrence": {
                 "periodMs": 10000,
                 "cron": null,
-                "remaining": 3
+                "remaining": 2
               }
             },
             "input": "timerFire"
@@ -736,7 +762,7 @@
             "id": {
               "processInstanceId": "Instance_1",
               "elementId": "Start_Reminder",
-              "activation": 1
+              "activation": 2
             },
             "definition": null,
             "detail": {
@@ -745,7 +771,7 @@
               "recurrence": {
                 "periodMs": 10000,
                 "cron": null,
-                "remaining": 3
+                "remaining": 2
               }
             },
             "input": "timerFire"
@@ -818,7 +844,7 @@
             "id": {
               "processInstanceId": "Instance_1",
               "elementId": "Start_Reminder",
-              "activation": 1
+              "activation": 2
             },
             "definition": null,
             "detail": {
@@ -827,7 +853,7 @@
               "recurrence": {
                 "periodMs": 10000,
                 "cron": null,
-                "remaining": 3
+                "remaining": 2
               }
             },
             "input": "timerFire"
@@ -837,13 +863,13 @@
       {
         "kind": "command",
         "commandId": "s06-fire-Start_Reminder",
-        "outcome": "rejected"
+        "outcome": "committed"
       },
       {
         "kind": "state",
         "instanceId": "Instance_1",
         "status": "running",
-        "logicalTimeMs": 10000,
+        "logicalTimeMs": 20000,
         "variables": [],
         "openWaits": [
           {
@@ -851,6 +877,28 @@
               "processInstanceId": "Instance_1",
               "elementId": "Remind",
               "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Remind the carrier",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Remind",
+              "activation": 2
             },
             "definition": null,
             "detail": {
@@ -900,16 +948,16 @@
             "id": {
               "processInstanceId": "Instance_1",
               "elementId": "Start_Reminder",
-              "activation": 1
+              "activation": 3
             },
             "definition": null,
             "detail": {
               "kind": "timer",
-              "deadlineMs": 20000,
+              "deadlineMs": 30000,
               "recurrence": {
                 "periodMs": 10000,
                 "cron": null,
-                "remaining": 3
+                "remaining": 1
               }
             },
             "input": "timerFire"
@@ -924,21 +972,90 @@
       {
         "kind": "state",
         "instanceId": "Instance_1",
-        "status": "completed",
-        "logicalTimeMs": 10000,
+        "status": "running",
+        "logicalTimeMs": 20000,
         "variables": [],
-        "openWaits": []
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Remind",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Remind the carrier",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Start_Abort",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 25000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Start_Dated",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 12000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Start_Reminder",
+              "activation": 3
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 30000,
+              "recurrence": {
+                "periodMs": 10000,
+                "cron": null,
+                "remaining": 1
+              }
+            },
+            "input": "timerFire"
+          }
+        ]
       },
       {
         "kind": "command",
         "commandId": "s08-complete-Remind",
-        "outcome": "rejected"
+        "outcome": "committed"
       },
       {
         "kind": "state",
         "instanceId": "Instance_1",
         "status": "completed",
-        "logicalTimeMs": 10000,
+        "logicalTimeMs": 20000,
         "variables": [],
         "openWaits": []
       },
@@ -951,7 +1068,7 @@
         "kind": "state",
         "instanceId": "Instance_1",
         "status": "completed",
-        "logicalTimeMs": 10000,
+        "logicalTimeMs": 20000,
         "variables": [],
         "openWaits": []
       }

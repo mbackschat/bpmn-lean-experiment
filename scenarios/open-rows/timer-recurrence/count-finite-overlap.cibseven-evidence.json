@@ -2,11 +2,11 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "timer-recurrence-count-finite-overlap",
-    "sha256": "1fe298ab5c8b5095cee75ffb4609b18f12a3c75ab6ac9f59c2be7ef4b1ec554a"
+    "sha256": "d67c64cc9b5e9c915054e6c5be3440098e75c3a542934fb0f8b1b1176506ed8e"
   },
   "profile": {
     "id": "cibseven-2.2.0",
-    "sha256": "4cfc533e2831fe656c1595971f9a1308d8cc9f41f6725798a949d2c6a5a49214"
+    "sha256": "186794b9b170bcdbc8353972e4902d2cedcd9c120f9bf3dc53b7e6256964547c"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -14,7 +14,8 @@
     "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
     "runner": "cibseven-oracle",
     "java": "21",
-    "database": "H2 2.3.232"
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
   },
   "producerObservations": {
     "stateQueries": [
@@ -49,7 +50,7 @@
       {
         "afterCommandId": "s03-fire-Cycle_Count",
         "processInstanceCount": 1,
-        "engineClockTimeMs": 10000,
+        "engineClockTimeMs": 20000,
         "variables": [
           {
             "name": "form",
@@ -63,7 +64,7 @@
       {
         "afterCommandId": "s04-fire-Cycle_Count",
         "processInstanceCount": 1,
-        "engineClockTimeMs": 10000,
+        "engineClockTimeMs": 30000,
         "variables": [
           {
             "name": "form",
@@ -77,7 +78,7 @@
       {
         "afterCommandId": "s05-fire-Cycle_Count",
         "processInstanceCount": 1,
-        "engineClockTimeMs": 10000,
+        "engineClockTimeMs": 30000,
         "variables": [
           {
             "name": "form",
@@ -91,7 +92,7 @@
       {
         "afterCommandId": "s06-complete-Handler_Count",
         "processInstanceCount": 1,
-        "engineClockTimeMs": 10000,
+        "engineClockTimeMs": 30000,
         "variables": [
           {
             "name": "form",
@@ -105,7 +106,7 @@
       {
         "afterCommandId": "s07-complete-Handler_Count",
         "processInstanceCount": 1,
-        "engineClockTimeMs": 10000,
+        "engineClockTimeMs": 30000,
         "variables": [
           {
             "name": "form",
@@ -119,7 +120,7 @@
       {
         "afterCommandId": "s08-complete-Handler_Count",
         "processInstanceCount": 1,
-        "engineClockTimeMs": 10000,
+        "engineClockTimeMs": 30000,
         "variables": [
           {
             "name": "form",
@@ -133,7 +134,7 @@
       {
         "afterCommandId": "s09-complete-Host_Count",
         "processInstanceCount": 0,
-        "engineClockTimeMs": 10000,
+        "engineClockTimeMs": 30000,
         "variables": [
           {
             "name": "form",
@@ -178,6 +179,10 @@
           {
             "elementId": "Handler_Count",
             "name": "Respond to the reminder (count)"
+          },
+          {
+            "elementId": "Handler_Count",
+            "name": "Respond to the reminder (count)"
           }
         ]
       },
@@ -187,6 +192,14 @@
           {
             "elementId": "Host_Count",
             "name": "Review (count)"
+          },
+          {
+            "elementId": "Handler_Count",
+            "name": "Respond to the reminder (count)"
+          },
+          {
+            "elementId": "Handler_Count",
+            "name": "Respond to the reminder (count)"
           },
           {
             "elementId": "Handler_Count",
@@ -204,6 +217,14 @@
           {
             "elementId": "Handler_Count",
             "name": "Respond to the reminder (count)"
+          },
+          {
+            "elementId": "Handler_Count",
+            "name": "Respond to the reminder (count)"
+          },
+          {
+            "elementId": "Handler_Count",
+            "name": "Respond to the reminder (count)"
           }
         ]
       },
@@ -217,6 +238,10 @@
           {
             "elementId": "Handler_Count",
             "name": "Respond to the reminder (count)"
+          },
+          {
+            "elementId": "Handler_Count",
+            "name": "Respond to the reminder (count)"
           }
         ]
       },
@@ -226,6 +251,10 @@
           {
             "elementId": "Host_Count",
             "name": "Review (count)"
+          },
+          {
+            "elementId": "Handler_Count",
+            "name": "Respond to the reminder (count)"
           }
         ]
       },
@@ -269,7 +298,7 @@
         "jobs": [
           {
             "elementId": "Cycle_Count",
-            "dueDateDeltaMs": 20000,
+            "dueDateDeltaMs": 30000,
             "executable": false
           }
         ]
@@ -279,8 +308,8 @@
         "jobs": [
           {
             "elementId": "Cycle_Count",
-            "dueDateDeltaMs": 20000,
-            "executable": false
+            "dueDateDeltaMs": 30000,
+            "executable": true
           }
         ]
       },
@@ -289,8 +318,8 @@
         "jobs": [
           {
             "elementId": "Cycle_Count",
-            "dueDateDeltaMs": 20000,
-            "executable": false
+            "dueDateDeltaMs": 30000,
+            "executable": true
           }
         ]
       },
@@ -299,8 +328,8 @@
         "jobs": [
           {
             "elementId": "Cycle_Count",
-            "dueDateDeltaMs": 20000,
-            "executable": false
+            "dueDateDeltaMs": 30000,
+            "executable": true
           }
         ]
       },
@@ -309,8 +338,8 @@
         "jobs": [
           {
             "elementId": "Cycle_Count",
-            "dueDateDeltaMs": 20000,
-            "executable": false
+            "dueDateDeltaMs": 30000,
+            "executable": true
           }
         ]
       },
@@ -319,8 +348,8 @@
         "jobs": [
           {
             "elementId": "Cycle_Count",
-            "dueDateDeltaMs": 20000,
-            "executable": false
+            "dueDateDeltaMs": 30000,
+            "executable": true
           }
         ]
       },
@@ -467,7 +496,7 @@
             "id": {
               "processInstanceId": "Instance_1",
               "elementId": "Cycle_Count",
-              "activation": 1
+              "activation": 2
             },
             "definition": null,
             "detail": {
@@ -476,7 +505,7 @@
               "recurrence": {
                 "periodMs": 10000,
                 "cron": null,
-                "remaining": 3
+                "remaining": 2
               }
             },
             "input": "timerFire"
@@ -530,13 +559,13 @@
       {
         "kind": "command",
         "commandId": "s03-fire-Cycle_Count",
-        "outcome": "rejected"
+        "outcome": "committed"
       },
       {
         "kind": "state",
         "instanceId": "Instance_1",
         "status": "running",
-        "logicalTimeMs": 10000,
+        "logicalTimeMs": 20000,
         "variables": [
           {
             "name": "form",
@@ -551,16 +580,16 @@
             "id": {
               "processInstanceId": "Instance_1",
               "elementId": "Cycle_Count",
-              "activation": 1
+              "activation": 3
             },
             "definition": null,
             "detail": {
               "kind": "timer",
-              "deadlineMs": 20000,
+              "deadlineMs": 30000,
               "recurrence": {
                 "periodMs": 10000,
                 "cron": null,
-                "remaining": 3
+                "remaining": 1
               }
             },
             "input": "timerFire"
@@ -570,6 +599,28 @@
               "processInstanceId": "Instance_1",
               "elementId": "Handler_Count",
               "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Respond to the reminder (count)",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Handler_Count",
+              "activation": 2
             },
             "definition": null,
             "detail": {
@@ -614,13 +665,13 @@
       {
         "kind": "command",
         "commandId": "s04-fire-Cycle_Count",
-        "outcome": "rejected"
+        "outcome": "committed"
       },
       {
         "kind": "state",
         "instanceId": "Instance_1",
         "status": "running",
-        "logicalTimeMs": 10000,
+        "logicalTimeMs": 30000,
         "variables": [
           {
             "name": "form",
@@ -635,16 +686,16 @@
             "id": {
               "processInstanceId": "Instance_1",
               "elementId": "Cycle_Count",
-              "activation": 1
+              "activation": 4
             },
             "definition": null,
             "detail": {
               "kind": "timer",
-              "deadlineMs": 20000,
+              "deadlineMs": 30000,
               "recurrence": {
                 "periodMs": 10000,
                 "cron": null,
-                "remaining": 3
+                "remaining": 0
               }
             },
             "input": "timerFire"
@@ -654,6 +705,50 @@
               "processInstanceId": "Instance_1",
               "elementId": "Handler_Count",
               "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Respond to the reminder (count)",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Handler_Count",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Respond to the reminder (count)",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Handler_Count",
+              "activation": 3
             },
             "definition": null,
             "detail": {
@@ -704,7 +799,7 @@
         "kind": "state",
         "instanceId": "Instance_1",
         "status": "running",
-        "logicalTimeMs": 10000,
+        "logicalTimeMs": 30000,
         "variables": [
           {
             "name": "form",
@@ -719,16 +814,16 @@
             "id": {
               "processInstanceId": "Instance_1",
               "elementId": "Cycle_Count",
-              "activation": 1
+              "activation": 4
             },
             "definition": null,
             "detail": {
               "kind": "timer",
-              "deadlineMs": 20000,
+              "deadlineMs": 30000,
               "recurrence": {
                 "periodMs": 10000,
                 "cron": null,
-                "remaining": 3
+                "remaining": 0
               }
             },
             "input": "timerFire"
@@ -738,6 +833,50 @@
               "processInstanceId": "Instance_1",
               "elementId": "Handler_Count",
               "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Respond to the reminder (count)",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Handler_Count",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Respond to the reminder (count)",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Handler_Count",
+              "activation": 3
             },
             "definition": null,
             "detail": {
@@ -782,13 +921,13 @@
       {
         "kind": "command",
         "commandId": "s06-complete-Handler_Count",
-        "outcome": "rejected"
+        "outcome": "committed"
       },
       {
         "kind": "state",
         "instanceId": "Instance_1",
         "status": "running",
-        "logicalTimeMs": 10000,
+        "logicalTimeMs": 30000,
         "variables": [
           {
             "name": "form",
@@ -803,16 +942,16 @@
             "id": {
               "processInstanceId": "Instance_1",
               "elementId": "Cycle_Count",
-              "activation": 1
+              "activation": 4
             },
             "definition": null,
             "detail": {
               "kind": "timer",
-              "deadlineMs": 20000,
+              "deadlineMs": 30000,
               "recurrence": {
                 "periodMs": 10000,
                 "cron": null,
-                "remaining": 3
+                "remaining": 0
               }
             },
             "input": "timerFire"
@@ -822,6 +961,28 @@
               "processInstanceId": "Instance_1",
               "elementId": "Handler_Count",
               "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Respond to the reminder (count)",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Handler_Count",
+              "activation": 2
             },
             "definition": null,
             "detail": {
@@ -872,7 +1033,7 @@
         "kind": "state",
         "instanceId": "Instance_1",
         "status": "running",
-        "logicalTimeMs": 10000,
+        "logicalTimeMs": 30000,
         "variables": [
           {
             "name": "form",
@@ -887,19 +1048,41 @@
             "id": {
               "processInstanceId": "Instance_1",
               "elementId": "Cycle_Count",
-              "activation": 1
+              "activation": 4
             },
             "definition": null,
             "detail": {
               "kind": "timer",
-              "deadlineMs": 20000,
+              "deadlineMs": 30000,
               "recurrence": {
                 "periodMs": 10000,
                 "cron": null,
-                "remaining": 3
+                "remaining": 0
               }
             },
             "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Handler_Count",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Respond to the reminder (count)",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
           },
           {
             "id": {
@@ -928,13 +1111,13 @@
       {
         "kind": "command",
         "commandId": "s08-complete-Handler_Count",
-        "outcome": "rejected"
+        "outcome": "committed"
       },
       {
         "kind": "state",
         "instanceId": "Instance_1",
         "status": "running",
-        "logicalTimeMs": 10000,
+        "logicalTimeMs": 30000,
         "variables": [
           {
             "name": "form",
@@ -949,16 +1132,16 @@
             "id": {
               "processInstanceId": "Instance_1",
               "elementId": "Cycle_Count",
-              "activation": 1
+              "activation": 4
             },
             "definition": null,
             "detail": {
               "kind": "timer",
-              "deadlineMs": 20000,
+              "deadlineMs": 30000,
               "recurrence": {
                 "periodMs": 10000,
                 "cron": null,
-                "remaining": 3
+                "remaining": 0
               }
             },
             "input": "timerFire"
@@ -996,7 +1179,7 @@
         "kind": "state",
         "instanceId": "Instance_1",
         "status": "completed",
-        "logicalTimeMs": 10000,
+        "logicalTimeMs": 30000,
         "variables": [
           {
             "name": "form",

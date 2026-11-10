@@ -1,0 +1,306 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "conditional-evaluation-two-items-one-write-order",
+    "sha256": "fc97da964fe1ac38848f03a8ea95e2487075158319bec19ea5917bb141266b85"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "186794b9b170bcdbc8353972e4902d2cedcd9c120f9bf3dc53b7e6256964547c"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "winner",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-set-level",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "level",
+            "value": {
+              "kind": "integer",
+              "value": 9
+            }
+          },
+          {
+            "name": "winner",
+            "value": {
+              "kind": "string",
+              "value": "catch"
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "tasks": [
+          {
+            "elementId": "Work",
+            "name": "Prepare the file"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-set-level",
+        "tasks": [
+          {
+            "elementId": "Work",
+            "name": "Prepare the file"
+          },
+          {
+            "elementId": "Hold_Esp",
+            "name": "Hold the listener"
+          },
+          {
+            "elementId": "Hold_Catch",
+            "name": "Hold the region"
+          }
+        ]
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s02-set-level",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "s01-start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s02-set-level",
+        "state": "ACTIVE"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "winner",
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Catch_Level",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "conditional",
+              "variableName": "level",
+              "variableEvents": [],
+              "lastValue": null
+            },
+            "input": null
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Start_Level",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "conditional",
+              "variableName": "level",
+              "variableEvents": [],
+              "lastValue": null
+            },
+            "input": null
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Work",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Prepare the file",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s02-set-level",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "level",
+            "value": {
+              "kind": "integer",
+              "value": 9
+            }
+          },
+          {
+            "name": "winner",
+            "value": {
+              "kind": "string",
+              "value": "catch"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Hold_Catch",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Hold the region",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Hold_Esp",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Hold the listener",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Start_Level",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "conditional",
+              "variableName": "level",
+              "variableEvents": [],
+              "lastValue": null
+            },
+            "input": null
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Work",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Prepare the file",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      }
+    ]
+  }
+}

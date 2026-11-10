@@ -2,11 +2,11 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "timer-recurrence-count-host-expires",
-    "sha256": "f85caede7233bcbbed6fa9b3a39e5c1c2a46708f6dce5422ad7c11a88030db58"
+    "sha256": "66ae6e05b56bb264fce707910e7e5a7896340e33bf38e45b448048f20e291439"
   },
   "profile": {
     "id": "cibseven-2.2.0",
-    "sha256": "4cfc533e2831fe656c1595971f9a1308d8cc9f41f6725798a949d2c6a5a49214"
+    "sha256": "186794b9b170bcdbc8353972e4902d2cedcd9c120f9bf3dc53b7e6256964547c"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -14,7 +14,8 @@
     "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
     "runner": "cibseven-oracle",
     "java": "21",
-    "database": "H2 2.3.232"
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
   },
   "producerObservations": {
     "stateQueries": [
@@ -291,7 +292,7 @@
             "id": {
               "processInstanceId": "Instance_1",
               "elementId": "Cycle_Count",
-              "activation": 1
+              "activation": 2
             },
             "definition": null,
             "detail": {
@@ -300,7 +301,7 @@
               "recurrence": {
                 "periodMs": 10000,
                 "cron": null,
-                "remaining": 3
+                "remaining": 2
               }
             },
             "input": "timerFire"

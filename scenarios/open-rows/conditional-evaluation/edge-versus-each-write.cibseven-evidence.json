@@ -1,0 +1,687 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "conditional-evaluation-edge-versus-each-write",
+    "sha256": "52417f591f5aa0efc3b18d0009a5e2273a95d285a128dca88317b087c53d71e7"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "186794b9b170bcdbc8353972e4902d2cedcd9c120f9bf3dc53b7e6256964547c"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "s02-set-level",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "level",
+            "value": {
+              "kind": "integer",
+              "value": 150
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-set-level",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "level",
+            "value": {
+              "kind": "integer",
+              "value": 150
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-set-level",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "level",
+            "value": {
+              "kind": "integer",
+              "value": 50
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-set-level",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "level",
+            "value": {
+              "kind": "integer",
+              "value": 150
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "tasks": [
+          {
+            "elementId": "Host",
+            "name": "Review the account"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-set-level",
+        "tasks": [
+          {
+            "elementId": "Handle_Level",
+            "name": "Handle the level condition"
+          },
+          {
+            "elementId": "Host",
+            "name": "Review the account"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-set-level",
+        "tasks": [
+          {
+            "elementId": "Handle_Level",
+            "name": "Handle the level condition"
+          },
+          {
+            "elementId": "Handle_Level",
+            "name": "Handle the level condition"
+          },
+          {
+            "elementId": "Host",
+            "name": "Review the account"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-set-level",
+        "tasks": [
+          {
+            "elementId": "Handle_Level",
+            "name": "Handle the level condition"
+          },
+          {
+            "elementId": "Handle_Level",
+            "name": "Handle the level condition"
+          },
+          {
+            "elementId": "Host",
+            "name": "Review the account"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-set-level",
+        "tasks": [
+          {
+            "elementId": "Handle_Level",
+            "name": "Handle the level condition"
+          },
+          {
+            "elementId": "Handle_Level",
+            "name": "Handle the level condition"
+          },
+          {
+            "elementId": "Handle_Level",
+            "name": "Handle the level condition"
+          },
+          {
+            "elementId": "Host",
+            "name": "Review the account"
+          }
+        ]
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s02-set-level",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s03-set-level",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s04-set-level",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s05-set-level",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "s01-start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s02-set-level",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s03-set-level",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s04-set-level",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s05-set-level",
+        "state": "ACTIVE"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Cond_Level",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "conditional",
+              "variableName": null,
+              "variableEvents": [],
+              "lastValue": null
+            },
+            "input": null
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Host",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review the account",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s02-set-level",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "level",
+            "value": {
+              "kind": "integer",
+              "value": 150
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Cond_Level",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "conditional",
+              "variableName": null,
+              "variableEvents": [],
+              "lastValue": null
+            },
+            "input": null
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Handle_Level",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Handle the level condition",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Host",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review the account",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s03-set-level",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "level",
+            "value": {
+              "kind": "integer",
+              "value": 150
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Cond_Level",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "conditional",
+              "variableName": null,
+              "variableEvents": [],
+              "lastValue": null
+            },
+            "input": null
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Handle_Level",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Handle the level condition",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Handle_Level",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Handle the level condition",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Host",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review the account",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s04-set-level",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "level",
+            "value": {
+              "kind": "integer",
+              "value": 50
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Cond_Level",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "conditional",
+              "variableName": null,
+              "variableEvents": [],
+              "lastValue": null
+            },
+            "input": null
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Handle_Level",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Handle the level condition",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Handle_Level",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Handle the level condition",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Host",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review the account",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s05-set-level",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "level",
+            "value": {
+              "kind": "integer",
+              "value": 150
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Cond_Level",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "conditional",
+              "variableName": null,
+              "variableEvents": [],
+              "lastValue": null
+            },
+            "input": null
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Handle_Level",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Handle the level condition",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Handle_Level",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Handle the level condition",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Handle_Level",
+              "activation": 3
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Handle the level condition",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Host",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review the account",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      }
+    ]
+  }
+}

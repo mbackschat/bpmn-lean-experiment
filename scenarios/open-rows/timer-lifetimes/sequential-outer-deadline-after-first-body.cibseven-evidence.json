@@ -6,7 +6,7 @@
   },
   "profile": {
     "id": "cibseven-2.2.0",
-    "sha256": "4cfc533e2831fe656c1595971f9a1308d8cc9f41f6725798a949d2c6a5a49214"
+    "sha256": "186794b9b170bcdbc8353972e4902d2cedcd9c120f9bf3dc53b7e6256964547c"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -14,7 +14,8 @@
     "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
     "runner": "cibseven-oracle",
     "java": "21",
-    "database": "H2 2.3.232"
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
   },
   "producerObservations": {
     "stateQueries": [
@@ -55,7 +56,7 @@
       {
         "afterCommandId": "s03-fire-Outer_Deadline",
         "processInstanceCount": 1,
-        "engineClockTimeMs": 0,
+        "engineClockTimeMs": 50000,
         "variables": [
           {
             "name": "items",
@@ -72,7 +73,7 @@
       {
         "afterCommandId": "s04-fire-Body_Deadline",
         "processInstanceCount": 1,
-        "engineClockTimeMs": 5000,
+        "engineClockTimeMs": 50000,
         "variables": [
           {
             "name": "items",
@@ -88,8 +89,8 @@
       },
       {
         "afterCommandId": "s05-complete-Outer_Late",
-        "processInstanceCount": 1,
-        "engineClockTimeMs": 5000,
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 50000,
         "variables": [
           {
             "name": "items",
@@ -127,8 +128,8 @@
         "afterCommandId": "s03-fire-Outer_Deadline",
         "tasks": [
           {
-            "elementId": "Inspect",
-            "name": "Inspect one lot"
+            "elementId": "Outer_Late",
+            "name": "Handle the abandoned inspection"
           }
         ]
       },
@@ -136,19 +137,14 @@
         "afterCommandId": "s04-fire-Body_Deadline",
         "tasks": [
           {
-            "elementId": "Body_Late",
-            "name": "Handle the late lot"
+            "elementId": "Outer_Late",
+            "name": "Handle the abandoned inspection"
           }
         ]
       },
       {
         "afterCommandId": "s05-complete-Outer_Late",
-        "tasks": [
-          {
-            "elementId": "Body_Late",
-            "name": "Handle the late lot"
-          }
-        ]
+        "tasks": []
       }
     ],
     "timerJobs": [
@@ -194,53 +190,15 @@
       },
       {
         "afterCommandId": "s03-fire-Outer_Deadline",
-        "jobs": [
-          {
-            "elementId": "Body_Deadline",
-            "dueDateDeltaMs": 5000,
-            "executable": false
-          },
-          {
-            "elementId": "Outer_Deadline",
-            "dueDateDeltaMs": 50000,
-            "executable": false
-          },
-          {
-            "elementId": "Start_Body_Note",
-            "dueDateDeltaMs": 3000,
-            "executable": false
-          }
-        ]
+        "jobs": []
       },
       {
         "afterCommandId": "s04-fire-Body_Deadline",
-        "jobs": [
-          {
-            "elementId": "Outer_Deadline",
-            "dueDateDeltaMs": 50000,
-            "executable": false
-          },
-          {
-            "elementId": "Start_Body_Note",
-            "dueDateDeltaMs": 3000,
-            "executable": true
-          }
-        ]
+        "jobs": []
       },
       {
         "afterCommandId": "s05-complete-Outer_Late",
-        "jobs": [
-          {
-            "elementId": "Outer_Deadline",
-            "dueDateDeltaMs": 50000,
-            "executable": false
-          },
-          {
-            "elementId": "Start_Body_Note",
-            "dueDateDeltaMs": 3000,
-            "executable": true
-          }
-        ]
+        "jobs": []
       }
     ],
     "historicProcessStates": [
@@ -262,7 +220,7 @@
       },
       {
         "afterCommandId": "s05-complete-Outer_Late",
-        "state": "ACTIVE"
+        "state": "COMPLETED"
       }
     ]
   },
@@ -272,7 +230,7 @@
   "result": {
     "outcome": {
       "kind": "semantic",
-      "outcome": "rejected"
+      "outcome": "committed"
     },
     "trace": [
       {
@@ -431,7 +389,7 @@
             "id": {
               "processInstanceId": "Instance_1",
               "elementId": "Outer_Deadline",
-              "activation": 2
+              "activation": 1
             },
             "definition": null,
             "detail": {
@@ -460,102 +418,13 @@
       {
         "kind": "command",
         "commandId": "s03-fire-Outer_Deadline",
-        "outcome": "rejected"
-      },
-      {
-        "kind": "state",
-        "instanceId": "Instance_1",
-        "status": "running",
-        "logicalTimeMs": 0,
-        "variables": [
-          {
-            "name": "items",
-            "value": {
-              "kind": "stringList",
-              "value": [
-                "a",
-                "b"
-              ]
-            }
-          }
-        ],
-        "openWaits": [
-          {
-            "id": {
-              "processInstanceId": "Instance_1",
-              "elementId": "Body_Deadline",
-              "activation": 2
-            },
-            "definition": null,
-            "detail": {
-              "kind": "timer",
-              "deadlineMs": 5000,
-              "recurrence": null
-            },
-            "input": "timerFire"
-          },
-          {
-            "id": {
-              "processInstanceId": "Instance_1",
-              "elementId": "Inspect",
-              "activation": 2
-            },
-            "definition": null,
-            "detail": {
-              "kind": "userTask",
-              "name": "Inspect one lot",
-              "assignee": null,
-              "candidateUsers": [],
-              "candidateGroups": [],
-              "formKey": null,
-              "formFields": [],
-              "dueDate": null,
-              "followUpDate": null,
-              "priority": null,
-              "inputs": []
-            },
-            "input": "command"
-          },
-          {
-            "id": {
-              "processInstanceId": "Instance_1",
-              "elementId": "Outer_Deadline",
-              "activation": 2
-            },
-            "definition": null,
-            "detail": {
-              "kind": "timer",
-              "deadlineMs": 50000,
-              "recurrence": null
-            },
-            "input": "timerFire"
-          },
-          {
-            "id": {
-              "processInstanceId": "Instance_1",
-              "elementId": "Start_Body_Note",
-              "activation": 2
-            },
-            "definition": null,
-            "detail": {
-              "kind": "timer",
-              "deadlineMs": 3000,
-              "recurrence": null
-            },
-            "input": "timerFire"
-          }
-        ]
-      },
-      {
-        "kind": "command",
-        "commandId": "s04-fire-Body_Deadline",
         "outcome": "committed"
       },
       {
         "kind": "state",
         "instanceId": "Instance_1",
         "status": "running",
-        "logicalTimeMs": 5000,
+        "logicalTimeMs": 50000,
         "variables": [
           {
             "name": "items",
@@ -572,13 +441,13 @@
           {
             "id": {
               "processInstanceId": "Instance_1",
-              "elementId": "Body_Late",
+              "elementId": "Outer_Late",
               "activation": 1
             },
             "definition": null,
             "detail": {
               "kind": "userTask",
-              "name": "Handle the late lot",
+              "name": "Handle the abandoned inspection",
               "assignee": null,
               "candidateUsers": [],
               "candidateGroups": [],
@@ -590,47 +459,19 @@
               "inputs": []
             },
             "input": "command"
-          },
-          {
-            "id": {
-              "processInstanceId": "Instance_1",
-              "elementId": "Outer_Deadline",
-              "activation": 2
-            },
-            "definition": null,
-            "detail": {
-              "kind": "timer",
-              "deadlineMs": 50000,
-              "recurrence": null
-            },
-            "input": "timerFire"
-          },
-          {
-            "id": {
-              "processInstanceId": "Instance_1",
-              "elementId": "Start_Body_Note",
-              "activation": 2
-            },
-            "definition": null,
-            "detail": {
-              "kind": "timer",
-              "deadlineMs": 3000,
-              "recurrence": null
-            },
-            "input": "timerFire"
           }
         ]
       },
       {
         "kind": "command",
-        "commandId": "s05-complete-Outer_Late",
+        "commandId": "s04-fire-Body_Deadline",
         "outcome": "rejected"
       },
       {
         "kind": "state",
         "instanceId": "Instance_1",
         "status": "running",
-        "logicalTimeMs": 5000,
+        "logicalTimeMs": 50000,
         "variables": [
           {
             "name": "items",
@@ -647,13 +488,13 @@
           {
             "id": {
               "processInstanceId": "Instance_1",
-              "elementId": "Body_Late",
+              "elementId": "Outer_Late",
               "activation": 1
             },
             "definition": null,
             "detail": {
               "kind": "userTask",
-              "name": "Handle the late lot",
+              "name": "Handle the abandoned inspection",
               "assignee": null,
               "candidateUsers": [],
               "candidateGroups": [],
@@ -665,36 +506,32 @@
               "inputs": []
             },
             "input": "command"
-          },
-          {
-            "id": {
-              "processInstanceId": "Instance_1",
-              "elementId": "Outer_Deadline",
-              "activation": 2
-            },
-            "definition": null,
-            "detail": {
-              "kind": "timer",
-              "deadlineMs": 50000,
-              "recurrence": null
-            },
-            "input": "timerFire"
-          },
-          {
-            "id": {
-              "processInstanceId": "Instance_1",
-              "elementId": "Start_Body_Note",
-              "activation": 2
-            },
-            "definition": null,
-            "detail": {
-              "kind": "timer",
-              "deadlineMs": 3000,
-              "recurrence": null
-            },
-            "input": "timerFire"
           }
         ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s05-complete-Outer_Late",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "completed",
+        "logicalTimeMs": 50000,
+        "variables": [
+          {
+            "name": "items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b"
+              ]
+            }
+          }
+        ],
+        "openWaits": []
       }
     ]
   }

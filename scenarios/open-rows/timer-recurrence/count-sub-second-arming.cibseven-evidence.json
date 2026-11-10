@@ -1,0 +1,462 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "timer-recurrence-count-sub-second-arming",
+    "sha256": "858751d93dd2e05b19f08db2fdc42d3e4a64ad7dd36a0c5c2052fd24a3e66141"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "186794b9b170bcdbc8353972e4902d2cedcd9c120f9bf3dc53b7e6256964547c"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "form",
+            "value": {
+              "kind": "string",
+              "value": "sub-second"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-fire-Catch_Half",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 500,
+        "variables": [
+          {
+            "name": "form",
+            "value": {
+              "kind": "string",
+              "value": "sub-second"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-fire-Cycle_SubSecond",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 10500,
+        "variables": [
+          {
+            "name": "form",
+            "value": {
+              "kind": "string",
+              "value": "sub-second"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-fire-Cycle_SubSecond",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 10500,
+        "variables": [
+          {
+            "name": "form",
+            "value": {
+              "kind": "string",
+              "value": "sub-second"
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "s02-fire-Catch_Half",
+        "tasks": [
+          {
+            "elementId": "Host_SubSecond",
+            "name": "Review (armed after half a second)"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-fire-Cycle_SubSecond",
+        "tasks": [
+          {
+            "elementId": "Host_SubSecond",
+            "name": "Review (armed after half a second)"
+          },
+          {
+            "elementId": "Handler_SubSecond",
+            "name": "Respond to the reminder (armed after half a second)"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-fire-Cycle_SubSecond",
+        "tasks": [
+          {
+            "elementId": "Host_SubSecond",
+            "name": "Review (armed after half a second)"
+          },
+          {
+            "elementId": "Handler_SubSecond",
+            "name": "Respond to the reminder (armed after half a second)"
+          }
+        ]
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": [
+          {
+            "elementId": "Catch_Half",
+            "dueDateDeltaMs": 500,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-fire-Catch_Half",
+        "jobs": [
+          {
+            "elementId": "Cycle_SubSecond",
+            "dueDateDeltaMs": 10500,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-fire-Cycle_SubSecond",
+        "jobs": [
+          {
+            "elementId": "Cycle_SubSecond",
+            "dueDateDeltaMs": 20000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-fire-Cycle_SubSecond",
+        "jobs": [
+          {
+            "elementId": "Cycle_SubSecond",
+            "dueDateDeltaMs": 20000,
+            "executable": false
+          }
+        ]
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "s01-start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s02-fire-Catch_Half",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s03-fire-Cycle_SubSecond",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s04-fire-Cycle_SubSecond",
+        "state": "ACTIVE"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "rejected"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "form",
+            "value": {
+              "kind": "string",
+              "value": "sub-second"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Catch_Half",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 500,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s02-fire-Catch_Half",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 500,
+        "variables": [
+          {
+            "name": "form",
+            "value": {
+              "kind": "string",
+              "value": "sub-second"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Cycle_SubSecond",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 10500,
+              "recurrence": {
+                "periodMs": 10000,
+                "cron": null,
+                "remaining": 3
+              }
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Host_SubSecond",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review (armed after half a second)",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s03-fire-Cycle_SubSecond",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 10500,
+        "variables": [
+          {
+            "name": "form",
+            "value": {
+              "kind": "string",
+              "value": "sub-second"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Cycle_SubSecond",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 20000,
+              "recurrence": {
+                "periodMs": 10000,
+                "cron": null,
+                "remaining": 2
+              }
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Handler_SubSecond",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Respond to the reminder (armed after half a second)",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Host_SubSecond",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review (armed after half a second)",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s04-fire-Cycle_SubSecond",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 10500,
+        "variables": [
+          {
+            "name": "form",
+            "value": {
+              "kind": "string",
+              "value": "sub-second"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Cycle_SubSecond",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 20000,
+              "recurrence": {
+                "periodMs": 10000,
+                "cron": null,
+                "remaining": 2
+              }
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Handler_SubSecond",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Respond to the reminder (armed after half a second)",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Host_SubSecond",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review (armed after half a second)",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      }
+    ]
+  }
+}

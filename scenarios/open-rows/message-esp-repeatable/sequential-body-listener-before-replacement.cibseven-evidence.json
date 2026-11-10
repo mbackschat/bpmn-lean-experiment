@@ -6,7 +6,7 @@
   },
   "profile": {
     "id": "cibseven-2.2.0",
-    "sha256": "4cfc533e2831fe656c1595971f9a1308d8cc9f41f6725798a949d2c6a5a49214"
+    "sha256": "186794b9b170bcdbc8353972e4902d2cedcd9c120f9bf3dc53b7e6256964547c"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -14,7 +14,8 @@
     "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
     "runner": "cibseven-oracle",
     "java": "21",
-    "database": "H2 2.3.232"
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
   },
   "producerObservations": {
     "stateQueries": [
@@ -307,10 +308,6 @@
           {
             "elementId": "Inner_Seq",
             "name": "Inspect one seq lot"
-          },
-          {
-            "elementId": "Handle_SeqNotice",
-            "name": "Handle the seq notice"
           }
         ]
       },
@@ -1642,7 +1639,7 @@
             "id": {
               "processInstanceId": "Instance_1",
               "elementId": "Start_SeqNotice",
-              "activation": 2
+              "activation": 3
             },
             "definition": null,
             "detail": {
@@ -1867,7 +1864,7 @@
             "id": {
               "processInstanceId": "Instance_1",
               "elementId": "Start_SeqNotice",
-              "activation": 2
+              "activation": 3
             },
             "definition": null,
             "detail": {
@@ -1908,7 +1905,7 @@
       {
         "kind": "command",
         "commandId": "s06-deliver-Start_SeqNotice",
-        "outcome": "committed"
+        "outcome": "rejected"
       },
       {
         "kind": "state",
@@ -1928,28 +1925,6 @@
           }
         ],
         "openWaits": [
-          {
-            "id": {
-              "processInstanceId": "Instance_1",
-              "elementId": "Handle_SeqNotice",
-              "activation": 2
-            },
-            "definition": null,
-            "detail": {
-              "kind": "userTask",
-              "name": "Handle the seq notice",
-              "assignee": null,
-              "candidateUsers": [],
-              "candidateGroups": [],
-              "formKey": null,
-              "formFields": [],
-              "dueDate": null,
-              "followUpDate": null,
-              "priority": null,
-              "inputs": []
-            },
-            "input": "command"
-          },
           {
             "id": {
               "processInstanceId": "Instance_1",
@@ -2114,7 +2089,7 @@
             "id": {
               "processInstanceId": "Instance_1",
               "elementId": "Start_SeqNotice",
-              "activation": 2
+              "activation": 3
             },
             "definition": null,
             "detail": {
@@ -2155,7 +2130,7 @@
       {
         "kind": "command",
         "commandId": "s07-complete-Handle_SeqNotice",
-        "outcome": "committed"
+        "outcome": "rejected"
       },
       {
         "kind": "state",
@@ -2339,7 +2314,7 @@
             "id": {
               "processInstanceId": "Instance_1",
               "elementId": "Start_SeqNotice",
-              "activation": 2
+              "activation": 3
             },
             "definition": null,
             "detail": {

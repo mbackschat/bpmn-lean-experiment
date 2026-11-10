@@ -2,11 +2,11 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "timer-recurrence-cron-seconds-field",
-    "sha256": "d7d80ac5d623b387edbc984c2455acece58e2c23ec538868eeecaf488b3ed6cb"
+    "sha256": "246c991c117b4452d6a4cda3f0ef36e107e2081bfb849906f509dbcfe955fb1a"
   },
   "profile": {
     "id": "cibseven-2.2.0",
-    "sha256": "4cfc533e2831fe656c1595971f9a1308d8cc9f41f6725798a949d2c6a5a49214"
+    "sha256": "186794b9b170bcdbc8353972e4902d2cedcd9c120f9bf3dc53b7e6256964547c"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -14,7 +14,8 @@
     "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
     "runner": "cibseven-oracle",
     "java": "21",
-    "database": "H2 2.3.232"
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
   },
   "producerObservations": {
     "stateQueries": [
@@ -49,7 +50,7 @@
       {
         "afterCommandId": "s03-fire-Cycle_Cron",
         "processInstanceCount": 1,
-        "engineClockTimeMs": 30000,
+        "engineClockTimeMs": 60000,
         "variables": [
           {
             "name": "form",
@@ -63,7 +64,7 @@
       {
         "afterCommandId": "s04-complete-Host_Cron",
         "processInstanceCount": 1,
-        "engineClockTimeMs": 30000,
+        "engineClockTimeMs": 60000,
         "variables": [
           {
             "name": "form",
@@ -77,7 +78,7 @@
       {
         "afterCommandId": "s05-fire-Cycle_Cron",
         "processInstanceCount": 1,
-        "engineClockTimeMs": 30000,
+        "engineClockTimeMs": 60000,
         "variables": [
           {
             "name": "form",
@@ -122,6 +123,10 @@
           {
             "elementId": "Handler_Cron",
             "name": "Respond to the reminder (cron)"
+          },
+          {
+            "elementId": "Handler_Cron",
+            "name": "Respond to the reminder (cron)"
           }
         ]
       },
@@ -131,12 +136,20 @@
           {
             "elementId": "Handler_Cron",
             "name": "Respond to the reminder (cron)"
+          },
+          {
+            "elementId": "Handler_Cron",
+            "name": "Respond to the reminder (cron)"
           }
         ]
       },
       {
         "afterCommandId": "s05-fire-Cycle_Cron",
         "tasks": [
+          {
+            "elementId": "Handler_Cron",
+            "name": "Respond to the reminder (cron)"
+          },
           {
             "elementId": "Handler_Cron",
             "name": "Respond to the reminder (cron)"
@@ -170,7 +183,7 @@
         "jobs": [
           {
             "elementId": "Cycle_Cron",
-            "dueDateDeltaMs": 60000,
+            "dueDateDeltaMs": 90000,
             "executable": false
           }
         ]
@@ -306,7 +319,7 @@
             "id": {
               "processInstanceId": "Instance_1",
               "elementId": "Cycle_Cron",
-              "activation": 1
+              "activation": 2
             },
             "definition": null,
             "detail": {
@@ -369,13 +382,13 @@
       {
         "kind": "command",
         "commandId": "s03-fire-Cycle_Cron",
-        "outcome": "rejected"
+        "outcome": "committed"
       },
       {
         "kind": "state",
         "instanceId": "Instance_1",
         "status": "running",
-        "logicalTimeMs": 30000,
+        "logicalTimeMs": 60000,
         "variables": [
           {
             "name": "form",
@@ -390,12 +403,12 @@
             "id": {
               "processInstanceId": "Instance_1",
               "elementId": "Cycle_Cron",
-              "activation": 1
+              "activation": 3
             },
             "definition": null,
             "detail": {
               "kind": "timer",
-              "deadlineMs": 60000,
+              "deadlineMs": 90000,
               "recurrence": {
                 "periodMs": null,
                 "cron": "0/30 * * * * ?",
@@ -409,6 +422,28 @@
               "processInstanceId": "Instance_1",
               "elementId": "Handler_Cron",
               "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Respond to the reminder (cron)",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Handler_Cron",
+              "activation": 2
             },
             "definition": null,
             "detail": {
@@ -459,7 +494,7 @@
         "kind": "state",
         "instanceId": "Instance_1",
         "status": "running",
-        "logicalTimeMs": 30000,
+        "logicalTimeMs": 60000,
         "variables": [
           {
             "name": "form",
@@ -491,6 +526,28 @@
               "inputs": []
             },
             "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Handler_Cron",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Respond to the reminder (cron)",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
           }
         ]
       },
@@ -503,7 +560,7 @@
         "kind": "state",
         "instanceId": "Instance_1",
         "status": "running",
-        "logicalTimeMs": 30000,
+        "logicalTimeMs": 60000,
         "variables": [
           {
             "name": "form",
@@ -519,6 +576,28 @@
               "processInstanceId": "Instance_1",
               "elementId": "Handler_Cron",
               "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Respond to the reminder (cron)",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Handler_Cron",
+              "activation": 2
             },
             "definition": null,
             "detail": {

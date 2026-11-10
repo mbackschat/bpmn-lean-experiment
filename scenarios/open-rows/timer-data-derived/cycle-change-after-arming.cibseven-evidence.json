@@ -1,0 +1,601 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "timer-data-derived-cycle-change-after-arming",
+    "sha256": "1b2c00b43ba57b2e217b3482dedead36b247a54646744826c0b54a90ac0cdc0f"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "186794b9b170bcdbc8353972e4902d2cedcd9c120f9bf3dc53b7e6256964547c"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "c",
+            "value": {
+              "kind": "string",
+              "value": "R3/PT10S"
+            }
+          },
+          {
+            "name": "route",
+            "value": {
+              "kind": "string",
+              "value": "cycle-change"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-complete-Writer",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "c",
+            "value": {
+              "kind": "string",
+              "value": "R/PT1S"
+            }
+          },
+          {
+            "name": "route",
+            "value": {
+              "kind": "string",
+              "value": "cycle-change"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-fire-Cadence",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 10000,
+        "variables": [
+          {
+            "name": "c",
+            "value": {
+              "kind": "string",
+              "value": "R/PT1S"
+            }
+          },
+          {
+            "name": "route",
+            "value": {
+              "kind": "string",
+              "value": "cycle-change"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-fire-Cadence",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 20000,
+        "variables": [
+          {
+            "name": "c",
+            "value": {
+              "kind": "string",
+              "value": "R/PT1S"
+            }
+          },
+          {
+            "name": "route",
+            "value": {
+              "kind": "string",
+              "value": "cycle-change"
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "tasks": [
+          {
+            "elementId": "Host_Remind",
+            "name": "Work with reminders"
+          },
+          {
+            "elementId": "Writer",
+            "name": "Revise the cadence"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-complete-Writer",
+        "tasks": [
+          {
+            "elementId": "Host_Remind",
+            "name": "Work with reminders"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-fire-Cadence",
+        "tasks": [
+          {
+            "elementId": "Host_Remind",
+            "name": "Work with reminders"
+          },
+          {
+            "elementId": "Handler_Cadence",
+            "name": "Respond to the reminder"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-fire-Cadence",
+        "tasks": [
+          {
+            "elementId": "Host_Remind",
+            "name": "Work with reminders"
+          },
+          {
+            "elementId": "Handler_Cadence",
+            "name": "Respond to the reminder"
+          },
+          {
+            "elementId": "Handler_Cadence",
+            "name": "Respond to the reminder"
+          }
+        ]
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": [
+          {
+            "elementId": "Cadence",
+            "dueDateDeltaMs": 10000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-complete-Writer",
+        "jobs": [
+          {
+            "elementId": "Cadence",
+            "dueDateDeltaMs": 10000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-fire-Cadence",
+        "jobs": [
+          {
+            "elementId": "Cadence",
+            "dueDateDeltaMs": 20000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-fire-Cadence",
+        "jobs": [
+          {
+            "elementId": "Cadence",
+            "dueDateDeltaMs": 30000,
+            "executable": false
+          }
+        ]
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "s01-start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s02-complete-Writer",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s03-fire-Cadence",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s04-fire-Cadence",
+        "state": "ACTIVE"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "c",
+            "value": {
+              "kind": "string",
+              "value": "R3/PT10S"
+            }
+          },
+          {
+            "name": "route",
+            "value": {
+              "kind": "string",
+              "value": "cycle-change"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Cadence",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 10000,
+              "recurrence": {
+                "periodMs": 10000,
+                "cron": null,
+                "remaining": 3
+              }
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Host_Remind",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Work with reminders",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Writer",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Revise the cadence",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s02-complete-Writer",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "c",
+            "value": {
+              "kind": "string",
+              "value": "R/PT1S"
+            }
+          },
+          {
+            "name": "route",
+            "value": {
+              "kind": "string",
+              "value": "cycle-change"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Cadence",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 10000,
+              "recurrence": {
+                "periodMs": 10000,
+                "cron": null,
+                "remaining": 3
+              }
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Host_Remind",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Work with reminders",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s03-fire-Cadence",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 10000,
+        "variables": [
+          {
+            "name": "c",
+            "value": {
+              "kind": "string",
+              "value": "R/PT1S"
+            }
+          },
+          {
+            "name": "route",
+            "value": {
+              "kind": "string",
+              "value": "cycle-change"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Cadence",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 20000,
+              "recurrence": {
+                "periodMs": 10000,
+                "cron": null,
+                "remaining": 2
+              }
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Handler_Cadence",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Respond to the reminder",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Host_Remind",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Work with reminders",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s04-fire-Cadence",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 20000,
+        "variables": [
+          {
+            "name": "c",
+            "value": {
+              "kind": "string",
+              "value": "R/PT1S"
+            }
+          },
+          {
+            "name": "route",
+            "value": {
+              "kind": "string",
+              "value": "cycle-change"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Cadence",
+              "activation": 3
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 30000,
+              "recurrence": {
+                "periodMs": 10000,
+                "cron": null,
+                "remaining": 1
+              }
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Handler_Cadence",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Respond to the reminder",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Handler_Cadence",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Respond to the reminder",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Host_Remind",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Work with reminders",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      }
+    ]
+  }
+}
