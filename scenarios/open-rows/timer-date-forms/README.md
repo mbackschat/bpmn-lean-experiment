@@ -26,7 +26,7 @@ Answer-free schedules for [PC-TIMER-01](../../../docs/PRACTICAL-CIB7-COVERAGE-TA
 | [lowercase-designators](lowercase-designators.scenario.json) | date-forms | PC-TIMER-01 | The lexeme `1970-01-01t01:00:00z`, with lower-case designators, is armed at the start; the schedule is the start alone. |
 | [offset-plus-two](offset-plus-two.scenario.json) | date-offset | PC-TIMER-01 | The date with the `+02:00` offset is armed at the start, fired at 3,600,000 and followed by `Proceed`. Separates an explicit offset applied as a fixed shift from its wall-clock time read as UTC. No evidence yet. |
 | [no-designator](no-designator.scenario.json) | date-no-designator | PC-TIMER-01 | The lexeme without a zone designator is armed at the start; the schedule is the start alone. Separates a zone-less date refused as outside the row's forms from the same wall-clock time read in the engine host's zone. No evidence yet. |
-| [before-epoch](before-epoch.scenario.json) | date-before-epoch | PC-TIMER-01 | The date before logical time zero is armed at the start; the schedule is the start alone. Separates a date before the epoch from a date that is already due. No evidence yet. |
+| [before-epoch](before-epoch.scenario.json) | date-before-epoch | PC-TIMER-01 | The date before logical time zero is armed at the start; the schedule is the start alone. Separates a date before the epoch from a date that is already due. CIB's job is due before logical time zero, which the observation cannot express, so its run ends as a harness failure. |
 
 ## Notes for the target runners
 

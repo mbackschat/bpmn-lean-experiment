@@ -1,6 +1,7 @@
 package org.bpmnlean.cibseven;
 
 import java.time.Duration;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Date;
@@ -424,16 +425,25 @@ final class CibSevenOpenWaitProjector {
 
   /**
    * The firings left of a finite cycle, including the open one: the declared count less the chain's earlier firings,
-   * as the kernel counts them (CIB keeps the declared count on every job of the chain).
+   * as the kernel counts them (CIB keeps the declared count on every job of the chain). A chain past its count
+   * (CIB-DEV-0006) has no value in the observation, so it fails the scenario rather than report a negative count.
    */
   static Recurrence remaining(Recurrence recurrence, long earlierFirings) {
     if (recurrence == null || recurrence.remaining() == null) {
       return recurrence;
     }
-    return new Recurrence(recurrence.periodMs(), recurrence.cron(), recurrence.remaining() - earlierFirings);
+    var left = recurrence.remaining() - earlierFirings;
+    if (left < 0) {
+      throw new IllegalStateException("CIB chained a finite Timer cycle past its declared count of "
+          + recurrence.remaining() + " (CIB-DEV-0006); the observation has no value for its remaining firings");
+    }
+    return new Recurrence(recurrence.periodMs(), recurrence.cron(), left);
   }
 
-  /** A timer's repetition from CIB's repeat expression: ISO `R[n]/[start/]period`, otherwise a cron expression. */
+  /**
+   * A timer's repetition from CIB's repeat expression: ISO `R[n]/[start/]period` or `R[n]/start/end`, whose period is
+   * the distance of its two dates (`DurationHelper`), otherwise a cron expression.
+   */
   static Recurrence recurrence(String repeat) {
     if (repeat == null || repeat.isEmpty()) {
       return null;
@@ -443,7 +453,10 @@ final class CibSevenOpenWaitProjector {
     }
     var parts = repeat.split("/");
     var count = parts[0].substring(1);
-    var period = Duration.parse(parts[parts.length - 1]).toMillis();
+    var last = parts[parts.length - 1];
+    var period = last.startsWith("P")
+        ? Duration.parse(last).toMillis()
+        : Duration.between(OffsetDateTime.parse(parts[1]), OffsetDateTime.parse(last)).toMillis();
     return new Recurrence(period, null, count.isEmpty() ? null : Long.parseLong(count));
   }
 }

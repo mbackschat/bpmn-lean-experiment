@@ -184,7 +184,7 @@ CIB dispatches the variable events of a task's completion before the task leaves
 
 When a finite cycle fires its `n`-th time with the clock exactly at that deadline, `DurationHelper#getDateAfterRepeat` (`:116-129`) exhausts the count with `cur` equal to the clock, does not end the cycle (`cur.before(date)` is false), and returns that instant; `TimerEntity#preExecute` creates a follow-up job due then, and every such firing repeats it. BPMN's `R<n>` has `n` recurrences; CIB's own test (`StartTimerEventTest:160-194`) avoids the artifact by moving the clock past each deadline. The kernel ends the cycle after `n` firings.
 
-**Evidence:** The cited source; witness `timer-recurrence/count-finite-overlap` after the retake (the observation after the third firing).
+**Evidence:** The cited source; witness `timer-recurrence/count-finite-overlap` after the retake (the observation after the third firing). The dated witnesses `dated-start-and-period` and `dated-start-and-end` fire past the count, which the observation cannot express, so the runner ends them as harness failures naming this entry (`CibSevenOpenWaitProjector.remaining`).
 
 **Boundary:** Finite ISO cycles whose firing happens exactly at the deadline; a runner firing later is outside today's observation boundary.
 
