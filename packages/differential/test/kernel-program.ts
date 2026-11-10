@@ -28,7 +28,7 @@ export async function readCaseSource(source: CaseSource, profileId: string): Pro
     overlay: source.overlay,
     profile: profileId,
     limits: readLimits,
-    decisions: source.decisions,
+    ...(source.decisions === undefined ? {} : { decisions: source.decisions }),
   }, kernelProfileOptions(profile.bpmn?.relationships ?? []));
 }
 

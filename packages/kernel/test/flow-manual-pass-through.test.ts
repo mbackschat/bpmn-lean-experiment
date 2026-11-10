@@ -18,15 +18,15 @@ type Json = Record<string, any>;
 function siteVisit(manualSourceType: string): Json {
   const manual = (id: string, env: Json): Json => {
     const element = activity(id, "manual", env);
-    element.activity.header.sourceType = manualSourceType;
+    (element.activity as Json).header.sourceType = manualSourceType;
     return element;
   };
   const user = (id: string, incoming: string, outgoing: string): Json => activity(id, userWork(), { incoming: [incoming], outgoing: [outgoing] });
   const program = base();
   const begin = start("Start");
-  begin.start.payload.outgoing = ["To_Prepare"];
+  (begin.start as Json).payload.outgoing = ["To_Prepare"];
   const finish = end("End");
-  finish.event.payload.incoming = ["To_End"];
+  (finish.event as Json).payload.incoming = ["To_End"];
   return {
     ...program,
     elements: [

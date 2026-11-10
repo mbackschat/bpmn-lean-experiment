@@ -118,7 +118,7 @@ test("a completion with one value over a bound is rejected whole, and the task t
     completeWith(valid, ["overflow", nested(5)]), completeWith(valid));
   assert.ok(committed(started!));
   assert.deepEqual(overflow, outside);
-  assert.ok(completed!.ok);
+  assert.ok(completed !== undefined && completed.ok);
   assert.deepEqual(completed.value.variables.find((entry) => entry.scope === 0)?.entries.map(([name]) => name).sort(), ["accepted", "payload"]);
 });
 
