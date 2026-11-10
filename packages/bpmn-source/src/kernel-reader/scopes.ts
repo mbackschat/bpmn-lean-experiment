@@ -1,20 +1,19 @@
 import type { ElementRecord } from "../moddle-graph.js";
 import { envelopeFor, headerOf } from "./build.js";
 import { startSubscription } from "./events.js";
-import { byId, FlowElementKind, ReadRefusal, ReadRefusalCode, list, optionalId, requireId, text } from "./model.js";
+import { FlowElementKind, ReadRefusal, ReadRefusalCode, list, optionalId, requireId, text } from "./model.js";
 import type { Built, ModelNode, ReadContext } from "./model.js";
 import { inputOutputParameters } from "./data.js";
 import { readActivityData } from "./work.js";
 import { assertNever, ctor } from "./wire.js";
 import type { KernelJson } from "./wire.js";
 
-/** Children of one container: its own nodes by id, then the compensation handlers it holds in subject order. */
+/** Children of one container: its own nodes in document order, then the compensation handlers it holds in subject order. */
 export function childIds(ctx: ReadContext, container: ElementRecord): string[] {
   const compensationBoundaries = new Set(ctx.compensation.map((entry) => entry.boundary));
   const own = ctx.childrenOf(container)
     .filter((node) => !compensationBoundaries.has(requireId(node.element)) && !ctx.handlers.has(requireId(node.element)) &&
       !ctx.erased.has(requireId(node.element)))
-    .sort(byId)
     .map((node) => requireId(node.element));
   const handled = ctx.compensation.filter((entry) => entry.container === container);
   return [...own, ...handled.filter((entry) => entry.boundary !== null).map((entry) => entry.handler),

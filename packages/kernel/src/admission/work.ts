@@ -4,11 +4,13 @@
  * Boundaries are admitted by `admission/subscriptions.ts` through the admission registry. Input and output mappings
  * are admitted only on the work kinds whose item carries the evaluated inputs (a User Task's published inputs, an
  * effect's arguments) and whose completion submits the values the outputs read (a User Task's submission, an effect's
- * result patch); elsewhere `feature/work.ts` would evaluate a mapping and drop its binding.
+ * result patch); elsewhere `feature/work.ts` would evaluate a mapping and drop its binding. A plain Task's completion
+ * submits nothing, so its output parameters are admitted only where they read the Task's own scope (`readsOwnScope`).
  */
 import {
   CallBindingTag,
   MappingDialect,
+  OutputContext,
   ValueSourceTag,
   WorkTag,
   assertNever,
@@ -22,6 +24,7 @@ import {
   type Envelope,
   type Mapping,
   type Program,
+  type ProfileOptions,
   type ReceiveWork,
   type ServiceWork,
   type UserWork,
@@ -30,17 +33,24 @@ import {
 } from "../il/types.js";
 import * as Decision from "./work/decision.js";
 
-function mapsData(work: Work): boolean {
+/**
+ * Whether `work` carries mappings. A plain Task carries them when `plainTask` holds (`readsOwnScope`); a decision task
+ * when `decisionTask` holds, since `feature/work.ts` `evaluateDecision` writes its result and maps its outputs
+ * (PC-AUTO-08), though no compensation subject completes through it.
+ */
+function mapsData(plainTask: boolean, decisionTask: boolean, work: Work): boolean {
   switch (work.tag) {
     case WorkTag.User:
     case WorkTag.Service:
       return true;
     case WorkTag.None:
+      return plainTask;
+    case WorkTag.Rule:
+      return decisionTask;
     case WorkTag.Manual:
     case WorkTag.Receive:
     case WorkTag.Send:
     case WorkTag.Script:
-    case WorkTag.Rule:
     case WorkTag.Call:
       return false;
   }
@@ -89,13 +99,23 @@ export function beginsWithoutToken(work: Work): boolean {
   return assertNever(work);
 }
 
-function envelope(work: Work, fields: Envelope): string | null {
-  if (fields.inputs.length > 0 && !mapsData(work)) return "activity.inputMappings";
-  if (fields.outputs.length > 0 && !mapsData(work)) return "activity.outputMappings";
+/**
+ * A plain Task completes with the empty submission, so its outputs have a source only under
+ * `OutputContext.ActivityScope` (CIB-EXT-0031), and only as `camunda:outputParameter`s: CIB parses those on any task
+ * (`BpmnParse.java:4825-4831`), makes the Task a scope (`:4801-4815`) and runs them when its execution ends
+ * (`ExecutionEntity.java:521-525`), as for a User or Service Task.
+ */
+function readsOwnScope(options: ProfileOptions, outputs: readonly Mapping[]): boolean {
+  return options.outputContext === OutputContext.ActivityScope && outputs.every((mapping) => mapping.dialect === MappingDialect.IoParameter);
+}
+
+function envelope(options: ProfileOptions, work: Work, fields: Envelope): string | null {
+  if (fields.inputs.length > 0 && !mapsData(false, true, work)) return "activity.inputMappings";
+  if (fields.outputs.length > 0 && !mapsData(readsOwnScope(options, fields.outputs), true, work)) return "activity.outputMappings";
   if (fields.multiInstance !== null && instanceBody(work) === null) return "activity.multiInstanceBody";
   // A compensation subject completes through the pipeline's `Hooks.completed`, which `feature/work.ts` reaches for a
   // single User Task or Service Task only.
-  if (fields.compensationHandler !== null && (!mapsData(work) || fields.multiInstance !== null)) return "activity.compensationHandler";
+  if (fields.compensationHandler !== null && (!mapsData(false, false, work) || fields.multiInstance !== null)) return "activity.compensationHandler";
   return null;
 }
 
@@ -291,5 +311,5 @@ function work(program: Program, payload: ActivityPayload): string | null {
 }
 
 export function activity(program: Program, payload: ActivityPayload): string | null {
-  return work(program, payload) ?? envelope(payload.work, payload.envelope);
+  return work(program, payload) ?? envelope(program.options, payload.work, payload.envelope);
 }

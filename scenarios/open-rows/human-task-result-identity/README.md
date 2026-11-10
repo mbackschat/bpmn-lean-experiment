@@ -20,6 +20,21 @@ Answer-free schedules for [PC-HUM-01](../../../docs/PRACTICAL-CIB7-COVERAGE-TARG
 | [items-sequential-preceding-body](items-sequential-preceding-body.scenario.json) | The completion of the first body's activation again while the second body is open. |
 | [items-parallel-stale-body](items-parallel-stale-body.scenario.json) | Out-of-order completion of simultaneous bodies, and a second completion of the body that already completed. |
 
+[item-check-sequential.bpmn](item-check-sequential.bpmn) and [item-check-parallel.bpmn](item-check-parallel.bpmn) are the same loops with the form field only: no input or output mapping, so each submitted `verdict` is installed by name.
+
+| Schedule | Case it separates |
+|---|---|
+| [items-sequential-preceding-body-unmapped](items-sequential-preceding-body-unmapped.scenario.json) | The schedule of `items-sequential-preceding-body` on the unmapped sequential loop. |
+| [items-parallel-stale-body-unmapped](items-parallel-stale-body-unmapped.scenario.json) | The schedule of `items-parallel-stale-body` on the unmapped parallel loop. |
+| [items-parallel-counter-submission](items-parallel-counter-submission.scenario.json) | A completion that submits `nrOfCompletedInstances`, a name the parallel body's loop state holds, then valid completions. |
+| [items-sequential-counter-submission](items-sequential-counter-submission.scenario.json) | A completion that submits `loopCounter`, a name the sequential body's loop state holds, then valid completions. |
+
+[item-named-parallel.bpmn](item-named-parallel.bpmn) is the unmapped parallel loop over the two items of the `items` collection, each body holding its item as `item`.
+
+| Schedule | Case it separates |
+|---|---|
+| [items-parallel-item-named-submission](items-parallel-item-named-submission.scenario.json) | A completion that submits `item`, the name the body holds its input data item under, which stays with that body; the other body's `verdict` reaches the root. |
+
 [called-review.bpmn](called-review.bpmn) calls a reusable review Process through a Call Activity with a mapped input and a differently named mapped output.
 
 | Schedule | Case it separates |

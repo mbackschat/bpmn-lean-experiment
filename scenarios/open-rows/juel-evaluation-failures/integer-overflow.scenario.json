@@ -3,9 +3,9 @@
   "id": "juel-evaluation-failures-integer-overflow",
   "profile": "cibseven-2.2.0",
   "bpmn": {
-    "id": "juel-evaluation-failures-failure-probes",
-    "relativePath": "scenarios/open-rows/juel-evaluation-failures/failure-probes.bpmn",
-    "sha256": "87081197a84ae3e7f821e77b4e0487969aff0ec164d46c76060d4e5d86bc3359",
+    "id": "juel-evaluation-failures-held-results",
+    "relativePath": "scenarios/open-rows/juel-evaluation-failures/held-results.bpmn",
+    "sha256": "869604c66d2371140324c240bf0809b0c5550b0f6f4272a31dd67fe290a6c104",
     "sourceOverlay": null
   },
   "stimuli": [

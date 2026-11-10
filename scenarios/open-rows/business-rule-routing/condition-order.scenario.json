@@ -1,0 +1,52 @@
+{
+  "kind": "scenario",
+  "id": "business-rule-routing-condition-order",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "business-rule-condition-order",
+    "relativePath": "scenarios/open-rows/business-rule-routing/rule-condition-order.bpmn",
+    "sha256": "6d298d26587c36253935dde8ec701ec584f986c7359ae1ced35c41a78730290d",
+    "sourceOverlay": null,
+    "decisions": [
+      {
+        "relativePath": "scenarios/open-rows/business-rule-routing/routing.dmn",
+        "sha256": "f712d0dff92167192c687ec77d321295b28bb2183781b847636b3112cf5cf2b5"
+      }
+    ]
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start",
+      "instanceId": "Applicant_1",
+      "variables": [
+        {
+          "name": "grade",
+          "value": {
+            "kind": "string",
+            "value": "pending"
+          }
+        },
+        {
+          "name": "score",
+          "value": {
+            "kind": "string",
+            "value": "90"
+          }
+        }
+      ]
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.3",
+      "BPMN 2.0.2 §13.3.3"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/DmnBusinessRuleTaskActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/BpmnActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/variable/mapping/IoMapping.java"
+    ]
+  }
+}

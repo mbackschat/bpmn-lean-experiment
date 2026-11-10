@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_StructuredAccess" targetNamespace="urn:bpmn-lean:scenarios:juel-form-separations:structured-access">
+  <process id="Process_StructuredAccess" name="Read structured values through . and []" isExecutable="true">
+    <startEvent id="StartEvent_Start" />
+    <sequenceFlow id="Flow_Start_Observe" sourceRef="StartEvent_Start" targetRef="UserTask_Observe" />
+    <userTask id="UserTask_Observe" name="Observe the evaluated inputs">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="wholeMap">${order}</camunda:inputParameter>
+          <camunda:inputParameter name="nestedMap">${order.customer.address}</camunda:inputParameter>
+          <camunda:inputParameter name="wholeList">${order.lines}</camunda:inputParameter>
+          <camunda:inputParameter name="firstElement">${order.lines[0]}</camunda:inputParameter>
+          <camunda:inputParameter name="secondElement">${order.lines[1]}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <sequenceFlow id="Flow_Observe_Done" sourceRef="UserTask_Observe" targetRef="EndEvent_Done" />
+    <endEvent id="EndEvent_Done" />
+  </process>
+</definitions>

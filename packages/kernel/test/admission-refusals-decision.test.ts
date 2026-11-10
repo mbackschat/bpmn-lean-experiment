@@ -3,7 +3,9 @@
  * Task a decision admits and the DMN resources, decisions and decision tables the program carries. Every form outside
  * the subset reaches its stable code; each control is the same construct in its admitted form.
  */
-import { computed, refusalTests, variable } from "./admission-refusal-support.ts";
+import {
+  activity, computed, conditionOn, juel, mapping, refusalTests, task, userWork, variable, withOptions,
+} from "./admission-refusal-support.ts";
 import type { Json, Row } from "./admission-refusal-support.ts";
 import {
   any, between, cmp, decision, eq, grades, input, lit, output, resource, rule, ruleProgram, table, tests,
@@ -21,7 +23,21 @@ const stringOutput = (value: Json | string, typeRef: Json | string | null = "str
   oneRule([input("score")], [output("grade", typeRef)], [any], [value]);
 const foreignText = (text: string, language: string | null = null): Json => ({ foreign: { value: { language, text } } });
 
+/**
+ * CIB binds `decisionResult` only as a transient local of a decision task's execution (`DecisionEvaluationUtil.java:82`);
+ * the kernel carries no such binding, so a JUEL read of the name is refused wherever it stands.
+ */
+const juelReads = (name: string): Json => juel({ identifier: { name } });
+const underJuel = (program: Json): Json => withOptions(program, { evaluator: "juel" });
+const outputReads = (name: string) => (program: Json): Json =>
+  underJuel(task(activity("T", userWork(), { outputs: [mapping("copy", juelReads(name))] }))(program));
+const conditionReads = (name: string) => (program: Json): Json => underJuel(conditionOn(program, "f2", juelReads(name)));
+
 const rows: Row[] = [
+  { code: "expression.juel.decisionResult", description: "an output parameter reading decisionResult",
+    mutate: outputReads("decisionResult"), control: outputReads("grade") },
+  { code: "expression.juel.decisionResult", description: "a Sequence Flow condition reading decisionResult",
+    mutate: conditionReads("decisionResult"), control: conditionReads("grade") },
   { code: "work.rule.decisionExpression", description: "a decisionRef given by an expression",
     mutate: withRule({ decision: computed(variable("key")) }), control: admitted },
   { code: "work.rule.binding", description: "a decisionRef bound by deployment", mutate: withRule({ binding: "deployment" }), control: admitted },

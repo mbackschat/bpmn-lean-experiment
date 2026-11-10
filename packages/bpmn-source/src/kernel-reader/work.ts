@@ -1,9 +1,10 @@
 import { asElement, asElementArray } from "../moddle-graph.js";
 import type { ElementRecord } from "../moddle-graph.js";
 import { envelopeFor, headerOf } from "./build.js";
-import { activityProtocol, declaredImplementation, effectBinding, operation } from "./binding.js";
+import { activityProtocol, boundDelegate, declaredImplementation, effectBinding, operation } from "./binding.js";
 import { associationMappings, associationSourceId, associationTargetId, inputOutputParameters, valueSource, variableCopies } from "./data.js";
 import { messageTrigger } from "./events.js";
+import { requireNoHandlerKeyName } from "./handler-key.js";
 import { FlowElementKind, ReadRefusal, ReadRefusalCode, extensionValues, list, optionalId, reference, requireId, text } from "./model.js";
 import type { Built, ModelNode, ReadContext } from "./model.js";
 import { readMultiInstance } from "./multi-instance.js";
@@ -12,8 +13,15 @@ import type { KernelJson } from "./wire.js";
 
 const configuredHandlers: ReadonlyMap<string, string> = new Map([["urn:bpmn-lean:task-handler:probe-v1", operation("probe")]]);
 
+/** A Service or Send Task's binding; the token it binds must name no declared variable (`work.handlerKeyName`). */
+function taskBinding(ctx: ReadContext, element: ElementRecord): KernelJson {
+  const delegate = boundDelegate(ctx, element);
+  if (delegate !== null) requireNoHandlerKeyName(ctx, element, delegate);
+  return effectBinding(ctx, element);
+}
+
 const serviceWork = (ctx: ReadContext, element: ElementRecord): KernelJson =>
-  ctor("service", { payload: effectBinding(ctx, element) });
+  ctor("service", { payload: taskBinding(ctx, element) });
 
 function configuredTaskWork(element: ElementRecord): KernelJson | null {
   const definition = extensionValues(element).find((value) => value.$type === "bpmnLean:TaskDefinition");
@@ -133,7 +141,7 @@ function callWork(ctx: ReadContext, element: ElementRecord): KernelJson {
 
 function sendWork(ctx: ReadContext, element: ElementRecord): KernelJson {
   return ctor("send", { payload: {
-    binding: effectBinding(ctx, element),
+    binding: taskBinding(ctx, element),
     recipient: null,
     correlation: [],
     messageRef: optionalId(reference(element, "messageRef", "bpmn:Message") ?? {}),

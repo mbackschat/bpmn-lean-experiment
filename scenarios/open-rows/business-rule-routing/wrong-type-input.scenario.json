@@ -6,7 +6,13 @@
     "id": "business-rule-routing-process",
     "relativePath": "scenarios/open-rows/business-rule-routing/rule-routing.bpmn",
     "sha256": "1c0189eb6ec4f84dca6120ad8eb693083f5a60692951e542c29dfd44903899af",
-    "sourceOverlay": null
+    "sourceOverlay": null,
+    "decisions": [
+      {
+        "relativePath": "scenarios/open-rows/business-rule-routing/routing.dmn",
+        "sha256": "f712d0dff92167192c687ec77d321295b28bb2183781b847636b3112cf5cf2b5"
+      }
+    ]
   },
   "stimuli": [
     {

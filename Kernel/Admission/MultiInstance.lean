@@ -50,11 +50,12 @@ def rereads (loop : MultiInstance) : Bool :=
     | .countAndCollection _ _ => false
 
 /-- An instance's result, given whether its work submits the output data item (`Kernel.Admission.Work.instanceBody`):
-a User Task's submission fills it; a Service Task's empty OutputSet fills neither an output data item nor an output
-collection, which body result effects (PC-MI-10) would. -/
-def result (submits : Bool) (loop : MultiInstance) : Option String :=
+a User Task's submission fills it, except that a submission installing variables (CIB-EXT-0005) needs none, since
+CIB's `TaskService.complete` sets each value through the instance's task execution; a Service Task's empty OutputSet
+fills neither an output data item nor an output collection, which body result effects (PC-MI-10) would. -/
+def result (submission : SubmissionRule) (submits : Bool) (loop : MultiInstance) : Option String :=
   if submits then
-    if loop.outputDataItem.isNone then some "multiInstance.outputDataItem" else none
+    if loop.outputDataItem.isNone && submission == .outputSet then some "multiInstance.outputDataItem" else none
   else if loop.outputDataItem.isSome || loop.outputCollection.isSome then some "multiInstance.instanceResult"
   else none
 
@@ -79,7 +80,7 @@ def activity (options : ProfileOptions) (juel : Bool → Expression → Option S
     else if collection && loop.inputDataItem.isNone then some "multiInstance.inputDataItem"
     else if counters && [loop.inputDataItem, loop.inputDataItemName].any (·.any counterNames.contains) then
       some "multiInstance.itemNamedLikeCounter"
-    else (submits.bind (result · loop)) <|>
+    else (submits.bind (result options.submission · loop)) <|>
       if !envelope.inputs.isEmpty || !envelope.outputs.isEmpty then some "multiInstance.mappings" else none
 
 end Kernel.Admission.MultiInstance

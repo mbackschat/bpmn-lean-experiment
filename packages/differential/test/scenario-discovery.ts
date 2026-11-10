@@ -174,9 +174,17 @@ async function boundDecisions(source: SourceDefinition) {
     ({ bytes: await readFile(path.join(projectRoot, decision.relativePath)), sha256: decision.sha256 })));
 }
 
-/** One source a discovered scenario binds, read under the scenario's profile; a reader refusal is returned. */
-export async function readSourceFor(scenarioPath: string, source: SourceDefinition, profile: string): Promise<KernelRead> {
-  const bytes = await readFile(path.join(projectRoot, source.relativePath));
+/**
+ * One source a discovered scenario binds, read under the scenario's profile; a reader refusal is returned. `bytes`, when
+ * given, stands in for the source file's content, which `source.sha256` must then bind (a metamorphic variant).
+ */
+export async function readSourceFor(
+  scenarioPath: string,
+  source: SourceDefinition,
+  profile: string,
+  bytes?: Uint8Array,
+): Promise<KernelRead> {
+  bytes ??= await readFile(path.join(projectRoot, source.relativePath));
   return readCaseSource({
     relativePath: source.relativePath, bytes, sha256: source.sha256, overlay: await boundOverlay(scenarioPath, source),
     decisions: await boundDecisions(source),

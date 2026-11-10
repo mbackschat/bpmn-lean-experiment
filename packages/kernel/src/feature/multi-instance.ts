@@ -347,7 +347,7 @@ export function arriveMultiInstance(
 function submitted(loop: MultiInstance, run: MultiInstanceRun, writes: readonly Binding[]): Result<Value | null> {
   if (loop.outputDataItem === null) return committed(null);
   const [only] = writes;
-  if (loop.outputDataItem === null || writes.length !== 1 || only === undefined) return failed(FailureTag.Rejected, "undeclared-output");
+  if (writes.length !== 1 || only === undefined) return failed(FailureTag.Rejected, "undeclared-output");
   const value = only[1];
   if (run.collection.tag === ValueTag.StringList && value.tag !== ValueTag.String) return failed(FailureTag.Rejected, "instance-output-kind");
   return committed(value);

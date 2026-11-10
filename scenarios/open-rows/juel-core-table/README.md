@@ -10,6 +10,8 @@ Answer-free schedules for [PC-DATA-07](../../../docs/PRACTICAL-CIB7-COVERAGE-TAR
 
 [call-source-expression.bpmn](call-source-expression.bpmn) is a probe model of two Call Activities of the Process *Peek*, whose one User Task publishes the input `seen` it received from `x`. One Call maps a source expression in, the other maps `seed` in and a source expression out. The called task of *call-source-expression-out* is addressed as `call:7:Probe_1:36:CallActivity_CallSourceExpressionOut:1`.
 
+[held-decimal.bpmn](held-decimal.bpmn) holds the decimal-noncanonical-result product in the input `value` of a Sub-Process, whose locals the CIB runner does not project, since the canonical result cannot hold a non-canonical Decimal; the task inside publishes the composite text `value=${value}`, the exact Java rendering. The kernel still evaluates the product at the Sub-Process input. The decimal-noncanonical-result task of kernel-limits stays in that model, unselected, so that its retained evidence stays bound.
+
 [computed-method.bpmn](computed-method.bpmn), [collection-parameter.bpmn](collection-parameter.bpmn), [counter-outside-multi-instance.bpmn](counter-outside-multi-instance.bpmn) and [decimal-against-double.bpmn](decimal-against-double.bpmn) each have the shape of *value-forms* and hold one form the core level refuses, with the start variables of the probe models minus `probe`.
 
 | Schedule | Model | Case it separates | Row |
@@ -17,7 +19,7 @@ Answer-free schedules for [PC-DATA-07](../../../docs/PRACTICAL-CIB7-COVERAGE-TAR
 | [value-forms](value-forms.scenario.json) | [value-forms](value-forms.bpmn) | An escaped backslash and an escaped delimiter in text, Long overflow wrap-around, a Decimal against Integer operands in `*`, `+` and `>`, `length()` compared and used as an operand, `replace` with a multi-character and an absent target. | PC-DATA-07 |
 | [integer-class-contains](integer-class-contains.scenario.json) | [kernel-limits](kernel-limits.bpmn) | `contains` of a List of Integer given the Integer result of `length()`. | PC-DATA-07 |
 | [integer-class-equals](integer-class-equals.scenario.json) | [kernel-limits](kernel-limits.bpmn) | `equals` of an Integer variable given an Integer literal. | PC-DATA-07 |
-| [decimal-noncanonical-result](decimal-noncanonical-result.scenario.json) | [kernel-limits](kernel-limits.bpmn) | A Decimal product whose result scale is not the canonical one. | PC-DATA-07 |
+| [decimal-noncanonical-result](decimal-noncanonical-result.scenario.json) | [held-decimal](held-decimal.bpmn) | A Decimal product whose result scale is not the canonical one. | PC-DATA-07 |
 | [text-double-operand](text-double-operand.scenario.json) | [kernel-limits](kernel-limits.bpmn) | Numeric text with a fraction as an arithmetic operand, so that the sum is a Double. | PC-DATA-07 |
 | [string-over-limit](string-over-limit.scenario.json) | [kernel-limits](kernel-limits.bpmn) | A String result longer than 1,000 characters, from two 600-character operands. | PC-DATA-07 |
 | [string-bean-property](string-bean-property.scenario.json) | [kernel-limits](kernel-limits.bpmn) | A bean-style property of a String value, `word['empty']`; `word.empty` is a syntax error, since `empty` is a keyword. | PC-DATA-07 |

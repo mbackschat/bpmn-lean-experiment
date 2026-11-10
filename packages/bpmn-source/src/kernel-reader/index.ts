@@ -149,7 +149,7 @@ function handlerDescendants(ctx: ReadContext, handler: string): ModelNode[] {
     }
     return false;
   });
-  return below.filter((node) => !ctx.erased.has(requireId(node.element))).sort(byId);
+  return below.filter((node) => !ctx.erased.has(requireId(node.element)));
 }
 
 function buildProgramElements(ctx: ReadContext): KernelJson[] {
@@ -158,7 +158,7 @@ function buildProgramElements(ctx: ReadContext): KernelJson[] {
   const normal = [...ctx.nodes.values()].filter((node) => {
     const id = requireId(node.element);
     return !ctx.handlers.has(id) && !inHandler.has(id) && !ctx.erased.has(id) && !deferredBoundaries.has(id);
-  }).sort(byId);
+  });
   const built = normal.map((node) => readNode(ctx, node));
   for (const entry of ctx.compensation) {
     const handler = ctx.nodes.get(entry.handler);
@@ -167,10 +167,21 @@ function buildProgramElements(ctx: ReadContext): KernelJson[] {
     const boundary = entry.boundary === null ? undefined : ctx.nodes.get(entry.boundary);
     if (boundary !== undefined) built.push(readNode(ctx, boundary));
   }
+  // Elements keep document order, the scan's: the kernel breaks a tie between catchers of equal precedence by it
+  // (CIB-INT-0010), so identifiers must not pick the catcher (PC-BASIC-03). Deferred compensation boundaries are built
+  // after the rest, so a host's boundaries are re-sorted into document order.
+  const documentOrder = new Map([...ctx.nodes.keys()].map((id, index) => [id, index]));
+  const position = (boundary: KernelJson): number => {
+    const id = String((boundary as { [key: string]: KernelJson })["id"]);
+    const index = documentOrder.get(id);
+    if (index === undefined) throw new TypeError(`boundary ${id} is not a scanned node`);
+    return index;
+  };
   const boundaries = new Map<string, KernelJson[]>();
   for (const entry of built) {
     if (entry.kind === "boundary") boundaries.set(entry.attachedTo, [...(boundaries.get(entry.attachedTo) ?? []), entry.boundary]);
   }
+  for (const list of boundaries.values()) list.sort((left, right) => position(left) - position(right));
   return built.flatMap((entry) => (entry.kind === "element" ? [entry.build(boundaries.get(entry.id) ?? [])] : []));
 }
 

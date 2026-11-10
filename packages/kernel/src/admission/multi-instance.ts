@@ -17,6 +17,7 @@ import {
   InstanceCountTag,
   MultiInstanceCounters,
   MultiInstanceMode,
+  SubmissionRule,
   assertNever,
   type Envelope,
   type Expression,
@@ -90,11 +91,14 @@ function rereads(loop: MultiInstance): boolean {
 
 /**
  * An instance's result, given whether its work submits the output data item (`admission/work.ts` `instanceBody`): a
- * User Task's submission fills it; a Service Task's empty OutputSet fills neither an output data item nor an output
- * collection, which body result effects (PC-MI-10) would.
+ * User Task's submission fills it, except that a submission installing variables (CIB-EXT-0005) needs none, since CIB's
+ * `TaskService.complete` sets each value through the instance's task execution; a Service Task's empty OutputSet fills
+ * neither an output data item nor an output collection, which body result effects (PC-MI-10) would.
  */
-function result(submits: boolean, loop: MultiInstance): string | null {
-  if (submits) return loop.outputDataItem === null ? "multiInstance.outputDataItem" : null;
+function result(submission: SubmissionRule, submits: boolean, loop: MultiInstance): string | null {
+  if (submits) {
+    return loop.outputDataItem === null && submission === SubmissionRule.OutputSet ? "multiInstance.outputDataItem" : null;
+  }
   return loop.outputDataItem !== null || loop.outputCollection !== null ? "multiInstance.instanceResult" : null;
 }
 
@@ -119,7 +123,7 @@ export function activity(options: ProfileOptions, juel: LoopExpression, submits:
   if (counters && [loop.inputDataItem, loop.inputDataItemName].some((name) => name !== null && counterNames.includes(name))) {
     return "multiInstance.itemNamedLikeCounter";
   }
-  const unfilled = submits === null ? null : result(submits, loop);
+  const unfilled = submits === null ? null : result(options.submission, submits, loop);
   if (unfilled !== null) return unfilled;
   if (envelope.inputs.length > 0 || envelope.outputs.length > 0) return "multiInstance.mappings";
   return null;

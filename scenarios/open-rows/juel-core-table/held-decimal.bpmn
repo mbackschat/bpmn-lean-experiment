@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_HeldDecimal" targetNamespace="urn:bpmn-lean:scenarios:juel-core-table:held-decimal">
+  <process id="Process_HeldDecimal" name="Hold a Decimal product in a Sub-Process and render it as text" isExecutable="true">
+    <startEvent id="StartEvent_Start" />
+    <sequenceFlow id="Flow_Start_Hold" sourceRef="StartEvent_Start" targetRef="SubProcess_DecimalNoncanonicalResult" />
+    <subProcess id="SubProcess_DecimalNoncanonicalResult" name="decimal noncanonical result">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${price * 2}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+      <startEvent id="StartEvent_Hold" />
+      <sequenceFlow id="Flow_Hold_Observe" sourceRef="StartEvent_Hold" targetRef="UserTask_Observe" />
+      <userTask id="UserTask_Observe" name="Observe the held value">
+        <extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="rendered">value=${value}</camunda:inputParameter>
+          </camunda:inputOutput>
+        </extensionElements>
+      </userTask>
+      <sequenceFlow id="Flow_Observe_End" sourceRef="UserTask_Observe" targetRef="EndEvent_Hold" />
+      <endEvent id="EndEvent_Hold" />
+    </subProcess>
+    <sequenceFlow id="Flow_Hold_Done" sourceRef="SubProcess_DecimalNoncanonicalResult" targetRef="EndEvent_Done" />
+    <endEvent id="EndEvent_Done" />
+  </process>
+</definitions>

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_RuleConditionOrder" targetNamespace="urn:bpmn-lean:business-rule-condition-order">
+  <process id="Process_RuleConditionOrder" name="Route on a decision task's own outgoing condition" isExecutable="true">
+    <startEvent id="ApplicantReceived" name="Applicant received" />
+    <businessRuleTask id="Assess" name="Assess applicant" camunda:decisionRef="routeDecision"
+                      camunda:mapDecisionResult="singleResult" camunda:resultVariable="outcome" default="Flow_Done">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="outcome">none</camunda:inputParameter>
+          <camunda:outputParameter name="grade">${outcome.grade}</camunda:outputParameter>
+          <camunda:outputParameter name="limit">${outcome.limit}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </businessRuleTask>
+    <userTask id="ManualReview" name="Review manually" />
+    <endEvent id="ApplicantReviewed" name="Applicant reviewed" />
+    <endEvent id="ApplicantDone" name="Applicant done" />
+    <sequenceFlow id="Flow_Received" sourceRef="ApplicantReceived" targetRef="Assess" />
+    <sequenceFlow id="Flow_Review" sourceRef="Assess" targetRef="ManualReview">
+      <conditionExpression xsi:type="tFormalExpression">${grade == 'pending'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Done" sourceRef="Assess" targetRef="ApplicantDone" />
+    <sequenceFlow id="Flow_Reviewed" sourceRef="ManualReview" targetRef="ApplicantReviewed" />
+  </process>
+</definitions>

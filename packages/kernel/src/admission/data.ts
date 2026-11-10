@@ -14,9 +14,10 @@ import {
 } from "../il/types/juel.js";
 
 /**
- * A name CIB resolves before any variable, or holds only inside a Multi-Instance instance: the engine objects of
- * `VariableScopeElResolver.java:51-90` and the loop counters, which `counters` admits: the Multi-Instance level puts
- * them in a completion condition's context under `MultiInstanceCounters.cibLocals`.
+ * A name CIB resolves before any variable, or holds only inside a Multi-Instance instance or a decision task: the
+ * engine objects of `VariableScopeElResolver.java:51-90`, the loop counters, which `counters` admits: the
+ * Multi-Instance level puts them in a completion condition's context under `MultiInstanceCounters.cibLocals`, and a
+ * decision task's `decisionResult`.
  */
 function juelName(counters: boolean, name: string): string | null {
   if (["execution", "task", "caseExecution", "externalTask", "authenticatedUserId"].includes(name)) {
@@ -25,6 +26,9 @@ function juelName(counters: boolean, name: string): string | null {
   if (!counters && ["loopCounter", "nrOfInstances", "nrOfActiveInstances", "nrOfCompletedInstances"].includes(name)) {
     return "expression.juel.multiInstanceCounter";
   }
+  // CIB binds it only as a transient local of a decision task's execution (`DecisionEvaluationUtil.java:82`), which
+  // the kernel does not carry; admission sees no expression's site owner, so the read is refused wherever it stands.
+  if (name === "decisionResult") return "expression.juel.decisionResult";
   return null;
 }
 

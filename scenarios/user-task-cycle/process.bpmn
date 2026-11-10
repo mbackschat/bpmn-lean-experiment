@@ -5,6 +5,7 @@
   targetNamespace="urn:bpmn-lean:test"
   expressionLanguage="urn:bpmn-lean:expression:simple-boolean:v1">
   <bpmn:process id="Process_CyclicControlFlow" isExecutable="true">
+    <bpmn:property id="route" />
     <bpmn:startEvent id="Start">
       <bpmn:outgoing>Flow_Start</bpmn:outgoing>
     </bpmn:startEvent>
@@ -17,6 +18,17 @@
     <bpmn:userTask id="Review" name="Review request">
       <bpmn:incoming>Flow_Merge_Review</bpmn:incoming>
       <bpmn:outgoing>Flow_Review_Choice</bpmn:outgoing>
+      <bpmn:ioSpecification id="Review_io">
+        <bpmn:dataOutput id="Review_route" name="Review route" />
+        <bpmn:inputSet id="Review_inputs" />
+        <bpmn:outputSet id="Review_outputs">
+          <bpmn:dataOutputRefs>Review_route</bpmn:dataOutputRefs>
+        </bpmn:outputSet>
+      </bpmn:ioSpecification>
+      <bpmn:dataOutputAssociation id="Review_write_route">
+        <bpmn:sourceRef>Review_route</bpmn:sourceRef>
+        <bpmn:targetRef>route</bpmn:targetRef>
+      </bpmn:dataOutputAssociation>
     </bpmn:userTask>
     <bpmn:exclusiveGateway id="Choice" gatewayDirection="Diverging" default="Flow_Exit">
       <bpmn:incoming>Flow_Review_Choice</bpmn:incoming>

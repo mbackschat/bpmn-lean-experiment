@@ -4,9 +4,11 @@ Answer-free schedules for [PC-DATA-07](../../../docs/PRACTICAL-CIB7-COVERAGE-TAR
 
 Two models hold the probes, each with the same shape: one User Task per probe behind an Exclusive Gateway whose JUEL conditions test the start variable `probe`, all branches merging before the End Event. Each probe task has one input mapping, `value`, holding the probe's expression. Every schedule has one stimulus, the start with its `probe` and the few variables its expression reads.
 
-[failure-probes.bpmn](failure-probes.bpmn) holds the probes whose expressions the kernel admits, so the evaluation failures happen at run time: missing-variable, empty-of-missing, text-in-arithmetic, modulo-by-zero, integer-overflow, negative-result, integer-as-boolean, unknown-property, index-out-of-range, non-integer-index, index-on-text and bean-reference. A probe whose expression CIB refuses to evaluate fails inside the starting command, so no later stimulus exists; a probe that CIB evaluates leaves the task open with `value` as its observation, and the root variables show any variable the expression wrote.
+[failure-probes.bpmn](failure-probes.bpmn) holds the probes whose expressions the kernel admits, so the evaluation failures happen at run time: missing-variable, empty-of-missing, text-in-arithmetic, modulo-by-zero, integer-as-boolean, unknown-property, index-out-of-range, non-integer-index, index-on-text and bean-reference. A probe whose expression CIB refuses to evaluate fails inside the starting command, so no later stimulus exists; a probe that CIB evaluates leaves the task open with `value` as its observation, and the root variables show any variable the expression wrote.
 
-[refused-probes.bpmn](refused-probes.bpmn) holds the probes whose expressions the kernel refuses at admission, so the model is refused as a whole and the schedules observe that refusal: authenticated-user-name, execution-read, execution-mutation, list-mutating-method, reflection-through-method, unknown-method and division-by-zero. They live apart because one refused expression would otherwise hide the evaluable probes behind the same refusal.
+[refused-probes.bpmn](refused-probes.bpmn) holds the probes whose expressions the kernel refuses at admission, so the model is refused as a whole and the schedules observe that refusal: authenticated-user-name, execution-read, execution-mutation, list-mutating-method, reflection-through-method and unknown-method. They live apart because one refused expression would otherwise hide the evaluable probes behind the same refusal.
+
+Three probes give CIB a value the canonical result cannot hold (a Long beyond 2^53−1, a negative Long, a Double), so the CIB runner could not record them where CIB stores them. [held-results.bpmn](held-results.bpmn) holds integer-overflow and negative-result each in the input `value` of a Sub-Process, whose locals the CIB runner does not project, and the task inside publishes the composite text `value=${value}`, the exact Java rendering. The kernel still evaluates the out-of-domain result at the Sub-Process input. The integer-overflow and negative-result tasks of failure-probes and the division-by-zero task of refused-probes stay in those models, unselected, so that their retained evidence stays bound. [division-probe.bpmn](division-probe.bpmn) holds division-by-zero alone as the text `quotient=${a / zero}`, which the kernel refuses at admission (`/`) and CIB renders as text.
 
 | Schedule | Model | Case it separates | Row |
 |---|---|---|---|
@@ -14,9 +16,9 @@ Two models hold the probes, each with the same shape: one User Task per probe be
 | [empty-of-missing](empty-of-missing.scenario.json) | [failure-probes](failure-probes.bpmn) | `empty` applied to a name no binding declares. | PC-DATA-07, PC-DATA-09 |
 | [text-in-arithmetic](text-in-arithmetic.scenario.json) | [failure-probes](failure-probes.bpmn) | Non-numeric text as an arithmetic operand. | PC-DATA-09 |
 | [modulo-by-zero](modulo-by-zero.scenario.json) | [failure-probes](failure-probes.bpmn) | `%` with a zero divisor over Integers. | PC-DATA-09 |
-| [division-by-zero](division-by-zero.scenario.json) | [refused-probes](refused-probes.bpmn) | `/` with a zero divisor over Integers. | PC-DATA-09 |
-| [integer-overflow](integer-overflow.scenario.json) | [failure-probes](failure-probes.bpmn) | A sum one above the largest safe Integer. | PC-DATA-02, PC-DATA-09 |
-| [negative-result](negative-result.scenario.json) | [failure-probes](failure-probes.bpmn) | A difference below zero, where the portable Integer domain starts at zero. | PC-DATA-02, PC-DATA-09 |
+| [division-by-zero](division-by-zero.scenario.json) | [division-probe](division-probe.bpmn) | `/` with a zero divisor over Integers. | PC-DATA-09 |
+| [integer-overflow](integer-overflow.scenario.json) | [held-results](held-results.bpmn) | A sum one above the largest safe Integer. | PC-DATA-02, PC-DATA-09 |
+| [negative-result](negative-result.scenario.json) | [held-results](held-results.bpmn) | A difference below zero, where the portable Integer domain starts at zero. | PC-DATA-02, PC-DATA-09 |
 | [integer-as-boolean](integer-as-boolean.scenario.json) | [failure-probes](failure-probes.bpmn) | An Integer as a Boolean operand. | PC-DATA-09 |
 | [unknown-property](unknown-property.scenario.json) | [failure-probes](failure-probes.bpmn) | A property no String has. | PC-DATA-07, PC-DATA-09 |
 | [unknown-method](unknown-method.scenario.json) | [refused-probes](refused-probes.bpmn) | A method no String has. | PC-DATA-07, PC-DATA-09 |
@@ -32,9 +34,6 @@ Two models hold the probes, each with the same shape: one User Task per probe be
 
 Notes for the target runners:
 
-- Gap: Double results: the runner's value projection carries no Double.
-- Gap: an Integer outside the portable domain: the runner's value projection refuses it.
-- Gap: a negative Integer: the runner's value projection refuses it.
 - Gap: List start values.
 - A probe step that fails inside the starting command must be recorded as the command outcome rather than as a harness failure.
 - `bean-reference` names a bean the runner registers for delegate expressions.

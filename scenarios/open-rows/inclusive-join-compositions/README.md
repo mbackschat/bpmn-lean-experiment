@@ -13,6 +13,7 @@ Answer-free schedules for [PC-CF-04](../../../docs/PRACTICAL-CIB7-COVERAGE-TARGE
 | [unselected-path](unselected-path.bpmn) | A Parallel fork over *Review A*, which reaches an Inclusive join, and *Review B*, which completes with a `retry` value and then either returns to the same join or ends in its own None End. |
 | [loop-reentry](loop-reentry.bpmn) | An Exclusive merge, an Inclusive split with a default, an Inclusive join and the User Task *Review round*, whose completion sets `a`, `b` and `again` and may return to the merge. |
 | [scoped-join](scoped-join.bpmn) | An Inclusive split over a Sub-Process, a Call Activity of `Process_Audit`, a parallel Multi-Instance User Task over `items`, and a default User Task, all joined before *Decide*. |
+| [scoped-join-counted](scoped-join-counted.bpmn) | The *scoped-join* source with the Multi-Instance branch replaced by the parallel Service Task *Notify item*, whose `loopCardinality` is `${count}` and whose inner instances begin asynchronously, so each one waits for an `effectResult`. |
 | [no-default-split](no-default-split.bpmn) | An Inclusive split whose two flows are both conditioned and which has no default, joined before *Decide*. |
 
 ## Schedules
@@ -36,17 +37,21 @@ Answer-free schedules for [PC-CF-04](../../../docs/PRACTICAL-CIB7-COVERAGE-TARGE
 | [all-selected](scoped-join-all-selected.scenario.json) | scoped-join | The Sub-Process, the Call and the Multi-Instance branch are all selected and complete in that order. |
 | [scope-only](scoped-join-scope-only.scenario.json) | scoped-join | Only the Sub-Process branch is selected. |
 | [call-and-batch-reversed](scoped-join-call-and-batch-reversed.scenario.json) | scoped-join | The Call and the Multi-Instance branch are selected; the second body completes before the first, and the Call's task completes last. |
+| [all-selected](scoped-join-counted-all-selected.scenario.json) | scoped-join-counted | The Sub-Process, the Call and both Multi-Instance effects arrive in that order, the join waiting while any selected branch is still upstream. |
+| [scope-only](scoped-join-counted-scope-only.scenario.json) | scoped-join-counted | Only the Sub-Process branch is selected. |
+| [call-and-batch-reversed](scoped-join-counted-call-and-batch-reversed.scenario.json) | scoped-join-counted | The Call and the Multi-Instance branch are selected; the second instance's effect settles before the first, and the Call's task completes last. |
 | [none-selected](no-default-split-none-selected.scenario.json) | no-default-split | No candidate holds. |
 | [one-selected](no-default-split-one-selected.scenario.json) | no-default-split | One candidate holds. |
 
 ## Kernel restrictions these inputs reconcile
 
-The [unpaired-merge](unpaired-merge.bpmn), [parallel-fed-join](parallel-fed-join.bpmn), [unselected-path](unselected-path.bpmn), [loop-reentry](loop-reentry.bpmn) and [scoped-join](scoped-join.bpmn) models fixed CIB's answer for the unstructured Inclusive joins, and [no-default-split](no-default-split.bpmn) for a split that may select nothing, before the kernel admitted both under the [Inclusive Gateway semantics](../../../docs/kernel/semantics/FLOW-SEMANTICS-SPEC.md#inclusive-gateway).
+The [unpaired-merge](unpaired-merge.bpmn), [parallel-fed-join](parallel-fed-join.bpmn), [unselected-path](unselected-path.bpmn), [loop-reentry](loop-reentry.bpmn) and [scoped-join](scoped-join.bpmn) models fixed CIB's answer for the unstructured Inclusive joins, and [no-default-split](no-default-split.bpmn) for a split that may select nothing, before the kernel admitted both under the [Inclusive Gateway semantics](../../../docs/kernel/semantics/FLOW-SEMANTICS-SPEC.md#inclusive-gateway). The kernel still refuses [scoped-join](scoped-join.bpmn) for its CIB element variable (`multiInstance.elementVariable`, [PC-MI-04](../../../docs/PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list)); [scoped-join-counted](scoped-join-counted.bpmn) holds the same joins with a Multi-Instance form the kernel admits.
 
 Notes for the target runners:
 
 - The Call's called instance is addressed by its derived identity `call:10:Instance_1:9:AuditCall:1`.
 - [none-selected](no-default-split-none-selected.scenario.json) has an engine step that can fail inside the start; the CIB runner records such a step as the command outcome.
 - The Multi-Instance branch is collection-driven by the start value `items`, a String List of two members.
+- In [scoped-join-counted](scoped-join-counted.bpmn) the Multi-Instance branch is counted by the start value `count`, 2; its instances are addressed as `NotifyItem` activations 1 and 2, and each `effectResult` succeeds with no outputs.
 
 The schedules carry no expected route or state; the retained CIB evidence is the answer.

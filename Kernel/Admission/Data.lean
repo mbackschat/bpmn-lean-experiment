@@ -22,14 +22,18 @@ def integerLexeme? (digits : String) : Option Nat :=
     let value := digits.foldl (fun acc char => acc * 10 + (char.toNat - '0'.toNat)) 0
     if value ≤ 9223372036854775807 then some value else none
 
-/-- A name CIB resolves before any variable, or holds only inside a Multi-Instance instance: the engine objects of
-`VariableScopeElResolver.java:51-90` and the loop counters, which `counters` admits: the Multi-Instance level puts them
-in a completion condition's context under `MultiInstanceCounters.cibLocals`. -/
+/-- A name CIB resolves before any variable, or holds only inside a Multi-Instance instance or a decision task: the
+engine objects of `VariableScopeElResolver.java:51-90`, the loop counters, which `counters` admits: the Multi-Instance
+level puts them in a completion condition's context under `MultiInstanceCounters.cibLocals`, and a decision task's
+`decisionResult`. -/
 def juelName (counters : Bool) (name : String) : Option String :=
   if ["execution", "task", "caseExecution", "externalTask", "authenticatedUserId"].contains name then
     some "expression.juel.engineContext"
   else if !counters && ["loopCounter", "nrOfInstances", "nrOfActiveInstances", "nrOfCompletedInstances"].contains name then
     some "expression.juel.multiInstanceCounter"
+  -- CIB binds it only as a transient local of a decision task's execution (`DecisionEvaluationUtil.java:82`), which
+  -- the kernel does not carry; admission sees no expression's site owner, so the read is refused wherever it stands.
+  else if name == "decisionResult" then some "expression.juel.decisionResult"
   else none
 
 /-- A method call outside the closed list, by name or by argument count. -/

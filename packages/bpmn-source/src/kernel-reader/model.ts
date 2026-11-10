@@ -35,6 +35,7 @@ export enum ReadRefusalCode {
   EmptyLoopCardinality = "reader.emptyLoopCardinality",
   ConditionExpressionType = "reader.conditionExpressionType",
   DecisionSchema = "decision.schema",
+  HandlerKeyName = "work.handlerKeyName",
 }
 
 export class ReadRefusal extends Error {

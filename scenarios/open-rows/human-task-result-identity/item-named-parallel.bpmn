@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+  id="Definitions_ItemNamedParallel"
+  targetNamespace="urn:bpmn-lean:human-item-named-parallel">
+  <bpmn:itemDefinition id="ItemDefinition_String" itemKind="Information" structureRef="xsd:string" isCollection="false" />
+  <bpmn:itemDefinition id="ItemDefinition_StringList" itemKind="Information" isCollection="true" />
+  <bpmn:process id="Process_ItemNamedParallel" name="Check each listed item at once" isExecutable="true">
+    <bpmn:startEvent id="ItemsReceived" name="Items received" />
+    <bpmn:userTask id="ReviewItem" name="Review item">
+      <bpmn:extensionElements>
+        <camunda:formData>
+          <camunda:formField id="verdict" type="string" />
+        </camunda:formData>
+      </bpmn:extensionElements>
+      <bpmn:ioSpecification id="IoSpecification_ReviewItem">
+        <bpmn:dataInput id="items" itemSubjectRef="ItemDefinition_StringList" isCollection="true" />
+        <bpmn:inputSet id="InputSet_ReviewItem">
+          <bpmn:dataInputRefs>items</bpmn:dataInputRefs>
+          <bpmn:outputSetRefs>OutputSet_ReviewItem</bpmn:outputSetRefs>
+        </bpmn:inputSet>
+        <bpmn:outputSet id="OutputSet_ReviewItem">
+          <bpmn:inputSetRefs>InputSet_ReviewItem</bpmn:inputSetRefs>
+        </bpmn:outputSet>
+      </bpmn:ioSpecification>
+      <bpmn:multiInstanceLoopCharacteristics isSequential="false">
+        <bpmn:loopDataInputRef>items</bpmn:loopDataInputRef>
+        <bpmn:inputDataItem id="item" name="item" itemSubjectRef="ItemDefinition_String" isCollection="false" />
+      </bpmn:multiInstanceLoopCharacteristics>
+    </bpmn:userTask>
+    <bpmn:endEvent id="ItemsReviewed" name="Items reviewed" />
+    <bpmn:sequenceFlow id="Flow_Received" sourceRef="ItemsReceived" targetRef="ReviewItem" />
+    <bpmn:sequenceFlow id="Flow_Reviewed" sourceRef="ReviewItem" targetRef="ItemsReviewed" />
+  </bpmn:process>
+</bpmn:definitions>

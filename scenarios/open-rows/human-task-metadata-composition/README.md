@@ -24,10 +24,11 @@ The remaining models are the forms the row says fail:
 | [untyped-form-field](untyped-form-field.scenario.json) | [untyped-form-field.bpmn](untyped-form-field.bpmn) | Partial metadata: a form field that declares an id and no type. |
 | [writable-handler-key](writable-handler-key.scenario.json) | [handler-key-collision.bpmn](handler-key-collision.bpmn) | A writable form field named `bpmnLeanEffectHandler`, the delegate token of a later Service Task, submitted by the task completion. |
 | [task-metadata-condition](task-metadata-condition.scenario.json) | [metadata-control.bpmn](metadata-control.bpmn) | A Sequence Flow condition that reads the task's assignee through the engine-context name `task`. |
+| [undeclared-handler-key](undeclared-handler-key.scenario.json) | [handler-key-undeclared.bpmn](handler-key-undeclared.bpmn) | The same completion as `writable-handler-key` on a task that declares no such field: the token's name arrives only as an undeclared submitted value. |
 
 Notes for the target runners:
 
 - `untyped-form-field` is a model CIB may refuse at deployment; the runner must record a refused deployment as the start's outcome.
-- `writable-handler-key` and `task-metadata-condition` have an engine step that can fail inside the completing command; the runner must record it as the command outcome rather than as a harness failure.
+- `writable-handler-key`, `undeclared-handler-key` and `task-metadata-condition` have an engine step that can fail inside the completing command; the runner must record it as the command outcome rather than as a harness failure.
 - The called occurrence is addressed by the derived called-instance identity (`call:<byte length>:<caller>:<byte length>:<Call element>:<activation>`).
 - Every submitted value is a String or a Boolean, and the Multi-Instance body is counted rather than collection-driven, because the [scenario value contract](../../../scripts/scenario-variable-value-contract.ts) admits Integer and `stringList` values only for registered process ids.

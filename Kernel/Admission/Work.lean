@@ -8,22 +8,27 @@ public import Kernel.Admission.Work.Decision
 Boundaries are admitted by `Kernel.Admission.Subscriptions` through the admission registry. Input and output
 mappings are admitted only on the work kinds whose item carries the evaluated inputs (a User Task's published inputs,
 an effect's arguments) and whose completion submits the values the outputs read (a User Task's submission, an
-effect's result patch); elsewhere `Kernel.Feature.Work` would evaluate a mapping and drop its binding.
+effect's result patch); elsewhere `Kernel.Feature.Work` would evaluate a mapping and drop its binding. A plain Task's
+completion submits nothing, so its output parameters are admitted only where they read the Task's own scope
+(`readsOwnScope`).
 -/
 
 public section
 
 namespace Kernel.Admission.Work
 
-def mapsData : Work → Bool
+/-- Whether `work` carries mappings. A plain Task carries them when `plainTask` holds (`readsOwnScope`); a decision
+task when `decisionTask` holds, since `Kernel.Feature.Work.evaluateDecision` writes its result and maps its outputs
+(PC-AUTO-08), though no compensation subject completes through it. -/
+def mapsData (plainTask decisionTask : Bool) : Work → Bool
   | .user _ => true
   | .service _ => true
-  | .none => false
+  | .none => plainTask
   | .manual => false
   | .receive _ => false
   | .send _ => false
   | .script _ => false
-  | .rule _ => false
+  | .rule _ => decisionTask
   | .call _ => false
 
 /-- The work one instance of a Multi-Instance Activity may do: `some submits`, where `submits` says whether its
@@ -54,13 +59,21 @@ def beginsWithoutToken : Work → Bool
   | .rule _ => false
   | .call _ => false
 
-def envelope (work : Work) (envelope : Envelope) : Option String :=
-  if !envelope.inputs.isEmpty && !mapsData work then some "activity.inputMappings"
-  else if !envelope.outputs.isEmpty && !mapsData work then some "activity.outputMappings"
+/-- A plain Task completes with the empty submission, so its outputs have a source only under
+`OutputContext.activityScope` (CIB-EXT-0031), and only as `camunda:outputParameter`s: CIB parses those on any task
+(`BpmnParse.java:4825-4831`), makes the Task a scope (`:4801-4815`) and runs them when its execution ends
+(`ExecutionEntity.java:521-525`), as for a User or Service Task. -/
+def readsOwnScope (options : ProfileOptions) (outputs : List Mapping) : Bool :=
+  options.outputContext == .activityScope && outputs.all (·.dialect == .ioParameter)
+
+def envelope (options : ProfileOptions) (work : Work) (envelope : Envelope) : Option String :=
+  if !envelope.inputs.isEmpty && !mapsData false true work then some "activity.inputMappings"
+  else if !envelope.outputs.isEmpty && !mapsData (readsOwnScope options envelope.outputs) true work then
+    some "activity.outputMappings"
   else if envelope.multiInstance.isSome && (instanceBody work).isNone then some "activity.multiInstanceBody"
   -- A compensation subject completes through the pipeline's `Hooks.completed`, which `Kernel.Feature.Work` reaches for a
   -- single User Task or Service Task only.
-  else if envelope.compensationHandler.isSome && (!mapsData work || envelope.multiInstance.isSome) then
+  else if envelope.compensationHandler.isSome && (!mapsData false false work || envelope.multiInstance.isSome) then
     some "activity.compensationHandler"
   else none
 
@@ -205,6 +218,6 @@ def activity (program : Program) (payload : ActivityPayload) : Option String :=
     | .script _ => some "work.script"
     | .rule work => Decision.task program work
     | .call work => call program work
-  work <|> envelope payload.work payload.envelope
+  work <|> envelope program.options payload.work payload.envelope
 
 end Kernel.Admission.Work

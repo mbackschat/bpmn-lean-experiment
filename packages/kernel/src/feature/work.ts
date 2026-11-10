@@ -14,6 +14,7 @@
 import {
   ErrorPathOutputs,
   MappingDialect,
+  MultiInstanceCounters,
   ResultValues,
   OutputContext,
   SubmissionRule,
@@ -29,6 +30,7 @@ import {
   type Header,
   type Mapping,
   type MultiInstance,
+  type RuleWork,
   type UserWork,
   type ValueSource,
 } from "../il/types.js";
@@ -189,7 +191,14 @@ export function arriveActivity(ctx: Ctx, header: Header, payload: ActivityPayloa
   const complete = (current: State): State => signal(current, completeSignal(occurrence.id, leaveOutgoing, [], WriteRule.Outward));
   const work = payload.work;
   switch (work.tag) {
-    case WorkTag.None:
+    case WorkTag.None: {
+      // A plain Task completes with the empty submission; its output parameters, which admission admits only where
+      // they read the Task's own scope (`activity.outputMappings`), are written as it leaves (CIB-EXT-0031).
+      const written = outputs(ctx, entered.logicalTimeMs, ResultValues.OutputSet, payload.envelope.outputs,
+        activityScope(ctx, entered, localScope(entered, occurrence.id) ?? occurrence.scope), []);
+      if (!written.ok) return failedWith(written.failure);
+      return committed(signal(entered, completeSignal(occurrence.id, leaveOutgoing, written.value, WriteRule.Outward)));
+    }
     case WorkTag.Manual:
       return committed(complete(entered));
     case WorkTag.User:
@@ -211,19 +220,30 @@ export function arriveActivity(ctx: Ctx, header: Header, payload: ActivityPayloa
       return failed(FailureTag.Unsupported, "work-send");
     case WorkTag.Script:
       return failed(FailureTag.Unsupported, "work-script");
-    case WorkTag.Rule: {
-      // The decision's result is written before the task leaves, so its outgoing conditions read it (PC-AUTO-07).
-      const writes = Decision.run(ctx.program, work.payload, evalContext(entered, occurrence.scope).variables);
-      if (!writes.ok) return writes;
-      return committed(complete(writes.value.length === 0
-        ? entered
-        : signal(entered, { tag: SignalTag.Write, scope: occurrence.scope, writes: writes.value, rule: WriteRule.Outward })));
-    }
+    case WorkTag.Rule:
+      return evaluateDecision(ctx, payload, work.payload, occurrence, entered);
     case WorkTag.Call:
       if (!begunByToken) return failed(FailureTag.Unsupported, "scope-implicit-start");
       return Call.invoke(ctx, header, payload, work.payload, occurrence, entered);
   }
   return assertNever(work);
+}
+
+/**
+ * A decision task (PC-AUTO-07, PC-AUTO-08) reads its inputs, which CIB holds as locals of the task's scope
+ * (`BpmnParse.java:2357-2360`), and writes the mapped result outward from that scope, as `setVariable` on the task's
+ * execution does (`DecisionEvaluationUtil.java:82-86`), so a task-local of the result's name holds it. The write is its
+ * own signal ahead of the completion, so the outgoing conditions read it whatever the condition order; the outputs map
+ * from the result first, then from the task's scope (`activityScope`), and a result no output reads is no error.
+ */
+function evaluateDecision(ctx: Ctx, payload: ActivityPayload, work: RuleWork, occurrence: Occurrence, state: State): Outcome {
+  const scope = localScope(state, occurrence.id) ?? occurrence.scope;
+  const writes = Decision.run(ctx.program, work, evalContext(state, scope).variables);
+  if (!writes.ok) return writes;
+  const written = outputs(ctx, state.logicalTimeMs, ResultValues.ActivityLocals, payload.envelope.outputs, activityScope(ctx, state, scope), writes.value);
+  if (!written.ok) return failedWith(written.failure);
+  const result = writes.value.length === 0 ? state : signal(state, { tag: SignalTag.Write, scope, writes: writes.value, rule: WriteRule.Outward });
+  return committed(signal(result, completeSignal(occurrence.id, leaveOutgoing, written.value, WriteRule.Outward)));
 }
 
 /** One Multi-Instance instance submits exactly its output data item, written locally to the instance. */
@@ -237,14 +257,40 @@ function instanceOutput(loop: MultiInstance, values: readonly Binding[]): Result
 }
 
 /**
+ * The loop whose instance submits exactly its output data item: a Multi-Instance Activity's, unless the loop declares
+ * none and the submission installs variables (CIB-EXT-0005), where CIB's `TaskService.complete` sets the instance's
+ * submission through its task execution as for any task.
+ */
+function submittedItem(submission: SubmissionRule, envelope: Envelope): MultiInstance | null {
+  const loop = envelope.multiInstance;
+  return loop !== null && (loop.outputDataItem !== null || submission === SubmissionRule.OutputSet) ? loop : null;
+}
+
+/**
+ * Under CIB's counters (`MultiInstanceCounters.cibLocals`, CIB-INT-0018) an instance's installed submission naming a
+ * counter would rewrite CIB's loop state, which the kernel computes rather than holds: the body execution's `loopCounter`
+ * and `nrOfInstances` that the next sequential instance reads (`SequentialMultiInstanceActivityBehavior.java:48-59`), or
+ * the parallel body's `nrOfActiveInstances` and `nrOfCompletedInstances` that end it
+ * (`ParallelMultiInstanceActivityBehavior.java:84-87,123`). The input data item is the instance's own local, which no
+ * later step reads, so it is no such name. `feature/multi-instance.ts` refuses a result so named with the same code.
+ */
+function shadowsCounter(ctx: Ctx, envelope: Envelope, values: readonly Binding[]): boolean {
+  return envelope.multiInstance !== null && ctx.program.options.multiInstanceCounters === MultiInstanceCounters.CibLocals &&
+    values.some(([name]) => cibCounterNames.includes(name));
+}
+
+const cibCounterNames: readonly string[] = ["loopCounter", "nrOfInstances", "nrOfActiveInstances", "nrOfCompletedInstances"];
+
+/**
  * Under a profile whose submission installs variables (CIB-EXT-0005) the completion first writes every submitted value
  * from the task's own local scope occurrence, as `TaskService.complete` sets it through the task's execution
  * (`AbstractVariableScope#setVariable`): a name the task holds as a local stays there and ends with the task, any other
  * reaches its nearest owner or the root. The write is its own signal ahead of the completion, so the outgoing conditions
  * read it even when they precede the outputs (CIB-INT-0011). The outputs then map from the submitted values, a value no
  * mapping reads being no error. Otherwise the submission is the task's OutputSet (`outputs`), which for a task without
- * outputs admits only the empty submission. The scope-chain rule, when the profile selects it, applies first
- * (`submission.ts`).
+ * outputs admits only the empty submission. A Multi-Instance instance submits its output data item instead
+ * (`submittedItem`); a name its loop's counters own is `unsupported` (`shadowsCounter`). The scope-chain rule, when the profile selects it, applies first, from the task's own frame, so the
+ * task's own locals are names it may submit (UTL-TASK-01; `submission.ts`).
  */
 export function completeUserTask(
   ctx: Ctx,
@@ -258,10 +304,10 @@ export function completeUserTask(
   if (!admitted.ok) return failedWith(admitted.failure);
   const limit = ctx.program.options.scopeChainSubmissionBytes;
   if (limit !== null) {
-    const checked = Submission.check(ctx, state, item.scope, limit, values);
+    const checked = Submission.check(ctx, state, localScope(state, item.occurrence) ?? item.scope, limit, values);
     if (!checked.ok) return failedWith(checked.failure);
   }
-  const loop = payload.envelope.multiInstance;
+  const loop = submittedItem(ctx.program.options.submission, payload.envelope);
   if (loop !== null) {
     const submitted = instanceOutput(loop, values);
     if (!submitted.ok) return failedWith(submitted.failure);
@@ -270,6 +316,8 @@ export function completeUserTask(
   const submission = ctx.program.options.submission;
   switch (submission) {
     case SubmissionRule.InstallsVariables: {
+      // Dynamic-only: a submission's names are the run's data.
+      if (shadowsCounter(ctx, payload.envelope, values)) return failed(FailureTag.Unsupported, "multiInstance.resultShadowsInstance");
       const written = outputs(ctx, state.logicalTimeMs, ResultValues.ActivityLocals, payload.envelope.outputs, outputScope(ctx, state, item), values);
       if (!written.ok) return failedWith(written.failure);
       const installed = signal(state, { tag: SignalTag.Write, scope: localScope(state, item.occurrence) ?? item.scope, writes: values, rule: WriteRule.Outward });
@@ -290,11 +338,15 @@ export function completeUserTask(
  * first, since CIB evaluates an output parameter in the Activity's execution (`OutputParameter.java:47`).
  */
 function outputScope(ctx: Ctx, state: State, item: OpenItem): readonly Binding[] {
+  return activityScope(ctx, state, localScope(state, item.occurrence) ?? item.scope);
+}
+
+function activityScope(ctx: Ctx, state: State, scope: ScopeOccurrenceId): readonly Binding[] {
   switch (ctx.program.options.outputContext) {
     case OutputContext.Submission:
       return [];
     case OutputContext.ActivityScope:
-      return visible(state, localScope(state, item.occurrence) ?? item.scope);
+      return visible(state, scope);
   }
   return assertNever(ctx.program.options.outputContext);
 }
@@ -440,7 +492,11 @@ export function resolveIncident(_ctx: Ctx, item: OpenItem, action: CommandAction
   return assertNever(action);
 }
 
-/** A delivery completes a Receive Task only on the channel it waits on; the Message carries no payload here. */
+/**
+ * A delivery completes a Receive Task only on the channel it waits on; the Message carries no payload here. The wait is
+ * uncorrelated, since admission refuses a Receive Task correlation (`work.receive.correlation`), so a delivery naming a
+ * criterion is refused as a Message subscription refuses one it does not bind (`subscriptions.ts` `admitFiring`).
+ */
 export function triggerActivity(
   _ctx: Ctx,
   _header: Header,
@@ -463,6 +519,7 @@ export function triggerActivity(
       if (!optionalChannelEquals(deliveryTriggerChannel(fired.delivery.trigger), channel)) {
         return failed(FailureTag.Rejected, "message-channel-mismatch");
       }
+      if (fired.delivery.correlation.length > 0) return failed(FailureTag.Rejected, "message-correlation-mismatch");
       if (fired.delivery.payload !== null) return failed(FailureTag.Rejected, "unexpected-message-payload");
       return committed(signal(state, completeSignal(item.occurrence, leaveOutgoing, [], WriteRule.Outward)));
     }

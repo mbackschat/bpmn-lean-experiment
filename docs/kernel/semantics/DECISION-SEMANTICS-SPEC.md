@@ -63,7 +63,7 @@ The admitted Business Rule Task has:
 - the default (latest) binding and no tenant;
 - `camunda:resultVariable` absent, or a name other than `decisionResult`;
 - an absent `mapDecisionResult` (meaning `resultList`) or one of the four mapper names;
-- no input or output mappings and no Multi-Instance body. A later row admits those.
+- `ioParameter` input and output mappings (PC-AUTO-08, [below](#mappings-on-a-decision-task)), and no Multi-Instance body.
 
 A `decisionRef` takes precedence over a delegate, as in CIB, and the delegate attribute CIB ignores is refused as `reader.factNotCarried`. The legacy `resultVariableName` alias is refused as `reader.factNotCarried`, like every Camunda attribute the reader declares but does not carry.
 
@@ -151,7 +151,7 @@ So `not("a")` matches a null input, and `not(< 5)` does not. The witnesses fix b
   - `collectEntries` gives a `list` of values;
   - `resultList` gives a `list` of `map`s.
 - Entry order is not part of the comparison, because CIB's maps are unordered; the kernel writes a `map` in the Data domain's key order.
-- With a result variable, the value is written by the nearest-owner rule. Since no mapping is admitted, no task-local binding of that name exists. Without a result variable nothing is written, because `decisionResult` is transient.
+- With a result variable, the value is written by the nearest-owner rule from the task's own scope, so a task-local input of that name holds it and ends with the task ([mappings](#mappings-on-a-decision-task)). Without a result variable nothing is written, because `decisionResult` is transient.
 - How the differential projects CIB's Java collections onto these kinds is the [witness README](../../../scenarios/open-rows/business-rule-hit-policies/README.md)'s observation boundary.
 
 ### 7. Conversion
@@ -195,7 +195,7 @@ An Error catcher coded with a Java class name would catch the failure in CIB. Th
 | Draft | Lane | Proposition |
 |---|---|---|
 | Decision tables | extension | A Business Rule Task's `camunda:decisionRef` names a DMN 1.3 decision table that the program carries. The kernel evaluates it within the subset above and writes the mapped result to `resultVariable` by the nearest-owner rule. Boundary: items 1 to 8, with no Error catcher coded with a Java class. |
-| Decision binding time | interpretation | CIB resolves a `latest` decision at every evaluation (`CallableElementUtil.java:127-151`). The kernel binds it at program assembly, as it binds a Call Activity's called element ([work semantics](WORK-SEMANTICS-SPEC.md#call-activities)), and both follow `ProfileOptions.callBindingTime = programAssembly`. Agreement holds while no deployment changes between assembly and evaluation. A key that the carried resources lack is refused at admission (`work.rule.decisionMissing`), where CIB would fail the run unless a later deployment adds it. The register has no entry yet behind `profile.callBindingTime.invocation`, so one entry should cover both the called-element and the decision binding. |
+| Decision binding time | limitation | CIB resolves a `latest` decision at every evaluation (`CallableElementUtil.java:127-151`); the kernel binds it once at program assembly, the program being fixed per instance ([binding time](#binding-time-of-a-latest-decision-reference)). Drafted as a CIB-LIM entry with a boundary line on CIB-EXT-0032; the Call Activity's version binding is PC-SCOPE-03's. |
 | Collect order | interpretation | DMN 1.3 leaves the order of a COLLECT result open. CIB returns rule order, which the profile selects. |
 | Entry-map order | operational mapping | CIB's entry maps are `HashMap`s. The kernel orders entries by output declaration, and the differential compares maps by name. |
 
@@ -326,7 +326,7 @@ Retained [hit-policy witnesses](../../../scenarios/open-rows/business-rule-hit-p
 - String literal, list and negated tests;
 - a wrong input type, an absent input, an output entry outside its `typeRef`, and an unknown decision.
 
-The retained [routing witnesses](../../../scenarios/open-rows/business-rule-routing/README.md) cover PC-AUTO-08. Their output mappings stay refused until that row admits them.
+The retained [routing witnesses](../../../scenarios/open-rows/business-rule-routing/README.md) cover PC-AUTO-08 ([its interpretation](#pc-auto-08-interpretation)).
 
 New witnesses, all in the hit-policy directory; their selecting gateway needs M2's Core JUEL level:
 
@@ -363,6 +363,62 @@ Kernel tests cover:
 - each hit policy, mapper and conversion in Lean and TypeScript;
 - the FEEL subset parser in the reader;
 - every refusal row.
+
+## PC-AUTO-08 interpretation
+
+Status: the cold interpretation review (2026-11-10) approved this text with required changes, which it folds in. The decision-task mappings are implemented in `Feature.Work.evaluateDecision` and admitted by the `rule` arm of `Admission.Work.mapsData`, both with their TypeScript pairs. Two meanings are added: when a `latest` decision reference binds, and the mappings of a decision task whose result feeds routing and a send. The version binding of a Call Activity's called element is PC-SCOPE-03's, decided by that row's review against its own two-version population witness; this section claims nothing about it.
+
+### Binding time of a `latest` decision reference
+
+BPMN 2.0.2 names a Business Rule Task's engine by `implementation` (§10.3.3) and knows no deployment or version. `camunda:decisionRef` is the CIB extension that names the decision (CIB-EXT-0032), so when it binds is that extension's boundary.
+
+CIB binds at every use:
+
+| Fact | Source |
+|---|---|
+| A decision task resolves its decision at every evaluation; `latest` is the deployed definition of the key with the highest version at that moment. | `E/util/DecisionEvaluationUtil.java:121-123`, `E/util/CallableElementUtil.java:127-151` |
+| A missing key throws `DecisionDefinitionNotFoundException`. | `E/persistence/deploy/cache/DecisionDefinitionCache.java:67-69` |
+| That exception is a `ProcessEngineException` without a cause, so the behavior rethrows it rather than raising a BPMN Error, and the reaching command rolls back. | `E/bpmn/helper/BpmnExceptionHandler.java:57-60,70-72` |
+
+The kernel binds once, at program assembly. A program carries its decisions without versions, and two carried decisions with one id are refused (`decision.duplicateId`), so a program names exactly one decision per key. Every step of an instance receives the same program, which is fixed per instance, so `Decision.run` (`feature/work/decision.ts`) looks up that one decision through recovery and replay. The binding is therefore the program's, not a per-instance record.
+
+Classification: CIB's per-use binding is the relation. The kernel's assembly binding is a profile limitation, drafted as a CIB-LIM entry, with a boundary line on CIB-EXT-0032. The two agree when no deployment touches the key between the assembly of the caller's program and the evaluation. They differ in these cases, each outside the claim:
+
+1. **A later deployment of the key.** CIB evaluates the new version; the kernel evaluates the assembled one.
+2. **A key missing at assembly.** The kernel refuses the whole model (`work.rule.decisionMissing`), also for runs that never reach the task. CIB deploys it, runs those runs, and rolls back only the command that reaches the missing key. This holds whether the key is deployed later or never.
+3. **A key undeployed or deleted after assembly.** The kernel still evaluates the assembled decision; CIB rolls back the reaching command.
+
+No witness separates the readings. Every retained witness deploys its BPMN and DMN resources together, and a two-version population cannot be admitted, because one program cannot carry two decisions of one key.
+
+### Mappings on a decision task
+
+CIB makes a decision task with `camunda:decisionRef` a scope (`E/bpmn/parser/BpmnParse.java:2357-2360`). The task's work runs in this order:
+
+1. Its input parameters set locals before the evaluation.
+2. The behavior evaluates the decision. It sets the transient `decisionResult` locally and the mapped result with `setVariable` (`E/util/DecisionEvaluationUtil.java:82-86`). The result reaches the nearest owner of the result variable, a task-local of that name included.
+3. Then it leaves. The task's outgoing conditions are evaluated before its output parameters (CIB-INT-0011, which both CIB profiles select as `conditionOrder = beforeOutputs`).
+4. The output parameters are evaluated in the task's execution (CIB-EXT-0031).
+
+The [routing witnesses](../../../scenarios/open-rows/business-rule-routing/README.md) declare `outcome` task-local, map the `singleResult` map into it, and copy `${outcome.grade}` and `${outcome.limit}` out.
+
+The kernel admits `ioParameter` input and output mappings on a decision task (`Feature.Work.evaluateDecision`):
+
+1. The inputs open the task's local scope, as for a Service Task.
+2. The decision reads its inputs from that scope.
+3. The result is written outward from that scope, as its own signal ahead of the completion.
+4. The completion's outgoing conditions run in the completion pipeline's place for the profile's `ConditionOrder`. Under `beforeOutputs` they read the result and the variables before the outputs; under `afterOutputs` they read the outputs.
+5. The outputs map from the result first, then from the task's scope under `OutputContext`. A result no output reads is no error.
+6. The task-local result ends with the task.
+
+A failed decision writes nothing and maps nothing (§8), so routing never reads fabricated success data. Each output parameter is its own mapping, so multiple declared outputs map independently.
+
+A JUEL read of `decisionResult` in an output parameter, a condition, or anywhere else is refused (`expression.juel.decisionResult`, `Admission.Data.juelName`). CIB binds that name only as the transient local of a decision task's execution, and the kernel carries no such binding. A Multi-Instance decision task stays refused.
+
+### Witness plan
+
+- The six retained routing schedules (`high-grade-review`, `low-grade-send`, `mid-grade`, `overlap`, `no-match`, `wrong-type-input`) bind `routing.dmn` and await CIB's answer.
+- The new [routing condition-order witness](../../../scenarios/open-rows/business-rule-routing/README.md) puts a condition on the decision task's own outgoing flow that reads a variable the task's outputs overwrite.
+- The kernel tests `work-decision-mappings` and `admission-refusals-decision` cover each step above, in Lean and TypeScript.
 
 ## Open questions for the review
 

@@ -1,0 +1,95 @@
+{
+  "kind": "scenario",
+  "id": "human-task-result-identity-items-parallel-counter-submission",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "human-item-check-parallel",
+    "relativePath": "scenarios/open-rows/human-task-result-identity/item-check-parallel.bpmn",
+    "sha256": "8c386e38caf009316a0de71fcf71e110e9a768338b444a84d594a5c09792d9c6",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start",
+      "instanceId": "Items_1",
+      "variables": []
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-item-1-with-counter",
+      "occurrence": {
+        "processInstanceId": "Items_1",
+        "elementId": "ReviewItem",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "nrOfCompletedInstances",
+            "value": {
+              "kind": "string",
+              "value": "9"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-item-2",
+      "occurrence": {
+        "processInstanceId": "Items_1",
+        "elementId": "ReviewItem",
+        "activation": 2
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "ok-b"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-item-1",
+      "occurrence": {
+        "processInstanceId": "Items_1",
+        "elementId": "ReviewItem",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "ok-a"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.3",
+      "BPMN 2.0.2 §10.4.2",
+      "BPMN 2.0.2 §13.3.3"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/UserTaskActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/persistence/entity/TaskEntity.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/variable/mapping/IoMapping.java"
+    ]
+  }
+}

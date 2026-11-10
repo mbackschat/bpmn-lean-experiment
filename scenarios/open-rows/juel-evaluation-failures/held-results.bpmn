@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_HeldResults" targetNamespace="urn:bpmn-lean:scenarios:juel-evaluation-failures:held-results">
+  <process id="Process_HeldResults" name="Hold one probe's result in a Sub-Process and render it as text" isExecutable="true">
+    <startEvent id="StartEvent_Start" name="Probe selected" />
+    <sequenceFlow id="Flow_Start_Select" sourceRef="StartEvent_Start" targetRef="Gateway_Select" />
+    <exclusiveGateway id="Gateway_Select" name="Select probe" gatewayDirection="Diverging" default="Flow_NoProbe" />
+    <subProcess id="SubProcess_IntegerOverflow" name="integer overflow">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${big + 1}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+      <startEvent id="StartEvent_IntegerOverflow" />
+      <sequenceFlow id="Flow_IntegerOverflow_Observe" sourceRef="StartEvent_IntegerOverflow" targetRef="UserTask_IntegerOverflowObserve" />
+      <userTask id="UserTask_IntegerOverflowObserve" name="Observe the held value">
+        <extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="rendered">value=${value}</camunda:inputParameter>
+          </camunda:inputOutput>
+        </extensionElements>
+      </userTask>
+      <sequenceFlow id="Flow_IntegerOverflow_End" sourceRef="UserTask_IntegerOverflowObserve" targetRef="EndEvent_IntegerOverflow" />
+      <endEvent id="EndEvent_IntegerOverflow" />
+    </subProcess>
+    <subProcess id="SubProcess_NegativeResult" name="negative result">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${b - a}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+      <startEvent id="StartEvent_NegativeResult" />
+      <sequenceFlow id="Flow_NegativeResult_Observe" sourceRef="StartEvent_NegativeResult" targetRef="UserTask_NegativeResultObserve" />
+      <userTask id="UserTask_NegativeResultObserve" name="Observe the held value">
+        <extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="rendered">value=${value}</camunda:inputParameter>
+          </camunda:inputOutput>
+        </extensionElements>
+      </userTask>
+      <sequenceFlow id="Flow_NegativeResult_End" sourceRef="UserTask_NegativeResultObserve" targetRef="EndEvent_NegativeResult" />
+      <endEvent id="EndEvent_NegativeResult" />
+    </subProcess>
+    <exclusiveGateway id="Gateway_Merge" name="Merge" gatewayDirection="Converging" />
+    <endEvent id="EndEvent_Done" />
+    <sequenceFlow id="Flow_ToIntegerOverflow" sourceRef="Gateway_Select" targetRef="SubProcess_IntegerOverflow">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'integer-overflow'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToNegativeResult" sourceRef="Gateway_Select" targetRef="SubProcess_NegativeResult">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'negative-result'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_NoProbe" sourceRef="Gateway_Select" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_IntegerOverflow_Merge" sourceRef="SubProcess_IntegerOverflow" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_NegativeResult_Merge" sourceRef="SubProcess_NegativeResult" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_Merge_Done" sourceRef="Gateway_Merge" targetRef="EndEvent_Done" />
+  </process>
+</definitions>

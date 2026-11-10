@@ -1,0 +1,87 @@
+{
+  "kind": "scenario",
+  "id": "inclusive-join-compositions-scoped-join-counted-scope-only",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "inclusive-join-compositions-scoped-join-counted",
+    "relativePath": "scenarios/open-rows/inclusive-join-compositions/scoped-join-counted.bpmn",
+    "sha256": "e9aef1fbf668ad03dcf6186c68c55abf1fca540082a37ec8f890082da705c753",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "batched",
+          "value": {
+            "kind": "boolean",
+            "value": false
+          }
+        },
+        {
+          "name": "called",
+          "value": {
+            "kind": "boolean",
+            "value": false
+          }
+        },
+        {
+          "name": "count",
+          "value": {
+            "kind": "integer",
+            "value": 2
+          }
+        },
+        {
+          "name": "scoped",
+          "value": {
+            "kind": "boolean",
+            "value": true
+          }
+        }
+      ]
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-complete-Measure-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Measure",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-complete-Decide-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Decide",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 \u00a710.6.3",
+      "BPMN 2.0.2 \u00a713.4.3",
+      "BPMN 2.0.2 \u00a710.3.8"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/InclusiveGatewayActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ParallelMultiInstanceActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java"
+    ]
+  }
+}

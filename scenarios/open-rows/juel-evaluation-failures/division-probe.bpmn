@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_DivisionProbe" targetNamespace="urn:bpmn-lean:scenarios:juel-evaluation-failures:division-probe">
+  <process id="Process_DivisionProbe" name="Divide by zero and render the quotient as text" isExecutable="true">
+    <startEvent id="StartEvent_Start" />
+    <sequenceFlow id="Flow_Start_Observe" sourceRef="StartEvent_Start" targetRef="UserTask_DivisionByZero" />
+    <userTask id="UserTask_DivisionByZero" name="division by zero">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="rendered">quotient=${a / zero}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <sequenceFlow id="Flow_Observe_Done" sourceRef="UserTask_DivisionByZero" targetRef="EndEvent_Done" />
+    <endEvent id="EndEvent_Done" />
+  </process>
+</definitions>

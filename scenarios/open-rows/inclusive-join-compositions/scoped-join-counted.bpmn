@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_ScopedJoinCounted" targetNamespace="urn:bpmn-lean:scenarios:inclusive-join-compositions:scoped-join-counted">
+  <process id="Process_ScopedJoinCounted" name="An Inclusive join after a Sub-Process, a Call and a counted Multi-Instance body" isExecutable="true">
+    <startEvent id="CaseOpened" name="Case opened" />
+    <inclusiveGateway id="ChooseWork" name="Choose work" gatewayDirection="Diverging" default="Flow_Plain" />
+    <subProcess id="Inspect" name="Inspect">
+      <startEvent id="InspectOpened" name="Inspect opened" />
+      <userTask id="Measure" name="Measure" />
+      <endEvent id="InspectClosed" name="Inspect closed" />
+      <sequenceFlow id="Flow_InspectOpened" sourceRef="InspectOpened" targetRef="Measure" />
+      <sequenceFlow id="Flow_Measured" sourceRef="Measure" targetRef="InspectClosed" />
+    </subProcess>
+    <callActivity id="AuditCall" name="Audit call" calledElement="Process_Audit" />
+    <serviceTask id="NotifyItem" name="Notify item" implementation="urn:bpmn-lean:effect:probe-v1" camunda:delegateExpression="${bpmnLeanEffectHandler}">
+      <multiInstanceLoopCharacteristics camunda:asyncBefore="true" isSequential="false">
+        <loopCardinality>${count}</loopCardinality>
+      </multiInstanceLoopCharacteristics>
+    </serviceTask>
+    <userTask id="PlainCheck" name="Plain check" />
+    <inclusiveGateway id="WorkDone" name="Work done" gatewayDirection="Converging" />
+    <userTask id="Decide" name="Decide" />
+    <endEvent id="CaseDecided" name="Case decided" />
+    <sequenceFlow id="Flow_Opened" sourceRef="CaseOpened" targetRef="ChooseWork" />
+    <sequenceFlow id="Flow_ToScope" sourceRef="ChooseWork" targetRef="Inspect">
+      <conditionExpression xsi:type="tFormalExpression">${scoped}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToCall" sourceRef="ChooseWork" targetRef="AuditCall">
+      <conditionExpression xsi:type="tFormalExpression">${called}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToBatch" sourceRef="ChooseWork" targetRef="NotifyItem">
+      <conditionExpression xsi:type="tFormalExpression">${batched}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Plain" sourceRef="ChooseWork" targetRef="PlainCheck" />
+    <sequenceFlow id="Flow_ScopeDone" sourceRef="Inspect" targetRef="WorkDone" />
+    <sequenceFlow id="Flow_CallDone" sourceRef="AuditCall" targetRef="WorkDone" />
+    <sequenceFlow id="Flow_BatchDone" sourceRef="NotifyItem" targetRef="WorkDone" />
+    <sequenceFlow id="Flow_PlainDone" sourceRef="PlainCheck" targetRef="WorkDone" />
+    <sequenceFlow id="Flow_WorkDone" sourceRef="WorkDone" targetRef="Decide" />
+    <sequenceFlow id="Flow_Decided" sourceRef="Decide" targetRef="CaseDecided" />
+  </process>
+  <process id="Process_Audit" name="Audit one case" isExecutable="true">
+    <startEvent id="AuditOpened" name="Audit opened" />
+    <userTask id="Audit" name="Audit" />
+    <endEvent id="AuditClosed" name="Audit closed" />
+    <sequenceFlow id="Flow_AuditOpened" sourceRef="AuditOpened" targetRef="Audit" />
+    <sequenceFlow id="Flow_Audited" sourceRef="Audit" targetRef="AuditClosed" />
+  </process>
+</definitions>

@@ -2970,7 +2970,7 @@
       "source": {
         "kind": "retainedScenario",
         "bpmnRelativePath": "scenarios/user-task-cycle/process.bpmn",
-        "sha256": "bce35b0b73934026f7da34e8c26eb74d590ad1010a847e34aca6858e2dbdf8b9",
+        "sha256": "e17c85a07022f6438ec934598284031ec74ff145091c23eb237bdb8dabf8c216",
         "scenarioRelativePath": "scenarios/user-task-cycle/scenario.json",
         "license": "MIT"
       },

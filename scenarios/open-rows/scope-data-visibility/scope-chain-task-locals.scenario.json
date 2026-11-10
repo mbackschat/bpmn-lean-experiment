@@ -1,0 +1,118 @@
+{
+  "kind": "scenario",
+  "id": "scope-data-visibility-scope-chain-task-locals",
+  "profile": "cibseven-2.2.0-scope-chain",
+  "bpmn": {
+    "id": "scope-data-visibility-shadowing-and-writes",
+    "relativePath": "scenarios/open-rows/scope-data-visibility/shadowing-and-writes.bpmn",
+    "sha256": "98177ae864aae7d2d5812ebdfa9c8a160bf230f9e219fbfdc59ce6967fe2eb82",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start",
+      "instanceId": "Run_1",
+      "variables": [
+        {
+          "name": "fresh",
+          "value": {
+            "kind": "string",
+            "value": "from-start"
+          }
+        },
+        {
+          "name": "memo",
+          "value": {
+            "kind": "string",
+            "value": "root-memo"
+          }
+        },
+        {
+          "name": "status",
+          "value": {
+            "kind": "string",
+            "value": "open"
+          }
+        },
+        {
+          "name": "ticket",
+          "value": {
+            "kind": "string",
+            "value": "T-1"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-inspect",
+      "occurrence": {
+        "processInstanceId": "Run_1",
+        "elementId": "UserTask_Inspect",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "memo",
+            "value": {
+              "kind": "string",
+              "value": "task-written"
+            }
+          },
+          {
+            "name": "seenTicket",
+            "value": {
+              "kind": "string",
+              "value": "task-only-written"
+            }
+          },
+          {
+            "name": "status",
+            "value": {
+              "kind": "string",
+              "value": "closed"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-after",
+      "occurrence": {
+        "processInstanceId": "Run_1",
+        "elementId": "UserTask_After",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.5",
+      "BPMN 2.0.2 §10.3.6",
+      "BPMN 2.0.2 Clause 10.4.1",
+      "BPMN 2.0.2 Clause 10.4.2",
+      "BPMN 2.0.2 §13.3.2"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/SubProcessActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/CallActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/UserTaskActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/variable/mapping/IoMapping.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/variable/mapping/InputParameter.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/variable/mapping/OutputParameter.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/variable/scope/AbstractVariableScope.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/model/CallableElementParameter.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/el/VariableScopeElResolver.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java"
+    ]
+  }
+}

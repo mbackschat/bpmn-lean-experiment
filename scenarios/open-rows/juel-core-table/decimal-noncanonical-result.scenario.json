@@ -3,9 +3,9 @@
   "id": "juel-core-table-decimal-noncanonical-result",
   "profile": "cibseven-2.2.0",
   "bpmn": {
-    "id": "juel-core-table-kernel-limits",
-    "relativePath": "scenarios/open-rows/juel-core-table/kernel-limits.bpmn",
-    "sha256": "4bdc435a2fd374ebde2d27d7c858a265f124376a96e19289fdcf2bca9002e3d3",
+    "id": "juel-core-table-held-decimal",
+    "relativePath": "scenarios/open-rows/juel-core-table/held-decimal.bpmn",
+    "sha256": "401cad9e03ec063e132f45c9436fa7d6e7a4959b554c21695e355d2ee363e1ae",
     "sourceOverlay": null
   },
   "stimuli": [

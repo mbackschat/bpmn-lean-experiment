@@ -26,6 +26,18 @@ export function declaredImplementation(ctx: ReadContext, element: ElementRecord)
   return null;
 }
 
+function boundBy(ctx: ReadContext, element: ElementRecord): EffectBinding | undefined {
+  const declared = declaredImplementation(ctx, element);
+  const delegate = declared?.name === "delegateExpression" ? declared.value : null;
+  const implementation = text(element, "implementation");
+  return [...ctx.bindings, ...builtInBindings].find((binding) =>
+    binding.delegateExpression === delegate && binding.implementation === implementation);
+}
+
+/** The delegate expression an overlay or built-in binding replaces with its operation, `null` when none matches. */
+export const boundDelegate = (ctx: ReadContext, element: ElementRecord): string | null =>
+  boundBy(ctx, element)?.delegateExpression ?? null;
+
 /**
  * The `EffectBinding` an element selects: an overlay or built-in binding when its source attributes match one;
  * otherwise the source's own attributes unchanged (BPMN's `implementation`, `##WebService` by default, and the declared
@@ -33,10 +45,8 @@ export function declaredImplementation(ctx: ReadContext, element: ElementRecord)
  */
 export function effectBinding(ctx: ReadContext, element: ElementRecord): KernelJson {
   const declared = declaredImplementation(ctx, element);
-  const delegate = declared?.name === "delegateExpression" ? declared.value : null;
   const implementation = text(element, "implementation");
-  const bound = [...ctx.bindings, ...builtInBindings].find((binding) =>
-    binding.delegateExpression === delegate && binding.implementation === implementation);
+  const bound = boundBy(ctx, element);
   if (bound !== undefined) return { protocol: bound.protocol, operation: bound.operation };
   if (implementation === compensationEffectImplementation) {
     return { protocol: activityProtocol, operation: operation("compensation-single-effect") };

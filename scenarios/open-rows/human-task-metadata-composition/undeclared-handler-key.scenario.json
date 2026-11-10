@@ -1,0 +1,64 @@
+{
+  "kind": "scenario",
+  "id": "human-task-metadata-composition-undeclared-handler-key",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "metadata-handler-key-undeclared",
+    "relativePath": "scenarios/open-rows/human-task-metadata-composition/handler-key-undeclared.bpmn",
+    "sha256": "5c87b17c21adeface57d81c03957e78600abf962be8fa188f1ffba761a41153f",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start",
+      "instanceId": "Request_1",
+      "variables": []
+    },
+    {
+      "kind": "command",
+      "commandId": "collect-with-handler-key",
+      "occurrence": {
+        "processInstanceId": "Request_1",
+        "elementId": "Collect",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "bpmnLeanEffectHandler",
+            "value": {
+              "kind": "string",
+              "value": "x"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "complete-notify",
+      "occurrence": {
+        "processInstanceId": "Request_1",
+        "elementId": "Notify",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.3",
+      "BPMN 2.0.2 §13.3.3"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/UserTaskActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ServiceTaskDelegateExpressionActivityBehavior.java"
+    ]
+  }
+}

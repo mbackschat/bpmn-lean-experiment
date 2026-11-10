@@ -16,7 +16,8 @@ Answer-free schedules for [PC-CF-06](../../../docs/PRACTICAL-CIB7-COVERAGE-TARGE
 | [two-reworks-with-stale-commands](rework-loop-two-reworks-with-stale-commands.scenario.json) | rework-loop | Two rework decisions and a final approval; after each rework the first iteration's *Inspect damage*, *Price repair* and *Review quote* identities are used once again while the later iteration's occurrence is open. |
 | [short-burst](automatic-loop-short-burst.scenario.json) | automatic-loop | `limit` is 3, so the automatic cycle runs a few times before *Report*. |
 | [long-burst](automatic-loop-long-burst.scenario.json) | automatic-loop | `limit` is 2000, so the automatic cycle runs far more times in one resumption. |
+| [beyond-bound](automatic-loop-beyond-bound.scenario.json) | automatic-loop | `limit` is 50000, beyond the row's declared limit, so the kernel refuses the start (`unsupported "closure-bound"`) and commits nothing, where CIB runs the whole burst. |
 
-The declared admission limit of the row is not yet a number. The kernel's dynamic bound is `Step.closureBound` of 100000 micro-steps, which a cycle of about 33000 iterations of this model reaches; the long burst here stays well under it, because a CIB run at that length is a hosted-lane cost the row's owner decides on once the limit is declared.
+The row's declared limit is `Step.closureBound`, 100000 micro-steps in one closure, which this model reaches at about 33000 iterations (about three micro-steps an iteration, measured 2026-11-10). The beyond-bound schedule is a long single CIB transaction, so its hosted run is the costliest of the directory.
 
 The schedules carry no expected state; the retained CIB evidence is the answer.

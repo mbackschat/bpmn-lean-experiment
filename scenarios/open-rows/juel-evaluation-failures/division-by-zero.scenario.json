@@ -3,9 +3,9 @@
   "id": "juel-evaluation-failures-division-by-zero",
   "profile": "cibseven-2.2.0",
   "bpmn": {
-    "id": "juel-evaluation-failures-refused-probes",
-    "relativePath": "scenarios/open-rows/juel-evaluation-failures/refused-probes.bpmn",
-    "sha256": "673e70ccb1fb50eefd0b196cd0e1eb4867ac8d41a24257752a760120cb3e4c7f",
+    "id": "juel-evaluation-failures-division-probe",
+    "relativePath": "scenarios/open-rows/juel-evaluation-failures/division-probe.bpmn",
+    "sha256": "1c25b776893a3c1f9e9d9a51182f79430d2e576f24026b0dcbac808aa7c91605",
     "sourceOverlay": null
   },
   "stimuli": [

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_ItemCheckParallel" targetNamespace="urn:bpmn-lean:human-item-check-parallel">
+  <process id="Process_ItemCheckParallel" name="Check all items at once" isExecutable="true">
+    <startEvent id="ItemsReceived" name="Items received" />
+    <userTask id="ReviewItem" name="Review item">
+      <extensionElements>
+        <camunda:formData>
+          <camunda:formField id="verdict" type="string" />
+        </camunda:formData>
+      </extensionElements>
+      <multiInstanceLoopCharacteristics isSequential="false">
+        <loopCardinality xsi:type="tFormalExpression">2</loopCardinality>
+      </multiInstanceLoopCharacteristics>
+    </userTask>
+    <endEvent id="ItemsReviewed" name="Items reviewed" />
+    <sequenceFlow id="Flow_Received" sourceRef="ItemsReceived" targetRef="ReviewItem" />
+    <sequenceFlow id="Flow_Reviewed" sourceRef="ReviewItem" targetRef="ItemsReviewed" />
+  </process>
+</definitions>

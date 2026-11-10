@@ -7,11 +7,12 @@ public import Kernel.Feature.Work.Call
 
 `ProfileOptions.scopeChainSubmissionBytes` selects `NSD-TASK-01` of the
 [nested embedded scope data specification](../../../docs/kernel/semantics/DATA-SEMANTICS-SPEC.md)
-(CIB-EXT-0020): a User Task completion may name only variables a scope occurrence on the task's chain declares,
-below the root of its process instance, or, inside a called instance, the names its Call copies across
-(`Call.submissionNames`, CVM-TASK-01), each at most once, and the canonical JSON of the submission may take at most
-the selected number of UTF-8 bytes. The name restriction is a profile admission restriction, not CIB behaviour,
-which would create a root binding for an undeclared name. Anything else is `rejected` and changes nothing.
+(CIB-EXT-0020): a User Task completion may name only variables a scope occurrence on the task's chain, its own frame
+included (UTL-TASK-01), declares, below the root of its process instance, or, inside a called instance, the names
+its Call copies across (`Call.submissionNames`, CVM-TASK-01), each at most once, and the canonical JSON of the
+submission may take at most the selected number of UTF-8 bytes. The name restriction is a profile admission
+restriction, not CIB behaviour, which would create a root binding for an undeclared name. Anything else is
+`rejected` and changes nothing.
 -/
 
 public section
