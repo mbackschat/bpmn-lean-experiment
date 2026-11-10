@@ -74,7 +74,7 @@ def definitions (subscription : Subscription) : Option String :=
   else none
 
 /-- Only a Message subscription writes what its delivery carries; any other trigger's outputs would be dropped. -/
-def outputs (subscription : Subscription) : Option String :=
+def subscriptionOutputs (subscription : Subscription) : Option String :=
   if subscription.trigger.message?.isSome || subscription.outputs.isEmpty then none else some "event.outputs"
 
 /-- Catch variables are a CIB extension (CIB-EXT-0028) the profile selects; BPMN 2.0.2 defines none. -/
@@ -104,7 +104,7 @@ def eventSubProcess (start : Subscription) (interrupting : Bool) : Option String
   | .cancel => none
 
 def catchEvent (subscription : Subscription) : Option String :=
-  definitions subscription <|> outputs subscription <|>
+  definitions subscription <|> subscriptionOutputs subscription <|>
   match subscription.trigger with
   | .timer trigger => timer false trigger
   | .message trigger => correlatedCatch subscription trigger
@@ -128,7 +128,7 @@ def boundary (variables : ErrorCatchVariables) (transactionHost : Bool) (seen : 
     match refusal with
     | some code => .error code
     | none => .ok seen
-  match definitions boundary.subscription <|> outputs boundary.subscription with
+  match definitions boundary.subscription <|> subscriptionOutputs boundary.subscription with
   | some code => .error code
   | none =>
     match boundary.subscription.trigger with
@@ -158,7 +158,7 @@ def boundaries (variables : ErrorCatchVariables) (transactionHost : Bool) (list 
 Sub-Process start, which may also repeat a cycle and catch what `Kernel.Feature.Propagation` raises. -/
 def start (variables : ErrorCatchVariables) (nested : Bool) (subscription : Subscription) : Option String :=
   let raised (code : String) : Option String := if nested then none else some code
-  definitions subscription <|> outputs subscription <|>
+  definitions subscription <|> subscriptionOutputs subscription <|>
   match subscription.trigger with
   | .timer trigger => timer nested trigger
   | .message trigger =>

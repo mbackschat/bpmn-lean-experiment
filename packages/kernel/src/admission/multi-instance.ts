@@ -19,6 +19,7 @@ import {
   MultiInstanceMode,
   SubmissionRule,
   assertNever,
+  multiInstanceCounterNames,
   type Envelope,
   type Expression,
   type InstanceCount,
@@ -85,8 +86,13 @@ function juelCount(juel: LoopExpression, count: InstanceCount): string | null {
 
 /** A sequential loop whose collection is `.juel`, which CIB re-evaluates before every later instance (PC-MI-08). */
 function rereads(loop: MultiInstance): boolean {
-  return loop.mode === MultiInstanceMode.Sequential && loop.count.tag === InstanceCountTag.Collection &&
-    loop.count.items.tag === ExpressionTag.Juel;
+  switch (loop.mode) {
+    case MultiInstanceMode.Parallel:
+      return false;
+    case MultiInstanceMode.Sequential:
+      return loop.count.tag === InstanceCountTag.Collection && loop.count.items.tag === ExpressionTag.Juel;
+  }
+  return assertNever(loop.mode);
 }
 
 /**
@@ -95,21 +101,19 @@ function rereads(loop: MultiInstance): boolean {
  * `TaskService.complete` sets each value through the instance's task execution; a Service Task's empty OutputSet fills
  * neither an output data item nor an output collection, which body result effects (PC-MI-10) would.
  */
-function result(submission: SubmissionRule, submits: boolean, loop: MultiInstance): string | null {
+function instanceResult(submission: SubmissionRule, submits: boolean, loop: MultiInstance): string | null {
   if (submits) {
     return loop.outputDataItem === null && submission === SubmissionRule.OutputSet ? "multiInstance.outputDataItem" : null;
   }
   return loop.outputDataItem !== null || loop.outputCollection !== null ? "multiInstance.instanceResult" : null;
 }
 
-const counterNames: readonly string[] = ["loopCounter", "nrOfInstances", "nrOfActiveInstances", "nrOfCompletedInstances"];
-
 /**
  * `submits` is `null` for work no instance may do, which `admission/work.ts` refuses. Under the CIB counters an item
  * named like a counter is refused: CIB sets both on one execution, so one overwrites the other. A collection loop needs
  * its input data item; a cardinality loop sets none (`MultiInstanceActivityBehavior:85`).
  */
-export function activity(options: ProfileOptions, juel: LoopExpression, submits: boolean | null, envelope: Envelope,
+export function activityLoop(options: ProfileOptions, juel: LoopExpression, submits: boolean | null, envelope: Envelope,
   loop: MultiInstance): string | null {
   const underJuel = options.evaluator === Evaluator.Juel;
   const counters = options.multiInstanceCounters === MultiInstanceCounters.CibLocals;
@@ -120,10 +124,10 @@ export function activity(options: ProfileOptions, juel: LoopExpression, submits:
   if (loop.elementVariable !== null) return "multiInstance.elementVariable";
   if (loop.mutableCollection === CollectionRead.SequentialReread || (underJuel && rereads(loop))) return "multiInstance.mutableCollection";
   if (loop.count.tag !== InstanceCountTag.Cardinality && loop.inputDataItem === null) return "multiInstance.inputDataItem";
-  if (counters && [loop.inputDataItem, loop.inputDataItemName].some((name) => name !== null && counterNames.includes(name))) {
+  if (counters && [loop.inputDataItem, loop.inputDataItemName].some((name) => name !== null && multiInstanceCounterNames.includes(name))) {
     return "multiInstance.itemNamedLikeCounter";
   }
-  const unfilled = submits === null ? null : result(options.submission, submits, loop);
+  const unfilled = submits === null ? null : instanceResult(options.submission, submits, loop);
   if (unfilled !== null) return unfilled;
   if (envelope.inputs.length > 0 || envelope.outputs.length > 0) return "multiInstance.mappings";
   return null;

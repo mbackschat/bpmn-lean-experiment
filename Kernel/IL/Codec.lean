@@ -47,7 +47,7 @@ deriving instance FromJson, ToJson for JuelFunctionNode, JuelCallNode, JuelCompu
   MessageCorrelation, DeliveryVariables, MultiInstanceFinalBody, MultiInstanceOutputs, CompensationOrder,
   CompensationHandlerFailure, AbnormalScopeEnd, UnhandledError, ErrorCatchVariables, CallBindingTime, Evaluator, ConditionOrder,
   MultiInstanceBinding, ResultValues, OutputContext, MultiInstanceCounters, MultiInstanceInputFailure, MultiInstanceCount,
-  ProfileOptions, CalledProcess, Program
+  BusinessRuleTask, InclusiveJoinReach, BranchSchedule, ProfileOptions, CalledProcess, Program
 
 /-- `[{name, value}]`, the scenario contract's variable bindings. -/
 def bindingsFromJson (json : Json) : Except String (List (String × Value)) := do
@@ -64,11 +64,11 @@ canonical encoding of the value it decodes to; every refusal begins with one of 
 def duplicateField : String := "codec.duplicateField"
 def unknownField : String := "codec.unknownField"
 def missingField : String := "codec.missingField"
-def malformed : String := "codec.malformed"
+def malformedCode : String := "codec.malformed"
 
 /-- Prefix a refusal that carries no code with `codec.malformed`. -/
 def coded (refusal : String) : String :=
-  if refusal.startsWith "codec." then refusal else s!"{malformed}: {refusal}"
+  if refusal.startsWith "codec." then refusal else s!"{malformedCode}: {refusal}"
 
 /-- Object members in `text`: each member has the one `:` outside a string. -/
 def textMembers (text : String) : Nat :=
@@ -108,7 +108,7 @@ partial def shapeRefusal (path : String) (input canonical : Json) : Option Strin
   | .arr given, .arr expected =>
     (List.range (min given.size expected.size)).findSome? fun index =>
       shapeRefusal s!"{path}[{index}]" given[index]! expected[index]!
-  | .obj _, _ => some s!"{malformed}: {path} is an object"
+  | .obj _, _ => some s!"{malformedCode}: {path} is an object"
   | _, _ => none
 
 /-- Decode `json` through `decode` and accept it only in the canonical encoding `encode` gives. -/

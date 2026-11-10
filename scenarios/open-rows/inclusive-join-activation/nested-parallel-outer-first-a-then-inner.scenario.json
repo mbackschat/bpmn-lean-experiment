@@ -1,0 +1,70 @@
+{
+  "kind": "scenario",
+  "id": "inclusive-join-activation-nested-parallel-outer-first-a-then-inner",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "inclusive-join-activation-nested-parallel-outer-first",
+    "relativePath": "scenarios/open-rows/inclusive-join-activation/nested-parallel-outer-first.bpmn",
+    "sha256": "dde3679442ee75f0d6f2c997b490400c5cf965729fb2360e9588de805784b684",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-complete-ReviewA-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "ReviewA",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-complete-ReviewB1-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "ReviewB1",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s04-complete-ReviewB2-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "ReviewB2",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 \u00a713.4.3",
+      "BPMN 2.0.2 Table 13.3",
+      "BPMN 2.0.2 \u00a713.4.1"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/InclusiveGatewayActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ParallelGatewayActivityBehavior.java"
+    ]
+  }
+}

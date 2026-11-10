@@ -18,7 +18,7 @@ open Lean (Json)
 
 /-- Refuse `json` unless it is an object whose keys are all of `required` and some of `optional`. -/
 def fields (json : Json) (required : List String) (optional : List String := []) : Except String Unit := do
-  let .obj members := json | throw s!"{malformed}: object expected"
+  let .obj members := json | throw s!"{malformedCode}: object expected"
   if let some key := members.keys.find? (fun key => !(required.contains key || optional.contains key)) then
     throw s!"{unknownField}: {key}"
   if let some key := required.find? (fun key => !(members.keys.contains key)) then
@@ -26,7 +26,7 @@ def fields (json : Json) (required : List String) (optional : List String := [])
 
 /-- The `kind` of a tagged object, after checking it has its form's keys. -/
 def kindOf (json : Json) : Except String String := do
-  let .obj _ := json | throw s!"{malformed}: object expected"
+  let .obj _ := json | throw s!"{malformedCode}: object expected"
   match json.getObjVal? "kind" with
   | .ok kind => kind.getStr?
   | .error _ => throw s!"{missingField}: kind"

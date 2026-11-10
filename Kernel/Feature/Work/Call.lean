@@ -58,8 +58,8 @@ def invoke (ctx : Ctx) (header : Header) (payload : ActivityPayload) (work : Cal
         else state.signal (.arm occurrence.id header.id occurrence.scope)
       .ok (state.signal (.begin { element := start.id, scope := root }))
 
-/-- `Hooks.completeCall`: return from the idle called instance whose root is `root`. -/
-def complete (ctx : Ctx) (_ : Header) (_ : ActivityPayload) (work : CallWork) (root : ScopeOccurrence)
+/-- The body of `Hooks.completeCall`: return from the idle called instance whose root is `root`. -/
+def returnFromCall (ctx : Ctx) (_ : Header) (_ : ActivityPayload) (work : CallWork) (root : ScopeOccurrence)
     (owner : Occurrence) (state : State) : Outcome := do
   let outputs ← copy ctx "call-output-unavailable" (state.evalContext root.id) work.outputs
   .ok (state.signal (.complete owner.id .outgoing outputs .outward))

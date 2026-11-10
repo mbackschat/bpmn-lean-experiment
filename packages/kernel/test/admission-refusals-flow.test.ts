@@ -1,11 +1,11 @@
 /**
  * Refusal tests of `admission/flow.ts`: a condition is read only on a conditional gateway's candidates and on an
  * Activity's non-default flows, an Event-Based Gateway arms only catch Events, an Exclusive Gateway refuses the
- * unconditioned flows CIB refuses to parse, a process has one initial start and a Sub-Process one start, and a throwing
+ * unconditioned flows CIB refuses to parse, an Exclusive or Inclusive Gateway needs an outgoing flow, a process has one initial start and a Sub-Process one start, and a throwing
  * Link needs exactly one catching Link of its name.
  */
 import {
-  activity, append, base, catchEvent, conditionOn, duration, end, eventBased, flow, gateway, link, message, receiveWork, refusalOf, refusalTests, replace,
+  activity, append, base, mapping, variable, withOptions, catchEvent, conditionOn, duration, end, eventBased, flow, gateway, link, message, receiveWork, refusalOf, refusalTests, replace,
   scope, simpleBoolean, start, task, text, userWork, withFlows,
 } from "./admission-refusal-support.ts";
 import type { Json, Row } from "./admission-refusal-support.ts";
@@ -53,6 +53,29 @@ const subProcessStarts = (count: number) => (program: Json): Json => {
 /** `T` becomes an exclusive gateway whose only flow `f2` is its only candidate, conditioned or not. */
 const soleCandidate = (conditionExpression: Json | null) => (program: Json): Json =>
   conditionOn(replace(program, "T", gateway("T", { exclusive: { candidates: ["f2"], default: null } })), "f2", conditionExpression);
+
+/** `T` becomes a gateway of `kind` with no candidate and no default; `outflow` keeps its flow `f2` to `E` or drops it. */
+const routeless = (kind: "exclusive" | "inclusive", outflow: boolean) => (program: Json): Json => {
+  const gatewayAt = replace(program, "T", gateway("T", { [kind]: { candidates: outflow ? ["f2"] : [], default: null } }));
+  return outflow ? gatewayAt : { ...gatewayAt, flows: (gatewayAt.flows as Json[]).filter((entry) => entry.id !== "f2") };
+};
+
+/**
+ * `Start -> T (Parallel fork) -> A, B -> J (Parallel join) -> End`, where the plain Tasks `A` and `B` write `first` and
+ * `second` from the variable `read` (CIB-EXT-0031's output context, so their outputs are admitted under the standards
+ * schedule), and `B`'s flow to the join is conditioned on `condition` when one is named.
+ */
+const racing = (first: string, second: string, read = "source", condition: string | null = null) => (program: Json): Json => {
+  const written = (name: string, source: string): Json => ({ outputs: [mapping(name, variable(source))] });
+  const forked = append(replace(program, "T", gateway("T", "parallel")),
+    activity("A", "none", written(first, "source")), activity("B", "none", written(second, read)), gateway("J", "parallel"));
+  const tested = condition === null ? null : { simpleBoolean: { body: { isPresent: { name: condition } } } };
+  return withOptions({
+    ...forked,
+    flows: [flow("f1", "S", "T"), flow("a", "T", "A"), flow("b", "T", "B"), flow("ja", "A", "J"), flow("jb", "B", "J", tested),
+      flow("f2", "J", "E")],
+  }, { outputContext: "activityScope" });
+};
 
 /**
  * `Start -> T (Inclusive split) -> A, B -> J (Inclusive join) -> End`: `a` and `b` leave the split, `ja` and `jb` enter
@@ -151,6 +174,27 @@ export const rows: readonly Row[] = [
     control: soleCandidate(null),
   },
   {
+    // CIB refuses it at deployment (`BpmnParse#validateExclusiveGateway`).
+    code: "gateway.exclusive.noOutgoingFlow",
+    description: "an Exclusive Gateway without an outgoing flow",
+    mutate: routeless("exclusive", false),
+    control: routeless("exclusive", true),
+  },
+  {
+    // CIB deploys it and rolls back every activation (`InclusiveGatewayActivityBehavior#execute`, `stuckExecutionException`).
+    code: "gateway.inclusive.noOutgoingFlow",
+    description: "an Inclusive Gateway without an outgoing flow",
+    mutate: routeless("inclusive", false),
+    control: routeless("inclusive", true),
+  },
+  {
+    // BPMN 2.0.2 Table 13.1, §13.3.1: the branches interleave in any order, so which write is left is undefined.
+    code: "flow.concurrentWrite",
+    description: "two branches of a Parallel fork writing one name with no wait between",
+    mutate: racing("x", "x"),
+    control: racing("x", "y"),
+  },
+  {
     code: "start.rootCombination",
     description: "a second None Start of the process",
     mutate: secondStart(null),
@@ -177,6 +221,15 @@ export const rows: readonly Row[] = [
 ];
 
 refusalTests("flow", rows);
+
+// The footprint counts reads as well as writes: the value a branch reads would otherwise depend on whether the sibling's
+// write ran first, which no input states (audit of round 7, finding 2).
+test("flow: a branch that reads a name a sibling branch writes is refused as flow.concurrentWrite", () => {
+  assert.equal(refusalOf(racing("x", "y", "x")(base())), "flow.concurrentWrite", "an output mapping's source");
+  assert.equal(refusalOf(racing("x", "y", "source", "x")(base())), "flow.concurrentWrite", "an outgoing condition");
+  assert.equal(refusalOf(racing("x", "y", "z")(base())), null);
+  assert.equal(refusalOf(racing("x", "y", "source", "z")(base())), null);
+});
 
 test("flow: Inclusive joins and splits of any shape and a catching Link with an incoming flow are admitted", () => {
   assert.equal(refusalOf(diverging("inclusive", simpleBoolean())(base())), null, "a split that may select nothing rolls back");

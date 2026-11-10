@@ -9,6 +9,7 @@ import {
   elementEnvelope,
   elementEvent,
   elementScope,
+  firstOf,
   workCall,
   type ActivityPayload,
   type Boundary,
@@ -126,7 +127,7 @@ function element(program: Program, throws: readonly Element[], entry: Element): 
         () => Work.activity(program, payload),
         () => activityOrigin(program, header, payload),
         () => (loop === null ? null
-          : MultiInstance.activity(program.options, Data.loopExpression, Work.instanceBody(payload.work), payload.envelope, loop)),
+          : MultiInstance.activityLoop(program.options, Data.loopExpression, Work.instanceBody(payload.work), payload.envelope, loop)),
         () => Subscriptions.boundaries(program.options.errorCatchVariables, false, payload.envelope.boundaries),
         () => boundaryData(program, payload.envelope.boundaries),
         () => Scopes.nestedCompensation(program, throws, header, payload.envelope),
@@ -154,7 +155,7 @@ function element(program: Program, throws: readonly Element[], entry: Element): 
       const subscription = entry.payload.subscription;
       return first(
         () => Data.origin(header),
-        () => FlowAdmission.start(program, header),
+        () => FlowAdmission.startCombination(program, header),
         () => (subscription === null
           ? null
           : Subscriptions.start(program.options.errorCatchVariables, header.parent !== null, subscription) ??
@@ -180,16 +181,17 @@ function loops(program: Program): boolean {
   return program.elements.some((entry) => (elementEnvelope(entry)?.multiInstance ?? null) !== null);
 }
 
-/** A flow's condition, then where it may sit. */
+/** A flow's condition, then where it may sit, then whether its branch races a sibling's write. */
 function flow(program: Program, entry: Flow): string | null {
-  return Data.flowCondition(program.options.evaluator, entry) ?? FlowAdmission.conditionalOutflow(program, entry);
+  return Data.flowCondition(program.options.evaluator, entry) ?? FlowAdmission.conditionalOutflow(program, entry) ??
+    FlowAdmission.concurrentWrite(program, entry);
 }
 
 /**
  * A called process is bound at assembly to the one definition the program carries, so its definition names no binding
  * of its own (PC-SCOPE-03).
  */
-function calledProcess(process: CalledProcess): string | null {
+function calledProcessBinding(process: CalledProcess): string | null {
   const definition = process.definition;
   const bound = definition.version !== null || definition.versionTag !== null || definition.deployment !== null ||
     definition.tenant !== null;
@@ -212,20 +214,12 @@ export function admit(program: Program): string | null {
   const throws = program.elements.filter(compensationThrow);
   return first(
     () => FlowAdmission.references(program),
-    () => Scopes.references(program),
+    () => Scopes.membership(program),
     () => Profile.options(abnormalScope(program), loops(program), program.options),
     () => executable(program),
     () => Decision.resources(program),
-    () => firstOf(program.processes, calledProcess),
+    () => firstOf(program.processes, calledProcessBinding),
     () => firstOf(program.flows, (entry) => flow(program, entry)),
     () => firstOf(program.elements, (entry) => element(program, throws, entry)),
   );
-}
-
-function firstOf<T>(items: readonly T[], check: (item: T) => string | null): string | null {
-  for (const item of items) {
-    const refused = check(item);
-    if (refused !== null) return refused;
-  }
-  return null;
 }

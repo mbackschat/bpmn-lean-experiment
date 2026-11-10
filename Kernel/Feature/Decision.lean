@@ -2,40 +2,27 @@ module
 
 public import Kernel.Hooks
 
-/-! # Work: DMN decision tables
+/-! # Decision: DMN decision tables, a sub-feature of Work
 
-A Business Rule Task whose `camunda:decisionRef` names a decision the program carries evaluates that decision table
+`Kernel.Feature.Work` reaches it only through its own hooks record (`Kernel.Feature.Work.WorkHooks.runDecision`), which
+`Kernel.Registry` fills, since features never import each other (ARCHITECTURE-SPEC "Modules and build shape"). A
+Business Rule Task whose `camunda:decisionRef` names a decision the program carries evaluates that decision table
 when its occurrence begins and completes in the same step
-([decision semantics](../../../docs/kernel/semantics/DECISION-SEMANTICS-SPEC.md#5-evaluation)), in CIB's three passes
+([decision semantics](../../docs/kernel/semantics/DECISION-SEMANTICS-SPEC.md#5-evaluation)), in CIB's three passes
 (`DecisionTableEvaluationHandler.java:101-161`): every input is read and converted, every rule is tested, every
 matching rule's outputs are converted, and only then does the hit policy select. The mapped result is written by the
 nearest-owner rule from the task's scope occurrence, before the task leaves, so its outgoing conditions read it
-(`DecisionEvaluationUtil.java:79-87`). Every refusal of `Kernel.Admission.Decision` reaches a site here only as an
+(`DecisionEvaluationUtil.java:79-87`). Every refusal of `Kernel.Admission.Work.Decision` reaches a site here only as an
 `unsupported` code of the same name.
 -/
 
 public section
 
-namespace Kernel.Feature.Work.Decision
+namespace Kernel.Feature.Decision
 
 /-- Item 8: every decision failure takes the stimulus' evaluation-failure outcome, which `Step` derives from a
 rollback (EXPRESSION-SEMANTICS-SPEC, failure outcomes per stimulus). -/
 def failed : Failure := .rolledBack "decision-failed"
-
-def isAscii (text : String) : Bool := text.toList.all fun char => decide (char.toNat < 128)
-
-/-- `Integer.parseInt` over ASCII text (`IntegerDataTypeTransformer.java:42`): an optional sign, decimal digits, the
-`int` range. -/
-def parseInt? (text : String) : Option Int :=
-  let (negative, digits) : Bool × List Char := match text.toList with
-    | '-' :: rest => (true, rest)
-    | '+' :: rest => (false, rest)
-    | chars => (false, chars)
-  if digits.isEmpty || !digits.all Char.isDigit then none
-  else
-    let magnitude : Int := digits.foldl (fun n c => n * 10 + ((c.toNat - '0'.toNat : Nat) : Int)) 0
-    let value := if negative then -magnitude else magnitude
-    if withinJavaInt value then some value else none
 
 /-- CIB's `typeRef` transformers for the values the kernel holds (item 7, `DmnTypeDefinitionImpl.java:41-58`): null is
 never converted; a value whose Java form the kernel does not decide is `unsupported`. -/
@@ -53,7 +40,8 @@ def convert (typeRef : TypeRef) (value : Value) : Except Failure Value :=
   | .integer, .string text =>
     -- dynamic-only: `Integer.parseInt` reads Unicode decimal digits the kernel does not decide
     if !isAscii text then .error (.unsupported "decision-conversion-text")
-    else match parseInt? text with
+    -- `Integer.parseInt` (`IntegerDataTypeTransformer.java:42`)
+    else match parseJavaInt? text with
       | some n => .ok (.int n)
       | none => .error failed
   | .integer, .bool _ => .error failed
@@ -169,7 +157,7 @@ def sameEntries (left right : List (String × Value)) : Bool :=
   left.length == right.length && (left.zip right).all fun (l, r) => l.1 == r.1 && sameValue l.2 r.2
 
 /-- Item 5: the hit policy over every matching rule's entry map, in rule order. -/
-def select (table : DecisionTable) (results : List (List (String × Value))) :
+def applyHitPolicy (table : DecisionTable) (results : List (List (String × Value))) :
     Except Failure (List (List (String × Value))) :=
   match table.aggregation, table.hitPolicy, results with
   | some _, _, _ => .error (.unsupported "decision-hit-policy")
@@ -189,7 +177,7 @@ def tableResults (table : DecisionTable) (variables : List (String × Value)) :
     Except Failure (List (List (String × Value))) := do
   let values ← table.inputs.mapM (readInput variables)
   let matching ← table.rules.filterM (ruleMatches values)
-  select table (← matching.mapM (ruleEntries table.outputs))
+  applyHitPolicy table (← matching.mapM (ruleEntries table.outputs))
 
 /-- A Map value in the Data semantics' key order; CIB's entry maps are `HashMap`s, whose order is no fact. -/
 def entryMap (entries : List (String × Value)) : Value :=
@@ -213,7 +201,7 @@ def mapResult (mapping : DecisionResultMapping) (results : List (List (String ×
 /-- The writes a Business Rule Task's decision makes: `(resultVariable, mapped value)`, or none without a result
 variable, since CIB applies no mapper then and its `decisionResult` is transient (`DecisionEvaluationUtil.java:79-87`).
 -/
-def run (program : Program) (work : RuleWork) (variables : List (String × Value)) :
+def runDecision (program : Program) (work : RuleWork) (variables : List (String × Value)) :
     Except Failure (List (String × Value)) := do
   let some key := work.decision.literal? | .error (.unsupported "work-rule-decision-expression")
   let some decision := program.decision? key | .error (.unsupported "work-rule-decision-missing")
@@ -223,4 +211,4 @@ def run (program : Program) (work : RuleWork) (variables : List (String × Value
   | none => .ok []
   | some name => .ok [(name, ← mapResult work.resultMapping results)]
 
-end Kernel.Feature.Work.Decision
+end Kernel.Feature.Decision

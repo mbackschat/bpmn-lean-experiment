@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_ParallelFork" targetNamespace="urn:bpmn-lean:scenarios:split-branch-order:parallel-fork">
+  <process id="Process_ParallelFork" name="Two automatic branches after a Parallel fork write one variable" isExecutable="true">
+    <startEvent id="Started" name="Started" />
+    <parallelGateway id="Fork" name="Fork" />
+    <task id="Zeta" name="Zeta">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:outputParameter name="outcome">zeta</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </task>
+    <task id="Alpha" name="Alpha">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:outputParameter name="outcome">alpha</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </task>
+    <parallelGateway id="Join" name="Join" />
+    <userTask id="Inspect" name="Inspect" />
+    <endEvent id="Finished" name="Finished" />
+    <sequenceFlow id="Flow_Started" sourceRef="Started" targetRef="Fork" />
+    <sequenceFlow id="Flow_Zeta" sourceRef="Fork" targetRef="Zeta" />
+    <sequenceFlow id="Flow_Alpha" sourceRef="Fork" targetRef="Alpha" />
+    <sequenceFlow id="Flow_ZetaDone" sourceRef="Zeta" targetRef="Join" />
+    <sequenceFlow id="Flow_AlphaDone" sourceRef="Alpha" targetRef="Join" />
+    <sequenceFlow id="Flow_Joined" sourceRef="Join" targetRef="Inspect" />
+    <sequenceFlow id="Flow_Inspected" sourceRef="Inspect" targetRef="Finished" />
+  </process>
+</definitions>

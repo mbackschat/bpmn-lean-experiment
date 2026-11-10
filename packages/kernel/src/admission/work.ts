@@ -16,7 +16,11 @@ import {
   assertNever,
   programCalledProcess,
   programProcessChildren,
+  elementActivity,
+  elementEnvelope,
   elementScope,
+  multiInstanceCounterNames,
+  parseJavaInt,
   scopeKindStart,
   type ActivityPayload,
   type CallBinding,
@@ -34,70 +38,67 @@ import {
 import * as Decision from "./work/decision.js";
 
 /**
- * Whether `work` carries mappings. A plain Task carries them when `plainTask` holds (`readsOwnScope`); a decision task
- * when `decisionTask` holds, since `feature/work.ts` `evaluateDecision` writes its result and maps its outputs
- * (PC-AUTO-08), though no compensation subject completes through it.
+ * What admission reads of a work kind, read in one place (`traits`): whether the work carries mappings (a plain Task's
+ * only where `readsOwnScope` holds; a decision task's, since `feature/work.ts` `evaluateDecision` writes its result and
+ * maps its outputs, PC-AUTO-08), whether it may be a compensation subject, which completes through the pipeline's
+ * `Hooks.completed` that `feature/work.ts` reaches for a single User Task or Service Task only, what one
+ * Multi-Instance instance submits (`instanceBody`), whether an occurrence no token began may do it
+ * (`beginsWithoutToken`), the names CIB installs from it (`declaredNames`) and the delegate token it binds.
  */
-function mapsData(plainTask: boolean, decisionTask: boolean, work: Work): boolean {
-  switch (work.tag) {
-    case WorkTag.User:
-    case WorkTag.Service:
-      return true;
-    case WorkTag.None:
-      return plainTask;
-    case WorkTag.Rule:
-      return decisionTask;
-    case WorkTag.Manual:
-    case WorkTag.Receive:
-    case WorkTag.Send:
-    case WorkTag.Script:
-    case WorkTag.Call:
-      return false;
-  }
-  return assertNever(work);
+interface Traits {
+  readonly mapsData: boolean;
+  readonly plainTask: boolean;
+  readonly compensable: boolean;
+  readonly instanceBody: boolean | null;
+  readonly beginsWithoutToken: boolean;
+  readonly names: readonly string[];
+  readonly handlerKey: string | null;
 }
+
+const noTraits: Traits = {
+  mapsData: false, plainTask: false, compensable: false, instanceBody: null, beginsWithoutToken: false, names: [], handlerKey: null,
+};
+
+/** The targets of the mappings CIB itself performs: every one except a BPMN Data Association, which it never runs. */
+const writtenTargets = (mappings: readonly Mapping[]): string[] =>
+  mappings.filter((mapping) => mapping.dialect !== MappingDialect.DataAssociation).map((mapping) => mapping.target);
 
 /**
- * The work one instance of a Multi-Instance Activity may do: whether its completion submits the loop's output data
- * item, or `null` for work no instance may do. A User Task submits it; a Service Task's effect result is the empty
- * OutputSet, since a Multi-Instance Activity has no mappings (PC-MI-02); a Receive Task's delivery carries no payload
- * (PC-HUM-06). The Multi-Instance shape itself is admitted by `admission/multi-instance.ts`.
+ * A User Task submits the loop's output data item; a Service Task's effect result is the empty OutputSet, since a
+ * Multi-Instance Activity has no mappings (PC-MI-02); a Receive Task's delivery carries no payload (PC-HUM-06). The
+ * Multi-Instance shape itself is admitted by `admission/multi-instance.ts`.
  */
-export function instanceBody(work: Work): boolean | null {
+function traits(work: Work): Traits {
   switch (work.tag) {
-    case WorkTag.User:
-      return true;
-    case WorkTag.Service:
-    case WorkTag.Receive:
-      return false;
     case WorkTag.None:
+      return { ...noTraits, plainTask: true, beginsWithoutToken: true };
     case WorkTag.Manual:
+      return { ...noTraits, beginsWithoutToken: true };
+    case WorkTag.User:
+      return { ...noTraits, mapsData: true, compensable: true, instanceBody: true, beginsWithoutToken: true,
+        names: work.payload.formFields.map(([key]) => key) };
+    case WorkTag.Receive:
+      return { ...noTraits, instanceBody: false };
+    case WorkTag.Service:
+      return { ...noTraits, mapsData: true, compensable: true, instanceBody: false, beginsWithoutToken: true,
+        handlerKey: work.payload.handlerKey };
     case WorkTag.Send:
+      return { ...noTraits, handlerKey: work.payload.handlerKey };
     case WorkTag.Script:
+      return { ...noTraits, names: work.payload.resultVariable === null ? [] : [work.payload.resultVariable] };
     case WorkTag.Rule:
+      return { ...noTraits, mapsData: true, names: work.payload.resultVariable === null ? [] : [work.payload.resultVariable] };
     case WorkTag.Call:
-      return null;
+      return { ...noTraits, names: writtenTargets([...work.payload.inputs, ...work.payload.outputs]) };
   }
   return assertNever(work);
 }
 
+/** The work one instance of a Multi-Instance Activity may do: whether it submits the output data item, else `null`. */
+export const instanceBody = (work: Work): boolean | null => traits(work).instanceBody;
+
 /** The work an occurrence no token began may do: a task without work, a User Task or a Service Task. */
-export function beginsWithoutToken(work: Work): boolean {
-  switch (work.tag) {
-    case WorkTag.None:
-    case WorkTag.Manual:
-    case WorkTag.User:
-    case WorkTag.Service:
-      return true;
-    case WorkTag.Receive:
-    case WorkTag.Send:
-    case WorkTag.Script:
-    case WorkTag.Rule:
-    case WorkTag.Call:
-      return false;
-  }
-  return assertNever(work);
-}
+export const beginsWithoutToken = (work: Work): boolean => traits(work).beginsWithoutToken;
 
 /**
  * A plain Task completes with the empty submission, so its outputs have a source only under
@@ -109,14 +110,40 @@ function readsOwnScope(options: ProfileOptions, outputs: readonly Mapping[]): bo
   return options.outputContext === OutputContext.ActivityScope && outputs.every((mapping) => mapping.dialect === MappingDialect.IoParameter);
 }
 
-function envelope(options: ProfileOptions, work: Work, fields: Envelope): string | null {
-  if (fields.inputs.length > 0 && !mapsData(false, true, work)) return "activity.inputMappings";
-  if (fields.outputs.length > 0 && !mapsData(readsOwnScope(options, fields.outputs), true, work)) return "activity.outputMappings";
-  if (fields.multiInstance !== null && instanceBody(work) === null) return "activity.multiInstanceBody";
-  // A compensation subject completes through the pipeline's `Hooks.completed`, which `feature/work.ts` reaches for a
-  // single User Task or Service Task only.
-  if (fields.compensationHandler !== null && (!mapsData(false, false, work) || fields.multiInstance !== null)) return "activity.compensationHandler";
+function workEnvelope(options: ProfileOptions, work: Traits, fields: Envelope): string | null {
+  if (fields.inputs.length > 0 && !work.mapsData) return "activity.inputMappings";
+  if (fields.outputs.length > 0 && !work.mapsData && !(work.plainTask && readsOwnScope(options, fields.outputs))) {
+    return "activity.outputMappings";
+  }
+  if (fields.multiInstance !== null && work.instanceBody === null) return "activity.multiInstanceBody";
+  if (fields.compensationHandler !== null && (!work.compensable || fields.multiInstance !== null)) return "activity.compensationHandler";
   return null;
+}
+
+/**
+ * The names CIB installs from the model as variables an expression may read: every element's parameter targets and
+ * loop item names, and its work's names (`traits`). A process-level item is none, since CIB parses no Property, Data
+ * Object or process I/O specification (`BpmnParse.java:726`).
+ */
+function declaredNames(program: Program): string[] {
+  return program.elements.flatMap((element) => {
+    const fields = elementEnvelope(element);
+    const loop = fields?.multiInstance ?? null;
+    const performed = elementActivity(element);
+    return [
+      ...(fields === null ? [] : writtenTargets([...fields.inputs, ...fields.outputs])),
+      ...(loop === null ? [] : [loop.elementVariable, loop.inputDataItem, loop.inputDataItemName].filter((name): name is string => name !== null)),
+      ...(performed === null ? [] : traits(performed[1].work).names),
+    ];
+  });
+}
+
+/**
+ * CIB resolves a delegate token against the variables before its beans (`JuelExpressionManager.java:144-150`), so a
+ * declared name equal to it shadows the handler and the job fails (CIB-LIM-0017).
+ */
+function handlerKey(program: Program, token: string | null): string | null {
+  return token !== null && declaredNames(program).includes(token) ? "work.handlerKeyName" : null;
 }
 
 /**
@@ -183,9 +210,9 @@ function callBinding(binding: CallBinding): string | null {
 /**
  * CIB drops a Call output whose target is a Multi-Instance counter before writing it
  * (`CallableElementActivityBehavior.java:48,135,160-166`); the counters belong to the loop (BPMN 2.0.2 Table 10.30)
- * (PC-SCOPE-04).
+ * (PC-SCOPE-04). `loopCounter` is not among them: CIB's list holds only the three instance counts.
  */
-const multiInstanceCounters: readonly string[] = ["nrOfInstances", "nrOfActiveInstances", "nrOfCompletedInstances"];
+const multiInstanceCounters: readonly string[] = multiInstanceCounterNames.filter((name) => name !== "loopCounter");
 
 /**
  * A Call names a called process literally that the program carries, not the root process and without an Event
@@ -240,10 +267,7 @@ function utcInstant(value: string): boolean {
  * (`TaskDecorator#initializeTaskPriority`); a `+` sign, which Java also reads, is refused rather than carried.
  */
 function javaInt(value: string): boolean {
-  const digits = value.startsWith("-") ? value.slice(1) : value;
-  if (digits.length === 0 || ![...digits].every((char) => char >= "0" && char <= "9")) return false;
-  const number = BigInt(value);
-  return -2147483648n <= number && number <= 2147483647n;
+  return !value.startsWith("+") && parseJavaInt(value) !== null;
 }
 
 /** A field's literal value satisfies `admitted`; an expression waits for the Task fields JUEL level. */
@@ -303,7 +327,7 @@ function work(program: Program, payload: ActivityPayload): string | null {
     case WorkTag.Script:
       return "work.script";
     case WorkTag.Rule:
-      return Decision.task(program, assigned.payload);
+      return Decision.task(program, assigned.payload, payload.envelope);
     case WorkTag.Call:
       return call(program, assigned.payload);
   }
@@ -311,5 +335,6 @@ function work(program: Program, payload: ActivityPayload): string | null {
 }
 
 export function activity(program: Program, payload: ActivityPayload): string | null {
-  return work(program, payload) ?? envelope(program.options, payload.work, payload.envelope);
+  const read = traits(payload.work);
+  return work(program, payload) ?? handlerKey(program, read.handlerKey) ?? workEnvelope(program.options, read, payload.envelope);
 }

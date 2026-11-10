@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_ErrorPathChainedOutputs" targetNamespace="urn:bpmn-lean:scenarios:mapping-order:error-path-chained-outputs">
+  <error id="Error_Fail" name="Fail" errorCode="FAIL" />
+  <process id="Process_ErrorPathChainedOutputs" name="Map a Sub-Process output from an earlier output's target on the Error path" isExecutable="true">
+    <startEvent id="StartEvent_Start" />
+    <subProcess id="SubProcess_Pack" name="Pack">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="amount">${incoming}</camunda:inputParameter>
+          <camunda:outputParameter name="total">${amount}</camunda:outputParameter>
+          <camunda:outputParameter name="summary">${total}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+      <startEvent id="StartEvent_PackBegin" />
+      <userTask id="UserTask_Place" name="Place" />
+      <endEvent id="EndEvent_PackFail">
+        <errorEventDefinition id="ErrorEventDefinition_PackFail" errorRef="Error_Fail" />
+      </endEvent>
+      <sequenceFlow id="Flow_PackBegin_Place" sourceRef="StartEvent_PackBegin" targetRef="UserTask_Place" />
+      <sequenceFlow id="Flow_Place_PackFail" sourceRef="UserTask_Place" targetRef="EndEvent_PackFail" />
+    </subProcess>
+    <boundaryEvent id="BoundaryEvent_PackFailed" attachedToRef="SubProcess_Pack" cancelActivity="true">
+      <errorEventDefinition id="ErrorEventDefinition_PackFailed" errorRef="Error_Fail" />
+    </boundaryEvent>
+    <userTask id="UserTask_Observe" name="Observe">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="seenTotal">${total}</camunda:inputParameter>
+          <camunda:inputParameter name="seenSummary">${summary}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <endEvent id="EndEvent_Packed" />
+    <endEvent id="EndEvent_Done" />
+    <sequenceFlow id="Flow_Start_Pack" sourceRef="StartEvent_Start" targetRef="SubProcess_Pack" />
+    <sequenceFlow id="Flow_Pack_Packed" sourceRef="SubProcess_Pack" targetRef="EndEvent_Packed" />
+    <sequenceFlow id="Flow_PackFailed_Observe" sourceRef="BoundaryEvent_PackFailed" targetRef="UserTask_Observe" />
+    <sequenceFlow id="Flow_Observe_Done" sourceRef="UserTask_Observe" targetRef="EndEvent_Done" />
+  </process>
+</definitions>

@@ -28,7 +28,11 @@ import {
   ValueTag,
   assertNever,
   elementEnvelope,
+  isAscii,
+  multiInstanceCounterNames,
+  parseJavaInt,
   programElement,
+  withinJavaInt,
   type Envelope,
   type Expression,
   type Header,
@@ -60,7 +64,6 @@ import {
   type State,
 } from "../state.js";
 import { EvaluationTag, collectionItems, evalContext, hold, multiInstanceRunItems, type Ctx } from "../hooks.js";
-import { withinJavaInt } from "../il/types/decision.js";
 
 function waitingIndex(slot: Iteration, index: number): readonly number[] {
   switch (slot.tag) {
@@ -84,20 +87,25 @@ function isActive(slot: Iteration): boolean {
   return assertNever(slot);
 }
 
-/** The instances to begin now: every waiting one in parallel, else the first waiting one once none runs. */
-function opening(mode: MultiInstanceMode, instances: readonly Iteration[]): readonly number[] {
-  const waiting = instances.flatMap(waitingIndex);
-  const running = instances.some(isActive);
+/** The feature's one match on the mode; every mode-specific rule below reads it. */
+function sequential(mode: MultiInstanceMode): boolean {
   switch (mode) {
     case MultiInstanceMode.Parallel:
-      return waiting;
+      return false;
     case MultiInstanceMode.Sequential:
-      return running ? [] : waiting.slice(0, 1);
+      return true;
   }
   return assertNever(mode);
 }
 
-function filled(slot: Iteration): boolean {
+/** The instances to begin now: every waiting one in parallel, else the first waiting one once none runs. */
+function opening(mode: MultiInstanceMode, instances: readonly Iteration[]): readonly number[] {
+  const waiting = instances.flatMap(waitingIndex);
+  if (!sequential(mode)) return waiting;
+  return instances.some(isActive) ? [] : waiting.slice(0, 1);
+}
+
+function slotFilled(slot: Iteration): boolean {
   switch (slot.tag) {
     case IterationTag.Completed:
       return true;
@@ -119,7 +127,7 @@ function output(slot: Iteration): Value | null {
   return assertNever(slot);
 }
 
-function outputs(run: MultiInstanceRun): readonly Value[] {
+function completedOutputs(run: MultiInstanceRun): readonly Value[] {
   return run.instances.flatMap((slot) => {
     const value = output(slot);
     return value === null ? [] : [value];
@@ -225,10 +233,9 @@ function counted(rule: MultiInstanceCount, count: bigint): Result<number> {
 /** `Integer.parseInt` over ASCII text: an optional sign and at least one digit, within `int`. */
 function parsedCount(rule: MultiInstanceCount, text: string): Result<number> {
   // Dynamic-only: `Integer.parseInt` reads Unicode digits the kernel does not model.
-  if (!/^[\u0000-\u007f]*$/u.test(text)) return failed(FailureTag.Unsupported, "juel.nonAsciiText");
-  if (!/^[+-]?[0-9]+$/u.test(text)) return notANumber;
-  const parsed = BigInt(text.startsWith("+") ? text.slice(1) : text);
-  return withinJavaInt(parsed) ? counted(rule, parsed) : notANumber;
+  if (!isAscii(text)) return failed(FailureTag.Unsupported, "juel.nonAsciiText");
+  const parsed = parseJavaInt(text);
+  return parsed === null ? notANumber : counted(rule, parsed);
 }
 
 /**
@@ -355,7 +362,7 @@ function submitted(loop: MultiInstance, run: MultiInstanceRun, writes: readonly 
 
 /** The body is done: complete it, writing the output collection when every slot is filled. */
 function finish(ctx: Ctx, loop: MultiInstance, run: MultiInstanceRun, state: State): State {
-  const writes = run.instances.every(filled) ? written(ctx, loop, run.collection, outputs(run)) : [];
+  const writes = run.instances.every(slotFilled) ? written(ctx, loop, run.collection, completedOutputs(run)) : [];
   return signal(state, completeSignal(run.occurrence, leaveOutgoing, writes, WriteRule.Outward));
 }
 
@@ -384,13 +391,7 @@ export function completeBody(
  */
 function evaluatesFinalCondition(ctx: Ctx, loop: MultiInstance): boolean {
   if (ctx.program.options.multiInstanceFinalBody === MultiInstanceFinalBody.ConditionEveryCompletion) return true;
-  switch (loop.mode) {
-    case MultiInstanceMode.Parallel:
-      return true;
-    case MultiInstanceMode.Sequential:
-      return false;
-  }
-  return assertNever(loop.mode);
+  return !sequential(loop.mode);
 }
 
 function activeIn(slot: Iteration, scope: number): boolean {
@@ -404,8 +405,6 @@ function activeIn(slot: Iteration, scope: number): boolean {
   return assertNever(slot);
 }
 
-const counterNames: readonly string[] = ["loopCounter", "nrOfInstances", "nrOfActiveInstances", "nrOfCompletedInstances"];
-
 /**
  * What a completion condition reads: the completing instance's scope occurrence, before it is left, so the item and the
  * instance's result locals are visible (BPMN 2.0.2 §13.3.7), and under `cibLocals` CIB's counters (CIB-INT-0018): the
@@ -415,11 +414,12 @@ const counterNames: readonly string[] = ["loopCounter", "nrOfInstances", "nrOfAc
 function conditionContext(ctx: Ctx, loop: MultiInstance, run: MultiInstanceRun, index: number, scope: number, state: State): EvalContext {
   const context = evalContext(state, scope);
   const total = run.instances.length;
-  const completed = run.instances.filter(filled).length;
-  const active = loop.mode === MultiInstanceMode.Sequential ? 1 : total - completed;
+  const completed = run.instances.filter(slotFilled).length;
+  const active = sequential(loop.mode) ? 1 : total - completed;
   const int = (value: number): Value => ({ tag: ValueTag.Int, value });
+  const [loopCounter, instances, activeInstances, completedInstances] = multiInstanceCounterNames;
   const counters: readonly Binding[] = ctx.program.options.multiInstanceCounters === MultiInstanceCounters.CibLocals
-    ? [["loopCounter", int(index)], ["nrOfInstances", int(total)], ["nrOfActiveInstances", int(active)], ["nrOfCompletedInstances", int(completed)]]
+    ? [[loopCounter, int(index)], [instances, int(total)], [activeInstances, int(active)], [completedInstances, int(completed)]]
     : [];
   return { ...context, variables: [...counters, ...context.variables] };
 }
@@ -464,14 +464,14 @@ export function instanceCompleted(ctx: Ctx, body: number, occurrence: Occurrence
   const results = loop.outputDataItem === null ? writes.map(([name]) => name) : [];
   const item = itemName(ctx, loop);
   // Dynamic-only: an effect result's names are the run's data.
-  if (results.some((name) => counterNames.includes(name) || name === item)) return failed(FailureTag.Unsupported, "multiInstance.resultShadowsInstance");
+  if (results.some((name) => multiInstanceCounterNames.includes(name) || name === item)) return failed(FailureTag.Unsupported, "multiInstance.resultShadowsInstance");
   const instances = [...found.instances];
   instances[index] = { tag: IterationTag.Completed, output: value.value };
   const completed: MultiInstanceRun = { ...found, instances };
-  const exhausted = completed.instances.every(filled);
+  const exhausted = completed.instances.every(slotFilled);
   const stop = exhausted && !evaluatesFinalCondition(ctx, loop) ? committed(false) : stops(ctx, loop, completed, index, occurrence.scope, results, state);
   if (!stop.ok) return stop;
-  const kept = loop.mode === MultiInstanceMode.Sequential ? [...new Set([...(found.results ?? []), ...results])] : [];
+  const kept = sequential(loop.mode) ? [...new Set([...(found.results ?? []), ...results])] : [];
   const run: MultiInstanceRun = { ...completed, results: kept };
   const left = setRun(leaveScope(state, occurrence.scope), run);
   if (stop.value || exhausted) return committed(finish(ctx, loop, run, left));

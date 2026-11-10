@@ -38,6 +38,9 @@ import {
   MessageCorrelation,
   MultiInstanceBinding,
   MultiInstanceCount,
+  BusinessRuleTask,
+  InclusiveJoinReach,
+  BranchSchedule,
   MultiInstanceCounters,
   MultiInstanceInputFailure,
   MultiInstanceFinalBody,
@@ -98,9 +101,9 @@ import type { Binding } from "../state.js";
 import { decisionResource } from "./codec/decision.js";
 import {
   accept, bool, entriesFromJson, entryToJson, inductive, isObject, list, mapDecoded, members, nat, nullary, objVal, objValD,
-  option, pair, refuse, string, struct, valueCodec, type Codec, type Decoded, type JsonValue,
+  option, pair, refuseDecoding, string, struct, valueCodec, type Codec, type Decoded, type JsonValue,
 } from "./codec/value.js";
-export { accept, isObject, mapDecoded, nat, objVal, objValD, refuse, string, valueCodec, type Decoded, type JsonValue };
+export { accept, isObject, mapDecoded, nat, objVal, objValD, refuseDecoding, string, valueCodec, type Decoded, type JsonValue };
 
 // The kernel IL, in `Kernel.IL.Types` declaration order.
 
@@ -122,7 +125,7 @@ const juelCall: Codec<JuelCall> = {
     const listed = juelMethod.decode(json);
     if (listed.ok) return accept({ tag: JuelCallTag.Listed, method: listed.value });
     const name = string.decode(json);
-    return name.ok ? accept({ tag: JuelCallTag.Other, name: name.value }) : refuse(`JuelCall: ${name.refusal}`);
+    return name.ok ? accept({ tag: JuelCallTag.Other, name: name.value }) : refuseDecoding(`JuelCall: ${name.refusal}`);
   },
   encode: (call) => {
     switch (call.tag) {
@@ -271,10 +274,11 @@ const work = inductive<Work>("Work", {
     }),
   },
   [WorkTag.Receive]: { payload: struct("ReceiveWork", { message: messageTrigger, instantiate: bool }) },
-  [WorkTag.Service]: { payload: struct("ServiceWork", { protocol: string, operation: string }) },
+  [WorkTag.Service]: { payload: struct("ServiceWork", { protocol: string, operation: string, handlerKey: option(string) }) },
   [WorkTag.Send]: {
     payload: struct("SendWork", {
       binding: effectBinding,
+      handlerKey: option(string),
       recipient: option(valueSource),
       correlation: list(correlationCriterion),
       messageRef: option(string),
@@ -441,6 +445,9 @@ const profileOptions = struct<ProfileOptions>("ProfileOptions", {
   multiInstanceCounters: members("MultiInstanceCounters", MultiInstanceCounters),
   multiInstanceInputFailure: members("MultiInstanceInputFailure", MultiInstanceInputFailure),
   multiInstanceCount: members("MultiInstanceCount", MultiInstanceCount),
+  businessRuleTask: members("BusinessRuleTask", BusinessRuleTask),
+  inclusiveJoinReach: members("InclusiveJoinReach", InclusiveJoinReach),
+  branchSchedule: members("BranchSchedule", BranchSchedule),
 });
 
 const program = struct<Program>("Program", {
@@ -538,9 +545,9 @@ export function parseStrict(text: string): Decoded<unknown> {
   try {
     json = JSON.parse(text);
   } catch (error) {
-    return refuse(coded(error instanceof Error ? error.message : String(error)));
+    return refuseDecoding(coded(error instanceof Error ? error.message : String(error)));
   }
-  return textMembers(text) === jsonMembers(json) ? accept(json) : refuse(`${CodecRefusalCode.DuplicateField}: an object repeats a key`);
+  return textMembers(text) === jsonMembers(json) ? accept(json) : refuseDecoding(`${CodecRefusalCode.DuplicateField}: an object repeats a key`);
 }
 
 const sortedKeys = (json: Readonly<Record<string, unknown>>): string[] => Object.keys(json).sort(compareStrings);
@@ -573,7 +580,7 @@ export function shapeRefusal(path: string, input: unknown, canonical: unknown): 
 /** Decode `json` through `decode` and accept it only in the canonical encoding `encode` gives. */
 export function strictly<T>(decode: (json: unknown) => Decoded<T>, encode: (value: T) => JsonValue, json: unknown): Decoded<T> {
   const decoded = decode(json);
-  if (!decoded.ok) return refuse(coded(decoded.refusal));
+  if (!decoded.ok) return refuseDecoding(coded(decoded.refusal));
   const refusal = shapeRefusal("$", json, encode(decoded.value));
-  return refusal === null ? decoded : refuse(refusal);
+  return refusal === null ? decoded : refuseDecoding(refusal);
 }

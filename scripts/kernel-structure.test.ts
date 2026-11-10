@@ -5,6 +5,7 @@ import path from "node:path";
 import { test } from "node:test";
 
 import {
+  duplicateNameFindings,
   Layer,
   layeringFindings,
   leanModules,
@@ -29,6 +30,10 @@ test("kernel files stay within the shape and size ceilings", () => {
 
 test("every Lean executable module has a TypeScript pair of the same name", () => {
   assert.deepEqual(pairingFindings(), []);
+});
+
+test("a definition's short name appears once per language package", () => {
+  assert.deepEqual(duplicateNameFindings(), []);
 });
 
 test("no profile identifier appears in the kernel", () => {
@@ -56,6 +61,33 @@ test("layering rejects a feature importing another feature, an admission importi
     "Kernel.Admission.Flow: imports Lean.Data.Json outside the kernel",
     "Kernel.Publish: dispatch module imports dispatch module Kernel.Step",
   ]);
+});
+
+test("the name clause rejects a helper defined twice and exempts only the two halves of one family", () => {
+  const root = mkdtempSync(path.join(tmpdir(), "kernel-names-"));
+  try {
+    const sources: Readonly<Record<string, string>> = {
+      "Kernel/Feature/Flow.lean": "def exclusive := 1\ndef isAscii := 1\n",
+      "Kernel/Admission/Flow.lean": "def exclusive := 1\n",
+      "Kernel/Feature/Data/Juel.lean": "private def isAscii := 1\n",
+      "Kernel/Laws/Flow.lean": "def exclusive := 1\n",
+      "packages/kernel/src/feature/flow.ts": "function filled() {}\n",
+      "packages/kernel/src/feature/multi-instance.ts": "export function filled() {}\n",
+      "packages/bpmn-source/src/a.ts": "function filled() {}\n",
+      "packages/bpmn-source/src/b.ts": "export const filled = (item: number): number => item;\n",
+    };
+    for (const [file, text] of Object.entries(sources)) {
+      mkdirSync(path.dirname(path.join(root, file)), { recursive: true });
+      writeFileSync(path.join(root, file), text);
+    }
+    assert.deepEqual(duplicateNameFindings(root), [
+      "filled is defined in packages/bpmn-source/src/a.ts, packages/bpmn-source/src/b.ts",
+      "filled is defined in packages/kernel/src/feature/flow.ts, packages/kernel/src/feature/multi-instance.ts",
+      "isAscii is defined in Kernel/Feature/Data/Juel.lean, Kernel/Feature/Flow.lean",
+    ]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
 });
 
 test("pairing rejects a Lean module without a TypeScript pair and the reverse", () => {

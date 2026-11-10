@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             id="Definitions_BoundaryExit" targetNamespace="urn:bpmn-lean:scenarios:inclusive-join-activation:boundary-exit">
+  <message id="Message_Withdraw" name="withdraw" />
+  <process id="Process_BoundaryExit" name="A join input whose only upstream work is withdrawn by its Boundary Event" isExecutable="true">
+    <startEvent id="CaseOpened" name="Case opened" />
+    <parallelGateway id="SplitCase" name="Split case" gatewayDirection="Diverging" />
+    <userTask id="ReviewA" name="Review A" />
+    <userTask id="ReviewB" name="Review B" />
+    <boundaryEvent id="Withdrawn" name="Withdrawn" attachedToRef="ReviewB">
+      <messageEventDefinition id="Withdrawn_Message" messageRef="Message_Withdraw" />
+    </boundaryEvent>
+    <endEvent id="BWithdrawn" name="B withdrawn" />
+    <inclusiveGateway id="Reviewed" name="Reviewed" gatewayDirection="Converging" />
+    <userTask id="Decide" name="Decide" />
+    <endEvent id="CaseDecided" name="Case decided" />
+    <sequenceFlow id="Flow_Opened" sourceRef="CaseOpened" targetRef="SplitCase" />
+    <sequenceFlow id="Flow_ToA" sourceRef="SplitCase" targetRef="ReviewA" />
+    <sequenceFlow id="Flow_ToB" sourceRef="SplitCase" targetRef="ReviewB" />
+    <sequenceFlow id="Flow_ADone" sourceRef="ReviewA" targetRef="Reviewed" />
+    <sequenceFlow id="Flow_BDone" sourceRef="ReviewB" targetRef="Reviewed" />
+    <sequenceFlow id="Flow_Withdrawn" sourceRef="Withdrawn" targetRef="BWithdrawn" />
+    <sequenceFlow id="Flow_Reviewed" sourceRef="Reviewed" targetRef="Decide" />
+    <sequenceFlow id="Flow_Decided" sourceRef="Decide" targetRef="CaseDecided" />
+  </process>
+</definitions>

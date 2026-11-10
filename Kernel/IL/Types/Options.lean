@@ -154,6 +154,11 @@ inductive MultiInstanceCounters where
   | cibLocals
   deriving DecidableEq, Repr
 
+/-- The names CIB-INT-0018 binds, in `cibLocals`' order: the instance's index, the count, the active and the completed
+instances (`MultiInstanceActivityBehavior.java:49-54`). -/
+def multiInstanceCounterNames : List String :=
+  ["loopCounter", "nrOfInstances", "nrOfActiveInstances", "nrOfCompletedInstances"]
+
 /-- What a Multi-Instance count or collection that is unavailable or of the wrong kind does. -/
 inductive MultiInstanceInputFailure where
   /-- BPMN 2.0.2 §10.4.2: an unavailable input holds the occurrence; a wrong kind is a semantic failure. -/
@@ -177,6 +182,36 @@ inductive OutputContext where
   | submission
   /-- CIB-EXT-0031: the variables visible from the Activity's own scope, its captured inputs first. -/
   | activityScope
+  deriving DecidableEq, Repr
+
+/-- What a Business Rule Task executes. -/
+inductive BusinessRuleTask where
+  /-- BPMN 2.0.2 §10.3.3 leaves the rule engine open, so a Business Rule Task has no meaning the kernel executes. -/
+  | refused
+  /-- CIB-EXT-0032: `camunda:decisionRef` names a DMN 1.3 decision table the program carries
+  ([decision semantics](../../../docs/kernel/semantics/DECISION-SEMANTICS-SPEC.md)). -/
+  | decisionTable
+  deriving DecidableEq, Repr
+
+/-- Where a position held by an element continues when a converging Inclusive Gateway asks whether it can still reach
+one of its empty inputs ([flow semantics](../../../docs/kernel/semantics/FLOW-SEMANTICS-SPEC.md#inclusive-join-activation-and-reach)). -/
+inductive InclusiveJoinReach where
+  /-- BPMN 2.0.2 Table 13.3 leaves it open; the standards reading also follows the host's Boundary Events (§10.5.4). -/
+  | withBoundaries
+  /-- CIB-INT-0020: `InclusiveGatewayActivityBehavior#isReachable` follows only outgoing transitions. -/
+  | outgoingOnly
+  deriving DecidableEq, Repr
+
+/-- How one closure orders the branches of a split. -/
+inductive BranchSchedule where
+  /-- BPMN 2.0.2 Table 13.1, §13.3.1: branches are concurrent and any interleaving is permitted, so admission refuses a
+  split one of whose branches writes a name another reads or writes in the closure (`flow.concurrentWrite`), and the
+  closure's order is immaterial. -/
+  | orderInvariant
+  /-- CIB-OP-0016: in Sequence Flow declaration order, each branch to its next wait, join or end before the next starts
+  (`PvmAtomicOperationTransitionDestroyScope:128-134`, `CommandInvocationContext:95,139`), an idle scope occurrence
+  completing before the next token moves (`PvmAtomicOperationActivityEnd:105`). -/
+  | declarationDepthFirst
   deriving DecidableEq, Repr
 
 structure ProfileOptions where
@@ -210,6 +245,9 @@ structure ProfileOptions where
   multiInstanceCounters : MultiInstanceCounters := .none
   multiInstanceInputFailure : MultiInstanceInputFailure := .hold
   multiInstanceCount : MultiInstanceCount := .integer
+  businessRuleTask : BusinessRuleTask := .refused
+  inclusiveJoinReach : InclusiveJoinReach := .withBoundaries
+  branchSchedule : BranchSchedule := .orderInvariant
   deriving Repr
 
 end Kernel

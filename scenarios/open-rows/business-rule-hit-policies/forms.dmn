@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" id="Definitions_DecisionForms" name="Decision forms" namespace="urn:bpmn-lean:business-rule-decision-forms">
+  <decision id="atMost" name="Inclusive and exclusive upper comparisons">
+    <decisionTable id="DecisionTable_atMost" hitPolicy="COLLECT">
+      <input id="Input_atMost_1" label="score">
+        <inputExpression id="InputExpression_atMost_1" typeRef="integer"><text>score</text></inputExpression>
+      </input>
+      <output id="Output_atMost_label" name="label" typeRef="string" />
+      <rule id="Rule_atMost_1">
+        <inputEntry id="InputEntry_atMost_1_1"><text>&lt;= 10</text></inputEntry>
+        <outputEntry id="OutputEntry_atMost_1_1"><text>"atMost10"</text></outputEntry>
+      </rule>
+      <rule id="Rule_atMost_2">
+        <inputEntry id="InputEntry_atMost_2_1"><text>&lt; 10</text></inputEntry>
+        <outputEntry id="OutputEntry_atMost_2_1"><text>"below10"</text></outputEntry>
+      </rule>
+      <rule id="Rule_atMost_3">
+        <inputEntry id="InputEntry_atMost_3_1"><text>&gt;= 10</text></inputEntry>
+        <outputEntry id="OutputEntry_atMost_3_1"><text>"atLeast10"</text></outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <decision id="negatives" name="Negative number literals">
+    <decisionTable id="DecisionTable_negatives" hitPolicy="COLLECT">
+      <input id="Input_negatives_1" label="score">
+        <inputExpression id="InputExpression_negatives_1" typeRef="integer"><text>score</text></inputExpression>
+      </input>
+      <output id="Output_negatives_label" name="label" typeRef="string" />
+      <rule id="Rule_negatives_1">
+        <inputEntry id="InputEntry_negatives_1_1"><text>-5</text></inputEntry>
+        <outputEntry id="OutputEntry_negatives_1_1"><text>"minusFive"</text></outputEntry>
+      </rule>
+      <rule id="Rule_negatives_2">
+        <inputEntry id="InputEntry_negatives_2_1"><text>[-7..-3]</text></inputEntry>
+        <outputEntry id="OutputEntry_negatives_2_1"><text>"minusRange"</text></outputEntry>
+      </rule>
+      <rule id="Rule_negatives_3">
+        <inputEntry id="InputEntry_negatives_3_1"><text>&lt; -10</text></inputEntry>
+        <outputEntry id="OutputEntry_negatives_3_1"><text>"belowMinusTen"</text></outputEntry>
+      </rule>
+      <rule id="Rule_negatives_4">
+        <inputEntry id="InputEntry_negatives_4_1"><text>&gt; -1</text></inputEntry>
+        <outputEntry id="OutputEntry_negatives_4_1"><text>"aboveMinusOne"</text></outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <decision id="halves" name="Numbers written without a whole part">
+    <decisionTable id="DecisionTable_halves" hitPolicy="COLLECT">
+      <input id="Input_halves_1" label="score">
+        <inputExpression id="InputExpression_halves_1" typeRef="integer"><text>score</text></inputExpression>
+      </input>
+      <output id="Output_halves_label" name="label" typeRef="string" />
+      <rule id="Rule_halves_1">
+        <inputEntry id="InputEntry_halves_1_1"><text>&lt; .5</text></inputEntry>
+        <outputEntry id="OutputEntry_halves_1_1"><text>"belowHalf"</text></outputEntry>
+      </rule>
+      <rule id="Rule_halves_2">
+        <inputEntry id="InputEntry_halves_2_1"><text>&gt; -.5</text></inputEntry>
+        <outputEntry id="OutputEntry_halves_2_1"><text>"aboveMinusHalf"</text></outputEntry>
+      </rule>
+      <rule id="Rule_halves_3">
+        <inputEntry id="InputEntry_halves_3_1"><text>.5</text></inputEntry>
+        <outputEntry id="OutputEntry_halves_3_1"><text>"half"</text></outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <decision id="inverted" name="An interval whose low end exceeds its high end">
+    <decisionTable id="DecisionTable_inverted" hitPolicy="COLLECT">
+      <input id="Input_inverted_1" label="score">
+        <inputExpression id="InputExpression_inverted_1" typeRef="integer"><text>score</text></inputExpression>
+      </input>
+      <output id="Output_inverted_label" name="label" typeRef="string" />
+      <rule id="Rule_inverted_1">
+        <inputEntry id="InputEntry_inverted_1_1"><text>[70..40]</text></inputEntry>
+        <outputEntry id="OutputEntry_inverted_1_1"><text>"inverted"</text></outputEntry>
+      </rule>
+      <rule id="Rule_inverted_2">
+        <inputEntry id="InputEntry_inverted_2_1"><text>-</text></inputEntry>
+        <outputEntry id="OutputEntry_inverted_2_1"><text>"any"</text></outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <decision id="escapes" name="String literals with escapes">
+    <decisionTable id="DecisionTable_escapes" hitPolicy="UNIQUE">
+      <input id="Input_escapes_1" label="channel">
+        <inputExpression id="InputExpression_escapes_1" typeRef="string"><text>channel</text></inputExpression>
+      </input>
+      <output id="Output_escapes_label" name="label" typeRef="string" />
+      <rule id="Rule_escapes_1">
+        <inputEntry id="InputEntry_escapes_1_1"><text>"a\"b"</text></inputEntry>
+        <outputEntry id="OutputEntry_escapes_1_1"><text>"quote"</text></outputEntry>
+      </rule>
+      <rule id="Rule_escapes_2">
+        <inputEntry id="InputEntry_escapes_2_1"><text>"a\\b"</text></inputEntry>
+        <outputEntry id="OutputEntry_escapes_2_1"><text>"backslash"</text></outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <decision id="flags" name="Boolean and null output literals">
+    <decisionTable id="DecisionTable_flags" hitPolicy="UNIQUE">
+      <input id="Input_flags_1" label="score">
+        <inputExpression id="InputExpression_flags_1" typeRef="integer"><text>score</text></inputExpression>
+      </input>
+      <output id="Output_flags_approved" name="approved" typeRef="boolean" />
+      <output id="Output_flags_note" name="note" typeRef="string" />
+      <rule id="Rule_flags_1">
+        <inputEntry id="InputEntry_flags_1_1"><text>&lt; 50</text></inputEntry>
+        <outputEntry id="OutputEntry_flags_1_1"><text>false</text></outputEntry>
+        <outputEntry id="OutputEntry_flags_1_2"><text>null</text></outputEntry>
+      </rule>
+      <rule id="Rule_flags_2">
+        <inputEntry id="InputEntry_flags_2_1"><text>&gt;= 50</text></inputEntry>
+        <outputEntry id="OutputEntry_flags_2_1"><text>true</text></outputEntry>
+        <outputEntry id="OutputEntry_flags_2_2"><text>"ok"</text></outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+</definitions>

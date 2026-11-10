@@ -41,7 +41,7 @@ The reader transcribes `Scanner` and `Parser` exactly, so the admitted language 
 
 - Outside an eval, text runs to the next unescaped `${` or `#{` (`Scanner.nextText`, `Scanner.java:233`). A backslash escapes a following `${` or `#{`; a backslash before any other character stays in the text; a backslash after a backslash appends one backslash and leaves the escape armed, so `\\${x}` is the text `\${x}`. EL §1.2.4 leaves this case open; the scanner settles it.
 - Inside an eval, whitespace is Java `Character.isWhitespace` (`Scanner.java:455`) restricted to ASCII: space, tab, line feed, vertical tab, form feed, carriage return and U+001C to U+001F. The non-ASCII whitespace Java also accepts (U+1680, U+2000 to U+2006, U+2008 to U+200A, U+2028, U+2029, U+205F, U+3000) leaves the text unparsed, so the ASCII rule below wins over Java's class; draft CIB-LIM-0009.
-- Identifiers are Java identifiers (`Scanner.java:408`); the reader admits only ASCII ones (start `[A-Za-z_$]`, part `[A-Za-z0-9_$]` and the ASCII identifier-ignorable controls U+0000 to U+0008 and U+000E to U+001B), and any non-ASCII character outside a string literal leaves the text unparsed.
+- Identifiers are Java identifiers (`Scanner.java:408`); the reader admits only ASCII ones (start `[A-Za-z_$]`, part `[A-Za-z0-9_$]` and the ASCII identifier-ignorable controls U+0000 to U+0008, U+000E to U+001B and U+007F), and any non-ASCII character outside a string literal leaves the text unparsed.
 - Reserved words are scanned as keywords, never identifiers: `and or not eq ne lt gt le ge true false null empty div mod instanceof` (`Scanner.java:149-164`, EL §1.14). `instanceof` has no production, so it is a syntax error.
 - An integer literal is a digit run read by `Long.valueOf` (`Parser.java:140`), leading zeros allowed; one above 2^63−1 is a syntax error. A floating literal (a `.` or an exponent, `Scanner.nextNumber`) is a `Double` (`Parser.java:154`).
 - A string literal is quoted by `'` or `"`; inside it only `\\` and the escaped quote are escapes, anything else is a syntax error (`Scanner.nextString`).
@@ -174,7 +174,7 @@ CIB wraps each in a `ProcessEngineException` (`el/JuelExpression.java:62-76`), w
 | Stimulus | CIB 2.2.0 | Kernel outcome under the CIB profile |
 |---|---|---|
 | a command (Start, task completion, a delivered Message or Signal, a variable update) | the command rolls back | `rolledBack` with the failure's code, state as before the command |
-| an effect result | the job that completed the effect fails | `ContinuationFailure.incident` turns it into the effect's technical failure ([CIB-EXT-0026](../../CIB-BPMN-RELATION-REGISTER.md#cib-ext-0026--a-continuation-failure-after-an-effect-result-fails-the-job)), unchanged |
+| an effect result | the job that completed the effect fails | `rolledBack` with the failure's code under `ContinuationFailure.rolledBack`, which both CIB profiles select: the effect result is refused and the effect stays open, a known disagreement with CIB's failed job. A profile selecting [CIB-EXT-0026](../../CIB-BPMN-RELATION-REGISTER.md#cib-ext-0026--a-continuation-failure-after-an-effect-result-fails-the-job) (`ContinuationFailure.incident`) would turn it into the effect's technical failure instead. |
 | a job continuation after an asynchronous boundary | the job fails, the boundary's commit stands | `unsupported` (`async-boundary-failure`, `Kernel.Step.deferred`, unchanged) |
 | a Timer firing | the timer job fails, retries, then raises an incident | `unsupported` (`timer-job-failure`) until a track models job failure there |
 
@@ -309,9 +309,12 @@ The completion condition takes Core's condition rule: the domain predicate, then
 Where a failure lands is selected by `ProfileOptions.multiInstanceInputFailure` (draft CIB-INT-0019):
 
 - `hold` is the standards reading: an unavailable collection holds the occurrence, as an unavailable InputSet does (BPMN 2.0.2 §10.4.2), and a present value the rules refuse is that rule's semantic failure (`multi-instance-collection` for a collection).
-- `rollback` is CIB's reading: every failure at the count and collection sites fails the operation, following the [stimulus table](#failure-semantics). It rolls back in a command, becomes the effect's technical failure after an effect result under CIB-EXT-0026, and is `unsupported` at a Timer.
+- `rollback` is CIB's reading: every failure at the count and collection sites fails the operation, following the [stimulus table](#failure-semantics). It rolls back in a command and after an effect result alike, since neither CIB profile selects CIB-EXT-0026, and is `unsupported` at a Timer.
 
-A completion-condition failure, a non-Boolean result included, follows the stimulus table under both values: it rolls back the User Task completion that reached it, or becomes the effect's technical failure after an effect result under CIB-EXT-0026. Under the standards profile only Simple Boolean reaches the condition, which never fails.
+A completion-condition failure, a non-Boolean result included, follows the stimulus table under both values: it rolls back the User Task completion or the effect result that reached it. Under the standards profile only Simple Boolean reaches the condition, which never fails. Neither CIB profile selects CIB-EXT-0026 or CIB-INT-0009, so two groups of [multi-instance-completion-failures](../../../scenarios/open-rows/multi-instance-completion-failures/README.md) are known disagreements with CIB:
+
+- Every `service-*` schedule: the kernel rolls back the effect result whose completion fails the condition, where CIB fails the job that completed the effect (CIB-EXT-0026 unselected).
+- `user-sequential-failing-final`, `user-sequential-not-boolean-final` and the two `service-sequential-*-final` schedules: the kernel evaluates the condition on the final sequential completion and fails, where CIB tests exhaustion first and completes the loop without evaluating it (CIB-INT-0009 unselected).
 
 ### Instance bounds
 

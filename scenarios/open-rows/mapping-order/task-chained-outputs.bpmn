@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_TaskChainedOutputs" targetNamespace="urn:bpmn-lean:scenarios:mapping-order:task-chained-outputs">
+  <process id="Process_TaskChainedOutputs" name="Map a later output from an earlier output's target" isExecutable="true">
+    <startEvent id="StartEvent_Start" />
+    <userTask id="UserTask_Decide" name="Decide">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:outputParameter name="total">${amount}</camunda:outputParameter>
+          <camunda:outputParameter name="summary">${total}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_Observe" name="Observe">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="seenTotal">${total}</camunda:inputParameter>
+          <camunda:inputParameter name="seenSummary">${summary}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <endEvent id="EndEvent_Done" />
+    <sequenceFlow id="Flow_Start_Decide" sourceRef="StartEvent_Start" targetRef="UserTask_Decide" />
+    <sequenceFlow id="Flow_Decide_Observe" sourceRef="UserTask_Decide" targetRef="UserTask_Observe" />
+    <sequenceFlow id="Flow_Observe_Done" sourceRef="UserTask_Observe" targetRef="EndEvent_Done" />
+  </process>
+</definitions>

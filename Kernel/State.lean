@@ -115,12 +115,14 @@ def Raised.isCancel : Raised → Bool
 
 /-- Where a raised event starts its search: the throwing element, the scope occurrence it ran in, and its
 activation. `host` is the Activity occurrence that raised it, whose boundaries are searched first; `none` for a
-throw Event. -/
+throw Event. `patch` is the result an effect's business Error carries while `host` still runs, its mapped Error-path
+outputs not yet written (`Propagation.raise`). -/
 structure Origin where
   element : ElementId
   scope : ScopeOccurrenceId
   activation : Nat
   host : Option Nat := none
+  patch : List (String × Value) := []
   deriving Repr
 
 /-- Where writes land (`Kernel.Feature.Data`). -/

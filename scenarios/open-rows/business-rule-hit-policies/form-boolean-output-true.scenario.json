@@ -1,0 +1,49 @@
+{
+  "kind": "scenario",
+  "id": "business-rule-hit-policies-form-boolean-output-true",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "business-rule-decision-forms-process",
+    "relativePath": "scenarios/open-rows/business-rule-hit-policies/forms.bpmn",
+    "sha256": "32f76b526ba3f50411d00aadf4cabf5fc2fce2ba0c84421c0a151deaf0bc7a69",
+    "sourceOverlay": null,
+    "decisions": [
+      {
+        "relativePath": "scenarios/open-rows/business-rule-hit-policies/forms.dmn",
+        "sha256": "58065efd47e5f5588d1540b252b5ed42c3b75d73a792502cf5fe291d2ebdc7b4"
+      }
+    ]
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start",
+      "instanceId": "Applicant_1",
+      "variables": [
+        {
+          "name": "score",
+          "value": {
+            "kind": "string",
+            "value": "60"
+          }
+        },
+        {
+          "name": "policy",
+          "value": {
+            "kind": "string",
+            "value": "flags"
+          }
+        }
+      ]
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.3"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/DmnBusinessRuleTaskActivityBehavior.java"
+    ]
+  }
+}

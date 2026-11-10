@@ -255,7 +255,7 @@ function apply(hooks: Hooks, definitions: readonly Definition[], progress: Progr
 }
 
 /** Fold the stimuli in order. */
-export function run(hooks: Hooks, definitions: readonly Definition[], stimuli: readonly Stimulus[]): Refusable<Result> {
+export function runStimuli(hooks: Hooks, definitions: readonly Definition[], stimuli: readonly Stimulus[]): Refusable<Result> {
   let progress: Progress = { instances: [], publications: [], inputFailures: [] };
   for (const stimulus of stimuli) {
     const next = apply(hooks, definitions, progress, stimulus);

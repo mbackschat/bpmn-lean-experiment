@@ -24,12 +24,14 @@ import {
   assertNever,
   distinctCount,
   elementEnvelope,
+  multiInstanceCounterNames,
   programElement,
   type ActivityPayload,
   type Envelope,
   type Header,
   type Mapping,
   type MultiInstance,
+  type Program,
   type RuleWork,
   type UserWork,
   type ValueSource,
@@ -64,6 +66,7 @@ import {
   type Occurrence,
   type OpenItem,
   type OpenKind,
+  type Origin,
   type Outcome,
   type Signal,
   type Result,
@@ -72,9 +75,11 @@ import {
   type State,
   type UserTaskDetail,
 } from "../state.js";
-import { admitValues, ctxEvaluateMappings, deliveryTriggerChannel, evalContext, hold, inValueDomain, messageTriggerChannel, type Ctx } from "../hooks.js";
+import {
+  admitValues, ctxEvaluateMappings, ctxEvaluateMappingsWith, ctxOutputReads, deliveryTriggerChannel, evalContext, hold, inValueDomain,
+  messageTriggerChannel, ownVariables, type Ctx,
+} from "../hooks.js";
 import * as Call from "./work/call.js";
-import * as Decision from "./work/decision.js";
 import * as Submission from "./work/submission.js";
 
 /** Open `kind` for the Activity and arm its boundaries on the occurrence. */
@@ -89,24 +94,28 @@ function openWork(kind: OpenKind, header: Header, payload: ActivityPayload, occu
  * (BPMN 2.0.2 §10.4.1): every output mapping evaluates against the submitted values alone, no name is submitted twice,
  * and no submitted value is superfluous (dropping it leaves the outputs evaluable). Anything else is rejected, so a
  * completion never commits a partial or unmediated write. Under `ResultValues.ActivityLocals` a superfluous value is an
- * Activity local that ends with the Activity, never written (CIB-EXT-0015).
+ * Activity local that ends with the Activity, never written (CIB-EXT-0015). The mappings also read `scope` behind the
+ * submitted values (`activityScope`), and `installed`, the values the completion set through the Activity's frame
+ * before its outputs run, where that write left them (`ctxOutputReads`); no name is installed twice either.
  */
-function outputs(
+function completionOutputs(
   ctx: Ctx,
   nowMs: number,
   unconsumed: ResultValues,
   mappings: readonly Mapping[],
-  scope: readonly Binding[],
+  scope: readonly [readonly Binding[], readonly Binding[]],
+  installed: readonly Binding[],
   values: readonly Binding[],
 ): Result<readonly Binding[]> {
   const evaluated = (variables: readonly Binding[]): Result<readonly Binding[] | null> =>
-    ctxEvaluateMappings(ctx, { variables: [...variables, ...scope], nowMs }, mappings);
+    ctxEvaluateMappingsWith(ctx, ctxOutputReads(ctx, nowMs, [...variables, ...scope[0]], installed, scope[1]), mappings);
   const fills = (variables: readonly Binding[]): boolean => {
     const result = evaluated(variables);
     return result.ok && result.value !== null;
   };
   const names = values.map(([name]) => name);
-  if (distinctCount(names) !== names.length) return failed(FailureTag.Rejected, "duplicate-output");
+  const given = [...names, ...installed.map(([name]) => name)];
+  if (distinctCount(given) !== given.length) return failed(FailureTag.Rejected, "duplicate-output");
   const written = evaluated(values);
   if (!written.ok) return failedWith(written.failure);
   if (written.value === null) return failed(FailureTag.Rejected, "output-unavailable");
@@ -168,6 +177,17 @@ function enterLocal(header: Header, inputs: readonly Binding[], occurrence: Occu
 }
 
 /**
+ * The sub-features Work joins through its own hooks record, since features never import each other (ARCHITECTURE-SPEC
+ * "Modules and build shape"); `registry.ts` fills it. `runDecision` is `feature/decision.ts` `runDecision`: the writes a decision
+ * task makes against the variables visible from its scope occurrence.
+ */
+export interface WorkHooks {
+  readonly runDecision: (program: Program, work: RuleWork, variables: readonly Binding[]) => Result<readonly Binding[]>;
+}
+
+export const defaultWorkHooks: WorkHooks = { runDecision: () => failed(FailureTag.Unsupported, "work-rule") };
+
+/**
  * An Activity's occurrence began. An input mapping whose source is unavailable makes the InputSet unavailable, and an
  * occurrence a token began waits for it (BPMN 2.0.2 §10.4.2), held in `FeatureSlots.held` until its scope occurrence
  * is cleared. An occurrence no token began has no flow to hold on, which is refused; it may do a task without work, a
@@ -175,7 +195,8 @@ function enterLocal(header: Header, inputs: readonly Binding[], occurrence: Occu
  * `camunda:inputParameter`, whose unresolved expression is no unavailable Data Input, rolls the command back instead
  * of holding (`ctxEvaluateMappings`).
  */
-export function arriveActivity(ctx: Ctx, header: Header, payload: ActivityPayload, occurrence: Occurrence, state: State): Outcome {
+export function arriveActivity(hooks: WorkHooks, ctx: Ctx, header: Header, payload: ActivityPayload, occurrence: Occurrence,
+  state: State): Outcome {
   const evaluated = ctxEvaluateMappings(ctx, evalContext(state, occurrence.scope), payload.envelope.inputs);
   if (!evaluated.ok) return failedWith(evaluated.failure);
   if (evaluated.value === null) {
@@ -194,8 +215,8 @@ export function arriveActivity(ctx: Ctx, header: Header, payload: ActivityPayloa
     case WorkTag.None: {
       // A plain Task completes with the empty submission; its output parameters, which admission admits only where
       // they read the Task's own scope (`activity.outputMappings`), are written as it leaves (CIB-EXT-0031).
-      const written = outputs(ctx, entered.logicalTimeMs, ResultValues.OutputSet, payload.envelope.outputs,
-        activityScope(ctx, entered, localScope(entered, occurrence.id) ?? occurrence.scope), []);
+      const written = completionOutputs(ctx, entered.logicalTimeMs, ResultValues.OutputSet, payload.envelope.outputs,
+        activityScope(ctx, entered, occurrence.id, occurrence.scope), [], []);
       if (!written.ok) return failedWith(written.failure);
       return committed(signal(entered, completeSignal(occurrence.id, leaveOutgoing, written.value, WriteRule.Outward)));
     }
@@ -221,7 +242,7 @@ export function arriveActivity(ctx: Ctx, header: Header, payload: ActivityPayloa
     case WorkTag.Script:
       return failed(FailureTag.Unsupported, "work-script");
     case WorkTag.Rule:
-      return evaluateDecision(ctx, payload, work.payload, occurrence, entered);
+      return evaluateDecision(hooks, ctx, payload, work.payload, occurrence, entered);
     case WorkTag.Call:
       if (!begunByToken) return failed(FailureTag.Unsupported, "scope-implicit-start");
       return Call.invoke(ctx, header, payload, work.payload, occurrence, entered);
@@ -232,15 +253,17 @@ export function arriveActivity(ctx: Ctx, header: Header, payload: ActivityPayloa
 /**
  * A decision task (PC-AUTO-07, PC-AUTO-08) reads its inputs, which CIB holds as locals of the task's scope
  * (`BpmnParse.java:2357-2360`), and writes the mapped result outward from that scope, as `setVariable` on the task's
- * execution does (`DecisionEvaluationUtil.java:82-86`), so a task-local of the result's name holds it. The write is its
- * own signal ahead of the completion, so the outgoing conditions read it whatever the condition order; the outputs map
- * from the result first, then from the task's scope (`activityScope`), and a result no output reads is no error.
+ * execution does (`DecisionEvaluationUtil.java:86`), so a task-local of the result's name holds it. The write is its
+ * own signal ahead of the completion, so the outgoing conditions read it whatever the condition order; the outputs read
+ * the result where that write left it, behind an earlier output's write of its name unless a task-local holds it
+ * (`ctxOutputReads`), and a result no output reads is no error.
  */
-function evaluateDecision(ctx: Ctx, payload: ActivityPayload, work: RuleWork, occurrence: Occurrence, state: State): Outcome {
+function evaluateDecision(hooks: WorkHooks, ctx: Ctx, payload: ActivityPayload, work: RuleWork, occurrence: Occurrence,
+  state: State): Outcome {
   const scope = localScope(state, occurrence.id) ?? occurrence.scope;
-  const writes = Decision.run(ctx.program, work, evalContext(state, scope).variables);
+  const writes = hooks.runDecision(ctx.program, work, evalContext(state, scope).variables);
   if (!writes.ok) return writes;
-  const written = outputs(ctx, state.logicalTimeMs, ResultValues.ActivityLocals, payload.envelope.outputs, activityScope(ctx, state, scope), writes.value);
+  const written = completionOutputs(ctx, state.logicalTimeMs, ResultValues.ActivityLocals, payload.envelope.outputs, activityScope(ctx, state, occurrence.id, occurrence.scope), writes.value, []);
   if (!written.ok) return failedWith(written.failure);
   const result = writes.value.length === 0 ? state : signal(state, { tag: SignalTag.Write, scope, writes: writes.value, rule: WriteRule.Outward });
   return committed(signal(result, completeSignal(occurrence.id, leaveOutgoing, written.value, WriteRule.Outward)));
@@ -276,18 +299,17 @@ function submittedItem(submission: SubmissionRule, envelope: Envelope): MultiIns
  */
 function shadowsCounter(ctx: Ctx, envelope: Envelope, values: readonly Binding[]): boolean {
   return envelope.multiInstance !== null && ctx.program.options.multiInstanceCounters === MultiInstanceCounters.CibLocals &&
-    values.some(([name]) => cibCounterNames.includes(name));
+    values.some(([name]) => multiInstanceCounterNames.includes(name));
 }
 
-const cibCounterNames: readonly string[] = ["loopCounter", "nrOfInstances", "nrOfActiveInstances", "nrOfCompletedInstances"];
 
 /**
  * Under a profile whose submission installs variables (CIB-EXT-0005) the completion first writes every submitted value
  * from the task's own local scope occurrence, as `TaskService.complete` sets it through the task's execution
  * (`AbstractVariableScope#setVariable`): a name the task holds as a local stays there and ends with the task, any other
  * reaches its nearest owner or the root. The write is its own signal ahead of the completion, so the outgoing conditions
- * read it even when they precede the outputs (CIB-INT-0011). The outputs then map from the submitted values, a value no
- * mapping reads being no error. Otherwise the submission is the task's OutputSet (`outputs`), which for a task without
+ * read it even when they precede the outputs (CIB-INT-0011). The outputs then read the submitted values where that
+ * write left them (`ctxOutputReads`), a value no mapping reads being no error. Otherwise the submission is the task's OutputSet (`completionOutputs`), which for a task without
  * outputs admits only the empty submission. A Multi-Instance instance submits its output data item instead
  * (`submittedItem`); a name its loop's counters own is `unsupported` (`shadowsCounter`). The scope-chain rule, when the profile selects it, applies first, from the task's own frame, so the
  * task's own locals are names it may submit (UTL-TASK-01; `submission.ts`).
@@ -318,13 +340,13 @@ export function completeUserTask(
     case SubmissionRule.InstallsVariables: {
       // Dynamic-only: a submission's names are the run's data.
       if (shadowsCounter(ctx, payload.envelope, values)) return failed(FailureTag.Unsupported, "multiInstance.resultShadowsInstance");
-      const written = outputs(ctx, state.logicalTimeMs, ResultValues.ActivityLocals, payload.envelope.outputs, outputScope(ctx, state, item), values);
+      const written = completionOutputs(ctx, state.logicalTimeMs, ResultValues.ActivityLocals, payload.envelope.outputs, outputScope(ctx, state, item), values, []);
       if (!written.ok) return failedWith(written.failure);
       const installed = signal(state, { tag: SignalTag.Write, scope: localScope(state, item.occurrence) ?? item.scope, writes: values, rule: WriteRule.Outward });
       return committed(signal(installed, completeSignal(item.occurrence, leaveOutgoing, written.value, WriteRule.Outward)));
     }
     case SubmissionRule.OutputSet: {
-      const written = outputs(ctx, state.logicalTimeMs, ResultValues.OutputSet, payload.envelope.outputs, outputScope(ctx, state, item), values);
+      const written = completionOutputs(ctx, state.logicalTimeMs, ResultValues.OutputSet, payload.envelope.outputs, outputScope(ctx, state, item), [], values);
       if (!written.ok) return failedWith(written.failure);
       return committed(signal(state, completeSignal(item.occurrence, leaveOutgoing, written.value, WriteRule.Outward)));
     }
@@ -333,20 +355,26 @@ export function completeUserTask(
 }
 
 /**
- * What an Activity's outputs read behind the submitted values: nothing under the standards reading; under
- * `OutputContext.ActivityScope` (CIB-EXT-0031) the variables visible from the Activity's own scope, its captured inputs
- * first, since CIB evaluates an output parameter in the Activity's execution (`OutputParameter.java:47`).
+ * The frame an open item's outputs read (`activityScope`): CIB evaluates an output parameter in the Activity's
+ * execution (`OutputParameter.java:47`).
  */
-function outputScope(ctx: Ctx, state: State, item: OpenItem): readonly Binding[] {
-  return activityScope(ctx, state, localScope(state, item.occurrence) ?? item.scope);
+function outputScope(ctx: Ctx, state: State, item: OpenItem): readonly [readonly Binding[], readonly Binding[]] {
+  return activityScope(ctx, state, item.occurrence, item.scope);
 }
 
-function activityScope(ctx: Ctx, state: State, scope: ScopeOccurrenceId): readonly Binding[] {
+/**
+ * The frame the outputs of the Activity occurrence `occurrence` in `scope` read besides the submitted values: nothing
+ * under the standards reading; under `OutputContext.ActivityScope` (CIB-EXT-0031) its own locals, the captured inputs,
+ * and the chain from `scope`, into which the outputs are written, which `ctxOutputReads` orders.
+ */
+function activityScope(ctx: Ctx, state: State, occurrence: number, scope: ScopeOccurrenceId): readonly [readonly Binding[], readonly Binding[]] {
   switch (ctx.program.options.outputContext) {
     case OutputContext.Submission:
-      return [];
-    case OutputContext.ActivityScope:
-      return visible(state, scope);
+      return [[], []];
+    case OutputContext.ActivityScope: {
+      const local = localScope(state, occurrence);
+      return [local === null ? [] : ownVariables(state, local), visible(state, scope)];
+    }
   }
   return assertNever(ctx.program.options.outputContext);
 }
@@ -389,10 +417,10 @@ function effectCompletion(envelope: Envelope | null, rule: ResultValues, occurre
 }
 
 /**
- * An effect's result patch is its OutputSet. A BPMN error raises from the Activity with the occurrence as host: it
- * writes no outputs (BPMN 2.0.2 §13.3.2) unless the profile maps them on the error path (CIB-EXT-0004, -0009, -0016). A
- * technical failure has no BPMN meaning (§13.3.3 defines only a fault) and refuses unless the profile opens an incident
- * (CIB-EXT-0013, CIB-CFG-0008).
+ * An effect's result patch is its OutputSet. A BPMN error raises from the Activity with the occurrence as host, which
+ * leaves only once its catcher is known (`mappedErrorOutputs`): it writes no outputs (BPMN 2.0.2 §13.3.2) unless the
+ * profile maps them on the error path (CIB-EXT-0004, -0009, -0016). A technical failure has no BPMN meaning (§13.3.3
+ * defines only a fault) and refuses unless the profile opens an incident (CIB-EXT-0013, CIB-CFG-0008).
  */
 export function effectResult(ctx: Ctx, item: OpenItem, outcome: EffectOutcome, state: State): Outcome {
   // A throw Event's effect has no envelope and so no output mappings (PC-MESSAGE-09).
@@ -403,21 +431,20 @@ export function effectResult(ctx: Ctx, item: OpenItem, outcome: EffectOutcome, s
     case EffectOutcomeTag.Success: {
       const admitted = admitValues(outcome.outputs.map(([, value]) => value));
       if (!admitted.ok) return failedWith(admitted.failure);
-      const written = outputs(ctx, state.logicalTimeMs, unconsumed(ctx, envelope), mappings, outputScope(ctx, state, item), outcome.outputs);
+      const written = completionOutputs(ctx, state.logicalTimeMs, unconsumed(ctx, envelope), mappings, outputScope(ctx, state, item), [], outcome.outputs);
       if (!written.ok) return failedWith(written.failure);
       return committed(signal(state, effectCompletion(envelope, unconsumed(ctx, envelope), item.occurrence, written.value, outcome.outputs)));
     }
     case EffectOutcomeTag.BusinessFailure: {
       const admitted = admitValues(outcome.outputs.map(([, value]) => value));
       if (!admitted.ok) return failedWith(admitted.failure);
-      const written = errorPathWrites(ctx, state, item, unconsumed(ctx, envelope), mappings, outcome.outputs);
-      if (!written.ok) return failedWith(written.failure);
+      const accepted = errorPatchAccepted(ctx, outcome.outputs);
+      if (!accepted.ok) return failedWith(accepted.failure);
       const activation = occurrenceOf(state, item.occurrence)?.activation ?? 0;
-      const completed = signal(state, completeSignal(item.occurrence, leaveRaised, written.value, WriteRule.Outward));
-      return committed(signal(completed, {
+      return committed(signal(state, {
         tag: SignalTag.Raise,
         event: { tag: RaisedTag.Error, code: outcome.code, message: outcome.message },
-        origin: { element: item.element, scope: item.scope, activation, host: item.occurrence },
+        origin: { element: item.element, scope: item.scope, activation, host: item.occurrence, patch: outcome.outputs },
       }));
     }
     case EffectOutcomeTag.TechnicalFailure:
@@ -426,21 +453,55 @@ export function effectResult(ctx: Ctx, item: OpenItem, outcome: EffectOutcome, s
   return assertNever(outcome);
 }
 
-function errorPathWrites(
-  ctx: Ctx,
-  state: State,
-  item: OpenItem,
-  rule: ResultValues,
-  mappings: readonly Mapping[],
-  patch: readonly Binding[],
-): Result<readonly Binding[]> {
+/** A business Error's result patch must be empty unless the profile maps outputs on the error path. */
+function errorPatchAccepted(ctx: Ctx, patch: readonly Binding[]): Result<null> {
   switch (ctx.program.options.errorPathOutputs) {
     case ErrorPathOutputs.Mapped:
-      return outputs(ctx, state.logicalTimeMs, rule, mappings, outputScope(ctx, state, item), patch);
+      return committed(null);
     case ErrorPathOutputs.None:
-      return patch.length === 0 ? committed([]) : failed(FailureTag.Rejected, "error-path-outputs-not-accepted");
+      return patch.length === 0 ? committed(null) : failed(FailureTag.Rejected, "error-path-outputs-not-accepted");
   }
   return assertNever(ctx.program.options.errorPathOutputs);
+}
+
+/** The outputs the raising Activity `host` writes as it leaves (`mappedErrorOutputs`). */
+function errorExitOutputs(ctx: Ctx, state: State, host: number, origin: Origin, envelope: Envelope | null,
+  installed: readonly Binding[]): Result<readonly Binding[]> {
+  switch (ctx.program.options.errorPathOutputs) {
+    case ErrorPathOutputs.Mapped:
+      return completionOutputs(ctx, state.logicalTimeMs, unconsumed(ctx, envelope), envelope?.outputs ?? [],
+        activityScope(ctx, state, host, origin.scope), installed, origin.patch);
+    case ErrorPathOutputs.None:
+      return committed([]);
+  }
+  return assertNever(ctx.program.options.errorPathOutputs);
+}
+
+/**
+ * How an Activity that raised a business Error leaves, once its catcher is known: `feature/propagation.ts` calls it
+ * through `PropagationHooks` with the values `installed` through the Activity's frame, its own boundary's catch
+ * variables or none. Under `ErrorPathOutputs.mapped` CIB sets those on the task's execution before `deleteCascade`
+ * destroys it and runs its output parameters (`BpmnExceptionHandler.java:146-154`,
+ * `PvmAtomicOperationCancelActivity.java:60`, `PvmExecutionImpl.java:613-626`, `ExecutionEntity.java:521-525`). An
+ * installed value of a name the frame holds, an input local or a result value the delegate set with
+ * `setVariableLocal`, is that local and ends with the Activity; any other is written outward from the frame first, so
+ * an output of its name is written after it. The outputs read the result `origin.patch` as a completion's do
+ * (`completionOutputs`); the Activity then leaves as raised.
+ */
+export function mappedErrorOutputs(ctx: Ctx, origin: Origin, installed: readonly Binding[], state: State): Outcome {
+  const host = origin.host;
+  if (host === null) return failed(FailureTag.SemanticFailure, "error-exit-without-host");
+  const element = programElement(ctx.program, origin.element);
+  const envelope = element === null ? null : elementEnvelope(element);
+  const frame = localScope(state, host);
+  const held = [...origin.patch, ...(frame === null ? [] : ownVariables(state, frame))].map(([name]) => name);
+  const outward = installed.filter(([name]) => !held.includes(name));
+  const written = errorExitOutputs(ctx, state, host, origin, envelope, installed);
+  if (!written.ok) return failedWith(written.failure);
+  const installedState = outward.length === 0
+    ? state
+    : signal(state, { tag: SignalTag.Write, scope: frame ?? origin.scope, writes: outward, rule: WriteRule.Outward });
+  return committed(signal(installedState, completeSignal(host, leaveRaised, written.value, WriteRule.Outward)));
 }
 
 function technicalFailure(ctx: Ctx, item: OpenItem, state: State): Outcome {
@@ -539,7 +600,7 @@ export function completeCall(
   const work = payload.work;
   switch (work.tag) {
     case WorkTag.Call:
-      return Call.complete(ctx, header, payload, work.payload, calledRoot, owner, state);
+      return Call.returnFromCall(ctx, header, payload, work.payload, calledRoot, owner, state);
     case WorkTag.None:
     case WorkTag.Manual:
     case WorkTag.User:

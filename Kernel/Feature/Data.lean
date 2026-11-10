@@ -39,8 +39,9 @@ def evaluate (context : EvalContext) : Expression → Evaluation
     | some value => .value value
     | none => .failure "unknown-variable"
   | .juel nodes => Juel.evaluateJuel context nodes
-  -- Admission refuses it (`expression.outsideSimpleBoolean`, `mapping.expression`, `flow.condition.foreign`).
-  | .foreign _ _ => .failure "expression.outsideSimpleBoolean"
+  -- Admission refuses it (`expression.outsideSimpleBoolean`, `mapping.expression`, `flow.condition.foreign`), so it is
+  -- `unsupported` like every refused shape (guard 20).
+  | .foreign _ _ => .unsupported "expression.outsideSimpleBoolean"
 
 /-- One write seen from `scope`. Outward, a name no scope binds goes to the instance root when the instance's process
 declares it, since a target is a declared item ([BPMN 2.0.2 §10.4.1](../../docs/reference/bpmn-2.0.2/README.md)); any

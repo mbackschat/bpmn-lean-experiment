@@ -18,14 +18,20 @@
  * instance per joined execution (CIB `ParallelGatewayActivityBehavior`, `PvmExecutionImpl.leaveActivityViaTransitions`).
  * An element's own selection (`ownFlows`) is an inclusive choice over its outgoing flows, which only an Activity's or a
  * Scope's may condition. A diverging gateway or an Activity that finds no outgoing flow rolls the command back.
+ *
+ * A parked Inclusive join also fires when no token arrives at it: Table 13.3 activates it by the state, and `settle`
+ * offers the parked joins again once the closure is otherwise quiescent (`reoffer` in `step.ts`).
  */
 import {
+  BranchSchedule,
   ConditionOrder,
   GatewayKindTag,
+  InclusiveJoinReach,
   ValueTag,
   assertNever,
   elementEnvelope,
   elementEvent,
+  elementGateway,
   elementOutgoing,
   eventPayloadLinkCatch,
   eventPayloadLinkThrow,
@@ -53,6 +59,7 @@ import {
   failedWith,
   leaveFlows,
   leaveOutgoing,
+  occurrenceOf,
   parkedEquals,
   signal,
   type EvalContext,
@@ -66,7 +73,7 @@ import {
 } from "../state.js";
 import { EvaluationTag, evalContext, type Ctx } from "../hooks.js";
 
-function complete(state: State, id: number, leave: Leave): State {
+function signalComplete(state: State, id: number, leave: Leave): State {
   return signal(state, completeSignal(id, leave, [], WriteRule.Outward));
 }
 
@@ -137,16 +144,36 @@ function ownFlows(ctx: Ctx, element: Element, context: EvalContext): Result<read
   return inclusiveChoice(ctx, context, outgoing.filter((flow) => flow !== fallback), fallback, outgoing, "activity-no-outgoing-flow");
 }
 
-/** `Hooks.outflow`: the only place tokens are added. An element's own selection is `ownFlows`, read after the completion's writes. */
+/**
+ * The order a split's tokens are queued in. `Step.settle` takes the newest token first under
+ * `BranchSchedule.declarationDepthFirst`, so the flows are queued reversed and the first-declared branch runs first, each
+ * to its next wait, join or end, as CIB reverses its outgoing executions for a LIFO queue (CIB-OP-0016).
+ */
+function queued(ctx: Ctx, flows: readonly FlowId[]): readonly FlowId[] {
+  switch (ctx.program.options.branchSchedule) {
+    case BranchSchedule.OrderInvariant:
+      return flows;
+    case BranchSchedule.DeclarationDepthFirst:
+      return [...flows].reverse();
+  }
+  return assertNever(ctx.program.options.branchSchedule);
+}
+
+/**
+ * `Hooks.outflow`: the only place tokens are added. An element's own selection is `ownFlows`, read after the
+ * completion's writes.
+ */
 export function outflow(ctx: Ctx, occurrence: Occurrence, leave: Leave, state: State): Outcome {
   switch (leave.tag) {
     case LeaveTag.Flows:
-      return committed(emit(state, leave.selected, occurrence.scope));
+      return committed(emit(state, queued(ctx, leave.selected), occurrence.scope));
     case LeaveTag.Outgoing: {
       const element = programElement(ctx.program, occurrence.element);
       if (element === null) return failed(FailureTag.SemanticFailure, "outflow-without-element");
       const selected = ownFlows(ctx, element, evalContext(state, occurrence.scope));
-      return selected.ok ? committed(emit(state, selected.value, occurrence.scope)) : failedWith(selected.failure);
+      return selected.ok
+        ? committed(emit(state, queued(ctx, selected.value), occurrence.scope))
+        : failedWith(selected.failure);
     }
     case LeaveTag.Raised:
       return failed(FailureTag.SemanticFailure, "outflow-of-raised-occurrence");
@@ -160,7 +187,7 @@ function exclusive(ctx: Ctx, candidates: readonly FlowId[], fallback: FlowId | n
   const flow = chosen.value[0] ?? fallback;
   return flow === null
     ? failed(FailureTag.RolledBack, "exclusive-gateway-no-outgoing-flow")
-    : committed(complete(state, occurrence.id, leaveFlows([flow])));
+    : committed(signalComplete(state, occurrence.id, leaveFlows([flow])));
 }
 
 /** The flows an inclusive split takes. A gateway that lists no candidates is a pure join. */
@@ -206,12 +233,21 @@ function selectBeforeOutputs(ctx: Ctx, occurrence: Occurrence, leave: Leave, sta
   return assertNever(leave);
 }
 
-/** The flows leaving an element, its boundaries' flows included. */
-function leaving(element: Element): readonly FlowId[] {
+/**
+ * The flows a position held by `element` continues on: its outgoing flows and, under the standards reach, its Boundary
+ * Events' flows, since an attached Event can still fire (BPMN 2.0.2 §10.5.4); CIB's `isReachable` follows outgoing
+ * transitions only (CIB-INT-0020).
+ */
+function leaving(ctx: Ctx, element: Element): readonly FlowId[] {
   const envelope = elementEnvelope(element);
-  return envelope === null
-    ? elementOutgoing(element)
-    : [...envelope.outgoing, ...envelope.boundaries.flatMap((boundary) => boundary.outgoing)];
+  if (envelope === null) return elementOutgoing(element);
+  switch (ctx.program.options.inclusiveJoinReach) {
+    case InclusiveJoinReach.WithBoundaries:
+      return [...envelope.outgoing, ...envelope.boundaries.flatMap((boundary) => boundary.outgoing)];
+    case InclusiveJoinReach.OutgoingOnly:
+      return envelope.outgoing;
+  }
+  return assertNever(ctx.program.options.inclusiveJoinReach);
 }
 
 /** The Link catch Events named `name` among the siblings of `parent`. */
@@ -223,15 +259,16 @@ function linkCatches(program: Program, parent: ElementId | null, name: string): 
 }
 
 /** The flows a token continues on after reaching `element`; a throwing Link continues at its catching Links. */
-function successors(program: Program, element: Element): readonly FlowId[] {
+function successors(ctx: Ctx, element: Element): readonly FlowId[] {
   const event = elementEvent(element);
   const name = event === null ? null : eventPayloadLinkThrow(event[1]);
-  if (event === null || name === null) return leaving(element);
-  return linkCatches(program, event[0].parent, name).flatMap(([, payload]) => payload.outgoing);
+  if (event === null || name === null) return leaving(ctx, element);
+  return linkCatches(ctx.program, event[0].parent, name).flatMap(([, payload]) => payload.outgoing);
 }
 
 /** Whether a token on one of `start` can reach one of `targets` without passing through `gateway`. */
-function reaches(program: Program, gateway: ElementId, targets: readonly FlowId[], start: readonly FlowId[]): boolean {
+function reaches(ctx: Ctx, gateway: ElementId, targets: readonly FlowId[], start: readonly FlowId[]): boolean {
+  const program = ctx.program;
   let frontier = [...start];
   const seen: FlowId[] = [];
   // The fuel bounds every visit of every flow by every edge into it, so it is never exhausted; running out answers
@@ -247,7 +284,7 @@ function reaches(program: Program, gateway: ElementId, targets: readonly FlowId[
     }
     const target = programTarget(program, flow);
     const element = target === null || target === gateway ? null : programElement(program, target);
-    frontier = [...rest, ...(element === null ? [] : successors(program, element))];
+    frontier = [...rest, ...(element === null ? [] : successors(ctx, element))];
     seen.unshift(flow);
   }
 }
@@ -255,13 +292,14 @@ function reaches(program: Program, gateway: ElementId, targets: readonly FlowId[
 /**
  * The flows from which the remaining work of scope occurrence `scope` continues, excluding the tokens parked at
  * `gateway`: queued tokens, the elements of open items and child scope occurrences, and tokens parked at other joins.
- * A passive item keeps nothing alive and is no position; a boundary item is no element, and its host's position
- * already covers the boundary's flows.
+ * A passive item keeps nothing alive and is no position; a boundary item is no element, and its host's position covers
+ * the boundary's flows as far as `leaving` follows them.
  */
-function positions(program: Program, state: State, gateway: ElementId, scope: ScopeOccurrenceId): readonly FlowId[] {
+function positions(ctx: Ctx, state: State, gateway: ElementId, scope: ScopeOccurrenceId): readonly FlowId[] {
+  const program = ctx.program;
   const continuing = (element: ElementId): readonly FlowId[] => {
     const found = programElement(program, element);
-    return found === null ? [] : successors(program, found);
+    return found === null ? [] : successors(ctx, found);
   };
   const queued = state.tokens.filter((token) => token.scope === scope).map((token) => token.flow);
   const items = state.openItems.filter((item) => item.scope === scope && !item.passive).flatMap((item) => continuing(item.element));
@@ -298,8 +336,9 @@ function unpark(state: State, consumed: readonly Parked[]): State {
 }
 
 /**
- * Park the occurrence at a join and fire when `ready` holds; a gateway with one incoming flow passes it on. When the
- * join fires, the arriving occurrence, if consumed, is the one that leaves with the flows and the others end with none.
+ * Park the occurrence at a join, unless `reoffer` in `step.ts` offers one already parked, and fire when `ready` holds; a gateway with
+ * one incoming flow passes it on. When the join fires, the offered occurrence, if consumed, is the one that leaves with
+ * the flows and the others end with none.
  */
 function join(
   occurrence: Occurrence,
@@ -312,9 +351,11 @@ function join(
   if (flow === null) return failed(FailureTag.SemanticFailure, "gateway-without-flow");
   if (incoming.length <= 1) {
     const selected = flows(state);
-    return selected.ok ? committed(complete(state, occurrence.id, leaveFlows(selected.value))) : failedWith(selected.failure);
+    return selected.ok ? committed(signalComplete(state, occurrence.id, leaveFlows(selected.value))) : failedWith(selected.failure);
   }
-  const parked = park(state, { occurrence: occurrence.id, flow, scope: occurrence.scope });
+  const parked = state.slots.parked.some((waiting) => waiting.occurrence === occurrence.id)
+    ? state
+    : park(state, { occurrence: occurrence.id, flow, scope: occurrence.scope });
   if (!ready(parked)) return committed(parked);
   const consumed = consumedAt(parked, incoming, occurrence.scope);
   const unparked = unpark(parked, consumed);
@@ -324,8 +365,8 @@ function join(
     ? occurrence.id
     : consumed.at(-1)?.occurrence ?? occurrence.id;
   const others = consumed.map((entry) => entry.occurrence).filter((id) => id !== firing);
-  const ended = others.reduce((current, id) => complete(current, id, leaveFlows([])), unparked);
-  return committed(complete(ended, firing, leaveFlows(selected.value)));
+  const ended = others.reduce((current, id) => signalComplete(current, id, leaveFlows([])), unparked);
+  return committed(signalComplete(ended, firing, leaveFlows(selected.value)));
 }
 
 export function arriveGateway(ctx: Ctx, header: Header, payload: GatewayPayload, occurrence: Occurrence, state: State): Outcome {
@@ -343,7 +384,7 @@ export function arriveGateway(ctx: Ctx, header: Header, payload: GatewayPayload,
         (parked) => {
           const full = filled(parked, payload.incoming, scope);
           const empty = payload.incoming.filter((flow) => !full.includes(flow));
-          return !reaches(ctx.program, header.id, empty, positions(ctx.program, parked, header.id, scope));
+          return !reaches(ctx, header.id, empty, positions(ctx, parked, header.id, scope));
         },
         (current) => inclusiveFlows(ctx, kind.candidates, kind.default, payload.outgoing, scope, current));
     case GatewayKindTag.EventBased:
@@ -359,10 +400,10 @@ export function arriveGateway(ctx: Ctx, header: Header, payload: GatewayPayload,
  */
 export function arriveLink(ctx: Ctx, header: Header, payload: EventPayload, occurrence: Occurrence, state: State): Outcome {
   const name = eventPayloadLinkThrow(payload);
-  if (name === null) return committed(complete(state, occurrence.id, leaveOutgoing));
+  if (name === null) return committed(signalComplete(state, occurrence.id, leaveOutgoing));
   const catches = linkCatches(ctx.program, header.parent, name);
   const [only] = catches;
   if (only === undefined) return failed(FailureTag.SemanticFailure, "link-without-catch");
   if (catches.length > 1) return failed(FailureTag.SemanticFailure, "link-ambiguous-catch");
-  return committed(complete(state, occurrence.id, leaveFlows(only[1].outgoing)));
+  return committed(signalComplete(state, occurrence.id, leaveFlows(only[1].outgoing)));
 }

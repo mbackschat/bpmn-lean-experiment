@@ -4,7 +4,7 @@
  * retained `automatic-loop` witness, whose plain Task counts with a `camunda:outputParameter` read in its own scope
  * (CIB-EXT-0031). The beyond-bound schedule (`limit` 50000, about 3 micro-steps an iteration, measured 2026-11-10)
  * separates a kernel that truncates the closure or commits its prefix from one that refuses it; CIB runs it to the end
- * (the draft CIB-LIM entry of PC-CF-06).
+ * (CIB-LIM-0016).
  */
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";

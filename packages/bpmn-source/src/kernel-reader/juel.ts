@@ -5,7 +5,7 @@
  * meaning-preserving; the source bytes stay in the preserved source. A text outside the pinned grammar, or with a
  * non-ASCII character outside a string literal, has no parse (`null`), and the caller keeps it `foreign`.
  */
-import { ctor } from "./wire.js";
+import { ctor, isDigit } from "./wire.js";
 import type { KernelJson } from "./wire.js";
 
 enum Symbol {
@@ -28,7 +28,6 @@ const keywordSymbols: Readonly<Record<string, Symbol>> = {
   ge: Symbol.Ge, gt: Symbol.Gt, instanceof: Symbol.Instanceof,
 };
 
-const isDigit = (char: string): boolean => char >= "0" && char <= "9";
 /** `Character.isWhitespace` over ASCII; non-ASCII whitespace leaves the text unparsed. */
 const isWhitespace = (char: string): boolean => /^[\t\n\u000b\f\r \u001c-\u001f]$/u.test(char);
 const isIdentifierStart = (char: string): boolean => /^[A-Za-z_$]$/u.test(char);
@@ -58,10 +57,10 @@ class Scanner {
   private nextToken(): Token {
     const input = this.input;
     const at = this.position;
-    if (this.inEval()) return input.charAt(at) === "}" ? fixed(Symbol.EndEval) : this.nextEval();
+    if (this.inEval()) return input.charAt(at) === "}" ? fixedToken(Symbol.EndEval) : this.nextEval();
     if (at + 1 < input.length && input.charAt(at + 1) === "{") {
-      if (input.charAt(at) === "#") return fixed(Symbol.StartDeferred);
-      if (input.charAt(at) === "$") return fixed(Symbol.StartDynamic);
+      if (input.charAt(at) === "#") return fixedToken(Symbol.StartDeferred);
+      if (input.charAt(at) === "$") return fixedToken(Symbol.StartDynamic);
     }
     return this.nextText();
   }
@@ -171,7 +170,7 @@ class Scanner {
   }
 }
 
-const fixed = (symbol: Symbol): Token => ({ symbol, image: symbol, size: symbol === Symbol.Eof ? 0 : symbol.length });
+const fixedToken = (symbol: Symbol): Token => ({ symbol, image: symbol, size: symbol === Symbol.Eof ? 0 : symbol.length });
 
 /** `Parser`: recursive descent emitting the node table in post-order. */
 class Parser {

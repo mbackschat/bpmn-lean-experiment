@@ -102,7 +102,7 @@ The host sees the kernel only through `hostRequirements(program)` (timers, concu
 | `Kernel.IL.Types` | flat element table, records, the instances a codec or theorem needs | nothing in the kernel |
 | `Kernel.State` | state records with fixed feature slots, generic subtree removal | `IL.Types` |
 | `Kernel.Hooks` | the hooks record with defaults | `IL.Types`, `State` |
-| `Kernel.Feature.<F>` | one feature's rules, at most three files | `IL.Types`, `State`, `Hooks` |
+| `Kernel.Feature.<F>` | one feature's rules, at most three files; a sub-feature such as `Feature.Decision`, which `Feature.Work` reaches through its own hooks record, is a feature of its own | `IL.Types`, `State`, `Hooks` |
 | `Kernel.Admission.<F>` | one feature's admission rules with refusal codes | `IL.Types` |
 | `Kernel.Step`, `Kernel.Publish`, `Kernel.Population` | dispatch over element, input and open-item kinds with the hooks record as a parameter; generic projection; population mechanisms | `IL.Types`, `State`, `Hooks` (`Population` also `Step`) |
 | `Kernel.Registry`, `Kernel.AdmissionRegistry` | fill the hooks record; assemble admission; generated from the feature directories | features; admissions |

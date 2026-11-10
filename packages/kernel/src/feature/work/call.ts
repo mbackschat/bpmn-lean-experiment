@@ -104,8 +104,8 @@ export function invoke(ctx: Ctx, header: Header, payload: ActivityPayload, work:
   return committed(signal(armed, { tag: SignalTag.Begin, request: beginRequest({ element: start[0].id, scope: root }) }));
 }
 
-/** `Hooks.completeCall`: return from the idle called instance whose root is `root`. */
-export function complete(
+/** The body of `Hooks.completeCall`: return from the idle called instance whose root is `root`. */
+export function returnFromCall(
   ctx: Ctx,
   _header: Header,
   _payload: ActivityPayload,

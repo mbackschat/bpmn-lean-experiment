@@ -31,7 +31,8 @@
     "timerZone": null,
     "multiInstanceBinding": "dataAssociations",
     "effectResultValues": "outputSet", "outputContext": "submission",
-    "multiInstanceCounters": "none", "multiInstanceInputFailure": "hold", "multiInstanceCount": "integer"
+    "multiInstanceCounters": "none", "multiInstanceInputFailure": "hold", "multiInstanceCount": "integer", "businessRuleTask": "refused",
+    "inclusiveJoinReach": "withBoundaries", "branchSchedule": "orderInvariant"
   },
   "elements": [
     {

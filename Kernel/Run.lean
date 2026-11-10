@@ -95,7 +95,7 @@ structure PublishedWait where
   kind : String
   json : Json
 
-def openWait (wait : Host.OpenWait) : PublishedWait :=
+def renderWait (wait : Host.OpenWait) : PublishedWait :=
   -- Every view sets exactly one detail field, so the empty fallback never renders.
   let (kind, fields) := (detail wait.view).getD ("", [])
   { id := wait.id, kind
@@ -104,7 +104,7 @@ def openWait (wait : Host.OpenWait) : PublishedWait :=
       ("detail", Json.mkObj (("kind", Json.str kind) :: fields))] }
 
 /-- The schema's canonical order: process instance, element (both in `String` order), activation, detail kind. -/
-def PublishedWait.le (left right : PublishedWait) : Bool :=
+def PublishedWait.canonicalLe (left right : PublishedWait) : Bool :=
   let (l, r) := (left.id, right.id)
   decide (l.processInstanceId < r.processInstanceId) || (l.processInstanceId == r.processInstanceId &&
     (decide (l.element.value < r.element.value) || (l.element.value == r.element.value &&
@@ -127,7 +127,7 @@ def scopeJson (scope : Publish.PublishedScope) : Json :=
 /-- The state observation; `failure` appears only in a failed state. -/
 def observationJson (program : Program) (state : State) : Json :=
   let view := Host.hostView program state
-  let waits := (view.openWaits.map openWait).mergeSort PublishedWait.le
+  let waits := (view.openWaits.map renderWait).mergeSort PublishedWait.canonicalLe
   let fields : List (String × Json) := [("kind", "state"), ("instanceId", Json.str state.instanceId),
     ("status", Json.str (Publish.statusName view.status)), ("logicalTimeMs", toJson state.logicalTimeMs),
     ("variables", Codec.bindingsToJson (Publish.variables state)),
@@ -409,7 +409,7 @@ def runPopulation (programPaths : List String) (scenarioPath : String) : IO Json
       throw (IO.userError s!"{programPath}: program identity differs from definition {id}")
     pure (id, ({ ref, program } : Population.Definition))
   let stimuli ← orFail scenarioPath do stepsFromJson definitions (← scenario.getObjValAs? (Array Json) "steps").toList
-  let result ← orFail scenarioPath (Population.run Registry.hooks (definitions.map (·.2)) stimuli)
+  let result ← orFail scenarioPath (Population.runStimuli Registry.hooks (definitions.map (·.2)) stimuli)
   pure (populationResultJson scenarioId result)
 
 end Kernel.Run

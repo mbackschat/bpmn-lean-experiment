@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_CaughtChainedOutputs" targetNamespace="urn:bpmn-lean:scenarios:mapping-order:caught-chained-outputs">
+  <error id="Error_Fail" name="Fail" errorCode="FAIL" />
+  <process id="Process_CaughtChainedOutputs" name="Map a Sub-Process output from an earlier output's target that the caught Error set" isExecutable="true">
+    <startEvent id="StartEvent_Start" />
+    <subProcess id="SubProcess_Pack" name="Pack">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:outputParameter name="total">mapped</camunda:outputParameter>
+          <camunda:outputParameter name="summary">${total}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+      <startEvent id="StartEvent_PackBegin" />
+      <userTask id="UserTask_Place" name="Place" />
+      <endEvent id="EndEvent_PackFail">
+        <errorEventDefinition id="ErrorEventDefinition_PackFail" errorRef="Error_Fail" />
+      </endEvent>
+      <sequenceFlow id="Flow_PackBegin_Place" sourceRef="StartEvent_PackBegin" targetRef="UserTask_Place" />
+      <sequenceFlow id="Flow_Place_PackFail" sourceRef="UserTask_Place" targetRef="EndEvent_PackFail" />
+    </subProcess>
+    <boundaryEvent id="BoundaryEvent_PackFailed" attachedToRef="SubProcess_Pack" cancelActivity="true">
+      <errorEventDefinition id="ErrorEventDefinition_PackFailed" errorRef="Error_Fail"
+        camunda:errorCodeVariable="total" />
+    </boundaryEvent>
+    <subProcess id="SubProcess_Shadow" name="Shadow">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="level">inner</camunda:inputParameter>
+          <camunda:outputParameter name="level">mapped</camunda:outputParameter>
+          <camunda:outputParameter name="shadowed">${level}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+      <startEvent id="StartEvent_ShadowBegin" />
+      <userTask id="UserTask_Hold" name="Hold" />
+      <endEvent id="EndEvent_ShadowFail">
+        <errorEventDefinition id="ErrorEventDefinition_ShadowFail" errorRef="Error_Fail" />
+      </endEvent>
+      <sequenceFlow id="Flow_ShadowBegin_Hold" sourceRef="StartEvent_ShadowBegin" targetRef="UserTask_Hold" />
+      <sequenceFlow id="Flow_Hold_ShadowFail" sourceRef="UserTask_Hold" targetRef="EndEvent_ShadowFail" />
+    </subProcess>
+    <boundaryEvent id="BoundaryEvent_ShadowFailed" attachedToRef="SubProcess_Shadow" cancelActivity="true">
+      <errorEventDefinition id="ErrorEventDefinition_ShadowFailed" errorRef="Error_Fail"
+        camunda:errorCodeVariable="level" />
+    </boundaryEvent>
+    <userTask id="UserTask_Observe" name="Observe">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="seenTotal">${total}</camunda:inputParameter>
+          <camunda:inputParameter name="seenSummary">${summary}</camunda:inputParameter>
+          <camunda:inputParameter name="seenLevel">${level}</camunda:inputParameter>
+          <camunda:inputParameter name="seenShadowed">${shadowed}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <endEvent id="EndEvent_Packed" />
+    <endEvent id="EndEvent_Shadowed" />
+    <endEvent id="EndEvent_Done" />
+    <sequenceFlow id="Flow_Start_Pack" sourceRef="StartEvent_Start" targetRef="SubProcess_Pack" />
+    <sequenceFlow id="Flow_Pack_Packed" sourceRef="SubProcess_Pack" targetRef="EndEvent_Packed" />
+    <sequenceFlow id="Flow_PackFailed_Shadow" sourceRef="BoundaryEvent_PackFailed" targetRef="SubProcess_Shadow" />
+    <sequenceFlow id="Flow_Shadow_Shadowed" sourceRef="SubProcess_Shadow" targetRef="EndEvent_Shadowed" />
+    <sequenceFlow id="Flow_ShadowFailed_Observe" sourceRef="BoundaryEvent_ShadowFailed" targetRef="UserTask_Observe" />
+    <sequenceFlow id="Flow_Observe_Done" sourceRef="UserTask_Observe" targetRef="EndEvent_Done" />
+  </process>
+</definitions>

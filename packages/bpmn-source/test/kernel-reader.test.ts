@@ -44,7 +44,7 @@ const element = (p: Json, id: string): Json => {
   return found;
 };
 
-test("an exclusive gateway keeps document order of its candidates, an inclusive one id order", async () => {
+test("exclusive and inclusive gateways keep document order of their candidates", async () => {
   const p = await program(declared(model(`<bpmn:startEvent id="S"/>
     <bpmn:exclusiveGateway id="X" default="z"/><bpmn:inclusiveGateway id="I"/><bpmn:endEvent id="E"/>
     <bpmn:sequenceFlow id="s" sourceRef="S" targetRef="X"/>
@@ -54,7 +54,7 @@ test("an exclusive gateway keeps document order of its candidates, an inclusive 
     <bpmn:sequenceFlow id="q" sourceRef="I" targetRef="E"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">true</bpmn:conditionExpression></bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="p" sourceRef="I" targetRef="E"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">false</bpmn:conditionExpression></bpmn:sequenceFlow>`)));
   assert.deepEqual(element(p, "X").gateway.payload.kind, { exclusive: { candidates: ["b", "a"], default: "z" } });
-  assert.deepEqual(element(p, "I").gateway.payload.kind, { inclusive: { candidates: ["p", "q"], default: null } });
+  assert.deepEqual(element(p, "I").gateway.payload.kind, { inclusive: { candidates: ["q", "p"], default: null } });
   const flow = (id: string): Json => p.flows.find((entry: Json) => entry.id === id);
   assert.deepEqual(flow("b").condition, { simpleBoolean: { body: { isPresent: { name: "a" } } } });
   assert.equal(flow("z").condition, null);
@@ -240,6 +240,9 @@ test("the profile options are the full record, each non-default selected by the 
     multiInstanceCounters: "none",
     multiInstanceInputFailure: "hold",
     multiInstanceCount: "integer",
+    businessRuleTask: "refused",
+    inclusiveJoinReach: "withBoundaries",
+    branchSchedule: "orderInvariant",
   });
   const relations = ["CIB-EXT-0010", "CIB-EXT-0020", "CIB-EXT-0016", "CIB-CFG-0008", "CIB-OP-0009", "CIB-EXT-0026",
     "CIB-INT-0011", "CIB-EXT-0025", "CIB-INT-0009", "CIB-LIM-0001", "CIB-INT-0007", "CIB-INT-0013", "CIB-EXT-0028"];
@@ -271,6 +274,9 @@ test("the profile options are the full record, each non-default selected by the 
     multiInstanceCounters: "none",
     multiInstanceInputFailure: "hold",
     multiInstanceCount: "integer",
+    businessRuleTask: "refused",
+    inclusiveJoinReach: "withBoundaries",
+    branchSchedule: "orderInvariant",
   });
   assert.equal(kernelProfileOptions(["CIB-EXT-0031"]).outputContext, "activityScope");
   assert.equal(kernelProfileOptions(["CIB-INT-0014"]).multiInstanceBinding, "loopReferences");
@@ -278,6 +284,9 @@ test("the profile options are the full record, each non-default selected by the 
   assert.equal(kernelProfileOptions(["CIB-INT-0018"]).multiInstanceCounters, "cibLocals");
   assert.equal(kernelProfileOptions(["CIB-INT-0019"]).multiInstanceInputFailure, "rollback");
   assert.equal(kernelProfileOptions(["CIB-EXT-0033"]).multiInstanceCount, "javaInt");
+  assert.equal(kernelProfileOptions(["CIB-EXT-0032"]).businessRuleTask, "decisionTable");
+  assert.equal(kernelProfileOptions(["CIB-INT-0020"]).inclusiveJoinReach, "outgoingOnly");
+  assert.equal(kernelProfileOptions(["CIB-OP-0016"]).branchSchedule, "declarationDepthFirst");
   assert.equal(kernelProfileOptions(["CIB-EXT-0005"]).submission, "installsVariables");
   for (const creates of ["CIB-EXT-0005", "CIB-EXT-0007", "CIB-EXT-0009", "CIB-EXT-0020"]) {
     assert.equal(kernelProfileOptions([creates]).undeclaredWrite, "atInstanceRoot", creates);
@@ -367,13 +376,14 @@ test("a Send Task without an implementation is read as Send work, a declared one
   const p = await program(model(`<bpmn:sendTask id="Plain" messageRef="M"/><bpmn:sendTask id="Delegate" camunda:delegateExpression="\${d}"/>`, `<bpmn:message id="M"/>`));
   assert.deepEqual(element(p, "Plain").activity.payload.work, { send: { payload: {
     binding: { protocol: "##WebService", operation: "" },
+    handlerKey: null,
     recipient: null,
     correlation: [],
     messageRef: "M",
     operationRef: null,
   } } });
   assert.equal(element(p, "Plain").activity.header.sourceType, "sendTask");
-  assert.deepEqual(element(p, "Delegate").activity.payload.work, { service: { payload: { protocol: "##WebService", operation: "${d}" } } });
+  assert.deepEqual(element(p, "Delegate").activity.payload.work, { service: { payload: { protocol: "##WebService", operation: "${d}", handlerKey: "d" } } });
 });
 
 test("an unknown element, foreign attribute or unsafe source is refused with a stable code", async () => {

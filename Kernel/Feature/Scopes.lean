@@ -74,9 +74,13 @@ def arriveScope (ctx : Ctx) (header : Header) (payload : ScopePayload) (occurren
       let cleared := if interrupting then state.clearInside occurrence.scope (occurrence.id :: entry.inner.toList) else state
       enter ctx header payload occurrence entry cleared
 
+/-- An idle Scope's outputs read its own variables, then the parent's chain they are written into
+(`Ctx.outputReads`). -/
 def completeScope (ctx : Ctx) (_ : Header) (payload : ScopePayload) (scope : ScopeOccurrence) (owner : Occurrence)
     (state : State) : Outcome := do
-  let outputs ← ctx.requireMappings (state.evalContext scope.id) payload.envelope.outputs
+  let outer := (scope.parent.map state.visible).getD []
+  let reads := ctx.outputReads state.logicalTimeMs (state.ownVariables scope.id) [] outer
+  let outputs ← ctx.requireMappingsWith reads payload.envelope.outputs
   .ok (state.signal (.complete owner.id .outgoing outputs .outward))
 
 end Kernel.Feature.Scopes

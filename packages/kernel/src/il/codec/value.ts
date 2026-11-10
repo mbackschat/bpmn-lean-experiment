@@ -38,7 +38,7 @@ export function accept<T>(value: T): Decoded<T> {
   return { ok: true, value };
 }
 
-export function refuse<T>(refusal: string): Decoded<T> {
+export function refuseDecoding<T>(refusal: string): Decoded<T> {
   return { ok: false, refusal };
 }
 
@@ -49,9 +49,9 @@ export function isObject(json: unknown): json is Readonly<Record<string, unknown
 /** Lean's `Json.getObjVal?`: the key must be present. */
 export function objVal(json: unknown, key: string): Decoded<unknown> {
   if (!isObject(json)) {
-    return refuse("object expected");
+    return refuseDecoding("object expected");
   }
-  return Object.hasOwn(json, key) ? accept(json[key]) : refuse(`property not found: ${key}`);
+  return Object.hasOwn(json, key) ? accept(json[key]) : refuseDecoding(`property not found: ${key}`);
 }
 
 /** Lean's `Json.getObjValD`: an absent key, or a non-object, reads as `null`. */
@@ -76,12 +76,12 @@ export function loose<T>(codec: Codec<T>): LooseCodec {
 }
 
 export const string: Codec<string> = {
-  decode: (json) => (typeof json === "string" ? accept(json) : refuse("String expected")),
+  decode: (json) => (typeof json === "string" ? accept(json) : refuseDecoding("String expected")),
   encode: (value) => value,
 };
 
 export const bool: Codec<boolean> = {
-  decode: (json) => (typeof json === "boolean" ? accept(json) : refuse("Bool expected")),
+  decode: (json) => (typeof json === "boolean" ? accept(json) : refuseDecoding("Bool expected")),
   encode: (value) => value,
 };
 
@@ -89,13 +89,13 @@ export const nat: Codec<number> = {
   decode: (json) =>
     typeof json === "number" && Number.isSafeInteger(json) && json >= 0
       ? accept(json)
-      : refuse("Natural number expected"),
+      : refuseDecoding("Natural number expected"),
   encode: (value) => value,
 };
 
 export const int: Codec<number> = {
   decode: (json) =>
-    typeof json === "number" && Number.isSafeInteger(json) ? accept(json) : refuse("Integer expected"),
+    typeof json === "number" && Number.isSafeInteger(json) ? accept(json) : refuseDecoding("Integer expected"),
   encode: (value) => value,
 };
 
@@ -103,13 +103,13 @@ export function list<T>(item: Codec<T>): Codec<readonly T[]> {
   return {
     decode: (json) => {
       if (!Array.isArray(json)) {
-        return refuse("expected JSON array");
+        return refuseDecoding("expected JSON array");
       }
       const items: T[] = [];
       for (const [index, entry] of json.entries()) {
         const decoded = item.decode(entry);
         if (!decoded.ok) {
-          return refuse(`[${index}]: ${decoded.refusal}`);
+          return refuseDecoding(`[${index}]: ${decoded.refusal}`);
         }
         items.push(decoded.value);
       }
@@ -130,7 +130,7 @@ export function pair<A, B>(first: Codec<A>, second: Codec<B>): Codec<readonly [A
   return {
     decode: (json) => {
       if (!Array.isArray(json) || json.length !== 2) {
-        return refuse("expected pair");
+        return refuseDecoding("expected pair");
       }
       const a = first.decode(json[0]);
       if (!a.ok) {
@@ -152,7 +152,7 @@ export function struct<T>(name: string, fields: Fields<T>): Codec<T> {
       for (const [key, codec] of entries) {
         const decoded = codec.decode(objValD(json, key));
         if (!decoded.ok) {
-          return refuse(`${name}.${key}: ${decoded.refusal}`);
+          return refuseDecoding(`${name}.${key}: ${decoded.refusal}`);
         }
         out[key] = decoded.value;
       }
@@ -179,11 +179,11 @@ export function inductive<T extends { readonly tag: string }>(name: string, cons
     decode: (json) => {
       const tag = tagOf(json);
       if (tag === null) {
-        return refuse(`${name}: no inductive tag found`);
+        return refuseDecoding(`${name}: no inductive tag found`);
       }
       const fields = table.get(tag);
       if (fields === undefined) {
-        return refuse(`${name}: no inductive constructor matched`);
+        return refuseDecoding(`${name}: no inductive constructor matched`);
       }
       const out: Record<string, unknown> = { tag };
       if (fields.length === 0) {
@@ -191,13 +191,13 @@ export function inductive<T extends { readonly tag: string }>(name: string, cons
       }
       const payload = objVal(json, tag);
       if (!payload.ok) {
-        return refuse(`${name}.${tag}: ${payload.refusal}`);
+        return refuseDecoding(`${name}.${tag}: ${payload.refusal}`);
       }
       for (const [key, codec] of fields) {
         const raw = objVal(payload.value, key);
         const decoded = raw.ok ? codec.decode(raw.value) : raw;
         if (!decoded.ok) {
-          return refuse(`${name}.${tag}.${key}: ${decoded.refusal}`);
+          return refuseDecoding(`${name}.${tag}.${key}: ${decoded.refusal}`);
         }
         out[key] = decoded.value;
       }
@@ -221,7 +221,7 @@ export function nullary<E extends string>(name: string, members: Readonly<Record
     decode: (json) => {
       const tag = tagOf(json);
       const member = tag === null ? undefined : table.get(tag);
-      return member === undefined ? refuse(`${name}: no inductive constructor matched`) : accept(member);
+      return member === undefined ? refuseDecoding(`${name}: no inductive constructor matched`) : accept(member);
     },
     encode: (value) => value,
   };
@@ -277,7 +277,7 @@ const valueKinds: ReadonlyMap<string, (json: unknown) => Decoded<Value>> = new M
       }
       const parsed = leanToInt(coefficient.value);
       if (parsed === null) {
-        return refuse(`invalid decimal coefficient ${coefficient.value}`);
+        return refuseDecoding(`invalid decimal coefficient ${coefficient.value}`);
       }
       return mapDecoded(nat.decode(objValD(json, "scale")), (scale) => ({
         tag: ValueTag.Decimal,
@@ -327,7 +327,7 @@ export const valueCodec: Codec<Value> = {
       return kind;
     }
     const decoder = valueKinds.get(kind.value);
-    return decoder === undefined ? refuse(`unknown value kind ${kind.value}`) : decoder(json);
+    return decoder === undefined ? refuseDecoding(`unknown value kind ${kind.value}`) : decoder(json);
   },
   encode: valueToJson,
 };

@@ -118,7 +118,7 @@ export function scope(program: Program, header: Header, payload: ScopePayload): 
  * an element outside its parent's list, or listed by a Scope it does not sit in, would be begun or cleared by one owner
  * and not the other.
  */
-export function references(program: Program): string | null {
+export function membership(program: Program): string | null {
   const parentOf = (id: ElementId): ElementId | null | undefined => {
     const element = programElement(program, id);
     if (element !== null) return elementHeader(element).parent;

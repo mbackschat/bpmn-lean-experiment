@@ -9,10 +9,12 @@
  */
 import {
   MappingDialect,
+  OutputContext,
   ValueSourceTag,
   ValueTag,
   assertNever,
   compareStrings,
+  mergeSort,
   utf8ByteSize,
   type ActivityPayload,
   type Boundary,
@@ -315,6 +317,11 @@ export function evalContext(state: State, scope: ScopeOccurrenceId): EvalContext
   return { variables: visible(state, scope), nowMs: state.logicalTimeMs };
 }
 
+/** The variables `scope` itself holds, without the chain behind it. */
+export function ownVariables(state: State, scope: ScopeOccurrenceId): readonly Binding[] {
+  return state.variables.find((entry) => entry.scope === scope)?.entries ?? [];
+}
+
 /** How a catch trigger catches a raised event: its precedence, lower first, and the variables it writes. */
 export interface Catch {
   readonly rank: number;
@@ -338,58 +345,116 @@ export interface Ctx {
 }
 
 /**
- * Evaluate each mapping's source against `variables`, in order. A failed source is read by the mapping's dialect: a
- * Data Association's source is unavailable (`null`, BPMN 2.0.2 §10.4.2, which the caller decides on), an `ioParameter`
- * expression rolls the command back with the evaluation's own code (CIB-EXT-0024), and a `callVariable` copy reads null
- * (CIB-EXT-0021). Features share it here because they never import each other. Lean folds from the right, so the last
- * failing mapping's outcome is reported, as here.
+ * `bindings` with only the last binding of each target, by target name: a target bound twice keeps the value written
+ * last, as CIB's sequential writes do, and the bindings, one per target, then commute, so they are kept in the name
+ * order a publication shows them in.
  */
-export function ctxEvaluateMappings(
-  ctx: Ctx,
-  context: EvalContext,
-  mappings: readonly Mapping[],
-): Result<readonly Binding[] | null> {
-  let rest: readonly Binding[] | null = [];
-  for (let index = mappings.length - 1; index >= 0; index -= 1) {
-    const mapping = mappings[index] as Mapping;
-    const next = mappingStep(mapping, ctx.evaluate(context, mapping.source), rest);
-    if (!next.ok) return next;
-    rest = next.value;
+export function lastWrites(bindings: readonly Binding[]): readonly Binding[] {
+  const kept: Binding[] = [];
+  for (let index = bindings.length - 1; index >= 0; index -= 1) {
+    const binding = bindings[index] as Binding;
+    if (!kept.some(([name]) => name === binding[0])) kept.unshift(binding);
   }
-  return committed(rest);
+  return mergeSort(kept, (left, right) => compareStrings(left[0], right[0]) <= 0);
 }
 
-function mappingStep(mapping: Mapping, evaluation: Evaluation, rest: readonly Binding[] | null): Result<readonly Binding[] | null> {
+/**
+ * Evaluate each mapping's source in document order, as CIB runs a parameter list one at a time (`IoMapping.java:38-48`),
+ * against `reads(earlier)`, the context given the bindings `earlier` the mappings before it made. A failed source is
+ * read by the mapping's dialect: a Data Association's source is unavailable (`null`, BPMN 2.0.2 §10.4.2, which the
+ * caller decides on) and the later sources are still evaluated, an `ioParameter` expression rolls the command back with
+ * the evaluation's own code (CIB-EXT-0024), and a `callVariable` copy reads null (CIB-EXT-0021). The first rollback or
+ * `unsupported` ends the evaluation, so a later mapping is never reached, as in CIB, where the first throwing parameter
+ * ends the command. A target bound twice keeps its last value (`lastWrites`). Features share it here because they
+ * never import each other.
+ */
+export function ctxEvaluateMappingsWith(
+  ctx: Ctx,
+  reads: (earlier: readonly Binding[]) => EvalContext,
+  mappings: readonly Mapping[],
+): Result<readonly Binding[] | null> {
+  const made: Binding[] = [];
+  let available = true;
+  for (const mapping of mappings) {
+    const next = mappingStep(mapping, ctx.evaluate(reads(made), mapping.source));
+    if (!next.ok) return next;
+    if (next.value === null) available = false;
+    else made.push([mapping.target, next.value]);
+  }
+  return committed(available ? lastWrites(made) : null);
+}
+
+/** `ctxEvaluateMappingsWith` where every mapping reads `context`, which no earlier mapping changes. */
+export function ctxEvaluateMappings(ctx: Ctx, context: EvalContext, mappings: readonly Mapping[]): Result<readonly Binding[] | null> {
+  return ctxEvaluateMappingsWith(ctx, () => context, mappings);
+}
+
+/** One mapping's binding, `null` when its Data Association source is unavailable. */
+function mappingStep(mapping: Mapping, evaluation: Evaluation): Result<Value | null> {
   switch (evaluation.tag) {
     case EvaluationTag.Value:
-      return committed(rest === null ? null : [[mapping.target, evaluation.result], ...rest]);
+      return committed(evaluation.result);
     case EvaluationTag.Unsupported:
       return failed(FailureTag.Unsupported, evaluation.code);
     case EvaluationTag.Failure:
-      return unavailableSource(mapping, evaluation.code, rest);
+      return unavailableSource(mapping, evaluation.code);
   }
   return assertNever(evaluation);
 }
 
-function unavailableSource(mapping: Mapping, code: string, rest: readonly Binding[] | null): Result<readonly Binding[] | null> {
+function unavailableSource(mapping: Mapping, code: string): Result<Value | null> {
   switch (mapping.dialect) {
     case MappingDialect.DataAssociation:
       return committed(null);
     case MappingDialect.IoParameter:
       return failed(FailureTag.RolledBack, code);
     case MappingDialect.CallVariable:
-      return committed(rest === null ? null : [[mapping.target, { tag: ValueTag.Null }], ...rest]);
+      return committed({ tag: ValueTag.Null });
   }
   return assertNever(mapping.dialect);
 }
 
+/**
+ * What an Activity's or a Scope's next output mapping reads, given the outputs `written` before it: `own`, the frame's
+ * submitted values and own locals, `installed`, the values the frame set before its outputs run, then `outer`, the
+ * chain the outputs are written into. Under `OutputContext.activityScope` the outputs read every name where CIB holds
+ * it when the next parameter resolves in the frame. CIB writes each output parameter into the outer scope before it
+ * evaluates the next one (`IoMapping.java:44-48`, `OutputParameter.java:44-52`), so the outputs already written stand
+ * behind `own`, the latest first. An installed value went through `setVariable` on the frame's execution
+ * (`AbstractVariableScope.java:331-345`): one of a name the frame holds is that local and shadows, any other reached
+ * its nearest owner or the root, where a later write of the same name replaces it, so it stands behind the written
+ * outputs and ahead of the outer chain (CIB-EXT-0031).
+ */
+export function ctxOutputReads(
+  ctx: Ctx, nowMs: number, own: readonly Binding[], installed: readonly Binding[], outer: readonly Binding[],
+): (written: readonly Binding[]) => EvalContext {
+  switch (ctx.program.options.outputContext) {
+    case OutputContext.Submission:
+      return () => ({ variables: [...installed, ...own, ...outer], nowMs });
+    case OutputContext.ActivityScope: {
+      const owned = (name: string): boolean => own.some(([other]) => other === name);
+      const held = installed.filter(([name]) => owned(name));
+      const outward = installed.filter(([name]) => !owned(name));
+      return (written) => ({ variables: [...held, ...own, ...[...written].reverse(), ...outward, ...outer], nowMs });
+    }
+  }
+  return assertNever(ctx.program.options.outputContext);
+}
+
 /** The bindings of `mappings` where an unavailable source has no state to wait in, a semantic failure. */
-export function ctxRequireMappings(ctx: Ctx, context: EvalContext, mappings: readonly Mapping[]): Result<readonly Binding[]> {
-  const evaluated = ctxEvaluateMappings(ctx, context, mappings);
+export function ctxRequireMappingsWith(
+  ctx: Ctx, reads: (earlier: readonly Binding[]) => EvalContext, mappings: readonly Mapping[],
+): Result<readonly Binding[]> {
+  const evaluated = ctxEvaluateMappingsWith(ctx, reads, mappings);
   if (!evaluated.ok) return evaluated;
   return evaluated.value === null
     ? failed(FailureTag.SemanticFailure, "mapping-source-unavailable")
     : committed(evaluated.value);
+}
+
+/** `ctxRequireMappingsWith` where every mapping reads `context`. */
+export function ctxRequireMappings(ctx: Ctx, context: EvalContext, mappings: readonly Mapping[]): Result<readonly Binding[]> {
+  return ctxRequireMappingsWith(ctx, () => context, mappings);
 }
 
 /**

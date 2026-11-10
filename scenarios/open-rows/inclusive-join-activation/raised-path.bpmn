@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_RaisedPath" targetNamespace="urn:bpmn-lean:scenarios:inclusive-join-activation:raised-path">
+  <process id="Process_RaisedPath" name="A join input whose only upstream work ends by an uncaught business Error" isExecutable="true">
+    <startEvent id="CaseOpened" name="Case opened" />
+    <parallelGateway id="SplitCase" name="Split case" gatewayDirection="Diverging" />
+    <userTask id="ReviewA" name="Review A" />
+    <serviceTask id="CheckB" name="Check B" implementation="urn:bpmn-lean:effect:probe-v1"
+                 camunda:delegateExpression="${bpmnLeanEffectHandler}" camunda:asyncBefore="true" />
+    <inclusiveGateway id="Reviewed" name="Reviewed" gatewayDirection="Converging" />
+    <userTask id="Decide" name="Decide" />
+    <endEvent id="CaseDecided" name="Case decided" />
+    <sequenceFlow id="Flow_Opened" sourceRef="CaseOpened" targetRef="SplitCase" />
+    <sequenceFlow id="Flow_ToA" sourceRef="SplitCase" targetRef="ReviewA" />
+    <sequenceFlow id="Flow_ToB" sourceRef="SplitCase" targetRef="CheckB" />
+    <sequenceFlow id="Flow_ADone" sourceRef="ReviewA" targetRef="Reviewed" />
+    <sequenceFlow id="Flow_BDone" sourceRef="CheckB" targetRef="Reviewed" />
+    <sequenceFlow id="Flow_Reviewed" sourceRef="Reviewed" targetRef="Decide" />
+    <sequenceFlow id="Flow_Decided" sourceRef="Decide" targetRef="CaseDecided" />
+  </process>
+</definitions>

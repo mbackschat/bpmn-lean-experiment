@@ -1,6 +1,7 @@
 /** Registry, transcribed from `Kernel/Registry.lean`: the hooks record the features fill. Only `run.ts` imports it. */
 import { defaultHooks, type Hooks } from "./hooks.js";
 import * as Data from "./feature/data.js";
+import * as Decision from "./feature/decision.js";
 import * as Flow from "./feature/flow.js";
 import * as Work from "./feature/work.js";
 import * as Compensation from "./feature/compensation.js";
@@ -9,10 +10,13 @@ import * as Propagation from "./feature/propagation.js";
 import * as Scopes from "./feature/scopes.js";
 import * as Subscriptions from "./feature/subscriptions.js";
 
+const workHooks: Work.WorkHooks = { ...Work.defaultWorkHooks, runDecision: Decision.runDecision };
+const propagationHooks: Propagation.PropagationHooks = { ...Propagation.defaultPropagationHooks, mappedErrorOutputs: Work.mappedErrorOutputs };
+
 export const hooks: Hooks = {
   ...defaultHooks,
   arriveStart: Subscriptions.arriveStart,
-  arriveActivity: Work.arriveActivity,
+  arriveActivity: (ctx, header, payload, occurrence, state) => Work.arriveActivity(workHooks, ctx, header, payload, occurrence, state),
   arriveMultiInstance: MultiInstance.arriveMultiInstance,
   arriveScope: Scopes.arriveScope,
   arriveGateway: Flow.arriveGateway,
@@ -30,7 +34,7 @@ export const hooks: Hooks = {
   arm: Subscriptions.arm,
   armScope: Subscriptions.armScope,
   armGateway: Subscriptions.armGateway,
-  raise: Propagation.raise,
+  raise: (ctx, raised, origin, state) => Propagation.raise(propagationHooks, ctx, raised, origin, state),
   compensate: Compensation.compensate,
   failCompensation: Compensation.failCompensation,
   leave: Subscriptions.leave,

@@ -7,7 +7,10 @@
  * in its deployment; each decision is one table with a selected hit policy, typed bare-name inputs, named outputs and
  * entries in the FEEL unary-test subset whose kinds agree with their `typeRef`s. A refusal carries a stable code.
  */
-import { CallBindingTag, ValueSourceTag, assertNever, programDecision, type Program, type RuleWork } from "../../il/types.js";
+import {
+  BusinessRuleTask, CallBindingTag, MappingDialect, ValueSourceTag, assertNever, firstOf, programDecision, withinJavaInt, type Envelope,
+  type Program, type RuleWork,
+} from "../../il/types.js";
 import {
   DecisionLogicTag,
   FeelLiteralTag,
@@ -18,7 +21,6 @@ import {
   TypeRefTag,
   UnaryTestTag,
   significantDigits,
-  withinJavaInt,
   type Decision,
   type DecisionInput,
   type DecisionOutput,
@@ -179,7 +181,7 @@ function input(entry: DecisionInput): string | null {
  * Two or more outputs each need a unique name (`DefaultDmnTransform.java:300-315`); the kernel names every entry, so a
  * single output needs one too (item 3).
  */
-function outputs(declared: readonly DecisionOutput[]): string | null {
+function declaredOutputs(declared: readonly DecisionOutput[]): string | null {
   const names = declared.flatMap((output) => (output.name === null ? [] : [output.name]));
   if (names.length !== declared.length || new Set(names).size !== names.length) return "decision.outputName";
   return firstOf(declared, (output) => (output.typeRef === null ? null : typeRef(output.typeRef)));
@@ -221,7 +223,7 @@ function decision(entry: Decision): string | null {
       return "decision.logic";
     case DecisionLogicTag.Table: {
       const table = entry.logic.value;
-      return hitPolicy(table) ?? firstOf(table.inputs, input) ?? outputs(table.outputs) ?? firstOf(table.rules, (each) => rule(table, each));
+      return hitPolicy(table) ?? firstOf(table.inputs, input) ?? declaredOutputs(table.outputs) ?? firstOf(table.rules, (each) => rule(table, each));
     }
   }
   return assertNever(entry.logic);
@@ -233,14 +235,6 @@ function resource(entry: DecisionResource): string | null {
   return firstOf(entry.decisions, decision);
 }
 
-function firstOf<T>(items: readonly T[], refusal: (item: T) => string | null): string | null {
-  for (const item of items) {
-    const found = refusal(item);
-    if (found !== null) return found;
-  }
-  return null;
-}
-
 /** Every resource the program carries, whole, and decision ids unique across them. */
 export function resources(program: Program): string | null {
   const ids = program.decisionResources.flatMap((entry) => entry.decisions).map((entry) => entry.id);
@@ -248,10 +242,17 @@ export function resources(program: Program): string | null {
 }
 
 /**
- * Item 1: a literal `decisionRef` the program carries, the latest binding, no tenant, and a result variable CIB does not
- * write onto the task's transient `decisionResult` local (`DecisionEvaluationUtil.java:79-87`).
+ * Item 1: a profile that selects decision tables (CIB-EXT-0032), since BPMN 2.0.2 §10.3.3 leaves a Business Rule Task's
+ * rule engine open; inputs and outputs only as `camunda:inputOutput` parameters, since CIB runs no Data Association
+ * on a decision task and the decision semantics give a DataOutput no source; a literal `decisionRef` the program
+ * carries, the latest binding, no tenant, and a result variable CIB does not write onto the task's transient
+ * `decisionResult` local (`DecisionEvaluationUtil.java:79-87`).
  */
-export function task(program: Program, work: RuleWork): string | null {
+export function task(program: Program, work: RuleWork, envelope: Envelope): string | null {
+  if (program.options.businessRuleTask === BusinessRuleTask.Refused) return "work.rule";
+  if ([...envelope.inputs, ...envelope.outputs].some((mapping) => mapping.dialect === MappingDialect.DataAssociation)) {
+    return "work.rule.dataAssociation";
+  }
   switch (work.decision.tag) {
     case ValueSourceTag.Expression:
       return "work.rule.decisionExpression";

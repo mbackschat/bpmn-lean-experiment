@@ -1,5 +1,7 @@
 module
 
+public import Kernel.IL.Types.Lexical
+
 /-! # DMN decision tables
 
 The reader's meaning-preserving read of the DMN 1.3 resources a program carries, for the Business Rule Tasks that name
@@ -128,10 +130,6 @@ structure DecisionResource where
   expressionLanguage : Option String := none
   decisions : List Decision
   deriving Repr
-
-/-- Java `int` (`Integer.MIN_VALUE` to `Integer.MAX_VALUE`), the carrier of a DMN `integer` value
-(`IntegerDataTypeTransformer.java:32-44`). -/
-def withinJavaInt (value : Int) : Bool := decide (-2147483648 ≤ value) && decide (value ≤ 2147483647)
 
 /-- The significant digits of `coefficient`, trailing zeros dropped: at most 15 is exact both as a Decimal128 and as a
 Java `double` (DECISION-SEMANTICS-SPEC item 4). -/

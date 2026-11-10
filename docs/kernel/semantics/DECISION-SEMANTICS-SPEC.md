@@ -59,11 +59,12 @@ The DMN 1.3 reading copy is not yet in the external corpus ([SOURCES](../../SOUR
 
 The admitted Business Rule Task has:
 
+- a profile that selects decision tables (`ProfileOptions.businessRuleTask = decisionTable`, CIB-EXT-0032); the standards profile refuses every decision task (`work.rule`), since BPMN 2.0.2 §10.3.3 names no rule engine;
 - a literal `camunda:decisionRef` naming a decision the program carries;
 - the default (latest) binding and no tenant;
 - `camunda:resultVariable` absent, or a name other than `decisionResult`;
 - an absent `mapDecisionResult` (meaning `resultList`) or one of the four mapper names;
-- `ioParameter` input and output mappings (PC-AUTO-08, [below](#mappings-on-a-decision-task)), and no Multi-Instance body.
+- `ioParameter` input and output mappings (PC-AUTO-08, [below](#mappings-on-a-decision-task)), no Data Association (`work.rule.dataAssociation`), and no Multi-Instance body. CIB's parser reads no Data Association (pinned `BpmnParse.java` has no such parse), and no item here gives a DataOutput a source.
 
 A `decisionRef` takes precedence over a delegate, as in CIB, and the delegate attribute CIB ignores is refused as `reader.factNotCarried`. The legacy `resultVariableName` alias is refused as `reader.factNotCarried`, like every Camunda attribute the reader declares but does not carry.
 
@@ -188,7 +189,7 @@ A decision failure takes the outcome the [expression semantics' stimulus table](
 
 An Error catcher coded with a Java class name would catch the failure in CIB. That relation is [CIB-EXT-0029](../../CIB-BPMN-RELATION-REGISTER.md#cib-ext-0029--a-technical-failure-is-caught-by-an-error-code-that-names-its-java-exception-class), which no profile selects, so such a model is outside the claim.
 
-`unique-absent-input` fixes, before code, whether an absent input variable is null in `feel-scala` or a failure.
+The kernel reads an absent input variable as null, as `feel-scala` resolves an unknown name (`Feature.Decision.readInput`); `unique-absent-input` is its witness.
 
 ## Classification drafts
 
@@ -281,6 +282,8 @@ structure DecisionResource where
 
 | Code | Refused |
 |---|---|
+| `work.rule` | a decision task under a profile that selects no decision tables (`ProfileOptions.businessRuleTask = refused`) |
+| `work.rule.dataAssociation` | a Data Input or Output Association on a decision task |
 | `work.rule.decisionExpression` | a `decisionRef` given by an expression |
 | `work.rule.binding`, `work.rule.tenant` | a binding other than latest; a tenant |
 | `work.rule.decisionMissing` | a `decisionRef` that no carried resource declares |
@@ -303,7 +306,7 @@ structure DecisionResource where
 | dynamic `decision-failed` | item 8 |
 | dynamic `unsupported` codes | `decision-conversion-text`, `decision-conversion-range`, `decision-conversion-kind`, `decision-input-kind` (item 7) |
 
-`work.rule` retires once these codes replace it. `activity.inputMappings`, `activity.outputMappings` and `activity.multiInstanceBody` keep refusing those envelope fields.
+`activity.inputMappings`, `activity.outputMappings` and `activity.multiInstanceBody` keep refusing those envelope fields.
 
 ## Parser and source binding
 
@@ -354,6 +357,17 @@ New witnesses, all in the hit-policy directory; their selecting gateway needs M2
 | `after-effect-failure` | a UNIQUE overlap reached by an effect result |
 | `after-timer-failure` | a UNIQUE overlap reached by a Timer firing |
 
+The `form-*` witnesses on [forms.dmn](../../../scenarios/open-rows/business-rule-hit-policies/forms.dmn) cover the forms the tables above leave out:
+
+| Witness | Separates |
+|---|---|
+| `form-at-most` | `<=` and `>=` include their bound, `<` excludes it |
+| `form-negative-numbers` | negative literals as a test, interval ends and comparison bounds |
+| `form-fraction-without-whole-part` | the `.5` and `-.5` number forms |
+| `form-inverted-interval` | an interval whose low end exceeds its high end matches nothing |
+| `form-escaped-quote`, `form-escaped-backslash` | the `\"` and `\\` String escapes |
+| `form-boolean-output-true`, `form-boolean-and-null-output` | `true`, `false` and `null` output literals |
+
 Every admitted form appears in at least one witness. A form the plan does not witness is refused by a code above.
 
 CIB evidence needs the runner to deploy each scenario's bound `*.dmn` and to realize a Business Rule Task. No runner dependency is needed, because the DMN engine and `feel-scala` ship with CIB.
@@ -366,7 +380,7 @@ Kernel tests cover:
 
 ## PC-AUTO-08 interpretation
 
-Status: the cold interpretation review (2026-11-10) approved this text with required changes, which it folds in. The decision-task mappings are implemented in `Feature.Work.evaluateDecision` and admitted by the `rule` arm of `Admission.Work.mapsData`, both with their TypeScript pairs. Two meanings are added: when a `latest` decision reference binds, and the mappings of a decision task whose result feeds routing and a send. The version binding of a Call Activity's called element is PC-SCOPE-03's, decided by that row's review against its own two-version population witness; this section claims nothing about it.
+Status: the cold interpretation review (2026-11-10) approved this text with required changes, which it folds in. The decision-task mappings are implemented in `Feature.Work.evaluateDecision` and admitted by the `rule` arm of `Admission.Work.traits`, both with their TypeScript pairs. Two meanings are added: when a `latest` decision reference binds, and the mappings of a decision task whose result feeds routing and a send. The version binding of a Call Activity's called element is PC-SCOPE-03's, decided by that row's review against its own two-version population witness; this section claims nothing about it.
 
 ### Binding time of a `latest` decision reference
 
@@ -380,7 +394,7 @@ CIB binds at every use:
 | A missing key throws `DecisionDefinitionNotFoundException`. | `E/persistence/deploy/cache/DecisionDefinitionCache.java:67-69` |
 | That exception is a `ProcessEngineException` without a cause, so the behavior rethrows it rather than raising a BPMN Error, and the reaching command rolls back. | `E/bpmn/helper/BpmnExceptionHandler.java:57-60,70-72` |
 
-The kernel binds once, at program assembly. A program carries its decisions without versions, and two carried decisions with one id are refused (`decision.duplicateId`), so a program names exactly one decision per key. Every step of an instance receives the same program, which is fixed per instance, so `Decision.run` (`feature/work/decision.ts`) looks up that one decision through recovery and replay. The binding is therefore the program's, not a per-instance record.
+The kernel binds once, at program assembly. A program carries its decisions without versions, and two carried decisions with one id are refused (`decision.duplicateId`), so a program names exactly one decision per key. Every step of an instance receives the same program, which is fixed per instance, so `Decision.runDecision` (`feature/decision.ts`) looks up that one decision through recovery and replay. The binding is therefore the program's, not a per-instance record.
 
 Classification: CIB's per-use binding is the relation. The kernel's assembly binding is a profile limitation, drafted as a CIB-LIM entry, with a boundary line on CIB-EXT-0032. The two agree when no deployment touches the key between the assembly of the caller's program and the evaluation. They differ in these cases, each outside the claim:
 
@@ -407,7 +421,7 @@ The kernel admits `ioParameter` input and output mappings on a decision task (`F
 2. The decision reads its inputs from that scope.
 3. The result is written outward from that scope, as its own signal ahead of the completion.
 4. The completion's outgoing conditions run in the completion pipeline's place for the profile's `ConditionOrder`. Under `beforeOutputs` they read the result and the variables before the outputs; under `afterOutputs` they read the outputs.
-5. The outputs map from the result first, then from the task's scope under `OutputContext`. A result no output reads is no error.
+5. The outputs read the result where its write left it: under `OutputContext.activityScope` a task-local of its name shadows, and otherwise an earlier output's write of its name comes first (`Ctx.outputReads`, CIB-EXT-0031), as CIB's `setVariable` placed it (`E/util/DecisionEvaluationUtil.java:86`). A result no output reads is no error.
 6. The task-local result ends with the task.
 
 A failed decision writes nothing and maps nothing (§8), so routing never reads fabricated success data. Each output parameter is its own mapping, so multiple declared outputs map independently.

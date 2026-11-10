@@ -16,7 +16,7 @@ import {
   nat,
   objVal,
   objValD,
-  refuse,
+  refuseDecoding,
   strictly,
   string,
   valueCodec,
@@ -62,8 +62,8 @@ function fieldsRefusal(json: unknown, required: readonly string[], optional: rea
 
 /** The `kind` of a tagged object, after checking it has its form's keys. */
 function kindOf(json: unknown): Decoded<string> {
-  if (!isObject(json)) return refuse(`${CodecRefusalCode.Malformed}: object expected`);
-  return Object.hasOwn(json, "kind") ? string.decode(json["kind"]) : refuse(`${CodecRefusalCode.MissingField}: kind`);
+  if (!isObject(json)) return refuseDecoding(`${CodecRefusalCode.Malformed}: object expected`);
+  return Object.hasOwn(json, "kind") ? string.decode(json["kind"]) : refuseDecoding(`${CodecRefusalCode.MissingField}: kind`);
 }
 
 /** The scenario contract's `messageChannel`: an operation, a direct or an unspecified Message. */
@@ -80,7 +80,7 @@ export function channelFromJson(json: unknown): Decoded<MessageChannel> {
   const required = Object.hasOwn(form, kind.value) ? form[kind.value] : undefined;
   const refusal = required === undefined ? null : fieldsRefusal(json, required);
   if (refusal !== null) {
-    return refuse(refusal);
+    return refuseDecoding(refusal);
   }
   if (kind.value === "operationMessage") {
     const messageId = stringField(json, "messageId");
@@ -107,7 +107,7 @@ export function channelFromJson(json: unknown): Decoded<MessageChannel> {
   if (kind.value === "unspecifiedMessage") {
     return accept({ messageId: null, interfaceRef: null, operationRef: null });
   }
-  return refuse(`unknown message channel kind ${kind.value}`);
+  return refuseDecoding(`unknown message channel kind ${kind.value}`);
 }
 
 /** An operation channel needs all three identifiers; otherwise a Message identifier makes a direct channel. */
@@ -130,7 +130,7 @@ export function channelToJson(channel: MessageChannel): JsonValue {
 export function occurrenceFromJson(json: unknown): Decoded<OccurrenceRef> {
   const refusal = fieldsRefusal(json, ["processInstanceId", "elementId", "activation"]);
   if (refusal !== null) {
-    return refuse(refusal);
+    return refuseDecoding(refusal);
   }
   const processInstanceId = stringField(json, "processInstanceId");
   if (!processInstanceId.ok) {
@@ -161,7 +161,7 @@ function decoding<T>(decode: () => T): Decoded<T> {
   try {
     return accept(decode());
   } catch (error) {
-    if (error instanceof Refusal) return refuse(error.refusal);
+    if (error instanceof Refusal) return refuseDecoding(error.refusal);
     throw error;
   }
 }
@@ -370,7 +370,7 @@ export function stimulusFromJson(json: unknown): Decoded<readonly [string, Input
     const atMs = at === undefined ? null : get(nat.decode(at));
     return [commandId, inputFromJson(json, kind, atMs)] as const;
   });
-  return decoded.ok ? decoded : refuse(coded(decoded.refusal));
+  return decoded.ok ? decoded : refuseDecoding(coded(decoded.refusal));
 }
 
 /** The refusal or failure code a failure carries. */

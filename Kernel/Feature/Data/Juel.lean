@@ -21,7 +21,19 @@ def aligned (left right : Int × Int) : Int × Int × Int :=
   let scale := max left.2 right.2
   (left.1 * 10 ^ (scale - left.2).toNat, right.1 * 10 ^ (scale - right.2).toNat, scale)
 
-def arithmetic (op : JuelBinary) (left right : JVal) : Eval JVal := do
+def addDecimal (left right : Int × Int) : Int × Int :=
+  let (x, y, scale) := aligned left right
+  (x + y, scale)
+
+def subtractDecimal (left right : Int × Int) : Int × Int :=
+  let (x, y, scale) := aligned left right
+  (x - y, scale)
+
+def multiplyDecimal (left right : Int × Int) : Int × Int := (left.1 * right.1, left.2 + right.2)
+
+/-- `NumberOperations.add`, `sub` or `mul`, given its rule over BigDecimals and over longs. -/
+def arithmetic (onDecimal : Int × Int → Int × Int → Int × Int) (onLong : Int → Int → Int) (left right : JVal) :
+    Eval JVal := do
   match left, right with
   | .null, .null => return long 0
   | _, _ =>
@@ -31,14 +43,13 @@ def arithmetic (op : JuelBinary) (left right : JVal) : Eval JVal := do
   if decimalOperand then
     let a ← toDecimal left
     let b ← toDecimal right
-    if op == .mul then return .decimal (a.1 * b.1) (a.2 + b.2)
-    let (x, y, scale) := aligned a b
-    return .decimal (if op == .add then x + y else x - y) scale
+    let (coefficient, scale) := onDecimal a b
+    return .decimal coefficient scale
   if dotEe left || dotEe right then double left right
   else
     let a ← toLong left
     let b ← toLong right
-    return long (if op == .add then a + b else if op == .sub then a - b else a * b)
+    return long (onLong a b)
 
 def isDecimal : JVal → Bool
   | .decimal _ _ => true
@@ -184,28 +195,28 @@ def equal (left right : JVal) : Eval Bool := do
   | .string _, _ | _, .string _ => return (← toText left) == (← toText right)
   | _, _ => decided (javaEquals left right)
 
-def operate (op : JuelBinary) (left right : JVal) : Eval JVal :=
+/-- `left op right`, the one dispatch over `JuelBinary`: `and` and `or` skip their right operand once the left one
+decides (EL §1.9); every other operator evaluates both, left first. -/
+def binary (op : JuelBinary) (sub : Nat → Eval JVal) (leftIndex rightIndex : Nat) : Eval JVal :=
+  let both (rule : JVal → JVal → Eval JVal) : Eval JVal := do rule (← sub leftIndex) (← sub rightIndex)
+  let logical (decisive : Bool) : Eval JVal := do
+    let first ← toBool (← sub leftIndex)
+    if first == decisive then return .bool first
+    return .bool (← toBool (← sub rightIndex))
   match op with
-  -- `binary` answers these before both operands are evaluated.
-  | .or | .and | .div => malformed
-  | .eq => JVal.bool <$> equal left right
-  | .ne => (JVal.bool ∘ not) <$> equal left right
-  | .lt => relational false (· == .lt) left right
-  | .gt => relational false (· == .gt) left right
-  | .le => relational true (· != .gt) left right
-  | .ge => relational true (· != .lt) left right
-  | .add | .sub | .mul => arithmetic op left right
-  | .mod => remainder left right
-
-def binary (op : JuelBinary) (sub : Nat → Eval JVal) (leftIndex rightIndex : Nat) : Eval JVal := do
-  if op == .div then limit "expression.juel.division"
-  else
-    let left ← sub leftIndex
-    if op == .and || op == .or then
-      let first ← toBool left
-      if first == (op == .or) then return .bool first
-      return .bool (← toBool (← sub rightIndex))
-    operate op left (← sub rightIndex)
+  | .div => limit "expression.juel.division"
+  | .and => logical false
+  | .or => logical true
+  | .eq => both fun left right => JVal.bool <$> equal left right
+  | .ne => both fun left right => (JVal.bool ∘ not) <$> equal left right
+  | .lt => both (relational false (· == .lt))
+  | .gt => both (relational false (· == .gt))
+  | .le => both (relational true (· != .gt))
+  | .ge => both (relational true (· != .lt))
+  | .add => both (arithmetic addDecimal (· + ·))
+  | .sub => both (arithmetic subtractDecimal (· - ·))
+  | .mul => both (arithmetic multiplyDecimal (· * ·))
+  | .mod => both remainder
 
 /-! ## Property access (`AstProperty.eval`; EL §1.6) -/
 
@@ -215,13 +226,13 @@ def listIndex : JVal → Eval Int
   | .string text =>
     -- dynamic-only: `Integer.parseInt` reads Unicode digits the kernel does not model.
     if !isAscii text then limit "juel.nonAsciiText"
-    else match signedDigits? text.toList with
-      | some parsed => if wrap32 parsed == parsed then .ok parsed else fail elError
+    else match parseJavaInt? text with
+      | some parsed => .ok parsed
       | none => fail elError
   -- dynamic-only: another index kind's coercion depends on the shaded resolver.
   | _ => limit "juel.indexType"
 
-def element? (items : List Value) (index : Int) : Option Value :=
+def listItem? (items : List Value) (index : Int) : Option Value :=
   if index < 0 then none else items[index.toNat]?
 
 /-- `base.name` or `base[name]` over a non-null base and property. -/
@@ -232,7 +243,7 @@ def property (base name : JVal) : Eval JVal := do
     | .string key => return ((entries.find? (·.1 == key)).map (fromValue ·.2)).getD .null
     -- dynamic-only: a non-String key's lookup depends on the host Map class.
     | _ => limit "juel.indexType"
-  | .list items => return ((element? items (← listIndex name)).map fromValue).getD .null
+  | .list items => return ((listItem? items (← listIndex name)).map fromValue).getD .null
   | .string _ | .bool _ | .int _ _ | .decimal _ _ | .null =>
     let rendered ← toText name
     let isString := match base with
@@ -270,6 +281,9 @@ def indexResult (found : Option Nat) : JVal :=
 
 def stringMethod (method : JuelMethod) (receiver : String) (args : List JVal) : Eval JVal := do
   let units := utf16 receiver
+  let asciiCase (mapping : String → String) : Eval JVal :=
+    -- dynamic-only: Java maps a non-ASCII character by the JVM's default locale.
+    if !isAscii receiver then limit "juel.nonAsciiText" else .ok (.string (mapping receiver))
   match method with
   | .length => return integer units.length
   | .isEmpty => return .bool receiver.isEmpty
@@ -289,10 +303,8 @@ def stringMethod (method : JuelMethod) (receiver : String) (args : List JVal) : 
     -- `StringIndexOutOfBoundsException` (`String.substring`).
     if begin < 0 || finish > units.length || begin > finish then fail elError
     else whole ((units.drop begin.toNat).take (finish - begin).toNat)
-  | .toUpperCase | .toLowerCase =>
-    -- dynamic-only: Java maps a non-ASCII character by the JVM's default locale.
-    if !isAscii receiver then limit "juel.nonAsciiText"
-    else return .string (if method == .toUpperCase then receiver.toUpper else receiver.toLower)
+  | .toUpperCase => asciiCase String.toUpper
+  | .toLowerCase => asciiCase String.toLower
   | .trim => return .string (String.ofList (javaTrim receiver.toList))
   | .replace =>
     let target ← textArgument args.head?
@@ -318,7 +330,7 @@ def listMethod (method : JuelMethod) (receiver : JVal) (items : List Value) (arg
   | .get =>
     let index ← intArgument (some argument)
     -- `IndexOutOfBoundsException` (`List.get`).
-    match element? items index with
+    match listItem? items index with
     | some item => return fromValue item
     | none => fail elError
   | .length | .startsWith | .endsWith | .substring | .toUpperCase | .toLowerCase | .trim | .concat
@@ -341,7 +353,7 @@ def mapMethod (method : JuelMethod) (receiver : JVal) (entries : List (String ×
   | .length | .contains | .startsWith | .endsWith | .indexOf | .lastIndexOf | .substring
   | .toUpperCase | .toLowerCase | .trim | .concat | .replace => wrongReceiver
 
-def invoke (method : JuelMethod) (receiver : JVal) (args : List JVal) : Eval JVal :=
+def applyMethod (method : JuelMethod) (receiver : JVal) (args : List JVal) : Eval JVal :=
   let first := args.head?.getD .null
   match receiver with
   | .string value => stringMethod method value args
@@ -349,7 +361,7 @@ def invoke (method : JuelMethod) (receiver : JVal) (args : List JVal) : Eval JVa
   | .map entries => mapMethod method receiver entries first
   | .null | .bool _ | .int _ _ | .decimal _ _ => wrongReceiver
 
-def call (payload : JuelCallNode) (sub : Nat → Eval JVal) : Eval JVal := do
+def methodCall (payload : JuelCallNode) (sub : Nat → Eval JVal) : Eval JVal := do
   match payload.target with
   | .other _ => limit "expression.juel.method"
   | .listed method =>
@@ -358,16 +370,9 @@ def call (payload : JuelCallNode) (sub : Nat → Eval JVal) : Eval JVal := do
       let receiver ← sub payload.receiver
       match receiver with
       | .null => fail "juel.propertyNotFound"
-      | _ => invoke method receiver (← payload.args.mapM sub)
+      | _ => applyMethod method receiver (← payload.args.mapM sub)
 
 /-! ## Nodes -/
-
-/-- A digits-only lexeme within `Long.valueOf`'s range (`Parser.java:140`). -/
-def integerLexeme? (digits : String) : Option Int :=
-  if digits.isEmpty || !digits.all Char.isDigit then none
-  else
-    let value : Int := digits.foldl (fun total char => total * 10 + (char.toNat - '0'.toNat)) 0
-    if value ≤ 9223372036854775807 then some value else none
 
 /-- One node, given `sub`, the evaluation of an earlier node: the one dispatch over `JuelNode`, kept apart from the
 recursion so that it is a single match site (guard 18). -/
@@ -400,7 +405,7 @@ def visit (context : EvalContext) (sub : Nat → Eval JVal) : JuelNode → Eval 
       match ← sub name with
       | .null => return .null
       | key => property value key
-  | .call payload => call payload sub
+  | .call payload => methodCall payload sub
   | .computedCall _ => limit "expression.juel.computedMethod"
   | .unary op operand => do unary op (← sub operand)
   | .binary payload => binary payload.op sub payload.left payload.right

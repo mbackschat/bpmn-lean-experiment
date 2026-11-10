@@ -211,7 +211,10 @@ export function work(value) {
   }
 }
 `,
-}, /switch over WorkTag has a default arm[\s\S]*does not end in assertNever/u);
+  "packages/kernel/src/feature/work.ts": `import { WorkTag } from "../il/types.js";
+export const isUser = (work) => work.tag === WorkTag.User;
+`,
+}, /switch over WorkTag has a default arm[\s\S]*does not end in assertNever[\s\S]*equality test on guarded WorkTag member inside its owner/u);
 
 holdsItsGround("guard 3 (mirror enumerations)", mirrorEnumerationFindings, {
   "packages/kernel/src/feature/flow.ts": `import { ElementTag } from "../il/types.js";

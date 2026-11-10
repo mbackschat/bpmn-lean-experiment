@@ -10,6 +10,9 @@ export function assertNever(value: never): never {
   throw new TypeError(`unhandled reader variant ${JSON.stringify(value)}`);
 }
 
+/** The ASCII digit test of the FEEL and JUEL lexers; `undefined`, a position past the end of the text, is no digit. */
+export const isDigit = (char: string | undefined): boolean => char !== undefined && char >= "0" && char <= "9";
+
 export const ctor = (name: string, args: Record<string, KernelJson>): KernelJson => ({ [name]: args });
 
 export const literalSource = (value: string): KernelJson => ctor("literal", { value });
@@ -71,6 +74,9 @@ export type KernelProfileOptions = Readonly<{
   multiInstanceCounters: "none" | "cibLocals";
   multiInstanceInputFailure: "hold" | "rollback";
   multiInstanceCount: "integer" | "javaInt";
+  businessRuleTask: "refused" | "decisionTable";
+  inclusiveJoinReach: "withBoundaries" | "outgoingOnly";
+  branchSchedule: "orderInvariant" | "declarationDepthFirst";
 }>;
 
 /** One portable value's allowance, which bounds a scope-chain submission (`NSD-TASK-01`). */
@@ -112,6 +118,9 @@ export function kernelProfileOptions(relations: readonly string[]): KernelProfil
     multiInstanceCounters: selects("CIB-INT-0018") ? "cibLocals" : "none",
     multiInstanceInputFailure: selects("CIB-INT-0019") ? "rollback" : "hold",
     multiInstanceCount: selects("CIB-EXT-0033") ? "javaInt" : "integer",
+    businessRuleTask: selects("CIB-EXT-0032") ? "decisionTable" : "refused",
+    inclusiveJoinReach: selects("CIB-INT-0020") ? "outgoingOnly" : "withBoundaries",
+    branchSchedule: selects("CIB-OP-0016") ? "declarationDepthFirst" : "orderInvariant",
   };
 }
 

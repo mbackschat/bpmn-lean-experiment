@@ -168,6 +168,7 @@
       "CIB-CFG-0010",
       "CIB-CFG-0011",
       "CIB-DEV-0001",
+      "CIB-DEV-0002",
       "CIB-EXT-0001",
       "CIB-EXT-0004",
       "CIB-EXT-0005",
@@ -205,6 +206,7 @@
       "CIB-INT-0017",
       "CIB-INT-0018",
       "CIB-INT-0019",
+      "CIB-INT-0020",
       "CIB-LIM-0002",
       "CIB-LIM-0003",
       "CIB-LIM-0006",
@@ -223,7 +225,8 @@
       "CIB-OP-0008",
       "CIB-OP-0009",
       "CIB-OP-0010",
-      "CIB-OP-0011"
+      "CIB-OP-0011",
+      "CIB-OP-0016"
     ]
   }
 }

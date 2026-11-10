@@ -40,7 +40,7 @@ function program(conditionOrder: string): Json {
   return {
     ...wired(withOptions(json, {
       evaluator: "juel", submission: "installsVariables", undeclaredWrite: "atInstanceRoot", outputContext: "activityScope",
-      conditionOrder,
+      conditionOrder, businessRuleTask: "decisionTable",
     })),
     decisionResources: [routing],
   };
@@ -83,4 +83,31 @@ test("a decision task's input and output parameters are admitted", () => {
     assert.ok(decoded.ok, decoded.ok ? "" : decoded.refusal);
     assert.equal(admit(decoded.value), null);
   }
+});
+
+/** `T` without inputs, so its result reaches the root, with the outputs `outcome` from `'mapped'`, then `seen` from `${outcome}`. */
+function overwritten(inputs: Json[]): Json {
+  const ruleTask = activity("T", ruleWork({ decision: text("d"), resultVariable: "outcome", resultMapping: "singleResult" }), {
+    inputs, outputs: [mapping("outcome", literalValue(str("mapped"))), mapping("seen", juel(id("outcome")))],
+  });
+  return {
+    ...wired(withOptions(task(ruleTask)(base()), {
+      evaluator: "juel", submission: "installsVariables", undeclaredWrite: "atInstanceRoot", outputContext: "activityScope",
+      conditionOrder: "beforeOutputs", businessRuleTask: "decisionTable",
+    })),
+    decisionResources: [routing],
+  };
+}
+
+const seen = (outcome: Outcome): unknown => outcome.ok
+  ? (outcome.value.variables.find((scope) => scope.scope === 0)?.entries ?? []).find(([name]) => name === "seen")?.[1]
+  : outcome.failure;
+
+test("a later output reads an earlier one's write of the result's name, which the result reached outward", () => {
+  assert.deepEqual(seen(started(overwritten([]), "90")), { tag: "string", value: "mapped" });
+});
+
+test("a task-local of the result's name holds the result, which shadows an earlier output's write", () => {
+  const result = seen(started(overwritten([mapping("outcome", literalValue(str("none")))]), "90")) as { tag: string };
+  assert.equal(result.tag, "map");
 });

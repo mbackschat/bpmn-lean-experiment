@@ -124,7 +124,7 @@ function definitions(subscription: Subscription): string | null {
 }
 
 /** Only a Message subscription writes what its delivery carries; any other trigger's outputs would be dropped. */
-function outputs(subscription: Subscription): string | null {
+function subscriptionOutputs(subscription: Subscription): string | null {
   return triggerMessage(subscription.trigger) !== null || subscription.outputs.length === 0 ? null : "event.outputs";
 }
 
@@ -171,7 +171,7 @@ export function eventSubProcess(start: Subscription, interrupting: boolean): str
 }
 
 export function catchEvent(subscription: Subscription): string | null {
-  const refused = definitions(subscription) ?? outputs(subscription);
+  const refused = definitions(subscription) ?? subscriptionOutputs(subscription);
   if (refused !== null) return refused;
   const trigger = subscription.trigger;
   switch (trigger.tag) {
@@ -205,7 +205,7 @@ export function catchEvent(subscription: Subscription): string | null {
  * adopted (PC-ERROR-01).
  */
 function boundary(variables: ErrorCatchVariables, transactionHost: boolean, seen: Set<string>, attached: Boundary): string | null {
-  const refused = definitions(attached.subscription) ?? outputs(attached.subscription);
+  const refused = definitions(attached.subscription) ?? subscriptionOutputs(attached.subscription);
   if (refused !== null) return refused;
   const trigger = attached.subscription.trigger;
   switch (trigger.tag) {
@@ -252,7 +252,7 @@ export function boundaries(variables: ErrorCatchVariables, transactionHost: bool
  */
 export function start(variables: ErrorCatchVariables, nested: boolean, subscription: Subscription): string | null {
   const raised = (code: string): string | null => (nested ? null : code);
-  const refused = definitions(subscription) ?? outputs(subscription);
+  const refused = definitions(subscription) ?? subscriptionOutputs(subscription);
   if (refused !== null) return refused;
   const trigger = subscription.trigger;
   switch (trigger.tag) {

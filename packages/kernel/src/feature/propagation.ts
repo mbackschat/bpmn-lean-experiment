@@ -63,6 +63,7 @@ import {
   leaveFlows,
   leaveOutgoing,
   signal,
+  visible,
   type Binding,
   type Leave,
   type Occurrence,
@@ -74,7 +75,7 @@ import {
   type ScopeOccurrenceId,
   type State,
 } from "../state.js";
-import { ScopeRole, boundaryFire, ctxRequireMappings, evalContext, type Ctx } from "../hooks.js";
+import { ScopeRole, boundaryFire, ctxOutputReads, ctxRequireMappingsWith, lastWrites, ownVariables, type Ctx } from "../hooks.js";
 
 /** The catcher with the lowest precedence among `candidates`, the first in document order on a tie, with what it writes. */
 function best<T>(ctx: Ctx, raised: Raised, trigger: (candidate: T) => Trigger, candidates: readonly T[]): readonly [T, readonly Binding[]] | null {
@@ -87,7 +88,7 @@ function best<T>(ctx: Ctx, raised: Raised, trigger: (candidate: T) => Trigger, c
   return chosen === null ? null : [chosen[2], chosen[1]];
 }
 
-function boundaries(ctx: Ctx, element: ElementId): readonly Boundary[] {
+function boundariesOf(ctx: Ctx, element: ElementId): readonly Boundary[] {
   const found = programElement(ctx.program, element);
   return (found === null ? null : elementEnvelope(found))?.boundaries ?? [];
 }
@@ -102,7 +103,7 @@ function eventSubProcesses(ctx: Ctx, occurrence: ScopeOccurrence): readonly (rea
 }
 
 /** The public identity of a trigger: the thrower's occurrence, as `origin` names it. */
-function trigger(state: State, origin: Origin): OccurrenceRef {
+function throwerRef(state: State, origin: Origin): OccurrenceRef {
   return { processInstanceId: instanceOf(state, origin.scope), element: origin.element, activation: origin.activation };
 }
 
@@ -149,7 +150,7 @@ function unhandledError(ctx: Ctx, code: string, message: string | null, origin: 
       return committed(signal(state, {
         tag: SignalTag.EndInstance,
         status: InstanceStatus.Failed,
-        failure: { code, message, occurrence: trigger(state, origin), related: [] },
+        failure: { code, message, occurrence: throwerRef(state, origin), related: [] },
       }));
     case UnhandledError.EndsThrowingPath: {
       const enclosing = enclosingInstances(ctx, state, origin.scope);
@@ -196,9 +197,12 @@ function writeCaught(scope: ScopeOccurrenceId, writes: readonly Binding[], state
 /**
  * Under `ErrorPathOutputs.mapped` a Scope an Error boundary interrupts writes its output mappings, after the catch
  * variables `caught`: CIB sets those on the Scope's execution and then runs the mappings as it destroys the Scope
- * (`BpmnExceptionHandler#propagateError:146-154`, `ExecutionEntity.destroy`, `OutputParameter.execute`, CIB-EXT-0016).
- * The mappings are evaluated before the queued write of `caught` applies, so they read `caught` first: that write goes
- * outward from the Scope, which leaves each caught value the one visible from it.
+ * (`BpmnExceptionHandler.java:146-153`, `ExecutionEntity.java:521-525`, `OutputParameter.execute`, CIB-EXT-0016). The
+ * mappings are evaluated before the queued write of `caught` applies, so they read `caught` as installed: `setVariable`
+ * on the Scope's execution, the boundary's event scope (`BpmnParse.java:3298,3301`), leaves a caught value in a local
+ * of its name or else at its nearest owner or the root (`ctxOutputReads`). `destroy` runs the same parameter list as a
+ * normal completion (`IoMapping.java:44-48`), so the outputs read as `completeScope`'s do: under
+ * `OutputContext.ActivityScope` a later one reads an earlier one's write, ahead of a caught value no local holds.
  */
 function interruptedOutputs(
   ctx: Ctx,
@@ -213,8 +217,9 @@ function interruptedOutputs(
   switch (selected) {
     case ErrorPathOutputs.Mapped: {
       if (mappings.length === 0) return committed(state);
-      const context = evalContext(state, occurrence.id);
-      const outputs = ctxRequireMappings(ctx, { ...context, variables: [...caught, ...context.variables] }, mappings);
+      const outer = occurrence.parent === null ? [] : visible(state, occurrence.parent);
+      const reads = ctxOutputReads(ctx, state.logicalTimeMs, ownVariables(state, occurrence.id), caught, outer);
+      const outputs = ctxRequireMappingsWith(ctx, reads, mappings);
       if (!outputs.ok) return outputs;
       return committed(signal(state, { tag: SignalTag.Write, scope: parent, writes: outputs.value, rule: WriteRule.Outward }));
     }
@@ -254,7 +259,7 @@ function leaveOccurrence(
         tag: SignalTag.Compensate,
         scope: occurrence.id,
         activity: null,
-        trigger: trigger(state, origin),
+        trigger: throwerRef(state, origin),
         leave: occurrence.occurrence,
         resume: { tag: ResumeTag.Occur, element: boundary.id, scope: parent, leave: leaveFlows(boundary.outgoing) },
       }));
@@ -281,7 +286,7 @@ function searchScopes(ctx: Ctx, raised: Raised, origin: Origin, state: State, bo
         { tag: SignalTag.Begin, request: beginRequest({ element, scope: occurrence.id }) }));
     }
     if (occurrence.element !== null && occurrence.parent !== null) {
-      const attached = role === ScopeRole.MultiInstanceInstance ? [] : boundaries(ctx, occurrence.element);
+      const attached = role === ScopeRole.MultiInstanceInstance ? [] : boundariesOf(ctx, occurrence.element);
       const caught = best(ctx, raised, (boundary) => boundary.subscription.trigger, attached);
       if (caught !== null) return leaveOccurrence(ctx, raised, origin, occurrence, occurrence.parent, caught[0], caught[1], state);
     }
@@ -291,13 +296,34 @@ function searchScopes(ctx: Ctx, raised: Raised, origin: Origin, state: State, bo
 }
 
 /** `Signal.raise`. */
-export function raise(ctx: Ctx, raised: Raised, origin: Origin, state: State): Outcome {
-  const hostBoundaries = ctx.scopeRole(state, origin.scope) === ScopeRole.MultiInstanceInstance ? [] : boundaries(ctx, origin.element);
-  if (origin.host !== null) {
-    const caught = best(ctx, raised, (boundary) => boundary.subscription.trigger, hostBoundaries);
-    if (caught !== null) return committed(boundaryFire(caught[0], null, null, origin.scope, [], writeCaught(origin.scope, caught[1], state)));
+/**
+ * What Propagation asks of the Work feature it may not import (ARCHITECTURE-SPEC "Modules and build shape");
+ * `registry.ts` fills it with `Work.mappedErrorOutputs`: how the Activity `origin.host`, still running after its
+ * business Error, leaves once the values its catcher installs through its frame are known.
+ */
+export interface PropagationHooks {
+  readonly mappedErrorOutputs: (ctx: Ctx, origin: Origin, installed: readonly Binding[], state: State) => Outcome;
+}
+
+export const defaultPropagationHooks: PropagationHooks = { mappedErrorOutputs: (_ctx, _origin, _installed, state) => committed(state) };
+
+/**
+ * `Signal.raise`. An Activity that raised the event (`origin.host`) is still running: its own boundaries are searched
+ * first, and a catching one installs its variables through the Activity's frame before the Activity leaves with its
+ * mapped Error-path outputs, as CIB sets them on the task's execution before destroying it
+ * (`BpmnExceptionHandler.java:146-154`, CIB-EXT-0028). Otherwise the Activity leaves first, installing nothing, and the
+ * event is raised again without a host, so every other catcher sees it gone (CIB-EXT-0028's boundary).
+ */
+export function raise(hooks: PropagationHooks, ctx: Ctx, raised: Raised, origin: Origin, state: State): Outcome {
+  const hostBoundaries = ctx.scopeRole(state, origin.scope) === ScopeRole.MultiInstanceInstance ? [] : boundariesOf(ctx, origin.element);
+  if (origin.host === null) return searchScopes(ctx, raised, origin, state, state.scopes.length + 1, origin.scope);
+  const caught = best(ctx, raised, (boundary) => boundary.subscription.trigger, hostBoundaries);
+  if (caught !== null) {
+    const left = hooks.mappedErrorOutputs(ctx, origin, lastWrites(caught[1]), state);
+    return left.ok ? committed(boundaryFire(caught[0], null, null, origin.scope, [], left.value)) : left;
   }
-  return searchScopes(ctx, raised, origin, state, state.scopes.length + 1, origin.scope);
+  const left = hooks.mappedErrorOutputs(ctx, origin, [], state);
+  return left.ok ? committed(signal(left.value, { tag: SignalTag.Raise, event: raised, origin: { ...origin, host: null, patch: [] } })) : left;
 }
 
 /** How a throw Event leaves once it has done its work. */
@@ -318,7 +344,7 @@ function throwLeave(payload: EventPayload): Leave {
 function throwCompensation(header: Header, payload: EventPayload, thrown: CompensationThrow, occurrence: Occurrence, state: State): Outcome {
   if (thrown.activity !== null) return failed(FailureTag.Unsupported, "throw-compensation-activity");
   if (!thrown.waitForCompletion) return failed(FailureTag.Unsupported, "throw-compensation-asynchronous");
-  const triggered = trigger(state, { element: header.id, scope: occurrence.scope, activation: occurrence.activation, host: null });
+  const triggered = throwerRef(state, { element: header.id, scope: occurrence.scope, activation: occurrence.activation, host: null, patch: [] });
   return committed(signal(state, {
     tag: SignalTag.Compensate,
     scope: occurrence.scope,
@@ -330,7 +356,7 @@ function throwCompensation(header: Header, payload: EventPayload, thrown: Compen
 }
 
 export function arriveThrow(_ctx: Ctx, header: Header, payload: EventPayload, thrown: Throw, occurrence: Occurrence, state: State): Outcome {
-  const origin: Origin = { element: header.id, scope: occurrence.scope, activation: occurrence.activation, host: null };
+  const origin: Origin = { element: header.id, scope: occurrence.scope, activation: occurrence.activation, host: null, patch: [] };
   const leave = (current: State): State => signal(current, completeSignal(occurrence.id, throwLeave(payload), [], WriteRule.Outward));
   const raiseEvent = (event: Raised): Outcome => committed(signal(leave(state), { tag: SignalTag.Raise, event, origin }));
   switch (thrown.tag) {

@@ -14,6 +14,8 @@ import {
 const withRule = (work: Json, resources: Json[] = [resource([grades("d", "unique")])]) =>
   (_program: Json): Json => ruleProgram(work, resources);
 const admitted = withRule({});
+/** The admitted decision task with envelope `env`. */
+const withEnvelope = (env: Json) => (_program: Json): Json => ruleProgram({}, [resource([grades("d", "unique")])], env);
 /** A program carrying the one decision `d` with `logic`. */
 const withLogic = (logic: Json) => withRule({}, [resource([decision("d", logic)])]);
 const oneRule = (inputs: Json[], outputs: Json[], entries: Array<Json | string>, results: Array<Json | string>, hitPolicy = "unique") =>
@@ -38,6 +40,14 @@ const rows: Row[] = [
     mutate: outputReads("decisionResult"), control: outputReads("grade") },
   { code: "expression.juel.decisionResult", description: "a Sequence Flow condition reading decisionResult",
     mutate: conditionReads("decisionResult"), control: conditionReads("grade") },
+  { code: "work.rule", description: "a Business Rule Task under a profile without decision tables (CIB-EXT-0032)",
+    mutate: (program) => withOptions(admitted(program), { businessRuleTask: "refused" }), control: admitted },
+  { code: "work.rule.dataAssociation", description: "a Data Input Association on a decision task",
+    mutate: withEnvelope({ inputs: [mapping("score", variable("s"), "dataAssociation")] }),
+    control: withEnvelope({ inputs: [mapping("score", variable("s"))] }) },
+  { code: "work.rule.dataAssociation", description: "a Data Output Association on a decision task",
+    mutate: withEnvelope({ outputs: [mapping("copy", variable("grade"), "dataAssociation")] }),
+    control: withEnvelope({ outputs: [mapping("copy", variable("grade"))] }) },
   { code: "work.rule.decisionExpression", description: "a decisionRef given by an expression",
     mutate: withRule({ decision: computed(variable("key")) }), control: admitted },
   { code: "work.rule.binding", description: "a decisionRef bound by deployment", mutate: withRule({ binding: "deployment" }), control: admitted },

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_DecisionChainedOutputs" targetNamespace="urn:bpmn-lean:scenarios:mapping-order:decision-chained-outputs">
+  <process id="Process_DecisionChainedOutputs" name="Map a later output from an earlier output's target that the decision result set" isExecutable="true">
+    <startEvent id="StartEvent_Start" />
+    <businessRuleTask id="BusinessRuleTask_Grade" name="Grade" camunda:decisionRef="gradeDecision"
+                      camunda:mapDecisionResult="singleEntry" camunda:resultVariable="grade">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:outputParameter name="grade">mapped</camunda:outputParameter>
+          <camunda:outputParameter name="summary">${grade}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </businessRuleTask>
+    <businessRuleTask id="BusinessRuleTask_Shadow" name="Shadow" camunda:decisionRef="gradeDecision"
+                      camunda:mapDecisionResult="singleEntry" camunda:resultVariable="level">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="level">inner</camunda:inputParameter>
+          <camunda:outputParameter name="level">mapped</camunda:outputParameter>
+          <camunda:outputParameter name="shadowed">${level}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </businessRuleTask>
+    <userTask id="UserTask_Observe" name="Observe">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="seenGrade">${grade}</camunda:inputParameter>
+          <camunda:inputParameter name="seenSummary">${summary}</camunda:inputParameter>
+          <camunda:inputParameter name="seenLevel">${level}</camunda:inputParameter>
+          <camunda:inputParameter name="seenShadowed">${shadowed}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <endEvent id="EndEvent_Done" />
+    <sequenceFlow id="Flow_Start_Grade" sourceRef="StartEvent_Start" targetRef="BusinessRuleTask_Grade" />
+    <sequenceFlow id="Flow_Grade_Shadow" sourceRef="BusinessRuleTask_Grade" targetRef="BusinessRuleTask_Shadow" />
+    <sequenceFlow id="Flow_Shadow_Observe" sourceRef="BusinessRuleTask_Shadow" targetRef="UserTask_Observe" />
+    <sequenceFlow id="Flow_Observe_Done" sourceRef="UserTask_Observe" targetRef="EndEvent_Done" />
+  </process>
+</definitions>

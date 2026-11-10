@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_DecisionForms" targetNamespace="urn:bpmn-lean:business-rule-decision-forms-process">
+  <process id="Process_DecisionForms" name="One Business Rule Task per FEEL form, selected by the start variable policy" isExecutable="true">
+    <startEvent id="ApplicantReceived" name="Applicant received" />
+    <exclusiveGateway id="Select" name="Select decision" gatewayDirection="Diverging" default="Flow_NoPolicy" />
+    <businessRuleTask id="AtMost" name="atMost" camunda:decisionRef="atMost" camunda:mapDecisionResult="collectEntries" camunda:resultVariable="labels" />
+    <businessRuleTask id="Negatives" name="negatives" camunda:decisionRef="negatives" camunda:mapDecisionResult="collectEntries" camunda:resultVariable="labels" />
+    <businessRuleTask id="Halves" name="halves" camunda:decisionRef="halves" camunda:mapDecisionResult="collectEntries" camunda:resultVariable="labels" />
+    <businessRuleTask id="Inverted" name="inverted" camunda:decisionRef="inverted" camunda:mapDecisionResult="collectEntries" camunda:resultVariable="labels" />
+    <businessRuleTask id="Escapes" name="escapes" camunda:decisionRef="escapes" camunda:mapDecisionResult="singleEntry" camunda:resultVariable="label" />
+    <businessRuleTask id="Flags" name="flags" camunda:decisionRef="flags" camunda:mapDecisionResult="singleResult" camunda:resultVariable="verdict" />
+    <exclusiveGateway id="Merge" name="Merge" gatewayDirection="Converging" />
+    <userTask id="Inspect" name="Inspect result" />
+    <endEvent id="ApplicantClosed" name="Applicant closed" />
+    <sequenceFlow id="Flow_Received" sourceRef="ApplicantReceived" targetRef="Select" />
+    <sequenceFlow id="Flow_NoPolicy" sourceRef="Select" targetRef="Merge" />
+    <sequenceFlow id="Flow_ToAtMost" sourceRef="Select" targetRef="AtMost">
+      <conditionExpression xsi:type="tFormalExpression">${policy == 'atMost'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_AtMostDone" sourceRef="AtMost" targetRef="Merge" />
+    <sequenceFlow id="Flow_ToNegatives" sourceRef="Select" targetRef="Negatives">
+      <conditionExpression xsi:type="tFormalExpression">${policy == 'negatives'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_NegativesDone" sourceRef="Negatives" targetRef="Merge" />
+    <sequenceFlow id="Flow_ToHalves" sourceRef="Select" targetRef="Halves">
+      <conditionExpression xsi:type="tFormalExpression">${policy == 'halves'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_HalvesDone" sourceRef="Halves" targetRef="Merge" />
+    <sequenceFlow id="Flow_ToInverted" sourceRef="Select" targetRef="Inverted">
+      <conditionExpression xsi:type="tFormalExpression">${policy == 'inverted'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_InvertedDone" sourceRef="Inverted" targetRef="Merge" />
+    <sequenceFlow id="Flow_ToEscapes" sourceRef="Select" targetRef="Escapes">
+      <conditionExpression xsi:type="tFormalExpression">${policy == 'escapes'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_EscapesDone" sourceRef="Escapes" targetRef="Merge" />
+    <sequenceFlow id="Flow_ToFlags" sourceRef="Select" targetRef="Flags">
+      <conditionExpression xsi:type="tFormalExpression">${policy == 'flags'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_FlagsDone" sourceRef="Flags" targetRef="Merge" />
+    <sequenceFlow id="Flow_Merged" sourceRef="Merge" targetRef="Inspect" />
+    <sequenceFlow id="Flow_Inspected" sourceRef="Inspect" targetRef="ApplicantClosed" />
+  </process>
+</definitions>

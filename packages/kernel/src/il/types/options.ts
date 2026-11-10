@@ -146,6 +146,12 @@ export enum MultiInstanceCounters {
   CibLocals = "cibLocals",
 }
 
+/**
+ * The names CIB-INT-0018 binds, in `CibLocals`' order: the instance's index, the count, the active and the completed
+ * instances (`MultiInstanceActivityBehavior.java:49-54`).
+ */
+export const multiInstanceCounterNames: readonly [string, string, string, string] = ["loopCounter", "nrOfInstances", "nrOfActiveInstances", "nrOfCompletedInstances"];
+
 /** What a Multi-Instance count or collection that is unavailable or of the wrong kind does. */
 export enum MultiInstanceInputFailure {
   /** BPMN 2.0.2 §10.4.2: an unavailable input holds the occurrence; a wrong kind is a semantic failure. */
@@ -168,6 +174,41 @@ export enum OutputContext {
   Submission = "submission",
   /** CIB-EXT-0031: the variables visible from the Activity's own scope, its captured inputs first. */
   ActivityScope = "activityScope",
+}
+
+/** What a Business Rule Task executes. */
+export enum BusinessRuleTask {
+  /** BPMN 2.0.2 §10.3.3 leaves the rule engine open, so a Business Rule Task has no meaning the kernel executes. */
+  Refused = "refused",
+  /** CIB-EXT-0032: `camunda:decisionRef` names a DMN 1.3 decision table the program carries. */
+  DecisionTable = "decisionTable",
+}
+
+/**
+ * Where a position held by an element continues when a converging Inclusive Gateway asks whether it can still reach one
+ * of its empty inputs.
+ */
+export enum InclusiveJoinReach {
+  /** BPMN 2.0.2 Table 13.3 leaves it open; the standards reading also follows the host's Boundary Events (§10.5.4). */
+  WithBoundaries = "withBoundaries",
+  /** CIB-INT-0020: `InclusiveGatewayActivityBehavior#isReachable` follows only outgoing transitions. */
+  OutgoingOnly = "outgoingOnly",
+}
+
+/** How one closure orders the branches of a split. */
+export enum BranchSchedule {
+  /**
+   * BPMN 2.0.2 Table 13.1, §13.3.1: branches are concurrent and any interleaving is permitted, so admission refuses a
+   * split one of whose branches writes a name another reads or writes in the closure (`flow.concurrentWrite`), and the
+   * closure's order is immaterial.
+   */
+  OrderInvariant = "orderInvariant",
+  /**
+   * CIB-OP-0016: in Sequence Flow declaration order, each branch to its next wait, join or end before the next starts
+   * (`PvmAtomicOperationTransitionDestroyScope:128-134`, `CommandInvocationContext:95,139`), an idle scope occurrence
+   * completing before the next token moves (`PvmAtomicOperationActivityEnd:105`).
+   */
+  DeclarationDepthFirst = "declarationDepthFirst",
 }
 
 export interface ProfileOptions {
@@ -203,4 +244,7 @@ export interface ProfileOptions {
   readonly multiInstanceCounters: MultiInstanceCounters;
   readonly multiInstanceInputFailure: MultiInstanceInputFailure;
   readonly multiInstanceCount: MultiInstanceCount;
+  readonly businessRuleTask: BusinessRuleTask;
+  readonly inclusiveJoinReach: InclusiveJoinReach;
+  readonly branchSchedule: BranchSchedule;
 }

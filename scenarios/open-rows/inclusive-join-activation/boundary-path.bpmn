@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             id="Definitions_BoundaryPath" targetNamespace="urn:bpmn-lean:scenarios:inclusive-join-activation:boundary-path">
+  <message id="Message_Escalate" name="escalate" />
+  <process id="Process_BoundaryPath" name="A join input reachable only through a Boundary Event" isExecutable="true">
+    <startEvent id="CaseOpened" name="Case opened" />
+    <parallelGateway id="SplitCase" name="Split case" gatewayDirection="Diverging" />
+    <userTask id="ReviewA" name="Review A" />
+    <userTask id="ReviewB" name="Review B" />
+    <boundaryEvent id="Escalated" name="Escalated" attachedToRef="ReviewB">
+      <messageEventDefinition id="Escalated_Message" messageRef="Message_Escalate" />
+    </boundaryEvent>
+    <endEvent id="BClosed" name="B closed" />
+    <inclusiveGateway id="Reviewed" name="Reviewed" gatewayDirection="Converging" />
+    <userTask id="Decide" name="Decide" />
+    <endEvent id="CaseDecided" name="Case decided" />
+    <sequenceFlow id="Flow_Opened" sourceRef="CaseOpened" targetRef="SplitCase" />
+    <sequenceFlow id="Flow_ToA" sourceRef="SplitCase" targetRef="ReviewA" />
+    <sequenceFlow id="Flow_ToB" sourceRef="SplitCase" targetRef="ReviewB" />
+    <sequenceFlow id="Flow_ADone" sourceRef="ReviewA" targetRef="Reviewed" />
+    <sequenceFlow id="Flow_BClosed" sourceRef="ReviewB" targetRef="BClosed" />
+    <sequenceFlow id="Flow_Escalated" sourceRef="Escalated" targetRef="Reviewed" />
+    <sequenceFlow id="Flow_Reviewed" sourceRef="Reviewed" targetRef="Decide" />
+    <sequenceFlow id="Flow_Decided" sourceRef="Decide" targetRef="CaseDecided" />
+  </process>
+</definitions>

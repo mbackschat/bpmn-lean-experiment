@@ -23,9 +23,9 @@ The counts below cover only entries recorded by this project, including the sepa
 | Lane | Recorded entries | Open candidates | Meaning |
 |---|---:|---:|---|
 | Normative agreement records | 19 | 2 | A bounded BPMN requirement and pinned CIB observation agree; candidates remain unapproved |
-| Permitted operational details | 15 | 0 | CIB or the oracle adapter chooses host mechanics without changing required BPMN observations |
-| Confirmed normative deviations | 0 | 1 | Clear BPMN requirement and pinned CIB evidence establish incompatible behavior |
-| CIB interpretations of BPMN gaps or inconsistencies | 18 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
+| Permitted operational details | 16 | 0 | CIB or the oracle adapter chooses host mechanics without changing required BPMN observations |
+| Confirmed normative deviations | 0 | 2 | Clear BPMN requirement and pinned CIB evidence establish incompatible behavior |
+| CIB interpretations of BPMN gaps or inconsistencies | 19 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
 | CIB extension records | 33 | 3 | Project profile deliberately includes behavior beyond bare BPMN execution; candidates remain unselected |
 | Configuration-specific realizations | 11 | 1 | Behavior is permitted or meaningful only under a declared CIB environment |
 | Known CIB limitations within reviewed scope | 17 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
@@ -71,6 +71,60 @@ None recorded.
 **Owner decision:** Approved normative BPMN behavior for the next capsule on 2026-07-26, with no parallel compatibility claim for the current CIB profile and no production implementation of the observed count-based behavior.
 
 **Last reviewed:** 2026-07-26.
+
+### CIB-DEV-0002 — a parked Inclusive join is re-examined only when another execution arrives at it
+
+**Status:** Candidate deviation; owner decision recorded, confirmation evidence incomplete
+
+**Summary:** Pinned CIB Seven `2.2.0` evaluates a converging Inclusive Gateway's activation only when an execution arrives at it. When the last execution that could reach an empty incoming flow ends elsewhere, or a Boundary Event withdraws it, the executions waiting at the join are never re-examined. The instance stays running with no task, job or subscription that could resume it.
+
+**BPMN requirement:** BPMN 2.0.2 Table 13.3 (§13.4.3) states when the gateway "is activated": a predicate over the state of its scope occurrence, not an arrival. Table 13.2, the Exclusive Gateway's, is the one that uses arrival language ("Each token arriving … activates"). The table claims the General Synchronizing Merge (WCP-38), which needs activation without an arrival. PC-CF-04 rejects "waiting forever for an unselected path".
+
+**BPMN sources and issues:** Table 13.3 and §13.4.3; Table 13.2 for the contrast. §13.3.5 is the Ad-Hoc Sub-Process's semantics; its fixpoint lists only Parallel and Complex Gateways, so it is at most an analogy. Open issue [BPMN21-450](https://issues.omg.org/issues/BPMN21-450) concerns the "also a directed path" clause, not the trigger, and changes nothing here.
+
+**CIB release and configuration:** CIB Seven `2.2.0` at revision `834a9874760de8a0107f7c1b32806e37f17fb017`. The configuration is the pinned oracle environment of CIB-CFG-0001, with JUEL conditions under CIB-CFG-0005. No setting changes the trigger.
+
+**Separating model and scenario:** The retained [`unselected-path-parked-then-unselected`](../scenarios/open-rows/inclusive-join-compositions/README.md) separates CIB from every reach reading:
+
+- Literal Table 13.3 counts only tokens on Sequence Flows. *Review B* is an active Activity, so the literal join activates when *Review A* arrives.
+- The reading that counts Activity-held tokens (the kernel's and CIB's) activates it when *Review B* ends at *B closed*.
+- CIB fires under neither reading.
+
+The pending [`boundary-exit-parked-then-withdrawn`](../scenarios/open-rows/inclusive-join-activation/README.md) is a second instance, in which an interrupting Boundary Event withdraws the blocking work.
+
+- The pending `inclusive-join-activation/nested-skip-*` and `raised-path-parked-then-failed` are further instances of the trigger.
+- The `nested-inclusive*` and `nested-parallel*` witnesses belong to the agreeing class: CIB and the kernel both fire the outer join once.
+
+**CIB observation:** `InclusiveGatewayActivityBehavior#execute` (`:46-52`) is the only caller of `activatesGateway`, and only when an execution arrives. An Activity's end only prunes (`PvmAtomicOperationActivityEnd:77-81`, `PvmExecutionImpl:577-603`). The retained evidence shows `running` with no open wait after *Review B* ends.
+
+**Expected normative behavior:** A parked join fires as soon as Table 13.3's condition holds. The kernel evaluates it on each arrival and again whenever the closure is otherwise quiescent: no signal, no token and no idle scope occurrence is left (`Step.reoffer?`, journalled with the `idle` cause of the join's scope occurrence).
+
+At that point every position is one `Feature.Flow.positions` sees. A completion still queued as a signal is no position, so an earlier evaluation would let a downstream join fire before the upstream join's token is on its flow, and fire again when it arrives (the audit's `nested` witness, now `inclusive-join-activation/nested-*`).
+
+Every closure passes that point before it ends, whatever removed the last position. That includes an uncaught business Error that ends its path without an outflow (`raised-path-parked-then-failed`, CIB-INT-0013). This is stronger than the weak fairness the reading needs (a join whose condition holds from some point on fires eventually).
+
+Ready joins are independent. When they are offered, the arrivals parked at one join are positions every other join sees, so a ready join cannot be reached by another's parked tokens. Their order (parking order) is therefore immaterial, which is a commutation-law obligation.
+
+**Alternative explanations excluded:**
+
+1. *Gap interpretation.* The witness separates CIB from every reach reading, so this is not a reach gap.
+2. *Operational detail.* The behaviour decides whether downstream work ever becomes active.
+3. *Limitation.* That class would need "is activated" to be a precondition checked at arrival, which leaves WCP-38 unsupported.
+4. *Observation artefact.* The producer observes tasks, timer jobs and history only. "No task, job or subscription" therefore depends on the model having no asynchronous step and no message element, which holds for the retained witness.
+
+**Classification rationale:** Table 13.3 is a clear requirement that an activated gateway executes, and the witness separates CIB from every reading of reach (classification order: not agreement, not an operational detail, not a gap resolution, not an extension or configuration). The entry stays a candidate because the [evidence threshold](#evidence-threshold-for-a-confirmed-deviation) is unmet: there is no pristine-lane probe and no owner review of the probe.
+
+**Profile decision:** As for CIB-DEV-0001: every profile, both CIB profiles included, uses the standards trigger. The cumulative CIB profile claims no compatibility for a join that becomes ready without an arrival, and this candidate owns the disagreeing evidence, which agreed with the kernel before the change. Reproducing CIB's stall would need a further option selected only by an explicitly separate compatibility profile, which no profile proposes.
+
+**Capsule and semantic rule IDs:** PC-CF-04; [flow semantics, Inclusive join activation and reach](kernel/semantics/FLOW-SEMANTICS-SPEC.md#inclusive-join-activation-and-reach).
+
+**Lean, TypeScript, Temporal, and compatibility impact:**
+
+- Lean `Kernel.Step.reoffer?` and `settle`, paired with `reoffer` and `settle` in `packages/kernel/src/step.ts`. `Feature.Flow.join` and its pair do not park an offered occurrence twice. No Hooks or State change.
+
+**Owner decision:** Owner decision taken by the root under the owner's standing direction of 2026-11-10 to decide autonomously: the kernel follows Table 13.3 under every profile, as CIB-DEV-0001 does, and the candidate owns CIB's arrival-only trigger.
+
+**Last reviewed:** 2026-11-10.
 
 A candidate must appear here immediately when evidence suggests conflict with a clear BPMN requirement. It remains a candidate until the evidence threshold below is satisfied. Implementation of the disputed profile-dependent behavior pauses unless the capsule explicitly preserves competing accounts as an unresolved experiment.
 
@@ -376,7 +430,7 @@ The nested scope-data profile adopts that resolution as the semantic outcome `ro
 
 **Evidence:** The [calibration probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenExclusiveChoiceWithoutDefaultProbeTest.java) and the [Exclusive Choice without a default account](kernel/semantics/FLOW-SEMANTICS-SPEC.md).
 
-**Boundary:** This interpretation covers only root-body Choices of the nested scope-data profile with Simple Boolean conditions, reached by a Start or a User Task completion. It does not cover a no-match after an effect result, incidents, job retries, a converging or mixed gateway, or any other profile.
+**Boundary:** This interpretation covers only root-body Choices of the nested scope-data profile with Simple Boolean conditions, reached by a Start or a User Task completion. It does not cover a no-match after an effect result, incidents, job retries, a converging or mixed gateway, or any other profile. CIB refuses an Exclusive Gateway without an outgoing flow at deployment (`BpmnParse#validateExclusiveGateway`), and the kernel refuses it at admission (`gateway.exclusive.noOutgoingFlow`).
 
 ### CIB-INT-0004 — a Receive Task without a Message waits for an occurrence-addressed trigger
 
@@ -476,7 +530,7 @@ The kernel adopts that resolution as the semantic outcome `rolledBack` with the 
 
 **Evidence:** Pinned `InclusiveGatewayActivityBehavior.java:61-84`, with the throw at `:82`, and `BpmnBehaviorLogger.java:51-55` for the code; the kernel's `Feature.Flow.inclusiveFlows`.
 
-**Boundary:** A diverging Inclusive Gateway reached by a Start or a User Task completion, and an Activity's own conditional outflow that takes no flow, which rolls back as `activity-no-outgoing-flow` as CIB throws from `BpmnActivityBehavior#performOutgoingBehavior` (witnesses [activity-outflow-none-holds and inclusive-without-default-none-selected](../scenarios/open-rows/flow-simple-boolean-outflow/README.md)). An unconditioned output is always taken (`CIB-INT-0005`). It does not cover a no-match after an effect result, incidents or job retries.
+**Boundary:** A diverging Inclusive Gateway reached by a Start or a User Task completion, and an Activity's own conditional outflow that takes no flow, which rolls back as `activity-no-outgoing-flow` as CIB throws from `BpmnActivityBehavior#performOutgoingBehavior` (witnesses [activity-outflow-none-holds and inclusive-without-default-none-selected](../scenarios/open-rows/flow-simple-boolean-outflow/README.md)). An unconditioned output is always taken (`CIB-INT-0005`). It does not cover a no-match after an effect result, incidents or job retries. CIB deploys an Inclusive Gateway without an outgoing flow and rolls back every activation (`InclusiveGatewayActivityBehavior#execute`, `stuckExecutionException`); the kernel refuses it at admission (`gateway.inclusive.noOutgoingFlow`), a restriction.
 
 ### CIB-INT-0013 — an Error that no catcher takes ends only its throwing path
 
@@ -514,11 +568,11 @@ BPMN 2.0.2 §10.6.2 and Table 13.2 route a diverging Exclusive Gateway by its co
 
 ### CIB-INT-0016 — a converging Inclusive Gateway fires when no further token of its scope occurrence can reach it
 
-**Status:** Selected bounded interpretation; the standards profile and the CIB profiles agree on admitted shapes except the duplicate-arrival class of `CIB-DEV-0001`
+**Status:** Selected bounded interpretation of Activity-held tokens, shared by every profile; the reach through Boundary Events is `CIB-INT-0020`, and the trigger without an arrival `CIB-DEV-0002`. Beyond the duplicate-arrival class of `CIB-DEV-0001`, the standards and CIB profiles differ by `CIB-DEV-0002` and, under `CIB-INT-0020`, by the reach
 
-BPMN 2.0.2 Table 13.3 activates a converging Inclusive Gateway when at least one incoming flow has a token and, for every empty incoming flow, no token upstream can reach it, without defining "upstream" in cyclic or multi-scope graphs. The kernel fires a join once no token of the same scope occurrence can reach an empty incoming flow without passing through the gateway, by a flow search over the IL that follows Links (`Feature.Flow.reaches`). CIB Seven `2.2.0` counts executions and reachability over the scope's process-virtual-machine graph (`InclusiveGatewayActivityBehavior#activatesGateway`, `#canReachActivity`). The two agree on every admitted witness except duplicate arrivals through one incoming flow, where CIB counts arrivals (`CIB-DEV-0001`).
+BPMN 2.0.2 Table 13.3 activates a converging Inclusive Gateway when at least one incoming flow has a token and, for every empty incoming flow, no token upstream can reach it, without defining "upstream" in cyclic or multi-scope graphs. The kernel fires a join once no token of the same scope occurrence can reach an empty incoming flow without passing through the gateway, by a flow search over the IL that follows Links (`Feature.Flow.reaches`). CIB Seven `2.2.0` counts executions and reachability over the scope's process-virtual-machine graph (`InclusiveGatewayActivityBehavior#activatesGateway`, `#canReachActivity`). The two differ on admitted witnesses only by duplicate arrivals through one incoming flow, where CIB counts arrivals (`CIB-DEV-0001`), by a parked join that becomes ready without a new arrival, which CIB never re-examines (`CIB-DEV-0002`), and, under `CIB-INT-0020`, by a reach that does not follow a host's Boundary Events.
 
-**Evidence:** Pinned `InclusiveGatewayActivityBehavior.java` (`activatesGateway`, `canReachActivity`); the retained witnesses [parallel-fed-join-a-then-b and parallel-fed-join-b-then-a](../scenarios/open-rows/inclusive-join-compositions/README.md), which agree, and [duplicate-arrival-join-left-pair-first](../scenarios/open-rows/parallel-region-compositions/README.md), which `CIB-DEV-0001` owns (CIB Seven `2.2.0`, 2026-11-09).
+**Evidence:** Pinned `InclusiveGatewayActivityBehavior.java` (`activatesGateway`, `canReachActivity`); the retained witnesses [parallel-fed-join-a-then-b and parallel-fed-join-b-then-a](../scenarios/open-rows/inclusive-join-compositions/README.md), which agree, and [duplicate-arrival-join-left-pair-first](../scenarios/open-rows/parallel-region-compositions/README.md), which `CIB-DEV-0001` owns (CIB Seven `2.2.0`, 2026-11-09). The pending `inclusive-join-activation/nested-inclusive*` and `nested-parallel*`, where CIB and the kernel fire the outer join once, also agree by prediction.
 
 **Boundary:** Converging Inclusive Gateways anywhere in one scope occurrence; arrivals from another scope occurrence are outside it, and the join after Sub-Processes, Calls and Multi-Instance bodies closes with `PC-SCOPE-01` and the Multi-Instance rows.
 
@@ -553,11 +607,25 @@ There is no terminated count. Under the option the kernel puts these names and v
 
 **Status:** Recorded bounded interpretation from the pinned source; selected by `ProfileOptions.multiInstanceInputFailure = rollback` through the [cibseven-2.2.0 cumulative profile](../profiles/cibseven-2.2.0/profile.json) and the scope-chain profile
 
-BPMN 2.0.2 §10.4.2 holds an Activity whose InputSet is unavailable until it becomes available. The standards reading holds the occurrence when the input collection is unavailable, and fails semantically on a present value that is no collection. CIB Seven `2.2.0` reads the count and collection when the token arrives and throws inside the operation that reached the Activity whenever one is missing or of the wrong kind, so the operation fails and nothing waits. The kernel follows the [stimulus table](kernel/semantics/EXPRESSION-SEMANTICS-SPEC.md#failure-semantics): a command rolls back, an effect result becomes the effect's technical failure under CIB-EXT-0026, and a Timer is `unsupported`. The cases are a collection variable that is absent, null or not a `Collection`; a collection expression that fails or is not a `Collection`; and a count that fails, is not a number, or is negative (`multiInstance.notACollection`, `multiInstance.notANumber`, `multiInstance.negativeCount`, or the evaluation's own code).
+BPMN 2.0.2 §10.4.2 holds an Activity whose InputSet is unavailable until it becomes available. The standards reading holds the occurrence when the input collection is unavailable, and fails semantically on a present value that is no collection. CIB Seven `2.2.0` reads the count and collection when the token arrives and throws inside the operation that reached the Activity whenever one is missing or of the wrong kind, so the operation fails and nothing waits. The kernel follows the [stimulus table](kernel/semantics/EXPRESSION-SEMANTICS-SPEC.md#failure-semantics): a command rolls back; an effect result rolls back as well, since neither CIB profile selects CIB-EXT-0026, where CIB fails the job that completed the effect (a known disagreement); and a Timer is `unsupported`. The cases are a collection variable that is absent, null or not a `Collection`; a collection expression that fails or is not a `Collection`; and a count that fails, is not a number, or is negative (`multiInstance.notACollection`, `multiInstance.notANumber`, `multiInstance.negativeCount`, or the evaluation's own code).
 
 **Evidence:** Pinned `MultiInstanceActivityBehavior:68-69` (`invalidAmountException`), `:113-114` (`unresolvableExpressionException`), `:117-120` (`invalidVariableTypeException`), `:153` (`expressionNotANumberException`). The [multi-instance-expression-results](../scenarios/open-rows/multi-instance-expression-results/README.md) `count-*` and `collection-*` witnesses, whose evidence run is pending.
 
-**Boundary:** The count and collection sites of admitted loops. A completion-condition failure follows the stimulus table under both values. A count that is fractional or outside Java's `int` range is `unsupported` (CIB-LIM-0010). Which values count is CIB-EXT-0033.
+**Boundary:** The count and collection sites of admitted loops. A completion-condition failure follows the stimulus table under both values. A count that is fractional or outside Java's `int` range is `unsupported` (CIB-LIM-0010). Which values count is CIB-EXT-0033. Known disagreements while CIB-EXT-0026 and CIB-INT-0009 stay unselected: every `service-*` schedule of [multi-instance-completion-failures](../scenarios/open-rows/multi-instance-completion-failures/README.md) (the kernel rolls the effect result back, CIB fails the job), and `user-sequential-failing-final`, `user-sequential-not-boolean-final` and both `service-sequential-*-final` (the kernel evaluates the condition on the final sequential completion, CIB tests exhaustion first and completes).
+
+### CIB-INT-0020 — a converging Inclusive Gateway's reach does not follow a host's Boundary Events
+
+**Status:** Selected bounded interpretation; selected by `ProfileOptions.inclusiveJoinReach = outgoingOnly` through both CIB profiles. The standards profile reads `withBoundaries`. The CIB side is a source prediction until the `boundary-path` evidence is retained.
+
+Table 13.3 follows "directed path[s] formed by sequence flow" from a Sequence Flow that holds a token. It defines no continuation for a token held by an active Activity, a waiting Event or a child scope (CIB-INT-0016).
+
+- **Standards reading:** such a position continues on the element's outgoing flows and on the outgoing flows of its Boundary Events, since an attached Event can still fire (§10.5.4).
+- **CIB reading:** `InclusiveGatewayActivityBehavior#isReachable` (`:141-199`) follows outgoing transitions, an Event-Based Gateway's event activities and the flow scope of an activity without outgoing transitions. It never follows a Boundary Event, which is no outgoing transition of its host.
+- **Consequence of `outgoingOnly`:** a join can fire while a Boundary Event that reaches it is still armed. That Event's later token arrives alone and fires the join again.
+
+**Evidence:** Pinned `InclusiveGatewayActivityBehavior.java` `isReachable`. Pending [`boundary-path-parked-then-closed` and `boundary-path-parked-then-escalated`](../scenarios/open-rows/inclusive-join-activation/README.md); `parked-then-escalated` decides. Kernel tests: `packages/differential/test/flow-inclusive-join-activation.test.ts`.
+
+**Boundary:** Boundary Events of a host inside the join's scope occurrence. Event Sub-Processes, and reach across scope occurrences, are outside it.
 
 ## Known limitation register
 
@@ -747,11 +815,11 @@ CIB Seven `2.2.0` runs a closure without a wait state in one transaction to its 
 
 **Status:** Profile limitation; not a deviation
 
-CIB evaluates `camunda:delegateExpression` as JUEL when the job runs (`ServiceTaskDelegateExpressionActivityBehavior.java:107-122`), and its resolver chain reads process variables (`JuelExpressionManager.java:144`) before the configured beans (`:150`). A visible variable named like the token therefore shadows the handler, and the job fails because the delegate is no `JavaDelegate` (`:120`). The kernel binds the token to its operation when it reads the model. It refuses a program that declares a writable name equal to a token one of its Service or Send Tasks binds (`work.handlerKeyName`). Declared names are form field ids, input and output parameter targets, `resultVariable`, `elementVariable` and input data items, Call input and output targets, and Data Object and Property names.
+CIB evaluates `camunda:delegateExpression` as JUEL when the job runs (`ServiceTaskDelegateExpressionActivityBehavior.java:107-122`), and its resolver chain reads process variables (`JuelExpressionManager.java:144`) before the configured beans (`:150`). A visible variable named like the token therefore shadows the handler, and the job fails because the delegate is no `JavaDelegate` (`:120`). The kernel binds the token to its operation when it reads the model and carries it as the work's `handlerKey`. `Kernel.Admission.Work` refuses a program that declares a name equal to a token one of its Service or Send Tasks binds (`work.handlerKeyName`). Declared names are input and output parameter targets, `resultVariable`, `elementVariable`, an input data item's name, which CIB binds as the element variable (`BpmnParse.java:1868-1872`), and Call input and output targets. Form field ids and an input data item's id are refused as well, conservatively: `TaskService.complete` installs a submission without the form handler (`CompleteTaskCmd.java:70-72`), and CIB never binds the item's id, so neither shadows a handler in CIB.
 
 **Evidence:** The retained `writable-handler-key` answer, where CIB rolls back the effect's result with the job's retries at 2, and `undeclared-handler-key`, its runtime counterpart (CIB Seven `2.2.0`).
 
-**Boundary:** Names only the run supplies are outside the claim, where the kernel commits and CIB fails the job: an undeclared name a User Task submission installs (CIB-EXT-0005), a Start variable, and a `setVariables` command.
+**Boundary:** Names only the run supplies are outside the claim, where the kernel commits and CIB fails the job: an undeclared name a User Task submission installs (CIB-EXT-0005), a Start variable, and a `setVariables` command. A Process's Property, Data Object or Data Input or Output and a Data Association target are no declared names, since CIB installs none of them: `parseProperties` is commented out at process level (`BpmnParse.java:726`), and the pinned parser reads no Data Object, process I/O specification or Data Association.
 
 ## Extension register
 
@@ -816,6 +884,8 @@ This is a CIB public-service extension over the BPMN User Task lifecycle, not ge
 **Evidence:** The Java-21 [packaged-engine phase-zero probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenUserTaskCompletionDataPhaseZeroProbeTest.java) uses the pinned CIB BPMN Model API to build the exact two-task control, records public task-service maps, runtime variables, final historic variables, active task keys, and Process liveness, and runs under `CIB-CFG-0001`. The [User Task completion-data specification](kernel/semantics/DATA-SEMANTICS-SPEC.md) owns the selected project rules and refinement boundary.
 
 **Boundary:** Under `installsVariables` a mapped User Task's completion installs every submitted value from the task's own scope occurrence outward, at the nearest owner or else the instance root, before its output parameters and before its outgoing conditions (`review-output-order`; the kernel's `Feature.Work.completeUserTask`). Only Process-scope string and explicit null values, one exact active task, create/overwrite/preserve merge, no-data preservation, continuation visibility, final-history visibility, and unknown/stale refusal are selected. A User Task instance of a Multi-Instance loop without an output data item installs its submission the same way, from the instance's task, through the instance's execution (`CompleteTaskCmd.java:71`, `TaskEntity.java:869-873`; `body-metadata`, `items-*-unmapped`). A submitted name equal to a loop counter is `unsupported` (`multiInstance.resultShadowsInstance`). A name the task holds as a local input stays local and ends with the task (`work-user-task-completion`). Transient variables, deletion, nested or serialized values, BPMN input/output specifications and Data Associations, forms, field validation, variable authorization, people assignment, and general Task Service compatibility remain excluded. Under the embedded completion profile, in data-bearing Programs, a completion patch writes each name to its nearest declaring frame on the task's occurrence chain or to the Process, and a name outside the declaring frames is refused ([concurrent scope data](kernel/semantics/DATA-SEMANTICS-SPEC.md)).
+
+Under this extension a User Task completion is not checked against the task's form fields or output mappings: `TaskService.complete` sets the submitted map on the task's execution (`CompleteTaskCmd.java:70-72`) without the form handler that `FormService.submitTaskForm` runs (`SubmitTaskFormCmd.java:75`). An extra result is installed, a missing result leaves the outputs reading the task's local input (CIB-EXT-0031), and a type-invalid result is installed as given; CIB and the kernel commit each (`claim-extra-result`, `claim-missing-result`, `claim-type-invalid-result`). A missing or extra result refuses unchanged only under the standards reading (`SubmissionRule.outputSet`, BPMN 2.0.2 §10.4.1: `undeclared-output`, `output-unavailable`). A form field type is published metadata under every profile, so a type-invalid result commits under both.
 
 ### CIB-EXT-0006 — public Process start installs initial Process variables
 
@@ -1074,11 +1144,11 @@ On a Multi-Instance Activity the marks are two pairs with no BPMN meaning. The A
 
 `camunda:errorCodeVariable` and `camunda:errorMessageVariable` on an Error Event Definition of a boundary or of an Event Sub-Process start name variables that receive the caught Error's code, a String, and its message, a String or a present null when the Error has none. BPMN 2.0.2 defines no such variables. CIB sets both with `setVariable` on the execution of the catcher's event scope before it starts the catcher: the boundary's host (`BpmnParse:3298`), or for an Event Sub-Process the enclosing scope (`BpmnParse:1112`). `setVariable` updates the nearest scope that binds the name and otherwise creates it at the instance root, so the variables outlive the handler. On a name shared with the interrupted host's output parameters the output, written later as CIB destroys the host, wins (`CIB-EXT-0016`); a Sub-Process local of that name is updated and leaves with the Sub-Process.
 
-The kernel's `Propagation.writeCaught` writes the variables from that event scope outward before the catcher begins; a Service Task host has already ended when its boundary catches, so its variables are written from the scope it ran in.
+The kernel's `Propagation.writeCaught` writes the variables from that event scope outward before the catcher begins. A Service Task host is still running when its own boundary catches, so its variables are set through the task's frame (`Work.mappedErrorOutputs`). A name the task holds, an input local or a result value the delegate set with `setVariableLocal`, updates that local, which ends with the task. Any other name is written from the task outward. The task's mapped output parameters then run (`PvmAtomicOperationCancelActivity.java:60`, `PvmExecutionImpl.java:613-626`, `ExecutionEntity.java:521-525`), so they read the variables and are written after them.
 
-**Evidence:** Pinned `BpmnExceptionHandler#propagateError` (`BpmnExceptionHandler.java:146-154`) and `AbstractVariableScope#setVariable`; the retained witnesses [error-catch-variables](../scenarios/open-rows/error-catch-variables/README.md), [error-esp-catch-variables](../scenarios/open-rows/error-esp-catch-variables/README.md) and [error-null-message](../scenarios/open-rows/error-null-message/README.md) (CIB Seven `2.2.0`, 2026-11-09). The local-shadow witness disagrees only where CIB's root-variable observation lists the Sub-Process local, which audit history attributes to the root (`DefaultHistoryEventProducer#createHistoricVariableEvent`).
+**Evidence:** Pinned `BpmnExceptionHandler#propagateError` (`BpmnExceptionHandler.java:146-154`) and `AbstractVariableScope#setVariable`; the retained witnesses [error-catch-variables](../scenarios/open-rows/error-catch-variables/README.md), [error-esp-catch-variables](../scenarios/open-rows/error-esp-catch-variables/README.md) and [error-null-message](../scenarios/open-rows/error-null-message/README.md) (CIB Seven `2.2.0`, 2026-11-09). The local-shadow witness disagrees only where CIB's root-variable observation lists the Sub-Process local, which audit history attributes to the root (`DefaultHistoryEventProducer#createHistoricVariableEvent`). Pinned `PvmAtomicOperationCancelActivity.java:60` (the cancelled event-scope execution is deleted with I/O mappings) and `PvmExecutionImpl.java:613-626` (`deleteCascade(reason)` does not skip them). The [mapping-order](../scenarios/open-rows/mapping-order/README.md) `task-caught-outputs` witness covers three cases: an output named like the catch variable, an output reading it, and a task-local of its name. Its evidence run is pending.
 
-**Boundary:** Error catchers on boundaries and Event Sub-Process starts. A catch variable named like an input parameter of a Service Task host, or like an output parameter of the throwing Service Task, which CIB writes after the catch variables and the kernel before them, is outside the claim, as are Escalation catch variables (`event.escalation.codeVariable` stays refused) and expression-valued messages.
+**Boundary:** Error catchers on boundaries and Event Sub-Process starts. Outside the claim: a catch variable an ancestor catcher sets (a boundary of an enclosing Scope or an Event Sub-Process) that is named like an output parameter of the throwing Service Task, or that one of the task's outputs reads. CIB sets it before `deleteCascade` runs the task's outputs; the kernel ends the task first. Also outside the claim: Escalation catch variables (`event.escalation.codeVariable` stays refused) and expression-valued messages.
 
 ### CIB-EXT-0029 — a technical failure is caught by an Error code that names its Java exception class
 
@@ -1102,23 +1172,23 @@ BPMN 2.0.2 makes XPath the default expression language (Table 8.1 `expressionLan
 
 ### CIB-EXT-0031 — an output parameter reads the Activity's own scope
 
-**Status:** Selected extension through the [cibseven-2.2.0 cumulative profile](../profiles/cibseven-2.2.0/profile.json) (`OutputContext.activityScope`)
+**Status:** Selected extension through the [cibseven-2.2.0 cumulative profile](../profiles/cibseven-2.2.0/profile.json) and the [cibseven-2.2.0-scope-chain profile](../profiles/cibseven-2.2.0-scope-chain/profile.json) (`OutputContext.activityScope`)
 
-BPMN 2.0.2 §10.4.2 and §13.3.2 copy an Activity's outputs from its OutputSet, the values its completion produces; the standards reading therefore evaluates an output mapping against the submitted values alone, and a source only a captured input holds is unavailable. CIB Seven `2.2.0` evaluates a `camunda:outputParameter` in the Activity's own execution (`core/variable/mapping/OutputParameter.java:47`), after `TaskService.complete` or the delegate has set the submitted values there, so the mapping reads the submitted values first and then the Activity's input locals and every variable visible from it. The CIB profile selects that context; the kernel reads it in [`Work.outputScope`](kernel/semantics/DATA-SEMANTICS-SPEC.md#activity-data).
+BPMN 2.0.2 §10.4.2 and §13.3.2 copy an Activity's outputs from its OutputSet, the values its completion produces; the standards reading therefore evaluates an output mapping against the submitted values alone, and a source only a captured input holds is unavailable. CIB Seven `2.2.0` evaluates a `camunda:outputParameter` in the Activity's own execution (`core/variable/mapping/OutputParameter.java:47`), so the mapping reads that execution's locals, its input locals and a delegate's `setVariableLocal` results among them, and then every variable visible from it. The CIB profile selects that context; the kernel reads it in [`Work.outputScope`](kernel/semantics/DATA-SEMANTICS-SPEC.md#activity-data). CIB runs an element's output parameters one at a time in document order (`BpmnParseUtil.java:89-110`, `IoMapping.java:44-48`) and writes each into the outer scope before it evaluates the next in the inner scope (`OutputParameter.java:44-52`), so a later output reads an earlier one's target unless the inner scope holds a local of that name. A value CIB sets through the Activity's execution before its outputs run goes through `setVariable` (`core/variable/scope/AbstractVariableScope.java:331-345`): a name the execution holds locally is updated there, any other reaches its nearest owner or the root, where a later output's write of the same name replaces it. Three completions do so: `TaskService.complete` sets the submission on the task's execution (`cmd/CompleteTaskCmd.java:71`, `persistence/entity/TaskEntity.java:869-873`), a decision task sets its mapped result (`util/DecisionEvaluationUtil.java:86`), and a caught Error sets its code and message variables on the boundary's host, a Sub-Process or a Service Task (`bpmn/helper/BpmnExceptionHandler.java:146-154`, `bpmn/parser/BpmnParse.java:3298,3301`), before `deleteCascade` destroys it and runs its outputs (`pvm/runtime/operation/PvmAtomicOperationCancelActivity.java:60`, `persistence/entity/ExecutionEntity.java:521-525`). Under the option the kernel reads the same way (`Ctx.outputReads`): the submitted values and the Activity's or Scope's own locals, an installed value of a local's name in that local's place, then the outputs already written, the latest first, then the installed values the frame does not hold, then the outer chain. A target named twice keeps the value written last.
 
-**Evidence:** Pinned `OutputParameter.java:47`; the retained witnesses `captured-input-fallback` (Service Task) and `completion-captured-fallback` (User Task) of [output-mapping-fanout](../scenarios/open-rows/output-mapping-fanout/README.md), which commit in CIB and agree with the kernel under the option (CIB Seven `2.2.0`).
+**Evidence:** Pinned `OutputParameter.java:47`; the retained witnesses `captured-input-fallback` (Service Task) and `completion-captured-fallback` (User Task) of [output-mapping-fanout](../scenarios/open-rows/output-mapping-fanout/README.md), which commit in CIB and agree with the kernel under the option (CIB Seven `2.2.0`). Pinned `ExecutionEntity.java:521-525` (the mapped Error path runs the same list as the Scope is destroyed) and `AbstractVariableScope.java:331-345` with the three installing sites above; the [mapping-order](../scenarios/open-rows/mapping-order/README.md) `task-chained-outputs`, `scope-chained-outputs`, `error-path-chained-outputs`, `installed-chained-outputs`, `decision-chained-outputs`, `caught-chained-outputs`, `task-caught-outputs` and `duplicate-targets` witnesses, whose evidence run is pending.
 
-**Boundary:** Output mappings of User and Service Tasks at normal completion and on the mapped Error path, and the `camunda:outputParameter`s of a plain Task, which completes with the empty submission (`BpmnParse.java:4788-4831`, `ExecutionEntity.java:521-525`). Scope (Sub-Process) outputs already read their own frame, and Call outputs the called root; neither changes. A write's target is unchanged (nearest owner, `CIB-EXT-0020`).
+**Boundary:** Output mappings of User and Service Tasks at normal completion and on the mapped Error path, where a Service Task's own boundary's catch variables stand behind them as installed values, of decision tasks, and the `camunda:outputParameter`s of a plain Task, which completes with the empty submission (`BpmnParse.java:4788-4831`, `ExecutionEntity.java:521-525`). Scope (Sub-Process) outputs read their own frame under either value and, under this option, also each earlier output's write, at normal completion and on the mapped Error path, where a caught variable no Scope local holds stands behind those writes (`Propagation.interruptedOutputs`). Call outputs read the called root and do not chain (CIB collects them into one map, `CallableElement.getOutputVariables`). A catch event's outputs read only the delivered payload, bound to every name a variable source reads, and JUEL is refused there (`expression.juel.site`), so an earlier write is never observable. A write's target is unchanged (nearest owner, `CIB-EXT-0020`).
 
 ### CIB-EXT-0032 — a Business Rule Task evaluates a DMN 1.3 decision table
 
-**Status:** Selected extension through the [cibseven-2.2.0 cumulative profile](../profiles/cibseven-2.2.0/profile.json)
+**Status:** Selected extension through the [cibseven-2.2.0 cumulative profile](../profiles/cibseven-2.2.0/profile.json) and the [cibseven-2.2.0-scope-chain profile](../profiles/cibseven-2.2.0-scope-chain/profile.json) (`ProfileOptions.businessRuleTask = decisionTable`); the standards profile refuses a decision task (`work.rule`), since BPMN 2.0.2 §10.3.3 names no rule engine
 
 BPMN 2.0.2 leaves a Business Rule Task's rule engine open (§10.3.3). CIB Seven `2.2.0` makes a Business Rule Task with `camunda:decisionRef` a decision task (`BpmnParse.java:2321-2324,2357-2360`) that evaluates a deployed DMN decision and maps its result (`mapDecisionResult`) into `resultVariable`. The kernel evaluates a DMN 1.3 decision table that the program carries, within the admitted subset of [the decision semantics](kernel/semantics/DECISION-SEMANTICS-SPEC.md) (hit policies, FEEL unary tests, result mappers, conversions and failures, items 1 to 8), and writes the mapped result by the nearest-owner rule; every form outside the subset is refused with a stable code.
 
-**Evidence:** Pinned `BpmnParse.java` and the DMN engine sources the decision semantics cite; the witnesses of [business-rule-hit-policies](../scenarios/open-rows/business-rule-hit-policies/README.md), whose CIB evidence the next retake records.
+**Evidence:** Pinned `BpmnParse.java` and the DMN engine sources the decision semantics cite; the witnesses of [business-rule-hit-policies](../scenarios/open-rows/business-rule-hit-policies/README.md), its `form-*` witnesses included, whose CIB evidence the next retake records.
 
-**Boundary:** Decision tables within the decision semantics' subset, with no Error catcher coded with a Java class (`CIB-EXT-0029`). The decision reference binds at program assembly (CIB-LIM-0015), not at each evaluation as in CIB.
+**Boundary:** Decision tables within the decision semantics' subset, with no Error catcher coded with a Java class (`CIB-EXT-0029`). The decision reference binds at program assembly (CIB-LIM-0015), not at each evaluation as in CIB. Inputs and outputs only as `camunda:inputOutput` parameters; a Data Association on a decision task is refused (`work.rule.dataAssociation`), since CIB runs none and no item of the decision semantics gives a DataOutput a source.
 
 ### CIB-EXT-0033 — a Multi-Instance cardinality counts parsed text and an integral Decimal
 
@@ -1297,6 +1367,37 @@ Java stores the legacy `stringList` kind and a structured `list` of Strings as t
 **Evidence:** The runner's projection comment; the decision witnesses `collect-overlap`, `collect-no-match`, `rule-order-overlap`, `interval-endpoints-*` and `decimal-literal` of [business-rule-hit-policies](../scenarios/open-rows/business-rule-hit-policies/README.md); the comparator test in `packages/differential/test/comparator.test.ts`.
 
 **Boundary:** Root bindings against retained CIB evidence only; order and members still compare.
+
+### CIB-OP-0016 — a split's branches run in declaration order, each to its next wait, join or end
+
+**Status:** Selected operational detail; selected by `ProfileOptions.branchSchedule = declarationDepthFirst` through both CIB profiles. The standards profile reads `orderInvariant`.
+
+BPMN 2.0.2 lets the branches of a split run concurrently in any interleaving (§13.3.1, Table 13.1; [BPMN21-429](https://issues.omg.org/issues/BPMN21-429) cautions against treating outgoing-flow order as portable). No order among them is the construct's meaning.
+
+CIB Seven `2.2.0` reverses a split's outgoing executions (`PvmAtomicOperationTransitionDestroyScope:128-134`) for the LIFO invocation queue of `CommandInvocationContext` (`:95,139`). It ends a Sub-Process in the operation that ends its last execution (`PvmAtomicOperationActivityEnd:105`), before that queue reaches a sibling branch. As a result, the first-declared branch runs first, each to its next wait, join or end, before the next branch starts, and the last-declared branch's write is the one left.
+
+The kernel reproduces this as follows (`Feature.Flow.queued`, `Step.nextToken`):
+
+- It queues a split's flows reversed and takes the newest token first.
+- It completes an idle scope occurrence before the next token moves.
+
+The schedule is observable when one branch writes a name another branch reads or writes before either waits. That is a race BPMN does not resolve, so the standards profile refuses it at admission rather than inherit an order (`flow.concurrentWrite`, a forward-compatible restriction).
+
+A branch's footprint covers:
+
+- **Reads:** input and output mapping sources, a Call's input sources, outgoing conditions and a Multi-Instance definition. An element the branch stops at counts only what it reads when it begins.
+- **Writes:** output targets and a Call's outputs.
+
+**Evidence:** The pinned source above. The [split-branch-order](../scenarios/open-rows/split-branch-order/README.md) witnesses are pending:
+
+- `parallel-fork`, `start-split` and `inclusive-split`;
+- `uneven-fork` (depth first against interleaved);
+- `nested-fork` (depth-first recursion);
+- `subprocess-fork` (a Sub-Process completes before the sibling branch).
+
+Their CIB answers are source predictions until the evidence is retained. Kernel tests: `packages/differential/test/flow-branch-schedule.test.ts`; the standards refusal of a read-write race is in `packages/kernel/test/admission-refusals-flow.test.ts`.
+
+**Boundary:** Branches within one closure. The order across inputs is fixed by the inputs. A decision task's `resultVariable` is not in the footprint, since every profile that reads `orderInvariant` refuses a decision task (`work.rule`); a profile that admits both must add it first.
 
 ## Configuration-specific register
 

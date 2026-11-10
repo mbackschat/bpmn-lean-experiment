@@ -154,7 +154,7 @@ def apply (hooks : Hooks) (definitions : List Definition) (progress : Progress) 
     pure { progress with instances := scripts.zip instances, publications := progress.publications ++ [published] }
 
 /-- Fold the stimuli in order. -/
-def run (hooks : Hooks) (definitions : List Definition) (stimuli : List Stimulus) : Except String Result := do
+def runStimuli (hooks : Hooks) (definitions : List Definition) (stimuli : List Stimulus) : Except String Result := do
   let progress ← stimuli.foldlM (apply hooks definitions) ({} : Progress)
   let ids := progress.instances.map (·.2.state.instanceId)
   unless ids.eraseDups.length == ids.length do throw "instance-id-duplicate"

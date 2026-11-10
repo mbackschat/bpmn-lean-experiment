@@ -6,15 +6,15 @@
  * Integers are 64-bit `bigint`s carrying their Java class; a rule that would build a Double, or reach a Java surface the
  * kernel does not represent, ends as `unsupported`. Strings are indexed and ordered in UTF-16 code units, as Java does.
  */
-import { ValueTag, assertNever, type Value } from "../../il/types.js";
+import { ValueTag, assertNever, integerLexeme, isAscii, parseJavaInt, type Value } from "../../il/types.js";
 import {
   JuelBinary, JuelCallTag, JuelMethod, JuelNodeTag, JuelUnary, juelMethodCounts, type JuelCallNode, type JuelNode,
 } from "../../il/types/juel.js";
 import { EvaluationTag, type Evaluation } from "../../hooks.js";
 import type { EvalContext } from "../../state.js";
 import {
-  Carrier, JValTag, bool, dotEe, double, elError, fail, fromValue, integer, isAscii, javaTrim, long, nullValue, ok,
-  portable, siteValue, signedDigits, stopped, text, toBool, toDecimal, toLong, toText, unsupported, type Decimal, type Eval, type JVal,
+  Carrier, JValTag, bool, dotEe, double, elError, fail, fromValue, integer, javaTrim, long, nullValue, ok,
+  portable, siteValue, stopped, text, toBool, toDecimal, toLong, toText, unsupported, type Decimal, type Eval, type JVal,
 } from "./juel/coercion.js";
 
 /** Evaluate a JUEL node table against the context's variables, innermost binding first. */
@@ -89,7 +89,7 @@ function node(context: EvalContext, nodes: readonly JuelNode[], at: number): Eva
       return name.value.tag === JValTag.Null ? ok(nullValue) : property(base.value, name.value);
     }
     case JuelNodeTag.Call:
-      return call(current.payload, sub);
+      return methodCall(current.payload, sub);
     case JuelNodeTag.ComputedCall:
       return unsupported("expression.juel.computedMethod");
     case JuelNodeTag.Unary: {
@@ -111,13 +111,6 @@ function node(context: EvalContext, nodes: readonly JuelNode[], at: number): Eva
   return assertNever(current);
 }
 
-/** A digits-only lexeme within `Long.valueOf`'s range (`Parser.java:140`), else `null`. */
-function integerLexeme(digits: string): bigint | null {
-  if (!/^[0-9]+$/u.test(digits)) return null;
-  const value = BigInt(digits);
-  return value <= 9223372036854775807n ? value : null;
-}
-
 // Operators (NumberOperations, BooleanOperations; EL §1.7 to §1.11)
 
 function aligned(left: Decimal, right: Decimal): readonly [bigint, bigint, bigint] {
@@ -130,23 +123,37 @@ function decimalCompare(left: Decimal, right: Decimal): number {
   return a < b ? -1 : a > b ? 1 : 0;
 }
 
-function arithmetic(op: JuelBinary.Add | JuelBinary.Sub | JuelBinary.Mul, left: JVal, right: JVal): Eval<JVal> {
+function addDecimal(left: Decimal, right: Decimal): Decimal {
+  const [x, y, scale] = aligned(left, right);
+  return [x + y, scale];
+}
+
+function subtractDecimal(left: Decimal, right: Decimal): Decimal {
+  const [x, y, scale] = aligned(left, right);
+  return [x - y, scale];
+}
+
+const multiplyDecimal = (left: Decimal, right: Decimal): Decimal => [left[0] * right[0], left[1] + right[1]];
+
+/** `NumberOperations.add`, `sub` or `mul`, given its rule over BigDecimals and over longs. */
+function arithmetic(
+  onDecimal: (left: Decimal, right: Decimal) => Decimal, onLong: (left: bigint, right: bigint) => bigint, left: JVal, right: JVal,
+): Eval<JVal> {
   if (left.tag === JValTag.Null && right.tag === JValTag.Null) return ok(long(0n));
   if (left.tag === JValTag.Decimal || right.tag === JValTag.Decimal) {
     const a = toDecimal(left);
     if (!a.ok) return stopped(a);
     const b = toDecimal(right);
     if (!b.ok) return stopped(b);
-    if (op === JuelBinary.Mul) return ok({ tag: JValTag.Decimal, coefficient: a.value[0] * b.value[0], scale: a.value[1] + b.value[1] });
-    const [x, y, scale] = aligned(a.value, b.value);
-    return ok({ tag: JValTag.Decimal, coefficient: op === JuelBinary.Add ? x + y : x - y, scale });
+    const [coefficient, scale] = onDecimal(a.value, b.value);
+    return ok({ tag: JValTag.Decimal, coefficient, scale });
   }
   if (dotEe(left) || dotEe(right)) return double(left, right);
   const a = toLong(left);
   if (!a.ok) return stopped(a);
   const b = toLong(right);
   if (!b.ok) return stopped(b);
-  return ok(long(op === JuelBinary.Add ? a.value + b.value : op === JuelBinary.Sub ? a.value - b.value : a.value * b.value));
+  return ok(long(onLong(a.value, b.value)));
 }
 
 function remainder(left: JVal, right: JVal): Eval<JVal> {
@@ -330,50 +337,61 @@ function decided(answer: boolean | null): Eval<boolean> {
   return answer === null ? unsupported("juel.integerCarrier") : ok(answer);
 }
 
+/**
+ * `left op right`, the one dispatch over `JuelBinary`: `and` and `or` skip their right operand once the left one
+ * decides (EL §1.9); every other operator evaluates both, left first.
+ */
 function binary(op: JuelBinary, sub: (index: number) => Eval<JVal>, leftIndex: number, rightIndex: number): Eval<JVal> {
-  if (op === JuelBinary.Div) return unsupported("expression.juel.division");
-  const left = sub(leftIndex);
-  if (!left.ok) return left;
-  if (op === JuelBinary.And || op === JuelBinary.Or) {
+  const both = (rule: (left: JVal, right: JVal) => Eval<JVal>): Eval<JVal> => {
+    const left = sub(leftIndex);
+    if (!left.ok) return left;
+    const right = sub(rightIndex);
+    return right.ok ? rule(left.value, right.value) : right;
+  };
+  const logical = (decisive: boolean): Eval<JVal> => {
+    const left = sub(leftIndex);
+    if (!left.ok) return left;
     const first = toBool(left.value);
     if (!first.ok) return stopped(first);
-    if (first.value === (op === JuelBinary.Or)) return ok(bool(first.value));
+    if (first.value === decisive) return ok(bool(first.value));
     const right = sub(rightIndex);
     if (!right.ok) return right;
     const second = toBool(right.value);
     return second.ok ? ok(bool(second.value)) : stopped(second);
-  }
-  const right = sub(rightIndex);
-  if (!right.ok) return right;
-  return operate(op, left.value, right.value);
-}
-
-function operate(op: JuelBinary, left: JVal, right: JVal): Eval<JVal> {
+  };
   switch (op) {
-    case JuelBinary.Or:
-    case JuelBinary.And:
     case JuelBinary.Div:
-      // `binary` answers these before both operands are evaluated.
-      return unsupported("expression.juel.malformed");
+      return unsupported("expression.juel.division");
+    case JuelBinary.And:
+      return logical(false);
+    case JuelBinary.Or:
+      return logical(true);
     case JuelBinary.Eq:
-    case JuelBinary.Ne: {
-      const same = equal(left, right);
-      return same.ok ? ok(bool(same.value === (op === JuelBinary.Eq))) : stopped(same);
-    }
+      return both((left, right) => {
+        const same = equal(left, right);
+        return same.ok ? ok(bool(same.value)) : stopped(same);
+      });
+    case JuelBinary.Ne:
+      return both((left, right) => {
+        const same = equal(left, right);
+        return same.ok ? ok(bool(!same.value)) : stopped(same);
+      });
     case JuelBinary.Lt:
-      return relational(false, (sign) => sign < 0, left, right);
+      return both((left, right) => relational(false, (sign) => sign < 0, left, right));
     case JuelBinary.Gt:
-      return relational(false, (sign) => sign > 0, left, right);
+      return both((left, right) => relational(false, (sign) => sign > 0, left, right));
     case JuelBinary.Le:
-      return relational(true, (sign) => sign <= 0, left, right);
+      return both((left, right) => relational(true, (sign) => sign <= 0, left, right));
     case JuelBinary.Ge:
-      return relational(true, (sign) => sign >= 0, left, right);
+      return both((left, right) => relational(true, (sign) => sign >= 0, left, right));
     case JuelBinary.Add:
+      return both((left, right) => arithmetic(addDecimal, (a, b) => a + b, left, right));
     case JuelBinary.Sub:
+      return both((left, right) => arithmetic(subtractDecimal, (a, b) => a - b, left, right));
     case JuelBinary.Mul:
-      return arithmetic(op, left, right);
+      return both((left, right) => arithmetic(multiplyDecimal, (a, b) => a * b, left, right));
     case JuelBinary.Mod:
-      return remainder(left, right);
+      return both(remainder);
   }
   return assertNever(op);
 }
@@ -418,8 +436,8 @@ function listIndex(name: JVal): Eval<number> {
   if (name.tag === JValTag.String) {
     // dynamic-only: `Integer.parseInt` reads Unicode digits the kernel does not model.
     if (!isAscii(name.value)) return unsupported("juel.nonAsciiText");
-    const parsed = signedDigits(name.value);
-    return parsed !== null && BigInt.asIntN(32, parsed) === parsed ? ok(Number(parsed)) : fail(elError);
+    const parsed = parseJavaInt(name.value);
+    return parsed === null ? fail(elError) : ok(Number(parsed));
   }
   // dynamic-only: another index kind's coercion depends on the shaded resolver.
   return unsupported("juel.indexType");
@@ -427,7 +445,7 @@ function listIndex(name: JVal): Eval<number> {
 
 // Methods (AstMethod.invoke; the closed list)
 
-function call(payload: JuelCallNode, sub: (index: number) => Eval<JVal>): Eval<JVal> {
+function methodCall(payload: JuelCallNode, sub: (index: number) => Eval<JVal>): Eval<JVal> {
   const { target, receiver: receiverIndex, args: argIndexes } = payload;
   switch (target.tag) {
     case JuelCallTag.Other:
@@ -443,7 +461,7 @@ function call(payload: JuelCallNode, sub: (index: number) => Eval<JVal>): Eval<J
         if (!arg.ok) return arg;
         args.push(arg.value);
       }
-      return invoke(target.method, receiver.value, args);
+      return applyMethod(target.method, receiver.value, args);
     }
   }
   return assertNever(target);
@@ -453,7 +471,7 @@ function call(payload: JuelCallNode, sub: (index: number) => Eval<JVal>): Eval<J
 const wrongReceiver = <T>(): Eval<T> => unsupported("juel.methodReceiver");
 const wrongArgument = <T>(): Eval<T> => unsupported("juel.methodArgument");
 
-function invoke(method: JuelMethod, receiver: JVal, args: readonly JVal[]): Eval<JVal> {
+function applyMethod(method: JuelMethod, receiver: JVal, args: readonly JVal[]): Eval<JVal> {
   const first = args[0] ?? nullValue;
   switch (receiver.tag) {
     case JValTag.String:
@@ -485,6 +503,18 @@ function whole(value: string): Eval<JVal> {
   return value.isWellFormed() ? ok(text(value)) : unsupported("juel.surrogateSplit");
 }
 
+/** A method whose one argument must be a String. */
+function withText(argument: JVal | undefined, rule: (argument: string) => JVal): Eval<JVal> {
+  const value = textArgument(argument);
+  return value === null ? wrongArgument() : ok(rule(value));
+}
+
+/** `toUpperCase` or `toLowerCase`, whose `mapped` result holds only for ASCII text. */
+function asciiCase(receiver: string, mapped: string): Eval<JVal> {
+  // dynamic-only: Java maps a non-ASCII character by the JVM's default locale.
+  return isAscii(receiver) ? ok(text(mapped)) : unsupported("juel.nonAsciiText");
+}
+
 function stringMethod(method: JuelMethod, receiver: string, args: readonly JVal[]): Eval<JVal> {
   const first = args[0];
   const second = args[1];
@@ -496,20 +526,17 @@ function stringMethod(method: JuelMethod, receiver: string, args: readonly JVal[
     case JuelMethod.Equals:
       return ok(bool(first?.tag === JValTag.String && first.value === receiver));
     case JuelMethod.Contains:
+      return withText(first, (argument) => bool(receiver.includes(argument)));
     case JuelMethod.StartsWith:
+      return withText(first, (argument) => bool(receiver.startsWith(argument)));
     case JuelMethod.EndsWith:
+      return withText(first, (argument) => bool(receiver.endsWith(argument)));
     case JuelMethod.IndexOf:
+      return withText(first, (argument) => integer(receiver.indexOf(argument)));
     case JuelMethod.LastIndexOf:
-    case JuelMethod.Concat: {
-      const argument = textArgument(first);
-      if (argument === null) return wrongArgument();
-      return method === JuelMethod.Contains ? ok(bool(receiver.includes(argument)))
-        : method === JuelMethod.StartsWith ? ok(bool(receiver.startsWith(argument)))
-        : method === JuelMethod.EndsWith ? ok(bool(receiver.endsWith(argument)))
-        : method === JuelMethod.IndexOf ? ok(integer(receiver.indexOf(argument)))
-        : method === JuelMethod.LastIndexOf ? ok(integer(receiver.lastIndexOf(argument)))
-        : ok(text(receiver + argument));
-    }
+      return withText(first, (argument) => integer(receiver.lastIndexOf(argument)));
+    case JuelMethod.Concat:
+      return withText(first, (argument) => text(receiver + argument));
     case JuelMethod.Substring: {
       const begin = intArgument(first);
       const end = args.length === 1 ? receiver.length : intArgument(second);
@@ -519,10 +546,9 @@ function stringMethod(method: JuelMethod, receiver: string, args: readonly JVal[
       return whole(receiver.slice(begin, end));
     }
     case JuelMethod.ToUpperCase:
+      return asciiCase(receiver, receiver.toUpperCase());
     case JuelMethod.ToLowerCase:
-      // dynamic-only: Java maps a non-ASCII character by the JVM's default locale.
-      if (!isAscii(receiver)) return unsupported("juel.nonAsciiText");
-      return ok(text(method === JuelMethod.ToUpperCase ? receiver.toUpperCase() : receiver.toLowerCase()));
+      return asciiCase(receiver, receiver.toLowerCase());
     case JuelMethod.Trim:
       return ok(text(javaTrim(receiver)));
     case JuelMethod.Replace: {
@@ -544,6 +570,14 @@ function stringMethod(method: JuelMethod, receiver: string, args: readonly JVal[
 
 function listMethod(method: JuelMethod, receiver: JVal & { readonly tag: JValTag.List }, argument: JVal): Eval<JVal> {
   const items = receiver.items.map(fromValue);
+  const found = (order: readonly number[]): Eval<JVal> => {
+    for (const index of order) {
+      const answer = decided(javaEquals(argument, items[index] as JVal));
+      if (!answer.ok) return stopped(answer);
+      if (answer.value) return ok(integer(index));
+    }
+    return ok(integer(-1));
+  };
   switch (method) {
     case JuelMethod.IsEmpty:
       return ok(bool(items.length === 0));
@@ -558,15 +592,9 @@ function listMethod(method: JuelMethod, receiver: JVal & { readonly tag: JValTag
       return answer.ok ? ok(bool(answer.value)) : stopped(answer);
     }
     case JuelMethod.IndexOf:
-    case JuelMethod.LastIndexOf: {
-      const order = method === JuelMethod.IndexOf ? items.map((_, index) => index) : items.map((_, index) => items.length - 1 - index);
-      for (const index of order) {
-        const answer = decided(javaEquals(argument, items[index] as JVal));
-        if (!answer.ok) return stopped(answer);
-        if (answer.value) return ok(integer(index));
-      }
-      return ok(integer(-1));
-    }
+      return found(items.map((_, index) => index));
+    case JuelMethod.LastIndexOf:
+      return found(items.map((_, index) => items.length - 1 - index));
     case JuelMethod.Get: {
       const index = intArgument(argument);
       if (index === null) return wrongArgument();
@@ -601,13 +629,12 @@ function mapMethod(method: JuelMethod, receiver: JVal & { readonly tag: JValTag.
       return answer.ok ? ok(bool(answer.value)) : stopped(answer);
     }
     case JuelMethod.Get:
-    case JuelMethod.ContainsKey: {
-      const key = textArgument(argument);
-      if (key === null) return wrongArgument();
-      const entry = receiver.entries.find(([name]) => name === key);
-      if (method === JuelMethod.ContainsKey) return ok(bool(entry !== undefined));
-      return ok(entry === undefined ? nullValue : fromValue(entry[1]));
-    }
+      return withText(argument, (key) => {
+        const entry = receiver.entries.find(([name]) => name === key);
+        return entry === undefined ? nullValue : fromValue(entry[1]);
+      });
+    case JuelMethod.ContainsKey:
+      return withText(argument, (key) => bool(receiver.entries.some(([name]) => name === key)));
     case JuelMethod.ContainsValue: {
       const answer = decided(some(receiver.entries.map(([, value]) => javaEquals(argument, fromValue(value)))));
       return answer.ok ? ok(bool(answer.value)) : stopped(answer);

@@ -74,7 +74,7 @@ def scope (program : Program) (header : Header) (payload : ScopePayload) : Optio
 one, sits in that Scope, a called process lists only process-level children, and a compensation handler names an
 element: an element outside its parent's list, or listed by a Scope it does not sit in, would be begun or cleared by one
 owner and not the other. -/
-def references (program : Program) : Option String :=
+def membership (program : Program) : Option String :=
   let parentOf (id : ElementId) : Option (Option ElementId) :=
     match program.element? id with
     | some element => some element.header.parent

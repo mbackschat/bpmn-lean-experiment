@@ -307,6 +307,24 @@
             "integer",
             "javaInt"
           ]
+        },
+        "businessRuleTask": {
+          "enum": [
+            "refused",
+            "decisionTable"
+          ]
+        },
+        "inclusiveJoinReach": {
+          "enum": [
+            "withBoundaries",
+            "outgoingOnly"
+          ]
+        },
+        "branchSchedule": {
+          "enum": [
+            "orderInvariant",
+            "declarationDepthFirst"
+          ]
         }
       }
     },
@@ -374,13 +392,16 @@
         "expression.juel.syntax",
         "expression.outsideJuel",
         "expression.outsideSimpleBoolean",
+        "flow.concurrentWrite",
         "flow.condition.foreign",
         "flow.conditionalOutflow",
         "gateway.eventBased.instantiate",
         "gateway.eventBased.linkArm",
         "gateway.eventBased.receiveArm",
+        "gateway.exclusive.noOutgoingFlow",
         "gateway.exclusive.singleConditionWithoutDefault",
         "gateway.exclusive.unconditionedFlow",
+        "gateway.inclusive.noOutgoingFlow",
         "il.reference",
         "link.catch",
         "link.duplicateCatch",
@@ -486,7 +507,9 @@
         "work.receive.correlation",
         "work.receive.instantiate",
         "work.receive.messageExpression",
+        "work.rule",
         "work.rule.binding",
+        "work.rule.dataAssociation",
         "work.rule.decisionExpression",
         "work.rule.decisionMissing",
         "work.rule.resultVariable",

@@ -138,7 +138,7 @@
   {
     "evidence": "scenarios/configured-task/cibseven-evidence.json",
     "owners": [
-      "PC-AUTO-01"
+      "CIB-LIM-0011"
     ]
   },
   {
@@ -209,12 +209,6 @@
   },
   {
     "evidence": "scenarios/open-rows/activity-split-merge/mi-body-split-one-body-two-outputs.cibseven-evidence.json",
-    "owners": [
-      "PC-CF-07"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/activity-split-merge/review-output-order-mapped-output-and-condition.cibseven-evidence.json",
     "owners": [
       "PC-CF-07"
     ]
@@ -1014,18 +1008,6 @@
     ]
   },
   {
-    "evidence": "scenarios/open-rows/cycle-compositions/automatic-loop-long-burst.cibseven-evidence.json",
-    "owners": [
-      "PC-CF-06"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/cycle-compositions/automatic-loop-short-burst.cibseven-evidence.json",
-    "owners": [
-      "PC-CF-06"
-    ]
-  },
-  {
     "evidence": "scenarios/open-rows/cycle-compositions/rework-loop-two-reworks-with-stale-commands.cibseven-evidence.json",
     "owners": [
       "PC-CF-06"
@@ -1454,12 +1436,6 @@
     ]
   },
   {
-    "evidence": "scenarios/open-rows/human-task-metadata-composition/body-metadata.cibseven-evidence.json",
-    "owners": [
-      "PC-HUM-02"
-    ]
-  },
-  {
     "evidence": "scenarios/open-rows/human-task-metadata-composition/called-task-metadata.cibseven-evidence.json",
     "owners": [
       "PC-HUM-02"
@@ -1468,7 +1444,7 @@
   {
     "evidence": "scenarios/open-rows/human-task-metadata-composition/task-metadata-condition.cibseven-evidence.json",
     "owners": [
-      "PC-HUM-02"
+      "CIB-LIM-0012"
     ]
   },
   {
@@ -1486,7 +1462,7 @@
   {
     "evidence": "scenarios/open-rows/human-task-metadata-composition/writable-handler-key.cibseven-evidence.json",
     "owners": [
-      "PC-HUM-02"
+      "CIB-LIM-0017"
     ]
   },
   {
@@ -1640,6 +1616,7 @@
   {
     "evidence": "scenarios/open-rows/inclusive-join-compositions/unselected-path-parked-then-unselected.cibseven-evidence.json",
     "owners": [
+      "CIB-DEV-0002",
       "PC-BASIC-03",
       "PC-CF-04",
       "PC-CF-08"

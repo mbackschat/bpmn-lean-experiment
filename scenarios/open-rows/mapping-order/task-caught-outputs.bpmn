@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_TaskCaughtOutputs" targetNamespace="urn:bpmn-lean:scenarios:mapping-order:task-caught-outputs">
+  <error id="Error_Fail" name="Fail" errorCode="FAIL" />
+  <process id="Process_TaskCaughtOutputs" name="Run a Service Task's Error-path outputs after its boundary's catch variable" isExecutable="true">
+    <startEvent id="StartEvent_Start" />
+    <serviceTask id="ServiceTask_Collide" name="Collide" implementation="urn:bpmn-lean:effect:probe-v1"
+                 camunda:delegateExpression="${bpmnLeanEffectHandler}" camunda:asyncBefore="true">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:outputParameter name="code">mapped</camunda:outputParameter>
+          <camunda:outputParameter name="seenCollide">${code}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </serviceTask>
+    <boundaryEvent id="BoundaryEvent_CollideFailed" attachedToRef="ServiceTask_Collide" cancelActivity="true">
+      <errorEventDefinition id="ErrorEventDefinition_CollideFailed" errorRef="Error_Fail" camunda:errorCodeVariable="code" />
+    </boundaryEvent>
+    <serviceTask id="ServiceTask_Read" name="Read" implementation="urn:bpmn-lean:effect:probe-v1"
+                 camunda:delegateExpression="${bpmnLeanEffectHandler}" camunda:asyncBefore="true">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:outputParameter name="seenRead">${failure}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </serviceTask>
+    <boundaryEvent id="BoundaryEvent_ReadFailed" attachedToRef="ServiceTask_Read" cancelActivity="true">
+      <errorEventDefinition id="ErrorEventDefinition_ReadFailed" errorRef="Error_Fail" camunda:errorCodeVariable="failure" />
+    </boundaryEvent>
+    <serviceTask id="ServiceTask_Local" name="Local" implementation="urn:bpmn-lean:effect:probe-v1"
+                 camunda:delegateExpression="${bpmnLeanEffectHandler}" camunda:asyncBefore="true">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="level">inner</camunda:inputParameter>
+          <camunda:outputParameter name="seenLocal">${level}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </serviceTask>
+    <boundaryEvent id="BoundaryEvent_LocalFailed" attachedToRef="ServiceTask_Local" cancelActivity="true">
+      <errorEventDefinition id="ErrorEventDefinition_LocalFailed" errorRef="Error_Fail" camunda:errorCodeVariable="level" />
+    </boundaryEvent>
+    <userTask id="UserTask_Observe" name="Observe">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="seenCode">${code}</camunda:inputParameter>
+          <camunda:inputParameter name="seenFailure">${failure}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <endEvent id="EndEvent_Collided" />
+    <endEvent id="EndEvent_Read" />
+    <endEvent id="EndEvent_Local" />
+    <endEvent id="EndEvent_Done" />
+    <sequenceFlow id="Flow_Start_Collide" sourceRef="StartEvent_Start" targetRef="ServiceTask_Collide" />
+    <sequenceFlow id="Flow_Collide_Collided" sourceRef="ServiceTask_Collide" targetRef="EndEvent_Collided" />
+    <sequenceFlow id="Flow_CollideFailed_Read" sourceRef="BoundaryEvent_CollideFailed" targetRef="ServiceTask_Read" />
+    <sequenceFlow id="Flow_Read_Read" sourceRef="ServiceTask_Read" targetRef="EndEvent_Read" />
+    <sequenceFlow id="Flow_ReadFailed_Local" sourceRef="BoundaryEvent_ReadFailed" targetRef="ServiceTask_Local" />
+    <sequenceFlow id="Flow_Local_Local" sourceRef="ServiceTask_Local" targetRef="EndEvent_Local" />
+    <sequenceFlow id="Flow_LocalFailed_Observe" sourceRef="BoundaryEvent_LocalFailed" targetRef="UserTask_Observe" />
+    <sequenceFlow id="Flow_Observe_Done" sourceRef="UserTask_Observe" targetRef="EndEvent_Done" />
+  </process>
+</definitions>

@@ -43,7 +43,7 @@ def best? {α : Type} (ctx : Ctx) (raised : Raised) (trigger : α → Trigger) (
     | some caught, some (best, _) => if caught.rank < best.rank then some (caught, candidate) else chosen) none).map
     fun (caught, candidate) => (candidate, caught.writes)
 
-def boundaries (ctx : Ctx) (element : ElementId) : List Boundary :=
+def boundariesOf (ctx : Ctx) (element : ElementId) : List Boundary :=
   (((ctx.program.element? element).bind (·.envelope?)).map (·.boundaries)).getD []
 
 /-- The Event Sub-Processes declared directly in the element of `occurrence`, the process included. -/
@@ -52,7 +52,7 @@ def eventSubProcesses (ctx : Ctx) (occurrence : ScopeOccurrence) : List (Element
     child.scope?.bind fun (header, payload) => (ctx.eventStart payload).map fun (start, _) => (header.id, start)
 
 /-- The public identity of a trigger: the thrower's occurrence, as `origin` names it. -/
-def trigger (state : State) (origin : Origin) : OccurrenceRef :=
+def throwerRef (state : State) (origin : Origin) : OccurrenceRef :=
   { processInstanceId := state.instanceOf origin.scope, element := origin.element, activation := origin.activation }
 
 /-- Whether the thrower's output mappings would run as its instance ends: it ran directly in its instance's root and
@@ -81,7 +81,7 @@ the Process instance": `failsInstance` ends the instance failed, naming the thro
 path, and the instance goes on or completes as what remains says. -/
 def unhandledError (ctx : Ctx) (code : String) (message : Option String) (origin : Origin) (state : State) : Outcome :=
   match ctx.program.options.unhandledError with
-  | .failsInstance => .ok (state.signal (.endInstance .failed (some { code, message, occurrence := trigger state origin })))
+  | .failsInstance => .ok (state.signal (.endInstance .failed (some { code, message, occurrence := throwerRef state origin })))
   | .endsThrowingPath => do
     let state ← enclosingInstances ctx state (state.scopes.length + 1) origin.scope
     if !endsInstanceWithOutputs ctx origin state then .ok state
@@ -108,9 +108,12 @@ def writeCaught (scope : ScopeOccurrenceId) (writes : List (String × Value)) (s
 
 /-- Under `ErrorPathOutputs.mapped` a Scope an Error boundary interrupts writes its output mappings, after the catch
 variables `caught`: CIB sets those on the Scope's execution and then runs the mappings as it destroys the Scope
-(`BpmnExceptionHandler#propagateError:146-154`, `ExecutionEntity.destroy`, `OutputParameter.execute`, CIB-EXT-0016).
-The mappings are evaluated before the queued write of `caught` applies, so they read `caught` first: that write goes
-outward from the Scope, which leaves each caught value the one visible from it. -/
+(`BpmnExceptionHandler.java:146-153`, `ExecutionEntity.java:521-525`, `OutputParameter.execute`, CIB-EXT-0016). The
+mappings are evaluated before the queued write of `caught` applies, so they read `caught` as installed: `setVariable`
+on the Scope's execution, the boundary's event scope (`BpmnParse.java:3298,3301`), leaves a caught value in a local of
+its name or else at its nearest owner or the root (`Ctx.outputReads`). `destroy` runs the same parameter list as a
+normal completion (`IoMapping.java:44-48`), so the outputs read as `Scopes.completeScope`'s do: under
+`OutputContext.activityScope` a later one reads an earlier one's write, ahead of a caught value no local holds. -/
 def interruptedOutputs (ctx : Ctx) (occurrence : ScopeOccurrence) (parent : ScopeOccurrenceId)
     (caught : List (String × Value)) (state : State) : Outcome :=
   let mappings := (((occurrence.element.bind ctx.program.element?).bind (·.scope?)).map (·.2.envelope.outputs)).getD []
@@ -118,8 +121,9 @@ def interruptedOutputs (ctx : Ctx) (occurrence : ScopeOccurrence) (parent : Scop
   | .mapped =>
     if mappings.isEmpty then .ok state
     else
-      let context := state.evalContext occurrence.id
-      (ctx.requireMappings { context with variables := caught ++ context.variables } mappings).map fun outputs =>
+      let outer := (occurrence.parent.map state.visible).getD []
+      let reads := ctx.outputReads state.logicalTimeMs (state.ownVariables occurrence.id) caught outer
+      (ctx.requireMappingsWith reads mappings).map fun outputs =>
         state.signal (.write parent outputs .outward)
   | .none => .ok state
 
@@ -135,7 +139,7 @@ def leaveOccurrence (ctx : Ctx) (raised : Raised) (origin : Origin) (occurrence 
     (interruptedOutputs ctx occurrence parent writes caught).map (boundary.fire occurrence.occurrence none parent [])
   | .escalation _ => .ok (boundary.fire occurrence.occurrence none parent [] caught)
   | .cancel =>
-    let thrown := trigger state origin
+    let thrown := throwerRef state origin
     .ok ((state.clearInside occurrence.id).signal (.compensate occurrence.id none thrown occurrence.occurrence
       (some (.occur boundary.id parent (.flows boundary.outgoing)))))
 
@@ -158,22 +162,32 @@ def searchScopes (ctx : Ctx) (raised : Raised) (origin : Origin) (state : State)
         let caught := do
           let element ← occurrence.element
           let parent ← occurrence.parent
-          let attached := if role == .multiInstanceInstance then [] else boundaries ctx element
+          let attached := if role == .multiInstanceInstance then [] else boundariesOf ctx element
           let (boundary, writes) ← best? ctx raised (·.subscription.trigger) attached
           pure (leaveOccurrence ctx raised origin occurrence parent boundary writes state)
         match caught with
         | some next => next
         | none => searchScopes ctx raised origin state fuel occurrence.parent
 
-/-- `Signal.raise`. -/
-def raise (ctx : Ctx) (raised : Raised) (origin : Origin) (state : State) : Outcome :=
-  let hostBoundaries := if ctx.scopeRole state origin.scope == .multiInstanceInstance then [] else boundaries ctx origin.element
-  let atHost := origin.host.bind fun _ =>
-    (best? ctx raised (·.subscription.trigger) hostBoundaries).map fun (boundary, writes) =>
-      boundary.fire none none origin.scope [] (writeCaught origin.scope writes state)
-  match atHost with
-  | some next => .ok next
-  | none => searchScopes ctx raised origin state (state.scopes.length + 1) (some origin.scope)
+/-- What Propagation asks of the Work feature it may not import (ARCHITECTURE-SPEC "Modules and build shape");
+`Kernel.Registry` fills it with `Kernel.Feature.Work.mappedErrorOutputs`: how the Activity `origin.host`, still running
+after its business Error, leaves once the values its catcher installs through its frame are known. -/
+structure PropagationHooks where
+  mappedErrorOutputs : Ctx → Origin → List (String × Value) → State → Outcome := fun _ _ _ state => .ok state
+
+/-- `Signal.raise`. An Activity that raised the event (`origin.host`) is still running: its own boundaries are searched
+first, and a catching one installs its variables through the Activity's frame before the Activity leaves with its
+mapped Error-path outputs, as CIB sets them on the task's execution before destroying it
+(`BpmnExceptionHandler.java:146-154`, CIB-EXT-0028). Otherwise the Activity leaves first, installing nothing, and the
+event is raised again without a host, so every other catcher sees it gone (CIB-EXT-0028's boundary). -/
+def raise (hooks : PropagationHooks) (ctx : Ctx) (raised : Raised) (origin : Origin) (state : State) : Outcome :=
+  let hostBoundaries := if ctx.scopeRole state origin.scope == .multiInstanceInstance then [] else boundariesOf ctx origin.element
+  match origin.host, best? ctx raised (·.subscription.trigger) hostBoundaries with
+  | some _, some (boundary, writes) =>
+    (hooks.mappedErrorOutputs ctx origin (lastWrites writes) state).map (boundary.fire none none origin.scope [])
+  | some _, none =>
+    (hooks.mappedErrorOutputs ctx origin [] state).map (·.signal (.raise raised { origin with host := none, patch := [] }))
+  | none, _ => searchScopes ctx raised origin state (state.scopes.length + 1) (some origin.scope)
 
 /-- How a throw Event leaves once it has done its work. -/
 def throwLeave (payload : EventPayload) : Leave :=
@@ -188,7 +202,7 @@ def throwCompensation (header : Header) (payload : EventPayload) (thrown : Compe
   if thrown.activity.isSome then .error (.unsupported "throw-compensation-activity")
   else if !thrown.waitForCompletion then .error (.unsupported "throw-compensation-asynchronous")
   else
-    let triggered := trigger state { element := header.id, scope := occurrence.scope, activation := occurrence.activation }
+    let triggered := throwerRef state { element := header.id, scope := occurrence.scope, activation := occurrence.activation }
     .ok (state.signal (.compensate occurrence.scope thrown.activity triggered none
       (some (.complete occurrence.id (throwLeave payload)))))
 

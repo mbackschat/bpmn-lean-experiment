@@ -97,7 +97,7 @@ def input (entry : DecisionInput) : Option String :=
 
 /-- Two or more outputs each need a unique name (`DefaultDmnTransform.java:300-315`); the kernel names every entry, so
 a single output needs one too (item 3). -/
-def outputs (declared : List DecisionOutput) : Option String :=
+def declaredOutputs (declared : List DecisionOutput) : Option String :=
   let names := declared.filterMap (·.name)
   if names.length != declared.length || names.eraseDups.length != names.length then some "decision.outputName"
   else declared.findSome? fun output => output.typeRef.bind typeRef
@@ -130,7 +130,7 @@ def decision (entry : Decision) : Option String :=
     match entry.logic with
     | .foreign _ => some "decision.logic"
     | .table table =>
-      hitPolicy table <|> table.inputs.findSome? input <|> outputs table.outputs <|> table.rules.findSome? (rule table)
+      hitPolicy table <|> table.inputs.findSome? input <|> declaredOutputs table.outputs <|> table.rules.findSome? (rule table)
 
 def resource (entry : DecisionResource) : Option String :=
   if entry.«namespace» != dmn13 then some "decision.namespace"
@@ -143,9 +143,15 @@ def resources (program : Program) : Option String :=
   program.decisionResources.findSome? resource <|>
     (if ids.eraseDups.length != ids.length then some "decision.duplicateId" else none)
 
-/-- Item 1: a literal `decisionRef` the program carries, the latest binding, no tenant, and a result variable CIB does
-not write onto the task's transient `decisionResult` local (`DecisionEvaluationUtil.java:79-87`). -/
-def task (program : Program) (work : RuleWork) : Option String :=
+/-- Item 1: a profile that selects decision tables (CIB-EXT-0032), since BPMN 2.0.2 §10.3.3 leaves a Business Rule
+Task's rule engine open; inputs and outputs only as `camunda:inputOutput` parameters, since CIB runs no Data
+Association on a decision task and the decision semantics give a DataOutput no source; a literal `decisionRef` the
+program carries, the latest binding, no tenant, and a result variable CIB does not write onto the task's transient
+`decisionResult` local (`DecisionEvaluationUtil.java:79-87`). -/
+def task (program : Program) (work : RuleWork) (envelope : Envelope) : Option String :=
+  if program.options.businessRuleTask == .refused then some "work.rule"
+  else if (envelope.inputs ++ envelope.outputs).any (·.dialect == .dataAssociation) then some "work.rule.dataAssociation"
+  else
   match work.decision with
   | .expression _ => some "work.rule.decisionExpression"
   | .literal key =>

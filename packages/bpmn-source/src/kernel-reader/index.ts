@@ -83,9 +83,9 @@ function selectRootProcess(processes: ReadonlyArray<ElementRecord>, nodes: Reado
 function createContext(definitions: ElementRecord, parsed: Awaited<ReturnType<typeof parseKernelSource>>, scan: Scan,
   processes: ReadonlyArray<ElementRecord>, notCarried: SourceFactNotCarried[]): ReadContext & { consumedBy: (element: ElementRecord) => ReadonlySet<string> } {
   const compensation = indexCompensation(scan.nodes, scan.containers);
-  const flowOrder = new Map(scan.flows.map((flow, index) => [String(flow.id), index]));
-  const flows = scan.flows.filter((flow) => !compensation.erased.has(String(flow.id)))
-    .sort((left, right) => compareIds(String(left.id), String(right.id)));
+  // Flows keep document order, never the identifiers', so every `outgoing` list is declaration order: CIB's branch
+  // schedule (CIB-OP-0016) and Exclusive candidate order read it, and a renaming cannot change either (PC-BASIC-03).
+  const flows = scan.flows.filter((flow) => !compensation.erased.has(String(flow.id)));
   const tracker = createExtensionTracker(definitions);
   return {
     ...tracker,
@@ -94,7 +94,6 @@ function createContext(definitions: ElementRecord, parsed: Awaited<ReturnType<ty
     processes,
     nodes: scan.nodes,
     flows,
-    flowOrder,
     incoming: (id) => flows.filter((flow) => endpoint(flow, "targetRef") === id).map((flow) => String(flow.id)),
     outgoing: (id) => flows.filter((flow) => endpoint(flow, "sourceRef") === id).map((flow) => String(flow.id)),
     childrenOf: (container) => [...scan.nodes.values()].filter((node) => node.container === container),

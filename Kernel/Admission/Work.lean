@@ -17,47 +17,49 @@ public section
 
 namespace Kernel.Admission.Work
 
-/-- Whether `work` carries mappings. A plain Task carries them when `plainTask` holds (`readsOwnScope`); a decision
-task when `decisionTask` holds, since `Kernel.Feature.Work.evaluateDecision` writes its result and maps its outputs
-(PC-AUTO-08), though no compensation subject completes through it. -/
-def mapsData (plainTask decisionTask : Bool) : Work → Bool
-  | .user _ => true
-  | .service _ => true
-  | .none => plainTask
-  | .manual => false
-  | .receive _ => false
-  | .send _ => false
-  | .script _ => false
-  | .rule _ => decisionTask
-  | .call _ => false
+/-- What admission reads of a work kind, read in one place (`traits`): whether the work carries mappings (a plain
+Task's only where `readsOwnScope` holds; a decision task's, since `Kernel.Feature.Work.evaluateDecision` writes its
+result and maps its outputs, PC-AUTO-08), whether it may be a compensation subject, which completes through the
+pipeline's `Hooks.completed` that `Kernel.Feature.Work` reaches for a single User Task or Service Task only, what one
+Multi-Instance instance submits (`instanceBody`), whether an occurrence no token began may do it
+(`beginsWithoutToken`), the names CIB installs from it (`declaredNames`) and the delegate token it binds. -/
+structure Traits where
+  mapsData : Bool := false
+  plainTask : Bool := false
+  compensable : Bool := false
+  instanceBody : Option Bool := none
+  beginsWithoutToken : Bool := false
+  names : List String := []
+  handlerKey : Option String := none
+
+/-- The targets of the mappings CIB itself performs: every one except a BPMN Data Association, which it never runs. -/
+def writtenTargets (mappings : List Mapping) : List String :=
+  (mappings.filter (·.dialect != .dataAssociation)).map (·.target)
+
+/-- A User Task submits the loop's output data item; a Service Task's effect result is the empty OutputSet, since a
+Multi-Instance Activity has no mappings (PC-MI-02); a Receive Task's delivery carries no payload (PC-HUM-06). The
+Multi-Instance shape itself is admitted by `Kernel.Admission.MultiInstance`. -/
+def traits : Work → Traits
+  | .none => { plainTask := true, beginsWithoutToken := true }
+  | .manual => { beginsWithoutToken := true }
+  | .user task =>
+    { mapsData := true, compensable := true, instanceBody := some true, beginsWithoutToken := true
+      names := task.formFields.map (·.1) }
+  | .receive _ => { instanceBody := some false }
+  | .service work =>
+    { mapsData := true, compensable := true, instanceBody := some false, beginsWithoutToken := true
+      handlerKey := work.handlerKey }
+  | .send work => { handlerKey := work.handlerKey }
+  | .script work => { names := work.resultVariable.toList }
+  | .rule work => { mapsData := true, names := work.resultVariable.toList }
+  | .call work => { names := writtenTargets (work.inputs ++ work.outputs) }
 
 /-- The work one instance of a Multi-Instance Activity may do: `some submits`, where `submits` says whether its
-completion submits the loop's output data item, or `none` for work no instance may do. A User Task submits it; a
-Service Task's effect result is the empty OutputSet, since a Multi-Instance Activity has no mappings (PC-MI-02); a
-Receive Task's delivery carries no payload (PC-HUM-06). The Multi-Instance shape itself is admitted by
-`Kernel.Admission.MultiInstance`. -/
-def instanceBody : Work → Option Bool
-  | .user _ => some true
-  | .service _ => some false
-  | .receive _ => some false
-  | .none => none
-  | .manual => none
-  | .send _ => none
-  | .script _ => none
-  | .rule _ => none
-  | .call _ => none
+completion submits the loop's output data item, or `none` for work no instance may do. -/
+def instanceBody (work : Work) : Option Bool := (traits work).instanceBody
 
 /-- The work an occurrence no token began may do: a task without work, a User Task or a Service Task. -/
-def beginsWithoutToken : Work → Bool
-  | .none => true
-  | .manual => true
-  | .user _ => true
-  | .service _ => true
-  | .receive _ => false
-  | .send _ => false
-  | .script _ => false
-  | .rule _ => false
-  | .call _ => false
+def beginsWithoutToken (work : Work) : Bool := (traits work).beginsWithoutToken
 
 /-- A plain Task completes with the empty submission, so its outputs have a source only under
 `OutputContext.activityScope` (CIB-EXT-0031), and only as `camunda:outputParameter`s: CIB parses those on any task
@@ -66,16 +68,31 @@ def beginsWithoutToken : Work → Bool
 def readsOwnScope (options : ProfileOptions) (outputs : List Mapping) : Bool :=
   options.outputContext == .activityScope && outputs.all (·.dialect == .ioParameter)
 
-def envelope (options : ProfileOptions) (work : Work) (envelope : Envelope) : Option String :=
-  if !envelope.inputs.isEmpty && !mapsData false true work then some "activity.inputMappings"
-  else if !envelope.outputs.isEmpty && !mapsData (readsOwnScope options envelope.outputs) true work then
+def workEnvelope (options : ProfileOptions) (work : Traits) (envelope : Envelope) : Option String :=
+  if !envelope.inputs.isEmpty && !work.mapsData then some "activity.inputMappings"
+  else if !envelope.outputs.isEmpty && !work.mapsData && !(work.plainTask && readsOwnScope options envelope.outputs) then
     some "activity.outputMappings"
-  else if envelope.multiInstance.isSome && (instanceBody work).isNone then some "activity.multiInstanceBody"
-  -- A compensation subject completes through the pipeline's `Hooks.completed`, which `Kernel.Feature.Work` reaches for a
-  -- single User Task or Service Task only.
-  else if envelope.compensationHandler.isSome && (!mapsData false false work || envelope.multiInstance.isSome) then
+  else if envelope.multiInstance.isSome && work.instanceBody.isNone then some "activity.multiInstanceBody"
+  else if envelope.compensationHandler.isSome && (!work.compensable || envelope.multiInstance.isSome) then
     some "activity.compensationHandler"
   else none
+
+/-- The names CIB installs from the model as variables an expression may read: every element's parameter targets and
+loop item names, and its work's names (`traits`). A process-level item is none, since CIB parses no Property, Data
+Object or process I/O specification (`BpmnParse.java:726`). -/
+def declaredNames (program : Program) : List String :=
+  program.elements.flatMap fun element =>
+    let loop := (element.envelope?).bind (·.multiInstance)
+    ((element.envelope?).map (fun envelope => writtenTargets (envelope.inputs ++ envelope.outputs))).getD [] ++
+      ((loop.map fun loop => loop.elementVariable.toList ++ loop.inputDataItem.toList ++
+        loop.inputDataItemName.toList).getD []) ++
+      ((element.activity?).map (fun (_, payload) => (traits payload.work).names)).getD []
+
+/-- CIB resolves a delegate token against the variables before its beans (`JuelExpressionManager.java:144-150`), so a
+declared name equal to it shadows the handler and the job fails (CIB-LIM-0017). -/
+def handlerKey (program : Program) : Option String → Option String
+  | none => none
+  | some token => if (declaredNames program).contains token then some "work.handlerKeyName" else none
 
 /-- An instantiating Receive Task starts its Process (BPMN 2.0.2 §10.3.3, Table 10.10), which pinned CIB never reads
 (CIB-LIM-0008) (PC-BASIC-04). -/
@@ -100,8 +117,8 @@ def dataCorrespondence (work : CallWork) : Option String :=
 
 /-- CIB drops a Call output whose target is a Multi-Instance counter before writing it
 (`CallableElementActivityBehavior.java:48,135,160-166`); the counters belong to the loop (BPMN 2.0.2 Table 10.30)
-(PC-SCOPE-04). -/
-def multiInstanceCounters : List String := ["nrOfInstances", "nrOfActiveInstances", "nrOfCompletedInstances"]
+(PC-SCOPE-04). `loopCounter` is not among them: CIB's list holds only the three instance counts. -/
+def multiInstanceCounters : List String := multiInstanceCounterNames.erase "loopCounter"
 
 /-- A Call names a called process literally that the program carries, not the root process and without an Event
 Sub-Process, binds the latest version, carries no business key or tenant and maps its data explicitly; its mappings
@@ -169,13 +186,7 @@ def utcInstant (value : String) : Bool :=
 /-- A decimal Java `int`, optionally negative: CIB parses a literal priority with `Integer.parseInt`
 (`TaskDecorator#initializeTaskPriority`); a `+` sign, which Java also reads, is refused rather than carried. -/
 def javaInt (value : String) : Bool :=
-  let digits := match value.toList with
-    | '-' :: rest => rest
-    | chars => chars
-  !digits.isEmpty && digits.all Char.isDigit &&
-    match value.toInt? with
-    | some number => decide (-2147483648 ≤ number) && decide (number ≤ 2147483647)
-    | none => false
+  !value.startsWith "+" && (parseJavaInt? value).isSome
 
 /-- A field's literal value satisfies `admitted`; an expression waits for the Task fields JUEL level. -/
 def literalField (admitted : String → Bool) : Option ValueSource → Bool
@@ -216,8 +227,9 @@ def activity (program : Program) (payload : ActivityPayload) : Option String :=
     | .service work => service work
     | .send _ => some "work.send"
     | .script _ => some "work.script"
-    | .rule work => Decision.task program work
+    | .rule work => Decision.task program work payload.envelope
     | .call work => call program work
-  work <|> envelope program.options payload.work payload.envelope
+  let read := traits payload.work
+  work <|> handlerKey program read.handlerKey <|> workEnvelope program.options read payload.envelope
 
 end Kernel.Admission.Work

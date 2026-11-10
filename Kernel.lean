@@ -14,6 +14,7 @@ public import Kernel.Feature.Compensation
 public import Kernel.Feature.Data
 public import Kernel.Feature.Data.Juel
 public import Kernel.Feature.Data.Juel.Coercion
+public import Kernel.Feature.Decision
 public import Kernel.Feature.Flow
 public import Kernel.Feature.MultiInstance
 public import Kernel.Feature.Propagation
@@ -21,7 +22,6 @@ public import Kernel.Feature.Scopes
 public import Kernel.Feature.Subscriptions
 public import Kernel.Feature.Work
 public import Kernel.Feature.Work.Call
-public import Kernel.Feature.Work.Decision
 public import Kernel.Feature.Work.Submission
 public import Kernel.Hooks
 public import Kernel.Host
@@ -34,6 +34,7 @@ public import Kernel.IL.Types
 public import Kernel.IL.Types.Decision
 public import Kernel.IL.Types.Expression
 public import Kernel.IL.Types.Juel
+public import Kernel.IL.Types.Lexical
 public import Kernel.IL.Types.Options
 public import Kernel.Population
 public import Kernel.Publish

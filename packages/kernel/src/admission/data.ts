@@ -7,7 +7,8 @@
  * ([expression semantics](../../../../docs/kernel/semantics/EXPRESSION-SEMANTICS-SPEC.md#admission-at-core)).
  */
 import {
-  Evaluator, ExpressionTag, MappingDialect, assertNever, type Envelope, type Expression, type Flow, type Header, type Mapping,
+  Evaluator, ExpressionTag, MappingDialect, assertNever, integerLexeme, multiInstanceCounterNames, type Envelope,
+  type Expression, type Flow, type Header, type Mapping,
 } from "../il/types.js";
 import {
   JuelBinary, JuelCallTag, JuelNodeTag, juelMethodCounts, type JuelCall, type JuelFunctionNode, type JuelNode,
@@ -23,7 +24,7 @@ function juelName(counters: boolean, name: string): string | null {
   if (["execution", "task", "caseExecution", "externalTask", "authenticatedUserId"].includes(name)) {
     return "expression.juel.engineContext";
   }
-  if (!counters && ["loopCounter", "nrOfInstances", "nrOfActiveInstances", "nrOfCompletedInstances"].includes(name)) {
+  if (!counters && multiInstanceCounterNames.includes(name)) {
     return "expression.juel.multiInstanceCounter";
   }
   // CIB binds it only as a transient local of a decision task's execution (`DecisionEvaluationUtil.java:82`), which
@@ -81,7 +82,7 @@ function juelNode(counters: boolean, at: number, node: JuelNode): string | null 
     case JuelNodeTag.Identifier:
       return juelName(counters, node.name);
     case JuelNodeTag.Integer:
-      return /^[0-9]+$/u.test(node.digits) && BigInt(node.digits) <= 9223372036854775807n ? null : "expression.juel.malformed";
+      return integerLexeme(node.digits) === null ? "expression.juel.malformed" : null;
     case JuelNodeTag.Float:
       return "expression.juel.floatLiteral";
     case JuelNodeTag.Function:
@@ -102,7 +103,7 @@ function juelNode(counters: boolean, at: number, node: JuelNode): string | null 
       return earlier(node.operand);
     case JuelNodeTag.Binary: {
       const { op, left, right } = node.payload;
-      return earlier(left, right) ?? (op === JuelBinary.Div ? "expression.juel.division" : null);
+      return earlier(left, right) ?? juelOperator(op);
     }
     case JuelNodeTag.Choice: {
       const { condition, whenTrue, whenFalse } = node.payload;
@@ -118,6 +119,28 @@ function juelNode(counters: boolean, at: number, node: JuelNode): string | null 
  */
 function juelFunction(earlier: (...children: readonly number[]) => string | null, call: JuelFunctionNode): string | null {
   return earlier(...call.args) ?? "expression.juel.function";
+}
+
+/** Division yields a Double over Integers (EL §1.7.2), outside the portable domain; every other operator is admitted. */
+function juelOperator(op: JuelBinary): string | null {
+  switch (op) {
+    case JuelBinary.Div:
+      return "expression.juel.division";
+    case JuelBinary.Or:
+    case JuelBinary.And:
+    case JuelBinary.Eq:
+    case JuelBinary.Ne:
+    case JuelBinary.Lt:
+    case JuelBinary.Gt:
+    case JuelBinary.Le:
+    case JuelBinary.Ge:
+    case JuelBinary.Add:
+    case JuelBinary.Sub:
+    case JuelBinary.Mul:
+    case JuelBinary.Mod:
+      return null;
+  }
+  return assertNever(op);
 }
 
 /** A method call outside the closed list, by name or by argument count. */

@@ -100,22 +100,7 @@ def javaTrim (chars : List Char) : List Char :=
   let blank (char : Char) : Bool := char.toNat ≤ 0x20
   ((chars.dropWhile blank).reverse.dropWhile blank).reverse
 
-def isAscii (text : String) : Bool := text.toList.all fun char => char.toNat < 128
-
 /-! ## Numeric text -/
-
-def unsign : List Char → Bool × List Char
-  | '-' :: rest => (true, rest)
-  | '+' :: rest => (false, rest)
-  | rest => (false, rest)
-
-/-- `Long.parseLong`'s ASCII grammar: an optional sign and at least one digit. -/
-def signedDigits? (chars : List Char) : Option Int :=
-  let (negative, body) := unsign chars
-  if body.isEmpty || !body.all Char.isDigit then none
-  else
-    let magnitude : Int := body.foldl (fun total char => total * 10 + (char.toNat - '0'.toNat)) 0
-    some (if negative then -magnitude else magnitude)
 
 /-- Digits, then the rest. -/
 def digitRun (chars : List Char) (digit : Char → Bool) : List Char × List Char :=
@@ -236,8 +221,8 @@ def toLong (value : JVal) : Eval Int :=
     | .string text =>
       -- dynamic-only: `Long.valueOf` reads Unicode digits the kernel does not model.
       if !isAscii text then limit "juel.nonAsciiText"
-      else match signedDigits? text.toList with
-        | some parsed => if wrap64 parsed == parsed then .ok parsed else fail elError
+      else match parseJavaLong? text with
+        | some parsed => .ok parsed
         | none => fail elError
     | .null | .bool _ | .list _ | .map _ => fail elError
 

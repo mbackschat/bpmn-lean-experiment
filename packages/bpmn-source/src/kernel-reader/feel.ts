@@ -4,12 +4,11 @@
  * not derive in full is kept as `foreign`, which admission refuses (`decision.feel`); the reader decides no kind or
  * domain, which admission checks against each input's and output's `typeRef`.
  */
-import { ctor } from "./wire.js";
+import { ctor, isDigit } from "./wire.js";
 import type { KernelJson } from "./wire.js";
 
 const keywords: ReadonlySet<string> = new Set(["true", "false", "null", "not"]);
 const whitespace: ReadonlySet<string> = new Set([" ", "\t", "\r", "\n"]);
-const isDigit = (char: string | undefined): boolean => char !== undefined && char >= "0" && char <= "9";
 
 /** A cursor over one entry's text; every `read` either consumes its form and returns it, or returns `null` unmoved. */
 class Cursor {
@@ -155,7 +154,7 @@ function whole(text: string, read: (cursor: Cursor) => KernelJson | null): Kerne
   return value !== null && cursor.done ? value : null;
 }
 
-const foreign = (language: string | null, text: string): KernelJson => ctor("foreign", { value: { language, text } });
+const foreignEntry = (language: string | null, text: string): KernelJson => ctor("foreign", { value: { language, text } });
 
 /** The text without the grammar's surrounding whitespace (space, tab, CR, LF), which `String.trim` would widen. */
 function stripped(text: string): string {
@@ -168,7 +167,7 @@ function stripped(text: string): string {
 
 /** An input entry: `-` or empty text is `any`; otherwise a test list, optionally inside `not( )`. */
 export function inputEntry(text: string, language: string | null): KernelJson {
-  if (language !== null) return foreign(language, text);
+  if (language !== null) return foreignEntry(language, text);
   const body = stripped(text);
   if (body === "" || body === "-") return "any";
   const read = whole(text, (cursor) => {
@@ -183,15 +182,15 @@ export function inputEntry(text: string, language: string | null): KernelJson {
     const list = cursor.tests(false);
     return list === null ? null : ctor("tests", { value: list });
   });
-  return read ?? foreign(null, text);
+  return read ?? foreignEntry(null, text);
 }
 
 /** An output entry: blank text is `blank`, a literal is `literal`, anything else `foreign`. */
 export function outputEntry(text: string, language: string | null): KernelJson {
-  if (language !== null) return foreign(language, text);
+  if (language !== null) return foreignEntry(language, text);
   if (stripped(text) === "") return "blank";
   const value = whole(text, (cursor) => cursor.literal());
-  return value === null ? foreign(null, text) : ctor("literal", { value });
+  return value === null ? foreignEntry(null, text) : ctor("literal", { value });
 }
 
 /** An input expression: a bare name that is not a keyword. */
@@ -202,5 +201,5 @@ export function inputExpression(text: string, language: string | null): KernelJs
     cursor.position += match[0].length;
     return match[0];
   });
-  return language === null && typeof name === "string" ? ctor("variable", { name }) : foreign(language, text);
+  return language === null && typeof name === "string" ? ctor("variable", { name }) : foreignEntry(language, text);
 }

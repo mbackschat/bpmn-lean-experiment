@@ -50,7 +50,7 @@ export const tsSiteBudget: Readonly<Record<string, number>> = {
   MultiInstanceMode: 2,
   // The JUEL types (M2), measured 2026-11-10; the Lean budgets add one each for a derived `Repr`.
   JuelNodeTag: 2, // admission, evaluator
-  JuelBinary: 1, // evaluator `operate`
+  JuelBinary: 2, // admission `juelOperator`, evaluator `operate`; re-measured 2026-11-10 once guard 2's owner clause ran
   JuelUnary: 1, // evaluator `unary`
   JuelCallTag: 2, // admission, evaluator
   JuelMethod: 4, // the String, List and Map methods, and the argument-count table
@@ -203,6 +203,29 @@ export function noCatchAllFindings(tree: KernelTree): string[] {
     }
   }
   if (!sawEnumSwitch) findings.push(emptyInputFinding(2, "switch over a kernel enum"));
+  return [...findings, ...ownerEqualityFindings(tree)];
+}
+
+/** Guard 2's owner clause: an equality test on a guarded member is a hidden catch-all for every member it leaves out,
+ * so an owner dispatches by an exhaustive `switch` or a `Record` table instead; guard 1 covers the non-owners. */
+function ownerEqualityFindings(tree: KernelTree): string[] {
+  const { types } = guardedTypes(tree);
+  const enums = typeScriptEnums(tree.typeScript);
+  const comparison = new Set(["===", "!==", "==", "!="]);
+  const findings: string[] = [];
+  for (const source of [...tree.typeScript, ...tree.reader]) {
+    const { tokens } = source;
+    for (const type of types) {
+      if (type.enumName === null || !allowed(source, type, enums.get(type.enumName))) continue;
+      for (let i = 0; i < tokens.length; i += 1) {
+        const token = tokens[i];
+        if (token?.text !== type.enumName || tokens[i + 1]?.text !== "." || tokens[i + 2]?.kind !== TokenKind.Word) continue;
+        if ((comparison.has(tokens[i - 1]?.text ?? "") || comparison.has(tokens[i + 3]?.text ?? "")) && !isJustified(source, token.line, 2)) {
+          findings.push(finding(2, source, token.line, `equality test on guarded ${type.enumName} member inside its owner`));
+        }
+      }
+    }
+  }
   return findings;
 }
 

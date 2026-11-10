@@ -51,11 +51,12 @@ export function grades(id: string, hitPolicy: string, labels: [string, string, s
 }
 
 /**
- * The base program whose `T` is a Business Rule Task with `work` overrides, carrying `resources`, under the CIB reading
- * that an undeclared write lands at the instance root (CIB-EXT-0005), as the hit-policy witnesses run.
+ * The base program whose `T` is a Business Rule Task with `work` and envelope `env` overrides, carrying `resources`,
+ * under the CIB profile's decision tables (CIB-EXT-0032) and its reading that an undeclared write lands at the instance
+ * root (CIB-EXT-0005), as the hit-policy witnesses run.
  */
-export function ruleProgram(work: Json, resources: Json[]): Json {
-  const program = withOptions(task(activity("T", ruleWork({ decision: text("d"), ...work })))(base()), { undeclaredWrite: "atInstanceRoot" });
+export function ruleProgram(work: Json, resources: Json[], env: Json = {}): Json {
+  const program = withOptions(task(activity("T", ruleWork({ decision: text("d"), ...work }), env))(base()), { undeclaredWrite: "atInstanceRoot", businessRuleTask: "decisionTable" });
   return { ...program, decisionResources: resources };
 }
 

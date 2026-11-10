@@ -4,6 +4,7 @@ public import Kernel.IL.Types.Options
 public import Kernel.IL.Types.Juel
 public import Kernel.IL.Types.Expression
 public import Kernel.IL.Types.Decision
+public import Kernel.IL.Types.Lexical
 
 /-! # Kernel IL
 
@@ -179,13 +180,18 @@ structure ReceiveWork where
   instantiate : Bool := false
   deriving Repr
 
+/-- `handlerKey` is the root identifier of the `camunda:delegateExpression` the binding was read from, which CIB
+resolves against process variables before its beans (CIB-LIM-0017); admission compares it with the declared names. -/
 structure ServiceWork where
   protocol : String
   operation : String
+  handlerKey : Option String := none
   deriving Repr
 
 structure SendWork where
   binding : EffectBinding
+  /-- As `ServiceWork.handlerKey`. -/
+  handlerKey : Option String := none
   recipient : Option ValueSource := none
   correlation : List CorrelationCriterion := []
   messageRef : Option String := none

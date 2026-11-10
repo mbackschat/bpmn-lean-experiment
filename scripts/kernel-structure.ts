@@ -174,6 +174,44 @@ export function pairingFindings(root = projectRoot): string[] {
   ].sort();
 }
 
+/** `Admission/Flow` and `Feature/Flow` to `flow`: the two halves of one family, which name a construct's admission
+ * check and its execution alike. */
+function admissionOrFeatureFamily(relative: string): string | null {
+  const match = /^(?:Kernel\/|packages\/kernel\/src\/)(?:Admission|admission|Feature|feature)\/([^/.]+)/u.exec(relative);
+  return match?.[1] === undefined ? null : match[1].replace(/[-_]/gu, "").toLowerCase();
+}
+
+/** Guard 8's name clause: one rule, one place, so a definition's short name appears once per language package. Lean
+ * executable modules (`Laws` and `Proofs` excluded), the TypeScript kernel and `bpmn-source` are scanned apart; the
+ * one exemption is a name both halves of one family define, and only those two. */
+export function duplicateNameFindings(root = projectRoot): string[] {
+  const typeScriptDefinition = /^(?:export )?(?:(?:async )?function\*? ?([A-Za-z0-9_$]+)|const ([A-Za-z0-9_$]+)(?:: [^=]+)? = (?:async )?(?:\([^)]*\)|[A-Za-z0-9_$]+)(?:: [^=]+)? =>)/u;
+  const packages: readonly (readonly [string, string, RegExp])[] = [
+    ["Kernel", ".lean", /^(?:@\[[^\]]*\]\s*)?(?:private |protected )?(?:noncomputable )?(?:partial )?(?:def|abbrev) ([^\s(:]+)/u],
+    // A top-level `function` or a top-level `const` bound to an arrow function: both are helper definitions.
+    [path.join("packages", "kernel", "src"), ".ts", typeScriptDefinition],
+    [path.join("packages", "bpmn-source", "src"), ".ts", typeScriptDefinition],
+  ];
+  return packages.flatMap(([directory, extension, definition]) => {
+    const owners = new Map<string, Set<string>>();
+    for (const file of files(path.join(root, directory), extension)) {
+      const relative = path.relative(root, file).split(path.sep).join("/");
+      if (/^Kernel\/(?:Laws|Proofs)\//u.test(relative)) continue;
+      for (const line of readFileSync(file, "utf8").split("\n")) {
+        const match = definition.exec(line);
+        const name = (match?.[1] ?? match?.[2])?.split(".").at(-1);
+        if (name !== undefined && name !== "") owners.set(name, (owners.get(name) ?? new Set()).add(relative));
+      }
+    }
+    return [...owners].flatMap(([name, modules]) => {
+      if (modules.size < 2) return [];
+      const families = [...modules].map(admissionOrFeatureFamily);
+      if (modules.size === 2 && families[0] !== null && families[0] === families[1]) return [];
+      return [`${name} is defined in ${[...modules].sort().join(", ")}`];
+    });
+  }).sort();
+}
+
 /** Guard 7: no profile identifier literal in the kernel; profiles are data the catalog owns. */
 export function profileLiteralFindings(root = projectRoot): string[] {
   const scanned = [...files(path.join(root, "Kernel"), ".lean"), ...files(path.join(root, "packages", "kernel", "src"), ".ts")];

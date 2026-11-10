@@ -75,6 +75,11 @@ const rows: readonly Row[] = [
   { name: "null as zero", build: (t) => t.bin("add", t.id("nothing"), t.int("1")), expect: { value: int(1) } },
   { name: "text with e that is no Double fails", build: (t) => t.bin("add", t.str("hello"), t.int("1")), expect: { failure: "juel.error" } },
   { name: "text that is a Double is unsupported", build: (t) => t.bin("gt", t.bin("add", t.str("1.5"), t.int("1")), t.int("2")), expect: { unsupported: "juel.double" } },
+  // `Double.valueOf` takes a type suffix only after a numeral, never after NaN or Infinity (`FloatingDecimal.readJavaFormatString`)
+  { name: "NaN text is a Double", build: (t) => t.bin("add", t.str("1.5"), t.str("NaN")), expect: { unsupported: "juel.double" } },
+  { name: "suffixed numeral text is a Double", build: (t) => t.bin("add", t.str("1.5"), t.str("-2d")), expect: { unsupported: "juel.double" } },
+  { name: "NaN with a suffix is no Double", build: (t) => t.bin("add", t.str("1.5"), t.str("NaNd")), expect: { failure: "juel.error" } },
+  { name: "Infinity with a suffix is no Double", build: (t) => t.bin("add", t.str("1.5"), t.str("-Infinityf")), expect: { failure: "juel.error" } },
   { name: "text without e that is no number fails", build: (t) => t.bin("add", t.str("abc"), t.int("1")), expect: { failure: "juel.error" } },
   { name: "Boolean in arithmetic fails", build: (t) => t.bin("add", t.id("flag"), t.int("1")), expect: { failure: "juel.error" } },
   { name: "Long wraps at 2^63", build: (t) => t.bin("lt", t.bin("add", t.int("9223372036854775807"), t.int("1")), t.int("0")), expect: { value: bool(true) } },
@@ -167,4 +172,9 @@ for (const row of rows) {
 test("juel: an empty node table is malformed", () => {
   const actual = hooks.evaluate({ variables: [], nowMs: 0 } as never, { tag: "juel", nodes: [] } as never) as unknown;
   assert.deepEqual(actual, { tag: "unsupported", code: "expression.juel.malformed" });
+});
+
+test("juel: a text the reader left unparsed is unsupported, as admission refuses it", () => {
+  const actual = hooks.evaluate({ variables: [], nowMs: 0 } as never, { tag: "foreign", language: "juel", source: "${x}" } as never) as unknown;
+  assert.deepEqual(actual, { tag: "unsupported", code: "expression.outsideSimpleBoolean" });
 });

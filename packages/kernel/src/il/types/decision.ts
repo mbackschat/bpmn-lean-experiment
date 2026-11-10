@@ -4,7 +4,6 @@
  * Every field outside the admitted subset stays in the shape and `admission/decision.ts` refuses it with a stable code.
  * Part of `il/types.ts`, which re-exports it.
  */
-
 /**
  * A `typeRef` CIB matches ignoring case (`DefaultDataTypeTransformerRegistry.java:41-61`); the reader keeps every
  * spelling but the three lower-case names as `foreign`, which admission refuses (`decision.typeRef`).
@@ -170,15 +169,6 @@ export interface DecisionResource {
   readonly namespace: string;
   readonly expressionLanguage: string | null;
   readonly decisions: readonly Decision[];
-}
-
-/**
- * Java `int` (`Integer.MIN_VALUE` to `Integer.MAX_VALUE`), the carrier of a DMN `integer` value
- * (`IntegerDataTypeTransformer.java:32-44`).
- */
-export function withinJavaInt(value: number | bigint): boolean {
-  const n = BigInt(value);
-  return n >= -2147483648n && n <= 2147483647n;
 }
 
 /**

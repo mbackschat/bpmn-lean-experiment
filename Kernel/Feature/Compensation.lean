@@ -68,7 +68,7 @@ def position (ctx : Ctx) (element : ElementId) : Nat :=
 
 /-- Begin `record`'s handler in a new context scope occurrence inside `scope`, where the records of its children become
 the ones a throw inside the handler compensates. -/
-def begin (ctx : Ctx) (scope : ScopeOccurrenceId) (state : State) (record : Compensable) :
+def beginHandler (ctx : Ctx) (scope : ScopeOccurrenceId) (state : State) (record : Compensable) :
     Except Failure (State × ScopeOccurrenceId) := do
   let element ← match ctx.program.element? record.handler with
     | some element => .ok element
@@ -108,7 +108,7 @@ def advance (ctx : Ctx) (scope : ScopeOccurrenceId) (state : State) : Outcome :=
       position ctx left.subject < position ctx right.subject ||
         (position ctx left.subject == position ctx right.subject && right.completion ≤ left.completion)
     let (state, started) ← ordered.foldlM (fun (state, started) record => do
-      let (state, context) ← begin ctx scope state record
+      let (state, context) ← beginHandler ctx scope state record
       .ok (state, started ++ [(context, record)])) (state, [])
     .ok (store state { state.slots.compensation with
       runs := others ++ [{ run with pending := waiting, running := run.running ++ started }] })

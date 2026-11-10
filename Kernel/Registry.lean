@@ -1,6 +1,7 @@
 module
 
 public import Kernel.Feature.Data
+public import Kernel.Feature.Decision
 public import Kernel.Feature.Flow
 public import Kernel.Feature.Work
 public import Kernel.Feature.Compensation
@@ -17,7 +18,7 @@ namespace Kernel.Registry
 
 def hooks : Hooks :=
   { arriveStart := Feature.Subscriptions.arriveStart
-    arriveActivity := Feature.Work.arriveActivity
+    arriveActivity := Feature.Work.arriveActivity { runDecision := Feature.Decision.runDecision }
     arriveMultiInstance := Feature.MultiInstance.arriveMultiInstance
     arriveScope := Feature.Scopes.arriveScope
     arriveGateway := Feature.Flow.arriveGateway
@@ -35,7 +36,7 @@ def hooks : Hooks :=
     arm := Feature.Subscriptions.arm
     armScope := Feature.Subscriptions.armScope
     armGateway := Feature.Subscriptions.armGateway
-    raise := Feature.Propagation.raise
+    raise := Feature.Propagation.raise { mappedErrorOutputs := Feature.Work.mappedErrorOutputs }
     compensate := Feature.Compensation.compensate
     failCompensation := Feature.Compensation.failCompensation
     leave := Feature.Subscriptions.leave

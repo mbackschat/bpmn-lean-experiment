@@ -124,7 +124,7 @@ function position(ctx: Ctx, element: ElementId): number {
  * Begin `record`'s handler in a new context scope occurrence inside `scope`, where the records of its children become
  * the ones a throw inside the handler compensates.
  */
-function begin(ctx: Ctx, scope: ScopeOccurrenceId, state: State, record: Compensable): Result<readonly [State, ScopeOccurrenceId]> {
+function beginHandler(ctx: Ctx, scope: ScopeOccurrenceId, state: State, record: Compensable): Result<readonly [State, ScopeOccurrenceId]> {
   const element = programElement(ctx.program, record.handler);
   if (element === null) return failed(FailureTag.SemanticFailure, "compensation-handler-missing");
   if (elementActivity(element) === null && elementScope(element) === null) {
@@ -184,7 +184,7 @@ function advance(ctx: Ctx, scope: ScopeOccurrenceId, state: State): Outcome {
   let current = state;
   const started: (readonly [ScopeOccurrenceId, Compensable])[] = [];
   for (const record of ordered) {
-    const begun = begin(ctx, scope, current, record);
+    const begun = beginHandler(ctx, scope, current, record);
     if (!begun.ok) return begun;
     current = begun.value[0];
     started.push([begun.value[1], record]);

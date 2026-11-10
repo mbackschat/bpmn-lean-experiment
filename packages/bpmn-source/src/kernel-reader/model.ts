@@ -35,7 +35,6 @@ export enum ReadRefusalCode {
   EmptyLoopCardinality = "reader.emptyLoopCardinality",
   ConditionExpressionType = "reader.conditionExpressionType",
   DecisionSchema = "decision.schema",
-  HandlerKeyName = "work.handlerKeyName",
 }
 
 export class ReadRefusal extends Error {
@@ -197,7 +196,6 @@ export type ReadContext = Readonly<{
   processes: ReadonlyArray<ElementRecord>;
   nodes: ReadonlyMap<string, ModelNode>;
   flows: ReadonlyArray<ElementRecord>;
-  flowOrder: ReadonlyMap<string, number>;
   incoming: (id: string) => string[];
   outgoing: (id: string) => string[];
   childrenOf: (container: ElementRecord) => ReadonlyArray<ModelNode>;

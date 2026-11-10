@@ -1,9 +1,10 @@
 /**
- * Work: DMN decision tables, transcribed from `Kernel/Feature/Work/Decision.lean`.
+ * Decision: DMN decision tables, a sub-feature of Work, transcribed from `Kernel/Feature/Decision.lean`.
  *
- * A Business Rule Task whose `camunda:decisionRef` names a decision the program carries evaluates that decision table
+ * `feature/work.ts` reaches it only through its own hooks record (`WorkHooks.runDecision`), which `registry.ts` fills, since
+ * features never import each other (ARCHITECTURE-SPEC "Modules and build shape"). A Business Rule Task whose `camunda:decisionRef` names a decision the program carries evaluates that decision table
  * when its occurrence begins and completes in the same step
- * ([decision semantics](../../../../../docs/kernel/semantics/DECISION-SEMANTICS-SPEC.md#5-evaluation)), in CIB's three
+ * ([decision semantics](../../../../docs/kernel/semantics/DECISION-SEMANTICS-SPEC.md#5-evaluation)), in CIB's three
  * passes (`DecisionTableEvaluationHandler.java:101-161`): every input is read and converted, every rule is tested,
  * every matching rule's outputs are converted, and only then does the hit policy select. The mapped result is written
  * by the nearest-owner rule from the task's scope occurrence, before the task leaves, so its outgoing conditions read it
@@ -16,11 +17,14 @@ import {
   ValueTag,
   assertNever,
   compareStrings,
+  isAscii,
+  parseJavaInt,
   programDecision,
+  withinJavaInt,
   type Program,
   type RuleWork,
   type Value,
-} from "../../il/types.js";
+} from "../il/types.js";
 import {
   Comparison,
   DecisionLogicTag,
@@ -32,7 +36,6 @@ import {
   TypeRefTag,
   UnaryTestTag,
   significantDigits,
-  withinJavaInt,
   type DecisionInput,
   type DecisionOutput,
   type DecisionRule,
@@ -42,8 +45,8 @@ import {
   type OutputEntry,
   type TypeRef,
   type UnaryTest,
-} from "../../il/types/decision.js";
-import { FailureTag, committed, failed, type Binding, type Result } from "../../state.js";
+} from "../il/types/decision.js";
+import { FailureTag, committed, failed, type Binding, type Result } from "../state.js";
 
 type Entries = readonly Binding[];
 
@@ -52,18 +55,6 @@ type Entries = readonly Binding[];
  * rollback (EXPRESSION-SEMANTICS-SPEC, failure outcomes per stimulus).
  */
 const decisionFailed = <T>(): Result<T> => failed(FailureTag.RolledBack, "decision-failed");
-
-const isAscii = (text: string): boolean => /^[\u0000-\u007f]*$/u.test(text);
-
-/**
- * `Integer.parseInt` over ASCII text (`IntegerDataTypeTransformer.java:42`): an optional sign, decimal digits, the `int`
- * range.
- */
-function parseInt(text: string): number | null {
-  if (!/^[+-]?[0-9]+$/u.test(text)) return null;
-  const value = BigInt(text.startsWith("+") ? text.slice(1) : text);
-  return withinJavaInt(value) ? Number(value) : null;
-}
 
 /**
  * CIB's `typeRef` transformers for the values the kernel holds (item 7, `DmnTypeDefinitionImpl.java:41-58`): null is
@@ -94,7 +85,7 @@ function convertScalar(ref: TypeRef, value: Value): Result<Value> {
     case TypeRefTag.Boolean:
       return toBoolean(value);
     case TypeRefTag.String:
-      return toText(value);
+      return toTextValue(value);
     case TypeRefTag.Foreign:
       return failed(FailureTag.Unsupported, "decision-type-ref");
   }
@@ -116,8 +107,9 @@ function toInteger(value: Value): Result<Value> {
     case ValueTag.String: {
       // dynamic-only: `Integer.parseInt` reads Unicode decimal digits the kernel does not decide
       if (!isAscii(value.value)) return failed(FailureTag.Unsupported, "decision-conversion-text");
-      const parsed = parseInt(value.value);
-      return parsed === null ? decisionFailed() : committed({ tag: ValueTag.Int, value: parsed });
+      // `Integer.parseInt` (`IntegerDataTypeTransformer.java:42`)
+      const parsed = parseJavaInt(value.value);
+      return parsed === null ? decisionFailed() : committed({ tag: ValueTag.Int, value: Number(parsed) });
     }
     case ValueTag.Bool:
       return decisionFailed();
@@ -153,7 +145,7 @@ function toBoolean(value: Value): Result<Value> {
   return assertNever(value);
 }
 
-function toText(value: Value): Result<Value> {
+function toTextValue(value: Value): Result<Value> {
   switch (value.tag) {
     case ValueTag.String:
       return committed(value);
@@ -348,7 +340,7 @@ const sameEntries = (left: Entries, right: Entries): boolean =>
   });
 
 /** Item 5: the hit policy over every matching rule's entry map, in rule order. */
-function select(table: DecisionTable, results: readonly Entries[]): Result<readonly Entries[]> {
+function applyHitPolicy(table: DecisionTable, results: readonly Entries[]): Result<readonly Entries[]> {
   if (table.aggregation !== null) return failed(FailureTag.Unsupported, "decision-hit-policy");
   const [first, ...rest] = results;
   switch (table.hitPolicy) {
@@ -389,7 +381,7 @@ function tableResults(table: DecisionTable, variables: Entries): Result<readonly
     if (!entries.ok) return entries;
     results.push(entries.value);
   }
-  return select(table, results);
+  return applyHitPolicy(table, results);
 }
 
 /** A Map value in the Data semantics' key order; CIB's entry maps are `HashMap`s, whose order is no fact. */
@@ -424,7 +416,7 @@ function mapResult(mapping: DecisionResultMapping, results: readonly Entries[]):
  * The writes a Business Rule Task's decision makes: `(resultVariable, mapped value)`, or none without a result
  * variable, since CIB applies no mapper then and its `decisionResult` is transient (`DecisionEvaluationUtil.java:79-87`).
  */
-export function run(program: Program, work: RuleWork, variables: Entries): Result<Entries> {
+export function runDecision(program: Program, work: RuleWork, variables: Entries): Result<Entries> {
   if (work.decision.tag !== ValueSourceTag.Literal) return failed(FailureTag.Unsupported, "work-rule-decision-expression");
   const decision = programDecision(program, work.decision.value);
   if (decision === null) return failed(FailureTag.Unsupported, "work-rule-decision-missing");

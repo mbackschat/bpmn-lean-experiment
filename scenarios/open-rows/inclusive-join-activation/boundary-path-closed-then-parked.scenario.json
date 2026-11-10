@@ -1,0 +1,58 @@
+{
+  "kind": "scenario",
+  "id": "inclusive-join-activation-boundary-path-closed-then-parked",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "inclusive-join-activation-boundary-path",
+    "relativePath": "scenarios/open-rows/inclusive-join-activation/boundary-path.bpmn",
+    "sha256": "09300349472c80e6eb2de7b81a440c3e08ed5045b1fa7777871318e0bff42c1b",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-complete-ReviewB-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "ReviewB",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-complete-ReviewA-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "ReviewA",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 \u00a713.4.3",
+      "BPMN 2.0.2 Table 13.3",
+      "BPMN 2.0.2 \u00a710.6.3",
+      "BPMN 2.0.2 \u00a710.5.4"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/InclusiveGatewayActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/BoundaryEventActivityBehavior.java"
+    ]
+  }
+}

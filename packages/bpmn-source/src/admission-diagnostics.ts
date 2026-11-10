@@ -210,7 +210,7 @@ function compareLoci(left: ElementLocus, right: ElementLocus): number {
   return left.segments.length - right.segments.length;
 }
 
-function renderContainmentPath(locus: ElementLocus): string {
+export function renderContainmentPath(locus: ElementLocus): string {
   return locus.segments.reduce<string>(
     (path, segment) =>
       typeof segment === "number"

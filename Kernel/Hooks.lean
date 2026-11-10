@@ -169,6 +169,10 @@ def State.hold (state : State) (held : Parked) : State :=
 def State.evalContext (state : State) (scope : ScopeOccurrenceId) : EvalContext :=
   { variables := state.visible scope, nowMs := state.logicalTimeMs }
 
+/-- The variables `scope` itself holds, without the chain behind it. -/
+def State.ownVariables (state : State) (scope : ScopeOccurrenceId) : List (String × Value) :=
+  ((state.variables.find? (·.scope == scope)).map (·.entries)).getD []
+
 /-- How a catch trigger catches a raised event: its precedence, lower first, and the variables it writes. -/
 structure Catch where
   rank : Nat
@@ -189,28 +193,67 @@ structure Ctx where
   /-- `Step`: what a scope occurrence is, for a search that must not treat it as ordinary. -/
   scopeRole : State → ScopeOccurrenceId → ScopeRole := fun _ _ => .ordinary
 
-/-- Evaluate each mapping's source against `variables`, in order. A failed source is read by the mapping's dialect:
-a Data Association's source is unavailable (`none`, BPMN 2.0.2 §10.4.2, which the caller decides on), an
-`ioParameter` expression rolls the command back with the evaluation's own code (CIB-EXT-0024), and a `callVariable`
-copy reads null (CIB-EXT-0021). Features share it here because they never import each other. -/
-def Ctx.evaluateMappings (ctx : Ctx) (context : EvalContext) (mappings : List Mapping) :
-    Except Failure (Option (List (String × Value))) :=
-  mappings.foldrM (fun mapping rest =>
-    match ctx.evaluate context mapping.source with
-    | .value value => .ok (rest.map ((mapping.target, value) :: ·))
+/-- `bindings` with only the last binding of each target, by target name: a target bound twice keeps the value written
+last, as CIB's sequential writes do, and the bindings, one per target, then commute, so they are kept in the name order
+a publication shows them in. -/
+def lastWrites (bindings : List (String × Value)) : List (String × Value) :=
+  (bindings.foldr (fun binding kept => if kept.any (·.1 == binding.1) then kept else binding :: kept) []).mergeSort
+    fun left right => decide (left.1 ≤ right.1)
+
+/-- Evaluate each mapping's source in document order, as CIB runs a parameter list one at a time
+(`IoMapping.java:38-48`), against `reads earlier`, the context given the bindings `earlier` the mappings before it
+made. A failed source is read by the mapping's dialect: a Data Association's source is unavailable (`none`,
+BPMN 2.0.2 §10.4.2, which the caller decides on) and the later sources are still evaluated, an `ioParameter`
+expression rolls the command back with the evaluation's own code (CIB-EXT-0024), and a `callVariable` copy reads null
+(CIB-EXT-0021). The first rollback or `unsupported` ends the evaluation, so a later mapping is never reached, as in
+CIB, where the first throwing parameter ends the command. A target bound twice keeps its last value (`lastWrites`).
+Features share it here because they never import each other. -/
+def Ctx.evaluateMappingsWith (ctx : Ctx) (reads : List (String × Value) → EvalContext) (mappings : List Mapping) :
+    Except Failure (Option (List (String × Value))) := do
+  let (made, available) ← mappings.foldlM (init := ([], true)) fun (made, available) mapping =>
+    match ctx.evaluate (reads made) mapping.source with
+    | .value value => .ok (made ++ [(mapping.target, value)], available)
     | .unsupported code => .error (.unsupported code)
     | .failure code =>
       match mapping.dialect with
-      | .dataAssociation => .ok none
+      | .dataAssociation => .ok (made, false)
       | .ioParameter => .error (.rolledBack code)
-      | .callVariable => .ok (rest.map ((mapping.target, Value.null) :: ·))) (some [])
+      | .callVariable => .ok (made ++ [(mapping.target, Value.null)], available)
+  return if available then some (lastWrites made) else none
+
+/-- `evaluateMappingsWith` where every mapping reads `context`, which no earlier mapping changes. -/
+def Ctx.evaluateMappings (ctx : Ctx) (context : EvalContext) (mappings : List Mapping) :
+    Except Failure (Option (List (String × Value))) :=
+  ctx.evaluateMappingsWith (fun _ => context) mappings
+
+/-- What an Activity's or a Scope's next output mapping reads, given the outputs `written` before it: `own`, the frame's
+submitted values and own locals, `installed`, the values the frame set before its outputs run, then `outer`, the chain
+the outputs are written into. Under `OutputContext.activityScope` the outputs read every name where CIB holds it when
+the next parameter resolves in the frame. CIB writes each output parameter into the outer scope before it evaluates the
+next one (`IoMapping.java:44-48`, `OutputParameter.java:44-52`), so the outputs already written stand behind `own`, the
+latest first. An installed value went through `setVariable` on the frame's execution (`AbstractVariableScope.java:331-345`):
+one of a name the frame holds is that local and shadows, any other reached its nearest owner or the root, where a
+later write of the same name replaces it, so it stands behind the written outputs and ahead of the outer chain
+(CIB-EXT-0031). -/
+def Ctx.outputReads (ctx : Ctx) (nowMs : Nat) (own installed outer : List (String × Value))
+    (written : List (String × Value)) : EvalContext :=
+  match ctx.program.options.outputContext with
+  | .submission => { variables := installed ++ own ++ outer, nowMs }
+  | .activityScope =>
+    let (held, outward) := installed.partition fun (name, _) => own.any (·.1 == name)
+    { variables := held ++ own ++ written.reverse ++ outward ++ outer, nowMs }
 
 /-- The bindings of `mappings` where an unavailable source has no state to wait in, a semantic failure. -/
-def Ctx.requireMappings (ctx : Ctx) (context : EvalContext) (mappings : List Mapping) :
+def Ctx.requireMappingsWith (ctx : Ctx) (reads : List (String × Value) → EvalContext) (mappings : List Mapping) :
     Except Failure (List (String × Value)) := do
-  match ← ctx.evaluateMappings context mappings with
+  match ← ctx.evaluateMappingsWith reads mappings with
   | some bindings => .ok bindings
   | none => .error (.semanticFailure "mapping-source-unavailable")
+
+/-- `requireMappingsWith` where every mapping reads `context`. -/
+def Ctx.requireMappings (ctx : Ctx) (context : EvalContext) (mappings : List Mapping) :
+    Except Failure (List (String × Value)) :=
+  ctx.requireMappingsWith (fun _ => context) mappings
 
 /-- The one way a boundary fires: an interrupting boundary first cancels the occurrence `host` it hangs on, if any; then
 the boundary's occurrence, the reservation `reserved` or a fresh one, begins and leaves on its flows in `scope`

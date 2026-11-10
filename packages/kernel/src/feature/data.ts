@@ -68,8 +68,9 @@ export function evaluate(context: EvalContext, expression: Expression): Evaluati
     case ExpressionTag.Juel:
       return evaluateJuel(context, expression.nodes);
     case ExpressionTag.Foreign:
-      // Admission refuses it (`expression.outsideSimpleBoolean`, `mapping.expression`, `flow.condition.foreign`).
-      return { tag: EvaluationTag.Failure, code: "expression.outsideSimpleBoolean" };
+      // Admission refuses it (`expression.outsideSimpleBoolean`, `mapping.expression`, `flow.condition.foreign`), so it
+      // is `unsupported` like every refused shape (guard 20).
+      return { tag: EvaluationTag.Unsupported, code: "expression.outsideSimpleBoolean" };
   }
   return assertNever(expression);
 }

@@ -1,0 +1,70 @@
+{
+  "kind": "scenario",
+  "id": "mapping-order-duplicate-targets",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "mapping-order-duplicate-targets",
+    "relativePath": "scenarios/open-rows/mapping-order/duplicate-targets.bpmn",
+    "sha256": "20f2178e15137942e55e6c1c1c82995fb7af80cb65c54f57c48b0e815a7dd8cf",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start",
+      "instanceId": "Run_1",
+      "variables": [
+        {
+          "name": "x",
+          "value": {
+            "kind": "string",
+            "value": "process"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-decide",
+      "occurrence": {
+        "processInstanceId": "Run_1",
+        "elementId": "UserTask_Decide",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-observe",
+      "occurrence": {
+        "processInstanceId": "Run_1",
+        "elementId": "UserTask_Observe",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 \u00a710.3.3",
+      "BPMN 2.0.2 Clause 10.4.2",
+      "BPMN 2.0.2 \u00a713.3.2"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/variable/mapping/IoMapping.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/variable/mapping/IoParameter.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/variable/mapping/InputParameter.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/variable/mapping/OutputParameter.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParseUtil.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/UserTaskActivityBehavior.java"
+    ]
+  }
+}

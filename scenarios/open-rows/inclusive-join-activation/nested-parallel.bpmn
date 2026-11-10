@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_NestedParallel" targetNamespace="urn:bpmn-lean:scenarios:inclusive-join-activation:nested-parallel">
+  <process id="Process_NestedParallel" name="A parallel join nested in one branch of an Inclusive join" isExecutable="true">
+    <startEvent id="CaseOpened" name="Case opened" />
+    <parallelGateway id="SplitCase" name="Split case" gatewayDirection="Diverging" />
+    <userTask id="ReviewA" name="Review A" />
+    <parallelGateway id="SplitB" name="Split B" gatewayDirection="Diverging" />
+    <userTask id="ReviewB1" name="Review B1" />
+    <userTask id="ReviewB2" name="Review B2" />
+    <parallelGateway id="InnerJoin" name="Inner join" gatewayDirection="Converging" />
+    <inclusiveGateway id="OuterJoin" name="Outer join" gatewayDirection="Converging" />
+    <userTask id="Decide" name="Decide" />
+    <endEvent id="CaseDecided" name="Case decided" />
+    <sequenceFlow id="Flow_Opened" sourceRef="CaseOpened" targetRef="SplitCase" />
+    <sequenceFlow id="Flow_ToA" sourceRef="SplitCase" targetRef="ReviewA" />
+    <sequenceFlow id="Flow_ToB" sourceRef="SplitCase" targetRef="SplitB" />
+    <sequenceFlow id="Flow_ToB1" sourceRef="SplitB" targetRef="ReviewB1" />
+    <sequenceFlow id="Flow_ToB2" sourceRef="SplitB" targetRef="ReviewB2" />
+    <sequenceFlow id="Flow_B1Done" sourceRef="ReviewB1" targetRef="InnerJoin" />
+    <sequenceFlow id="Flow_B2Done" sourceRef="ReviewB2" targetRef="InnerJoin" />
+    <sequenceFlow id="Flow_InnerJoined" sourceRef="InnerJoin" targetRef="OuterJoin" />
+    <sequenceFlow id="Flow_ADone" sourceRef="ReviewA" targetRef="OuterJoin" />
+    <sequenceFlow id="Flow_Joined" sourceRef="OuterJoin" targetRef="Decide" />
+    <sequenceFlow id="Flow_Decided" sourceRef="Decide" targetRef="CaseDecided" />
+  </process>
+</definitions>

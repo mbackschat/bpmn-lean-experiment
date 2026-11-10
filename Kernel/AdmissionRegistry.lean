@@ -62,7 +62,7 @@ def element (program : Program) (throws : List Element) : Element → Option Str
       Admission.Work.activity program payload <|>
       activityOrigin program header payload <|>
       payload.envelope.multiInstance.bind
-        (Admission.MultiInstance.activity program.options Admission.Data.loopExpression
+        (Admission.MultiInstance.activityLoop program.options Admission.Data.loopExpression
           (Admission.Work.instanceBody payload.work) payload.envelope) <|>
       Admission.Subscriptions.boundaries program.options.errorCatchVariables false payload.envelope.boundaries <|>
       boundaryData program payload.envelope.boundaries <|>
@@ -89,7 +89,7 @@ def element (program : Program) (throws : List Element) : Element → Option Str
   | .gateway header payload =>
     Admission.Data.origin header <|> Admission.Flow.gateway program payload
   | .start header payload =>
-    Admission.Data.origin header <|> Admission.Flow.start program header <|>
+    Admission.Data.origin header <|> Admission.Flow.startCombination program header <|>
       payload.subscription.bind fun subscription =>
         Admission.Subscriptions.start program.options.errorCatchVariables header.parent.isSome subscription <|>
           subscriptionData program subscription
@@ -105,13 +105,14 @@ def abnormalScope (program : Program) : Bool :=
 def loops (program : Program) : Bool :=
   program.elements.any fun element => ((element.envelope?).bind (·.multiInstance)).isSome
 
-/-- A flow's condition, then where it may sit. -/
+/-- A flow's condition, then where it may sit, then whether its branch races a sibling's write. -/
 def flow (program : Program) (entry : Flow) : Option String :=
-  Admission.Data.flowCondition program.options.evaluator entry <|> Admission.Flow.conditionalOutflow program entry
+  Admission.Data.flowCondition program.options.evaluator entry <|> Admission.Flow.conditionalOutflow program entry <|>
+    Admission.Flow.concurrentWrite program entry
 
 /-- A called process is bound at assembly to the one definition the program carries, so its definition names no
 binding of its own (PC-SCOPE-03). -/
-def calledProcess (process : CalledProcess) : Option String :=
+def calledProcessBinding (process : CalledProcess) : Option String :=
   let definition := process.definition
   if definition.version.isSome || definition.versionTag.isSome || definition.deployment.isSome ||
       definition.tenant.isSome then some "process.definition.binding"
@@ -125,11 +126,11 @@ def executable (program : Program) : Option String :=
 /-- The first refusal: references, profile options, a process not marked executable, the carried DMN resources, then
 called-process bindings, flows and elements in program order. -/
 def admit (program : Program) : Option String :=
-  Admission.Flow.references program <|> Admission.Scopes.references program <|>
+  Admission.Flow.references program <|> Admission.Scopes.membership program <|>
     Admission.Profile.options (abnormalScope program) (loops program) program.options <|>
     executable program <|>
     Admission.Work.Decision.resources program <|>
-    program.processes.findSome? calledProcess <|>
+    program.processes.findSome? calledProcessBinding <|>
     program.flows.findSome? (flow program) <|>
     program.elements.findSome? (element program (program.elements.filter compensationThrow))
 

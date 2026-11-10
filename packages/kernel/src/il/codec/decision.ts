@@ -9,7 +9,7 @@ import {
   type OutputEntry, type TypeRef, type UnaryTest, type DecisionLogic,
 } from "../types/decision.js";
 import {
-  accept, bool, inductive, leanToInt, list, mapDecoded, members, nat, objVal, objValD, option, refuse, string, struct,
+  accept, bool, inductive, leanToInt, list, mapDecoded, members, nat, objVal, objValD, option, refuseDecoding, string, struct,
   type Codec,
 } from "./value.js";
 
@@ -35,7 +35,7 @@ const feelLiteral: Codec<FeelLiteral> = {
     const coefficient = string.decode(objValD(number.value, "coefficient"));
     if (!coefficient.ok) return coefficient;
     const parsed = leanToInt(coefficient.value);
-    if (parsed === null) return refuse(`invalid number coefficient ${coefficient.value}`);
+    if (parsed === null) return refuseDecoding(`invalid number coefficient ${coefficient.value}`);
     return mapDecoded(nat.decode(objValD(number.value, "scale")), (scale) => ({ tag: FeelLiteralTag.Number, coefficient: parsed, scale }));
   },
   encode: (value) => {

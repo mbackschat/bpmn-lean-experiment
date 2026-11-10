@@ -1,0 +1,94 @@
+{
+  "kind": "scenario",
+  "id": "mapping-order-task-caught-outputs",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "mapping-order-task-caught-outputs",
+    "relativePath": "scenarios/open-rows/mapping-order/task-caught-outputs.bpmn",
+    "sha256": "7892d61fd30227fe61c59821cdce45e5129d5b138714b2eadd054fce0f231682",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start",
+      "instanceId": "Run_1",
+      "variables": []
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "fail-collide",
+      "occurrence": {
+        "processInstanceId": "Run_1",
+        "elementId": "ServiceTask_Collide",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "businessFailure",
+        "code": "FAIL",
+        "outputs": [],
+        "message": "failed"
+      }
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "fail-read",
+      "occurrence": {
+        "processInstanceId": "Run_1",
+        "elementId": "ServiceTask_Read",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "businessFailure",
+        "code": "FAIL",
+        "outputs": [],
+        "message": "failed"
+      }
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "fail-local",
+      "occurrence": {
+        "processInstanceId": "Run_1",
+        "elementId": "ServiceTask_Local",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "businessFailure",
+        "code": "FAIL",
+        "outputs": [],
+        "message": "failed"
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-observe",
+      "occurrence": {
+        "processInstanceId": "Run_1",
+        "elementId": "UserTask_Observe",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 \u00a710.4.2",
+      "BPMN 2.0.2 \u00a710.5.6",
+      "BPMN 2.0.2 \u00a713.5.3"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/helper/BpmnExceptionHandler.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/pvm/runtime/operation/PvmAtomicOperationCancelActivity.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/pvm/runtime/PvmExecutionImpl.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/persistence/entity/ExecutionEntity.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/variable/mapping/OutputParameter.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/variable/scope/AbstractVariableScope.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java"
+    ]
+  }
+}

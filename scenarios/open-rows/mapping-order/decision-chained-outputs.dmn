@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" id="Definitions_DecisionChainedOutputs" name="Grade" namespace="urn:bpmn-lean:scenarios:mapping-order:decision-chained-outputs">
+  <decision id="gradeDecision" name="Grade a score">
+    <decisionTable id="DecisionTable_gradeDecision" hitPolicy="UNIQUE">
+      <input id="Input_gradeDecision" label="Score">
+        <inputExpression id="InputExpression_gradeDecision" typeRef="integer"><text>score</text></inputExpression>
+      </input>
+      <output id="Output_gradeDecision_grade" name="grade" typeRef="string" />
+      <rule id="Rule_gradeDecision_1">
+        <inputEntry id="InputEntry_gradeDecision_1"><text>&gt; 60</text></inputEntry>
+        <outputEntry id="OutputEntry_gradeDecision_1"><text>"high"</text></outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+</definitions>

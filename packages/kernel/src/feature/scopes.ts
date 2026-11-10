@@ -37,13 +37,14 @@ import {
   failed,
   leaveOutgoing,
   signal,
+  visible,
   type Occurrence,
   type Outcome,
   type Result,
   type ScopeOccurrence,
   type State,
 } from "../state.js";
-import { ctxRequireMappings, evalContext, type Ctx, type ScopeEntry } from "../hooks.js";
+import { ctxOutputReads, ctxRequireMappings, ctxRequireMappingsWith, evalContext, ownVariables, type Ctx, type ScopeEntry } from "../hooks.js";
 
 /** `Ctx.eventStart`: the start subscription and interrupting flag of an Event Sub-Process. */
 export function eventStart(payload: ScopePayload): readonly [Subscription, boolean] | null {
@@ -132,6 +133,7 @@ export function arriveScope(ctx: Ctx, header: Header, payload: ScopePayload, occ
   return assertNever(kind);
 }
 
+/** An idle Scope's outputs read its own variables, then the parent's chain they are written into (`ctxOutputReads`). */
 export function completeScope(
   ctx: Ctx,
   _header: Header,
@@ -140,7 +142,9 @@ export function completeScope(
   owner: Occurrence,
   state: State,
 ): Outcome {
-  const outputs = ctxRequireMappings(ctx, evalContext(state, scope.id), payload.envelope.outputs);
+  const outer = scope.parent === null ? [] : visible(state, scope.parent);
+  const reads = ctxOutputReads(ctx, state.logicalTimeMs, ownVariables(state, scope.id), [], outer);
+  const outputs = ctxRequireMappingsWith(ctx, reads, payload.envelope.outputs);
   if (!outputs.ok) return outputs;
   return committed(signal(state, completeSignal(owner.id, leaveOutgoing, outputs.value, WriteRule.Outward)));
 }

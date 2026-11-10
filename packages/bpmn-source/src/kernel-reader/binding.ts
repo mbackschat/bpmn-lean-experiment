@@ -34,9 +34,16 @@ function boundBy(ctx: ReadContext, element: ElementRecord): EffectBinding | unde
     binding.delegateExpression === delegate && binding.implementation === implementation);
 }
 
-/** The delegate expression an overlay or built-in binding replaces with its operation, `null` when none matches. */
-export const boundDelegate = (ctx: ReadContext, element: ElementRecord): string | null =>
-  boundBy(ctx, element)?.delegateExpression ?? null;
+/**
+ * The root identifier of the element's `camunda:delegateExpression`, which CIB resolves against process variables before
+ * its beans (`JuelExpressionManager.java:144-150`); `Kernel.Admission` compares it with the declared names
+ * (`work.handlerKeyName`, CIB-LIM-0017).
+ */
+export function handlerKey(ctx: ReadContext, element: ElementRecord): string | null {
+  const declared = declaredImplementation(ctx, element);
+  if (declared?.name !== "delegateExpression") return null;
+  return /^[$#]\{\s*([A-Za-z_$][\w$]*)/u.exec(declared.value)?.[1] ?? null;
+}
 
 /**
  * The `EffectBinding` an element selects: an overlay or built-in binding when its source attributes match one;

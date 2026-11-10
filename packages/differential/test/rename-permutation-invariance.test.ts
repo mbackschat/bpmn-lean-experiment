@@ -15,6 +15,12 @@
  * schedule or expression names, not references the reader resolves. A called instance's identifier embeds its Call
  * Activity's (`calledInstanceId`), so it is renamed through that encoding.
  *
+ * Keeping those declaration orders hides an identifier dependence inside them, so the check runs twice per witness: on
+ * the retained source and on its declaration-reversed twin, whose flow nodes and Sequence Flows are all reversed. The
+ * twin may legitimately end differently from the retained source, since declaration order decides a split's branch order
+ * and a catcher tie (PC-BASIC-03); it is compared only with its own renamed variant, so a difference there is one that
+ * identifiers, not document order, decide.
+ *
  * The check is generic over the cohort and grows by no per-model case; a witness it does not cover is one the reader
  * refuses, the kernel refuses to deploy, or a population schedule (several instances), each counted below.
  */
@@ -171,6 +177,17 @@ export function variant(xml: string): { xml: string; names: ReadonlyMap<string, 
   return { xml: serialize(tree), names };
 }
 
+/** The source with the flow nodes and the Sequence Flows of every container in reverse declaration order. */
+export function declarationReversed(xml: string): string {
+  const tree = parse(xml);
+  for (const [element] of elements(tree)) {
+    if (!containers.has(element.local)) continue;
+    permuteSlots(element.children, (local) => flowNodes.has(local), (picked) => [...picked].reverse());
+    permuteSlots(element.children, (local) => local === "sequenceFlow", (picked) => [...picked].reverse());
+  }
+  return serialize(tree);
+}
+
 /** A called instance's identifier with its Call Activity renamed, nested callers included (`calledInstanceId`). */
 function renamedInstance(id: string, names: ReadonlyMap<string, string>): string {
   const parsed = /^call:(\d+):/u.exec(id);
@@ -228,7 +245,29 @@ async function scenarioFiles(directory: string): Promise<string[]> {
 
 const sha256 = (bytes: Uint8Array): string => createHash("sha256").update(bytes).digest("hex");
 
-test("renaming and permuting every admitted witness changes nothing the kernel observes beyond the renaming", async () => {
+/** The source a witness binds, as these bytes. */
+const boundTo = (source: ScenarioDocument["bpmn"], bytes: Uint8Array): ScenarioDocument["bpmn"] => ({ ...source, sha256: sha256(bytes) });
+
+/** The disagreement between `xml`'s run and its renamed and permuted variant's, mapped back; null when they agree. */
+async function renamedDisagreement(scenarioPath: string, scenario: ScenarioDocument, xml: string): Promise<string | null> {
+  const encoder = new TextEncoder();
+  const original = await readSourceFor(scenarioPath, boundTo(scenario.bpmn, encoder.encode(xml)), scenario.profile, encoder.encode(xml));
+  if (original.kind !== "read") return `the source is refused (${JSON.stringify(original)})`;
+  const expected = JSON.parse(JSON.stringify(runScenario(original.program, scenario)));
+  const changed = variant(xml);
+  const bytes = encoder.encode(changed.xml);
+  const read = await readSourceFor(scenarioPath, boundTo(scenario.bpmn, bytes), scenario.profile, bytes);
+  if (read.kind !== "read") return `the variant is refused (${JSON.stringify(read)})`;
+  const back = new Map([...changed.names].map(([old, renamed]) => [renamed, old]));
+  const schedule = mapStrings(scenario, changed.names, (field) => elementFields.has(field));
+  const actual = mapStrings(JSON.parse(JSON.stringify(runScenario(read.program, schedule))), back, () => true);
+  // Both results are the kernel's, so its codes and scopes count; open waits are compared in their canonical order.
+  const comparison = compareTargetResults({ target: DifferentialTarget.KernelTs, result: scopesSorted(expected) },
+    [{ target: DifferentialTarget.Kernel, result: scopesSorted(actual) }]);
+  return comparison.kind === ComparisonKind.Disagreement ? JSON.stringify(comparison.disagreement) : null;
+}
+
+test("renaming and permuting every admitted witness and its declaration-reversed twin changes nothing the kernel observes beyond the renaming", async () => {
   const files = (await Promise.all(differentialDiscoveryRoots.map(scenarioFiles))).flat().sort();
   const counts = { covered: 0, readerRefused: 0, notDeployed: 0, population: 0 };
   const findings: string[] = [];
@@ -251,20 +290,10 @@ test("renaming and permuting every admitted witness changes nothing the kernel o
     }
     counts.covered += 1;
     const xml = await readFile(path.join(projectRoot, scenario.bpmn.relativePath), "utf8");
-    const changed = variant(xml);
-    const bytes = new TextEncoder().encode(changed.xml);
-    const read = await readSourceFor(scenarioPath, { ...scenario.bpmn, sha256: sha256(bytes) }, scenario.profile, bytes);
-    if (read.kind !== "read") {
-      findings.push(`${scenarioPath}: the variant is refused (${JSON.stringify(read)})`);
-      continue;
+    for (const [twin, source] of [["retained", xml], ["declaration-reversed", declarationReversed(xml)]] as const) {
+      const finding = await renamedDisagreement(scenarioPath, scenario, source);
+      if (finding !== null) findings.push(`${scenarioPath} (${twin}): ${finding}`);
     }
-    const back = new Map([...changed.names].map(([old, renamed]) => [renamed, old]));
-    const schedule = mapStrings(scenario, changed.names, (field) => elementFields.has(field));
-    const actual = mapStrings(JSON.parse(JSON.stringify(runScenario(read.program, schedule))), back, () => true);
-    // Both results are the kernel's, so its codes and scopes count; open waits are compared in their canonical order.
-    const comparison = compareTargetResults({ target: DifferentialTarget.KernelTs, result: scopesSorted(expected) },
-      [{ target: DifferentialTarget.Kernel, result: scopesSorted(actual) }]);
-    if (comparison.kind === ComparisonKind.Disagreement) findings.push(`${scenarioPath}: ${JSON.stringify(comparison.disagreement)}`);
   }
   assert.deepEqual(findings, [], JSON.stringify(counts));
   // The cohort is the retained witnesses; an empty or shrunken run would pass vacuously.

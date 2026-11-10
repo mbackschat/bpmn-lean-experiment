@@ -2,7 +2,7 @@
  * Data: Java's carriers for portable values and the EL coercions between them (`TypeConverterImpl`, EL §1.18), for
  * the Core JUEL evaluator; transcribed from `Kernel/Feature/Data/Juel/Coercion.lean`.
  */
-import { ValueTag, assertNever, type Value } from "../../../il/types.js";
+import { ValueTag, assertNever, isAscii, parseJavaLong, type Value } from "../../../il/types.js";
 import { canonicalDecimal } from "../../../hooks.js";
 
 /** Which Java class carries an Integer during one evaluation; only Java `equals` observes it. */
@@ -152,8 +152,6 @@ export function toBool(value: JVal): Eval<boolean> {
   return assertNever(value);
 }
 
-export const isAscii = (value: string): boolean => /^[\x00-\x7f]*$/u.test(value);
-
 export function toLong(value: JVal): Eval<bigint> {
   if (isBlank(value)) return ok(0n);
   switch (value.tag) {
@@ -164,8 +162,8 @@ export function toLong(value: JVal): Eval<bigint> {
     case JValTag.String: {
       // dynamic-only: `Long.valueOf` reads Unicode digits the kernel does not model.
       if (!isAscii(value.value)) return unsupported("juel.nonAsciiText");
-      const parsed = signedDigits(value.value);
-      return parsed !== null && BigInt.asIntN(64, parsed) === parsed ? ok(parsed) : fail(elError);
+      const parsed = parseJavaLong(value.value);
+      return parsed === null ? fail(elError) : ok(parsed);
     }
     case JValTag.Null:
     case JValTag.Bool:
@@ -174,11 +172,6 @@ export function toLong(value: JVal): Eval<bigint> {
       return fail(elError);
   }
   return assertNever(value);
-}
-
-/** `Long.parseLong`'s ASCII grammar: an optional sign and at least one digit. */
-export function signedDigits(source: string): bigint | null {
-  return /^[+-]?[0-9]+$/u.test(source) ? BigInt(source.startsWith("+") ? source.slice(1) : source) : null;
 }
 
 /** `coefficient × 10^-scale` truncated toward zero. */

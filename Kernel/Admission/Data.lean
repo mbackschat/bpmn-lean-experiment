@@ -15,13 +15,6 @@ public section
 
 namespace Kernel.Admission.Data
 
-/-- A digits-only lexeme within `Long.valueOf`'s range (`Parser.java:140`). -/
-def integerLexeme? (digits : String) : Option Nat :=
-  if digits.isEmpty || !digits.all Char.isDigit then none
-  else
-    let value := digits.foldl (fun acc char => acc * 10 + (char.toNat - '0'.toNat)) 0
-    if value ≤ 9223372036854775807 then some value else none
-
 /-- A name CIB resolves before any variable, or holds only inside a Multi-Instance instance or a decision task: the
 engine objects of `VariableScopeElResolver.java:51-90`, the loop counters, which `counters` admits: the Multi-Instance
 level puts them in a completion condition's context under `MultiInstanceCounters.cibLocals`, and a decision task's
@@ -29,7 +22,7 @@ level puts them in a completion condition's context under `MultiInstanceCounters
 def juelName (counters : Bool) (name : String) : Option String :=
   if ["execution", "task", "caseExecution", "externalTask", "authenticatedUserId"].contains name then
     some "expression.juel.engineContext"
-  else if !counters && ["loopCounter", "nrOfInstances", "nrOfActiveInstances", "nrOfCompletedInstances"].contains name then
+  else if !counters && multiInstanceCounterNames.contains name then
     some "expression.juel.multiInstanceCounter"
   -- CIB binds it only as a transient local of a decision task's execution (`DecisionEvaluationUtil.java:82`), which
   -- the kernel does not carry; admission sees no expression's site owner, so the read is refused wherever it stands.
@@ -41,6 +34,22 @@ def juelCall (target : JuelCall) (count : Nat) : Option String :=
   match target with
   | .listed method => if method.admits count then none else some "expression.juel.method"
   | .other _ => some "expression.juel.method"
+
+/-- Division yields a Double over Integers (EL §1.7.2), outside the portable domain; every other operator is admitted. -/
+def juelOperator : JuelBinary → Option String
+  | .div => some "expression.juel.division"
+  | .or => none
+  | .and => none
+  | .eq => none
+  | .ne => none
+  | .lt => none
+  | .gt => none
+  | .le => none
+  | .ge => none
+  | .add => none
+  | .sub => none
+  | .mul => none
+  | .mod => none
 
 /-- A function call is refused whole once its arguments are well formed; the Events level admits `now()` and
 `dateTime()` by their qualified name. -/
@@ -68,7 +77,7 @@ def juelNode (counters : Bool) (position : Nat) (node : JuelNode) : Option Strin
     earlier (payload.receiver :: payload.name :: payload.args) <|> some "expression.juel.computedMethod"
   | .unary _ operand => earlier [operand]
   | .binary payload =>
-    earlier [payload.left, payload.right] <|> if payload.op == .div then some "expression.juel.division" else none
+    earlier [payload.left, payload.right] <|> juelOperator payload.op
   | .choice payload => earlier [payload.condition, payload.whenTrue, payload.whenFalse]
 
 /-- The first node a Core JUEL table refuses, in node order; `counters` admits the Multi-Instance counter names. -/

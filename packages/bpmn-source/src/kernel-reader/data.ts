@@ -3,7 +3,7 @@ import type { ElementRecord } from "../moddle-graph.js";
 import { parseJuel } from "./juel.js";
 import { ReadRefusal, ReadRefusalCode, list, namespaceOf, optionalId, text } from "./model.js";
 import type { ReadContext } from "./model.js";
-import { compareIds, ctor, expressionSource, foreign, literalSource, mapping, MappingSyntax, stringLiteral, variable } from "./wire.js";
+import { ctor, expressionSource, foreign, literalSource, mapping, MappingSyntax, stringLiteral, variable } from "./wire.js";
 import type { KernelJson } from "./wire.js";
 
 /** The source language of a CIB text the JUEL reader could not parse, which the kernel reads only as `foreign`. */
@@ -148,13 +148,16 @@ function parameterValue(parameter: ElementRecord): KernelJson {
 
 export type ParameterMappings = Readonly<{ inputs: KernelJson[]; outputs: KernelJson[]; targets: string[] }>;
 
-/** `camunda:inputOutput`, each direction ordered by target name. */
+/**
+ * `camunda:inputOutput`, each direction in document order: CIB runs the parameters one at a time in that order
+ * (`BpmnParseUtil.java:89-110`, `IoMapping.java:38-48`), so which failure ends an entry, which value a repeated target
+ * keeps and what a later output reads of an earlier one depend on it (`Ctx.evaluateMappingsWith`).
+ */
 export function inputOutputParameters(ctx: ReadContext, element: ElementRecord): ParameterMappings {
   const blocks = ctx.extensions(element, "inputOutput");
   const parameters = blocks.flatMap((block) => asElementArray(block.$children) ?? []);
   const named = (localName: string): ElementRecord[] => parameters
-    .filter((parameter) => String(parameter.$type).endsWith(`:${localName}`))
-    .sort((left, right) => compareIds(String(left.name), String(right.name)));
+    .filter((parameter) => String(parameter.$type).endsWith(`:${localName}`));
   const inputs = named("inputParameter");
   return {
     inputs: inputs.map((parameter) => mapping(String(parameter.name), parameterValue(parameter), MappingSyntax.IoParameter)),

@@ -22,13 +22,16 @@ instance per joined execution (CIB `ParallelGatewayActivityBehavior`, `PvmExecut
 
 An element's own selection (`ownFlows`) is an inclusive choice over its outgoing flows, which only an Activity's or a
 Scope's may condition. A diverging gateway or an Activity that finds no outgoing flow rolls the command back.
+
+A parked Inclusive join also fires when no token arrives at it: Table 13.3 activates it by the state, and `Step.settle`
+offers the parked joins again once the closure is otherwise quiescent (`Step.reoffer?`).
 -/
 
 public section
 
 namespace Kernel.Feature.Flow
 
-def complete (state : State) (id : Nat) (leave : Leave) : State :=
+def signalComplete (state : State) (id : Nat) (leave : Leave) : State :=
   state.signal (.complete id leave [] .outward)
 
 /-- A candidate's condition, read from its Sequence Flow; an unconditioned candidate holds. A failing or non-Boolean
@@ -67,16 +70,6 @@ def ownFlows (ctx : Ctx) (element : Element) (context : EvalContext) : Except Fa
   inclusiveChoice ctx context (element.outgoing.filter (some · != default)) default element.outgoing
     "activity-no-outgoing-flow"
 
-/-- `Hooks.outflow`: the only place tokens are added. An element's own selection is `ownFlows`, read after the
-completion's writes. -/
-def outflow (ctx : Ctx) (occurrence : Occurrence) (leave : Leave) (state : State) : Outcome :=
-  match leave with
-  | .flows selected => .ok (state.emit selected occurrence.scope)
-  | .outgoing =>
-    match ctx.program.element? occurrence.element with
-    | some element => do .ok (state.emit (← ownFlows ctx element (state.evalContext occurrence.scope)) occurrence.scope)
-    | none => .error (.semanticFailure "outflow-without-element")
-  | .raised => .error (.semanticFailure "outflow-of-raised-occurrence")
 
 /-- The first candidate whose condition holds. -/
 def firstTrue (ctx : Ctx) (context : EvalContext) : List FlowId → Except Failure (Option FlowId)
@@ -88,7 +81,7 @@ def exclusive (ctx : Ctx) (candidates : List FlowId) (default : Option FlowId) (
     (state : State) : Outcome := do
   let chosen ← firstTrue ctx (state.evalContext occurrence.scope) candidates
   match chosen <|> default with
-  | some flow => .ok (complete state occurrence.id (.flows [flow]))
+  | some flow => .ok (signalComplete state occurrence.id (.flows [flow]))
   | none => .error (.rolledBack "exclusive-gateway-no-outgoing-flow")
 
 /-- The flows an inclusive split takes. A gateway that lists no candidates is a pure join. -/
@@ -111,11 +104,14 @@ def select (ctx : Ctx) (occurrence : Occurrence) (leave : Leave) (state : State)
       let inside := ((state.scopes.find? (·.occurrence == some occurrence.id)).map (·.id)).getD occurrence.scope
       .ok (.flows (← ownFlows ctx element (state.evalContext inside)))
 
-/-- The flows leaving an element, its boundaries' flows included. -/
-def leaving (element : Element) : List FlowId :=
-  match element.envelope? with
-  | some envelope => envelope.outgoing ++ envelope.boundaries.flatMap (·.outgoing)
-  | none => element.outgoing
+/-- The flows a position held by `element` continues on: its outgoing flows and, under the standards reach, its Boundary
+Events' flows, since an attached Event can still fire (BPMN 2.0.2 §10.5.4); CIB's `isReachable` follows outgoing
+transitions only (CIB-INT-0020). -/
+def leaving (ctx : Ctx) (element : Element) : List FlowId :=
+  match element.envelope?, ctx.program.options.inclusiveJoinReach with
+  | some envelope, .withBoundaries => envelope.outgoing ++ envelope.boundaries.flatMap (·.outgoing)
+  | some envelope, .outgoingOnly => envelope.outgoing
+  | none, _ => element.outgoing
 
 /-- The Link catch Events named `name` among the siblings of `parent`. -/
 def linkCatches (program : Program) (parent : Option ElementId) (name : String) : List (Header × EventPayload) :=
@@ -124,13 +120,14 @@ def linkCatches (program : Program) (parent : Option ElementId) (name : String) 
       if payload.linkCatch? == some name then some (header, payload) else none
 
 /-- The flows a token continues on after reaching `element`; a throwing Link continues at its catching Links. -/
-def successors (program : Program) (element : Element) : List FlowId :=
+def successors (ctx : Ctx) (element : Element) : List FlowId :=
   match element.event?.bind fun (header, payload) => payload.linkThrow?.map (header, ·) with
-  | some (header, name) => (linkCatches program header.parent name).flatMap (·.2.outgoing)
-  | none => leaving element
+  | some (header, name) => (linkCatches ctx.program header.parent name).flatMap (·.2.outgoing)
+  | none => leaving ctx element
 
 /-- Whether a token on one of `start` can reach one of `targets` without passing through `gateway`. -/
-def reaches (program : Program) (gateway : ElementId) (targets start : List FlowId) : Bool :=
+def reaches (ctx : Ctx) (gateway : ElementId) (targets start : List FlowId) : Bool :=
+  let program := ctx.program
   let rec go (fuel : Nat) (frontier seen : List FlowId) : Bool :=
     match fuel, frontier with
     | _, [] => false
@@ -143,7 +140,7 @@ def reaches (program : Program) (gateway : ElementId) (targets start : List Flow
       else
         let next := match program.target? flow with
           | some target =>
-            if target == gateway then [] else ((program.element? target).map (successors program)).getD []
+            if target == gateway then [] else ((program.element? target).map (successors ctx)).getD []
           | none => []
         go fuel (rest ++ next) (flow :: seen)
   go ((program.flows.length + 1) * (program.flows.length + 1)) start []
@@ -151,10 +148,11 @@ def reaches (program : Program) (gateway : ElementId) (targets start : List Flow
 /-- The flows from which the remaining work of scope occurrence `scope` continues, excluding the tokens parked at
 `gateway`: queued tokens, the elements of open items and child scope occurrences, and tokens parked at other
 joins. A passive item keeps nothing alive and is no position; a boundary item is no element, and its host's
-position already covers the boundary's flows. -/
-def positions (program : Program) (state : State) (gateway : ElementId) (scope : ScopeOccurrenceId) :
+position covers the boundary's flows as far as `leaving` follows them. -/
+def positions (ctx : Ctx) (state : State) (gateway : ElementId) (scope : ScopeOccurrenceId) :
     List FlowId :=
-  let continuing (element : ElementId) := ((program.element? element).map (successors program)).getD []
+  let program := ctx.program
+  let continuing (element : ElementId) := ((program.element? element).map (successors ctx)).getD []
   let queued := (state.tokens.filter (·.scope == scope)).map (·.flow)
   let items := (state.openItems.filter fun item => item.scope == scope && !item.passive)
     |>.flatMap (continuing ·.element)
@@ -178,15 +176,16 @@ def consumed (state : State) (incoming : List FlowId) (scope : ScopeOccurrenceId
 def unpark (state : State) (consumed : List Parked) : State :=
   { state with slots := { state.slots with parked := state.slots.parked.filter (!consumed.contains ·) } }
 
-/-- Park the occurrence at a join and fire when `ready` holds; a gateway with one incoming flow passes it on. When the
-join fires, the arriving occurrence, if consumed, is the one that leaves with the flows and the others end with
-none. -/
+/-- Park the occurrence at a join, unless `Step.reoffer?` offers one already parked, and fire when `ready` holds; a gateway
+with one incoming flow passes it on. When the join fires, the offered occurrence, if consumed, is the one that leaves
+with the flows and the others end with none. -/
 def join (occurrence : Occurrence) (incoming : List FlowId) (state : State) (ready : State → Bool)
     (flows : State → Except Failure (List FlowId)) : Outcome := do
   let some flow := occurrence.incoming | .error (.semanticFailure "gateway-without-flow")
-  if incoming.length ≤ 1 then .ok (complete state occurrence.id (.flows (← flows state)))
+  if incoming.length ≤ 1 then .ok (signalComplete state occurrence.id (.flows (← flows state)))
   else
-    let parked := park state { occurrence := occurrence.id, flow, scope := occurrence.scope }
+    let parked := if state.slots.parked.any (·.occurrence == occurrence.id) then state
+      else park state { occurrence := occurrence.id, flow, scope := occurrence.scope }
     if !ready parked then .ok parked
     else
       let consumed := consumed parked incoming occurrence.scope
@@ -196,7 +195,7 @@ def join (occurrence : Occurrence) (incoming : List FlowId) (state : State) (rea
         if consumed.any (·.occurrence == occurrence.id) then occurrence.id
         else (consumed.getLast?.map (·.occurrence)).getD occurrence.id
       let others := (consumed.map (·.occurrence)).filter (· != firing)
-      .ok (complete (others.foldl (complete · · (.flows [])) unparked) firing (.flows selected))
+      .ok (signalComplete (others.foldl (signalComplete · · (.flows [])) unparked) firing (.flows selected))
 
 def arriveGateway (ctx : Ctx) (header : Header) (payload : GatewayPayload) (occurrence : Occurrence) (state : State) :
     Outcome :=
@@ -211,10 +210,31 @@ def arriveGateway (ctx : Ctx) (header : Header) (payload : GatewayPayload) (occu
     join occurrence payload.incoming state
       (fun parked =>
         let empty := payload.incoming.filter (!(filled parked payload.incoming scope).contains ·)
-        !reaches ctx.program header.id empty (positions ctx.program parked header.id scope))
+        !reaches ctx header.id empty (positions ctx parked header.id scope))
       (inclusiveFlows ctx candidates default payload.outgoing scope)
   -- Admission admits only a non-instantiating gateway (`gateway.eventBased.instantiate`).
   | .eventBased _ => .ok (state.signal (.armGateway occurrence.id header.id scope))
+
+/-- The order a split's tokens are queued in. `Step.settle` takes the newest token first under
+`BranchSchedule.declarationDepthFirst`, so the flows are queued reversed and the first-declared branch runs first, each to
+its next wait, join or end, as CIB reverses its outgoing executions for a LIFO queue (CIB-OP-0016). -/
+def queued (ctx : Ctx) (flows : List FlowId) : List FlowId :=
+  match ctx.program.options.branchSchedule with
+  | .orderInvariant => flows
+  | .declarationDepthFirst => flows.reverse
+
+/-- `Hooks.outflow`: the only place tokens are added. An element's own selection is `ownFlows`, read after the
+completion's writes. -/
+def outflow (ctx : Ctx) (occurrence : Occurrence) (leave : Leave) (state : State) : Outcome :=
+  match leave with
+  | .flows selected => .ok (state.emit (queued ctx selected) occurrence.scope)
+  | .outgoing =>
+    match ctx.program.element? occurrence.element with
+    | some element => do
+      let selected ← ownFlows ctx element (state.evalContext occurrence.scope)
+      .ok (state.emit (queued ctx selected) occurrence.scope)
+    | none => .error (.semanticFailure "outflow-without-element")
+  | .raised => .error (.semanticFailure "outflow-of-raised-occurrence")
 
 /-- A throwing Link continues at the catching Link of the same name in the same process level or Sub-Process
 (BPMN 2.0.2 §10.5.6); a catching Link reached by a flow passes the token on. -/
@@ -223,9 +243,9 @@ def arriveLink (ctx : Ctx) (header : Header) (payload : EventPayload) (occurrenc
   match payload.linkThrow? with
   | some name =>
     match linkCatches ctx.program header.parent name with
-    | [(_, target)] => .ok (complete state occurrence.id (.flows target.outgoing))
+    | [(_, target)] => .ok (signalComplete state occurrence.id (.flows target.outgoing))
     | [] => .error (.semanticFailure "link-without-catch")
     | _ :: _ :: _ => .error (.semanticFailure "link-ambiguous-catch")
-  | none => .ok (complete state occurrence.id .outgoing)
+  | none => .ok (signalComplete state occurrence.id .outgoing)
 
 end Kernel.Feature.Flow

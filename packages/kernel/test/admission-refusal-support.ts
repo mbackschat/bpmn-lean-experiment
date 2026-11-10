@@ -75,7 +75,8 @@ export const userWork = (over: Json = {}): Json => ({
     },
   },
 });
-export const serviceWork = (protocol = "http", operation = "get"): Json => ({ service: { payload: { protocol, operation } } });
+export const serviceWork = (protocol = "http", operation = "get", handlerKey: string | null = null): Json =>
+  ({ service: { payload: { protocol, operation, handlerKey } } });
 export const receiveWork = (over: Json = {}, instantiate = false): Json => ({ receive: { payload: { message: messageBody(over), instantiate } } });
 export const callWork = (over: Json = {}): Json => ({
   call: {
@@ -86,7 +87,7 @@ export const callWork = (over: Json = {}): Json => ({
   },
 });
 
-export const sendWork = (): Json => ({ send: { payload: { binding: { protocol: "http", operation: "post" }, recipient: null, correlation: [], messageRef: null, operationRef: null } } });
+export const sendWork = (): Json => ({ send: { payload: { binding: { protocol: "http", operation: "post" }, handlerKey: null, recipient: null, correlation: [], messageRef: null, operationRef: null } } });
 export const scriptWork = (): Json => ({ script: { payload: { format: "js", source: "1", resultVariable: null } } });
 export const ruleWork = (over: Json = {}): Json =>
   ({ rule: { payload: { decision: text("d"), resultVariable: null, binding: "latest", resultMapping: "singleEntry", tenant: null, ...over } } });

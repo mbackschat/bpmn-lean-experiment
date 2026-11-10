@@ -1,0 +1,89 @@
+{
+  "kind": "scenario",
+  "id": "mapping-order-installed-chained-outputs",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "mapping-order-installed-chained-outputs",
+    "relativePath": "scenarios/open-rows/mapping-order/installed-chained-outputs.bpmn",
+    "sha256": "71e0361b0adeaafc28f8149eb633e67b669309011834963feac9d61107a4c7fa",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start",
+      "instanceId": "Run_1",
+      "variables": []
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-decide",
+      "occurrence": {
+        "processInstanceId": "Run_1",
+        "elementId": "UserTask_Decide",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "total",
+            "value": {
+              "kind": "string",
+              "value": "submitted"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-shadow",
+      "occurrence": {
+        "processInstanceId": "Run_1",
+        "elementId": "UserTask_Shadow",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "level",
+            "value": {
+              "kind": "string",
+              "value": "submitted"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-observe",
+      "occurrence": {
+        "processInstanceId": "Run_1",
+        "elementId": "UserTask_Observe",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 \u00a710.3.3",
+      "BPMN 2.0.2 Clause 10.4.2"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/variable/mapping/IoMapping.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/variable/mapping/OutputParameter.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/variable/scope/AbstractVariableScope.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/cmd/CompleteTaskCmd.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/persistence/entity/TaskEntity.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/persistence/entity/ExecutionEntity.java"
+    ]
+  }
+}

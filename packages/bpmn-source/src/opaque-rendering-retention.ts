@@ -7,6 +7,7 @@ import type { BpmnSourceDiagnostic } from "./contracts.js";
 import {
   containedLocus,
   rejectElement,
+  renderContainmentPath,
 } from "./admission-diagnostics.js";
 import type {
   ElementLocus,
@@ -126,18 +127,6 @@ export function isWarningWithinOpaqueRendering(
   const offset = sourceOffset(xml, line, column);
   return offset !== undefined &&
     isSourceOffsetInsideBpmnUserTaskRendering(xml, offset);
-}
-
-function renderContainmentPath(locus: ElementLocus): string {
-  return locus.segments.reduce<string>(
-    (path, segment) =>
-      typeof segment === "number"
-        ? `${path}[${segment}]`
-        : path.length === 0
-          ? segment
-          : `${path}/${segment}`,
-    "",
-  );
 }
 
 function invalidOpaqueRoot(

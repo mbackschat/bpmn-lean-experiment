@@ -53,18 +53,16 @@ def rereads (loop : MultiInstance) : Bool :=
 a User Task's submission fills it, except that a submission installing variables (CIB-EXT-0005) needs none, since
 CIB's `TaskService.complete` sets each value through the instance's task execution; a Service Task's empty OutputSet
 fills neither an output data item nor an output collection, which body result effects (PC-MI-10) would. -/
-def result (submission : SubmissionRule) (submits : Bool) (loop : MultiInstance) : Option String :=
+def instanceResult (submission : SubmissionRule) (submits : Bool) (loop : MultiInstance) : Option String :=
   if submits then
     if loop.outputDataItem.isNone && submission == .outputSet then some "multiInstance.outputDataItem" else none
   else if loop.outputDataItem.isSome || loop.outputCollection.isSome then some "multiInstance.instanceResult"
   else none
 
-def counterNames : List String := ["loopCounter", "nrOfInstances", "nrOfActiveInstances", "nrOfCompletedInstances"]
-
 /-- `submits` is `none` for work no instance may do, which `Kernel.Admission.Work` refuses. Under the CIB counters an
 item named like a counter is refused: CIB sets both on one execution, so one overwrites the other. A collection loop
 needs its input data item; a cardinality loop sets none (`MultiInstanceActivityBehavior:85`). -/
-def activity (options : ProfileOptions) (juel : Bool → Expression → Option String) (submits : Option Bool)
+def activityLoop (options : ProfileOptions) (juel : Bool → Expression → Option String) (submits : Option Bool)
     (envelope : Envelope) (loop : MultiInstance) : Option String :=
   let underJuel := options.evaluator == .juel
   let counters := options.multiInstanceCounters == .cibLocals
@@ -78,9 +76,9 @@ def activity (options : ProfileOptions) (juel : Bool → Expression → Option S
     if loop.elementVariable.isSome then some "multiInstance.elementVariable"
     else if loop.mutableCollection == .sequentialReread || (underJuel && rereads loop) then some "multiInstance.mutableCollection"
     else if collection && loop.inputDataItem.isNone then some "multiInstance.inputDataItem"
-    else if counters && [loop.inputDataItem, loop.inputDataItemName].any (·.any counterNames.contains) then
+    else if counters && [loop.inputDataItem, loop.inputDataItemName].any (·.any multiInstanceCounterNames.contains) then
       some "multiInstance.itemNamedLikeCounter"
-    else (submits.bind (result options.submission · loop)) <|>
+    else (submits.bind (instanceResult options.submission · loop)) <|>
       if !envelope.inputs.isEmpty || !envelope.outputs.isEmpty then some "multiInstance.mappings" else none
 
 end Kernel.Admission.MultiInstance

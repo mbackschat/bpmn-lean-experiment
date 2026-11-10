@@ -1,0 +1,77 @@
+{
+  "kind": "scenario",
+  "id": "inclusive-join-activation-nested-skip-outer-first-a-then-skipped",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "inclusive-join-activation-nested-skip-outer-first",
+    "relativePath": "scenarios/open-rows/inclusive-join-activation/nested-skip-outer-first.bpmn",
+    "sha256": "93fdcbdaf0c289d3992ebb41b9d1f0da8550be66a724cdf79adc75a39f42f34f",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "skip",
+          "value": {
+            "kind": "boolean",
+            "value": true
+          }
+        }
+      ]
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-complete-ReviewA-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "ReviewA",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-complete-ReviewB1-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "ReviewB1",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s04-complete-ReviewB2-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "ReviewB2",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 \u00a713.4.3",
+      "BPMN 2.0.2 Table 13.3",
+      "BPMN 2.0.2 \u00a713.4.2"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/InclusiveGatewayActivityBehavior.java"
+    ]
+  }
+}

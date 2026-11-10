@@ -39,7 +39,7 @@ def opening (mode : MultiInstanceMode) (instances : List Iteration) : List Nat :
   | .parallel => waiting
   | .sequential => if running then [] else waiting.take 1
 
-def filled : Iteration → Bool
+def slotFilled : Iteration → Bool
   | .completed _ => true
   | .waiting => false
   | .active _ => false
@@ -135,13 +135,9 @@ def countOf (rule : MultiInstanceCount) (value : Value) : Except Failure Nat :=
     else counted (coefficient / 10 ^ scale)
   | .javaInt, .string text =>
     -- Dynamic-only: `Integer.parseInt` reads Unicode digits the kernel does not model.
-    if !text.all (fun char : Char => decide (char.toNat < 128)) then .error (.unsupported "juel.nonAsciiText")
-    else
-      let digits := if text.startsWith "+" || text.startsWith "-" then text.drop 1 else text
-      match (if digits.isEmpty || !digits.all Char.isDigit then none else digits.toNat?) with
-      | some magnitude =>
-        let parsed : Int := if text.startsWith "-" then -magnitude else magnitude
-        if withinJavaInt parsed then counted parsed else notANumber
+    if !isAscii text then .error (.unsupported "juel.nonAsciiText")
+    else match parseJavaInt? text with
+      | some parsed => counted parsed
       | none => notANumber
   | .javaInt, _ => notANumber
 
@@ -212,7 +208,7 @@ def submitted (loop : MultiInstance) (run : MultiInstanceRun) (writes : List (St
 
 /-- The body is done: complete it, writing the output collection when every slot is filled. -/
 def finish (ctx : Ctx) (loop : MultiInstance) (run : MultiInstanceRun) (state : State) : State :=
-  let writes := if run.instances.all filled then written ctx loop run.collection (run.instances.filterMap output?)
+  let writes := if run.instances.all slotFilled then written ctx loop run.collection (run.instances.filterMap output?)
     else []
   state.signal (.complete run.occurrence .outgoing writes .outward)
 
@@ -236,8 +232,6 @@ def evaluatesFinalCondition (ctx : Ctx) (loop : MultiInstance) : Bool :=
   | .modeSpecific, .parallel => true
   | .modeSpecific, .sequential => false
 
-def counterNames : List String := ["loopCounter", "nrOfInstances", "nrOfActiveInstances", "nrOfCompletedInstances"]
-
 /-- What a completion condition reads: the completing instance's scope occurrence, before it is left, so the item and
 the instance's result locals are visible (BPMN 2.0.2 §13.3.7), and under `cibLocals` CIB's counters (CIB-INT-0018):
 the instance's zero-based index; the count; the active instances, which CIB never lowers below
@@ -246,12 +240,11 @@ def conditionContext (ctx : Ctx) (loop : MultiInstance) (run : MultiInstanceRun)
     (state : State) : EvalContext :=
   let context := state.evalContext scope
   let total := run.instances.length
-  let completed := (run.instances.filter filled).length
+  let completed := (run.instances.filter slotFilled).length
   let active := if loop.mode == .sequential then 1 else total - completed
   let counters : List (String × Value) := match ctx.program.options.multiInstanceCounters with
     | .none => []
-    | .cibLocals => [("loopCounter", .int index), ("nrOfInstances", .int total), ("nrOfActiveInstances", .int active),
-      ("nrOfCompletedInstances", .int completed)]
+    | .cibLocals => multiInstanceCounterNames.zip [Value.int index, .int total, .int active, .int completed]
   { context with variables := counters ++ context.variables }
 
 /-- Whether the completion condition holds, read in the instance's scope occurrence before it is left. A result named
@@ -285,11 +278,11 @@ def instanceCompleted (ctx : Ctx) (body : Nat) (occurrence : Occurrence) (writes
     | .error (.semanticFailure "instance-without-slot")
   let output ← submitted loop run writes
   let results := if loop.outputDataItem.isNone then writes.map (·.1) else []
-  let shadows := results.any fun name => counterNames.contains name || some name == itemName ctx loop
+  let shadows := results.any fun name => multiInstanceCounterNames.contains name || some name == itemName ctx loop
   -- Dynamic-only: an effect result's names are the run's data.
   if shadows then .error (.unsupported "multiInstance.resultShadowsInstance")
   let run := { run with instances := run.instances.set index (.completed output) }
-  let exhausted := run.instances.all filled
+  let exhausted := run.instances.all slotFilled
   let stop ← if exhausted && !evaluatesFinalCondition ctx loop then .ok false
     else stops ctx loop run index occurrence.scope results state
   let run := { run with results := if loop.mode == .sequential then (run.results ++ results).eraseDups else [] }

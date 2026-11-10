@@ -70,9 +70,9 @@ def budgets : List (Name × Nat) := [
   -- The JUEL types (M2), measured 2026-11-10; each is its TypeScript budget plus the derived `Repr` instance that
   -- `Expression`'s derived `Repr` requires.
   (`Kernel.JuelNode, 3), -- Admission.Data.juelNode, Feature.Data.Juel.visit, Repr
-  (`Kernel.JuelBinary, 2), -- Feature.Data.Juel.operate, Repr
+  (`Kernel.JuelBinary, 3), -- Admission.Data.juelOperator, Feature.Data.Juel.operate, Repr (2026-11-10: guard 2's owner clause)
   (`Kernel.JuelUnary, 2), -- Feature.Data.Juel.unary, Repr
-  (`Kernel.JuelCall, 3), -- Admission.Data.juelCall, Feature.Data.Juel.call, Repr
+  (`Kernel.JuelCall, 3), -- Admission.Data.juelCall, Feature.Data.Juel.methodCall, Repr
   (`Kernel.JuelMethod, 5)] -- the String, List and Map methods, JuelMethod.admits, Repr
 
 structure Uses where

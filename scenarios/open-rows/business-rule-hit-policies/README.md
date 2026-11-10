@@ -9,6 +9,7 @@ Every scenario binds the DMN resource [decisions.dmn](decisions.dmn) by its exac
 - [hit-policies.bpmn](hit-policies.bpmn): one Exclusive Gateway selects a Business Rule Task by the start variable `policy`; all branches merge into the User Task *Inspect result*.
 - [decision-contexts.bpmn](decision-contexts.bpmn): `gradeUnique` (mapped `singleEntry` to `grade`) reached in three contexts the gateway selects: inside a Sub-Process whose input parameter binds a local `grade`, after an `asyncBefore` Service Task's effect result, and after a `PT10S` Timer.
 - [unknown-decision.bpmn](unknown-decision.bpmn): one Business Rule Task whose `decisionRef` `noSuchDecision` no bound resource declares.
+- [forms.bpmn](forms.bpmn): one Business Rule Task per table of [forms.dmn](forms.dmn), selected by `policy` as in `hit-policies.bpmn`; the schedules on it bind `forms.dmn` instead of `decisions.dmn`.
 
 The [scenario value contract](../../../scripts/scenario-variable-value-contract.ts) admits Integer start values only for registered process ids, so every number below is a numeric String that the decision's `integer` type reference converts.
 
@@ -30,6 +31,17 @@ The tables `gradeUnique`, `gradeFirst`, `gradeAnyAgree`, `gradeAnyConflict`, `gr
 | `signs` | UNIQUE | `score` | `7` → `"seven"`; `0` → `"zero"` |
 | `numberText` | UNIQUE | `score` | `-` → `5` under `string` |
 | `dashes` | UNIQUE | `score`, `channel` | `-` and an empty `<text/>` → `"both"` |
+
+The tables of [forms.dmn](forms.dmn) witness the remaining admitted FEEL forms; each reads the Integer `score` unless it names another input.
+
+| Table | Hit policy | Input | Rules (test → output) |
+|---|---|---|---|
+| `atMost` | COLLECT | `score` | `<= 10` → `"atMost10"`; `< 10` → `"below10"`; `>= 10` → `"atLeast10"` |
+| `negatives` | COLLECT | `score` | `-5` → `"minusFive"`; `[-7..-3]` → `"minusRange"`; `< -10` → `"belowMinusTen"`; `> -1` → `"aboveMinusOne"` |
+| `halves` | COLLECT | `score` | `< .5` → `"belowHalf"`; `> -.5` → `"aboveMinusHalf"`; `.5` → `"half"` |
+| `inverted` | COLLECT | `score` | `[70..40]` → `"inverted"`; `-` → `"any"` |
+| `escapes` | UNIQUE | String `channel` | `"a\"b"` → `"quote"`; `"a\\b"` → `"backslash"` |
+| `flags` | UNIQUE | `score` | `< 50` → Boolean `approved` `false`, String `note` `null`; `>= 50` → `true`, `"ok"` |
 
 ## Schedules
 
@@ -73,6 +85,12 @@ Every schedule starts the process; the two on `decision-contexts.bpmn` that reac
 | [result-shadowed-in-subprocess](result-shadowed-in-subprocess.scenario.json) | `decision-contexts.bpmn`, root `grade = "root"`, `score = "55"` | The nearest-owner write when a Sub-Process binds the result name. |
 | [after-effect-failure](after-effect-failure.scenario.json) | `decision-contexts.bpmn`, `score = "65"`, then the effect result | A UNIQUE overlap reached by an effect result. |
 | [after-timer-failure](after-timer-failure.scenario.json) | `decision-contexts.bpmn`, `score = "65"`, then the Timer | A UNIQUE overlap reached by a Timer firing. |
+| [form-at-most](form-at-most.scenario.json) | `atMost` `collectEntries`, `score = "10"` | `<=` and `>=` include their bound, `<` excludes it. |
+| [form-negative-numbers](form-negative-numbers.scenario.json) | `negatives` `collectEntries`, `score = "-5"` | Negative literals as a test, interval ends and comparison bounds. |
+| [form-fraction-without-whole-part](form-fraction-without-whole-part.scenario.json) | `halves` `collectEntries`, `score = "0"` | The `.5` and `-.5` number forms against an Integer input. |
+| [form-inverted-interval](form-inverted-interval.scenario.json) | `inverted` `collectEntries`, `score = "55"` | An interval whose low end exceeds its high end matches nothing. |
+| [form-escaped-quote](form-escaped-quote.scenario.json), [form-escaped-backslash](form-escaped-backslash.scenario.json) | `escapes` `singleEntry`, `channel` the text `a"b` and `a\b` | The `\"` and `\\` escapes of a String literal. |
+| [form-boolean-output-true](form-boolean-output-true.scenario.json), [form-boolean-and-null-output](form-boolean-and-null-output.scenario.json) | `flags` `singleResult`, `score = "60"` and `"10"` | `true`, `false` and `null` output literals under `boolean` and `string`. |
 | [unknown-decision](unknown-decision.scenario.json) | `noSuchDecision`, `score = "55"` | A Business Rule Task that names a decision no deployment contains. |
 
 ## Observation boundary

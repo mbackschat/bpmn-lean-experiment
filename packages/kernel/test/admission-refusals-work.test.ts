@@ -6,7 +6,7 @@
  */
 import {
   activity, append, callWork, computed, criterion, definitionRef, duration, eventSubProcess, loop, mapping, receiveWork, refusalTests,
-  ruleWork, scope, scriptWork, sendWork, serviceWork, task, text, userWork, variable,
+  ruleWork, scope, scriptWork, sendWork, serviceWork, task, text, userWork, variable, withOptions,
 } from "./admission-refusal-support.ts";
 import type { Json, Row } from "./admission-refusal-support.ts";
 
@@ -268,7 +268,10 @@ export const rows: readonly Row[] = [
   },
   { code: "work.send", description: "a Send Task", mutate: withTask(sendWork()) },
   { code: "work.script", description: "a Script Task", mutate: withTask(scriptWork()) },
-  { code: "work.rule.decisionMissing", description: "a Business Rule Task naming a decision the program does not carry", mutate: withTask(ruleWork()) },
+  {
+    code: "work.rule.decisionMissing", description: "a Business Rule Task naming a decision the program does not carry",
+    mutate: (program) => withOptions(withTask(ruleWork())(program), { businessRuleTask: "decisionTable" }),
+  },
 ];
 
 refusalTests("work", rows);

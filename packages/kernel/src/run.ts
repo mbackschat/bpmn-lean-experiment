@@ -17,7 +17,7 @@
  * a population refusal is a harness error, thrown, never a result.
  */
 import { assertNever, compareStrings, mergeSort, type DefinitionRef, type Program } from "./il/types.js";
-import { bindingsToJson, decodeProgram, encodeExpression, type JsonValue } from "./il/codec.js";
+import { bindingsToJson, decodeProgram, encodeExpression, isObject, type JsonValue } from "./il/codec.js";
 import { channelFromJson, channelToJson, failureCode, failureName, stimulusFromJson } from "./il/codec/stimulus.js";
 import {
   CauseTag,
@@ -49,7 +49,7 @@ import { ResolvedTag, type Resolved } from "./il/timer.js";
 import {
   ResolutionTag,
   StimulusTag,
-  run as runInstances,
+  runStimuli as runInstances,
   type Definition,
   type DeploymentRef,
   type Publication,
@@ -72,7 +72,7 @@ function nullable<T>(value: T | null, encode: (value: T) => JsonValue): JsonValu
   return value === null ? null : encode(value);
 }
 
-const text = (value: string): JsonValue => value;
+const jsonString = (value: string): JsonValue => value;
 const number = (value: number): JsonValue => value;
 const flag = (value: boolean): JsonValue => value;
 
@@ -80,10 +80,10 @@ function definitionRefJson(ref: DefinitionRef): JsonValue {
   return {
     key: ref.key,
     version: nullable(ref.version, number),
-    versionTag: nullable(ref.versionTag, text),
-    deployment: nullable(ref.deployment, text),
-    tenant: nullable(ref.tenant, text),
-    sourceSha256: nullable(ref.sourceSha256, text),
+    versionTag: nullable(ref.versionTag, jsonString),
+    deployment: nullable(ref.deployment, jsonString),
+    tenant: nullable(ref.tenant, jsonString),
+    sourceSha256: nullable(ref.sourceSha256, jsonString),
   };
 }
 
@@ -93,20 +93,20 @@ function effectFields(effect: EffectDetail): Record<string, JsonValue> {
     operation: effect.operation,
     arguments: bindingsToJson(effect.arguments),
     failures: effect.failures,
-    send: nullable(effect.send, (send) => ({ recipient: nullable(send.recipient, text), correlation: bindingsToJson(send.correlation) })),
+    send: nullable(effect.send, (send) => ({ recipient: nullable(send.recipient, jsonString), correlation: bindingsToJson(send.correlation) })),
   };
 }
 
 function userTaskFields(task: UserTaskDetail): Record<string, JsonValue> {
   return {
-    name: nullable(task.name, text),
-    assignee: nullable(task.assignee, text),
+    name: nullable(task.name, jsonString),
+    assignee: nullable(task.assignee, jsonString),
     candidateUsers: [...task.candidateUsers],
     candidateGroups: [...task.candidateGroups],
-    formKey: nullable(task.formKey, text),
+    formKey: nullable(task.formKey, jsonString),
     formFields: task.formFields.map(([key, type]) => ({ key, type })),
-    dueDate: nullable(task.dueDate, text),
-    followUpDate: nullable(task.followUpDate, text),
+    dueDate: nullable(task.dueDate, jsonString),
+    followUpDate: nullable(task.followUpDate, jsonString),
     priority: nullable(task.priority, number),
     inputs: bindingsToJson(task.inputs),
   };
@@ -124,7 +124,7 @@ function detail(view: WaitView): readonly [string, Record<string, JsonValue>] | 
   if (view.conditional !== null) {
     const condition = view.conditional;
     return ["conditional", {
-      variableName: nullable(condition.variableName, text),
+      variableName: nullable(condition.variableName, jsonString),
       variableEvents: [...condition.variableEvents],
       lastValue: nullable(condition.lastValue, flag),
     }];
@@ -134,7 +134,7 @@ function detail(view: WaitView): readonly [string, Record<string, JsonValue>] | 
       deadlineMs: view.deadlineMs,
       recurrence: nullable(view.recurrence, (recurrence) => ({
         periodMs: nullable(recurrence.periodMs, number),
-        cron: nullable(recurrence.cron, text),
+        cron: nullable(recurrence.cron, jsonString),
         remaining: nullable(recurrence.remaining, number),
       })),
     }];
@@ -152,7 +152,7 @@ interface PublishedWait {
   readonly json: JsonValue;
 }
 
-function openWait(wait: OpenWait): PublishedWait {
+function renderWait(wait: OpenWait): PublishedWait {
   // Every view sets exactly one detail field, so the empty fallback never renders.
   const [kind, fields] = detail(wait.view) ?? ["", {}];
   return {
@@ -161,7 +161,7 @@ function openWait(wait: OpenWait): PublishedWait {
     json: {
       id: referenceJson(wait.id),
       definition: nullable(wait.definition, definitionRefJson),
-      input: nullable(wait.view.input, text),
+      input: nullable(wait.view.input, jsonString),
       detail: { kind, ...fields },
     },
   };
@@ -180,7 +180,7 @@ function publishedWaitLe(left: PublishedWait, right: PublishedWait): boolean {
 function failureJson(failure: InstanceFailure): JsonValue {
   return {
     code: failure.code,
-    message: nullable(failure.message, text),
+    message: nullable(failure.message, jsonString),
     occurrence: referenceJson(failure.occurrence),
     related: failure.related.map(([name, ref]) => ({ name, occurrence: referenceJson(ref) })),
   };
@@ -197,7 +197,7 @@ function scopeJson(scope: PublishedScope): JsonValue {
 
 export function observationJson(program: Program, state: State): JsonValue {
   const view = hostView(program, state);
-  const waits = mergeSort(view.openWaits.map(openWait), publishedWaitLe);
+  const waits = mergeSort(view.openWaits.map(renderWait), publishedWaitLe);
   return {
     kind: "state",
     instanceId: state.instanceId,
@@ -257,10 +257,6 @@ function result(program: Program, stimuli: readonly ScenarioStimulus[]): JsonVal
   return { outcome: semantic(outcome), trace: [deploymentJson("committed", null), ...trace] };
 }
 
-function isObject(json: unknown): json is Readonly<Record<string, unknown>> {
-  return typeof json === "object" && json !== null && !Array.isArray(json);
-}
-
 /** Lean's `Json.getObjVal?`: the key must be present. */
 function field(json: unknown, key: string, where: string): unknown {
   if (!isObject(json) || !Object.hasOwn(json, key)) throw new Error(`${where}: property not found: ${key}`);
@@ -268,7 +264,7 @@ function field(json: unknown, key: string, where: string): unknown {
 }
 
 /** Lean's `getObjValAs? String`: an absent key reads as `null`, which is no String. */
-function stringField(json: unknown, key: string, where: string): string {
+function requiredString(json: unknown, key: string, where: string): string {
   const value = isObject(json) && Object.hasOwn(json, key) ? json[key] : null;
   if (typeof value !== "string") throw new Error(`${where}: ${key}: String expected`);
   return value;
@@ -285,9 +281,9 @@ function arrayField(json: unknown, key: string, where: string): readonly unknown
 function definitionRefFromJson(resource: unknown, profile: string, where: string): DeploymentRef {
   const overlay = field(resource, "sourceOverlay", where);
   return {
-    sourceId: stringField(resource, "id", where),
-    sourceSha256: stringField(resource, "sha256", where),
-    overlay: overlay === null ? null : { id: stringField(overlay, "id", where), sha256: stringField(overlay, "sha256", where) },
+    sourceId: requiredString(resource, "id", where),
+    sourceSha256: requiredString(resource, "sha256", where),
+    overlay: overlay === null ? null : { id: requiredString(overlay, "id", where), sha256: requiredString(overlay, "sha256", where) },
     profile,
   };
 }
@@ -470,17 +466,17 @@ function definitionOf(definitions: readonly (readonly [string, Definition])[], r
 function publicationFromJson(definitions: readonly (readonly [string, Definition])[], json: unknown, where: string): Publication {
   const address = field(json, "address", where);
   const payload = field(json, "payload", where);
-  const payloadKind = stringField(payload, "kind", where);
+  const payloadKind = requiredString(payload, "kind", where);
   if (payloadKind !== "string") throw new Error(`${where}: unknown publication payload kind ${payloadKind}`);
-  const commandId = stringField(json, "commandId", where);
-  const definition = definitionOf(definitions, stringField(address, "definitionRef", where), where).ref;
-  const processId = stringField(address, "processId", where);
+  const commandId = requiredString(json, "commandId", where);
+  const definition = definitionOf(definitions, requiredString(address, "definitionRef", where), where).ref;
+  const processId = requiredString(address, "processId", where);
   const channel = channelFromJson(field(address, "channel", where));
   if (!channel.ok) throw new Error(`${where}: ${channel.refusal}`);
   return {
     commandId,
-    address: { definition, processId, channel: channel.value, correlationKey: stringField(address, "correlationKeyId", where) },
-    payload: stringField(payload, "value", where),
+    address: { definition, processId, channel: channel.value, correlationKey: requiredString(address, "correlationKeyId", where) },
+    payload: requiredString(payload, "value", where),
   };
 }
 
@@ -494,12 +490,12 @@ function stepFromJson(
   json: unknown,
   where: string,
 ): Stimulus {
-  const kind = stringField(json, "kind", where);
+  const kind = requiredString(json, "kind", where);
   if (kind === "instance") {
-    const script: Script = { instanceId: stringField(json, "instanceId", where), definitionRef: stringField(json, "definitionRef", where) };
+    const script: Script = { instanceId: requiredString(json, "instanceId", where), definitionRef: requiredString(json, "definitionRef", where) };
     const stimulus = field(json, "stimulus", where);
     if (isObject(stimulus) && stimulus["kind"] === "start") {
-      const started = stringField(stimulus, "instanceId", where);
+      const started = requiredString(stimulus, "instanceId", where);
       if (started !== script.instanceId) throw new Error(`${where}: step of ${script.instanceId} starts ${started}`);
     }
     const [commandId, input] = stimulusOf(stimulus, where);
@@ -568,8 +564,8 @@ function populationResultJson(scenarioId: string, population: PopulationResult):
 /** `kernelRun --population <program.json>... <population-scenario.json>`: one program per scenario definition, in order. */
 export function runPopulation(programJsons: readonly unknown[], scenarioJson: unknown): unknown {
   const where = "population scenario";
-  const scenarioId = stringField(scenarioJson, "id", where);
-  const profile = stringField(scenarioJson, "profile", where);
+  const scenarioId = requiredString(scenarioJson, "id", where);
+  const profile = requiredString(scenarioJson, "profile", where);
   const resources = arrayField(scenarioJson, "definitions", where);
   if (resources.length !== programJsons.length) {
     throw new Error(`${where}: ${resources.length} definitions, ${programJsons.length} programs`);
@@ -578,7 +574,7 @@ export function runPopulation(programJsons: readonly unknown[], scenarioJson: un
     const program = programFromJson(programJsons[index], `program ${index}`);
     const code = admit(program);
     if (code !== null) throw new Error(`program ${index}: admission refused: ${code}`);
-    const id = stringField(resource, "definitionRef", where);
+    const id = requiredString(resource, "definitionRef", where);
     const ref = definitionRefFromJson(field(resource, "bpmn", where), profile, where);
     if (program.identity.sourceSha256 !== ref.sourceSha256 || program.identity.profile !== profile) {
       throw new Error(`program ${index}: program identity differs from definition ${id}`);

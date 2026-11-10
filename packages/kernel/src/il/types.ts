@@ -15,18 +15,21 @@ import {
   MultiInstanceFinalBody, MultiInstanceOutputs, type ProfileOptions, SubmissionRule, TechnicalFailure, UndeclaredWrite,
   UnhandledError, ErrorCatchVariables,
   MultiInstanceBinding, ResultValues, OutputContext, MultiInstanceCounters, MultiInstanceInputFailure, MultiInstanceCount,
+  multiInstanceCounterNames, BusinessRuleTask, InclusiveJoinReach, BranchSchedule,
 } from "./types/options.js";
 import {
   ExpressionTag, MappingDialect, SimpleBooleanTag, ValueSourceTag, ValueTag, type Expression, type Mapping,
   type SimpleBoolean, type Value, type ValueSource,
 } from "./types/expression.js";
 import type { Decision, DecisionResource } from "./types/decision.js";
+export { integerLexeme, isAscii, parseJavaInt, parseJavaLong, signedDigits, withinJavaInt } from "./types/lexical.js";
 export {
   AbnormalScopeEnd, CallBindingTime, type CompensationHandlerFailure, CompensationHandlerFailureTag, CompensationOrder,
   ConditionOrder, ContinuationFailure, DeliveryVariables, ErrorPathOutputs, Evaluator, MessageCorrelation,
   MultiInstanceFinalBody, MultiInstanceOutputs, type ProfileOptions, SubmissionRule, TechnicalFailure, UndeclaredWrite,
   UnhandledError, ErrorCatchVariables,
   MultiInstanceBinding, ResultValues, OutputContext, MultiInstanceCounters, MultiInstanceInputFailure, MultiInstanceCount,
+  multiInstanceCounterNames, BusinessRuleTask, InclusiveJoinReach, BranchSchedule,
 };
 export {
   ExpressionTag, MappingDialect, SimpleBooleanTag, ValueSourceTag, ValueTag, type Expression, type Mapping,
@@ -77,6 +80,15 @@ export function mergeSort<T>(items: readonly T[], le: (left: T, right: T) => boo
     }
   }
   return [...merged, ...left.slice(i), ...right.slice(j)];
+}
+
+/** Lean's `List.findSome?` over refusal checks: the first refusal code an item draws, `null` when none does. */
+export function firstOf<T>(items: readonly T[], check: (item: T) => string | null): string | null {
+  for (const item of items) {
+    const refused = check(item);
+    if (refused !== null) return refused;
+  }
+  return null;
 }
 
 /** Lean's `String.utf8ByteSize`, counted per code point; a lone surrogate counts as its replacement character. */
@@ -244,10 +256,16 @@ export interface UserWork {
 /** `instantiate` marks a Receive Task that instantiates its Process (BPMN 2.0.2 §10.3.3, Table 10.10). */
 export interface ReceiveWork { readonly message: MessageTrigger; readonly instantiate: boolean; }
 
-export interface ServiceWork { readonly protocol: string; readonly operation: string; }
+/**
+ * `handlerKey` is the root identifier of the `camunda:delegateExpression` the binding was read from, which CIB resolves
+ * against process variables before its beans (CIB-LIM-0017); admission compares it with the declared names.
+ */
+export interface ServiceWork { readonly protocol: string; readonly operation: string; readonly handlerKey: string | null; }
 
 export interface SendWork {
   readonly binding: EffectBinding;
+  /** As `ServiceWork.handlerKey`. */
+  readonly handlerKey: string | null;
   // guard-exception(19): a Send Task is refused whole (`work.send`, admission/work.ts).
   readonly recipient: ValueSource | null;
   readonly correlation: readonly CorrelationCriterion[];

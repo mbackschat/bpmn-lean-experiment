@@ -52,23 +52,29 @@ def listReference (program : Program) (element : Element) : Bool :=
       envelope.defaultFlow.all element.outgoing.contains &&
       envelope.boundaries.all fun boundary => distinct boundary.outgoing && boundary.outgoing.all (leaves boundary.id))
 
-/-- The candidates and default of a conditional Gateway: what the admissions read of a Gateway's kind. -/
-def routing (payload : GatewayPayload) : Option (List FlowId × Option FlowId) :=
+/-- What the admissions read of a Gateway's kind: the candidates and default of a conditional Gateway, whether one
+activation may leave on several flows at once, and whether it waits for an event. -/
+structure Routing where
+  conditional : Option (List FlowId × Option FlowId)
+  concurrent : Bool
+  waits : Bool
+
+def routing (payload : GatewayPayload) : Routing :=
   match payload.kind with
-  | .exclusive candidates default => some (candidates, default)
-  | .inclusive candidates default => some (candidates, default)
-  | .parallel => none
-  | .eventBased _ => none
+  | .exclusive candidates default => { conditional := some (candidates, default), concurrent := false, waits := false }
+  | .inclusive candidates default => { conditional := some (candidates, default), concurrent := true, waits := false }
+  | .parallel => { conditional := none, concurrent := true, waits := false }
+  | .eventBased _ => { conditional := none, concurrent := false, waits := true }
 
 /-- A gateway's candidates and default are its own outgoing flows, the default not a candidate. -/
 def gatewayReference (payload : GatewayPayload) : Bool :=
-  (routing payload).all fun (candidates, default) =>
+  (routing payload).conditional.all fun (candidates, default) =>
     candidates.all payload.outgoing.contains && distinct candidates &&
       default.all fun flow => payload.outgoing.contains flow && !candidates.contains flow
 
 /-- Every identifier names exactly one element, boundary or flow, and every flow reference resolves where it is used:
 a dangling or misplaced reference would be read as no reference at all. Scope membership is
-`Kernel.Admission.Scopes.references`. -/
+`Kernel.Admission.Scopes.membership`. -/
 def references (program : Program) : Option String :=
   let elements := program.elements.map (·.header.id)
   let boundaries := program.elements.flatMap fun element => (element.envelope?.map (·.boundaries.map (·.id))).getD []
@@ -82,8 +88,10 @@ def references (program : Program) : Option String :=
 def conditioned (program : Program) (flow : FlowId) : Bool :=
   ((program.flow? flow).bind (·.condition)).isSome
 
-/-- An Event-Based Gateway's arms are catch Events: a Receive Task arm opens through the work feature's wait, which
-`Hooks.armGateway` cannot name, and a catching Link has no incoming flow (BPMN 2.0.2 §10.5.5) (PC-CF-05, PC-BASIC-02). -/
+/-- An Event-Based Gateway's arms are catch Events. BPMN 2.0.2 §10.6.6 also admits a Receive Task, which pinned CIB
+refuses at parse like every target that is not an intermediate catch (`BpmnParse#parseEventBasedGateway`, :2139), so any
+other arm is `receiveArm` (PC-CF-05). §10.6.6 lists Link among the invalid triggers and CIB refuses a catching Link
+after the gateway (`BpmnParse:1546`), so a Link arm is `linkArm` (PC-CF-05, PC-BASIC-02). -/
 def eventBasedArms (program : Program) (payload : GatewayPayload) : Option String :=
   let arm (flow : FlowId) : Option EventPayload :=
     ((program.target? flow).bind program.element?).bind fun target => target.event?.map (·.2)
@@ -95,12 +103,13 @@ def eventBasedArms (program : Program) (payload : GatewayPayload) : Option Strin
 unconditioned non-default flow is a candidate whose condition always holds, tried in declaration order like the others
 (the reading CIB-INT-0005 gives an Inclusive output, which CIB's `ExclusiveGatewayActivityBehavior#doLeave` applies);
 CIB refuses to parse a second unconditioned flow, an unconditioned flow beside a default, and a sole conditioned flow
-without a default (`BpmnParse#validateExclusiveGateway`). A converging gateway's one unconditioned flow is its merge
-(PC-CF-02). -/
+without a default (`BpmnParse#validateExclusiveGateway`), and so one without an outgoing flow. A converging gateway's
+one unconditioned flow is its merge (PC-CF-02). -/
 def exclusive (program : Program) (payload : GatewayPayload) (candidates : List FlowId) (default : Option FlowId) :
     Option String :=
   let unconditioned := (candidates.filter (!conditioned program ·)).length
-  if payload.outgoing.length ≥ 2 && (unconditioned ≥ 2 || (default.isSome && unconditioned ≥ 1)) then
+  if payload.outgoing.isEmpty then some "gateway.exclusive.noOutgoingFlow"
+  else if payload.outgoing.length ≥ 2 && (unconditioned ≥ 2 || (default.isSome && unconditioned ≥ 1)) then
     some "gateway.exclusive.unconditionedFlow"
   else if default.isNone && payload.outgoing.length == 1 && candidates.all (conditioned program) &&
       !candidates.isEmpty then
@@ -108,21 +117,25 @@ def exclusive (program : Program) (payload : GatewayPayload) (candidates : List 
   else none
 
 /-- An Inclusive Gateway joins by `Kernel.Feature.Flow`'s reachability rule wherever it converges, and a split that
-selects nothing rolls back (CIB-INT-0012), so only the Event-Based arms and instantiation and the Exclusive shapes are
-refused here (PC-CF-04). An instantiating Event-Based Gateway starts its Process (BPMN 2.0.2 §10.6.6), which pinned CIB
+selects nothing rolls back (CIB-INT-0012). One without an outgoing flow would consume every token it takes, where CIB
+deploys it and rolls back each activation (`InclusiveGatewayActivityBehavior#execute`, `stuckExecutionException`), so it
+is refused (PC-CF-04). An instantiating Event-Based Gateway starts its Process (BPMN 2.0.2 §10.6.6), which pinned CIB
 never reads (CIB-LIM-0008) (PC-BASIC-04). -/
 def gateway (program : Program) (payload : GatewayPayload) : Option String :=
   match payload.kind with
   | .exclusive candidates default => exclusive program payload candidates default
   | .parallel => none
-  | .inclusive _ _ => none
+  | .inclusive _ _ => if payload.outgoing.isEmpty then some "gateway.inclusive.noOutgoingFlow" else none
   | .eventBased .none => eventBasedArms program payload
   | .eventBased .exclusive => some "gateway.eventBased.instantiate"
   | .eventBased .parallel => some "gateway.eventBased.instantiate"
 
 /-- A condition is read on a conditional Gateway's candidates and on an Activity's or Scope's flows other than its
-default (BPMN 2.0.2 §13.3.1; §10.3.1: a condition on the default "SHALL be ignored"); on any other flow it would be
-silently ignored (PC-CF-07). -/
+default (BPMN 2.0.2 §13.3.1). Elsewhere it is refused: BPMN gives it no meaning on a default (§10.3.1 "SHALL be
+ignored"), a Parallel Gateway's flows (§13.4.1 "without checking any conditions"), an Event-Based Gateway's (§10.6.6
+"MUST NOT") or a Start Event's (§10.5.2 "MUST be set to None"), and pinned CIB evaluates it on a Start, intermediate or
+Boundary Event's flows (`BpmnActivityBehavior#performOutgoingBehavior`), outside the admitted surface: a
+restriction, not a reading (PC-CF-07, PC-BASIC-01). -/
 def conditionalOutflow (program : Program) (flow : Flow) : Option String :=
   let refused : Option String := some "flow.conditionalOutflow"
   match flow.condition, program.element? flow.source with
@@ -130,14 +143,128 @@ def conditionalOutflow (program : Program) (flow : Flow) : Option String :=
   | some _, none => refused
   | some _, some source =>
     match source.gateway?, source.envelope? with
-    | some (_, payload), _ => if (routing payload).any (·.1.contains flow.id) then none else refused
+    | some (_, payload), _ => if (routing payload).conditional.any (·.1.contains flow.id) then none else refused
     | none, some envelope => if envelope.defaultFlow == some flow.id then refused else none
     | none, none => refused
+
+/-! ## Concurrent footprints -/
+
+/-- A set of variable names, or every name. -/
+structure NameSet where
+  names : List String := []
+  all : Bool := false
+
+def NameSet.union (left right : NameSet) : NameSet := { names := left.names ++ right.names, all := left.all || right.all }
+
+def NameSet.meets (left right : NameSet) : Bool :=
+  (left.all && (right.all || !right.names.isEmpty)) || (right.all && !left.names.isEmpty) ||
+    left.names.any right.names.contains
+
+/-- What a branch reads and writes within one closure. -/
+structure Footprint where
+  reads : NameSet := {}
+  writes : NameSet := {}
+
+def Footprint.union (left right : Footprint) : Footprint :=
+  { reads := left.reads.union right.reads, writes := left.writes.union right.writes }
+
+/-- Whether one branch's writes meet the other's reads or writes, in either direction. -/
+def Footprint.races (left right : Footprint) : Bool :=
+  left.writes.meets (right.reads.union right.writes) || right.writes.meets left.reads
+
+/-- The names an expression reads. A JUEL or foreign text counts as reading every name: a JUEL method or the
+`execution` object can read a variable no identifier names. -/
+def expressionReads : Expression → NameSet
+  | .literal _ => {}
+  | .variable name => { names := [name] }
+  | .simpleBoolean (.literal _) => {}
+  | .simpleBoolean (.isPresent name) => { names := [name] }
+  | .simpleBoolean (.isNull name) => { names := [name] }
+  | .simpleBoolean (.stringEquals name _) => { names := [name] }
+  | .juel _ => { all := true }
+  | .foreign _ _ => { all := true }
+
+def mappingReads (mappings : List Mapping) : NameSet :=
+  mappings.foldl (fun found mapping => found.union (expressionReads mapping.source)) {}
+
+/-- What `element` reads when it begins: its input mappings, and every name for a Multi-Instance definition, whose
+count, collection and condition it evaluates then or later in the closure. -/
+def beginReads (element : Element) : NameSet :=
+  (element.envelope?.map fun envelope => (mappingReads envelope.inputs).union { all := envelope.multiInstance.isSome }).getD {}
+
+/-- What `element` reads and writes when it runs through in the closure: it begins, its outputs read their sources
+and write their targets, a Call maps its inputs and outputs, and its outgoing conditions are evaluated. -/
+def footprint (program : Program) (element : Element) : Footprint :=
+  let outputs := (element.envelope?.map (·.outputs)).getD []
+  let call := element.activity?.bind fun (_, payload) => payload.work.call?
+  let conditions := (element.outgoing.filterMap fun flow => (program.flow? flow).bind (·.condition)).foldl
+    (fun found condition => found.union (expressionReads condition)) {}
+  let callOutputs := (call.map fun work => work.outputs.map (·.target)).getD []
+  { reads := ((beginReads element).union (mappingReads outputs)).union
+      (((call.map fun work => mappingReads work.inputs).getD {}).union conditions),
+    writes := { names := outputs.map (·.target) ++ callOutputs, all := call.any (·.propagateAllOutputs) } }
+
+/-- An element a token stops at within its closure: a User, Service or Receive Task, a catch Event or an Event-Based
+Gateway waits for a stimulus, and a converging Parallel or Inclusive Gateway joins the branches (CIB parks its
+execution there too). -/
+def branchStop (element : Element) : Bool :=
+  (element.activity?.any fun (_, payload) =>
+    payload.work.isUser || payload.work.isService || payload.work.receive?.isSome) ||
+  (element.event?.any fun (_, payload) => payload.catch?.isSome) ||
+  element.gateway?.any fun (_, payload) =>
+    (routing payload).waits || ((routing payload).concurrent && payload.incoming.length ≥ 2)
+
+/-- The flows a token continues on from `element` in the same closure: its outgoing flows, a throwing Link's catch,
+and the outgoing flows of a Scope's starts, which its occurrence begins at once. -/
+def onward (program : Program) (element : Element) : List FlowId :=
+  let link := (element.event?.bind fun (header, payload) => payload.linkThrow?.map (header, ·)).map fun (header, name) =>
+    (program.children header.parent).flatMap fun other =>
+      if (other.event?.bind (·.2.linkCatch?)) == some name then other.outgoing else []
+  let starts := element.scope?.map fun (header, _) =>
+    (program.children (some header.id)).flatMap fun child => if child.start?.isSome then child.outgoing else []
+  element.outgoing ++ link.getD [] ++ starts.getD []
+
+/-- What the work a token on `start` reaches may read and write in one closure; an element it stops at only begins. -/
+def branchFootprint (program : Program) (start : FlowId) : Footprint :=
+  let rec go (fuel : Nat) (frontier seen : List FlowId) (found : Footprint) : Footprint :=
+    match fuel, frontier with
+    | _, [] => found
+    -- The fuel bounds every visit of every flow, so it is never exhausted; running out answers what was found.
+    | 0, _ :: _ => found
+    | fuel + 1, flow :: rest =>
+      if seen.contains flow then go fuel rest seen found
+      else
+        match (program.target? flow).bind program.element? with
+        | none => go fuel rest (flow :: seen) found
+        | some element =>
+          if branchStop element then go fuel rest (flow :: seen) (found.union { reads := beginReads element })
+          else go fuel (rest ++ onward program element) (flow :: seen) (found.union (footprint program element))
+  go ((program.flows.length + 1) * (program.flows.length + 1)) [start] [] {}
+
+/-- Under `BranchSchedule.orderInvariant`, no branch of a split may write a name another branch reads or writes in the
+same closure: BPMN 2.0.2 lets concurrent branches interleave in any order (Table 13.1, §13.3.1), so the value left or
+read would depend on the closure's order, which no input states. CIB runs the first-declared branch first
+(CIB-OP-0016), the profile option `declarationDepthFirst` (PC-BASIC-03). A split is a Parallel or Inclusive Gateway,
+or any element or Boundary Event with several outgoing flows. A forward-compatible restriction, and a conservative one:
+a Call's output mappings count as written in the closure even when the called instance waits, and a JUEL text as
+reading every name; a later profile may take the interleaving as a choice input instead. Not counted: what an element
+it stops at evaluates besides its input mappings and Multi-Instance definition. -/
+def concurrentWrite (program : Program) (flow : Flow) : Option String :=
+  match program.options.branchSchedule with
+  | .declarationDepthFirst => none
+  | .orderInvariant =>
+    let siblings := leaving program flow.source
+    let concurrent := ((program.element? flow.source).bind (·.gateway?)).all fun (_, payload) =>
+      (routing payload).concurrent
+    let own := branchFootprint program flow.id
+    if concurrent && siblings.any fun other => other != flow.id && own.races (branchFootprint program other) then
+      some "flow.concurrentWrite"
+    else none
 
 /-- Pinned CIB parses one initial start per process, a None or Timer Start (`BpmnParse#selectInitial`), and one start
 per Sub-Process (`BpmnParse#parseScopeStartEvent`); BPMN 2.0.2 §10.5.2 admits several, which lie outside the target
 (PC-BASIC-01). -/
-def start (program : Program) (header : Header) : Option String :=
+def startCombination (program : Program) (header : Header) : Option String :=
   let here := place program header.id
   let siblings := program.elements.filterMap fun element =>
     element.start?.bind fun (other, payload) => if place program other.id == here then some payload else none

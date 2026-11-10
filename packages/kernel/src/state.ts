@@ -159,6 +159,11 @@ export interface Origin {
   readonly scope: ScopeOccurrenceId;
   readonly activation: number;
   readonly host: number | null;
+  /**
+   * The result an effect's business Error carries while `host` still runs, its mapped Error-path outputs not yet
+   * written (`Propagation.raise`).
+   */
+  readonly patch: readonly Binding[];
 }
 
 /** Where writes land (`feature/data.ts`). */

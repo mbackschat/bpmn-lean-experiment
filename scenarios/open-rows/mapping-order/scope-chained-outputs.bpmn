@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_ScopeChainedOutputs" targetNamespace="urn:bpmn-lean:scenarios:mapping-order:scope-chained-outputs">
+  <process id="Process_ScopeChainedOutputs" name="Map a Sub-Process output from an earlier output's target" isExecutable="true">
+    <startEvent id="StartEvent_Start" />
+    <subProcess id="SubProcess_Pack" name="Pack">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="amount">${incoming}</camunda:inputParameter>
+          <camunda:outputParameter name="total">${amount}</camunda:outputParameter>
+          <camunda:outputParameter name="summary">${total}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+      <startEvent id="StartEvent_PackBegin" />
+      <endEvent id="EndEvent_PackEnd" />
+      <sequenceFlow id="Flow_PackBegin_PackEnd" sourceRef="StartEvent_PackBegin" targetRef="EndEvent_PackEnd" />
+    </subProcess>
+    <subProcess id="SubProcess_Shadow" name="Shadow">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="amount">${incoming}</camunda:inputParameter>
+          <camunda:inputParameter name="level">inner</camunda:inputParameter>
+          <camunda:outputParameter name="level">${amount}</camunda:outputParameter>
+          <camunda:outputParameter name="shadowed">${level}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+      <startEvent id="StartEvent_ShadowBegin" />
+      <endEvent id="EndEvent_ShadowEnd" />
+      <sequenceFlow id="Flow_ShadowBegin_ShadowEnd" sourceRef="StartEvent_ShadowBegin" targetRef="EndEvent_ShadowEnd" />
+    </subProcess>
+    <userTask id="UserTask_Observe" name="Observe">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="seenTotal">${total}</camunda:inputParameter>
+          <camunda:inputParameter name="seenSummary">${summary}</camunda:inputParameter>
+          <camunda:inputParameter name="seenLevel">${level}</camunda:inputParameter>
+          <camunda:inputParameter name="seenShadowed">${shadowed}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <endEvent id="EndEvent_Done" />
+    <sequenceFlow id="Flow_Start_Pack" sourceRef="StartEvent_Start" targetRef="SubProcess_Pack" />
+    <sequenceFlow id="Flow_Pack_Shadow" sourceRef="SubProcess_Pack" targetRef="SubProcess_Shadow" />
+    <sequenceFlow id="Flow_Shadow_Observe" sourceRef="SubProcess_Shadow" targetRef="UserTask_Observe" />
+    <sequenceFlow id="Flow_Observe_Done" sourceRef="UserTask_Observe" targetRef="EndEvent_Done" />
+  </process>
+</definitions>
