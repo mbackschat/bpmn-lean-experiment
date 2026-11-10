@@ -320,7 +320,9 @@ function interruptedOutputs(
  * flows (BPMN 2.0.2 §10.3.5 Transaction: the boundary "will direct the flow after the Transaction has been rolled back
  * and all compensation has been completed"). An interrupting Error or Escalation boundary writes its catch variables
  * from the host and the host's output mappings (`interruptedOutputs`; CIB-EXT-0016 for both, as `deleteCascade`
- * destroys the host either way, `PvmAtomicOperationCancelActivity.java:60`). Only an Escalation boundary is
+ * destroys the host either way, `PvmAtomicOperationCancelActivity.java:60`). A Call's host is its occurrence in the
+ * caller, the called root's `parent`, not the called instance: CIB sets the variables on the execution of the boundary's
+ * event scope, the Call's (`BpmnExceptionHandler.java:146-153`, CIB-EXT-0028). Only an Escalation boundary is
  * non-interrupting (`boundary.error.nonInterrupting`): it writes its code variable from the host's parent, CIB's flow
  * scope of the boundary (`EscalationHandler.java:80-97`), and its thrower then leaves.
  */
@@ -345,7 +347,8 @@ function leaveOccurrence(
     }));
   }
   if (boundary.interrupting) {
-    const written = interruptedOutputs(ctx, occurrence, parent, writes, writeCaught(occurrence.id, writes, state));
+    const host = calledRoot(state, occurrence.id) ? parent : occurrence.id;
+    const written = interruptedOutputs(ctx, occurrence, parent, writes, writeCaught(host, writes, state));
     if (!written.ok) return written;
     return committed(boundaryFire(boundary, occurrence.occurrence, null, parent, [], written.value));
   }

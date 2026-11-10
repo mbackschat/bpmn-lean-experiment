@@ -13,7 +13,7 @@ import { test } from "node:test";
 import { decodeProgram, hooks, step, stimulusFromJson } from "@bpmn-lean/kernel";
 
 import {
-  activity, append, base, boundary, callWork, definitionRef, end, escalationTrigger, flow, gateway, literalValue, mapping, start,
+  activity, append, base, boundary, callWork, definitionRef, end, errorTrigger, escalationTrigger, flow, gateway, literalValue, mapping, start,
   task, userWork, withFlows, withOptions, wired,
 } from "./admission-refusal-support.ts";
 import type { Json } from "./admission-refusal-support.ts";
@@ -67,4 +67,20 @@ test("a raise caught at a busy called root whose Call maps nothing commits", () 
   const outcome = started(calling([], true));
   assert.ok(outcome.ok, JSON.stringify(outcome));
   assert.deepEqual(outcome.value.openItems.map((item) => item.element), ["W"]);
+});
+
+// CIB sets a catch variable on the execution of the catcher's event scope (`BpmnExceptionHandler.java:146-153`), which
+// for a boundary on a Call is the Call's execution in the caller, not the called instance (CIB-EXT-0028).
+test("a Call boundary's catch variables are written in the caller, not in the called instance", () => {
+  const caller = append(task(activity("T", callWork(), {
+    boundaries: [boundary("B", errorTrigger({ code: "FAIL", codeVariable: "code", messageVariable: "message" }))],
+  }))(base()), activity("W", userWork()));
+  const called = append(caller, start("CS"), end("CE", { error: { payload: { code: "FAIL", message: { literal: { value: "boom" } } } } }));
+  const program = withFlows({ ...called, processes: [{ definition: definitionRef("Called"), children: ["CS", "CE"], variables: [], executable: true }] },
+    flow("fb", "B", "W"), flow("fw", "W", "E"), flow("cf1", "CS", "CE"));
+  const outcome = started(withOptions(program, { errorCatchVariables: "eventScope", undeclaredWrite: "atInstanceRoot" }));
+  assert.ok(outcome.ok, JSON.stringify(outcome));
+  assert.deepEqual(outcome.value.openItems.map((item) => item.element), ["W"]);
+  assert.deepEqual(outcome.value.variables.flatMap((entry) => entry.entries),
+    [["code", { tag: "string", value: "FAIL" }], ["message", { tag: "string", value: "boom" }]]);
 });

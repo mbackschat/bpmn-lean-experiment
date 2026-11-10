@@ -196,7 +196,9 @@ boundary's flows ([BPMN 2.0.2 §10.3.5](../../docs/reference/bpmn-2.0.2/README.m
 direct the flow after the Transaction has been rolled back and all compensation has been completed"). An interrupting
 Error or Escalation boundary writes its catch variables from the host and the host's output mappings
 (`interruptedOutputs`; CIB-EXT-0016 for both, as `deleteCascade` destroys the host either way,
-`PvmAtomicOperationCancelActivity.java:60`). Only an Escalation boundary is non-interrupting
+`PvmAtomicOperationCancelActivity.java:60`). A Call's host is its occurrence in the caller, the called root's `parent`,
+not the called instance: CIB sets the variables on the execution of the boundary's event scope, the Call's
+(`BpmnExceptionHandler.java:146-153`, CIB-EXT-0028). Only an Escalation boundary is non-interrupting
 (`boundary.error.nonInterrupting`): it writes its code variable from the host's parent, CIB's flow scope of the
 boundary (`EscalationHandler.java:80-97`), and its thrower then leaves. -/
 def leaveOccurrence (ctx : Ctx) (raised : Raised) (origin : Origin) (occurrence : ScopeOccurrence)
@@ -206,7 +208,8 @@ def leaveOccurrence (ctx : Ctx) (raised : Raised) (origin : Origin) (occurrence 
     .ok ((state.clearInside occurrence.id).signal (.compensate occurrence.id none thrown occurrence.occurrence
       (some (.occur boundary.id parent (.flows boundary.outgoing)))))
   else if boundary.interrupting then
-    (interruptedOutputs ctx occurrence parent writes (writeCaught occurrence.id writes state)).map
+    let host := if state.calledRoot occurrence.id then parent else occurrence.id
+    (interruptedOutputs ctx occurrence parent writes (writeCaught host writes state)).map
       (boundary.fire occurrence.occurrence none parent [])
   else .ok (throwerLeaves ctx origin (boundary.fire occurrence.occurrence none parent [] (writeCaught parent writes state)))
 
