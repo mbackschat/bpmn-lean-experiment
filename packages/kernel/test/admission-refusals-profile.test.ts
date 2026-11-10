@@ -1,10 +1,11 @@
 /**
  * Refusal tests of `admission/profile.ts`: a profile may select only behaviour the kernel implements. Each option the
  * kernel has one reading of refuses its other value; `abnormalScopeEnd` is refused only for a program whose own shape
- * reaches an abnormal scope end (a Terminate in a Sub-Process or an interrupting Event Sub-Process).
+ * reaches an abnormal scope end (a Terminate in a Sub-Process or at a called process's level, or an interrupting Event
+ * Sub-Process).
  */
 import {
-  append, duration, end, eventSubProcess, flow, refusalTests, scope, start, task, withFlows, withOptions,
+  append, definitionRef, duration, end, eventSubProcess, flow, refusalTests, scope, start, task, withFlows, withOptions,
 } from "./admission-refusal-support.ts";
 import type { Json, Row } from "./admission-refusal-support.ts";
 
@@ -17,6 +18,12 @@ const terminatingScope = (program: Json): Json =>
 
 /** `T` becomes an interrupting Event Sub-Process. */
 const interruptingScope = task(scope("T", eventSubProcess(duration("PT1S"), true)));
+
+/** The called process `Called` reaches, at its process level, an End Event `CX` that terminates its instance. */
+const terminatingCalledProcess = (program: Json): Json =>
+  withFlows({ ...append(program, start("CS"), end("CX", "terminate")),
+    processes: [{ definition: definitionRef("Called"), children: ["CS", "CX"], variables: [], executable: true }] },
+  flow("fc", "CS", "CX"));
 
 const completesNormally = { abnormalScopeEnd: "completesNormally" };
 
@@ -68,6 +75,12 @@ export const rows: readonly Row[] = [
     description: "an abnormal scope end that leaves without outflow, reached by an interrupting Event Sub-Process",
     mutate: (program) => interruptingScope(withOptions(program, { abnormalScopeEnd: "withoutOutflow" })),
     control: (program) => interruptingScope(withOptions(program, completesNormally)),
+  },
+  {
+    code: "profile.abnormalScopeEnd.withoutOutflow",
+    description: "an abnormal scope end that leaves without outflow, reached by a Terminate at a called process's level",
+    mutate: (program) => terminatingCalledProcess(withOptions(program, { abnormalScopeEnd: "withoutOutflow" })),
+    control: (program) => terminatingCalledProcess(withOptions(program, completesNormally)),
   },
 ];
 

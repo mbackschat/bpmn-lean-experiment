@@ -3,8 +3,8 @@
  * stable code.
  *
  * A profile may select only behaviour the kernel implements. `abnormalScope` says whether the program's own shape
- * reaches the abnormal end `ProfileOptions.abnormalScopeEnd` governs (a Terminate in a Sub-Process or an interrupting
- * Event Sub-Process, BPMN 2.0.2 §13.3.4, §13.5.6); the standards reading refuses only those programs, since the kernel
+ * reaches the abnormal end `ProfileOptions.abnormalScopeEnd` governs (a Terminate in a Sub-Process or at a called
+ * process's level, or an interrupting Event Sub-Process, BPMN 2.0.2 §13.3.4, §13.5.6); the standards reading refuses only those programs, since the kernel
  * has only the normal-continuation semantics of CIB-INT-0007.
  */
 import {
