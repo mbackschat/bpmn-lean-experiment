@@ -45,6 +45,7 @@ import org.bpmnlean.cibseven.ScenarioProtocol.TimerFire;
 import org.bpmnlean.cibseven.ScenarioProtocol.TimerStart;
 import org.bpmnlean.cibseven.ScenarioProtocol.UnspecifiedMessageChannel;
 import org.cibseven.bpm.engine.ProcessEngine;
+import org.cibseven.bpm.engine.impl.ManagementServiceImpl;
 import org.cibseven.bpm.engine.impl.cfg.ProcessEngineConfigurationImpl;
 import org.cibseven.bpm.engine.impl.util.ClockUtil;
 import org.cibseven.bpm.model.bpmn.instance.CallActivity;
@@ -131,6 +132,7 @@ final class CibSevenEngineScenarioRunner implements AutoCloseable {
     String stableRootId = null;
     PvmDefinitionProjection pvmDefinition = null;
     CleanupProjection cleanup = null;
+    RuntimeException undeletable = null;
     CommandOutcome scenarioOutcome = COMMITTED;
 
     ClockUtil.setCurrentTime(LOGICAL_EPOCH);
@@ -227,7 +229,7 @@ final class CibSevenEngineScenarioRunner implements AutoCloseable {
       try {
         var cleanupStartedAt = System.nanoTime();
         if (deploymentId != null) {
-          processEngine.getRepositoryService().deleteDeployment(deploymentId, true, true, true);
+          undeletable = deleteDeployment(deploymentId);
         }
         cleanup = projector.observeCleanup();
         timings.cleanupNanos = positiveElapsedSince(cleanupStartedAt);
@@ -237,6 +239,9 @@ final class CibSevenEngineScenarioRunner implements AutoCloseable {
       }
     }
 
+    if (undeletable != null) {
+      throw new IllegalStateException("CIB could not delete the scenario's deployment; the engine was purged", undeletable);
+    }
     return new ScenarioResult(
         ScenarioProtocol.SCENARIO_RESULT_KIND,
         scenario.id(),
@@ -405,6 +410,23 @@ final class CibSevenEngineScenarioRunner implements AutoCloseable {
         processEngine.close();
         closed = true;
       }
+    }
+  }
+
+  /**
+   * Deletes a scenario's deployment with its instances and history, or, when CIB's cascade delete itself throws, purges
+   * the engine and returns that failure so the scenario fails as a harness failure. CIB Seven `2.2.0` throws for an
+   * instance stopped inside a Transaction's compensation (`PvmAtomicOperationDeleteCascade` reaching
+   * `CompensationBehavior#getParentActivityInstanceId`, line 82); without the purge its residue would sit under every
+   * later scenario of the same engine and fail their cleanup check.
+   */
+  private RuntimeException deleteDeployment(String deploymentId) {
+    try {
+      processEngine.getRepositoryService().deleteDeployment(deploymentId, true, true, true);
+      return null;
+    } catch (RuntimeException failure) {
+      ((ManagementServiceImpl) processEngine.getManagementService()).purge();
+      return failure;
     }
   }
 

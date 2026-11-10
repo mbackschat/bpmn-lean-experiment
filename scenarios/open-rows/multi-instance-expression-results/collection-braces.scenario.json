@@ -1,0 +1,44 @@
+{
+  "kind": "scenario",
+  "id": "mi-expression-results-collection-braces",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "mi-expression-results-collection-braces",
+    "relativePath": "scenarios/open-rows/multi-instance-expression-results/collection-braces.bpmn",
+    "sha256": "6f5f6bb441d4f1b04f49bc6b0e46b166cb84926297cb99314650a95a5c7e08d2",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "items",
+          "value": {
+            "kind": "stringList",
+            "value": [
+              "a",
+              "b"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 \u00a710.2.8",
+      "BPMN 2.0.2 Table 10.29",
+      "BPMN 2.0.2 Table 10.30",
+      "BPMN 2.0.2 \u00a713.3.7"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/MultiInstanceActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ParallelMultiInstanceActivityBehavior.java"
+    ]
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "kind": "scenario",
+  "id": "mi-expression-results-count-null",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "mi-expression-results-cardinality-variable",
+    "relativePath": "scenarios/open-rows/multi-instance-expression-results/cardinality-variable.bpmn",
+    "sha256": "fb7878e732c80635edb98883deb2fec046d8234eb23bc4c674282d2940f9974d",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "count",
+          "value": {
+            "kind": "null"
+          }
+        }
+      ]
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 \u00a710.2.8",
+      "BPMN 2.0.2 Table 10.29",
+      "BPMN 2.0.2 Table 10.30",
+      "BPMN 2.0.2 \u00a713.3.7"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/MultiInstanceActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ParallelMultiInstanceActivityBehavior.java"
+    ]
+  }
+}

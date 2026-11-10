@@ -1,0 +1,41 @@
+{
+  "kind": "scenario",
+  "id": "mi-expression-results-collection-variable-integer",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "mi-expression-results-collection-variable",
+    "relativePath": "scenarios/open-rows/multi-instance-expression-results/collection-variable.bpmn",
+    "sha256": "ee0b2d38496df36e0e0b31faa89cac99961351aabbc3b34415833414a773f720",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "DataInput_Recipients",
+          "value": {
+            "kind": "integer",
+            "value": 2
+          }
+        }
+      ]
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 \u00a710.2.8",
+      "BPMN 2.0.2 Table 10.29",
+      "BPMN 2.0.2 Table 10.30",
+      "BPMN 2.0.2 \u00a713.3.7"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/MultiInstanceActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ParallelMultiInstanceActivityBehavior.java"
+    ]
+  }
+}

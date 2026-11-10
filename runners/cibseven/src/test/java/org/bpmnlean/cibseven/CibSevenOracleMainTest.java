@@ -51,6 +51,30 @@ public class CibSevenOracleMainTest {
     assertEquals(ScenarioProtocol.SCENARIO_RESULT_KIND, ScenarioJson.readResult(lines.get(1)).kind());
   }
 
+  /**
+   * CIB's cascade delete throws for this witness's instance, stopped inside a Transaction's compensation
+   * (`PvmAtomicOperationDeleteCascade` reaching `CompensationBehavior#getParentActivityInstanceId`), so the scenario
+   * fails as a harness failure; the next scenario in the same engine must still start from an empty engine.
+   */
+  @Test
+  public void leavesNoResidueForTheNextScenarioWhenCibCannotDeleteAFailedOne() throws Exception {
+    var undeletable = ScenarioJson.writeScenario(ScenarioJson.read(
+        PROJECT_ROOT.resolve("scenarios/open-rows/transaction-cancel-mixed/subjects-effect-first.scenario.json")));
+    var good = ScenarioJson.writeScenario(ScenarioJson.read(
+        PROJECT_ROOT.resolve("scenarios/user-task-discovery-completion/scenario.json")));
+    var output = new StringWriter();
+
+    CibSevenOracleMain.serve(
+        new StringReader(undeletable + System.lineSeparator() + good + System.lineSeparator()), output, PROJECT_ROOT);
+
+    var lines = output.toString().lines().toList();
+    assertEquals(2, lines.size());
+    assertTrue(lines.get(0).startsWith("{\"kind\":\"scenarioHarnessFailure\""));
+    assertEquals(
+        ScenarioDiagnosticsProtocol.CleanupProjection.clean(),
+        ScenarioJson.readResult(lines.get(1)).diagnostics().cleanup());
+  }
+
   @Test
   public void servesTheInteractionCapsuleInRequestOrderThroughOneEngine()
       throws Exception {
