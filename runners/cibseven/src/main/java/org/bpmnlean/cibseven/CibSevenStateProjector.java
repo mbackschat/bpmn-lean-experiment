@@ -72,7 +72,7 @@ final class CibSevenStateProjector {
             projection.waits().stream().map(ProjectedWait::openWait).toList());
     return new ObservedState(
         state,
-        new StateQuerySnapshot(afterCommandId, running, engineClockTimeMs, rawVariables),
+        new StateQuerySnapshot(afterCommandId, running, engineClockTimeMs, variables),
         new TaskQuerySnapshot(afterCommandId, projection.tasks()),
         new MessageSubscriptionSnapshot(afterCommandId, projection.subscriptions(), projection.addressless()),
         new TimerJobSnapshot(afterCommandId, projection.timers()),

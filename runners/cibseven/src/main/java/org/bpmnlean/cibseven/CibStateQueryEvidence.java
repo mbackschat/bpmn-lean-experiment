@@ -3,6 +3,7 @@ package org.bpmnlean.cibseven;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.util.List;
 import java.util.Objects;
+import org.bpmnlean.cibseven.ScenarioProtocol.VariableBinding;
 
 /** Raw CIB runtime/history query shapes retained before canonical state projection. */
 public final class CibStateQueryEvidence {
@@ -11,11 +12,15 @@ public final class CibStateQueryEvidence {
 
   private CibStateQueryEvidence() {}
 
+  /**
+   * A state query's facts. Its root variables are retained as wire-typed bindings, not as the raw Java values: a host
+   * carrier such as BigDecimal, List or Map has no raw JSON spelling inside the strict wire integer domain.
+   */
   public record StateQuerySnapshot(
       String afterCommandId,
       long processInstanceCount,
       long engineClockTimeMs,
-      List<ProcessVariableSnapshot> variables) {
+      List<VariableBinding> variables) {
     public StateQuerySnapshot {
       Objects.requireNonNull(afterCommandId, "afterCommandId");
       if (processInstanceCount < 0 || processInstanceCount > 1) {

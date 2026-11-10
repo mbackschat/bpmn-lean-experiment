@@ -7,24 +7,36 @@ import { Ajv2020 } from "ajv/dist/2020.js";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 
-test("admits the exact raw CIB scalar and flat string-list value domain", async () => {
-  const schema = JSON.parse(await readFile(
-    `${projectRoot}/contracts/schemas/cibseven-evidence.schema.json`,
-    "utf8",
-  )) as { readonly $defs: Readonly<Record<string, unknown>> };
-  const validator = new Ajv2020({ strict: true }).compile({
+/**
+ * A state query's root variables are retained as wire-typed bindings, never as raw JSON of the Java value: the runner's
+ * host carriers include BigDecimal, List and Map, which raw JSON spells as numbers the strict wire parser rejects
+ * (`scripts/strict-json.ts`: only nonnegative safe integers).
+ */
+test("a state query snapshot retains its variables as wire-typed bindings", async () => {
+  const schema = async (name: string) =>
+    JSON.parse(await readFile(`${projectRoot}/contracts/schemas/${name}`, "utf8")) as Readonly<Record<string, unknown>> & {
+      readonly $defs: Readonly<Record<string, unknown>>;
+    };
+  const evidence = await schema("cibseven-evidence.schema.json");
+  const ajv = new Ajv2020({ strict: true, strictTuples: false });
+  ajv.addSchema(await schema("scenario.schema.json"));
+  ajv.addSchema(await schema("canonical-result.schema.json"));
+  const validator = ajv.compile({
     $schema: "https://json-schema.org/draft/2020-12/schema",
-    $defs: schema.$defs,
-    $ref: "#/$defs/processVariableSnapshot",
+    $defs: evidence.$defs,
+    $ref: "#/$defs/stateQuerySnapshot",
   });
-  for (const value of ["true", true, false, null, 0, 9007199254740991, [], ["a", "a"]]) {
-    assert.equal(validator({ name: "approved", value }), true);
+  const snapshot = (variables: unknown) => ({ afterCommandId: "start", processInstanceCount: 1, engineClockTimeMs: 0, variables });
+  for (const value of [
+    { kind: "decimal", coefficient: "-15", scale: 1 },
+    { kind: "list", value: [{ kind: "integer", value: 1 }] },
+    { kind: "map", value: [{ name: "a", value: { kind: "null" } }] },
+    { kind: "stringList", value: ["a", "a"] },
+    { kind: "boolean", value: true },
+  ]) {
+    assert.equal(validator(snapshot([{ name: "v", value }])), true, JSON.stringify(value));
   }
-  for (const value of [-1, 1.5, 9007199254740992, {}, [1], undefined]) {
-    assert.equal(validator({ name: "approved", value }), false);
+  for (const value of [1.5, -1, true, "x", ["a"], null]) {
+    assert.equal(validator(snapshot([{ name: "v", value }])), false, JSON.stringify(value));
   }
-  assert.equal(
-    validator({ name: "approved", value: true, extra: null }),
-    false,
-  );
 });
