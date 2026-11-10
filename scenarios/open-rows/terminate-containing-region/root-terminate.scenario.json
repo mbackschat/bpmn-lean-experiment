@@ -108,7 +108,7 @@
   ],
   "options": {
     "incidents": {
-      "cancellable": false
+      "cancellable": true
     }
   },
   "provenance": {
