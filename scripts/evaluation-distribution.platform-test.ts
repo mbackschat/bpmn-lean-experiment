@@ -174,7 +174,8 @@ test("the API and the recovery Worker read one engine deployment, the repository
   assert.ok(anchor?.groups?.json, "compose.yaml must define the engine deployment once, as a YAML anchor");
   // The evaluation BPMN Worker, like a showcase Worker, serves every capability with its own effect handler, so
   // the showcase deployment is the expected value and profiles/ stays its only source.
-  assert.deepEqual(JSON.parse(anchor.groups.json), showcaseEngineDeployment());
+  assert.deepEqual(JSON.parse(anchor.groups.json), showcaseEngineDeployment(),
+    "compose.yaml's engine deployment is stale: run node scripts/compose-engine-deployment.ts --write");
   for (const service of ["platform-api", "platform-recovery-worker"]) {
     assert.match(serviceBlock(compose, service), /^ {6}PLATFORM_ENGINE_DEPLOYMENT_JSON: \*engine-deployment$/mu);
   }
