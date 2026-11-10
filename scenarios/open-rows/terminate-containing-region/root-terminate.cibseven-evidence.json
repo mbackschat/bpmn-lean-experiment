@@ -2,7 +2,7 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "terminate-containing-region-root-terminate",
-    "sha256": "15c93ed40cfadb4f2a5afc9fc7f0a238ad1936087b7ce083420d819d77c9b6a0"
+    "sha256": "733248b4e0dc53dfe18ad199ded3ff777ad1cead9abecdc77fc559828713fd14"
   },
   "profile": {
     "id": "cibseven-2.2.0",
@@ -1083,7 +1083,7 @@
                 "send": null
               },
               "generation": 1,
-              "cancellable": false
+              "cancellable": true
             },
             "input": "command"
           },

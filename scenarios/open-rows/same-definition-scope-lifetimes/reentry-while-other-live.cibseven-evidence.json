@@ -2115,7 +2115,7 @@
                   "name": "seenStatus",
                   "value": {
                     "kind": "string",
-                    "value": "south"
+                    "value": "reentry"
                   }
                 }
               ]
@@ -2152,7 +2152,7 @@
                   "name": "seenStatus",
                   "value": {
                     "kind": "string",
-                    "value": "reentry"
+                    "value": "south"
                   }
                 }
               ]
@@ -2262,7 +2262,7 @@
                   "name": "seenStatus",
                   "value": {
                     "kind": "string",
-                    "value": "south"
+                    "value": "reentry"
                   }
                 }
               ]
@@ -2350,7 +2350,7 @@
                   "name": "seenStatus",
                   "value": {
                     "kind": "string",
-                    "value": "south"
+                    "value": "reentry"
                   }
                 }
               ]
