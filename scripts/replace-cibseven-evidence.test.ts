@@ -3,6 +3,7 @@ import { test } from "node:test";
 
 import {
   bridgeOutcomes,
+  cibBridgeDeadlineMs,
   cibEvidenceEffectSchedule,
   requireReplacementAuthorization,
 } from "./replace-cibseven-evidence.ts";
@@ -45,4 +46,13 @@ test("refuses bridge output that skips, reorders or invents a scenario", () => {
   assert.throws(() => bridgeOutcomes(["a", "b"], [line("scenarioResult", "b"), line("scenarioResult", "a")]),
     /line 1 answers b, not a/);
   assert.throws(() => bridgeOutcomes(["a"], [line("other", "a")]), /line 1 has kind other/);
+});
+
+test("gives the preparing bridge call the shared Maven ceiling and every scenario batch its fixed deadline", () => {
+  // The preparing call carries the cold-host work (dependency resolution, compilation, JVM start) under the one ceiling
+  // every CIB Maven call site shares (`cibseven-maven-budget.ts`); a scenario batch keeps its own fixed deadline.
+  assert.equal(cibBridgeDeadlineMs(0, {}), 120_000);
+  assert.equal(cibBridgeDeadlineMs(0, { BPMN_CIB_MAVEN_TIMEOUT_MS: "200000" }), 200_000);
+  assert.equal(cibBridgeDeadlineMs(20, {}), 30_000);
+  assert.equal(cibBridgeDeadlineMs(1, { BPMN_CIB_MAVEN_TIMEOUT_MS: "200000" }), 30_000);
 });

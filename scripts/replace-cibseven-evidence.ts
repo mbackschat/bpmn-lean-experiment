@@ -9,6 +9,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { resolveCibSevenMavenTimeoutMs, wrapCibSevenMavenFailure } from "./cibseven-maven-budget.ts";
 import { oracleEvidenceCases } from "./contract-artifact-cases.ts";
 import { resolveJavaHome } from "./java-home.ts";
 import { runCommand } from "./run-command.ts";
@@ -139,6 +140,18 @@ function requireCleanDiagnostics(
 /** Scenarios per Maven invocation, so one invocation stays inside its deadline as the batch grows. */
 const cibBatchChunkSize = 20;
 
+/** The kill deadline of one bridge call that runs scenarios. */
+const cibBatchDeadlineMs = 30_000;
+
+/**
+ * The kill deadline of one bridge call. The preparing call runs no scenario and carries the cold-host work (dependency
+ * resolution after a Maven cache miss, compilation, JVM start), so it gets the ceiling every CIB Maven call site
+ * shares (`cibseven-maven-budget.ts`); a scenario batch then keeps its fixed deadline for the scenarios alone.
+ */
+export function cibBridgeDeadlineMs(scenarioCount: number, environment: NodeJS.ProcessEnv): number {
+  return scenarioCount === 0 ? resolveCibSevenMavenTimeoutMs(environment) : cibBatchDeadlineMs;
+}
+
 type HarnessFailure = Readonly<{ scenarioId: string; failure: string }>;
 type BatchOutcome = Readonly<{ results: ReadonlyArray<CibRunnerResult>; failures: ReadonlyArray<HarnessFailure> }>;
 
@@ -214,18 +227,22 @@ async function runCibBatch(
       `-Dmaven.repo.local=${process.env.BPMN_MAVEN_REPO_LOCAL}`,
     );
   }
-  await runCommand(
-    path.join(runnerDirectory, "mvnw"),
-    args,
-    {
-      cwd: projectRoot,
-      env: {
-        ...process.env,
-        JAVA_HOME: resolveJavaHome(),
+  try {
+    await runCommand(
+      path.join(runnerDirectory, "mvnw"),
+      args,
+      {
+        cwd: projectRoot,
+        env: {
+          ...process.env,
+          JAVA_HOME: resolveJavaHome(),
+        },
+        timeoutMs: cibBridgeDeadlineMs(scenarios.length, process.env),
       },
-      timeoutMs: 30_000,
-    },
-  );
+    );
+  } catch (error) {
+    throw wrapCibSevenMavenFailure(engineVersion, error);
+  }
   const output = await readFile(outputPath);
   const lines = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(output)
     .split("\n")
@@ -290,6 +307,7 @@ async function replaceEvidence() {
       const engineVersion = parsed[0];
       const effectSchedule = parsed[1];
       const scenarios = versionSources.map(({ scenario }) => scenario.value);
+      await runCibBatch([], temporaryDirectory, engineVersion, effectSchedule);
       for (let start = 0; start < scenarios.length; start += cibBatchChunkSize) {
         const batch = await runCibBatch(
           scenarios.slice(start, start + cibBatchChunkSize), temporaryDirectory, engineVersion, effectSchedule);
