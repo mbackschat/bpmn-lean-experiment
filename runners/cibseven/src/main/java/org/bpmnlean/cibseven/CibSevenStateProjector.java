@@ -97,10 +97,17 @@ final class CibSevenStateProjector {
     };
   }
 
-  /** The root scope's variables, from history so that they stay observable after the instance ends. */
+  /**
+   * The root scope's variables, from history so that they stay observable after the instance ends. They are the ones
+   * held by the process instance's own execution: a variable's history activity instance is its execution's parent
+   * activity instance (`DefaultHistoryEventProducer#createHistoricVariableEvent`), which for a Sub-Process's input
+   * locals, written as it enters, is still the root's. A task-local variable of a User Task in the root holds that
+   * execution too, and belongs to the task.
+   */
   private List<ProcessVariableSnapshot> rootVariables(String engineRootId) {
     return engine.getHistoryService().createHistoricVariableInstanceQuery()
-        .processInstanceId(engineRootId).activityInstanceIdIn(engineRootId).list().stream()
+        .processInstanceId(engineRootId).executionIdIn(engineRootId).list().stream()
+        .filter(variable -> variable.getTaskId() == null)
         .map(variable -> new ProcessVariableSnapshot(variable.getName(), variable.getValue()))
         .sorted(Comparator.comparing(ProcessVariableSnapshot::name, WireStrings::compare))
         .toList();
