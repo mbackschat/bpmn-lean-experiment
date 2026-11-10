@@ -21,17 +21,17 @@
       "instanceId": "Applicant_1",
       "variables": [
         {
-          "name": "score",
-          "value": {
-            "kind": "string",
-            "value": "0"
-          }
-        },
-        {
           "name": "policy",
           "value": {
             "kind": "string",
             "value": "halves"
+          }
+        },
+        {
+          "name": "score",
+          "value": {
+            "kind": "string",
+            "value": "0"
           }
         }
       ]
