@@ -6,7 +6,7 @@
   },
   "profile": {
     "id": "cibseven-2.2.0",
-    "sha256": "28dba164ed6d66d9d6401e4c8ebae110d1688fc29810c8cac4f43ac97b5882c4"
+    "sha256": "820c7e46113d9bb8adc77c83e77632f870100fd1912d545f4dd23c6f537a7c7e"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -25,7 +25,10 @@
         "variables": [
           {
             "name": "claim",
-            "value": "C-1"
+            "value": {
+              "kind": "string",
+              "value": "C-1"
+            }
           }
         ]
       },
@@ -36,15 +39,17 @@
         "variables": [
           {
             "name": "claim",
-            "value": "C-1"
+            "value": {
+              "kind": "string",
+              "value": "C-1"
+            }
           },
           {
             "name": "decision",
-            "value": "approve"
-          },
-          {
-            "name": "notes",
-            "value": "C-1"
+            "value": {
+              "kind": "string",
+              "value": "approve"
+            }
           }
         ]
       },
@@ -55,19 +60,24 @@
         "variables": [
           {
             "name": "claim",
-            "value": "C-1"
+            "value": {
+              "kind": "string",
+              "value": "C-1"
+            }
           },
           {
             "name": "decision",
-            "value": "approve"
+            "value": {
+              "kind": "string",
+              "value": "approve"
+            }
           },
           {
             "name": "intakeNotes",
-            "value": "n-1"
-          },
-          {
-            "name": "notes",
-            "value": "n-1"
+            "value": {
+              "kind": "string",
+              "value": "n-1"
+            }
           }
         ]
       },
@@ -78,19 +88,24 @@
         "variables": [
           {
             "name": "claim",
-            "value": "C-1"
+            "value": {
+              "kind": "string",
+              "value": "C-1"
+            }
           },
           {
             "name": "decision",
-            "value": "approve"
+            "value": {
+              "kind": "string",
+              "value": "approve"
+            }
           },
           {
             "name": "intakeNotes",
-            "value": "n-1"
-          },
-          {
-            "name": "notes",
-            "value": "n-1"
+            "value": {
+              "kind": "string",
+              "value": "n-1"
+            }
           }
         ]
       },
@@ -101,19 +116,24 @@
         "variables": [
           {
             "name": "claim",
-            "value": "C-1"
+            "value": {
+              "kind": "string",
+              "value": "C-1"
+            }
           },
           {
             "name": "decision",
-            "value": "approve"
+            "value": {
+              "kind": "string",
+              "value": "approve"
+            }
           },
           {
             "name": "intakeNotes",
-            "value": "n-1"
-          },
-          {
-            "name": "notes",
-            "value": "n-1"
+            "value": {
+              "kind": "string",
+              "value": "n-1"
+            }
           }
         ]
       }
@@ -324,13 +344,6 @@
               "kind": "string",
               "value": "approve"
             }
-          },
-          {
-            "name": "notes",
-            "value": {
-              "kind": "string",
-              "value": "C-1"
-            }
           }
         ],
         "openWaits": [
@@ -416,13 +429,6 @@
               "kind": "string",
               "value": "n-1"
             }
-          },
-          {
-            "name": "notes",
-            "value": {
-              "kind": "string",
-              "value": "n-1"
-            }
           }
         ],
         "openWaits": [
@@ -481,13 +487,6 @@
               "kind": "string",
               "value": "n-1"
             }
-          },
-          {
-            "name": "notes",
-            "value": {
-              "kind": "string",
-              "value": "n-1"
-            }
           }
         ],
         "openWaits": [
@@ -542,13 +541,6 @@
           },
           {
             "name": "intakeNotes",
-            "value": {
-              "kind": "string",
-              "value": "n-1"
-            }
-          },
-          {
-            "name": "notes",
             "value": {
               "kind": "string",
               "value": "n-1"

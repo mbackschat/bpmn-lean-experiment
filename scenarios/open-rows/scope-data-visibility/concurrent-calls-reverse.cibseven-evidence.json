@@ -6,7 +6,7 @@
   },
   "profile": {
     "id": "cibseven-2.2.0",
-    "sha256": "28dba164ed6d66d9d6401e4c8ebae110d1688fc29810c8cac4f43ac97b5882c4"
+    "sha256": "820c7e46113d9bb8adc77c83e77632f870100fd1912d545f4dd23c6f537a7c7e"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -25,15 +25,10 @@
         "variables": [
           {
             "name": "seed",
-            "value": "s0"
-          },
-          {
-            "name": "slot",
-            "value": null
-          },
-          {
-            "name": "slot",
-            "value": null
+            "value": {
+              "kind": "string",
+              "value": "s0"
+            }
           }
         ]
       },
@@ -44,19 +39,17 @@
         "variables": [
           {
             "name": "resultB",
-            "value": "beta-opinion"
+            "value": {
+              "kind": "string",
+              "value": "beta-opinion"
+            }
           },
           {
             "name": "seed",
-            "value": "s0"
-          },
-          {
-            "name": "slot",
-            "value": null
-          },
-          {
-            "name": "slot",
-            "value": "beta-opinion"
+            "value": {
+              "kind": "string",
+              "value": "s0"
+            }
           }
         ]
       },
@@ -67,23 +60,24 @@
         "variables": [
           {
             "name": "resultA",
-            "value": "alpha-opinion"
+            "value": {
+              "kind": "string",
+              "value": "alpha-opinion"
+            }
           },
           {
             "name": "resultB",
-            "value": "beta-opinion"
+            "value": {
+              "kind": "string",
+              "value": "beta-opinion"
+            }
           },
           {
             "name": "seed",
-            "value": "s0"
-          },
-          {
-            "name": "slot",
-            "value": "alpha-opinion"
-          },
-          {
-            "name": "slot",
-            "value": "beta-opinion"
+            "value": {
+              "kind": "string",
+              "value": "s0"
+            }
           }
         ]
       },
@@ -94,23 +88,24 @@
         "variables": [
           {
             "name": "resultA",
-            "value": "alpha-opinion"
+            "value": {
+              "kind": "string",
+              "value": "alpha-opinion"
+            }
           },
           {
             "name": "resultB",
-            "value": "beta-opinion"
+            "value": {
+              "kind": "string",
+              "value": "beta-opinion"
+            }
           },
           {
             "name": "seed",
-            "value": "s0"
-          },
-          {
-            "name": "slot",
-            "value": "alpha-opinion"
-          },
-          {
-            "name": "slot",
-            "value": "beta-opinion"
+            "value": {
+              "kind": "string",
+              "value": "s0"
+            }
           }
         ]
       }
@@ -218,18 +213,6 @@
             "value": {
               "kind": "string",
               "value": "s0"
-            }
-          },
-          {
-            "name": "slot",
-            "value": {
-              "kind": "null"
-            }
-          },
-          {
-            "name": "slot",
-            "value": {
-              "kind": "null"
             }
           }
         ],
@@ -348,19 +331,6 @@
               "kind": "string",
               "value": "s0"
             }
-          },
-          {
-            "name": "slot",
-            "value": {
-              "kind": "null"
-            }
-          },
-          {
-            "name": "slot",
-            "value": {
-              "kind": "string",
-              "value": "beta-opinion"
-            }
           }
         ],
         "openWaits": [
@@ -441,20 +411,6 @@
               "kind": "string",
               "value": "s0"
             }
-          },
-          {
-            "name": "slot",
-            "value": {
-              "kind": "string",
-              "value": "alpha-opinion"
-            }
-          },
-          {
-            "name": "slot",
-            "value": {
-              "kind": "string",
-              "value": "beta-opinion"
-            }
           }
         ],
         "openWaits": [
@@ -527,20 +483,6 @@
             "value": {
               "kind": "string",
               "value": "s0"
-            }
-          },
-          {
-            "name": "slot",
-            "value": {
-              "kind": "string",
-              "value": "alpha-opinion"
-            }
-          },
-          {
-            "name": "slot",
-            "value": {
-              "kind": "string",
-              "value": "beta-opinion"
             }
           }
         ],

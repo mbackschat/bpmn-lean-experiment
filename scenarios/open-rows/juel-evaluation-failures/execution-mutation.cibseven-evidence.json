@@ -2,11 +2,11 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "juel-evaluation-failures-execution-mutation",
-    "sha256": "1e847603fb5d23ad42fad73c5b08e929b6968f82f7b69369654f8453d771ff29"
+    "sha256": "05846a4dfce2a1daf053497bae6b231cbff3c485f791f5baee89cdab3facd9fd"
   },
   "profile": {
     "id": "cibseven-2.2.0",
-    "sha256": "28dba164ed6d66d9d6401e4c8ebae110d1688fc29810c8cac4f43ac97b5882c4"
+    "sha256": "820c7e46113d9bb8adc77c83e77632f870100fd1912d545f4dd23c6f537a7c7e"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -25,11 +25,17 @@
         "variables": [
           {
             "name": "leaked",
-            "value": "yes"
+            "value": {
+              "kind": "string",
+              "value": "yes"
+            }
           },
           {
             "name": "probe",
-            "value": "execution-mutation"
+            "value": {
+              "kind": "string",
+              "value": "execution-mutation"
+            }
           }
         ]
       }

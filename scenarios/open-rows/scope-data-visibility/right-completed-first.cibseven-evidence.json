@@ -6,7 +6,7 @@
   },
   "profile": {
     "id": "cibseven-2.2.0",
-    "sha256": "28dba164ed6d66d9d6401e4c8ebae110d1688fc29810c8cac4f43ac97b5882c4"
+    "sha256": "820c7e46113d9bb8adc77c83e77632f870100fd1912d545f4dd23c6f537a7c7e"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -25,19 +25,17 @@
         "variables": [
           {
             "name": "seed",
-            "value": "s0"
+            "value": {
+              "kind": "string",
+              "value": "s0"
+            }
           },
           {
             "name": "slot",
-            "value": "left-initial"
-          },
-          {
-            "name": "slot",
-            "value": "right-initial"
-          },
-          {
-            "name": "slot",
-            "value": "root-slot"
+            "value": {
+              "kind": "string",
+              "value": "root-slot"
+            }
           }
         ]
       },
@@ -48,23 +46,24 @@
         "variables": [
           {
             "name": "rightResult",
-            "value": "right-written"
+            "value": {
+              "kind": "string",
+              "value": "right-written"
+            }
           },
           {
             "name": "seed",
-            "value": "s0"
+            "value": {
+              "kind": "string",
+              "value": "s0"
+            }
           },
           {
             "name": "slot",
-            "value": "left-initial"
-          },
-          {
-            "name": "slot",
-            "value": "right-written"
-          },
-          {
-            "name": "slot",
-            "value": "root-slot"
+            "value": {
+              "kind": "string",
+              "value": "root-slot"
+            }
           }
         ]
       },
@@ -75,27 +74,31 @@
         "variables": [
           {
             "name": "leftResult",
-            "value": "left-written"
+            "value": {
+              "kind": "string",
+              "value": "left-written"
+            }
           },
           {
             "name": "rightResult",
-            "value": "right-written"
+            "value": {
+              "kind": "string",
+              "value": "right-written"
+            }
           },
           {
             "name": "seed",
-            "value": "s0"
+            "value": {
+              "kind": "string",
+              "value": "s0"
+            }
           },
           {
             "name": "slot",
-            "value": "left-written"
-          },
-          {
-            "name": "slot",
-            "value": "right-written"
-          },
-          {
-            "name": "slot",
-            "value": "root-slot"
+            "value": {
+              "kind": "string",
+              "value": "root-slot"
+            }
           }
         ]
       },
@@ -106,27 +109,31 @@
         "variables": [
           {
             "name": "leftResult",
-            "value": "left-written"
+            "value": {
+              "kind": "string",
+              "value": "left-written"
+            }
           },
           {
             "name": "rightResult",
-            "value": "right-written"
+            "value": {
+              "kind": "string",
+              "value": "right-written"
+            }
           },
           {
             "name": "seed",
-            "value": "s0"
+            "value": {
+              "kind": "string",
+              "value": "s0"
+            }
           },
           {
             "name": "slot",
-            "value": "left-written"
-          },
-          {
-            "name": "slot",
-            "value": "right-written"
-          },
-          {
-            "name": "slot",
-            "value": "root-slot"
+            "value": {
+              "kind": "string",
+              "value": "root-slot"
+            }
           }
         ]
       }
@@ -234,20 +241,6 @@
             "value": {
               "kind": "string",
               "value": "s0"
-            }
-          },
-          {
-            "name": "slot",
-            "value": {
-              "kind": "string",
-              "value": "left-initial"
-            }
-          },
-          {
-            "name": "slot",
-            "value": {
-              "kind": "string",
-              "value": "right-initial"
             }
           },
           {
@@ -364,20 +357,6 @@
             "name": "slot",
             "value": {
               "kind": "string",
-              "value": "left-initial"
-            }
-          },
-          {
-            "name": "slot",
-            "value": {
-              "kind": "string",
-              "value": "right-written"
-            }
-          },
-          {
-            "name": "slot",
-            "value": {
-              "kind": "string",
               "value": "root-slot"
             }
           }
@@ -452,20 +431,6 @@
             "value": {
               "kind": "string",
               "value": "s0"
-            }
-          },
-          {
-            "name": "slot",
-            "value": {
-              "kind": "string",
-              "value": "left-written"
-            }
-          },
-          {
-            "name": "slot",
-            "value": {
-              "kind": "string",
-              "value": "right-written"
             }
           },
           {
@@ -553,20 +518,6 @@
             "value": {
               "kind": "string",
               "value": "s0"
-            }
-          },
-          {
-            "name": "slot",
-            "value": {
-              "kind": "string",
-              "value": "left-written"
-            }
-          },
-          {
-            "name": "slot",
-            "value": {
-              "kind": "string",
-              "value": "right-written"
             }
           },
           {

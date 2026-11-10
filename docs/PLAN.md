@@ -65,7 +65,7 @@ HIGH track agents author kernel feature, admission and laws modules in Lean and 
 
 Active work: Practical CIB7 Coverage, through the [kernel architecture](kernel/ARCHITECTURE-SPEC.md) (owner direction 2026-11-08).
 
-Current task: the first wave of [mechanism tracks](#mechanism-tracks-then-rows), M1, M2 and M3, step 4 of the [after-W0 sequence](#after-w0). The pilot rows closed on 2026-11-10 (`336a99ea`): PC-ERROR-01 and PC-AUTO-02 done, PC-MI-02 a slice.
+Current task: the first wave of [mechanism tracks](#mechanism-tracks-then-rows), M1, M2 and M3, step 4 of the [after-W0 sequence](#after-w0). The pilot rows closed on 2026-11-10 (`336a99ea`): PC-ERROR-01 and PC-AUTO-02 done, PC-MI-02 a slice. Wave 1 closed eight rows on 2026-11-10 against retained CIB evidence (receipt `c07dc2e3`): PC-CF-06, PC-BASIC-04, PC-HUM-05, PC-DATA-03, PC-DATA-04, PC-HUM-06, PC-AUTO-07 and PC-AUTO-08.
 
 Deliverable after W0: the [after-W0 sequence](#after-w0), then mechanism tracks M1–M9 and the integration track.
 
@@ -75,7 +75,7 @@ Owner items: none open; the owner packet (proof wave, JUEL levels, Script runtim
 
 Effort budget: W0's 168 hours from approval; the tracks five days across three in parallel, integration two days.
 
-Next action: M2 opens with the core JUEL level, which rows in every other track consume; M1 and M3 run beside it on Simple Boolean, each track filling its rows against their [retained witnesses](../scenarios/open-rows/) and the [disagreement ledger](../packages/differential/test/cib-disagreement-ledger.json).
+Next action: the remaining M1, M2 and M3 rows, each against its [retained witnesses](../scenarios/open-rows/) and the entries it owns in the [disagreement ledger](../packages/differential/test/cib-disagreement-ledger.json), beside the second wave of tracks.
 
 Oracle: the guardrails, both kernels and the retained CIB evidence on every scenario.
 

@@ -2,11 +2,11 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "juel-evaluation-failures-authenticated-user-name",
-    "sha256": "c5da57e872837a24430849b7843a05f44af878485cc5633c553ad17da2f3188d"
+    "sha256": "068873a2a0f7f6c2b65211eb3722aae44347c390a40d4017dfe9658a4729ddc5"
   },
   "profile": {
     "id": "cibseven-2.2.0",
-    "sha256": "28dba164ed6d66d9d6401e4c8ebae110d1688fc29810c8cac4f43ac97b5882c4"
+    "sha256": "820c7e46113d9bb8adc77c83e77632f870100fd1912d545f4dd23c6f537a7c7e"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -25,7 +25,10 @@
         "variables": [
           {
             "name": "probe",
-            "value": "authenticated-user-name"
+            "value": {
+              "kind": "string",
+              "value": "authenticated-user-name"
+            }
           }
         ]
       }

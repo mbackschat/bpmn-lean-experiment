@@ -6,7 +6,7 @@
   },
   "profile": {
     "id": "cibseven-2.2.0",
-    "sha256": "28dba164ed6d66d9d6401e4c8ebae110d1688fc29810c8cac4f43ac97b5882c4"
+    "sha256": "820c7e46113d9bb8adc77c83e77632f870100fd1912d545f4dd23c6f537a7c7e"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -37,7 +37,10 @@
         "variables": [
           {
             "name": "again",
-            "value": "yes"
+            "value": {
+              "kind": "string",
+              "value": "yes"
+            }
           }
         ]
       },
@@ -48,7 +51,10 @@
         "variables": [
           {
             "name": "again",
-            "value": "yes"
+            "value": {
+              "kind": "string",
+              "value": "yes"
+            }
           }
         ]
       },
@@ -59,40 +65,52 @@
         "variables": [
           {
             "name": "again",
-            "value": "yes"
+            "value": {
+              "kind": "string",
+              "value": "yes"
+            }
           }
         ]
       },
       {
         "afterCommandId": "s06-fire-ReplyOverdue-2",
         "processInstanceCount": 1,
-        "engineClockTimeMs": 0,
+        "engineClockTimeMs": 10000,
         "variables": [
           {
             "name": "again",
-            "value": "yes"
+            "value": {
+              "kind": "string",
+              "value": "yes"
+            }
           }
         ]
       },
       {
         "afterCommandId": "s07-deliver-ReplyReceived-2",
         "processInstanceCount": 1,
-        "engineClockTimeMs": 0,
+        "engineClockTimeMs": 10000,
         "variables": [
           {
             "name": "again",
-            "value": "yes"
+            "value": {
+              "kind": "string",
+              "value": "yes"
+            }
           }
         ]
       },
       {
         "afterCommandId": "s08-complete-ChaseCustomer-1",
-        "processInstanceCount": 1,
-        "engineClockTimeMs": 0,
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 10000,
         "variables": [
           {
             "name": "again",
-            "value": "yes"
+            "value": {
+              "kind": "string",
+              "value": "yes"
+            }
           }
         ]
       }
@@ -124,49 +142,18 @@
       },
       {
         "afterCommandId": "s04-deliver-ReplyReceived-1",
-        "tasks": [
-          {
-            "elementId": "ProcessReply",
-            "name": "Process reply",
-            "identityLinks": [],
-            "formFields": [
-              {
-                "id": "again",
-                "typeName": "string"
-              }
-            ]
-          }
-        ]
+        "tasks": []
       },
       {
         "afterCommandId": "s05-fire-ReplyOverdue-1",
-        "tasks": [
-          {
-            "elementId": "ProcessReply",
-            "name": "Process reply",
-            "identityLinks": [],
-            "formFields": [
-              {
-                "id": "again",
-                "typeName": "string"
-              }
-            ]
-          }
-        ]
+        "tasks": []
       },
       {
         "afterCommandId": "s06-fire-ReplyOverdue-2",
         "tasks": [
           {
-            "elementId": "ProcessReply",
-            "name": "Process reply",
-            "identityLinks": [],
-            "formFields": [
-              {
-                "id": "again",
-                "typeName": "string"
-              }
-            ]
+            "elementId": "ChaseCustomer",
+            "name": "Chase customer"
           }
         ]
       },
@@ -174,33 +161,14 @@
         "afterCommandId": "s07-deliver-ReplyReceived-2",
         "tasks": [
           {
-            "elementId": "ProcessReply",
-            "name": "Process reply",
-            "identityLinks": [],
-            "formFields": [
-              {
-                "id": "again",
-                "typeName": "string"
-              }
-            ]
+            "elementId": "ChaseCustomer",
+            "name": "Chase customer"
           }
         ]
       },
       {
         "afterCommandId": "s08-complete-ChaseCustomer-1",
-        "tasks": [
-          {
-            "elementId": "ProcessReply",
-            "name": "Process reply",
-            "identityLinks": [],
-            "formFields": [
-              {
-                "id": "again",
-                "typeName": "string"
-              }
-            ]
-          }
-        ]
+        "tasks": []
       }
     ],
     "messageSubscriptions": [
@@ -234,11 +202,27 @@
       },
       {
         "afterCommandId": "s04-deliver-ReplyReceived-1",
-        "subscriptions": []
+        "subscriptions": [
+          {
+            "elementId": "ReplyReceived",
+            "eventName": "reply",
+            "messageId": "Message_Reply",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
       },
       {
         "afterCommandId": "s05-fire-ReplyOverdue-1",
-        "subscriptions": []
+        "subscriptions": [
+          {
+            "elementId": "ReplyReceived",
+            "eventName": "reply",
+            "messageId": "Message_Reply",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
       },
       {
         "afterCommandId": "s06-fire-ReplyOverdue-2",
@@ -280,11 +264,23 @@
       },
       {
         "afterCommandId": "s04-deliver-ReplyReceived-1",
-        "jobs": []
+        "jobs": [
+          {
+            "elementId": "ReplyOverdue",
+            "dueDateDeltaMs": 10000,
+            "executable": false
+          }
+        ]
       },
       {
         "afterCommandId": "s05-fire-ReplyOverdue-1",
-        "jobs": []
+        "jobs": [
+          {
+            "elementId": "ReplyOverdue",
+            "dueDateDeltaMs": 10000,
+            "executable": false
+          }
+        ]
       },
       {
         "afterCommandId": "s06-fire-ReplyOverdue-2",
@@ -330,7 +326,7 @@
       },
       {
         "afterCommandId": "s08-complete-ChaseCustomer-1",
-        "state": "ACTIVE"
+        "state": "COMPLETED"
       }
     ]
   },
@@ -340,7 +336,7 @@
   "result": {
     "outcome": {
       "kind": "semantic",
-      "outcome": "rejected"
+      "outcome": "committed"
     },
     "trace": [
       {
@@ -458,7 +454,7 @@
             "id": {
               "processInstanceId": "Instance_1",
               "elementId": "ReplyOverdue",
-              "activation": 1
+              "activation": 2
             },
             "definition": null,
             "detail": {
@@ -472,7 +468,7 @@
             "id": {
               "processInstanceId": "Instance_1",
               "elementId": "ReplyReceived",
-              "activation": 1
+              "activation": 2
             },
             "definition": null,
             "detail": {
@@ -491,7 +487,7 @@
       {
         "kind": "command",
         "commandId": "s04-deliver-ReplyReceived-1",
-        "outcome": "committed"
+        "outcome": "rejected"
       },
       {
         "kind": "state",
@@ -511,29 +507,34 @@
           {
             "id": {
               "processInstanceId": "Instance_1",
-              "elementId": "ProcessReply",
+              "elementId": "ReplyOverdue",
               "activation": 2
             },
             "definition": null,
             "detail": {
-              "kind": "userTask",
-              "name": "Process reply",
-              "assignee": null,
-              "candidateUsers": [],
-              "candidateGroups": [],
-              "formKey": null,
-              "formFields": [
-                {
-                  "key": "again",
-                  "type": "string"
-                }
-              ],
-              "dueDate": null,
-              "followUpDate": null,
-              "priority": null,
-              "inputs": []
+              "kind": "timer",
+              "deadlineMs": 10000,
+              "recurrence": null
             },
-            "input": "command"
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ReplyReceived",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Reply"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
           }
         ]
       },
@@ -560,42 +561,47 @@
           {
             "id": {
               "processInstanceId": "Instance_1",
-              "elementId": "ProcessReply",
+              "elementId": "ReplyOverdue",
               "activation": 2
             },
             "definition": null,
             "detail": {
-              "kind": "userTask",
-              "name": "Process reply",
-              "assignee": null,
-              "candidateUsers": [],
-              "candidateGroups": [],
-              "formKey": null,
-              "formFields": [
-                {
-                  "key": "again",
-                  "type": "string"
-                }
-              ],
-              "dueDate": null,
-              "followUpDate": null,
-              "priority": null,
-              "inputs": []
+              "kind": "timer",
+              "deadlineMs": 10000,
+              "recurrence": null
             },
-            "input": "command"
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ReplyReceived",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Reply"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
           }
         ]
       },
       {
         "kind": "command",
         "commandId": "s06-fire-ReplyOverdue-2",
-        "outcome": "rejected"
+        "outcome": "committed"
       },
       {
         "kind": "state",
         "instanceId": "Instance_1",
         "status": "running",
-        "logicalTimeMs": 0,
+        "logicalTimeMs": 10000,
         "variables": [
           {
             "name": "again",
@@ -609,23 +615,18 @@
           {
             "id": {
               "processInstanceId": "Instance_1",
-              "elementId": "ProcessReply",
-              "activation": 2
+              "elementId": "ChaseCustomer",
+              "activation": 1
             },
             "definition": null,
             "detail": {
               "kind": "userTask",
-              "name": "Process reply",
+              "name": "Chase customer",
               "assignee": null,
               "candidateUsers": [],
               "candidateGroups": [],
               "formKey": null,
-              "formFields": [
-                {
-                  "key": "again",
-                  "type": "string"
-                }
-              ],
+              "formFields": [],
               "dueDate": null,
               "followUpDate": null,
               "priority": null,
@@ -644,7 +645,7 @@
         "kind": "state",
         "instanceId": "Instance_1",
         "status": "running",
-        "logicalTimeMs": 0,
+        "logicalTimeMs": 10000,
         "variables": [
           {
             "name": "again",
@@ -658,23 +659,18 @@
           {
             "id": {
               "processInstanceId": "Instance_1",
-              "elementId": "ProcessReply",
-              "activation": 2
+              "elementId": "ChaseCustomer",
+              "activation": 1
             },
             "definition": null,
             "detail": {
               "kind": "userTask",
-              "name": "Process reply",
+              "name": "Chase customer",
               "assignee": null,
               "candidateUsers": [],
               "candidateGroups": [],
               "formKey": null,
-              "formFields": [
-                {
-                  "key": "again",
-                  "type": "string"
-                }
-              ],
+              "formFields": [],
               "dueDate": null,
               "followUpDate": null,
               "priority": null,
@@ -687,13 +683,13 @@
       {
         "kind": "command",
         "commandId": "s08-complete-ChaseCustomer-1",
-        "outcome": "rejected"
+        "outcome": "committed"
       },
       {
         "kind": "state",
         "instanceId": "Instance_1",
-        "status": "running",
-        "logicalTimeMs": 0,
+        "status": "completed",
+        "logicalTimeMs": 10000,
         "variables": [
           {
             "name": "again",
@@ -703,35 +699,7 @@
             }
           }
         ],
-        "openWaits": [
-          {
-            "id": {
-              "processInstanceId": "Instance_1",
-              "elementId": "ProcessReply",
-              "activation": 2
-            },
-            "definition": null,
-            "detail": {
-              "kind": "userTask",
-              "name": "Process reply",
-              "assignee": null,
-              "candidateUsers": [],
-              "candidateGroups": [],
-              "formKey": null,
-              "formFields": [
-                {
-                  "key": "again",
-                  "type": "string"
-                }
-              ],
-              "dueDate": null,
-              "followUpDate": null,
-              "priority": null,
-              "inputs": []
-            },
-            "input": "command"
-          }
-        ]
+        "openWaits": []
       }
     ]
   }

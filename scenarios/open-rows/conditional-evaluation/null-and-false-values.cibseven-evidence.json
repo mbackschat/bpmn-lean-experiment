@@ -6,7 +6,7 @@
   },
   "profile": {
     "id": "cibseven-2.2.0",
-    "sha256": "28dba164ed6d66d9d6401e4c8ebae110d1688fc29810c8cac4f43ac97b5882c4"
+    "sha256": "820c7e46113d9bb8adc77c83e77632f870100fd1912d545f4dd23c6f537a7c7e"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -25,7 +25,10 @@
         "variables": [
           {
             "name": "note",
-            "value": "n"
+            "value": {
+              "kind": "string",
+              "value": "n"
+            }
           }
         ]
       },
@@ -36,11 +39,16 @@
         "variables": [
           {
             "name": "note",
-            "value": "n"
+            "value": {
+              "kind": "string",
+              "value": "n"
+            }
           },
           {
             "name": "status",
-            "value": null
+            "value": {
+              "kind": "null"
+            }
           }
         ]
       },
@@ -51,15 +59,22 @@
         "variables": [
           {
             "name": "approved",
-            "value": null
+            "value": {
+              "kind": "null"
+            }
           },
           {
             "name": "note",
-            "value": "n"
+            "value": {
+              "kind": "string",
+              "value": "n"
+            }
           },
           {
             "name": "status",
-            "value": null
+            "value": {
+              "kind": "null"
+            }
           }
         ]
       },
@@ -70,15 +85,23 @@
         "variables": [
           {
             "name": "approved",
-            "value": false
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
           },
           {
             "name": "note",
-            "value": "n"
+            "value": {
+              "kind": "string",
+              "value": "n"
+            }
           },
           {
             "name": "status",
-            "value": null
+            "value": {
+              "kind": "null"
+            }
           }
         ]
       },
@@ -89,19 +112,30 @@
         "variables": [
           {
             "name": "approved",
-            "value": false
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
           },
           {
             "name": "flag",
-            "value": false
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
           },
           {
             "name": "note",
-            "value": "n"
+            "value": {
+              "kind": "string",
+              "value": "n"
+            }
           },
           {
             "name": "status",
-            "value": null
+            "value": {
+              "kind": "null"
+            }
           }
         ]
       },
@@ -112,19 +146,30 @@
         "variables": [
           {
             "name": "approved",
-            "value": false
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
           },
           {
             "name": "flag",
-            "value": true
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
           },
           {
             "name": "note",
-            "value": "n"
+            "value": {
+              "kind": "string",
+              "value": "n"
+            }
           },
           {
             "name": "status",
-            "value": null
+            "value": {
+              "kind": "null"
+            }
           }
         ]
       }

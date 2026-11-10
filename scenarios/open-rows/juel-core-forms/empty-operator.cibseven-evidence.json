@@ -1,0 +1,343 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "juel-core-forms-empty-operator",
+    "sha256": "4a687c328a23efad2dd2404e3e85da4c7d972de1fbce1560df6da78712d48bf6"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "820c7e46113d9bb8adc77c83e77632f870100fd1912d545f4dd23c6f537a7c7e"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "blank",
+            "value": {
+              "kind": "string",
+              "value": ""
+            }
+          },
+          {
+            "name": "flag",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "x",
+                "y"
+              ]
+            }
+          },
+          {
+            "name": "noFields",
+            "value": {
+              "kind": "map",
+              "value": []
+            }
+          },
+          {
+            "name": "noItems",
+            "value": {
+              "kind": "stringList",
+              "value": []
+            }
+          },
+          {
+            "name": "nothing",
+            "value": {
+              "kind": "null"
+            }
+          },
+          {
+            "name": "person",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "name",
+                  "value": {
+                    "kind": "string",
+                    "value": "Ada"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "word",
+            "value": {
+              "kind": "string",
+              "value": "abc"
+            }
+          },
+          {
+            "name": "zero",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start",
+        "tasks": [
+          {
+            "elementId": "UserTask_Observe",
+            "name": "Observe the evaluated inputs"
+          }
+        ]
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start",
+        "state": "ACTIVE"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Run_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "blank",
+            "value": {
+              "kind": "string",
+              "value": ""
+            }
+          },
+          {
+            "name": "flag",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "x",
+                "y"
+              ]
+            }
+          },
+          {
+            "name": "noFields",
+            "value": {
+              "kind": "map",
+              "value": []
+            }
+          },
+          {
+            "name": "noItems",
+            "value": {
+              "kind": "stringList",
+              "value": []
+            }
+          },
+          {
+            "name": "nothing",
+            "value": {
+              "kind": "null"
+            }
+          },
+          {
+            "name": "person",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "name",
+                  "value": {
+                    "kind": "string",
+                    "value": "Ada"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "word",
+            "value": {
+              "kind": "string",
+              "value": "abc"
+            }
+          },
+          {
+            "name": "zero",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Run_1",
+              "elementId": "UserTask_Observe",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Observe the evaluated inputs",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "emptyList",
+                  "value": {
+                    "kind": "boolean",
+                    "value": true
+                  }
+                },
+                {
+                  "name": "emptyLiteral",
+                  "value": {
+                    "kind": "boolean",
+                    "value": true
+                  }
+                },
+                {
+                  "name": "emptyMap",
+                  "value": {
+                    "kind": "boolean",
+                    "value": true
+                  }
+                },
+                {
+                  "name": "emptyNull",
+                  "value": {
+                    "kind": "boolean",
+                    "value": true
+                  }
+                },
+                {
+                  "name": "emptyOfElement",
+                  "value": {
+                    "kind": "boolean",
+                    "value": false
+                  }
+                },
+                {
+                  "name": "emptyOfProperty",
+                  "value": {
+                    "kind": "boolean",
+                    "value": false
+                  }
+                },
+                {
+                  "name": "emptyString",
+                  "value": {
+                    "kind": "boolean",
+                    "value": true
+                  }
+                },
+                {
+                  "name": "falseBoolean",
+                  "value": {
+                    "kind": "boolean",
+                    "value": false
+                  }
+                },
+                {
+                  "name": "filledList",
+                  "value": {
+                    "kind": "boolean",
+                    "value": false
+                  }
+                },
+                {
+                  "name": "filledMap",
+                  "value": {
+                    "kind": "boolean",
+                    "value": false
+                  }
+                },
+                {
+                  "name": "filledString",
+                  "value": {
+                    "kind": "boolean",
+                    "value": false
+                  }
+                },
+                {
+                  "name": "notEmpty",
+                  "value": {
+                    "kind": "boolean",
+                    "value": true
+                  }
+                },
+                {
+                  "name": "zeroNumber",
+                  "value": {
+                    "kind": "boolean",
+                    "value": false
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      }
+    ]
+  }
+}

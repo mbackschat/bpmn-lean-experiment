@@ -6,7 +6,7 @@
   },
   "profile": {
     "id": "cibseven-2.2.0",
-    "sha256": "28dba164ed6d66d9d6401e4c8ebae110d1688fc29810c8cac4f43ac97b5882c4"
+    "sha256": "820c7e46113d9bb8adc77c83e77632f870100fd1912d545f4dd23c6f537a7c7e"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -25,10 +25,13 @@
         "variables": [
           {
             "name": "DataInput_Recipients",
-            "value": [
-              "a",
-              "b"
-            ]
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b"
+              ]
+            }
           }
         ]
       },
@@ -39,10 +42,13 @@
         "variables": [
           {
             "name": "DataInput_Recipients",
-            "value": [
-              "a",
-              "b"
-            ]
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b"
+              ]
+            }
           }
         ]
       },
@@ -53,10 +59,13 @@
         "variables": [
           {
             "name": "DataInput_Recipients",
-            "value": [
-              "a",
-              "b"
-            ]
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b"
+              ]
+            }
           }
         ]
       },
@@ -67,10 +76,13 @@
         "variables": [
           {
             "name": "DataInput_Recipients",
-            "value": [
-              "a",
-              "b"
-            ]
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b"
+              ]
+            }
           }
         ]
       },
@@ -81,10 +93,13 @@
         "variables": [
           {
             "name": "DataInput_Recipients",
-            "value": [
-              "a",
-              "b"
-            ]
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b"
+              ]
+            }
           }
         ]
       },
@@ -95,10 +110,13 @@
         "variables": [
           {
             "name": "DataInput_Recipients",
-            "value": [
-              "a",
-              "b"
-            ]
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b"
+              ]
+            }
           }
         ]
       }

@@ -2,11 +2,11 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "juel-evaluation-failures-integer-as-boolean",
-    "sha256": "ca9545a57c78dbf7e2873300dae1345009e3d993329f19c0631f40f466a9891e"
+    "sha256": "0946629ee16209737eec8d0bf3e09baf43f0240cc4cf1c3125debb86a07b45e5"
   },
   "profile": {
     "id": "cibseven-2.2.0",
-    "sha256": "28dba164ed6d66d9d6401e4c8ebae110d1688fc29810c8cac4f43ac97b5882c4"
+    "sha256": "820c7e46113d9bb8adc77c83e77632f870100fd1912d545f4dd23c6f537a7c7e"
   },
   "producer": {
     "engine": "CIB Seven",

@@ -1,0 +1,1390 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "terminate-multi-instance-bodies-parallel-second-body-terminates",
+    "sha256": "212243a8662a223313c474ef78b34c4933838c791a7c009fbae370cd737261b4"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "820c7e46113d9bb8adc77c83e77632f870100fd1912d545f4dd23c6f537a7c7e"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "batches",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "b1",
+                "b2"
+              ]
+            }
+          },
+          {
+            "name": "parcels",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "p1",
+                "p2"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-seal-second-parcel",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "batches",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "b1",
+                "b2"
+              ]
+            }
+          },
+          {
+            "name": "parcels",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "p1",
+                "p2"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-late-label-second-parcel",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "batches",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "b1",
+                "b2"
+              ]
+            }
+          },
+          {
+            "name": "parcels",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "p1",
+                "p2"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-label-first-parcel",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "batches",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "b1",
+                "b2"
+              ]
+            }
+          },
+          {
+            "name": "parcels",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "p1",
+                "p2"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-seal-first-parcel",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "batches",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "b1",
+                "b2"
+              ]
+            }
+          },
+          {
+            "name": "parcels",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "p1",
+                "p2"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s06-release-parcels",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "batches",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "b1",
+                "b2"
+              ]
+            }
+          },
+          {
+            "name": "parcels",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "p1",
+                "p2"
+              ]
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "tasks": [
+          {
+            "elementId": "UserTask_ParcelTrigger",
+            "name": "Seal the parcel"
+          },
+          {
+            "elementId": "UserTask_ParcelOther",
+            "name": "Label the parcel"
+          },
+          {
+            "elementId": "UserTask_ParcelTrigger",
+            "name": "Seal the parcel"
+          },
+          {
+            "elementId": "UserTask_ParcelOther",
+            "name": "Label the parcel"
+          },
+          {
+            "elementId": "UserTask_BatchTrigger",
+            "name": "Seal the batch"
+          },
+          {
+            "elementId": "UserTask_BatchOther",
+            "name": "Label the batch"
+          },
+          {
+            "elementId": "UserTask_Outside",
+            "name": "Update the packing log"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-seal-second-parcel",
+        "tasks": [
+          {
+            "elementId": "UserTask_ParcelTrigger",
+            "name": "Seal the parcel"
+          },
+          {
+            "elementId": "UserTask_ParcelOther",
+            "name": "Label the parcel"
+          },
+          {
+            "elementId": "UserTask_BatchTrigger",
+            "name": "Seal the batch"
+          },
+          {
+            "elementId": "UserTask_BatchOther",
+            "name": "Label the batch"
+          },
+          {
+            "elementId": "UserTask_Outside",
+            "name": "Update the packing log"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-late-label-second-parcel",
+        "tasks": [
+          {
+            "elementId": "UserTask_ParcelTrigger",
+            "name": "Seal the parcel"
+          },
+          {
+            "elementId": "UserTask_ParcelOther",
+            "name": "Label the parcel"
+          },
+          {
+            "elementId": "UserTask_BatchTrigger",
+            "name": "Seal the batch"
+          },
+          {
+            "elementId": "UserTask_BatchOther",
+            "name": "Label the batch"
+          },
+          {
+            "elementId": "UserTask_Outside",
+            "name": "Update the packing log"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-label-first-parcel",
+        "tasks": [
+          {
+            "elementId": "UserTask_ParcelTrigger",
+            "name": "Seal the parcel"
+          },
+          {
+            "elementId": "UserTask_BatchTrigger",
+            "name": "Seal the batch"
+          },
+          {
+            "elementId": "UserTask_BatchOther",
+            "name": "Label the batch"
+          },
+          {
+            "elementId": "UserTask_Outside",
+            "name": "Update the packing log"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-seal-first-parcel",
+        "tasks": [
+          {
+            "elementId": "UserTask_BatchTrigger",
+            "name": "Seal the batch"
+          },
+          {
+            "elementId": "UserTask_BatchOther",
+            "name": "Label the batch"
+          },
+          {
+            "elementId": "UserTask_Outside",
+            "name": "Update the packing log"
+          },
+          {
+            "elementId": "UserTask_AfterParcels",
+            "name": "Release the parcels"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s06-release-parcels",
+        "tasks": [
+          {
+            "elementId": "UserTask_BatchTrigger",
+            "name": "Seal the batch"
+          },
+          {
+            "elementId": "UserTask_BatchOther",
+            "name": "Label the batch"
+          },
+          {
+            "elementId": "UserTask_Outside",
+            "name": "Update the packing log"
+          }
+        ]
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s02-seal-second-parcel",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s03-late-label-second-parcel",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s04-label-first-parcel",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s05-seal-first-parcel",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s06-release-parcels",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "s01-start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s02-seal-second-parcel",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s03-late-label-second-parcel",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s04-label-first-parcel",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s05-seal-first-parcel",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s06-release-parcels",
+        "state": "ACTIVE"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "batches",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "b1",
+                "b2"
+              ]
+            }
+          },
+          {
+            "name": "parcels",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "p1",
+                "p2"
+              ]
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_BatchOther",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Label the batch",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "seenBatch",
+                  "value": {
+                    "kind": "string",
+                    "value": "b1"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_BatchTrigger",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Seal the batch",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "seenBatch",
+                  "value": {
+                    "kind": "string",
+                    "value": "b1"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Outside",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Update the packing log",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_ParcelOther",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Label the parcel",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "seenParcel",
+                  "value": {
+                    "kind": "string",
+                    "value": "p1"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_ParcelOther",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Label the parcel",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "seenParcel",
+                  "value": {
+                    "kind": "string",
+                    "value": "p2"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_ParcelTrigger",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Seal the parcel",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "seenParcel",
+                  "value": {
+                    "kind": "string",
+                    "value": "p1"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_ParcelTrigger",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Seal the parcel",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "seenParcel",
+                  "value": {
+                    "kind": "string",
+                    "value": "p2"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s02-seal-second-parcel",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "batches",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "b1",
+                "b2"
+              ]
+            }
+          },
+          {
+            "name": "parcels",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "p1",
+                "p2"
+              ]
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_BatchOther",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Label the batch",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "seenBatch",
+                  "value": {
+                    "kind": "string",
+                    "value": "b1"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_BatchTrigger",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Seal the batch",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "seenBatch",
+                  "value": {
+                    "kind": "string",
+                    "value": "b1"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Outside",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Update the packing log",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_ParcelOther",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Label the parcel",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "seenParcel",
+                  "value": {
+                    "kind": "string",
+                    "value": "p1"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_ParcelTrigger",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Seal the parcel",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "seenParcel",
+                  "value": {
+                    "kind": "string",
+                    "value": "p1"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s03-late-label-second-parcel",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "batches",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "b1",
+                "b2"
+              ]
+            }
+          },
+          {
+            "name": "parcels",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "p1",
+                "p2"
+              ]
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_BatchOther",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Label the batch",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "seenBatch",
+                  "value": {
+                    "kind": "string",
+                    "value": "b1"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_BatchTrigger",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Seal the batch",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "seenBatch",
+                  "value": {
+                    "kind": "string",
+                    "value": "b1"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Outside",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Update the packing log",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_ParcelOther",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Label the parcel",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "seenParcel",
+                  "value": {
+                    "kind": "string",
+                    "value": "p1"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_ParcelTrigger",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Seal the parcel",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "seenParcel",
+                  "value": {
+                    "kind": "string",
+                    "value": "p1"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s04-label-first-parcel",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "batches",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "b1",
+                "b2"
+              ]
+            }
+          },
+          {
+            "name": "parcels",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "p1",
+                "p2"
+              ]
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_BatchOther",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Label the batch",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "seenBatch",
+                  "value": {
+                    "kind": "string",
+                    "value": "b1"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_BatchTrigger",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Seal the batch",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "seenBatch",
+                  "value": {
+                    "kind": "string",
+                    "value": "b1"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Outside",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Update the packing log",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_ParcelTrigger",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Seal the parcel",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "seenParcel",
+                  "value": {
+                    "kind": "string",
+                    "value": "p1"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s05-seal-first-parcel",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "batches",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "b1",
+                "b2"
+              ]
+            }
+          },
+          {
+            "name": "parcels",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "p1",
+                "p2"
+              ]
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_AfterParcels",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Release the parcels",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_BatchOther",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Label the batch",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "seenBatch",
+                  "value": {
+                    "kind": "string",
+                    "value": "b1"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_BatchTrigger",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Seal the batch",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "seenBatch",
+                  "value": {
+                    "kind": "string",
+                    "value": "b1"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Outside",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Update the packing log",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s06-release-parcels",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "batches",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "b1",
+                "b2"
+              ]
+            }
+          },
+          {
+            "name": "parcels",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "p1",
+                "p2"
+              ]
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_BatchOther",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Label the batch",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "seenBatch",
+                  "value": {
+                    "kind": "string",
+                    "value": "b1"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_BatchTrigger",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Seal the batch",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "seenBatch",
+                  "value": {
+                    "kind": "string",
+                    "value": "b1"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Outside",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Update the packing log",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      }
+    ]
+  }
+}

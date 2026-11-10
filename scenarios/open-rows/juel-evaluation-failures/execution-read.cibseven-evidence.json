@@ -2,11 +2,11 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "juel-evaluation-failures-execution-read",
-    "sha256": "0bd1240ac5d0020f0b7318bc40f2dd97290ca7ae4b1d043f0ba2dfacb5859ddf"
+    "sha256": "8eb649a300fba730d5d8ecf4b48a050ad568c5debbdb721f508dca2b2a6bc27a"
   },
   "profile": {
     "id": "cibseven-2.2.0",
-    "sha256": "28dba164ed6d66d9d6401e4c8ebae110d1688fc29810c8cac4f43ac97b5882c4"
+    "sha256": "820c7e46113d9bb8adc77c83e77632f870100fd1912d545f4dd23c6f537a7c7e"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -25,7 +25,10 @@
         "variables": [
           {
             "name": "probe",
-            "value": "execution-read"
+            "value": {
+              "kind": "string",
+              "value": "execution-read"
+            }
           }
         ]
       }

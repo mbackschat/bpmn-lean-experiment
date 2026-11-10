@@ -1,0 +1,1993 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "structured-order-values-revised-order",
+    "sha256": "85520ddeb29e61ad9020bf2278a8969a861bd250e78f464db621e314c6b52f92"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "820c7e46113d9bb8adc77c83e77632f870100fd1912d545f4dd23c6f537a7c7e"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "order",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "customer",
+                  "value": {
+                    "kind": "map",
+                    "value": [
+                      {
+                        "name": "address",
+                        "value": {
+                          "kind": "map",
+                          "value": [
+                            {
+                              "name": "city",
+                              "value": {
+                                "kind": "string",
+                                "value": "Hamburg"
+                              }
+                            },
+                            {
+                              "name": "line2",
+                              "value": {
+                                "kind": "string",
+                                "value": ""
+                              }
+                            },
+                            {
+                              "name": "street",
+                              "value": {
+                                "kind": "string",
+                                "value": "Pier 2"
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "name": "name",
+                        "value": {
+                          "kind": "string",
+                          "value": "Grace"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "id",
+                  "value": {
+                    "kind": "string",
+                    "value": "O-2"
+                  }
+                },
+                {
+                  "name": "lines",
+                  "value": {
+                    "kind": "list",
+                    "value": [
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "quantity",
+                            "value": {
+                              "kind": "integer",
+                              "value": 2
+                            }
+                          },
+                          {
+                            "name": "sku",
+                            "value": {
+                              "kind": "string",
+                              "value": "B"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "quantity",
+                            "value": {
+                              "kind": "integer",
+                              "value": 1
+                            }
+                          },
+                          {
+                            "name": "sku",
+                            "value": {
+                              "kind": "string",
+                              "value": "A"
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "note",
+                  "value": {
+                    "kind": "string",
+                    "value": "rush"
+                  }
+                },
+                {
+                  "name": "total",
+                  "value": {
+                    "kind": "decimal",
+                    "coefficient": "-125",
+                    "scale": 2
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-review",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "order",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "customer",
+                  "value": {
+                    "kind": "map",
+                    "value": [
+                      {
+                        "name": "address",
+                        "value": {
+                          "kind": "map",
+                          "value": [
+                            {
+                              "name": "city",
+                              "value": {
+                                "kind": "string",
+                                "value": "Hamburg"
+                              }
+                            },
+                            {
+                              "name": "line2",
+                              "value": {
+                                "kind": "string",
+                                "value": ""
+                              }
+                            },
+                            {
+                              "name": "street",
+                              "value": {
+                                "kind": "string",
+                                "value": "Pier 2"
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "name": "name",
+                        "value": {
+                          "kind": "string",
+                          "value": "Grace"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "id",
+                  "value": {
+                    "kind": "string",
+                    "value": "O-2"
+                  }
+                },
+                {
+                  "name": "lines",
+                  "value": {
+                    "kind": "list",
+                    "value": [
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "quantity",
+                            "value": {
+                              "kind": "integer",
+                              "value": 2
+                            }
+                          },
+                          {
+                            "name": "sku",
+                            "value": {
+                              "kind": "string",
+                              "value": "B"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "quantity",
+                            "value": {
+                              "kind": "integer",
+                              "value": 1
+                            }
+                          },
+                          {
+                            "name": "sku",
+                            "value": {
+                              "kind": "string",
+                              "value": "A"
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "note",
+                  "value": {
+                    "kind": "string",
+                    "value": "rush"
+                  }
+                },
+                {
+                  "name": "total",
+                  "value": {
+                    "kind": "decimal",
+                    "coefficient": "-125",
+                    "scale": 2
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "reviewed",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "lines",
+                  "value": {
+                    "kind": "list",
+                    "value": [
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "quantity",
+                            "value": {
+                              "kind": "integer",
+                              "value": 1
+                            }
+                          },
+                          {
+                            "name": "sku",
+                            "value": {
+                              "kind": "string",
+                              "value": "A"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "quantity",
+                            "value": {
+                              "kind": "integer",
+                              "value": 2
+                            }
+                          },
+                          {
+                            "name": "sku",
+                            "value": {
+                              "kind": "string",
+                              "value": "B"
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "status",
+                  "value": {
+                    "kind": "string",
+                    "value": "revised"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "result-archive",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "order",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "customer",
+                  "value": {
+                    "kind": "map",
+                    "value": [
+                      {
+                        "name": "address",
+                        "value": {
+                          "kind": "map",
+                          "value": [
+                            {
+                              "name": "city",
+                              "value": {
+                                "kind": "string",
+                                "value": "Hamburg"
+                              }
+                            },
+                            {
+                              "name": "line2",
+                              "value": {
+                                "kind": "string",
+                                "value": ""
+                              }
+                            },
+                            {
+                              "name": "street",
+                              "value": {
+                                "kind": "string",
+                                "value": "Pier 2"
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "name": "name",
+                        "value": {
+                          "kind": "string",
+                          "value": "Grace"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "id",
+                  "value": {
+                    "kind": "string",
+                    "value": "O-2"
+                  }
+                },
+                {
+                  "name": "lines",
+                  "value": {
+                    "kind": "list",
+                    "value": [
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "quantity",
+                            "value": {
+                              "kind": "integer",
+                              "value": 2
+                            }
+                          },
+                          {
+                            "name": "sku",
+                            "value": {
+                              "kind": "string",
+                              "value": "B"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "quantity",
+                            "value": {
+                              "kind": "integer",
+                              "value": 1
+                            }
+                          },
+                          {
+                            "name": "sku",
+                            "value": {
+                              "kind": "string",
+                              "value": "A"
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "note",
+                  "value": {
+                    "kind": "string",
+                    "value": "rush"
+                  }
+                },
+                {
+                  "name": "total",
+                  "value": {
+                    "kind": "decimal",
+                    "coefficient": "-125",
+                    "scale": 2
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "receipt",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "archived",
+                  "value": {
+                    "kind": "boolean",
+                    "value": false
+                  }
+                },
+                {
+                  "name": "lines",
+                  "value": {
+                    "kind": "list",
+                    "value": []
+                  }
+                },
+                {
+                  "name": "meta",
+                  "value": {
+                    "kind": "map",
+                    "value": []
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "reviewed",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "lines",
+                  "value": {
+                    "kind": "list",
+                    "value": [
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "quantity",
+                            "value": {
+                              "kind": "integer",
+                              "value": 1
+                            }
+                          },
+                          {
+                            "name": "sku",
+                            "value": {
+                              "kind": "string",
+                              "value": "A"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "quantity",
+                            "value": {
+                              "kind": "integer",
+                              "value": 2
+                            }
+                          },
+                          {
+                            "name": "sku",
+                            "value": {
+                              "kind": "string",
+                              "value": "B"
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "status",
+                  "value": {
+                    "kind": "string",
+                    "value": "revised"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-confirm",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "order",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "customer",
+                  "value": {
+                    "kind": "map",
+                    "value": [
+                      {
+                        "name": "address",
+                        "value": {
+                          "kind": "map",
+                          "value": [
+                            {
+                              "name": "city",
+                              "value": {
+                                "kind": "string",
+                                "value": "Hamburg"
+                              }
+                            },
+                            {
+                              "name": "line2",
+                              "value": {
+                                "kind": "string",
+                                "value": ""
+                              }
+                            },
+                            {
+                              "name": "street",
+                              "value": {
+                                "kind": "string",
+                                "value": "Pier 2"
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "name": "name",
+                        "value": {
+                          "kind": "string",
+                          "value": "Grace"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "id",
+                  "value": {
+                    "kind": "string",
+                    "value": "O-2"
+                  }
+                },
+                {
+                  "name": "lines",
+                  "value": {
+                    "kind": "list",
+                    "value": [
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "quantity",
+                            "value": {
+                              "kind": "integer",
+                              "value": 2
+                            }
+                          },
+                          {
+                            "name": "sku",
+                            "value": {
+                              "kind": "string",
+                              "value": "B"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "quantity",
+                            "value": {
+                              "kind": "integer",
+                              "value": 1
+                            }
+                          },
+                          {
+                            "name": "sku",
+                            "value": {
+                              "kind": "string",
+                              "value": "A"
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "note",
+                  "value": {
+                    "kind": "string",
+                    "value": "rush"
+                  }
+                },
+                {
+                  "name": "total",
+                  "value": {
+                    "kind": "decimal",
+                    "coefficient": "-125",
+                    "scale": 2
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "receipt",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "archived",
+                  "value": {
+                    "kind": "boolean",
+                    "value": false
+                  }
+                },
+                {
+                  "name": "lines",
+                  "value": {
+                    "kind": "list",
+                    "value": []
+                  }
+                },
+                {
+                  "name": "meta",
+                  "value": {
+                    "kind": "map",
+                    "value": []
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "reviewed",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "lines",
+                  "value": {
+                    "kind": "list",
+                    "value": [
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "quantity",
+                            "value": {
+                              "kind": "integer",
+                              "value": 1
+                            }
+                          },
+                          {
+                            "name": "sku",
+                            "value": {
+                              "kind": "string",
+                              "value": "A"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "quantity",
+                            "value": {
+                              "kind": "integer",
+                              "value": 2
+                            }
+                          },
+                          {
+                            "name": "sku",
+                            "value": {
+                              "kind": "string",
+                              "value": "B"
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "status",
+                  "value": {
+                    "kind": "string",
+                    "value": "revised"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start",
+        "tasks": [
+          {
+            "elementId": "UserTask_Review",
+            "name": "Review order"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-review",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "result-archive",
+        "tasks": [
+          {
+            "elementId": "UserTask_Confirm",
+            "name": "Confirm receipt"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-confirm",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-review",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "result-archive",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-confirm",
+        "jobs": []
+      }
+    ],
+    "effectJobs": [
+      {
+        "afterCommandId": "start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-review",
+        "jobs": [
+          {
+            "elementId": "ServiceTask_Archive",
+            "activation": 1,
+            "protocol": "urn:bpmn-lean:effect:probe-v1",
+            "handler": "bpmnLeanEffectHandler",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "result-archive",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-confirm",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-review",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "result-archive",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-confirm",
+        "state": "COMPLETED"
+      }
+    ],
+    "effectExecutions": [
+      {
+        "afterCommandId": "result-archive",
+        "schedule": "plainSuccess",
+        "invocations": 1,
+        "mutations": 1,
+        "initialRetries": 3,
+        "retriesAfterFirstFailure": null
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Run_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "order",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "customer",
+                  "value": {
+                    "kind": "map",
+                    "value": [
+                      {
+                        "name": "address",
+                        "value": {
+                          "kind": "map",
+                          "value": [
+                            {
+                              "name": "city",
+                              "value": {
+                                "kind": "string",
+                                "value": "Hamburg"
+                              }
+                            },
+                            {
+                              "name": "line2",
+                              "value": {
+                                "kind": "string",
+                                "value": ""
+                              }
+                            },
+                            {
+                              "name": "street",
+                              "value": {
+                                "kind": "string",
+                                "value": "Pier 2"
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "name": "name",
+                        "value": {
+                          "kind": "string",
+                          "value": "Grace"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "id",
+                  "value": {
+                    "kind": "string",
+                    "value": "O-2"
+                  }
+                },
+                {
+                  "name": "lines",
+                  "value": {
+                    "kind": "list",
+                    "value": [
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "quantity",
+                            "value": {
+                              "kind": "integer",
+                              "value": 2
+                            }
+                          },
+                          {
+                            "name": "sku",
+                            "value": {
+                              "kind": "string",
+                              "value": "B"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "quantity",
+                            "value": {
+                              "kind": "integer",
+                              "value": 1
+                            }
+                          },
+                          {
+                            "name": "sku",
+                            "value": {
+                              "kind": "string",
+                              "value": "A"
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "note",
+                  "value": {
+                    "kind": "string",
+                    "value": "rush"
+                  }
+                },
+                {
+                  "name": "total",
+                  "value": {
+                    "kind": "decimal",
+                    "coefficient": "-125",
+                    "scale": 2
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Run_1",
+              "elementId": "UserTask_Review",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review order",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "city",
+                  "value": {
+                    "kind": "string",
+                    "value": "Hamburg"
+                  }
+                },
+                {
+                  "name": "firstLine",
+                  "value": {
+                    "kind": "map",
+                    "value": [
+                      {
+                        "name": "quantity",
+                        "value": {
+                          "kind": "integer",
+                          "value": 2
+                        }
+                      },
+                      {
+                        "name": "sku",
+                        "value": {
+                          "kind": "string",
+                          "value": "B"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "lineCount",
+                  "value": {
+                    "kind": "integer",
+                    "value": 2
+                  }
+                },
+                {
+                  "name": "note",
+                  "value": {
+                    "kind": "string",
+                    "value": "rush"
+                  }
+                },
+                {
+                  "name": "order",
+                  "value": {
+                    "kind": "map",
+                    "value": [
+                      {
+                        "name": "customer",
+                        "value": {
+                          "kind": "map",
+                          "value": [
+                            {
+                              "name": "address",
+                              "value": {
+                                "kind": "map",
+                                "value": [
+                                  {
+                                    "name": "city",
+                                    "value": {
+                                      "kind": "string",
+                                      "value": "Hamburg"
+                                    }
+                                  },
+                                  {
+                                    "name": "line2",
+                                    "value": {
+                                      "kind": "string",
+                                      "value": ""
+                                    }
+                                  },
+                                  {
+                                    "name": "street",
+                                    "value": {
+                                      "kind": "string",
+                                      "value": "Pier 2"
+                                    }
+                                  }
+                                ]
+                              }
+                            },
+                            {
+                              "name": "name",
+                              "value": {
+                                "kind": "string",
+                                "value": "Grace"
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "name": "id",
+                        "value": {
+                          "kind": "string",
+                          "value": "O-2"
+                        }
+                      },
+                      {
+                        "name": "lines",
+                        "value": {
+                          "kind": "list",
+                          "value": [
+                            {
+                              "kind": "map",
+                              "value": [
+                                {
+                                  "name": "quantity",
+                                  "value": {
+                                    "kind": "integer",
+                                    "value": 2
+                                  }
+                                },
+                                {
+                                  "name": "sku",
+                                  "value": {
+                                    "kind": "string",
+                                    "value": "B"
+                                  }
+                                }
+                              ]
+                            },
+                            {
+                              "kind": "map",
+                              "value": [
+                                {
+                                  "name": "quantity",
+                                  "value": {
+                                    "kind": "integer",
+                                    "value": 1
+                                  }
+                                },
+                                {
+                                  "name": "sku",
+                                  "value": {
+                                    "kind": "string",
+                                    "value": "A"
+                                  }
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "name": "note",
+                        "value": {
+                          "kind": "string",
+                          "value": "rush"
+                        }
+                      },
+                      {
+                        "name": "total",
+                        "value": {
+                          "kind": "decimal",
+                          "coefficient": "-125",
+                          "scale": 2
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "total",
+                  "value": {
+                    "kind": "decimal",
+                    "coefficient": "-125",
+                    "scale": 2
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-review",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Run_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "order",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "customer",
+                  "value": {
+                    "kind": "map",
+                    "value": [
+                      {
+                        "name": "address",
+                        "value": {
+                          "kind": "map",
+                          "value": [
+                            {
+                              "name": "city",
+                              "value": {
+                                "kind": "string",
+                                "value": "Hamburg"
+                              }
+                            },
+                            {
+                              "name": "line2",
+                              "value": {
+                                "kind": "string",
+                                "value": ""
+                              }
+                            },
+                            {
+                              "name": "street",
+                              "value": {
+                                "kind": "string",
+                                "value": "Pier 2"
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "name": "name",
+                        "value": {
+                          "kind": "string",
+                          "value": "Grace"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "id",
+                  "value": {
+                    "kind": "string",
+                    "value": "O-2"
+                  }
+                },
+                {
+                  "name": "lines",
+                  "value": {
+                    "kind": "list",
+                    "value": [
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "quantity",
+                            "value": {
+                              "kind": "integer",
+                              "value": 2
+                            }
+                          },
+                          {
+                            "name": "sku",
+                            "value": {
+                              "kind": "string",
+                              "value": "B"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "quantity",
+                            "value": {
+                              "kind": "integer",
+                              "value": 1
+                            }
+                          },
+                          {
+                            "name": "sku",
+                            "value": {
+                              "kind": "string",
+                              "value": "A"
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "note",
+                  "value": {
+                    "kind": "string",
+                    "value": "rush"
+                  }
+                },
+                {
+                  "name": "total",
+                  "value": {
+                    "kind": "decimal",
+                    "coefficient": "-125",
+                    "scale": 2
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "reviewed",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "lines",
+                  "value": {
+                    "kind": "list",
+                    "value": [
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "quantity",
+                            "value": {
+                              "kind": "integer",
+                              "value": 1
+                            }
+                          },
+                          {
+                            "name": "sku",
+                            "value": {
+                              "kind": "string",
+                              "value": "A"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "quantity",
+                            "value": {
+                              "kind": "integer",
+                              "value": 2
+                            }
+                          },
+                          {
+                            "name": "sku",
+                            "value": {
+                              "kind": "string",
+                              "value": "B"
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "status",
+                  "value": {
+                    "kind": "string",
+                    "value": "revised"
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Run_1",
+              "elementId": "ServiceTask_Archive",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "urn:bpmn-lean:effect-operation:probe-v1",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "result-archive",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Run_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "order",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "customer",
+                  "value": {
+                    "kind": "map",
+                    "value": [
+                      {
+                        "name": "address",
+                        "value": {
+                          "kind": "map",
+                          "value": [
+                            {
+                              "name": "city",
+                              "value": {
+                                "kind": "string",
+                                "value": "Hamburg"
+                              }
+                            },
+                            {
+                              "name": "line2",
+                              "value": {
+                                "kind": "string",
+                                "value": ""
+                              }
+                            },
+                            {
+                              "name": "street",
+                              "value": {
+                                "kind": "string",
+                                "value": "Pier 2"
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "name": "name",
+                        "value": {
+                          "kind": "string",
+                          "value": "Grace"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "id",
+                  "value": {
+                    "kind": "string",
+                    "value": "O-2"
+                  }
+                },
+                {
+                  "name": "lines",
+                  "value": {
+                    "kind": "list",
+                    "value": [
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "quantity",
+                            "value": {
+                              "kind": "integer",
+                              "value": 2
+                            }
+                          },
+                          {
+                            "name": "sku",
+                            "value": {
+                              "kind": "string",
+                              "value": "B"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "quantity",
+                            "value": {
+                              "kind": "integer",
+                              "value": 1
+                            }
+                          },
+                          {
+                            "name": "sku",
+                            "value": {
+                              "kind": "string",
+                              "value": "A"
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "note",
+                  "value": {
+                    "kind": "string",
+                    "value": "rush"
+                  }
+                },
+                {
+                  "name": "total",
+                  "value": {
+                    "kind": "decimal",
+                    "coefficient": "-125",
+                    "scale": 2
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "receipt",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "archived",
+                  "value": {
+                    "kind": "boolean",
+                    "value": false
+                  }
+                },
+                {
+                  "name": "lines",
+                  "value": {
+                    "kind": "list",
+                    "value": []
+                  }
+                },
+                {
+                  "name": "meta",
+                  "value": {
+                    "kind": "map",
+                    "value": []
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "reviewed",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "lines",
+                  "value": {
+                    "kind": "list",
+                    "value": [
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "quantity",
+                            "value": {
+                              "kind": "integer",
+                              "value": 1
+                            }
+                          },
+                          {
+                            "name": "sku",
+                            "value": {
+                              "kind": "string",
+                              "value": "A"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "quantity",
+                            "value": {
+                              "kind": "integer",
+                              "value": 2
+                            }
+                          },
+                          {
+                            "name": "sku",
+                            "value": {
+                              "kind": "string",
+                              "value": "B"
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "status",
+                  "value": {
+                    "kind": "string",
+                    "value": "revised"
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Run_1",
+              "elementId": "UserTask_Confirm",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Confirm receipt",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "seenReceipt",
+                  "value": {
+                    "kind": "map",
+                    "value": [
+                      {
+                        "name": "archived",
+                        "value": {
+                          "kind": "boolean",
+                          "value": false
+                        }
+                      },
+                      {
+                        "name": "lines",
+                        "value": {
+                          "kind": "list",
+                          "value": []
+                        }
+                      },
+                      {
+                        "name": "meta",
+                        "value": {
+                          "kind": "map",
+                          "value": []
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "seenReviewed",
+                  "value": {
+                    "kind": "map",
+                    "value": [
+                      {
+                        "name": "lines",
+                        "value": {
+                          "kind": "list",
+                          "value": [
+                            {
+                              "kind": "map",
+                              "value": [
+                                {
+                                  "name": "quantity",
+                                  "value": {
+                                    "kind": "integer",
+                                    "value": 1
+                                  }
+                                },
+                                {
+                                  "name": "sku",
+                                  "value": {
+                                    "kind": "string",
+                                    "value": "A"
+                                  }
+                                }
+                              ]
+                            },
+                            {
+                              "kind": "map",
+                              "value": [
+                                {
+                                  "name": "quantity",
+                                  "value": {
+                                    "kind": "integer",
+                                    "value": 2
+                                  }
+                                },
+                                {
+                                  "name": "sku",
+                                  "value": {
+                                    "kind": "string",
+                                    "value": "B"
+                                  }
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "name": "status",
+                        "value": {
+                          "kind": "string",
+                          "value": "revised"
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-confirm",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Run_1",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "order",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "customer",
+                  "value": {
+                    "kind": "map",
+                    "value": [
+                      {
+                        "name": "address",
+                        "value": {
+                          "kind": "map",
+                          "value": [
+                            {
+                              "name": "city",
+                              "value": {
+                                "kind": "string",
+                                "value": "Hamburg"
+                              }
+                            },
+                            {
+                              "name": "line2",
+                              "value": {
+                                "kind": "string",
+                                "value": ""
+                              }
+                            },
+                            {
+                              "name": "street",
+                              "value": {
+                                "kind": "string",
+                                "value": "Pier 2"
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "name": "name",
+                        "value": {
+                          "kind": "string",
+                          "value": "Grace"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "id",
+                  "value": {
+                    "kind": "string",
+                    "value": "O-2"
+                  }
+                },
+                {
+                  "name": "lines",
+                  "value": {
+                    "kind": "list",
+                    "value": [
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "quantity",
+                            "value": {
+                              "kind": "integer",
+                              "value": 2
+                            }
+                          },
+                          {
+                            "name": "sku",
+                            "value": {
+                              "kind": "string",
+                              "value": "B"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "quantity",
+                            "value": {
+                              "kind": "integer",
+                              "value": 1
+                            }
+                          },
+                          {
+                            "name": "sku",
+                            "value": {
+                              "kind": "string",
+                              "value": "A"
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "note",
+                  "value": {
+                    "kind": "string",
+                    "value": "rush"
+                  }
+                },
+                {
+                  "name": "total",
+                  "value": {
+                    "kind": "decimal",
+                    "coefficient": "-125",
+                    "scale": 2
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "receipt",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "archived",
+                  "value": {
+                    "kind": "boolean",
+                    "value": false
+                  }
+                },
+                {
+                  "name": "lines",
+                  "value": {
+                    "kind": "list",
+                    "value": []
+                  }
+                },
+                {
+                  "name": "meta",
+                  "value": {
+                    "kind": "map",
+                    "value": []
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "reviewed",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "lines",
+                  "value": {
+                    "kind": "list",
+                    "value": [
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "quantity",
+                            "value": {
+                              "kind": "integer",
+                              "value": 1
+                            }
+                          },
+                          {
+                            "name": "sku",
+                            "value": {
+                              "kind": "string",
+                              "value": "A"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "quantity",
+                            "value": {
+                              "kind": "integer",
+                              "value": 2
+                            }
+                          },
+                          {
+                            "name": "sku",
+                            "value": {
+                              "kind": "string",
+                              "value": "B"
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "status",
+                  "value": {
+                    "kind": "string",
+                    "value": "revised"
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}

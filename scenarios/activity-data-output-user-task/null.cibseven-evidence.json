@@ -6,7 +6,7 @@
   },
   "profile": {
     "id": "bpmn-2.0.2",
-    "sha256": "2a1e548c9f7d2dbf5a04e34279aab75bded1192883aae5cbd49f9df972d491a0"
+    "sha256": "89155106a5ec44c370470efa8a652c7d7d6320906a8df66d4f168d82d3ef1822"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -31,7 +31,9 @@
         "variables": [
           {
             "name": "DataOutput_Decision",
-            "value": null
+            "value": {
+              "kind": "null"
+            }
           }
         ]
       }

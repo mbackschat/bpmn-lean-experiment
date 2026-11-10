@@ -1,0 +1,404 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "input-mapping-contexts-call-entry",
+    "sha256": "36ddad6cb6adb528fddd7eaf4146f87a38bf63d439432f1d5bcfc7cc7563a334"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "820c7e46113d9bb8adc77c83e77632f870100fd1912d545f4dd23c6f537a7c7e"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "first",
+            "value": {
+              "kind": "string",
+              "value": "process-first"
+            }
+          },
+          {
+            "name": "order",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "customer",
+                  "value": {
+                    "kind": "map",
+                    "value": [
+                      {
+                        "name": "name",
+                        "value": {
+                          "kind": "string",
+                          "value": "Ada"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "lines",
+                  "value": {
+                    "kind": "list",
+                    "value": [
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "quantity",
+                            "value": {
+                              "kind": "integer",
+                              "value": 1
+                            }
+                          },
+                          {
+                            "name": "sku",
+                            "value": {
+                              "kind": "string",
+                              "value": "A"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "quantity",
+                            "value": {
+                              "kind": "integer",
+                              "value": 1
+                            }
+                          },
+                          {
+                            "name": "sku",
+                            "value": {
+                              "kind": "string",
+                              "value": "A"
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "quantity",
+            "value": {
+              "kind": "integer",
+              "value": 4
+            }
+          },
+          {
+            "name": "seed",
+            "value": {
+              "kind": "string",
+              "value": "seed-value"
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start",
+        "tasks": [
+          {
+            "elementId": "UserTask_Echo",
+            "name": "Echo"
+          }
+        ]
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start",
+        "state": "ACTIVE"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Run_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "first",
+            "value": {
+              "kind": "string",
+              "value": "process-first"
+            }
+          },
+          {
+            "name": "order",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "customer",
+                  "value": {
+                    "kind": "map",
+                    "value": [
+                      {
+                        "name": "name",
+                        "value": {
+                          "kind": "string",
+                          "value": "Ada"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "lines",
+                  "value": {
+                    "kind": "list",
+                    "value": [
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "quantity",
+                            "value": {
+                              "kind": "integer",
+                              "value": 1
+                            }
+                          },
+                          {
+                            "name": "sku",
+                            "value": {
+                              "kind": "string",
+                              "value": "A"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "map",
+                        "value": [
+                          {
+                            "name": "quantity",
+                            "value": {
+                              "kind": "integer",
+                              "value": 1
+                            }
+                          },
+                          {
+                            "name": "sku",
+                            "value": {
+                              "kind": "string",
+                              "value": "A"
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "quantity",
+            "value": {
+              "kind": "integer",
+              "value": 4
+            }
+          },
+          {
+            "name": "seed",
+            "value": {
+              "kind": "string",
+              "value": "seed-value"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "call:5:Run_1:21:CallActivity_Delegate:1",
+              "elementId": "UserTask_Echo",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_Delegate",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Echo",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "seenComposite",
+                  "value": {
+                    "kind": "string",
+                    "value": "Order Ada x4"
+                  }
+                },
+                {
+                  "name": "seenExpression",
+                  "value": {
+                    "kind": "integer",
+                    "value": 8
+                  }
+                },
+                {
+                  "name": "seenField",
+                  "value": {
+                    "kind": "string",
+                    "value": "Ada"
+                  }
+                },
+                {
+                  "name": "seenFirst",
+                  "value": {
+                    "kind": "string",
+                    "value": "seed-value"
+                  }
+                },
+                {
+                  "name": "seenLiteral",
+                  "value": {
+                    "kind": "string",
+                    "value": "fixed"
+                  }
+                },
+                {
+                  "name": "seenReference",
+                  "value": {
+                    "kind": "map",
+                    "value": [
+                      {
+                        "name": "customer",
+                        "value": {
+                          "kind": "map",
+                          "value": [
+                            {
+                              "name": "name",
+                              "value": {
+                                "kind": "string",
+                                "value": "Ada"
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "name": "lines",
+                        "value": {
+                          "kind": "list",
+                          "value": [
+                            {
+                              "kind": "map",
+                              "value": [
+                                {
+                                  "name": "quantity",
+                                  "value": {
+                                    "kind": "integer",
+                                    "value": 1
+                                  }
+                                },
+                                {
+                                  "name": "sku",
+                                  "value": {
+                                    "kind": "string",
+                                    "value": "A"
+                                  }
+                                }
+                              ]
+                            },
+                            {
+                              "kind": "map",
+                              "value": [
+                                {
+                                  "name": "quantity",
+                                  "value": {
+                                    "kind": "integer",
+                                    "value": 1
+                                  }
+                                },
+                                {
+                                  "name": "sku",
+                                  "value": {
+                                    "kind": "string",
+                                    "value": "A"
+                                  }
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "seenSecond",
+                  "value": {
+                    "kind": "string",
+                    "value": "process-first"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      }
+    ]
+  }
+}

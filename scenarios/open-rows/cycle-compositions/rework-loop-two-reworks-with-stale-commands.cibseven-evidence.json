@@ -6,7 +6,7 @@
   },
   "profile": {
     "id": "cibseven-2.2.0",
-    "sha256": "28dba164ed6d66d9d6401e4c8ebae110d1688fc29810c8cac4f43ac97b5882c4"
+    "sha256": "820c7e46113d9bb8adc77c83e77632f870100fd1912d545f4dd23c6f537a7c7e"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -25,7 +25,10 @@
         "variables": [
           {
             "name": "claimId",
-            "value": "c-1"
+            "value": {
+              "kind": "string",
+              "value": "c-1"
+            }
           }
         ]
       },
@@ -36,11 +39,17 @@
         "variables": [
           {
             "name": "claimId",
-            "value": "c-1"
+            "value": {
+              "kind": "string",
+              "value": "c-1"
+            }
           },
           {
             "name": "notes",
-            "value": "n1"
+            "value": {
+              "kind": "string",
+              "value": "n1"
+            }
           }
         ]
       },
@@ -51,15 +60,24 @@
         "variables": [
           {
             "name": "claimId",
-            "value": "c-1"
+            "value": {
+              "kind": "string",
+              "value": "c-1"
+            }
           },
           {
             "name": "notes",
-            "value": "n1"
+            "value": {
+              "kind": "string",
+              "value": "n1"
+            }
           },
           {
             "name": "quote",
-            "value": "q1"
+            "value": {
+              "kind": "string",
+              "value": "q1"
+            }
           }
         ]
       },
@@ -70,19 +88,31 @@
         "variables": [
           {
             "name": "claimId",
-            "value": "c-1"
+            "value": {
+              "kind": "string",
+              "value": "c-1"
+            }
           },
           {
             "name": "decision",
-            "value": "rework"
+            "value": {
+              "kind": "string",
+              "value": "rework"
+            }
           },
           {
             "name": "notes",
-            "value": "n1"
+            "value": {
+              "kind": "string",
+              "value": "n1"
+            }
           },
           {
             "name": "quote",
-            "value": "q1"
+            "value": {
+              "kind": "string",
+              "value": "q1"
+            }
           }
         ]
       },
@@ -93,19 +123,31 @@
         "variables": [
           {
             "name": "claimId",
-            "value": "c-1"
+            "value": {
+              "kind": "string",
+              "value": "c-1"
+            }
           },
           {
             "name": "decision",
-            "value": "rework"
+            "value": {
+              "kind": "string",
+              "value": "rework"
+            }
           },
           {
             "name": "notes",
-            "value": "n1"
+            "value": {
+              "kind": "string",
+              "value": "n1"
+            }
           },
           {
             "name": "quote",
-            "value": "q1"
+            "value": {
+              "kind": "string",
+              "value": "q1"
+            }
           }
         ]
       },
@@ -116,19 +158,31 @@
         "variables": [
           {
             "name": "claimId",
-            "value": "c-1"
+            "value": {
+              "kind": "string",
+              "value": "c-1"
+            }
           },
           {
             "name": "decision",
-            "value": "rework"
+            "value": {
+              "kind": "string",
+              "value": "rework"
+            }
           },
           {
             "name": "notes",
-            "value": "n2"
+            "value": {
+              "kind": "string",
+              "value": "n2"
+            }
           },
           {
             "name": "quote",
-            "value": "q1"
+            "value": {
+              "kind": "string",
+              "value": "q1"
+            }
           }
         ]
       },
@@ -139,19 +193,31 @@
         "variables": [
           {
             "name": "claimId",
-            "value": "c-1"
+            "value": {
+              "kind": "string",
+              "value": "c-1"
+            }
           },
           {
             "name": "decision",
-            "value": "rework"
+            "value": {
+              "kind": "string",
+              "value": "rework"
+            }
           },
           {
             "name": "notes",
-            "value": "n2"
+            "value": {
+              "kind": "string",
+              "value": "n2"
+            }
           },
           {
             "name": "quote",
-            "value": "q1"
+            "value": {
+              "kind": "string",
+              "value": "q1"
+            }
           }
         ]
       },
@@ -162,19 +228,31 @@
         "variables": [
           {
             "name": "claimId",
-            "value": "c-1"
+            "value": {
+              "kind": "string",
+              "value": "c-1"
+            }
           },
           {
             "name": "decision",
-            "value": "rework"
+            "value": {
+              "kind": "string",
+              "value": "rework"
+            }
           },
           {
             "name": "notes",
-            "value": "n2"
+            "value": {
+              "kind": "string",
+              "value": "n2"
+            }
           },
           {
             "name": "quote",
-            "value": "q2"
+            "value": {
+              "kind": "string",
+              "value": "q2"
+            }
           }
         ]
       },
@@ -185,19 +263,31 @@
         "variables": [
           {
             "name": "claimId",
-            "value": "c-1"
+            "value": {
+              "kind": "string",
+              "value": "c-1"
+            }
           },
           {
             "name": "decision",
-            "value": "rework"
+            "value": {
+              "kind": "string",
+              "value": "rework"
+            }
           },
           {
             "name": "notes",
-            "value": "n2"
+            "value": {
+              "kind": "string",
+              "value": "n2"
+            }
           },
           {
             "name": "quote",
-            "value": "q2"
+            "value": {
+              "kind": "string",
+              "value": "q2"
+            }
           }
         ]
       },
@@ -208,19 +298,31 @@
         "variables": [
           {
             "name": "claimId",
-            "value": "c-1"
+            "value": {
+              "kind": "string",
+              "value": "c-1"
+            }
           },
           {
             "name": "decision",
-            "value": "rework"
+            "value": {
+              "kind": "string",
+              "value": "rework"
+            }
           },
           {
             "name": "notes",
-            "value": "n2"
+            "value": {
+              "kind": "string",
+              "value": "n2"
+            }
           },
           {
             "name": "quote",
-            "value": "q2"
+            "value": {
+              "kind": "string",
+              "value": "q2"
+            }
           }
         ]
       },
@@ -231,19 +333,31 @@
         "variables": [
           {
             "name": "claimId",
-            "value": "c-1"
+            "value": {
+              "kind": "string",
+              "value": "c-1"
+            }
           },
           {
             "name": "decision",
-            "value": "rework"
+            "value": {
+              "kind": "string",
+              "value": "rework"
+            }
           },
           {
             "name": "notes",
-            "value": "n3"
+            "value": {
+              "kind": "string",
+              "value": "n3"
+            }
           },
           {
             "name": "quote",
-            "value": "q2"
+            "value": {
+              "kind": "string",
+              "value": "q2"
+            }
           }
         ]
       },
@@ -254,19 +368,31 @@
         "variables": [
           {
             "name": "claimId",
-            "value": "c-1"
+            "value": {
+              "kind": "string",
+              "value": "c-1"
+            }
           },
           {
             "name": "decision",
-            "value": "rework"
+            "value": {
+              "kind": "string",
+              "value": "rework"
+            }
           },
           {
             "name": "notes",
-            "value": "n3"
+            "value": {
+              "kind": "string",
+              "value": "n3"
+            }
           },
           {
             "name": "quote",
-            "value": "q3"
+            "value": {
+              "kind": "string",
+              "value": "q3"
+            }
           }
         ]
       },
@@ -277,19 +403,31 @@
         "variables": [
           {
             "name": "claimId",
-            "value": "c-1"
+            "value": {
+              "kind": "string",
+              "value": "c-1"
+            }
           },
           {
             "name": "decision",
-            "value": "approve"
+            "value": {
+              "kind": "string",
+              "value": "approve"
+            }
           },
           {
             "name": "notes",
-            "value": "n3"
+            "value": {
+              "kind": "string",
+              "value": "n3"
+            }
           },
           {
             "name": "quote",
-            "value": "q3"
+            "value": {
+              "kind": "string",
+              "value": "q3"
+            }
           }
         ]
       }

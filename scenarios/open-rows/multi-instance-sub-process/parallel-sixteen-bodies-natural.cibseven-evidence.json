@@ -6,7 +6,7 @@
   },
   "profile": {
     "id": "cibseven-2.2.0",
-    "sha256": "28dba164ed6d66d9d6401e4c8ebae110d1688fc29810c8cac4f43ac97b5882c4"
+    "sha256": "820c7e46113d9bb8adc77c83e77632f870100fd1912d545f4dd23c6f537a7c7e"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -25,28 +25,34 @@
         "variables": [
           {
             "name": "items",
-            "value": [
-              "item-01",
-              "item-02",
-              "item-03",
-              "item-04",
-              "item-05",
-              "item-06",
-              "item-07",
-              "item-08",
-              "item-09",
-              "item-10",
-              "item-11",
-              "item-12",
-              "item-13",
-              "item-14",
-              "item-15",
-              "item-16"
-            ]
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "item-01",
+                "item-02",
+                "item-03",
+                "item-04",
+                "item-05",
+                "item-06",
+                "item-07",
+                "item-08",
+                "item-09",
+                "item-10",
+                "item-11",
+                "item-12",
+                "item-13",
+                "item-14",
+                "item-15",
+                "item-16"
+              ]
+            }
           },
           {
             "name": "quorum",
-            "value": 99
+            "value": {
+              "kind": "integer",
+              "value": 99
+            }
           }
         ]
       },
@@ -57,32 +63,41 @@
         "variables": [
           {
             "name": "items",
-            "value": [
-              "item-01",
-              "item-02",
-              "item-03",
-              "item-04",
-              "item-05",
-              "item-06",
-              "item-07",
-              "item-08",
-              "item-09",
-              "item-10",
-              "item-11",
-              "item-12",
-              "item-13",
-              "item-14",
-              "item-15",
-              "item-16"
-            ]
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "item-01",
+                "item-02",
+                "item-03",
+                "item-04",
+                "item-05",
+                "item-06",
+                "item-07",
+                "item-08",
+                "item-09",
+                "item-10",
+                "item-11",
+                "item-12",
+                "item-13",
+                "item-14",
+                "item-15",
+                "item-16"
+              ]
+            }
           },
           {
             "name": "quorum",
-            "value": 99
+            "value": {
+              "kind": "integer",
+              "value": 99
+            }
           },
           {
             "name": "verdict",
-            "value": "v1"
+            "value": {
+              "kind": "string",
+              "value": "v1"
+            }
           }
         ]
       },
@@ -93,32 +108,41 @@
         "variables": [
           {
             "name": "items",
-            "value": [
-              "item-01",
-              "item-02",
-              "item-03",
-              "item-04",
-              "item-05",
-              "item-06",
-              "item-07",
-              "item-08",
-              "item-09",
-              "item-10",
-              "item-11",
-              "item-12",
-              "item-13",
-              "item-14",
-              "item-15",
-              "item-16"
-            ]
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "item-01",
+                "item-02",
+                "item-03",
+                "item-04",
+                "item-05",
+                "item-06",
+                "item-07",
+                "item-08",
+                "item-09",
+                "item-10",
+                "item-11",
+                "item-12",
+                "item-13",
+                "item-14",
+                "item-15",
+                "item-16"
+              ]
+            }
           },
           {
             "name": "quorum",
-            "value": 99
+            "value": {
+              "kind": "integer",
+              "value": 99
+            }
           },
           {
             "name": "verdict",
-            "value": "v2"
+            "value": {
+              "kind": "string",
+              "value": "v2"
+            }
           }
         ]
       },
@@ -129,32 +153,41 @@
         "variables": [
           {
             "name": "items",
-            "value": [
-              "item-01",
-              "item-02",
-              "item-03",
-              "item-04",
-              "item-05",
-              "item-06",
-              "item-07",
-              "item-08",
-              "item-09",
-              "item-10",
-              "item-11",
-              "item-12",
-              "item-13",
-              "item-14",
-              "item-15",
-              "item-16"
-            ]
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "item-01",
+                "item-02",
+                "item-03",
+                "item-04",
+                "item-05",
+                "item-06",
+                "item-07",
+                "item-08",
+                "item-09",
+                "item-10",
+                "item-11",
+                "item-12",
+                "item-13",
+                "item-14",
+                "item-15",
+                "item-16"
+              ]
+            }
           },
           {
             "name": "quorum",
-            "value": 99
+            "value": {
+              "kind": "integer",
+              "value": 99
+            }
           },
           {
             "name": "verdict",
-            "value": "v3"
+            "value": {
+              "kind": "string",
+              "value": "v3"
+            }
           }
         ]
       },
@@ -165,32 +198,41 @@
         "variables": [
           {
             "name": "items",
-            "value": [
-              "item-01",
-              "item-02",
-              "item-03",
-              "item-04",
-              "item-05",
-              "item-06",
-              "item-07",
-              "item-08",
-              "item-09",
-              "item-10",
-              "item-11",
-              "item-12",
-              "item-13",
-              "item-14",
-              "item-15",
-              "item-16"
-            ]
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "item-01",
+                "item-02",
+                "item-03",
+                "item-04",
+                "item-05",
+                "item-06",
+                "item-07",
+                "item-08",
+                "item-09",
+                "item-10",
+                "item-11",
+                "item-12",
+                "item-13",
+                "item-14",
+                "item-15",
+                "item-16"
+              ]
+            }
           },
           {
             "name": "quorum",
-            "value": 99
+            "value": {
+              "kind": "integer",
+              "value": 99
+            }
           },
           {
             "name": "verdict",
-            "value": "v4"
+            "value": {
+              "kind": "string",
+              "value": "v4"
+            }
           }
         ]
       },
@@ -201,32 +243,41 @@
         "variables": [
           {
             "name": "items",
-            "value": [
-              "item-01",
-              "item-02",
-              "item-03",
-              "item-04",
-              "item-05",
-              "item-06",
-              "item-07",
-              "item-08",
-              "item-09",
-              "item-10",
-              "item-11",
-              "item-12",
-              "item-13",
-              "item-14",
-              "item-15",
-              "item-16"
-            ]
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "item-01",
+                "item-02",
+                "item-03",
+                "item-04",
+                "item-05",
+                "item-06",
+                "item-07",
+                "item-08",
+                "item-09",
+                "item-10",
+                "item-11",
+                "item-12",
+                "item-13",
+                "item-14",
+                "item-15",
+                "item-16"
+              ]
+            }
           },
           {
             "name": "quorum",
-            "value": 99
+            "value": {
+              "kind": "integer",
+              "value": 99
+            }
           },
           {
             "name": "verdict",
-            "value": "v5"
+            "value": {
+              "kind": "string",
+              "value": "v5"
+            }
           }
         ]
       },
@@ -237,32 +288,41 @@
         "variables": [
           {
             "name": "items",
-            "value": [
-              "item-01",
-              "item-02",
-              "item-03",
-              "item-04",
-              "item-05",
-              "item-06",
-              "item-07",
-              "item-08",
-              "item-09",
-              "item-10",
-              "item-11",
-              "item-12",
-              "item-13",
-              "item-14",
-              "item-15",
-              "item-16"
-            ]
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "item-01",
+                "item-02",
+                "item-03",
+                "item-04",
+                "item-05",
+                "item-06",
+                "item-07",
+                "item-08",
+                "item-09",
+                "item-10",
+                "item-11",
+                "item-12",
+                "item-13",
+                "item-14",
+                "item-15",
+                "item-16"
+              ]
+            }
           },
           {
             "name": "quorum",
-            "value": 99
+            "value": {
+              "kind": "integer",
+              "value": 99
+            }
           },
           {
             "name": "verdict",
-            "value": "v6"
+            "value": {
+              "kind": "string",
+              "value": "v6"
+            }
           }
         ]
       },
@@ -273,32 +333,41 @@
         "variables": [
           {
             "name": "items",
-            "value": [
-              "item-01",
-              "item-02",
-              "item-03",
-              "item-04",
-              "item-05",
-              "item-06",
-              "item-07",
-              "item-08",
-              "item-09",
-              "item-10",
-              "item-11",
-              "item-12",
-              "item-13",
-              "item-14",
-              "item-15",
-              "item-16"
-            ]
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "item-01",
+                "item-02",
+                "item-03",
+                "item-04",
+                "item-05",
+                "item-06",
+                "item-07",
+                "item-08",
+                "item-09",
+                "item-10",
+                "item-11",
+                "item-12",
+                "item-13",
+                "item-14",
+                "item-15",
+                "item-16"
+              ]
+            }
           },
           {
             "name": "quorum",
-            "value": 99
+            "value": {
+              "kind": "integer",
+              "value": 99
+            }
           },
           {
             "name": "verdict",
-            "value": "v7"
+            "value": {
+              "kind": "string",
+              "value": "v7"
+            }
           }
         ]
       },
@@ -309,32 +378,41 @@
         "variables": [
           {
             "name": "items",
-            "value": [
-              "item-01",
-              "item-02",
-              "item-03",
-              "item-04",
-              "item-05",
-              "item-06",
-              "item-07",
-              "item-08",
-              "item-09",
-              "item-10",
-              "item-11",
-              "item-12",
-              "item-13",
-              "item-14",
-              "item-15",
-              "item-16"
-            ]
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "item-01",
+                "item-02",
+                "item-03",
+                "item-04",
+                "item-05",
+                "item-06",
+                "item-07",
+                "item-08",
+                "item-09",
+                "item-10",
+                "item-11",
+                "item-12",
+                "item-13",
+                "item-14",
+                "item-15",
+                "item-16"
+              ]
+            }
           },
           {
             "name": "quorum",
-            "value": 99
+            "value": {
+              "kind": "integer",
+              "value": 99
+            }
           },
           {
             "name": "verdict",
-            "value": "v8"
+            "value": {
+              "kind": "string",
+              "value": "v8"
+            }
           }
         ]
       },
@@ -345,32 +423,41 @@
         "variables": [
           {
             "name": "items",
-            "value": [
-              "item-01",
-              "item-02",
-              "item-03",
-              "item-04",
-              "item-05",
-              "item-06",
-              "item-07",
-              "item-08",
-              "item-09",
-              "item-10",
-              "item-11",
-              "item-12",
-              "item-13",
-              "item-14",
-              "item-15",
-              "item-16"
-            ]
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "item-01",
+                "item-02",
+                "item-03",
+                "item-04",
+                "item-05",
+                "item-06",
+                "item-07",
+                "item-08",
+                "item-09",
+                "item-10",
+                "item-11",
+                "item-12",
+                "item-13",
+                "item-14",
+                "item-15",
+                "item-16"
+              ]
+            }
           },
           {
             "name": "quorum",
-            "value": 99
+            "value": {
+              "kind": "integer",
+              "value": 99
+            }
           },
           {
             "name": "verdict",
-            "value": "v9"
+            "value": {
+              "kind": "string",
+              "value": "v9"
+            }
           }
         ]
       },
@@ -381,32 +468,41 @@
         "variables": [
           {
             "name": "items",
-            "value": [
-              "item-01",
-              "item-02",
-              "item-03",
-              "item-04",
-              "item-05",
-              "item-06",
-              "item-07",
-              "item-08",
-              "item-09",
-              "item-10",
-              "item-11",
-              "item-12",
-              "item-13",
-              "item-14",
-              "item-15",
-              "item-16"
-            ]
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "item-01",
+                "item-02",
+                "item-03",
+                "item-04",
+                "item-05",
+                "item-06",
+                "item-07",
+                "item-08",
+                "item-09",
+                "item-10",
+                "item-11",
+                "item-12",
+                "item-13",
+                "item-14",
+                "item-15",
+                "item-16"
+              ]
+            }
           },
           {
             "name": "quorum",
-            "value": 99
+            "value": {
+              "kind": "integer",
+              "value": 99
+            }
           },
           {
             "name": "verdict",
-            "value": "v10"
+            "value": {
+              "kind": "string",
+              "value": "v10"
+            }
           }
         ]
       },
@@ -417,32 +513,41 @@
         "variables": [
           {
             "name": "items",
-            "value": [
-              "item-01",
-              "item-02",
-              "item-03",
-              "item-04",
-              "item-05",
-              "item-06",
-              "item-07",
-              "item-08",
-              "item-09",
-              "item-10",
-              "item-11",
-              "item-12",
-              "item-13",
-              "item-14",
-              "item-15",
-              "item-16"
-            ]
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "item-01",
+                "item-02",
+                "item-03",
+                "item-04",
+                "item-05",
+                "item-06",
+                "item-07",
+                "item-08",
+                "item-09",
+                "item-10",
+                "item-11",
+                "item-12",
+                "item-13",
+                "item-14",
+                "item-15",
+                "item-16"
+              ]
+            }
           },
           {
             "name": "quorum",
-            "value": 99
+            "value": {
+              "kind": "integer",
+              "value": 99
+            }
           },
           {
             "name": "verdict",
-            "value": "v11"
+            "value": {
+              "kind": "string",
+              "value": "v11"
+            }
           }
         ]
       },
@@ -453,32 +558,41 @@
         "variables": [
           {
             "name": "items",
-            "value": [
-              "item-01",
-              "item-02",
-              "item-03",
-              "item-04",
-              "item-05",
-              "item-06",
-              "item-07",
-              "item-08",
-              "item-09",
-              "item-10",
-              "item-11",
-              "item-12",
-              "item-13",
-              "item-14",
-              "item-15",
-              "item-16"
-            ]
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "item-01",
+                "item-02",
+                "item-03",
+                "item-04",
+                "item-05",
+                "item-06",
+                "item-07",
+                "item-08",
+                "item-09",
+                "item-10",
+                "item-11",
+                "item-12",
+                "item-13",
+                "item-14",
+                "item-15",
+                "item-16"
+              ]
+            }
           },
           {
             "name": "quorum",
-            "value": 99
+            "value": {
+              "kind": "integer",
+              "value": 99
+            }
           },
           {
             "name": "verdict",
-            "value": "v12"
+            "value": {
+              "kind": "string",
+              "value": "v12"
+            }
           }
         ]
       },
@@ -489,32 +603,41 @@
         "variables": [
           {
             "name": "items",
-            "value": [
-              "item-01",
-              "item-02",
-              "item-03",
-              "item-04",
-              "item-05",
-              "item-06",
-              "item-07",
-              "item-08",
-              "item-09",
-              "item-10",
-              "item-11",
-              "item-12",
-              "item-13",
-              "item-14",
-              "item-15",
-              "item-16"
-            ]
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "item-01",
+                "item-02",
+                "item-03",
+                "item-04",
+                "item-05",
+                "item-06",
+                "item-07",
+                "item-08",
+                "item-09",
+                "item-10",
+                "item-11",
+                "item-12",
+                "item-13",
+                "item-14",
+                "item-15",
+                "item-16"
+              ]
+            }
           },
           {
             "name": "quorum",
-            "value": 99
+            "value": {
+              "kind": "integer",
+              "value": 99
+            }
           },
           {
             "name": "verdict",
-            "value": "v13"
+            "value": {
+              "kind": "string",
+              "value": "v13"
+            }
           }
         ]
       },
@@ -525,32 +648,41 @@
         "variables": [
           {
             "name": "items",
-            "value": [
-              "item-01",
-              "item-02",
-              "item-03",
-              "item-04",
-              "item-05",
-              "item-06",
-              "item-07",
-              "item-08",
-              "item-09",
-              "item-10",
-              "item-11",
-              "item-12",
-              "item-13",
-              "item-14",
-              "item-15",
-              "item-16"
-            ]
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "item-01",
+                "item-02",
+                "item-03",
+                "item-04",
+                "item-05",
+                "item-06",
+                "item-07",
+                "item-08",
+                "item-09",
+                "item-10",
+                "item-11",
+                "item-12",
+                "item-13",
+                "item-14",
+                "item-15",
+                "item-16"
+              ]
+            }
           },
           {
             "name": "quorum",
-            "value": 99
+            "value": {
+              "kind": "integer",
+              "value": 99
+            }
           },
           {
             "name": "verdict",
-            "value": "v14"
+            "value": {
+              "kind": "string",
+              "value": "v14"
+            }
           }
         ]
       },
@@ -561,32 +693,41 @@
         "variables": [
           {
             "name": "items",
-            "value": [
-              "item-01",
-              "item-02",
-              "item-03",
-              "item-04",
-              "item-05",
-              "item-06",
-              "item-07",
-              "item-08",
-              "item-09",
-              "item-10",
-              "item-11",
-              "item-12",
-              "item-13",
-              "item-14",
-              "item-15",
-              "item-16"
-            ]
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "item-01",
+                "item-02",
+                "item-03",
+                "item-04",
+                "item-05",
+                "item-06",
+                "item-07",
+                "item-08",
+                "item-09",
+                "item-10",
+                "item-11",
+                "item-12",
+                "item-13",
+                "item-14",
+                "item-15",
+                "item-16"
+              ]
+            }
           },
           {
             "name": "quorum",
-            "value": 99
+            "value": {
+              "kind": "integer",
+              "value": 99
+            }
           },
           {
             "name": "verdict",
-            "value": "v15"
+            "value": {
+              "kind": "string",
+              "value": "v15"
+            }
           }
         ]
       },
@@ -597,32 +738,41 @@
         "variables": [
           {
             "name": "items",
-            "value": [
-              "item-01",
-              "item-02",
-              "item-03",
-              "item-04",
-              "item-05",
-              "item-06",
-              "item-07",
-              "item-08",
-              "item-09",
-              "item-10",
-              "item-11",
-              "item-12",
-              "item-13",
-              "item-14",
-              "item-15",
-              "item-16"
-            ]
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "item-01",
+                "item-02",
+                "item-03",
+                "item-04",
+                "item-05",
+                "item-06",
+                "item-07",
+                "item-08",
+                "item-09",
+                "item-10",
+                "item-11",
+                "item-12",
+                "item-13",
+                "item-14",
+                "item-15",
+                "item-16"
+              ]
+            }
           },
           {
             "name": "quorum",
-            "value": 99
+            "value": {
+              "kind": "integer",
+              "value": 99
+            }
           },
           {
             "name": "verdict",
-            "value": "v16"
+            "value": {
+              "kind": "string",
+              "value": "v16"
+            }
           }
         ]
       },
@@ -633,32 +783,41 @@
         "variables": [
           {
             "name": "items",
-            "value": [
-              "item-01",
-              "item-02",
-              "item-03",
-              "item-04",
-              "item-05",
-              "item-06",
-              "item-07",
-              "item-08",
-              "item-09",
-              "item-10",
-              "item-11",
-              "item-12",
-              "item-13",
-              "item-14",
-              "item-15",
-              "item-16"
-            ]
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "item-01",
+                "item-02",
+                "item-03",
+                "item-04",
+                "item-05",
+                "item-06",
+                "item-07",
+                "item-08",
+                "item-09",
+                "item-10",
+                "item-11",
+                "item-12",
+                "item-13",
+                "item-14",
+                "item-15",
+                "item-16"
+              ]
+            }
           },
           {
             "name": "quorum",
-            "value": 99
+            "value": {
+              "kind": "integer",
+              "value": 99
+            }
           },
           {
             "name": "verdict",
-            "value": "v16"
+            "value": {
+              "kind": "string",
+              "value": "v16"
+            }
           }
         ]
       }

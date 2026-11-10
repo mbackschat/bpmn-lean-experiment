@@ -1,0 +1,320 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "mapping-order-duplicate-targets",
+    "sha256": "cf440bb969d75501f008b00987162c719ee2c0bd94d1ec996ebccfcae0e35040"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "820c7e46113d9bb8adc77c83e77632f870100fd1912d545f4dd23c6f537a7c7e"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "x",
+            "value": {
+              "kind": "string",
+              "value": "process"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-decide",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "out",
+            "value": {
+              "kind": "string",
+              "value": "second"
+            }
+          },
+          {
+            "name": "twice",
+            "value": {
+              "kind": "string",
+              "value": "second"
+            }
+          },
+          {
+            "name": "x",
+            "value": {
+              "kind": "string",
+              "value": "process"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-observe",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "out",
+            "value": {
+              "kind": "string",
+              "value": "second"
+            }
+          },
+          {
+            "name": "twice",
+            "value": {
+              "kind": "string",
+              "value": "second"
+            }
+          },
+          {
+            "name": "x",
+            "value": {
+              "kind": "string",
+              "value": "process"
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start",
+        "tasks": [
+          {
+            "elementId": "UserTask_Decide",
+            "name": "Decide"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-decide",
+        "tasks": [
+          {
+            "elementId": "UserTask_Observe",
+            "name": "Observe"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-observe",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-decide",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-observe",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-decide",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-observe",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Run_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "x",
+            "value": {
+              "kind": "string",
+              "value": "process"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Run_1",
+              "elementId": "UserTask_Decide",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Decide",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "x",
+                  "value": {
+                    "kind": "string",
+                    "value": "second"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-decide",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Run_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "out",
+            "value": {
+              "kind": "string",
+              "value": "second"
+            }
+          },
+          {
+            "name": "twice",
+            "value": {
+              "kind": "string",
+              "value": "second"
+            }
+          },
+          {
+            "name": "x",
+            "value": {
+              "kind": "string",
+              "value": "process"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Run_1",
+              "elementId": "UserTask_Observe",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Observe",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "seenOut",
+                  "value": {
+                    "kind": "string",
+                    "value": "second"
+                  }
+                },
+                {
+                  "name": "seenTwice",
+                  "value": {
+                    "kind": "string",
+                    "value": "second"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-observe",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Run_1",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "out",
+            "value": {
+              "kind": "string",
+              "value": "second"
+            }
+          },
+          {
+            "name": "twice",
+            "value": {
+              "kind": "string",
+              "value": "second"
+            }
+          },
+          {
+            "name": "x",
+            "value": {
+              "kind": "string",
+              "value": "process"
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}

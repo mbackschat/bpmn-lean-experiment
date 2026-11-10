@@ -1,0 +1,307 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "mapping-order-decision-chained-outputs",
+    "sha256": "c529add4f4bc94a617dc6348b8b3e81b95b3d43c0f5a1786c4df55de249f1410"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "820c7e46113d9bb8adc77c83e77632f870100fd1912d545f4dd23c6f537a7c7e"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "grade",
+            "value": {
+              "kind": "string",
+              "value": "mapped"
+            }
+          },
+          {
+            "name": "level",
+            "value": {
+              "kind": "string",
+              "value": "mapped"
+            }
+          },
+          {
+            "name": "score",
+            "value": {
+              "kind": "string",
+              "value": "90"
+            }
+          },
+          {
+            "name": "shadowed",
+            "value": {
+              "kind": "string",
+              "value": "high"
+            }
+          },
+          {
+            "name": "summary",
+            "value": {
+              "kind": "string",
+              "value": "mapped"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-observe",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "grade",
+            "value": {
+              "kind": "string",
+              "value": "mapped"
+            }
+          },
+          {
+            "name": "level",
+            "value": {
+              "kind": "string",
+              "value": "mapped"
+            }
+          },
+          {
+            "name": "score",
+            "value": {
+              "kind": "string",
+              "value": "90"
+            }
+          },
+          {
+            "name": "shadowed",
+            "value": {
+              "kind": "string",
+              "value": "high"
+            }
+          },
+          {
+            "name": "summary",
+            "value": {
+              "kind": "string",
+              "value": "mapped"
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start",
+        "tasks": [
+          {
+            "elementId": "UserTask_Observe",
+            "name": "Observe"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-observe",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-observe",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-observe",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Run_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "grade",
+            "value": {
+              "kind": "string",
+              "value": "mapped"
+            }
+          },
+          {
+            "name": "level",
+            "value": {
+              "kind": "string",
+              "value": "mapped"
+            }
+          },
+          {
+            "name": "score",
+            "value": {
+              "kind": "string",
+              "value": "90"
+            }
+          },
+          {
+            "name": "shadowed",
+            "value": {
+              "kind": "string",
+              "value": "high"
+            }
+          },
+          {
+            "name": "summary",
+            "value": {
+              "kind": "string",
+              "value": "mapped"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Run_1",
+              "elementId": "UserTask_Observe",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Observe",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "seenGrade",
+                  "value": {
+                    "kind": "string",
+                    "value": "mapped"
+                  }
+                },
+                {
+                  "name": "seenLevel",
+                  "value": {
+                    "kind": "string",
+                    "value": "mapped"
+                  }
+                },
+                {
+                  "name": "seenShadowed",
+                  "value": {
+                    "kind": "string",
+                    "value": "high"
+                  }
+                },
+                {
+                  "name": "seenSummary",
+                  "value": {
+                    "kind": "string",
+                    "value": "mapped"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-observe",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Run_1",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "grade",
+            "value": {
+              "kind": "string",
+              "value": "mapped"
+            }
+          },
+          {
+            "name": "level",
+            "value": {
+              "kind": "string",
+              "value": "mapped"
+            }
+          },
+          {
+            "name": "score",
+            "value": {
+              "kind": "string",
+              "value": "90"
+            }
+          },
+          {
+            "name": "shadowed",
+            "value": {
+              "kind": "string",
+              "value": "high"
+            }
+          },
+          {
+            "name": "summary",
+            "value": {
+              "kind": "string",
+              "value": "mapped"
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}

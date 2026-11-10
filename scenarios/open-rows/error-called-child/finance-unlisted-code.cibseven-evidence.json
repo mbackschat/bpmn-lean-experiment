@@ -1,0 +1,448 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "error-called-child-finance-unlisted-code",
+    "sha256": "7e31d0b8ad0ec9edfab4cc214fba949737bf9c4831eeba0a712499809dab0509"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "820c7e46113d9bb8adc77c83e77632f870100fd1912d545f4dd23c6f537a7c7e"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start-process",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "complianceDossier",
+            "value": {
+              "kind": "string",
+              "value": "C-1"
+            }
+          },
+          {
+            "name": "financeDossier",
+            "value": {
+              "kind": "string",
+              "value": "F-1"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "prepare-finance",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "complianceDossier",
+            "value": {
+              "kind": "string",
+              "value": "C-1"
+            }
+          },
+          {
+            "name": "financeDossier",
+            "value": {
+              "kind": "string",
+              "value": "F-1"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "fail-assess-finance",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "complianceDossier",
+            "value": {
+              "kind": "string",
+              "value": "C-1"
+            }
+          },
+          {
+            "name": "financeDossier",
+            "value": {
+              "kind": "string",
+              "value": "F-1"
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start-process",
+        "tasks": [
+          {
+            "elementId": "Prepare",
+            "name": "Prepare review"
+          },
+          {
+            "elementId": "Prepare",
+            "name": "Prepare review"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "prepare-finance",
+        "tasks": [
+          {
+            "elementId": "Prepare",
+            "name": "Prepare review"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "fail-assess-finance",
+        "tasks": [
+          {
+            "elementId": "Prepare",
+            "name": "Prepare review"
+          }
+        ]
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start-process",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "prepare-finance",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "fail-assess-finance",
+        "jobs": []
+      }
+    ],
+    "effectJobs": [
+      {
+        "afterCommandId": "start-process",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "prepare-finance",
+        "jobs": [
+          {
+            "elementId": "Assess",
+            "activation": 1,
+            "protocol": "urn:bpmn-lean:effect:probe-v1",
+            "handler": "bpmnLeanEffectHandler",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "fail-assess-finance",
+        "jobs": [
+          {
+            "elementId": "Assess",
+            "activation": 1,
+            "protocol": "urn:bpmn-lean:effect:probe-v1",
+            "handler": "bpmnLeanEffectHandler",
+            "retries": 2,
+            "executable": true,
+            "dueDatePresent": false
+          }
+        ]
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start-process",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "prepare-finance",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "fail-assess-finance",
+        "state": "ACTIVE"
+      }
+    ],
+    "effectExecutions": []
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "rolledBack"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start-process",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "complianceDossier",
+            "value": {
+              "kind": "string",
+              "value": "C-1"
+            }
+          },
+          {
+            "name": "financeDossier",
+            "value": {
+              "kind": "string",
+              "value": "F-1"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:13:ReviewFinance:1",
+              "elementId": "Prepare",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_ReviewDossier",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Prepare review",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:16:ReviewCompliance:1",
+              "elementId": "Prepare",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_ReviewDossier",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Prepare review",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "prepare-finance",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "complianceDossier",
+            "value": {
+              "kind": "string",
+              "value": "C-1"
+            }
+          },
+          {
+            "name": "financeDossier",
+            "value": {
+              "kind": "string",
+              "value": "F-1"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:13:ReviewFinance:1",
+              "elementId": "Assess",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_ReviewDossier",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "urn:bpmn-lean:effect-operation:probe-v1",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          },
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:16:ReviewCompliance:1",
+              "elementId": "Prepare",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_ReviewDossier",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Prepare review",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "fail-assess-finance",
+        "outcome": "rolledBack"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "complianceDossier",
+            "value": {
+              "kind": "string",
+              "value": "C-1"
+            }
+          },
+          {
+            "name": "financeDossier",
+            "value": {
+              "kind": "string",
+              "value": "F-1"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:13:ReviewFinance:1",
+              "elementId": "Assess",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_ReviewDossier",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "urn:bpmn-lean:effect-operation:probe-v1",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          },
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:16:ReviewCompliance:1",
+              "elementId": "Prepare",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_ReviewDossier",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Prepare review",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,1394 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "transaction-multi-instance-parallel-cancel-with-others-unchecked",
+    "sha256": "81fc12d867141746e89bbf05da548ae9d93dd66a76f28f1853eea777134089d1"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "820c7e46113d9bb8adc77c83e77632f870100fd1912d545f4dd23c6f537a7c7e"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "badLot",
+            "value": {
+              "kind": "string",
+              "value": "b"
+            }
+          },
+          {
+            "name": "lot",
+            "value": {
+              "kind": "string",
+              "value": "outside"
+            }
+          },
+          {
+            "name": "lots",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b",
+                "c"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s01-complete-UserTask_Process-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "badLot",
+            "value": {
+              "kind": "string",
+              "value": "b"
+            }
+          },
+          {
+            "name": "lot",
+            "value": {
+              "kind": "string",
+              "value": "outside"
+            }
+          },
+          {
+            "name": "lots",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b",
+                "c"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-complete-UserTask_Process-2",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "badLot",
+            "value": {
+              "kind": "string",
+              "value": "b"
+            }
+          },
+          {
+            "name": "lot",
+            "value": {
+              "kind": "string",
+              "value": "outside"
+            }
+          },
+          {
+            "name": "lots",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b",
+                "c"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-complete-UserTask_Process-3",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "badLot",
+            "value": {
+              "kind": "string",
+              "value": "b"
+            }
+          },
+          {
+            "name": "lot",
+            "value": {
+              "kind": "string",
+              "value": "outside"
+            }
+          },
+          {
+            "name": "lots",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b",
+                "c"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_Check-2",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "badLot",
+            "value": {
+              "kind": "string",
+              "value": "b"
+            }
+          },
+          {
+            "name": "lot",
+            "value": {
+              "kind": "string",
+              "value": "outside"
+            }
+          },
+          {
+            "name": "lots",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b",
+                "c"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-complete-UserTask_UndoProcess-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "badLot",
+            "value": {
+              "kind": "string",
+              "value": "b"
+            }
+          },
+          {
+            "name": "lot",
+            "value": {
+              "kind": "string",
+              "value": "outside"
+            }
+          },
+          {
+            "name": "lots",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b",
+                "c"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s06-complete-UserTask_UndoProcess-2",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "badLot",
+            "value": {
+              "kind": "string",
+              "value": "b"
+            }
+          },
+          {
+            "name": "lot",
+            "value": {
+              "kind": "string",
+              "value": "outside"
+            }
+          },
+          {
+            "name": "lots",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b",
+                "c"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s07-complete-UserTask_UndoProcess-3",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "badLot",
+            "value": {
+              "kind": "string",
+              "value": "b"
+            }
+          },
+          {
+            "name": "lot",
+            "value": {
+              "kind": "string",
+              "value": "outside"
+            }
+          },
+          {
+            "name": "lots",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b",
+                "c"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s08-complete-UserTask_Check-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "badLot",
+            "value": {
+              "kind": "string",
+              "value": "b"
+            }
+          },
+          {
+            "name": "lot",
+            "value": {
+              "kind": "string",
+              "value": "outside"
+            }
+          },
+          {
+            "name": "lots",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b",
+                "c"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s09-complete-UserTask_BatchCancelled-1",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "badLot",
+            "value": {
+              "kind": "string",
+              "value": "b"
+            }
+          },
+          {
+            "name": "lot",
+            "value": {
+              "kind": "string",
+              "value": "outside"
+            }
+          },
+          {
+            "name": "lots",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b",
+                "c"
+              ]
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "tasks": [
+          {
+            "elementId": "UserTask_Process",
+            "name": "Process the lot"
+          },
+          {
+            "elementId": "UserTask_Process",
+            "name": "Process the lot"
+          },
+          {
+            "elementId": "UserTask_Process",
+            "name": "Process the lot"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s01-complete-UserTask_Process-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_Process",
+            "name": "Process the lot"
+          },
+          {
+            "elementId": "UserTask_Process",
+            "name": "Process the lot"
+          },
+          {
+            "elementId": "UserTask_Check",
+            "name": "Check the lot"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-complete-UserTask_Process-2",
+        "tasks": [
+          {
+            "elementId": "UserTask_Process",
+            "name": "Process the lot"
+          },
+          {
+            "elementId": "UserTask_Check",
+            "name": "Check the lot"
+          },
+          {
+            "elementId": "UserTask_Check",
+            "name": "Check the lot"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-complete-UserTask_Process-3",
+        "tasks": [
+          {
+            "elementId": "UserTask_Check",
+            "name": "Check the lot"
+          },
+          {
+            "elementId": "UserTask_Check",
+            "name": "Check the lot"
+          },
+          {
+            "elementId": "UserTask_Check",
+            "name": "Check the lot"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_Check-2",
+        "tasks": [
+          {
+            "elementId": "UserTask_Check",
+            "name": "Check the lot"
+          },
+          {
+            "elementId": "UserTask_Check",
+            "name": "Check the lot"
+          },
+          {
+            "elementId": "UserTask_UndoProcess",
+            "name": "Undo the lot"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-complete-UserTask_UndoProcess-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_BatchCancelled",
+            "name": "Handle the cancelled batch"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s06-complete-UserTask_UndoProcess-2",
+        "tasks": [
+          {
+            "elementId": "UserTask_BatchCancelled",
+            "name": "Handle the cancelled batch"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s07-complete-UserTask_UndoProcess-3",
+        "tasks": [
+          {
+            "elementId": "UserTask_BatchCancelled",
+            "name": "Handle the cancelled batch"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s08-complete-UserTask_Check-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_BatchCancelled",
+            "name": "Handle the cancelled batch"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s09-complete-UserTask_BatchCancelled-1",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s01-complete-UserTask_Process-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s02-complete-UserTask_Process-2",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s03-complete-UserTask_Process-3",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_Check-2",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s05-complete-UserTask_UndoProcess-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s06-complete-UserTask_UndoProcess-2",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s07-complete-UserTask_UndoProcess-3",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s08-complete-UserTask_Check-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s09-complete-UserTask_BatchCancelled-1",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "s01-start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s01-complete-UserTask_Process-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s02-complete-UserTask_Process-2",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s03-complete-UserTask_Process-3",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_Check-2",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s05-complete-UserTask_UndoProcess-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s06-complete-UserTask_UndoProcess-2",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s07-complete-UserTask_UndoProcess-3",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s08-complete-UserTask_Check-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s09-complete-UserTask_BatchCancelled-1",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "badLot",
+            "value": {
+              "kind": "string",
+              "value": "b"
+            }
+          },
+          {
+            "name": "lot",
+            "value": {
+              "kind": "string",
+              "value": "outside"
+            }
+          },
+          {
+            "name": "lots",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b",
+                "c"
+              ]
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Process",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Process the lot",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Process",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Process the lot",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Process",
+              "activation": 3
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Process the lot",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-complete-UserTask_Process-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "badLot",
+            "value": {
+              "kind": "string",
+              "value": "b"
+            }
+          },
+          {
+            "name": "lot",
+            "value": {
+              "kind": "string",
+              "value": "outside"
+            }
+          },
+          {
+            "name": "lots",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b",
+                "c"
+              ]
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Check",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Check the lot",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Process",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Process the lot",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Process",
+              "activation": 3
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Process the lot",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s02-complete-UserTask_Process-2",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "badLot",
+            "value": {
+              "kind": "string",
+              "value": "b"
+            }
+          },
+          {
+            "name": "lot",
+            "value": {
+              "kind": "string",
+              "value": "outside"
+            }
+          },
+          {
+            "name": "lots",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b",
+                "c"
+              ]
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Check",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Check the lot",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Check",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Check the lot",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Process",
+              "activation": 3
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Process the lot",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s03-complete-UserTask_Process-3",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "badLot",
+            "value": {
+              "kind": "string",
+              "value": "b"
+            }
+          },
+          {
+            "name": "lot",
+            "value": {
+              "kind": "string",
+              "value": "outside"
+            }
+          },
+          {
+            "name": "lots",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b",
+                "c"
+              ]
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Check",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Check the lot",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Check",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Check the lot",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Check",
+              "activation": 3
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Check the lot",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s04-complete-UserTask_Check-2",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "badLot",
+            "value": {
+              "kind": "string",
+              "value": "b"
+            }
+          },
+          {
+            "name": "lot",
+            "value": {
+              "kind": "string",
+              "value": "outside"
+            }
+          },
+          {
+            "name": "lots",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b",
+                "c"
+              ]
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Check",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Check the lot",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Check",
+              "activation": 3
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Check the lot",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_UndoProcess",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Undo the lot",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "seenLot",
+                  "value": {
+                    "kind": "string",
+                    "value": "b"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s05-complete-UserTask_UndoProcess-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "badLot",
+            "value": {
+              "kind": "string",
+              "value": "b"
+            }
+          },
+          {
+            "name": "lot",
+            "value": {
+              "kind": "string",
+              "value": "outside"
+            }
+          },
+          {
+            "name": "lots",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b",
+                "c"
+              ]
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_BatchCancelled",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Handle the cancelled batch",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s06-complete-UserTask_UndoProcess-2",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "badLot",
+            "value": {
+              "kind": "string",
+              "value": "b"
+            }
+          },
+          {
+            "name": "lot",
+            "value": {
+              "kind": "string",
+              "value": "outside"
+            }
+          },
+          {
+            "name": "lots",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b",
+                "c"
+              ]
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_BatchCancelled",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Handle the cancelled batch",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s07-complete-UserTask_UndoProcess-3",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "badLot",
+            "value": {
+              "kind": "string",
+              "value": "b"
+            }
+          },
+          {
+            "name": "lot",
+            "value": {
+              "kind": "string",
+              "value": "outside"
+            }
+          },
+          {
+            "name": "lots",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b",
+                "c"
+              ]
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_BatchCancelled",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Handle the cancelled batch",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s08-complete-UserTask_Check-1",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "badLot",
+            "value": {
+              "kind": "string",
+              "value": "b"
+            }
+          },
+          {
+            "name": "lot",
+            "value": {
+              "kind": "string",
+              "value": "outside"
+            }
+          },
+          {
+            "name": "lots",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b",
+                "c"
+              ]
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_BatchCancelled",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Handle the cancelled batch",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s09-complete-UserTask_BatchCancelled-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "badLot",
+            "value": {
+              "kind": "string",
+              "value": "b"
+            }
+          },
+          {
+            "name": "lot",
+            "value": {
+              "kind": "string",
+              "value": "outside"
+            }
+          },
+          {
+            "name": "lots",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b",
+                "c"
+              ]
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}

@@ -6,7 +6,7 @@
   },
   "profile": {
     "id": "cibseven-2.2.0",
-    "sha256": "28dba164ed6d66d9d6401e4c8ebae110d1688fc29810c8cac4f43ac97b5882c4"
+    "sha256": "820c7e46113d9bb8adc77c83e77632f870100fd1912d545f4dd23c6f537a7c7e"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -24,24 +24,11 @@
         "engineClockTimeMs": 0,
         "variables": [
           {
-            "name": "file",
-            "value": "Acme"
-          },
-          {
-            "name": "file",
-            "value": "sanctions screening"
-          },
-          {
             "name": "supplierName",
-            "value": "Acme"
-          },
-          {
-            "name": "verdict",
-            "value": "pending"
-          },
-          {
-            "name": "verdict",
-            "value": "pending"
+            "value": {
+              "kind": "string",
+              "value": "Acme"
+            }
           }
         ]
       },
@@ -51,24 +38,11 @@
         "engineClockTimeMs": 0,
         "variables": [
           {
-            "name": "file",
-            "value": "Acme"
-          },
-          {
-            "name": "file",
-            "value": "sanctions screening"
-          },
-          {
             "name": "supplierName",
-            "value": "Acme"
-          },
-          {
-            "name": "verdict",
-            "value": "pending"
-          },
-          {
-            "name": "verdict",
-            "value": "pending"
+            "value": {
+              "kind": "string",
+              "value": "Acme"
+            }
           }
         ]
       },
@@ -78,24 +52,11 @@
         "engineClockTimeMs": 0,
         "variables": [
           {
-            "name": "file",
-            "value": "Acme"
-          },
-          {
-            "name": "file",
-            "value": "sanctions screening"
-          },
-          {
             "name": "supplierName",
-            "value": "Acme"
-          },
-          {
-            "name": "verdict",
-            "value": "pending"
-          },
-          {
-            "name": "verdict",
-            "value": "pending"
+            "value": {
+              "kind": "string",
+              "value": "Acme"
+            }
           }
         ]
       },
@@ -105,28 +66,18 @@
         "engineClockTimeMs": 0,
         "variables": [
           {
-            "name": "file",
-            "value": "Acme"
-          },
-          {
-            "name": "file",
-            "value": "sanctions screening"
-          },
-          {
             "name": "financialVerdict",
-            "value": "solvent"
+            "value": {
+              "kind": "string",
+              "value": "solvent"
+            }
           },
           {
             "name": "supplierName",
-            "value": "Acme"
-          },
-          {
-            "name": "verdict",
-            "value": "solvent"
-          },
-          {
-            "name": "verdict",
-            "value": "pending"
+            "value": {
+              "kind": "string",
+              "value": "Acme"
+            }
           }
         ]
       },
@@ -136,28 +87,18 @@
         "engineClockTimeMs": 0,
         "variables": [
           {
-            "name": "file",
-            "value": "Acme"
-          },
-          {
-            "name": "file",
-            "value": "sanctions screening"
-          },
-          {
             "name": "financialVerdict",
-            "value": "solvent"
+            "value": {
+              "kind": "string",
+              "value": "solvent"
+            }
           },
           {
             "name": "supplierName",
-            "value": "Acme"
-          },
-          {
-            "name": "verdict",
-            "value": "solvent"
-          },
-          {
-            "name": "verdict",
-            "value": "pending"
+            "value": {
+              "kind": "string",
+              "value": "Acme"
+            }
           }
         ]
       },
@@ -168,31 +109,24 @@
         "variables": [
           {
             "name": "complianceVerdict",
-            "value": "clear"
-          },
-          {
-            "name": "file",
-            "value": "Acme"
-          },
-          {
-            "name": "file",
-            "value": "sanctions screening"
+            "value": {
+              "kind": "string",
+              "value": "clear"
+            }
           },
           {
             "name": "financialVerdict",
-            "value": "solvent"
+            "value": {
+              "kind": "string",
+              "value": "solvent"
+            }
           },
           {
             "name": "supplierName",
-            "value": "Acme"
-          },
-          {
-            "name": "verdict",
-            "value": "solvent"
-          },
-          {
-            "name": "verdict",
-            "value": "clear"
+            "value": {
+              "kind": "string",
+              "value": "Acme"
+            }
           }
         ]
       },
@@ -203,31 +137,24 @@
         "variables": [
           {
             "name": "complianceVerdict",
-            "value": "clear"
-          },
-          {
-            "name": "file",
-            "value": "Acme"
-          },
-          {
-            "name": "file",
-            "value": "sanctions screening"
+            "value": {
+              "kind": "string",
+              "value": "clear"
+            }
           },
           {
             "name": "financialVerdict",
-            "value": "solvent"
+            "value": {
+              "kind": "string",
+              "value": "solvent"
+            }
           },
           {
             "name": "supplierName",
-            "value": "Acme"
-          },
-          {
-            "name": "verdict",
-            "value": "solvent"
-          },
-          {
-            "name": "verdict",
-            "value": "clear"
+            "value": {
+              "kind": "string",
+              "value": "Acme"
+            }
           }
         ]
       }
@@ -390,38 +317,10 @@
         "logicalTimeMs": 0,
         "variables": [
           {
-            "name": "file",
-            "value": {
-              "kind": "string",
-              "value": "Acme"
-            }
-          },
-          {
-            "name": "file",
-            "value": {
-              "kind": "string",
-              "value": "sanctions screening"
-            }
-          },
-          {
             "name": "supplierName",
             "value": {
               "kind": "string",
               "value": "Acme"
-            }
-          },
-          {
-            "name": "verdict",
-            "value": {
-              "kind": "string",
-              "value": "pending"
-            }
-          },
-          {
-            "name": "verdict",
-            "value": {
-              "kind": "string",
-              "value": "pending"
             }
           }
         ],
@@ -484,38 +383,10 @@
         "logicalTimeMs": 0,
         "variables": [
           {
-            "name": "file",
-            "value": {
-              "kind": "string",
-              "value": "Acme"
-            }
-          },
-          {
-            "name": "file",
-            "value": {
-              "kind": "string",
-              "value": "sanctions screening"
-            }
-          },
-          {
             "name": "supplierName",
             "value": {
               "kind": "string",
               "value": "Acme"
-            }
-          },
-          {
-            "name": "verdict",
-            "value": {
-              "kind": "string",
-              "value": "pending"
-            }
-          },
-          {
-            "name": "verdict",
-            "value": {
-              "kind": "string",
-              "value": "pending"
             }
           }
         ],
@@ -585,38 +456,10 @@
         "logicalTimeMs": 0,
         "variables": [
           {
-            "name": "file",
-            "value": {
-              "kind": "string",
-              "value": "Acme"
-            }
-          },
-          {
-            "name": "file",
-            "value": {
-              "kind": "string",
-              "value": "sanctions screening"
-            }
-          },
-          {
             "name": "supplierName",
             "value": {
               "kind": "string",
               "value": "Acme"
-            }
-          },
-          {
-            "name": "verdict",
-            "value": {
-              "kind": "string",
-              "value": "pending"
-            }
-          },
-          {
-            "name": "verdict",
-            "value": {
-              "kind": "string",
-              "value": "pending"
             }
           }
         ],
@@ -693,20 +536,6 @@
         "logicalTimeMs": 0,
         "variables": [
           {
-            "name": "file",
-            "value": {
-              "kind": "string",
-              "value": "Acme"
-            }
-          },
-          {
-            "name": "file",
-            "value": {
-              "kind": "string",
-              "value": "sanctions screening"
-            }
-          },
-          {
             "name": "financialVerdict",
             "value": {
               "kind": "string",
@@ -718,20 +547,6 @@
             "value": {
               "kind": "string",
               "value": "Acme"
-            }
-          },
-          {
-            "name": "verdict",
-            "value": {
-              "kind": "string",
-              "value": "solvent"
-            }
-          },
-          {
-            "name": "verdict",
-            "value": {
-              "kind": "string",
-              "value": "pending"
             }
           }
         ],
@@ -779,20 +594,6 @@
         "logicalTimeMs": 0,
         "variables": [
           {
-            "name": "file",
-            "value": {
-              "kind": "string",
-              "value": "Acme"
-            }
-          },
-          {
-            "name": "file",
-            "value": {
-              "kind": "string",
-              "value": "sanctions screening"
-            }
-          },
-          {
             "name": "financialVerdict",
             "value": {
               "kind": "string",
@@ -804,20 +605,6 @@
             "value": {
               "kind": "string",
               "value": "Acme"
-            }
-          },
-          {
-            "name": "verdict",
-            "value": {
-              "kind": "string",
-              "value": "solvent"
-            }
-          },
-          {
-            "name": "verdict",
-            "value": {
-              "kind": "string",
-              "value": "pending"
             }
           }
         ],
@@ -872,20 +659,6 @@
             }
           },
           {
-            "name": "file",
-            "value": {
-              "kind": "string",
-              "value": "Acme"
-            }
-          },
-          {
-            "name": "file",
-            "value": {
-              "kind": "string",
-              "value": "sanctions screening"
-            }
-          },
-          {
             "name": "financialVerdict",
             "value": {
               "kind": "string",
@@ -897,20 +670,6 @@
             "value": {
               "kind": "string",
               "value": "Acme"
-            }
-          },
-          {
-            "name": "verdict",
-            "value": {
-              "kind": "string",
-              "value": "solvent"
-            }
-          },
-          {
-            "name": "verdict",
-            "value": {
-              "kind": "string",
-              "value": "clear"
             }
           }
         ],
@@ -958,20 +717,6 @@
             }
           },
           {
-            "name": "file",
-            "value": {
-              "kind": "string",
-              "value": "Acme"
-            }
-          },
-          {
-            "name": "file",
-            "value": {
-              "kind": "string",
-              "value": "sanctions screening"
-            }
-          },
-          {
             "name": "financialVerdict",
             "value": {
               "kind": "string",
@@ -983,20 +728,6 @@
             "value": {
               "kind": "string",
               "value": "Acme"
-            }
-          },
-          {
-            "name": "verdict",
-            "value": {
-              "kind": "string",
-              "value": "solvent"
-            }
-          },
-          {
-            "name": "verdict",
-            "value": {
-              "kind": "string",
-              "value": "clear"
             }
           }
         ],

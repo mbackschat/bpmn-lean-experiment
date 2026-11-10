@@ -2,11 +2,11 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "juel-evaluation-failures-reflection-through-method",
-    "sha256": "26fc4889c64929edefe94d7de93b42577e4b179b7949412b286fb3da1b4ea030"
+    "sha256": "d47ad5c0b3e95b3cf992a4ce173b5c9867a20ebd21917a4394c98dce9937984f"
   },
   "profile": {
     "id": "cibseven-2.2.0",
-    "sha256": "28dba164ed6d66d9d6401e4c8ebae110d1688fc29810c8cac4f43ac97b5882c4"
+    "sha256": "820c7e46113d9bb8adc77c83e77632f870100fd1912d545f4dd23c6f537a7c7e"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -25,11 +25,17 @@
         "variables": [
           {
             "name": "probe",
-            "value": "reflection-through-method"
+            "value": {
+              "kind": "string",
+              "value": "reflection-through-method"
+            }
           },
           {
             "name": "word",
-            "value": "abc"
+            "value": {
+              "kind": "string",
+              "value": "abc"
+            }
           }
         ]
       }

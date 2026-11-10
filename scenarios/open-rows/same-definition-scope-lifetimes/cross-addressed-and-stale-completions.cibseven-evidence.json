@@ -1,0 +1,2091 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "same-definition-scope-lifetimes-cross-addressed-and-stale-completions",
+    "sha256": "d99bfdddd8b3e53419eb819ac80b8861b9aa558dc0defe3eae0f96bad0d8eee2"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "820c7e46113d9bb8adc77c83e77632f870100fd1912d545f4dd23c6f537a7c7e"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "again",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "seed",
+            "value": {
+              "kind": "string",
+              "value": "s0"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-intake-north",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "again",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "seed",
+            "value": {
+              "kind": "string",
+              "value": "s0"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-intake-south",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "again",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "seed",
+            "value": {
+              "kind": "string",
+              "value": "s0"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-examine-south",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "again",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "seed",
+            "value": {
+              "kind": "string",
+              "value": "s0"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-notify-south",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "again",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "seed",
+            "value": {
+              "kind": "string",
+              "value": "s0"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s06-sign-not-yet-open",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "again",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "seed",
+            "value": {
+              "kind": "string",
+              "value": "s0"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s07-sign-south",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "again",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "seed",
+            "value": {
+              "kind": "string",
+              "value": "s0"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s08-stale-sign-south",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "again",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "seed",
+            "value": {
+              "kind": "string",
+              "value": "s0"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s09-examine-north",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "again",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "seed",
+            "value": {
+              "kind": "string",
+              "value": "s0"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s10-stale-notify-south",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "again",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "seed",
+            "value": {
+              "kind": "string",
+              "value": "s0"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s11-notify-north",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "again",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "seed",
+            "value": {
+              "kind": "string",
+              "value": "s0"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s12-sign-north",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "again",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "seed",
+            "value": {
+              "kind": "string",
+              "value": "s0"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s13-publish-south",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "again",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "seed",
+            "value": {
+              "kind": "string",
+              "value": "s0"
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "tasks": [
+          {
+            "elementId": "UserTask_IntakeNorth",
+            "name": "Intake from the north desk"
+          },
+          {
+            "elementId": "UserTask_IntakeSouth",
+            "name": "Intake from the south desk"
+          },
+          {
+            "elementId": "UserTask_Outside",
+            "name": "Handle the unrelated request"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-intake-north",
+        "tasks": [
+          {
+            "elementId": "UserTask_IntakeSouth",
+            "name": "Intake from the south desk"
+          },
+          {
+            "elementId": "UserTask_Outside",
+            "name": "Handle the unrelated request"
+          },
+          {
+            "elementId": "UserTask_Examine",
+            "name": "Examine the submission"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-intake-south",
+        "tasks": [
+          {
+            "elementId": "UserTask_Outside",
+            "name": "Handle the unrelated request"
+          },
+          {
+            "elementId": "UserTask_Examine",
+            "name": "Examine the submission"
+          },
+          {
+            "elementId": "UserTask_Examine",
+            "name": "Examine the submission"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-examine-south",
+        "tasks": [
+          {
+            "elementId": "UserTask_Outside",
+            "name": "Handle the unrelated request"
+          },
+          {
+            "elementId": "UserTask_Examine",
+            "name": "Examine the submission"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-notify-south",
+        "tasks": [
+          {
+            "elementId": "UserTask_Outside",
+            "name": "Handle the unrelated request"
+          },
+          {
+            "elementId": "UserTask_Examine",
+            "name": "Examine the submission"
+          },
+          {
+            "elementId": "UserTask_Sign",
+            "name": "Sign the review"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s06-sign-not-yet-open",
+        "tasks": [
+          {
+            "elementId": "UserTask_Outside",
+            "name": "Handle the unrelated request"
+          },
+          {
+            "elementId": "UserTask_Examine",
+            "name": "Examine the submission"
+          },
+          {
+            "elementId": "UserTask_Sign",
+            "name": "Sign the review"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s07-sign-south",
+        "tasks": [
+          {
+            "elementId": "UserTask_Outside",
+            "name": "Handle the unrelated request"
+          },
+          {
+            "elementId": "UserTask_Examine",
+            "name": "Examine the submission"
+          },
+          {
+            "elementId": "UserTask_Publish",
+            "name": "Publish the decision"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s08-stale-sign-south",
+        "tasks": [
+          {
+            "elementId": "UserTask_Outside",
+            "name": "Handle the unrelated request"
+          },
+          {
+            "elementId": "UserTask_Examine",
+            "name": "Examine the submission"
+          },
+          {
+            "elementId": "UserTask_Publish",
+            "name": "Publish the decision"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s09-examine-north",
+        "tasks": [
+          {
+            "elementId": "UserTask_Outside",
+            "name": "Handle the unrelated request"
+          },
+          {
+            "elementId": "UserTask_Publish",
+            "name": "Publish the decision"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s10-stale-notify-south",
+        "tasks": [
+          {
+            "elementId": "UserTask_Outside",
+            "name": "Handle the unrelated request"
+          },
+          {
+            "elementId": "UserTask_Publish",
+            "name": "Publish the decision"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s11-notify-north",
+        "tasks": [
+          {
+            "elementId": "UserTask_Outside",
+            "name": "Handle the unrelated request"
+          },
+          {
+            "elementId": "UserTask_Publish",
+            "name": "Publish the decision"
+          },
+          {
+            "elementId": "UserTask_Sign",
+            "name": "Sign the review"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s12-sign-north",
+        "tasks": [
+          {
+            "elementId": "UserTask_Outside",
+            "name": "Handle the unrelated request"
+          },
+          {
+            "elementId": "UserTask_Publish",
+            "name": "Publish the decision"
+          },
+          {
+            "elementId": "UserTask_Publish",
+            "name": "Publish the decision"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s13-publish-south",
+        "tasks": [
+          {
+            "elementId": "UserTask_Outside",
+            "name": "Handle the unrelated request"
+          },
+          {
+            "elementId": "UserTask_Publish",
+            "name": "Publish the decision"
+          }
+        ]
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s02-intake-north",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s03-intake-south",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s04-examine-south",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s05-notify-south",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s06-sign-not-yet-open",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s07-sign-south",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s08-stale-sign-south",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s09-examine-north",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s10-stale-notify-south",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s11-notify-north",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s12-sign-north",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s13-publish-south",
+        "jobs": []
+      }
+    ],
+    "effectJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s02-intake-north",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s03-intake-south",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s04-examine-south",
+        "jobs": [
+          {
+            "elementId": "ServiceTask_Notify",
+            "activation": 1,
+            "protocol": "urn:bpmn-lean:effect:probe-v1",
+            "handler": "bpmnLeanEffectHandler",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-notify-south",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s06-sign-not-yet-open",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s07-sign-south",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s08-stale-sign-south",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s09-examine-north",
+        "jobs": [
+          {
+            "elementId": "ServiceTask_Notify",
+            "activation": 2,
+            "protocol": "urn:bpmn-lean:effect:probe-v1",
+            "handler": "bpmnLeanEffectHandler",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s10-stale-notify-south",
+        "jobs": [
+          {
+            "elementId": "ServiceTask_Notify",
+            "activation": 2,
+            "protocol": "urn:bpmn-lean:effect:probe-v1",
+            "handler": "bpmnLeanEffectHandler",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s11-notify-north",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s12-sign-north",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s13-publish-south",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "s01-start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s02-intake-north",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s03-intake-south",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s04-examine-south",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s05-notify-south",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s06-sign-not-yet-open",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s07-sign-south",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s08-stale-sign-south",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s09-examine-north",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s10-stale-notify-south",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s11-notify-north",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s12-sign-north",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s13-publish-south",
+        "state": "ACTIVE"
+      }
+    ],
+    "effectExecutions": [
+      {
+        "afterCommandId": "s05-notify-south",
+        "schedule": "plainSuccess",
+        "invocations": 1,
+        "mutations": 1,
+        "initialRetries": 3,
+        "retriesAfterFirstFailure": null
+      },
+      {
+        "afterCommandId": "s11-notify-north",
+        "schedule": "plainSuccess",
+        "invocations": 2,
+        "mutations": 1,
+        "initialRetries": 3,
+        "retriesAfterFirstFailure": null
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "again",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "seed",
+            "value": {
+              "kind": "string",
+              "value": "s0"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_IntakeNorth",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Intake from the north desk",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_IntakeSouth",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Intake from the south desk",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Outside",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Handle the unrelated request",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s02-intake-north",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "again",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "seed",
+            "value": {
+              "kind": "string",
+              "value": "s0"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Examine",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Examine the submission",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "seenNote",
+                  "value": {
+                    "kind": "string",
+                    "value": "s0"
+                  }
+                },
+                {
+                  "name": "seenStatus",
+                  "value": {
+                    "kind": "string",
+                    "value": "open"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_IntakeSouth",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Intake from the south desk",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Outside",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Handle the unrelated request",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s03-intake-south",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "again",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "seed",
+            "value": {
+              "kind": "string",
+              "value": "s0"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Examine",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Examine the submission",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "seenNote",
+                  "value": {
+                    "kind": "string",
+                    "value": "s0"
+                  }
+                },
+                {
+                  "name": "seenStatus",
+                  "value": {
+                    "kind": "string",
+                    "value": "open"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Examine",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Examine the submission",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "seenNote",
+                  "value": {
+                    "kind": "string",
+                    "value": "s0"
+                  }
+                },
+                {
+                  "name": "seenStatus",
+                  "value": {
+                    "kind": "string",
+                    "value": "open"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Outside",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Handle the unrelated request",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s04-examine-south",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "again",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "seed",
+            "value": {
+              "kind": "string",
+              "value": "s0"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ServiceTask_Notify",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "urn:bpmn-lean:effect-operation:probe-v1",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Examine",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Examine the submission",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "seenNote",
+                  "value": {
+                    "kind": "string",
+                    "value": "s0"
+                  }
+                },
+                {
+                  "name": "seenStatus",
+                  "value": {
+                    "kind": "string",
+                    "value": "open"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Outside",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Handle the unrelated request",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s05-notify-south",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "again",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "seed",
+            "value": {
+              "kind": "string",
+              "value": "s0"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Examine",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Examine the submission",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "seenNote",
+                  "value": {
+                    "kind": "string",
+                    "value": "s0"
+                  }
+                },
+                {
+                  "name": "seenStatus",
+                  "value": {
+                    "kind": "string",
+                    "value": "open"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Outside",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Handle the unrelated request",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Sign",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Sign the review",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "seenNote",
+                  "value": {
+                    "kind": "string",
+                    "value": "s0"
+                  }
+                },
+                {
+                  "name": "seenStatus",
+                  "value": {
+                    "kind": "string",
+                    "value": "south"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s06-sign-not-yet-open",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "again",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "seed",
+            "value": {
+              "kind": "string",
+              "value": "s0"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Examine",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Examine the submission",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "seenNote",
+                  "value": {
+                    "kind": "string",
+                    "value": "s0"
+                  }
+                },
+                {
+                  "name": "seenStatus",
+                  "value": {
+                    "kind": "string",
+                    "value": "open"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Outside",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Handle the unrelated request",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Sign",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Sign the review",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "seenNote",
+                  "value": {
+                    "kind": "string",
+                    "value": "s0"
+                  }
+                },
+                {
+                  "name": "seenStatus",
+                  "value": {
+                    "kind": "string",
+                    "value": "south"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s07-sign-south",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "again",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "seed",
+            "value": {
+              "kind": "string",
+              "value": "s0"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Examine",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Examine the submission",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "seenNote",
+                  "value": {
+                    "kind": "string",
+                    "value": "s0"
+                  }
+                },
+                {
+                  "name": "seenStatus",
+                  "value": {
+                    "kind": "string",
+                    "value": "open"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Outside",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Handle the unrelated request",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Publish",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Publish the decision",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s08-stale-sign-south",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "again",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "seed",
+            "value": {
+              "kind": "string",
+              "value": "s0"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Examine",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Examine the submission",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "seenNote",
+                  "value": {
+                    "kind": "string",
+                    "value": "s0"
+                  }
+                },
+                {
+                  "name": "seenStatus",
+                  "value": {
+                    "kind": "string",
+                    "value": "open"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Outside",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Handle the unrelated request",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Publish",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Publish the decision",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s09-examine-north",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "again",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "seed",
+            "value": {
+              "kind": "string",
+              "value": "s0"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ServiceTask_Notify",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "urn:bpmn-lean:effect-operation:probe-v1",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Outside",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Handle the unrelated request",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Publish",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Publish the decision",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s10-stale-notify-south",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "again",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "seed",
+            "value": {
+              "kind": "string",
+              "value": "s0"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ServiceTask_Notify",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "urn:bpmn-lean:effect-operation:probe-v1",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Outside",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Handle the unrelated request",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Publish",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Publish the decision",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s11-notify-north",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "again",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "seed",
+            "value": {
+              "kind": "string",
+              "value": "s0"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Outside",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Handle the unrelated request",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Publish",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Publish the decision",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Sign",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Sign the review",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "seenNote",
+                  "value": {
+                    "kind": "string",
+                    "value": "s0"
+                  }
+                },
+                {
+                  "name": "seenStatus",
+                  "value": {
+                    "kind": "string",
+                    "value": "north"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s12-sign-north",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "again",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "seed",
+            "value": {
+              "kind": "string",
+              "value": "s0"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Outside",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Handle the unrelated request",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Publish",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Publish the decision",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Publish",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Publish the decision",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s13-publish-south",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "again",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "seed",
+            "value": {
+              "kind": "string",
+              "value": "s0"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Outside",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Handle the unrelated request",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Publish",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Publish the decision",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      }
+    ]
+  }
+}

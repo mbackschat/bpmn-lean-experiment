@@ -1,0 +1,494 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "mi-completion-failures-user-sequential-not-boolean-final",
+    "sha256": "dbf14fdf3b7fea32381471daa2e6379aa34bacece36ca25a5c85909fd1b247db"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "820c7e46113d9bb8adc77c83e77632f870100fd1912d545f4dd23c6f537a7c7e"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "DataInput_Items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b"
+              ]
+            }
+          },
+          {
+            "name": "failAt",
+            "value": {
+              "kind": "integer",
+              "value": 2
+            }
+          },
+          {
+            "name": "label",
+            "value": {
+              "kind": "string",
+              "value": "x"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-complete-UserTask_Review-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "DataInput_Items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b"
+              ]
+            }
+          },
+          {
+            "name": "DataOutput_Result",
+            "value": {
+              "kind": "string",
+              "value": "ok-1"
+            }
+          },
+          {
+            "name": "failAt",
+            "value": {
+              "kind": "integer",
+              "value": 2
+            }
+          },
+          {
+            "name": "label",
+            "value": {
+              "kind": "string",
+              "value": "x"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-complete-UserTask_Review-2",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "DataInput_Items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b"
+              ]
+            }
+          },
+          {
+            "name": "DataOutput_Result",
+            "value": {
+              "kind": "string",
+              "value": "ok-2"
+            }
+          },
+          {
+            "name": "failAt",
+            "value": {
+              "kind": "integer",
+              "value": 2
+            }
+          },
+          {
+            "name": "label",
+            "value": {
+              "kind": "string",
+              "value": "x"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_Close-1",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "DataInput_Items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b"
+              ]
+            }
+          },
+          {
+            "name": "DataOutput_Result",
+            "value": {
+              "kind": "string",
+              "value": "ok-2"
+            }
+          },
+          {
+            "name": "failAt",
+            "value": {
+              "kind": "integer",
+              "value": 2
+            }
+          },
+          {
+            "name": "label",
+            "value": {
+              "kind": "string",
+              "value": "x"
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "tasks": [
+          {
+            "elementId": "UserTask_Review",
+            "name": "Review item"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-complete-UserTask_Review-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_Review",
+            "name": "Review item"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-complete-UserTask_Review-2",
+        "tasks": [
+          {
+            "elementId": "UserTask_Close",
+            "name": "Close review"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_Close-1",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s02-complete-UserTask_Review-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s03-complete-UserTask_Review-2",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_Close-1",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "s01-start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s02-complete-UserTask_Review-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s03-complete-UserTask_Review-2",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_Close-1",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "DataInput_Items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b"
+              ]
+            }
+          },
+          {
+            "name": "failAt",
+            "value": {
+              "kind": "integer",
+              "value": 2
+            }
+          },
+          {
+            "name": "label",
+            "value": {
+              "kind": "string",
+              "value": "x"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Review",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review item",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s02-complete-UserTask_Review-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "DataInput_Items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b"
+              ]
+            }
+          },
+          {
+            "name": "DataOutput_Result",
+            "value": {
+              "kind": "string",
+              "value": "ok-1"
+            }
+          },
+          {
+            "name": "failAt",
+            "value": {
+              "kind": "integer",
+              "value": 2
+            }
+          },
+          {
+            "name": "label",
+            "value": {
+              "kind": "string",
+              "value": "x"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Review",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review item",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s03-complete-UserTask_Review-2",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "DataInput_Items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b"
+              ]
+            }
+          },
+          {
+            "name": "DataOutput_Result",
+            "value": {
+              "kind": "string",
+              "value": "ok-2"
+            }
+          },
+          {
+            "name": "failAt",
+            "value": {
+              "kind": "integer",
+              "value": 2
+            }
+          },
+          {
+            "name": "label",
+            "value": {
+              "kind": "string",
+              "value": "x"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Close",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Close review",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s04-complete-UserTask_Close-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "DataInput_Items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b"
+              ]
+            }
+          },
+          {
+            "name": "DataOutput_Result",
+            "value": {
+              "kind": "string",
+              "value": "ok-2"
+            }
+          },
+          {
+            "name": "failAt",
+            "value": {
+              "kind": "integer",
+              "value": 2
+            }
+          },
+          {
+            "name": "label",
+            "value": {
+              "kind": "string",
+              "value": "x"
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}
