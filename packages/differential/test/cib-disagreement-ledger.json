@@ -563,6 +563,61 @@
     ]
   },
   {
+    "evidence": "scenarios/open-rows/conditional-boundary-hosts/body-local-write-reads-another-scope.cibseven-evidence.json",
+    "owners": [
+      "CIB-DEV-0010"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/conditional-boundary-hosts/call-host-condition-then-return.cibseven-evidence.json",
+    "owners": [
+      "CIB-DEV-0010"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/conditional-boundary-hosts/call-return-write-reaches-watcher.cibseven-evidence.json",
+    "owners": [
+      "CIB-DEV-0010"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/conditional-boundary-hosts/completion-write-reaches-sibling.cibseven-evidence.json",
+    "owners": [
+      "CIB-DEV-0010"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/conditional-boundary-hosts/completion-write-read-by-own-boundary.cibseven-evidence.json",
+    "owners": [
+      "CIB-DEV-0005",
+      "CIB-DEV-0010"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/conditional-boundary-hosts/effect-host-condition.cibseven-evidence.json",
+    "owners": [
+      "CIB-DEV-0010"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/conditional-boundary-hosts/level-both-eligible.cibseven-evidence.json",
+    "owners": [
+      "CIB-DEV-0010"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/conditional-boundary-hosts/level-repeated-handlers.cibseven-evidence.json",
+    "owners": [
+      "CIB-DEV-0010"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/conditional-boundary-hosts/multi-instance-task-halt.cibseven-evidence.json",
+    "owners": [
+      "CIB-DEV-0010"
+    ]
+  },
+  {
     "evidence": "scenarios/open-rows/conditional-esp/handler-writes-bounded-chain.cibseven-evidence.json",
     "owners": [
       "CIB-LIM-0009"
@@ -608,6 +663,12 @@
     "evidence": "scenarios/open-rows/conditional-evaluation/null-and-false-values.cibseven-evidence.json",
     "owners": [
       "CIB-LIM-0009"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/conditional-evaluation/portable-entry-true.cibseven-evidence.json",
+    "owners": [
+      "CIB-OP-0018"
     ]
   },
   {
@@ -1094,9 +1155,93 @@
     ]
   },
   {
-    "evidence": "scenarios/open-rows/message-esp-repeatable/sequential-body-listener-before-replacement.cibseven-evidence.json",
+    "evidence": "scenarios/open-rows/message-boundary-interrupting/call-child-completes-first.cibseven-evidence.json",
     "owners": [
-      "PC-MESSAGE-07"
+      "CIB-DEV-0010"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/message-boundary-interrupting/call-stop-while-child-open.cibseven-evidence.json",
+    "owners": [
+      "CIB-DEV-0010"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/message-boundary-interrupting/effect-abort-before-result.cibseven-evidence.json",
+    "owners": [
+      "CIB-DEV-0010"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/message-boundary-interrupting/effect-result-first.cibseven-evidence.json",
+    "owners": [
+      "CIB-DEV-0010"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/message-boundary-interrupting/parallel-bodies-complete-first.cibseven-evidence.json",
+    "owners": [
+      "CIB-DEV-0010"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/message-boundary-interrupting/parallel-bodies-quit.cibseven-evidence.json",
+    "owners": [
+      "CIB-DEV-0010"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/message-boundary-interrupting/receive-message-first.cibseven-evidence.json",
+    "owners": [
+      "CIB-DEV-0010"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/message-boundary-interrupting/receive-withdraw-before-own-message.cibseven-evidence.json",
+    "owners": [
+      "CIB-DEV-0010"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/message-boundary-interrupting/scope-completes-first.cibseven-evidence.json",
+    "owners": [
+      "CIB-DEV-0010"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/message-boundary-interrupting/scope-halt-while-work-open.cibseven-evidence.json",
+    "owners": [
+      "CIB-DEV-0010"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/message-boundary-interrupting/sequential-bodies-complete-first.cibseven-evidence.json",
+    "owners": [
+      "CIB-DEV-0010"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/message-boundary-interrupting/sequential-bodies-quit.cibseven-evidence.json",
+    "owners": [
+      "CIB-DEV-0010"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/message-boundary-interrupting/user-amend-first.cibseven-evidence.json",
+    "owners": [
+      "CIB-DEV-0010"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/message-boundary-interrupting/user-cancel-then-amend.cibseven-evidence.json",
+    "owners": [
+      "CIB-DEV-0010"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/message-boundary-interrupting/user-completes-first.cibseven-evidence.json",
+    "owners": [
+      "CIB-DEV-0010"
     ]
   },
   {
@@ -1154,6 +1299,13 @@
     ]
   },
   {
+    "evidence": "scenarios/open-rows/multi-instance-call-activity/parallel-child-error.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-03",
+      "PC-MI-12"
+    ]
+  },
+  {
     "evidence": "scenarios/open-rows/multi-instance-call-activity/parallel-equal-reviewers-reversed.cibseven-evidence.json",
     "owners": [
       "PC-MI-03"
@@ -1163,6 +1315,12 @@
     "evidence": "scenarios/open-rows/multi-instance-call-activity/parallel-quorum-reached-early.cibseven-evidence.json",
     "owners": [
       "PC-MI-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-call-activity/parallel-timer-while-work-remains.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-12"
     ]
   },
   {
@@ -1362,12 +1520,6 @@
     "owners": [
       "PC-MI-06",
       "PC-MI-07"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/multi-instance-sub-process/sequential-timer-while-work-remains.cibseven-evidence.json",
-    "owners": [
-      "PC-MI-12"
     ]
   },
   {
@@ -1745,73 +1897,74 @@
   {
     "evidence": "scenarios/open-rows/timer-boundary-hosts/call-child-completes-first.cibseven-evidence.json",
     "owners": [
-      "PC-TIMER-06"
+      "CIB-DEV-0010"
     ]
   },
   {
     "evidence": "scenarios/open-rows/timer-boundary-hosts/call-reminders-then-late.cibseven-evidence.json",
     "owners": [
-      "PC-TIMER-06"
+      "CIB-DEV-0006",
+      "CIB-DEV-0010"
     ]
   },
   {
     "evidence": "scenarios/open-rows/timer-boundary-hosts/effect-result-first.cibseven-evidence.json",
     "owners": [
-      "PC-TIMER-06"
+      "CIB-DEV-0010"
     ]
   },
   {
     "evidence": "scenarios/open-rows/timer-boundary-hosts/effect-timer-before-result.cibseven-evidence.json",
     "owners": [
-      "PC-TIMER-06"
+      "CIB-DEV-0010"
     ]
   },
   {
     "evidence": "scenarios/open-rows/timer-boundary-hosts/loop-stale-deadline.cibseven-evidence.json",
     "owners": [
-      "PC-TIMER-06"
+      "CIB-DEV-0010"
     ]
   },
   {
     "evidence": "scenarios/open-rows/timer-boundary-hosts/receive-message-first.cibseven-evidence.json",
     "owners": [
-      "PC-TIMER-06"
+      "CIB-DEV-0010"
     ]
   },
   {
     "evidence": "scenarios/open-rows/timer-boundary-hosts/receive-remind-then-late.cibseven-evidence.json",
     "owners": [
-      "PC-TIMER-06"
+      "CIB-DEV-0010"
     ]
   },
   {
     "evidence": "scenarios/open-rows/timer-boundary-hosts/scope-hard-while-work-open.cibseven-evidence.json",
     "owners": [
-      "PC-TIMER-06"
+      "CIB-DEV-0010"
     ]
   },
   {
     "evidence": "scenarios/open-rows/timer-boundary-hosts/scope-soft-then-work-completes.cibseven-evidence.json",
     "owners": [
-      "PC-TIMER-06"
+      "CIB-DEV-0010"
     ]
   },
   {
     "evidence": "scenarios/open-rows/timer-boundary-hosts/user-completes-first.cibseven-evidence.json",
     "owners": [
-      "PC-TIMER-06"
+      "CIB-DEV-0010"
     ]
   },
   {
     "evidence": "scenarios/open-rows/timer-boundary-hosts/user-hard-first.cibseven-evidence.json",
     "owners": [
-      "PC-TIMER-06"
+      "CIB-DEV-0010"
     ]
   },
   {
     "evidence": "scenarios/open-rows/timer-boundary-hosts/user-soft-then-hard.cibseven-evidence.json",
     "owners": [
-      "PC-TIMER-06"
+      "CIB-DEV-0010"
     ]
   },
   {
@@ -1822,21 +1975,28 @@
     ]
   },
   {
-    "evidence": "scenarios/open-rows/timer-event-subprocess/cycle-handlers-overlap-past-the-ordinary-path.cibseven-evidence.json",
+    "evidence": "scenarios/open-rows/timer-data-derived/value-outside-subset.cibseven-evidence.json",
     "owners": [
-      "PC-TIMER-07"
+      "CIB-LIM-0003"
     ]
   },
   {
-    "evidence": "scenarios/open-rows/timer-lifetimes/sequential-first-body-deadline-arms-second.cibseven-evidence.json",
+    "evidence": "scenarios/open-rows/timer-date-forms/no-designator.cibseven-evidence.json",
     "owners": [
-      "PC-TIMER-08"
+      "CIB-CFG-0013",
+      "CIB-LIM-0003"
     ]
   },
   {
-    "evidence": "scenarios/open-rows/timer-lifetimes/sequential-outer-deadline-after-first-body.cibseven-evidence.json",
+    "evidence": "scenarios/open-rows/timer-duration-forms/form-five-weeks-in-february.cibseven-evidence.json",
     "owners": [
-      "PC-TIMER-08"
+      "CIB-DEV-0009"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/timer-duration-forms/form-sub-millisecond.cibseven-evidence.json",
+    "owners": [
+      "CIB-LIM-0003"
     ]
   },
   {
@@ -1846,39 +2006,33 @@
     ]
   },
   {
-    "evidence": "scenarios/open-rows/timer-recurrence/count-host-expires.cibseven-evidence.json",
+    "evidence": "scenarios/open-rows/timer-recurrence/count-last-fire-chain.cibseven-evidence.json",
     "owners": [
-      "PC-TIMER-02"
+      "CIB-DEV-0006"
     ]
   },
   {
-    "evidence": "scenarios/open-rows/timer-recurrence/cron-on-catch.cibseven-evidence.json",
+    "evidence": "scenarios/open-rows/timer-recurrence/count-sub-second-arming.cibseven-evidence.json",
     "owners": [
-      "PC-TIMER-02"
+      "CIB-DEV-0007"
     ]
   },
   {
-    "evidence": "scenarios/open-rows/timer-recurrence/cron-seconds-field.cibseven-evidence.json",
+    "evidence": "scenarios/open-rows/timer-recurrence/cron-refused-day-name.cibseven-evidence.json",
     "owners": [
-      "PC-TIMER-02"
+      "CIB-LIM-0003"
     ]
   },
   {
-    "evidence": "scenarios/open-rows/timer-recurrence/cycle-on-catch.cibseven-evidence.json",
+    "evidence": "scenarios/open-rows/timer-recurrence/cron-refused-last-day.cibseven-evidence.json",
     "owners": [
-      "PC-TIMER-02"
+      "CIB-LIM-0003"
     ]
   },
   {
-    "evidence": "scenarios/open-rows/timer-recurrence/cycle-on-interrupting-boundary.cibseven-evidence.json",
+    "evidence": "scenarios/open-rows/timer-recurrence/cron-refused-two-day-fields.cibseven-evidence.json",
     "owners": [
-      "PC-TIMER-02"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/timer-recurrence/dated-start-and-period.cibseven-evidence.json",
-    "owners": [
-      "PC-TIMER-02"
+      "CIB-LIM-0003"
     ]
   },
   {
@@ -2020,20 +2174,6 @@
     "evidence": "scenarios/parallel-multi-instance/interrupted.cibseven-evidence.json",
     "owners": [
       "CIB-INT-0014"
-    ]
-  },
-  {
-    "evidence": "scenarios/repeatable-event-subscriptions/boundary-timer-repeat.cibseven-evidence.json",
-    "owners": [
-      "PC-MESSAGE-05",
-      "PC-TIMER-06"
-    ]
-  },
-  {
-    "evidence": "scenarios/repeatable-event-subscriptions/subprocess-boundary-timer-repeat.cibseven-evidence.json",
-    "owners": [
-      "PC-MESSAGE-05",
-      "PC-TIMER-06"
     ]
   },
   {

@@ -24,7 +24,7 @@ The counts below cover only entries recorded by this project, including the sepa
 |---|---:|---:|---|
 | Normative agreement records | 19 | 2 | A bounded BPMN requirement and pinned CIB observation agree; candidates remain unapproved |
 | Permitted operational details | 18 | 0 | CIB or the oracle adapter chooses host mechanics without changing required BPMN observations |
-| Confirmed normative deviations | 0 | 9 | Clear BPMN requirement and pinned CIB evidence establish incompatible behavior |
+| Confirmed normative deviations | 0 | 10 | Clear BPMN requirement and pinned CIB evidence establish incompatible behavior |
 | CIB interpretations of BPMN gaps or inconsistencies | 25 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
 | CIB extension records | 37 | 3 | Project profile deliberately includes behavior beyond bare BPMN execution; candidates remain unselected |
 | Configuration-specific realizations | 14 | 1 | Behavior is permitted or meaningful only under a declared CIB environment |
@@ -217,6 +217,16 @@ ISO 8601 makes `PnW` `7n` days. CIB parses `P\\d+W` as `newDuration(n·604,800,0
 **Evidence:** The cited source; witness `timer-duration-forms/form-five-weeks-in-february` (to author).
 
 **Boundary:** `PnW` with `n ≥ 5` (and `n = 4` armed in a 28-day February window where the months differ).
+
+### CIB-DEV-0010 — CIB never holds an effect Activity's boundaries open while its effect waits
+
+**Status:** Candidate deviation; every profile keeps BPMN's arming
+
+BPMN arms a Boundary Event while its host Activity is active (§10.5.6, §13.5.3), so a Timer, Message or Conditional boundary of a Service Task can interrupt or accompany the work the Task waits for. Under CIB-EXT-0001 (and CIB-EXT-0023 for a Send Task) the effect's wait is CIB's `asyncBefore` continuation job, which comes before the Activity exists: `PvmAtomicOperationTransitionCreateScope#isAsync` answers `isAsyncBefore` (`PvmAtomicOperationTransitionCreateScope.java:28-31`), so the job is scheduled before `PvmAtomicOperationCreateScope#execute` creates the Activity's scope execution and its `initialize` creates the boundary subscriptions (`PvmAtomicOperationCreateScope.java:37-46`, `ExecutionEntity.java:409-414`). The job then creates them, runs the delegate and completes the Task in one transaction, so no committed state holds them. The kernel's effect occurrence is the active Task (CIB-EXT-0001 maps CIB's pre-activation wait onto it) and arms its boundaries when it begins: it publishes them open, fires a Timer at its deadline, accepts a Message for them and offers writes to a Conditional one, where CIB has no subscription (a Timer never armed, a delivery rejected, a write unseen).
+
+**Evidence:** Pinned sources above; retained `timer-boundary-hosts/*` (`Soft_Service`, `Late_Service`), `message-boundary-interrupting/*` (`Abort_Service`, `effect-abort-before-result`: the kernel commits the delivery, CIB rejects it) and `conditional-boundary-hosts/*` (`Service_Cond`, `effect-host-condition`: the kernel begins `Handle_Poke`), each the kernel's one extra open wait on the `asyncBefore` effect host `Host_Service`.
+
+**Boundary:** Boundaries of Activities whose work is an effect (Service Task, Send Task) under the cibseven profiles. The User Task, Receive Task, Sub-Process and Call hosts of the same models agree. A profile option that imitated CIB would refuse or never arm these boundaries; none is proposed.
 
 A candidate must appear here immediately when evidence suggests conflict with a clear BPMN requirement. It remains a candidate until the evidence threshold below is satisfied. Implementation of the disputed profile-dependent behavior pauses unless the capsule explicitly preserves competing accounts as an unresolved experiment.
 
