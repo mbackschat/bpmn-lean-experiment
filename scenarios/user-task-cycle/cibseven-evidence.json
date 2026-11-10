@@ -2,11 +2,11 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "user-task-cycle-repeat-rework-exit",
-    "sha256": "2c909737a18d19216ac6dcc56bc8e7f6600d4addc1b589b9e4c64906a048f522"
+    "sha256": "1dfdec7314946b2358f4bf30ae0b59a92f03df1bbccb5ceaf3ad540402a27f41"
   },
   "profile": {
     "id": "bpmn-2.0.2",
-    "sha256": "2a1e548c9f7d2dbf5a04e34279aab75bded1192883aae5cbd49f9df972d491a0"
+    "sha256": "89155106a5ec44c370470efa8a652c7d7d6320906a8df66d4f168d82d3ef1822"
   },
   "producer": {
     "engine": "CIB Seven",

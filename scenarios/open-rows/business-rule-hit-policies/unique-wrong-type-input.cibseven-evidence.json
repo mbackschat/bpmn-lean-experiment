@@ -1,0 +1,45 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "business-rule-hit-policies-unique-wrong-type-input",
+    "sha256": "1b701eacec031fec28f8ae2acc5019324f761e7cf428d71725214a3442a043ff"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "820c7e46113d9bb8adc77c83e77632f870100fd1912d545f4dd23c6f537a7c7e"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [],
+    "taskQueries": [],
+    "timerJobs": [],
+    "historicProcessStates": []
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "rolledBack"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start",
+        "outcome": "rolledBack"
+      }
+    ]
+  }
+}

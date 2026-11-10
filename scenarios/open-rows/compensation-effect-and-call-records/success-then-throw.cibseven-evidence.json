@@ -6,7 +6,7 @@
   },
   "profile": {
     "id": "cibseven-2.2.0",
-    "sha256": "28dba164ed6d66d9d6401e4c8ebae110d1688fc29810c8cac4f43ac97b5882c4"
+    "sha256": "820c7e46113d9bb8adc77c83e77632f870100fd1912d545f4dd23c6f537a7c7e"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -26,12 +26,6 @@
       },
       {
         "afterCommandId": "s01-effect-success-ServiceTask_Reserve-1",
-        "processInstanceCount": 1,
-        "engineClockTimeMs": 0,
-        "variables": []
-      },
-      {
-        "afterCommandId": "s02-effect-success-ServiceTask_Release-1",
         "processInstanceCount": 1,
         "engineClockTimeMs": 0,
         "variables": []
@@ -58,15 +52,6 @@
         ]
       },
       {
-        "afterCommandId": "s02-effect-success-ServiceTask_Release-1",
-        "tasks": [
-          {
-            "elementId": "UserTask_After",
-            "name": "Continue"
-          }
-        ]
-      },
-      {
         "afterCommandId": "s03-complete-UserTask_After-1",
         "tasks": []
       }
@@ -78,10 +63,6 @@
       },
       {
         "afterCommandId": "s01-effect-success-ServiceTask_Reserve-1",
-        "jobs": []
-      },
-      {
-        "afterCommandId": "s02-effect-success-ServiceTask_Release-1",
         "jobs": []
       },
       {
@@ -109,10 +90,6 @@
         "jobs": []
       },
       {
-        "afterCommandId": "s02-effect-success-ServiceTask_Release-1",
-        "jobs": []
-      },
-      {
         "afterCommandId": "s03-complete-UserTask_After-1",
         "jobs": []
       }
@@ -127,10 +104,6 @@
         "state": "ACTIVE"
       },
       {
-        "afterCommandId": "s02-effect-success-ServiceTask_Release-1",
-        "state": "ACTIVE"
-      },
-      {
         "afterCommandId": "s03-complete-UserTask_After-1",
         "state": "COMPLETED"
       }
@@ -139,10 +112,19 @@
       {
         "afterCommandId": "s01-effect-success-ServiceTask_Reserve-1",
         "schedule": "plainSuccess",
-        "invocations": 2,
+        "invocations": 1,
         "mutations": 1,
         "initialRetries": 3,
         "retriesAfterFirstFailure": null
+      }
+    ],
+    "mappingExecutions": [
+      {
+        "afterCommandId": "s01-effect-success-ServiceTask_Reserve-1",
+        "handler": "bpmnLeanEffectHandler",
+        "arguments": [],
+        "localPatch": [],
+        "invocations": 1
       }
     ]
   },
@@ -194,42 +176,6 @@
         "kind": "command",
         "commandId": "s01-effect-success-ServiceTask_Reserve-1",
         "outcome": "committed"
-      },
-      {
-        "kind": "state",
-        "instanceId": "Instance_1",
-        "status": "running",
-        "logicalTimeMs": 0,
-        "variables": [],
-        "openWaits": [
-          {
-            "id": {
-              "processInstanceId": "Instance_1",
-              "elementId": "UserTask_After",
-              "activation": 1
-            },
-            "definition": null,
-            "detail": {
-              "kind": "userTask",
-              "name": "Continue",
-              "assignee": null,
-              "candidateUsers": [],
-              "candidateGroups": [],
-              "formKey": null,
-              "formFields": [],
-              "dueDate": null,
-              "followUpDate": null,
-              "priority": null,
-              "inputs": []
-            },
-            "input": "command"
-          }
-        ]
-      },
-      {
-        "kind": "command",
-        "commandId": "s02-effect-success-ServiceTask_Release-1",
-        "outcome": "rejected"
       },
       {
         "kind": "state",

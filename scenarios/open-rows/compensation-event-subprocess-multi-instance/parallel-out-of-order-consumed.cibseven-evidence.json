@@ -1,0 +1,1051 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "compensation-event-subprocess-multi-instance-parallel-out-of-order-consumed",
+    "sha256": "f87b08f079dc1064492726029b8058f5522099986845a2804e28fad3890e9de0"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "820c7e46113d9bb8adc77c83e77632f870100fd1912d545f4dd23c6f537a7c7e"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "s1",
+                "s2",
+                "s3"
+              ]
+            }
+          },
+          {
+            "name": "rethrow",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "stop",
+            "value": {
+              "kind": "string",
+              "value": "outside"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s01-complete-UserTask_Visit-2",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "s1",
+                "s2",
+                "s3"
+              ]
+            }
+          },
+          {
+            "name": "rethrow",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "stop",
+            "value": {
+              "kind": "string",
+              "value": "outside"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-complete-UserTask_Visit-3",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "s1",
+                "s2",
+                "s3"
+              ]
+            }
+          },
+          {
+            "name": "rethrow",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "stop",
+            "value": {
+              "kind": "string",
+              "value": "outside"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-complete-UserTask_Visit-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "s1",
+                "s2",
+                "s3"
+              ]
+            }
+          },
+          {
+            "name": "rethrow",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "stop",
+            "value": {
+              "kind": "string",
+              "value": "outside"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-set-variables-UserTask_Pause-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "s1",
+                "s2",
+                "s3"
+              ]
+            }
+          },
+          {
+            "name": "rethrow",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "stop",
+            "value": {
+              "kind": "string",
+              "value": "late"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-complete-UserTask_Pause-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "s1",
+                "s2",
+                "s3"
+              ]
+            }
+          },
+          {
+            "name": "rethrow",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "stop",
+            "value": {
+              "kind": "string",
+              "value": "late"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s06-complete-UserTask_UndoVisitParent-3",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "s1",
+                "s2",
+                "s3"
+              ]
+            }
+          },
+          {
+            "name": "rethrow",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "stop",
+            "value": {
+              "kind": "string",
+              "value": "late"
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "tasks": [
+          {
+            "elementId": "UserTask_Visit",
+            "name": "Work at the stop"
+          },
+          {
+            "elementId": "UserTask_Visit",
+            "name": "Work at the stop"
+          },
+          {
+            "elementId": "UserTask_Visit",
+            "name": "Work at the stop"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s01-complete-UserTask_Visit-2",
+        "tasks": [
+          {
+            "elementId": "UserTask_Visit",
+            "name": "Work at the stop"
+          },
+          {
+            "elementId": "UserTask_Visit",
+            "name": "Work at the stop"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-complete-UserTask_Visit-3",
+        "tasks": [
+          {
+            "elementId": "UserTask_Visit",
+            "name": "Work at the stop"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-complete-UserTask_Visit-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_Pause",
+            "name": "Pause before compensating"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-set-variables-UserTask_Pause-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_Pause",
+            "name": "Pause before compensating"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-complete-UserTask_Pause-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_UndoVisitParent",
+            "name": "Undo the stop"
+          },
+          {
+            "elementId": "UserTask_UndoVisitParent",
+            "name": "Undo the stop"
+          },
+          {
+            "elementId": "UserTask_UndoVisitParent",
+            "name": "Undo the stop"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s06-complete-UserTask_UndoVisitParent-3",
+        "tasks": [
+          {
+            "elementId": "UserTask_UndoVisitParent",
+            "name": "Undo the stop"
+          },
+          {
+            "elementId": "UserTask_UndoVisitParent",
+            "name": "Undo the stop"
+          },
+          {
+            "elementId": "UserTask_UndoVisitParent",
+            "name": "Undo the stop"
+          }
+        ]
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s01-complete-UserTask_Visit-2",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s02-complete-UserTask_Visit-3",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s03-complete-UserTask_Visit-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s04-set-variables-UserTask_Pause-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s05-complete-UserTask_Pause-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s06-complete-UserTask_UndoVisitParent-3",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "s01-start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s01-complete-UserTask_Visit-2",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s02-complete-UserTask_Visit-3",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s03-complete-UserTask_Visit-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s04-set-variables-UserTask_Pause-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s05-complete-UserTask_Pause-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s06-complete-UserTask_UndoVisitParent-3",
+        "state": "ACTIVE"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "rolledBack"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "s1",
+                "s2",
+                "s3"
+              ]
+            }
+          },
+          {
+            "name": "rethrow",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "stop",
+            "value": {
+              "kind": "string",
+              "value": "outside"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Visit",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Work at the stop",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Visit",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Work at the stop",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Visit",
+              "activation": 3
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Work at the stop",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-complete-UserTask_Visit-2",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "s1",
+                "s2",
+                "s3"
+              ]
+            }
+          },
+          {
+            "name": "rethrow",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "stop",
+            "value": {
+              "kind": "string",
+              "value": "outside"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Visit",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Work at the stop",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Visit",
+              "activation": 3
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Work at the stop",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s02-complete-UserTask_Visit-3",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "s1",
+                "s2",
+                "s3"
+              ]
+            }
+          },
+          {
+            "name": "rethrow",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "stop",
+            "value": {
+              "kind": "string",
+              "value": "outside"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Visit",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Work at the stop",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s03-complete-UserTask_Visit-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "s1",
+                "s2",
+                "s3"
+              ]
+            }
+          },
+          {
+            "name": "rethrow",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "stop",
+            "value": {
+              "kind": "string",
+              "value": "outside"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Pause",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Pause before compensating",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s04-set-variables-UserTask_Pause-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "s1",
+                "s2",
+                "s3"
+              ]
+            }
+          },
+          {
+            "name": "rethrow",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "stop",
+            "value": {
+              "kind": "string",
+              "value": "late"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Pause",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Pause before compensating",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s05-complete-UserTask_Pause-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "s1",
+                "s2",
+                "s3"
+              ]
+            }
+          },
+          {
+            "name": "rethrow",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "stop",
+            "value": {
+              "kind": "string",
+              "value": "late"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_UndoVisitParent",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Undo the stop",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "seenParent",
+                  "value": {
+                    "kind": "string",
+                    "value": "late"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_UndoVisitParent",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Undo the stop",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "seenParent",
+                  "value": {
+                    "kind": "string",
+                    "value": "late"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_UndoVisitParent",
+              "activation": 3
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Undo the stop",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "seenParent",
+                  "value": {
+                    "kind": "string",
+                    "value": "late"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s06-complete-UserTask_UndoVisitParent-3",
+        "outcome": "rolledBack"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "s1",
+                "s2",
+                "s3"
+              ]
+            }
+          },
+          {
+            "name": "rethrow",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "stop",
+            "value": {
+              "kind": "string",
+              "value": "late"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_UndoVisitParent",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Undo the stop",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "seenParent",
+                  "value": {
+                    "kind": "string",
+                    "value": "late"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_UndoVisitParent",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Undo the stop",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "seenParent",
+                  "value": {
+                    "kind": "string",
+                    "value": "late"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_UndoVisitParent",
+              "activation": 3
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Undo the stop",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "seenParent",
+                  "value": {
+                    "kind": "string",
+                    "value": "late"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      }
+    ]
+  }
+}

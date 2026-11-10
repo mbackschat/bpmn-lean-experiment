@@ -1,0 +1,205 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "output-mapping-fanout-missing-source",
+    "sha256": "4309e95b8b8265d57ddfc64dbff8bcef2d3c22799f76e45281e0acbe9c961a74"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "820c7e46113d9bb8adc77c83e77632f870100fd1912d545f4dd23c6f537a7c7e"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "seed",
+            "value": {
+              "kind": "string",
+              "value": "s0"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "result-compute",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "seed",
+            "value": {
+              "kind": "string",
+              "value": "s0"
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "result-compute",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "result-compute",
+        "jobs": []
+      }
+    ],
+    "effectJobs": [
+      {
+        "afterCommandId": "start",
+        "jobs": [
+          {
+            "elementId": "ServiceTask_Compute",
+            "activation": 1,
+            "protocol": "urn:bpmn-lean:effect:probe-v1",
+            "handler": "bpmnLeanEffectHandler",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "result-compute",
+        "jobs": [
+          {
+            "elementId": "ServiceTask_Compute",
+            "activation": 1,
+            "protocol": "urn:bpmn-lean:effect:probe-v1",
+            "handler": "bpmnLeanEffectHandler",
+            "retries": 2,
+            "executable": true,
+            "dueDatePresent": false
+          }
+        ]
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "result-compute",
+        "state": "ACTIVE"
+      }
+    ],
+    "effectExecutions": []
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "rolledBack"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Run_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "seed",
+            "value": {
+              "kind": "string",
+              "value": "s0"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Run_1",
+              "elementId": "ServiceTask_Compute",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "urn:bpmn-lean:effect-operation:probe-v1",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "result-compute",
+        "outcome": "rolledBack"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Run_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "seed",
+            "value": {
+              "kind": "string",
+              "value": "s0"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Run_1",
+              "elementId": "ServiceTask_Compute",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "urn:bpmn-lean:effect-operation:probe-v1",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          }
+        ]
+      }
+    ]
+  }
+}

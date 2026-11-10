@@ -6,7 +6,7 @@
   },
   "profile": {
     "id": "cibseven-2.2.0",
-    "sha256": "28dba164ed6d66d9d6401e4c8ebae110d1688fc29810c8cac4f43ac97b5882c4"
+    "sha256": "820c7e46113d9bb8adc77c83e77632f870100fd1912d545f4dd23c6f537a7c7e"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -24,16 +24,11 @@
         "engineClockTimeMs": 0,
         "variables": [
           {
-            "name": "attempt",
-            "value": "fresh"
-          },
-          {
             "name": "carried",
-            "value": "none"
-          },
-          {
-            "name": "carry",
-            "value": "none"
+            "value": {
+              "kind": "string",
+              "value": "none"
+            }
           }
         ]
       },
@@ -43,16 +38,11 @@
         "engineClockTimeMs": 0,
         "variables": [
           {
-            "name": "attempt",
-            "value": "first-written"
-          },
-          {
             "name": "carried",
-            "value": "first-written"
-          },
-          {
-            "name": "carry",
-            "value": "none"
+            "value": {
+              "kind": "string",
+              "value": "first-written"
+            }
           }
         ]
       },
@@ -63,27 +53,17 @@
         "variables": [
           {
             "name": "again",
-            "value": "yes"
-          },
-          {
-            "name": "attempt",
-            "value": "fresh"
-          },
-          {
-            "name": "attempt",
-            "value": "first-written"
+            "value": {
+              "kind": "string",
+              "value": "yes"
+            }
           },
           {
             "name": "carried",
-            "value": "first-written"
-          },
-          {
-            "name": "carry",
-            "value": "none"
-          },
-          {
-            "name": "carry",
-            "value": "first-written"
+            "value": {
+              "kind": "string",
+              "value": "first-written"
+            }
           }
         ]
       },
@@ -94,27 +74,17 @@
         "variables": [
           {
             "name": "again",
-            "value": "yes"
-          },
-          {
-            "name": "attempt",
-            "value": "fresh"
-          },
-          {
-            "name": "attempt",
-            "value": "first-written"
+            "value": {
+              "kind": "string",
+              "value": "yes"
+            }
           },
           {
             "name": "carried",
-            "value": "fresh"
-          },
-          {
-            "name": "carry",
-            "value": "none"
-          },
-          {
-            "name": "carry",
-            "value": "first-written"
+            "value": {
+              "kind": "string",
+              "value": "fresh"
+            }
           }
         ]
       },
@@ -125,27 +95,17 @@
         "variables": [
           {
             "name": "again",
-            "value": "no"
-          },
-          {
-            "name": "attempt",
-            "value": "fresh"
-          },
-          {
-            "name": "attempt",
-            "value": "first-written"
+            "value": {
+              "kind": "string",
+              "value": "no"
+            }
           },
           {
             "name": "carried",
-            "value": "fresh"
-          },
-          {
-            "name": "carry",
-            "value": "none"
-          },
-          {
-            "name": "carry",
-            "value": "first-written"
+            "value": {
+              "kind": "string",
+              "value": "fresh"
+            }
           }
         ]
       }
@@ -262,21 +222,7 @@
         "logicalTimeMs": 0,
         "variables": [
           {
-            "name": "attempt",
-            "value": {
-              "kind": "string",
-              "value": "fresh"
-            }
-          },
-          {
             "name": "carried",
-            "value": {
-              "kind": "string",
-              "value": "none"
-            }
-          },
-          {
-            "name": "carry",
             "value": {
               "kind": "string",
               "value": "none"
@@ -335,24 +281,10 @@
         "logicalTimeMs": 0,
         "variables": [
           {
-            "name": "attempt",
-            "value": {
-              "kind": "string",
-              "value": "first-written"
-            }
-          },
-          {
             "name": "carried",
             "value": {
               "kind": "string",
               "value": "first-written"
-            }
-          },
-          {
-            "name": "carry",
-            "value": {
-              "kind": "string",
-              "value": "none"
             }
           }
         ],
@@ -400,35 +332,7 @@
             }
           },
           {
-            "name": "attempt",
-            "value": {
-              "kind": "string",
-              "value": "fresh"
-            }
-          },
-          {
-            "name": "attempt",
-            "value": {
-              "kind": "string",
-              "value": "first-written"
-            }
-          },
-          {
             "name": "carried",
-            "value": {
-              "kind": "string",
-              "value": "first-written"
-            }
-          },
-          {
-            "name": "carry",
-            "value": {
-              "kind": "string",
-              "value": "none"
-            }
-          },
-          {
-            "name": "carry",
             "value": {
               "kind": "string",
               "value": "first-written"
@@ -494,38 +398,10 @@
             }
           },
           {
-            "name": "attempt",
-            "value": {
-              "kind": "string",
-              "value": "fresh"
-            }
-          },
-          {
-            "name": "attempt",
-            "value": {
-              "kind": "string",
-              "value": "first-written"
-            }
-          },
-          {
             "name": "carried",
             "value": {
               "kind": "string",
               "value": "fresh"
-            }
-          },
-          {
-            "name": "carry",
-            "value": {
-              "kind": "string",
-              "value": "none"
-            }
-          },
-          {
-            "name": "carry",
-            "value": {
-              "kind": "string",
-              "value": "first-written"
             }
           }
         ],
@@ -573,38 +449,10 @@
             }
           },
           {
-            "name": "attempt",
-            "value": {
-              "kind": "string",
-              "value": "fresh"
-            }
-          },
-          {
-            "name": "attempt",
-            "value": {
-              "kind": "string",
-              "value": "first-written"
-            }
-          },
-          {
             "name": "carried",
             "value": {
               "kind": "string",
               "value": "fresh"
-            }
-          },
-          {
-            "name": "carry",
-            "value": {
-              "kind": "string",
-              "value": "none"
-            }
-          },
-          {
-            "name": "carry",
-            "value": {
-              "kind": "string",
-              "value": "first-written"
             }
           }
         ],

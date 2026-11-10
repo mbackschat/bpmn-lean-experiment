@@ -1,0 +1,147 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "business-rule-routing-condition-order",
+    "sha256": "346d640adfd12cc5808134d927258db04dcf5e26d8772dab87c07bd199aab290"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "820c7e46113d9bb8adc77c83e77632f870100fd1912d545f4dd23c6f537a7c7e"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "grade",
+            "value": {
+              "kind": "string",
+              "value": "high"
+            }
+          },
+          {
+            "name": "limit",
+            "value": {
+              "kind": "integer",
+              "value": 900
+            }
+          },
+          {
+            "name": "score",
+            "value": {
+              "kind": "string",
+              "value": "90"
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start",
+        "tasks": [
+          {
+            "elementId": "ManualReview",
+            "name": "Review manually"
+          }
+        ]
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start",
+        "state": "ACTIVE"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Applicant_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "grade",
+            "value": {
+              "kind": "string",
+              "value": "high"
+            }
+          },
+          {
+            "name": "limit",
+            "value": {
+              "kind": "integer",
+              "value": 900
+            }
+          },
+          {
+            "name": "score",
+            "value": {
+              "kind": "string",
+              "value": "90"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Applicant_1",
+              "elementId": "ManualReview",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review manually",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      }
+    ]
+  }
+}

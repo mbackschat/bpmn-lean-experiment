@@ -1,0 +1,427 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "mapping-order-caught-chained-outputs",
+    "sha256": "25e3acc9d1084b37ac8a002fdf56f044c1c6d188f82b5d9dc165b5032e92c640"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "820c7e46113d9bb8adc77c83e77632f870100fd1912d545f4dd23c6f537a7c7e"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-place",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "summary",
+            "value": {
+              "kind": "string",
+              "value": "mapped"
+            }
+          },
+          {
+            "name": "total",
+            "value": {
+              "kind": "string",
+              "value": "mapped"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-hold",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "level",
+            "value": {
+              "kind": "string",
+              "value": "mapped"
+            }
+          },
+          {
+            "name": "shadowed",
+            "value": {
+              "kind": "string",
+              "value": "FAIL"
+            }
+          },
+          {
+            "name": "summary",
+            "value": {
+              "kind": "string",
+              "value": "mapped"
+            }
+          },
+          {
+            "name": "total",
+            "value": {
+              "kind": "string",
+              "value": "mapped"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-observe",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "level",
+            "value": {
+              "kind": "string",
+              "value": "mapped"
+            }
+          },
+          {
+            "name": "shadowed",
+            "value": {
+              "kind": "string",
+              "value": "FAIL"
+            }
+          },
+          {
+            "name": "summary",
+            "value": {
+              "kind": "string",
+              "value": "mapped"
+            }
+          },
+          {
+            "name": "total",
+            "value": {
+              "kind": "string",
+              "value": "mapped"
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start",
+        "tasks": [
+          {
+            "elementId": "UserTask_Place",
+            "name": "Place"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-place",
+        "tasks": [
+          {
+            "elementId": "UserTask_Hold",
+            "name": "Hold"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-hold",
+        "tasks": [
+          {
+            "elementId": "UserTask_Observe",
+            "name": "Observe"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-observe",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-place",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-hold",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-observe",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-place",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-hold",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-observe",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Run_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Run_1",
+              "elementId": "UserTask_Place",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Place",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-place",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Run_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "summary",
+            "value": {
+              "kind": "string",
+              "value": "mapped"
+            }
+          },
+          {
+            "name": "total",
+            "value": {
+              "kind": "string",
+              "value": "mapped"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Run_1",
+              "elementId": "UserTask_Hold",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Hold",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-hold",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Run_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "level",
+            "value": {
+              "kind": "string",
+              "value": "mapped"
+            }
+          },
+          {
+            "name": "shadowed",
+            "value": {
+              "kind": "string",
+              "value": "FAIL"
+            }
+          },
+          {
+            "name": "summary",
+            "value": {
+              "kind": "string",
+              "value": "mapped"
+            }
+          },
+          {
+            "name": "total",
+            "value": {
+              "kind": "string",
+              "value": "mapped"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Run_1",
+              "elementId": "UserTask_Observe",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Observe",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "seenLevel",
+                  "value": {
+                    "kind": "string",
+                    "value": "mapped"
+                  }
+                },
+                {
+                  "name": "seenShadowed",
+                  "value": {
+                    "kind": "string",
+                    "value": "FAIL"
+                  }
+                },
+                {
+                  "name": "seenSummary",
+                  "value": {
+                    "kind": "string",
+                    "value": "mapped"
+                  }
+                },
+                {
+                  "name": "seenTotal",
+                  "value": {
+                    "kind": "string",
+                    "value": "mapped"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-observe",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Run_1",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "level",
+            "value": {
+              "kind": "string",
+              "value": "mapped"
+            }
+          },
+          {
+            "name": "shadowed",
+            "value": {
+              "kind": "string",
+              "value": "FAIL"
+            }
+          },
+          {
+            "name": "summary",
+            "value": {
+              "kind": "string",
+              "value": "mapped"
+            }
+          },
+          {
+            "name": "total",
+            "value": {
+              "kind": "string",
+              "value": "mapped"
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}

@@ -6,7 +6,7 @@
   },
   "profile": {
     "id": "cibseven-2.2.0",
-    "sha256": "28dba164ed6d66d9d6401e4c8ebae110d1688fc29810c8cac4f43ac97b5882c4"
+    "sha256": "820c7e46113d9bb8adc77c83e77632f870100fd1912d545f4dd23c6f537a7c7e"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -22,12 +22,7 @@
         "afterCommandId": "s01-start",
         "processInstanceCount": 1,
         "engineClockTimeMs": 0,
-        "variables": [
-          {
-            "name": "failCode",
-            "value": "local-value"
-          }
-        ]
+        "variables": []
       },
       {
         "afterCommandId": "s02-fail-screen",
@@ -35,12 +30,11 @@
         "engineClockTimeMs": 0,
         "variables": [
           {
-            "name": "failCode",
-            "value": "REGION_FAILED"
-          },
-          {
             "name": "failMessage",
-            "value": "Region refused"
+            "value": {
+              "kind": "string",
+              "value": "Region refused"
+            }
           }
         ]
       }
@@ -134,15 +128,7 @@
         "instanceId": "Instance_1",
         "status": "running",
         "logicalTimeMs": 0,
-        "variables": [
-          {
-            "name": "failCode",
-            "value": {
-              "kind": "string",
-              "value": "local-value"
-            }
-          }
-        ],
+        "variables": [],
         "openWaits": [
           {
             "id": {
@@ -174,13 +160,6 @@
         "status": "running",
         "logicalTimeMs": 0,
         "variables": [
-          {
-            "name": "failCode",
-            "value": {
-              "kind": "string",
-              "value": "REGION_FAILED"
-            }
-          },
           {
             "name": "failMessage",
             "value": {

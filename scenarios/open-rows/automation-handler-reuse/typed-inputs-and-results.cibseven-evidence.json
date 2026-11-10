@@ -6,7 +6,7 @@
   },
   "profile": {
     "id": "cibseven-2.2.0",
-    "sha256": "28dba164ed6d66d9d6401e4c8ebae110d1688fc29810c8cac4f43ac97b5882c4"
+    "sha256": "820c7e46113d9bb8adc77c83e77632f870100fd1912d545f4dd23c6f537a7c7e"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -25,19 +25,30 @@
         "variables": [
           {
             "name": "express",
-            "value": true
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
           },
           {
             "name": "note",
-            "value": null
+            "value": {
+              "kind": "null"
+            }
           },
           {
             "name": "orderId",
-            "value": "O-7"
+            "value": {
+              "kind": "string",
+              "value": "O-7"
+            }
           },
           {
             "name": "quantity",
-            "value": "3"
+            "value": {
+              "kind": "string",
+              "value": "3"
+            }
           }
         ]
       },
@@ -48,23 +59,37 @@
         "variables": [
           {
             "name": "express",
-            "value": true
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
           },
           {
             "name": "note",
-            "value": null
+            "value": {
+              "kind": "null"
+            }
           },
           {
             "name": "orderId",
-            "value": "O-7"
+            "value": {
+              "kind": "string",
+              "value": "O-7"
+            }
           },
           {
             "name": "quantity",
-            "value": "3"
+            "value": {
+              "kind": "string",
+              "value": "3"
+            }
           },
           {
             "name": "total",
-            "value": "120"
+            "value": {
+              "kind": "string",
+              "value": "120"
+            }
           }
         ]
       },
@@ -75,66 +100,51 @@
         "variables": [
           {
             "name": "express",
-            "value": true
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
           },
           {
             "name": "note",
-            "value": null
+            "value": {
+              "kind": "null"
+            }
           },
           {
             "name": "orderId",
-            "value": "O-7"
+            "value": {
+              "kind": "string",
+              "value": "O-7"
+            }
           },
           {
             "name": "packed",
-            "value": "BOX-7"
+            "value": {
+              "kind": "string",
+              "value": "BOX-7"
+            }
           },
           {
             "name": "quantity",
-            "value": "3"
+            "value": {
+              "kind": "string",
+              "value": "3"
+            }
           },
           {
             "name": "sealed",
-            "value": "BOX-7"
+            "value": {
+              "kind": "string",
+              "value": "S-1"
+            }
           },
           {
             "name": "total",
-            "value": "120"
-          }
-        ]
-      },
-      {
-        "afterCommandId": "complete-seal",
-        "processInstanceCount": 0,
-        "engineClockTimeMs": 0,
-        "variables": [
-          {
-            "name": "express",
-            "value": true
-          },
-          {
-            "name": "note",
-            "value": null
-          },
-          {
-            "name": "orderId",
-            "value": "O-7"
-          },
-          {
-            "name": "packed",
-            "value": "BOX-7"
-          },
-          {
-            "name": "quantity",
-            "value": "3"
-          },
-          {
-            "name": "sealed",
-            "value": "BOX-7"
-          },
-          {
-            "name": "total",
-            "value": "120"
+            "value": {
+              "kind": "string",
+              "value": "120"
+            }
           }
         ]
       }
@@ -151,10 +161,6 @@
       {
         "afterCommandId": "complete-label",
         "tasks": []
-      },
-      {
-        "afterCommandId": "complete-seal",
-        "tasks": []
       }
     ],
     "timerJobs": [
@@ -168,10 +174,6 @@
       },
       {
         "afterCommandId": "complete-label",
-        "jobs": []
-      },
-      {
-        "afterCommandId": "complete-seal",
         "jobs": []
       }
     ],
@@ -207,10 +209,6 @@
       {
         "afterCommandId": "complete-label",
         "jobs": []
-      },
-      {
-        "afterCommandId": "complete-seal",
-        "jobs": []
       }
     ],
     "historicProcessStates": [
@@ -224,10 +222,6 @@
       },
       {
         "afterCommandId": "complete-label",
-        "state": "COMPLETED"
-      },
-      {
-        "afterCommandId": "complete-seal",
         "state": "COMPLETED"
       }
     ],
@@ -243,10 +237,35 @@
       {
         "afterCommandId": "complete-label",
         "schedule": "plainSuccess",
-        "invocations": 3,
+        "invocations": 2,
         "mutations": 1,
         "initialRetries": 3,
         "retriesAfterFirstFailure": null
+      }
+    ],
+    "mappingExecutions": [
+      {
+        "afterCommandId": "complete-label",
+        "handler": "mappedSuccessHandler",
+        "arguments": [
+          {
+            "name": "stamp",
+            "value": {
+              "kind": "string",
+              "value": "O-7"
+            }
+          }
+        ],
+        "localPatch": [
+          {
+            "name": "result",
+            "value": {
+              "kind": "string",
+              "value": "S-1"
+            }
+          }
+        ],
+        "invocations": 1
       }
     ]
   },
@@ -256,7 +275,7 @@
   "result": {
     "outcome": {
       "kind": "semantic",
-      "outcome": "rejected"
+      "outcome": "committed"
     },
     "trace": [
       {
@@ -437,69 +456,7 @@
             "name": "sealed",
             "value": {
               "kind": "string",
-              "value": "BOX-7"
-            }
-          },
-          {
-            "name": "total",
-            "value": {
-              "kind": "string",
-              "value": "120"
-            }
-          }
-        ],
-        "openWaits": []
-      },
-      {
-        "kind": "command",
-        "commandId": "complete-seal",
-        "outcome": "rejected"
-      },
-      {
-        "kind": "state",
-        "instanceId": "Order_1",
-        "status": "completed",
-        "logicalTimeMs": 0,
-        "variables": [
-          {
-            "name": "express",
-            "value": {
-              "kind": "boolean",
-              "value": true
-            }
-          },
-          {
-            "name": "note",
-            "value": {
-              "kind": "null"
-            }
-          },
-          {
-            "name": "orderId",
-            "value": {
-              "kind": "string",
-              "value": "O-7"
-            }
-          },
-          {
-            "name": "packed",
-            "value": {
-              "kind": "string",
-              "value": "BOX-7"
-            }
-          },
-          {
-            "name": "quantity",
-            "value": {
-              "kind": "string",
-              "value": "3"
-            }
-          },
-          {
-            "name": "sealed",
-            "value": {
-              "kind": "string",
-              "value": "BOX-7"
+              "value": "S-1"
             }
           },
           {

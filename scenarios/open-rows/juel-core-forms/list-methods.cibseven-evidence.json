@@ -1,0 +1,191 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "juel-core-forms-list-methods",
+    "sha256": "5ec38bf4865f5fa755b01cf48a40930b2163fa7dd3873c91d1dbb5e08fd5526f"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "820c7e46113d9bb8adc77c83e77632f870100fd1912d545f4dd23c6f537a7c7e"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "x",
+                "y",
+                "x"
+              ]
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start",
+        "tasks": [
+          {
+            "elementId": "UserTask_Observe",
+            "name": "Observe the evaluated inputs"
+          }
+        ]
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start",
+        "state": "ACTIVE"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Run_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "x",
+                "y",
+                "x"
+              ]
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Run_1",
+              "elementId": "UserTask_Observe",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Observe the evaluated inputs",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "contains",
+                  "value": {
+                    "kind": "boolean",
+                    "value": true
+                  }
+                },
+                {
+                  "name": "containsAbsent",
+                  "value": {
+                    "kind": "boolean",
+                    "value": false
+                  }
+                },
+                {
+                  "name": "get",
+                  "value": {
+                    "kind": "string",
+                    "value": "y"
+                  }
+                },
+                {
+                  "name": "indexOf",
+                  "value": {
+                    "kind": "integer",
+                    "value": 0
+                  }
+                },
+                {
+                  "name": "isEmpty",
+                  "value": {
+                    "kind": "boolean",
+                    "value": false
+                  }
+                },
+                {
+                  "name": "lastIndexOf",
+                  "value": {
+                    "kind": "integer",
+                    "value": 2
+                  }
+                },
+                {
+                  "name": "size",
+                  "value": {
+                    "kind": "integer",
+                    "value": 3
+                  }
+                },
+                {
+                  "name": "sizeAsIndex",
+                  "value": {
+                    "kind": "string",
+                    "value": "x"
+                  }
+                },
+                {
+                  "name": "sizeMinusOne",
+                  "value": {
+                    "kind": "integer",
+                    "value": 2
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      }
+    ]
+  }
+}

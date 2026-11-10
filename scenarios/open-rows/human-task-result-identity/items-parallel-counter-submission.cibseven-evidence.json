@@ -1,0 +1,262 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "human-task-result-identity-items-parallel-counter-submission",
+    "sha256": "f0b0196b112be500b41fbb4c31bffbb185d7bb081feafe30644bc6bb10767f7c"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "820c7e46113d9bb8adc77c83e77632f870100fd1912d545f4dd23c6f537a7c7e"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-item-1-with-counter",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start",
+        "tasks": [
+          {
+            "elementId": "ReviewItem",
+            "name": "Review item",
+            "identityLinks": [],
+            "formFields": [
+              {
+                "id": "verdict",
+                "typeName": "string"
+              }
+            ]
+          },
+          {
+            "elementId": "ReviewItem",
+            "name": "Review item",
+            "identityLinks": [],
+            "formFields": [
+              {
+                "id": "verdict",
+                "typeName": "string"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-item-1-with-counter",
+        "tasks": [
+          {
+            "elementId": "ReviewItem",
+            "name": "Review item",
+            "identityLinks": [],
+            "formFields": [
+              {
+                "id": "verdict",
+                "typeName": "string"
+              }
+            ]
+          },
+          {
+            "elementId": "ReviewItem",
+            "name": "Review item",
+            "identityLinks": [],
+            "formFields": [
+              {
+                "id": "verdict",
+                "typeName": "string"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-item-1-with-counter",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-item-1-with-counter",
+        "state": "ACTIVE"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "rolledBack"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Items_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Items_1",
+              "elementId": "ReviewItem",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review item",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "verdict",
+                  "type": "string"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Items_1",
+              "elementId": "ReviewItem",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review item",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "verdict",
+                  "type": "string"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-item-1-with-counter",
+        "outcome": "rolledBack"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Items_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Items_1",
+              "elementId": "ReviewItem",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review item",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "verdict",
+                  "type": "string"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Items_1",
+              "elementId": "ReviewItem",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review item",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "verdict",
+                  "type": "string"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      }
+    ]
+  }
+}

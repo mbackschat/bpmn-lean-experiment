@@ -1,0 +1,208 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "business-rule-hit-policies-after-timer-failure",
+    "sha256": "5d97783125672c02a8eba7786049cb9968ee9eb85a6eaa724c79a812a34bd774"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "820c7e46113d9bb8adc77c83e77632f870100fd1912d545f4dd23c6f537a7c7e"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "policy",
+            "value": {
+              "kind": "string",
+              "value": "timer"
+            }
+          },
+          {
+            "name": "score",
+            "value": {
+              "kind": "string",
+              "value": "65"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "fire-cooling-off",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 10000,
+        "variables": [
+          {
+            "name": "policy",
+            "value": {
+              "kind": "string",
+              "value": "timer"
+            }
+          },
+          {
+            "name": "score",
+            "value": {
+              "kind": "string",
+              "value": "65"
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "fire-cooling-off",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start",
+        "jobs": [
+          {
+            "elementId": "CoolingOff",
+            "dueDateDeltaMs": 10000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "fire-cooling-off",
+        "jobs": [
+          {
+            "elementId": "CoolingOff",
+            "dueDateDeltaMs": 10000,
+            "executable": true
+          }
+        ]
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "fire-cooling-off",
+        "state": "ACTIVE"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "rolledBack"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Applicant_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "policy",
+            "value": {
+              "kind": "string",
+              "value": "timer"
+            }
+          },
+          {
+            "name": "score",
+            "value": {
+              "kind": "string",
+              "value": "65"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Applicant_1",
+              "elementId": "CoolingOff",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 10000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "fire-cooling-off",
+        "outcome": "rolledBack"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Applicant_1",
+        "status": "running",
+        "logicalTimeMs": 10000,
+        "variables": [
+          {
+            "name": "policy",
+            "value": {
+              "kind": "string",
+              "value": "timer"
+            }
+          },
+          {
+            "name": "score",
+            "value": {
+              "kind": "string",
+              "value": "65"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Applicant_1",
+              "elementId": "CoolingOff",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 10000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          }
+        ]
+      }
+    ]
+  }
+}

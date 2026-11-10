@@ -1,0 +1,689 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "transaction-paths-cancel-end",
+    "sha256": "8b3a1a352bd79835016530651fe5539ebd12727e4dda4a33647b3fa84f939dbe"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "820c7e46113d9bb8adc77c83e77632f870100fd1912d545f4dd23c6f537a7c7e"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "flight",
+            "value": {
+              "kind": "string",
+              "value": "f0"
+            }
+          },
+          {
+            "name": "outcome",
+            "value": {
+              "kind": "string",
+              "value": "cancel"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s01-complete-UserTask_Flight-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "flight",
+            "value": {
+              "kind": "string",
+              "value": "f1"
+            }
+          },
+          {
+            "name": "outcome",
+            "value": {
+              "kind": "string",
+              "value": "cancel"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-complete-UserTask_Hotel-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "flight",
+            "value": {
+              "kind": "string",
+              "value": "f1"
+            }
+          },
+          {
+            "name": "outcome",
+            "value": {
+              "kind": "string",
+              "value": "cancel"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-complete-UserTask_UndoHotel-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "flight",
+            "value": {
+              "kind": "string",
+              "value": "f1"
+            }
+          },
+          {
+            "name": "outcome",
+            "value": {
+              "kind": "string",
+              "value": "cancel"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_Cancelled-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "flight",
+            "value": {
+              "kind": "string",
+              "value": "f1"
+            }
+          },
+          {
+            "name": "outcome",
+            "value": {
+              "kind": "string",
+              "value": "cancel"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-complete-UserTask_UndoFlight-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "flight",
+            "value": {
+              "kind": "string",
+              "value": "f1"
+            }
+          },
+          {
+            "name": "outcome",
+            "value": {
+              "kind": "string",
+              "value": "cancel"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s06-complete-UserTask_Cancelled-1",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "flight",
+            "value": {
+              "kind": "string",
+              "value": "f1"
+            }
+          },
+          {
+            "name": "outcome",
+            "value": {
+              "kind": "string",
+              "value": "cancel"
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "tasks": [
+          {
+            "elementId": "UserTask_Flight",
+            "name": "Book the flight"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s01-complete-UserTask_Flight-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_Hotel",
+            "name": "Book the hotel"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-complete-UserTask_Hotel-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_UndoFlight",
+            "name": "Undo the flight"
+          },
+          {
+            "elementId": "UserTask_UndoHotel",
+            "name": "Undo the hotel"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-complete-UserTask_UndoHotel-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_UndoFlight",
+            "name": "Undo the flight"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_Cancelled-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_UndoFlight",
+            "name": "Undo the flight"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-complete-UserTask_UndoFlight-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_Cancelled",
+            "name": "Handle the cancellation"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s06-complete-UserTask_Cancelled-1",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s01-complete-UserTask_Flight-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s02-complete-UserTask_Hotel-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s03-complete-UserTask_UndoHotel-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_Cancelled-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s05-complete-UserTask_UndoFlight-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s06-complete-UserTask_Cancelled-1",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "s01-start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s01-complete-UserTask_Flight-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s02-complete-UserTask_Hotel-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s03-complete-UserTask_UndoHotel-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_Cancelled-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s05-complete-UserTask_UndoFlight-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s06-complete-UserTask_Cancelled-1",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "flight",
+            "value": {
+              "kind": "string",
+              "value": "f0"
+            }
+          },
+          {
+            "name": "outcome",
+            "value": {
+              "kind": "string",
+              "value": "cancel"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Flight",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Book the flight",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-complete-UserTask_Flight-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "flight",
+            "value": {
+              "kind": "string",
+              "value": "f1"
+            }
+          },
+          {
+            "name": "outcome",
+            "value": {
+              "kind": "string",
+              "value": "cancel"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Hotel",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Book the hotel",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s02-complete-UserTask_Hotel-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "flight",
+            "value": {
+              "kind": "string",
+              "value": "f1"
+            }
+          },
+          {
+            "name": "outcome",
+            "value": {
+              "kind": "string",
+              "value": "cancel"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_UndoFlight",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Undo the flight",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "seenFlight",
+                  "value": {
+                    "kind": "string",
+                    "value": "f1"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_UndoHotel",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Undo the hotel",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s03-complete-UserTask_UndoHotel-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "flight",
+            "value": {
+              "kind": "string",
+              "value": "f1"
+            }
+          },
+          {
+            "name": "outcome",
+            "value": {
+              "kind": "string",
+              "value": "cancel"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_UndoFlight",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Undo the flight",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "seenFlight",
+                  "value": {
+                    "kind": "string",
+                    "value": "f1"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s04-complete-UserTask_Cancelled-1",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "flight",
+            "value": {
+              "kind": "string",
+              "value": "f1"
+            }
+          },
+          {
+            "name": "outcome",
+            "value": {
+              "kind": "string",
+              "value": "cancel"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_UndoFlight",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Undo the flight",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "seenFlight",
+                  "value": {
+                    "kind": "string",
+                    "value": "f1"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s05-complete-UserTask_UndoFlight-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "flight",
+            "value": {
+              "kind": "string",
+              "value": "f1"
+            }
+          },
+          {
+            "name": "outcome",
+            "value": {
+              "kind": "string",
+              "value": "cancel"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Cancelled",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Handle the cancellation",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s06-complete-UserTask_Cancelled-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "flight",
+            "value": {
+              "kind": "string",
+              "value": "f1"
+            }
+          },
+          {
+            "name": "outcome",
+            "value": {
+              "kind": "string",
+              "value": "cancel"
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}

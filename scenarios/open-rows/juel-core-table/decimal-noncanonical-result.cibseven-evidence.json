@@ -1,0 +1,223 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "juel-core-table-decimal-noncanonical-result",
+    "sha256": "e933140d41589220d8b0a192de2cfea3c2ab4da24081388bce5696d13f4c8fb7"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "820c7e46113d9bb8adc77c83e77632f870100fd1912d545f4dd23c6f537a7c7e"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "flag",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          },
+          {
+            "name": "list",
+            "value": {
+              "kind": "list",
+              "value": [
+                {
+                  "kind": "integer",
+                  "value": 3
+                }
+              ]
+            }
+          },
+          {
+            "name": "long",
+            "value": {
+              "kind": "string",
+              "value": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            }
+          },
+          {
+            "name": "n",
+            "value": {
+              "kind": "integer",
+              "value": 3
+            }
+          },
+          {
+            "name": "price",
+            "value": {
+              "kind": "decimal",
+              "coefficient": "15",
+              "scale": 1
+            }
+          },
+          {
+            "name": "probe",
+            "value": {
+              "kind": "string",
+              "value": "decimal-noncanonical-result"
+            }
+          },
+          {
+            "name": "word",
+            "value": {
+              "kind": "string",
+              "value": "abc"
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start",
+        "tasks": [
+          {
+            "elementId": "UserTask_Observe",
+            "name": "Observe the held value"
+          }
+        ]
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start",
+        "state": "ACTIVE"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Probe_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "flag",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          },
+          {
+            "name": "list",
+            "value": {
+              "kind": "list",
+              "value": [
+                {
+                  "kind": "integer",
+                  "value": 3
+                }
+              ]
+            }
+          },
+          {
+            "name": "long",
+            "value": {
+              "kind": "string",
+              "value": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            }
+          },
+          {
+            "name": "n",
+            "value": {
+              "kind": "integer",
+              "value": 3
+            }
+          },
+          {
+            "name": "price",
+            "value": {
+              "kind": "decimal",
+              "coefficient": "15",
+              "scale": 1
+            }
+          },
+          {
+            "name": "probe",
+            "value": {
+              "kind": "string",
+              "value": "decimal-noncanonical-result"
+            }
+          },
+          {
+            "name": "word",
+            "value": {
+              "kind": "string",
+              "value": "abc"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Probe_1",
+              "elementId": "UserTask_Observe",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Observe the held value",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "rendered",
+                  "value": {
+                    "kind": "string",
+                    "value": "value=3.0"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      }
+    ]
+  }
+}

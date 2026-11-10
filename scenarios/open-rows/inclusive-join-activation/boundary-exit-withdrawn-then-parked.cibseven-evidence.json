@@ -1,0 +1,287 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "inclusive-join-activation-boundary-exit-withdrawn-then-parked",
+    "sha256": "d61c5724983b2e4cab6448fd9439262ef6f475a5ae1cbd7339a3d504629fe991"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "820c7e46113d9bb8adc77c83e77632f870100fd1912d545f4dd23c6f537a7c7e"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "s02-deliver-Withdrawn",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "s03-complete-ReviewA-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "tasks": [
+          {
+            "elementId": "ReviewA",
+            "name": "Review A"
+          },
+          {
+            "elementId": "ReviewB",
+            "name": "Review B"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-deliver-Withdrawn",
+        "tasks": [
+          {
+            "elementId": "ReviewA",
+            "name": "Review A"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-complete-ReviewA-1",
+        "tasks": [
+          {
+            "elementId": "Decide",
+            "name": "Decide"
+          }
+        ]
+      }
+    ],
+    "messageSubscriptions": [
+      {
+        "afterCommandId": "s01-start",
+        "subscriptions": [
+          {
+            "elementId": "Withdrawn",
+            "eventName": "withdraw",
+            "messageId": "Message_Withdraw",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-deliver-Withdrawn",
+        "subscriptions": []
+      },
+      {
+        "afterCommandId": "s03-complete-ReviewA-1",
+        "subscriptions": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s02-deliver-Withdrawn",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s03-complete-ReviewA-1",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "s01-start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s02-deliver-Withdrawn",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s03-complete-ReviewA-1",
+        "state": "ACTIVE"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ReviewA",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review A",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ReviewB",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review B",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Withdrawn",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Withdraw"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s02-deliver-Withdrawn",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ReviewA",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review A",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s03-complete-ReviewA-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Decide",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Decide",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      }
+    ]
+  }
+}

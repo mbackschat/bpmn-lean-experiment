@@ -1,0 +1,336 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "human-task-result-identity-items-sequential-preceding-body-unmapped",
+    "sha256": "d11457d8eed88a87693fd9cdd70f220025de41b57bbd005347e80bb2507b5737"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "820c7e46113d9bb8adc77c83e77632f870100fd1912d545f4dd23c6f537a7c7e"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-item-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "ok-a"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "preceding-body-again",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "ok-a"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-item-2",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "ok-b"
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start",
+        "tasks": [
+          {
+            "elementId": "ReviewItem",
+            "name": "Review item",
+            "identityLinks": [],
+            "formFields": [
+              {
+                "id": "verdict",
+                "typeName": "string"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-item-1",
+        "tasks": [
+          {
+            "elementId": "ReviewItem",
+            "name": "Review item",
+            "identityLinks": [],
+            "formFields": [
+              {
+                "id": "verdict",
+                "typeName": "string"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "afterCommandId": "preceding-body-again",
+        "tasks": [
+          {
+            "elementId": "ReviewItem",
+            "name": "Review item",
+            "identityLinks": [],
+            "formFields": [
+              {
+                "id": "verdict",
+                "typeName": "string"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-item-2",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-item-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "preceding-body-again",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-item-2",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-item-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "preceding-body-again",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-item-2",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Items_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Items_1",
+              "elementId": "ReviewItem",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review item",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "verdict",
+                  "type": "string"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-item-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Items_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "ok-a"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Items_1",
+              "elementId": "ReviewItem",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review item",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "verdict",
+                  "type": "string"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "preceding-body-again",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Items_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "ok-a"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Items_1",
+              "elementId": "ReviewItem",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review item",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [
+                {
+                  "key": "verdict",
+                  "type": "string"
+                }
+              ],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-item-2",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Items_1",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "ok-b"
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}

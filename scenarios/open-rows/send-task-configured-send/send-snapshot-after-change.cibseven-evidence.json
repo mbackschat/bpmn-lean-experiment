@@ -6,7 +6,7 @@
   },
   "profile": {
     "id": "cibseven-2.2.0",
-    "sha256": "28dba164ed6d66d9d6401e4c8ebae110d1688fc29810c8cac4f43ac97b5882c4"
+    "sha256": "820c7e46113d9bb8adc77c83e77632f870100fd1912d545f4dd23c6f537a7c7e"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -25,19 +25,31 @@
         "variables": [
           {
             "name": "copies",
-            "value": "2"
+            "value": {
+              "kind": "string",
+              "value": "2"
+            }
           },
           {
             "name": "customerEmail",
-            "value": "ada@example.org"
+            "value": {
+              "kind": "string",
+              "value": "ada@example.org"
+            }
           },
           {
             "name": "order",
-            "value": "A-17"
+            "value": {
+              "kind": "string",
+              "value": "A-17"
+            }
           },
           {
             "name": "urgent",
-            "value": false
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
           }
         ]
       },
@@ -48,23 +60,38 @@
         "variables": [
           {
             "name": "copies",
-            "value": "2"
+            "value": {
+              "kind": "string",
+              "value": "2"
+            }
           },
           {
             "name": "customerEmail",
-            "value": "ada@example.org"
+            "value": {
+              "kind": "string",
+              "value": "ada@example.org"
+            }
           },
           {
             "name": "notice",
-            "value": "v1"
+            "value": {
+              "kind": "string",
+              "value": "v1"
+            }
           },
           {
             "name": "order",
-            "value": "A-17"
+            "value": {
+              "kind": "string",
+              "value": "A-17"
+            }
           },
           {
             "name": "urgent",
-            "value": false
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
           }
         ]
       },
@@ -75,23 +102,38 @@
         "variables": [
           {
             "name": "copies",
-            "value": "2"
+            "value": {
+              "kind": "string",
+              "value": "2"
+            }
           },
           {
             "name": "customerEmail",
-            "value": "ada@example.org"
+            "value": {
+              "kind": "string",
+              "value": "ada@example.org"
+            }
           },
           {
             "name": "notice",
-            "value": "v2"
+            "value": {
+              "kind": "string",
+              "value": "v2"
+            }
           },
           {
             "name": "order",
-            "value": "A-17"
+            "value": {
+              "kind": "string",
+              "value": "A-17"
+            }
           },
           {
             "name": "urgent",
-            "value": false
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
           }
         ]
       },
@@ -102,23 +144,38 @@
         "variables": [
           {
             "name": "copies",
-            "value": "2"
+            "value": {
+              "kind": "string",
+              "value": "2"
+            }
           },
           {
             "name": "customerEmail",
-            "value": "ada@example.org"
+            "value": {
+              "kind": "string",
+              "value": "ada@example.org"
+            }
           },
           {
             "name": "notice",
-            "value": "v2"
+            "value": {
+              "kind": "string",
+              "value": "v2"
+            }
           },
           {
             "name": "order",
-            "value": "A-17"
+            "value": {
+              "kind": "string",
+              "value": "A-17"
+            }
           },
           {
             "name": "urgent",
-            "value": false
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
           }
         ]
       }

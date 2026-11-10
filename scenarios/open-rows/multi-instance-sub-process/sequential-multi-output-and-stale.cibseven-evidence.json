@@ -6,7 +6,7 @@
   },
   "profile": {
     "id": "cibseven-2.2.0",
-    "sha256": "28dba164ed6d66d9d6401e4c8ebae110d1688fc29810c8cac4f43ac97b5882c4"
+    "sha256": "820c7e46113d9bb8adc77c83e77632f870100fd1912d545f4dd23c6f537a7c7e"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -25,18 +25,27 @@
         "variables": [
           {
             "name": "invoices",
-            "value": [
-              "a",
-              "b"
-            ]
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b"
+              ]
+            }
           },
           {
             "name": "note",
-            "value": "n0"
+            "value": {
+              "kind": "string",
+              "value": "n0"
+            }
           },
           {
             "name": "quorum",
-            "value": 99
+            "value": {
+              "kind": "integer",
+              "value": 99
+            }
           }
         ]
       },
@@ -47,26 +56,41 @@
         "variables": [
           {
             "name": "extra",
-            "value": "x"
+            "value": {
+              "kind": "string",
+              "value": "x"
+            }
           },
           {
             "name": "invoices",
-            "value": [
-              "a",
-              "b"
-            ]
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b"
+              ]
+            }
           },
           {
             "name": "note",
-            "value": "n0"
+            "value": {
+              "kind": "string",
+              "value": "n0"
+            }
           },
           {
             "name": "quorum",
-            "value": 99
+            "value": {
+              "kind": "integer",
+              "value": 99
+            }
           },
           {
             "name": "summary",
-            "value": "from-commercial"
+            "value": {
+              "kind": "string",
+              "value": "from-commercial"
+            }
           }
         ]
       },
@@ -77,26 +101,41 @@
         "variables": [
           {
             "name": "extra",
-            "value": "x"
+            "value": {
+              "kind": "string",
+              "value": "x"
+            }
           },
           {
             "name": "invoices",
-            "value": [
-              "a",
-              "b"
-            ]
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b"
+              ]
+            }
           },
           {
             "name": "note",
-            "value": "n0"
+            "value": {
+              "kind": "string",
+              "value": "n0"
+            }
           },
           {
             "name": "quorum",
-            "value": 99
+            "value": {
+              "kind": "integer",
+              "value": 99
+            }
           },
           {
             "name": "summary",
-            "value": "from-commercial"
+            "value": {
+              "kind": "string",
+              "value": "from-commercial"
+            }
           }
         ]
       },
@@ -107,26 +146,41 @@
         "variables": [
           {
             "name": "extra",
-            "value": "x"
+            "value": {
+              "kind": "string",
+              "value": "x"
+            }
           },
           {
             "name": "invoices",
-            "value": [
-              "a",
-              "b"
-            ]
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b"
+              ]
+            }
           },
           {
             "name": "note",
-            "value": "n0"
+            "value": {
+              "kind": "string",
+              "value": "n0"
+            }
           },
           {
             "name": "quorum",
-            "value": 99
+            "value": {
+              "kind": "integer",
+              "value": 99
+            }
           },
           {
             "name": "summary",
-            "value": "from-commercial"
+            "value": {
+              "kind": "string",
+              "value": "from-commercial"
+            }
           }
         ]
       },
@@ -137,26 +191,41 @@
         "variables": [
           {
             "name": "extra",
-            "value": "x"
+            "value": {
+              "kind": "string",
+              "value": "x"
+            }
           },
           {
             "name": "invoices",
-            "value": [
-              "a",
-              "b"
-            ]
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b"
+              ]
+            }
           },
           {
             "name": "note",
-            "value": "n0"
+            "value": {
+              "kind": "string",
+              "value": "n0"
+            }
           },
           {
             "name": "quorum",
-            "value": 99
+            "value": {
+              "kind": "integer",
+              "value": 99
+            }
           },
           {
             "name": "summary",
-            "value": "approved"
+            "value": {
+              "kind": "string",
+              "value": "approved"
+            }
           }
         ]
       },
@@ -167,26 +236,41 @@
         "variables": [
           {
             "name": "extra",
-            "value": "x"
+            "value": {
+              "kind": "string",
+              "value": "x"
+            }
           },
           {
             "name": "invoices",
-            "value": [
-              "a",
-              "b"
-            ]
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b"
+              ]
+            }
           },
           {
             "name": "note",
-            "value": "n0"
+            "value": {
+              "kind": "string",
+              "value": "n0"
+            }
           },
           {
             "name": "quorum",
-            "value": 99
+            "value": {
+              "kind": "integer",
+              "value": 99
+            }
           },
           {
             "name": "summary",
-            "value": "approved"
+            "value": {
+              "kind": "string",
+              "value": "approved"
+            }
           }
         ]
       },
@@ -197,26 +281,41 @@
         "variables": [
           {
             "name": "extra",
-            "value": "x"
+            "value": {
+              "kind": "string",
+              "value": "x"
+            }
           },
           {
             "name": "invoices",
-            "value": [
-              "a",
-              "b"
-            ]
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b"
+              ]
+            }
           },
           {
             "name": "note",
-            "value": "n0"
+            "value": {
+              "kind": "string",
+              "value": "n0"
+            }
           },
           {
             "name": "quorum",
-            "value": 99
+            "value": {
+              "kind": "integer",
+              "value": 99
+            }
           },
           {
             "name": "summary",
-            "value": "approved"
+            "value": {
+              "kind": "string",
+              "value": "approved"
+            }
           }
         ]
       },
@@ -227,26 +326,41 @@
         "variables": [
           {
             "name": "extra",
-            "value": "x"
+            "value": {
+              "kind": "string",
+              "value": "x"
+            }
           },
           {
             "name": "invoices",
-            "value": [
-              "a",
-              "b"
-            ]
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b"
+              ]
+            }
           },
           {
             "name": "note",
-            "value": "n0"
+            "value": {
+              "kind": "string",
+              "value": "n0"
+            }
           },
           {
             "name": "quorum",
-            "value": 99
+            "value": {
+              "kind": "integer",
+              "value": 99
+            }
           },
           {
             "name": "summary",
-            "value": "approved"
+            "value": {
+              "kind": "string",
+              "value": "approved"
+            }
           }
         ]
       },
@@ -257,26 +371,41 @@
         "variables": [
           {
             "name": "extra",
-            "value": "x"
+            "value": {
+              "kind": "string",
+              "value": "x"
+            }
           },
           {
             "name": "invoices",
-            "value": [
-              "a",
-              "b"
-            ]
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b"
+              ]
+            }
           },
           {
             "name": "note",
-            "value": "n0"
+            "value": {
+              "kind": "string",
+              "value": "n0"
+            }
           },
           {
             "name": "quorum",
-            "value": 99
+            "value": {
+              "kind": "integer",
+              "value": 99
+            }
           },
           {
             "name": "summary",
-            "value": "approved"
+            "value": {
+              "kind": "string",
+              "value": "approved"
+            }
           }
         ]
       }

@@ -1,0 +1,127 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "business-rule-routing-no-match",
+    "sha256": "a5295c9e819a14cd17f76c6f19e615cfead086f4b86bf5a36d288888d4834e11"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "820c7e46113d9bb8adc77c83e77632f870100fd1912d545f4dd23c6f537a7c7e"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "applicant",
+            "value": {
+              "kind": "string",
+              "value": "ada@example.org"
+            }
+          },
+          {
+            "name": "grade",
+            "value": {
+              "kind": "null"
+            }
+          },
+          {
+            "name": "limit",
+            "value": {
+              "kind": "null"
+            }
+          },
+          {
+            "name": "score",
+            "value": {
+              "kind": "null"
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Applicant_1",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "applicant",
+            "value": {
+              "kind": "string",
+              "value": "ada@example.org"
+            }
+          },
+          {
+            "name": "grade",
+            "value": {
+              "kind": "null"
+            }
+          },
+          {
+            "name": "limit",
+            "value": {
+              "kind": "null"
+            }
+          },
+          {
+            "name": "score",
+            "value": {
+              "kind": "null"
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}

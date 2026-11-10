@@ -1,0 +1,314 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "mi-completion-failures-user-parallel-failing-nonfinal",
+    "sha256": "60fb815b20838052bfb9ea8f7832ae7cc83643e8bcd4153ed1b9a84a85034e29"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "820c7e46113d9bb8adc77c83e77632f870100fd1912d545f4dd23c6f537a7c7e"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "DataInput_Items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b"
+              ]
+            }
+          },
+          {
+            "name": "failAt",
+            "value": {
+              "kind": "integer",
+              "value": 1
+            }
+          },
+          {
+            "name": "label",
+            "value": {
+              "kind": "string",
+              "value": "x"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-complete-UserTask_Review-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "DataInput_Items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b"
+              ]
+            }
+          },
+          {
+            "name": "failAt",
+            "value": {
+              "kind": "integer",
+              "value": 1
+            }
+          },
+          {
+            "name": "label",
+            "value": {
+              "kind": "string",
+              "value": "x"
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "tasks": [
+          {
+            "elementId": "UserTask_Review",
+            "name": "Review item"
+          },
+          {
+            "elementId": "UserTask_Review",
+            "name": "Review item"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-complete-UserTask_Review-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_Review",
+            "name": "Review item"
+          },
+          {
+            "elementId": "UserTask_Review",
+            "name": "Review item"
+          }
+        ]
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s02-complete-UserTask_Review-1",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "s01-start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s02-complete-UserTask_Review-1",
+        "state": "ACTIVE"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "rolledBack"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "DataInput_Items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b"
+              ]
+            }
+          },
+          {
+            "name": "failAt",
+            "value": {
+              "kind": "integer",
+              "value": 1
+            }
+          },
+          {
+            "name": "label",
+            "value": {
+              "kind": "string",
+              "value": "x"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Review",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review item",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Review",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review item",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s02-complete-UserTask_Review-1",
+        "outcome": "rolledBack"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "DataInput_Items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b"
+              ]
+            }
+          },
+          {
+            "name": "failAt",
+            "value": {
+              "kind": "integer",
+              "value": 1
+            }
+          },
+          {
+            "name": "label",
+            "value": {
+              "kind": "string",
+              "value": "x"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Review",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review item",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Review",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review item",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      }
+    ]
+  }
+}

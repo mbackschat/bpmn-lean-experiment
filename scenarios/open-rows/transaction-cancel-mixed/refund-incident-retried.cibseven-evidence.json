@@ -1,0 +1,896 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "transaction-cancel-mixed-refund-incident-retried",
+    "sha256": "8398fe3154a6f8fc59834908b73691dc9e1c7c7909325b291ab2ba7126d96a45"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "820c7e46113d9bb8adc77c83e77632f870100fd1912d545f4dd23c6f537a7c7e"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "cancel",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          },
+          {
+            "name": "crate",
+            "value": {
+              "kind": "string",
+              "value": "root-crate"
+            }
+          },
+          {
+            "name": "picked",
+            "value": {
+              "kind": "string",
+              "value": "p0"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s01-complete-UserTask_Pick-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "cancel",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          },
+          {
+            "name": "crate",
+            "value": {
+              "kind": "string",
+              "value": "root-crate"
+            }
+          },
+          {
+            "name": "picked",
+            "value": {
+              "kind": "string",
+              "value": "p1"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-effect-success-ServiceTask_Charge-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "cancel",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          },
+          {
+            "name": "crate",
+            "value": {
+              "kind": "string",
+              "value": "root-crate"
+            }
+          },
+          {
+            "name": "picked",
+            "value": {
+              "kind": "string",
+              "value": "p1"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-complete-UserTask_PackItems-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "cancel",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          },
+          {
+            "name": "crate",
+            "value": {
+              "kind": "string",
+              "value": "root-crate"
+            }
+          },
+          {
+            "name": "picked",
+            "value": {
+              "kind": "string",
+              "value": "p1"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_Decide-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "cancel",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          },
+          {
+            "name": "crate",
+            "value": {
+              "kind": "string",
+              "value": "root-crate"
+            }
+          },
+          {
+            "name": "picked",
+            "value": {
+              "kind": "string",
+              "value": "p1"
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "tasks": [
+          {
+            "elementId": "UserTask_Pick",
+            "name": "Pick the goods"
+          },
+          {
+            "elementId": "UserTask_PackItems",
+            "name": "Pack the items"
+          },
+          {
+            "elementId": "UserTask_Decide",
+            "name": "Decide whether to cancel"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s01-complete-UserTask_Pick-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_PackItems",
+            "name": "Pack the items"
+          },
+          {
+            "elementId": "UserTask_Decide",
+            "name": "Decide whether to cancel"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-effect-success-ServiceTask_Charge-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_PackItems",
+            "name": "Pack the items"
+          },
+          {
+            "elementId": "UserTask_Decide",
+            "name": "Decide whether to cancel"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-complete-UserTask_PackItems-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_Decide",
+            "name": "Decide whether to cancel"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_Decide-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_Decide",
+            "name": "Decide whether to cancel"
+          }
+        ]
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": [
+          {
+            "elementId": "Boundary_Deadline",
+            "dueDateDeltaMs": 30000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s01-complete-UserTask_Pick-1",
+        "jobs": [
+          {
+            "elementId": "Boundary_Deadline",
+            "dueDateDeltaMs": 30000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-effect-success-ServiceTask_Charge-1",
+        "jobs": [
+          {
+            "elementId": "Boundary_Deadline",
+            "dueDateDeltaMs": 30000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-complete-UserTask_PackItems-1",
+        "jobs": [
+          {
+            "elementId": "Boundary_Deadline",
+            "dueDateDeltaMs": 30000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_Decide-1",
+        "jobs": [
+          {
+            "elementId": "Boundary_Deadline",
+            "dueDateDeltaMs": 30000,
+            "executable": false
+          }
+        ]
+      }
+    ],
+    "effectJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": [
+          {
+            "elementId": "ServiceTask_Charge",
+            "activation": 1,
+            "protocol": "urn:bpmn-lean:effect:probe-v1",
+            "handler": "bpmnLeanEffectHandler",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s01-complete-UserTask_Pick-1",
+        "jobs": [
+          {
+            "elementId": "ServiceTask_Charge",
+            "activation": 1,
+            "protocol": "urn:bpmn-lean:effect:probe-v1",
+            "handler": "bpmnLeanEffectHandler",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-effect-success-ServiceTask_Charge-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s03-complete-UserTask_PackItems-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_Decide-1",
+        "jobs": []
+      }
+    ],
+    "incidentJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "createIncidentOnFailedJobEnabled": true,
+        "jobs": [
+          {
+            "publicJobId": "23",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false,
+            "processInstanceId": "7",
+            "elementId": "ServiceTask_Charge",
+            "incident": null
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s01-complete-UserTask_Pick-1",
+        "createIncidentOnFailedJobEnabled": true,
+        "jobs": [
+          {
+            "publicJobId": "23",
+            "retries": 3,
+            "executable": true,
+            "dueDatePresent": false,
+            "processInstanceId": "7",
+            "elementId": "ServiceTask_Charge",
+            "incident": null
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-effect-success-ServiceTask_Charge-1",
+        "createIncidentOnFailedJobEnabled": true,
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s03-complete-UserTask_PackItems-1",
+        "createIncidentOnFailedJobEnabled": true,
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_Decide-1",
+        "createIncidentOnFailedJobEnabled": true,
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "s01-start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s01-complete-UserTask_Pick-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s02-effect-success-ServiceTask_Charge-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s03-complete-UserTask_PackItems-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_Decide-1",
+        "state": "ACTIVE"
+      }
+    ],
+    "effectExecutions": [
+      {
+        "afterCommandId": "s02-effect-success-ServiceTask_Charge-1",
+        "schedule": "incidentReportRetrySuccess",
+        "invocations": 1,
+        "mutations": 1,
+        "initialRetries": 3,
+        "retriesAfterFirstFailure": null
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "rolledBack"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "cancel",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          },
+          {
+            "name": "crate",
+            "value": {
+              "kind": "string",
+              "value": "root-crate"
+            }
+          },
+          {
+            "name": "picked",
+            "value": {
+              "kind": "string",
+              "value": "p0"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Boundary_Deadline",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 30000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ServiceTask_Charge",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "urn:bpmn-lean:effect-operation:probe-v1",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Decide",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Decide whether to cancel",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_PackItems",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Pack the items",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Pick",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Pick the goods",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-complete-UserTask_Pick-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "cancel",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          },
+          {
+            "name": "crate",
+            "value": {
+              "kind": "string",
+              "value": "root-crate"
+            }
+          },
+          {
+            "name": "picked",
+            "value": {
+              "kind": "string",
+              "value": "p1"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Boundary_Deadline",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 30000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ServiceTask_Charge",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "effect",
+              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+              "operation": "urn:bpmn-lean:effect-operation:probe-v1",
+              "arguments": [],
+              "failures": 0,
+              "send": null
+            },
+            "input": "effectResult"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Decide",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Decide whether to cancel",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_PackItems",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Pack the items",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s02-effect-success-ServiceTask_Charge-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "cancel",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          },
+          {
+            "name": "crate",
+            "value": {
+              "kind": "string",
+              "value": "root-crate"
+            }
+          },
+          {
+            "name": "picked",
+            "value": {
+              "kind": "string",
+              "value": "p1"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Boundary_Deadline",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 30000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Decide",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Decide whether to cancel",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_PackItems",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Pack the items",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s03-complete-UserTask_PackItems-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "cancel",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          },
+          {
+            "name": "crate",
+            "value": {
+              "kind": "string",
+              "value": "root-crate"
+            }
+          },
+          {
+            "name": "picked",
+            "value": {
+              "kind": "string",
+              "value": "p1"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Boundary_Deadline",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 30000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Decide",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Decide whether to cancel",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s04-complete-UserTask_Decide-1",
+        "outcome": "rolledBack"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "cancel",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          },
+          {
+            "name": "crate",
+            "value": {
+              "kind": "string",
+              "value": "root-crate"
+            }
+          },
+          {
+            "name": "picked",
+            "value": {
+              "kind": "string",
+              "value": "p1"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Boundary_Deadline",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 30000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Decide",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Decide whether to cancel",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,155 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "juel-evaluation-failures-division-by-zero",
+    "sha256": "7bba75e2045f0bb7e264b38cfa530144fd021e6fd532b4729af40c6cedb7de29"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "820c7e46113d9bb8adc77c83e77632f870100fd1912d545f4dd23c6f537a7c7e"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "a",
+            "value": {
+              "kind": "integer",
+              "value": 7
+            }
+          },
+          {
+            "name": "probe",
+            "value": {
+              "kind": "string",
+              "value": "division-by-zero"
+            }
+          },
+          {
+            "name": "zero",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start",
+        "tasks": [
+          {
+            "elementId": "UserTask_DivisionByZero",
+            "name": "division by zero"
+          }
+        ]
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start",
+        "state": "ACTIVE"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Run_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "a",
+            "value": {
+              "kind": "integer",
+              "value": 7
+            }
+          },
+          {
+            "name": "probe",
+            "value": {
+              "kind": "string",
+              "value": "division-by-zero"
+            }
+          },
+          {
+            "name": "zero",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Run_1",
+              "elementId": "UserTask_DivisionByZero",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "division by zero",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "rendered",
+                  "value": {
+                    "kind": "string",
+                    "value": "quotient=Infinity"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      }
+    ]
+  }
+}

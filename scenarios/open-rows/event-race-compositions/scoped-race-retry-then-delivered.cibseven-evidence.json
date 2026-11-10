@@ -6,7 +6,7 @@
   },
   "profile": {
     "id": "cibseven-2.2.0",
-    "sha256": "28dba164ed6d66d9d6401e4c8ebae110d1688fc29810c8cac4f43ac97b5882c4"
+    "sha256": "820c7e46113d9bb8adc77c83e77632f870100fd1912d545f4dd23c6f537a7c7e"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -25,7 +25,10 @@
         "variables": [
           {
             "name": "retry",
-            "value": false
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
           }
         ]
       },
@@ -36,7 +39,10 @@
         "variables": [
           {
             "name": "retry",
-            "value": false
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
           }
         ]
       },
@@ -47,7 +53,10 @@
         "variables": [
           {
             "name": "retry",
-            "value": true
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
           }
         ]
       },
@@ -58,7 +67,10 @@
         "variables": [
           {
             "name": "retry",
-            "value": true
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
           }
         ]
       },
@@ -69,7 +81,10 @@
         "variables": [
           {
             "name": "retry",
-            "value": true
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
           }
         ]
       },
@@ -80,7 +95,10 @@
         "variables": [
           {
             "name": "retry",
-            "value": true
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
           }
         ]
       }
@@ -112,12 +130,7 @@
       },
       {
         "afterCommandId": "s04-deliver-Delivered-1",
-        "tasks": [
-          {
-            "elementId": "ConfirmDelivery",
-            "name": "Confirm delivery"
-          }
-        ]
+        "tasks": []
       },
       {
         "afterCommandId": "s05-deliver-Delivered-2",
@@ -164,7 +177,15 @@
       },
       {
         "afterCommandId": "s04-deliver-Delivered-1",
-        "subscriptions": []
+        "subscriptions": [
+          {
+            "elementId": "Delivered",
+            "eventName": "delivered",
+            "messageId": "Message_Delivered",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
       },
       {
         "afterCommandId": "s05-deliver-Delivered-2",
@@ -210,7 +231,13 @@
       },
       {
         "afterCommandId": "s04-deliver-Delivered-1",
-        "jobs": []
+        "jobs": [
+          {
+            "elementId": "DeliveryOverdue",
+            "dueDateDeltaMs": 10000,
+            "executable": false
+          }
+        ]
       },
       {
         "afterCommandId": "s05-deliver-Delivered-2",
@@ -394,7 +421,7 @@
             "id": {
               "processInstanceId": "Instance_1",
               "elementId": "Delivered",
-              "activation": 1
+              "activation": 2
             },
             "definition": null,
             "detail": {
@@ -412,7 +439,7 @@
             "id": {
               "processInstanceId": "Instance_1",
               "elementId": "DeliveryOverdue",
-              "activation": 1
+              "activation": 2
             },
             "definition": null,
             "detail": {
@@ -427,7 +454,7 @@
       {
         "kind": "command",
         "commandId": "s04-deliver-Delivered-1",
-        "outcome": "committed"
+        "outcome": "rejected"
       },
       {
         "kind": "state",
@@ -447,31 +474,41 @@
           {
             "id": {
               "processInstanceId": "Instance_1",
-              "elementId": "ConfirmDelivery",
-              "activation": 1
+              "elementId": "Delivered",
+              "activation": 2
             },
             "definition": null,
             "detail": {
-              "kind": "userTask",
-              "name": "Confirm delivery",
-              "assignee": null,
-              "candidateUsers": [],
-              "candidateGroups": [],
-              "formKey": null,
-              "formFields": [],
-              "dueDate": null,
-              "followUpDate": null,
-              "priority": null,
-              "inputs": []
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Delivered"
+              },
+              "payload": false,
+              "criteria": []
             },
-            "input": "command"
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "DeliveryOverdue",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 10000,
+              "recurrence": null
+            },
+            "input": "timerFire"
           }
         ]
       },
       {
         "kind": "command",
         "commandId": "s05-deliver-Delivered-2",
-        "outcome": "rejected"
+        "outcome": "committed"
       },
       {
         "kind": "state",
@@ -536,7 +573,7 @@
             "id": {
               "processInstanceId": "Instance_1",
               "elementId": "Delivered",
-              "activation": 1
+              "activation": 3
             },
             "definition": null,
             "detail": {
@@ -554,7 +591,7 @@
             "id": {
               "processInstanceId": "Instance_1",
               "elementId": "DeliveryOverdue",
-              "activation": 1
+              "activation": 3
             },
             "definition": null,
             "detail": {

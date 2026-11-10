@@ -1,0 +1,40 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "interchange-reference-forms-event-definition-ref-catch-timer-then-proceed",
+    "sha256": "9f13292d2709188fc0e8c57be129c25ddbfb8f293fcaaae90c26977f1c9890ca"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "820c7e46113d9bb8adc77c83e77632f870100fd1912d545f4dd23c6f537a7c7e"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [],
+    "taskQueries": [],
+    "timerJobs": [],
+    "historicProcessStates": []
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "unsupported"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "unsupported"
+      }
+    ]
+  }
+}

@@ -1,0 +1,252 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "juel-core-table-call-source-expression-out",
+    "sha256": "8e81e5107ef853a7e1cbc962cbca4a66b56396986cf2c364b21b3f6a8eaca8c6"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "820c7e46113d9bb8adc77c83e77632f870100fd1912d545f4dd23c6f537a7c7e"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "probe",
+            "value": {
+              "kind": "string",
+              "value": "call-source-expression-out"
+            }
+          },
+          {
+            "name": "seed",
+            "value": {
+              "kind": "integer",
+              "value": 1
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-peek",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "probe",
+            "value": {
+              "kind": "string",
+              "value": "call-source-expression-out"
+            }
+          },
+          {
+            "name": "seed",
+            "value": {
+              "kind": "integer",
+              "value": 1
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start",
+        "tasks": [
+          {
+            "elementId": "UserTask_Peek",
+            "name": "Peek"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-peek",
+        "tasks": [
+          {
+            "elementId": "UserTask_Peek",
+            "name": "Peek"
+          }
+        ]
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-peek",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-peek",
+        "state": "ACTIVE"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "rolledBack"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Probe_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "probe",
+            "value": {
+              "kind": "string",
+              "value": "call-source-expression-out"
+            }
+          },
+          {
+            "name": "seed",
+            "value": {
+              "kind": "integer",
+              "value": 1
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "call:7:Probe_1:36:CallActivity_CallSourceExpressionOut:1",
+              "elementId": "UserTask_Peek",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_Peek",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Peek",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "seen",
+                  "value": {
+                    "kind": "integer",
+                    "value": 1
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-peek",
+        "outcome": "rolledBack"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Probe_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "probe",
+            "value": {
+              "kind": "string",
+              "value": "call-source-expression-out"
+            }
+          },
+          {
+            "name": "seed",
+            "value": {
+              "kind": "integer",
+              "value": 1
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "call:7:Probe_1:36:CallActivity_CallSourceExpressionOut:1",
+              "elementId": "UserTask_Peek",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_Peek",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Peek",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "seen",
+                  "value": {
+                    "kind": "integer",
+                    "value": 1
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      }
+    ]
+  }
+}
