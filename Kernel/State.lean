@@ -1,6 +1,6 @@
 module
 
-public import Kernel.State.Raise
+public import Kernel.State.Journal
 
 /-! # Kernel runtime state
 
@@ -27,13 +27,6 @@ inductive Continuation where
   /-- A compensation handler of the run in that scope occurrence. -/
   | compensation (run : ScopeOccurrenceId)
   deriving Repr
-
-/-- Which counter numbers an occurrence: a Multi-Instance body and its instances number apart, as CIB gives the body
-an activity id of its own (`BpmnParse:185`). -/
-inductive ActivationRole where
-  | element
-  | multiInstanceBody
-  deriving DecidableEq, Repr
 
 /-- One flow-node occurrence, from its issue until it ends. `activation` counts the activations of `element` in its
 process instance under `role`, from 1. `incoming` is the flow the token arrived on, `none` for an occurrence no token
@@ -184,44 +177,6 @@ inductive Signal where
   deriving Repr
 
 /-! ## The occurrence journal -/
-
-/-- An occurrence's public key in the journal. -/
-structure OccurrenceKey where
-  processInstanceId : String
-  element : ElementId
-  activation : Nat
-  role : ActivationRole := .element
-  deriving DecidableEq, Repr
-
-inductive Terminal where
-  | completed
-  | cancelled
-  deriving DecidableEq, Repr
-
-/-- What caused a micro-step. -/
-inductive Cause where
-  | input (tag : InputTag)
-  | signal (name : String)
-  | arrive (flow : FlowId)
-  | idle (scope : ScopeOccurrenceId)
-  deriving Repr
-
-/-- An occurrence began: its key, its owning scope occurrence and its element's source type, which semantic publication
-shows. -/
-structure StartedFact where
-  occurrence : OccurrenceKey
-  owner : ScopeOccurrenceId
-  sourceType : String
-  deriving Repr
-
-/-- One micro-step's occurrence facts. -/
-structure Transition where
-  cause : Cause
-  element : Option ElementId
-  owner : ScopeOccurrenceId
-  started : List StartedFact := []
-  ended : List (OccurrenceKey × Terminal) := []
-  deriving Repr
 
 /-- The facts of the micro-step in progress, which `Kernel.Step` turns into one `Transition`. `cancelled` holds the
 occurrences cancelled, for `Hooks.cancelled` after the micro-step. -/

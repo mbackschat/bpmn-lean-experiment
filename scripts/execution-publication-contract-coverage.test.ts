@@ -89,12 +89,12 @@ test("validates the closed page, result, and full-export structures", async () =
 });
 
 test("publishes every kernel cause as a role, with the vocabulary's input kinds", async () => {
-  const [schema, vocabulary, kernelState] = await Promise.all([
+  const [schema, vocabulary, kernelJournal] = await Promise.all([
     readSchema("semantic-publication.schema.json"),
     readSchema("vocabulary.schema.json"),
-    readFile(`${projectRoot}/packages/kernel/src/state.ts`, "utf8"),
+    readFile(`${projectRoot}/packages/kernel/src/state/journal.ts`, "utf8"),
   ]);
-  assert.deepEqual(roleArms(schema).map(({ kind }) => kind).toSorted(), inlineEnumValues(kernelState, "CauseTag").toSorted());
+  assert.deepEqual(roleArms(schema).map(({ kind }) => kind).toSorted(), inlineEnumValues(kernelJournal, "CauseTag").toSorted());
   const input = roleArms(schema).find(({ kind }) => kind === "input");
   assert.deepEqual(input?.input, inputKinds(vocabulary));
   const integers = collectIntegerSchemas(schema);

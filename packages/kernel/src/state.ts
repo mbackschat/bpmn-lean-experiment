@@ -51,6 +51,12 @@ import {
 export {
   type InstanceFailure, type Origin, type Raised, raisedIsCancel, RaisedTag,
 };
+import {
+  ActivationRole, type Cause, CauseTag, type OccurrenceKey, type StartedFact, Terminal, type Transition,
+} from "./state/journal.js";
+export {
+  ActivationRole, type Cause, CauseTag, type OccurrenceKey, type StartedFact, Terminal, type Transition,
+};
 export {
   type Compensable, type CompensationRun, type Compensations, type FeatureSlots, featureSlotsClear,
   featureSlotsKeptAlive, type InstanceData, type Iteration, IterationTag, type Leave, leaveFlows, leaveOutgoing,
@@ -74,12 +80,6 @@ export type Continuation =
   | { readonly tag: ContinuationTag.Compensation; readonly run: ScopeOccurrenceId };
 
 export const flowContinuation: Continuation = { tag: ContinuationTag.Flow };
-
-/**
- * Which counter numbers an occurrence: a Multi-Instance body and its instances number apart, as CIB gives the body an
- * activity id of its own (`BpmnParse:185`).
- */
-export enum ActivationRole { Element = "element", MultiInstanceBody = "multiInstanceBody" }
 
 /**
  * One flow-node occurrence, from its issue until it ends. `activation` counts the activations of `element` in its
@@ -277,41 +277,6 @@ export function completeSignal(occurrence: number, leave: Leave, writes: readonl
 }
 
 // The occurrence journal
-
-/** An occurrence's public key in the journal. */
-export interface OccurrenceKey {
-  readonly processInstanceId: string;
-  readonly element: ElementId;
-  readonly activation: number;
-  readonly role: ActivationRole;
-}
-
-export enum Terminal { Completed = "completed", Cancelled = "cancelled" }
-
-/** What caused a micro-step. */
-export enum CauseTag { Input = "input", Signal = "signal", Arrive = "arrive", Idle = "idle" }
-
-export type Cause =
-  | { readonly tag: CauseTag.Input; readonly input: InputTag }
-  | { readonly tag: CauseTag.Signal; readonly name: string }
-  | { readonly tag: CauseTag.Arrive; readonly flow: FlowId }
-  | { readonly tag: CauseTag.Idle; readonly scope: ScopeOccurrenceId };
-
-/** An occurrence began: its key, its owning scope occurrence and its element's source type. */
-export interface StartedFact {
-  readonly occurrence: OccurrenceKey;
-  readonly owner: ScopeOccurrenceId;
-  readonly sourceType: string;
-}
-
-/** One micro-step's occurrence facts. */
-export interface Transition {
-  readonly cause: Cause;
-  readonly element: ElementId | null;
-  readonly owner: ScopeOccurrenceId;
-  readonly started: readonly StartedFact[];
-  readonly ended: readonly (readonly [OccurrenceKey, Terminal])[];
-}
 
 /**
  * The facts of the micro-step in progress, which `step.ts` turns into one `Transition`. `cancelled` holds the
