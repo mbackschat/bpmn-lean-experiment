@@ -1,0 +1,33 @@
+{
+  "kind": "scenario",
+  "id": "timer-date-forms-no-designator",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "timer-date-forms-date-no-designator",
+    "relativePath": "scenarios/open-rows/timer-date-forms/date-no-designator.bpmn",
+    "sha256": "15fa6da2edeaeab7c3af2cf44c850f9ebed6e370e36d66f9d842b87052fee5b0",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.5.4",
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 Table 10.101"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/jobexecutor/TimerDeclarationImpl.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/calendar/DueDateBusinessCalendar.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/calendar/DateTimeUtil.java",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/event/timer/IntermediateTimerEventTest.java"
+    ]
+  }
+}

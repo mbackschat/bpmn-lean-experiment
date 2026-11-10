@@ -222,6 +222,42 @@ export enum BranchSchedule {
   DeclarationDepthFirst = "declarationDepthFirst",
 }
 
+/** How often a non-interrupting Conditional boundary or Event Sub-Process start fires while its condition holds. */
+export enum ConditionalRetrigger {
+  /**
+   * BPMN 2.0.2 Tables 10.89, 10.90: it is triggered when its condition becomes true, so it fires again only after an
+   * evaluation found the condition false. `camunda:variableName` and `camunda:variableEvents` are refused.
+   */
+  Edge = "edge",
+  /**
+   * CIB-EXT-0035: each offered write whose evaluation is true fires it, same-value updates included, filtered by
+   * `camunda:variableName` and `camunda:variableEvents` (`ConditionalEventDefinition.java:91-113`).
+   */
+  EachWrite = "eachWrite",
+}
+
+/** What a literal Timer value the pinned parser cannot read does. */
+export enum MalformedTimer {
+  /** BPMN 2.0.2 Table 10.101: the value MUST conform to ISO 8601, so such a model is refused at admission. */
+  Refused = "refused",
+  /** CIB-EXT-0036: the model deploys and the arming fails, rolling back the input that reached it. */
+  RollsBackArming = "rollsBackArming",
+}
+
+/** What a Message's `name` is. */
+export enum MessageNames {
+  /**
+   * BPMN 2.0.2 Table 8.48: a text description; a Message is addressed by its identifier, so a nameless Message is
+   * admitted and a name is never an expression.
+   */
+  Description = "description",
+  /**
+   * CIB-LIM-0022: CIB addresses a Message subscription by its name, which must be non-blank and unique among the
+   * subscriptions of one event scope, and may be an expression resolved when the subscription opens.
+   */
+  Addresses = "addresses",
+}
+
 export interface ProfileOptions {
   readonly relations: readonly string[];
   readonly evaluator: Evaluator;
@@ -259,4 +295,7 @@ export interface ProfileOptions {
   readonly businessRuleTask: BusinessRuleTask;
   readonly inclusiveJoinReach: InclusiveJoinReach;
   readonly branchSchedule: BranchSchedule;
+  readonly conditionalRetrigger: ConditionalRetrigger;
+  readonly malformedTimer: MalformedTimer;
+  readonly messageNames: MessageNames;
 }

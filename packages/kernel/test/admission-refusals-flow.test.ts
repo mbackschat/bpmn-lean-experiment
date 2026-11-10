@@ -198,13 +198,13 @@ export const rows: readonly Row[] = [
     code: "start.rootCombination",
     description: "a second None Start of the process",
     mutate: secondStart(null),
-    control: secondStart(message({ name: text("M") })),
+    control: secondStart(message({ messageRef: "M", name: text("M") })),
   },
   {
     code: "start.rootCombination",
     description: "a Timer Start beside the process's None Start",
     mutate: secondStart(duration("PT1S")),
-    control: secondStart(message({ name: text("M") })),
+    control: secondStart(message({ messageRef: "M", name: text("M") })),
   },
   {
     code: "start.subProcessCombination",

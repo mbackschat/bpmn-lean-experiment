@@ -1,0 +1,113 @@
+{
+  "kind": "scenario",
+  "id": "mi-subprocess-parallel-body-above-sibling-branch",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "mi-subprocess-parallel-beside-branch",
+    "relativePath": "scenarios/open-rows/multi-instance-sub-process/parallel-beside-branch.bpmn",
+    "sha256": "831e969b71f09e62d386369e3a4c3cc2bcdd4ed60a8cd11ee4181cb3ecfebcad",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "fresh",
+          "value": {
+            "kind": "string",
+            "value": "new"
+          }
+        },
+        {
+          "name": "items",
+          "value": {
+            "kind": "stringList",
+            "value": [
+              "a",
+              "b"
+            ]
+          }
+        },
+        {
+          "name": "last",
+          "value": {
+            "kind": "string",
+            "value": "none"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-complete-UserTask_Check-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Check",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-complete-UserTask_Check-2",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Check",
+        "activation": 2
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s04-complete-UserTask_Sibling",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Sibling",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s05-complete-UserTask_Publish",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Publish",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.8",
+      "BPMN 2.0.2 §13.3.7",
+      "BPMN 2.0.2 Table 10.29",
+      "BPMN 2.0.2 Table 10.30",
+      "BPMN 2.0.2 §10.3.5",
+      "BPMN 2.0.2 §13.3.4"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/MultiInstanceActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ParallelMultiInstanceActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/interceptor/CommandInvocationContext.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/interceptor/AtomicOperationInvocation.java"
+    ]
+  }
+}

@@ -121,11 +121,11 @@ function deferred(program: Program, state: State, outcome: Outcome): Outcome {
   return assertNever(outcome.failure.tag);
 }
 
-/** A rolled-back timer firing is `unsupported`: CIB fails and retries its timer job, which no track models yet. */
-function timerJob(outcome: Outcome): Outcome {
+/** A rolled-back timer firing stays rolled back under `ContinuationFailure.RolledBack`, `unsupported` under `Incident`. */
+function timerJob(failure: ContinuationFailure, outcome: Outcome): Outcome {
   const rolledBack = !outcome.ok && outcome.failure.tag === FailureTag.RolledBack;
   // dynamic-only: whether a firing's closure rolls back depends on the run's data
-  return rolledBack ? failed(FailureTag.Unsupported, "timer-job-failure") : outcome;
+  return rolledBack && failure === ContinuationFailure.Incident ? failed(FailureTag.Unsupported, "timer-job-failure") : outcome;
 }
 
 /** Begin the occurrence `request` names and hand it to its feature. */
@@ -460,7 +460,7 @@ function itemOf(ctx: Ctx, state: State, occurrence: OccurrenceRef, detail: (view
 /** The begun occurrence with the public identity `ref`, the instance rather than the body of a Multi-Instance element. */
 function occurrenceOfRef(ctx: Ctx, state: State, ref: OccurrenceRef): Occurrence | null {
   return state.occurrences.find((occurrence) =>
-    occurrence.begun && occurrence.role === ActivationRole.Element && occurrence.activation === ref.activation &&
+    (occurrence.begun || state.openItems.some((item) => item.occurrence === occurrence.id)) && occurrence.role === ActivationRole.Element && occurrence.activation === ref.activation &&
     programPublicId(ctx.program, occurrence.element) === ref.element &&
     instanceOf(state, occurrence.scope) === ref.processInstanceId) ?? null;
 }
@@ -619,7 +619,7 @@ export function step(hooks: Hooks, program: Program, before: State | null, input
       return onRunning(hooks, ctx, input.tag, input.payload.atMs, before, (state) => deliver(hooks, ctx, input, state));
     case InputTag.TimerFire: {
       const data = input.payload;
-      return timerJob(onRunning(hooks, ctx, input.tag, data.atMs ?? data.logicalTimeMs, before, (state) => {
+      return timerJob(ctx.program.options.continuationFailure, onRunning(hooks, ctx, input.tag, data.atMs ?? data.logicalTimeMs, before, (state) => {
         const item = itemOf(ctx, state, data.occurrence, (view) => view.deadlineMs);
         return item === null
           ? failed(FailureTag.Rejected, "unknown-timer")

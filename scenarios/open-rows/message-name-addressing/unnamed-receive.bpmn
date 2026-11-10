@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_UnnamedReceive"
+  targetNamespace="urn:bpmn-lean:scenarios:message-name-addressing:unnamed-receive">
+  <bpmn:message id="Message_UnnamedReceive" />
+  <bpmn:process id="Process_UnnamedReceive" name="A Receive Task whose Message has no name" isExecutable="true">
+    <bpmn:startEvent id="Start_Receive" />
+    <bpmn:receiveTask id="Receive_Unnamed" name="Await the unnamed notice" messageRef="Message_UnnamedReceive" />
+    <bpmn:endEvent id="End_Receive" />
+    <bpmn:sequenceFlow id="Flow_Start_Receive_Receive_Unnamed" sourceRef="Start_Receive" targetRef="Receive_Unnamed" />
+    <bpmn:sequenceFlow id="Flow_Receive_Unnamed_End_Receive" sourceRef="Receive_Unnamed" targetRef="End_Receive" />
+  </bpmn:process>
+</bpmn:definitions>

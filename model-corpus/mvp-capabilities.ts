@@ -357,7 +357,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Intermediate Catch Events",
     element: "Timer Intermediate Catch Event",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "Exact `PT[nH][nM][nS]` durations from 1 ms to PT87660H with explicit logical-time firing; nominal, fractional, zero, dated and repeating forms are refused, and the boundary, race arm, Timer Start and repeatable catch keep their single literal.",
+    restriction: "ISO 8601 durations, extended dates with an explicit zone, and undated or Cron cycles over UTC, as `Kernel.Timer.classify` admits (the Timers account of the subscriptions semantics specification); other forms are refused.",
     cibEvidence: exactCib("intermediate-catch-timer-pt1s"),
   },
   {

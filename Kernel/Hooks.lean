@@ -37,14 +37,9 @@ inductive ScopeRole where
   | compensationHandler
   deriving DecidableEq, Repr
 
-/-- The channel a Message trigger waits on, `none` for a Message named by an expression. -/
-def MessageTrigger.channel? (trigger : MessageTrigger) : Option MessageChannel :=
-  let address (messageId : Option String) : MessageChannel :=
-    { messageId, interfaceRef := trigger.interfaceRef, operationRef := trigger.operationRef }
-  match trigger.name with
-  | none => some (address none)
-  | some (.literal name) => some (address (some name))
-  | some (.expression _) => none
+/-- The channel a Message trigger waits on: its Message's and Operation's identifiers, never its name (PC-MESSAGE-01). -/
+def MessageTrigger.channel (trigger : MessageTrigger) : MessageChannel :=
+  { messageId := trigger.messageRef, interfaceRef := trigger.interfaceRef, operationRef := trigger.operationRef }
 
 def DeliveryTrigger.channel? : DeliveryTrigger → Option MessageChannel
   | .message channel => some channel

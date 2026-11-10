@@ -244,6 +244,9 @@ test("the profile options are the full record, each non-default selected by the 
     businessRuleTask: "refused",
     inclusiveJoinReach: "withBoundaries",
     branchSchedule: "orderInvariant",
+    conditionalRetrigger: "edge",
+    malformedTimer: "refused",
+    messageNames: "description",
   });
   const relations = ["CIB-EXT-0010", "CIB-EXT-0020", "CIB-EXT-0016", "CIB-CFG-0008", "CIB-OP-0009", "CIB-EXT-0026",
     "CIB-INT-0011", "CIB-EXT-0025", "CIB-INT-0009", "CIB-LIM-0001", "CIB-INT-0007", "CIB-INT-0013", "CIB-EXT-0028"];
@@ -279,6 +282,9 @@ test("the profile options are the full record, each non-default selected by the 
     businessRuleTask: "refused",
     inclusiveJoinReach: "withBoundaries",
     branchSchedule: "orderInvariant",
+    conditionalRetrigger: "edge",
+    malformedTimer: "refused",
+    messageNames: "description",
   });
   assert.equal(kernelProfileOptions(["CIB-EXT-0031"]).outputContext, "activityScope");
   assert.equal(kernelProfileOptions(["CIB-INT-0014"]).multiInstanceBinding, "loopReferences");
@@ -290,6 +296,9 @@ test("the profile options are the full record, each non-default selected by the 
   assert.equal(kernelProfileOptions(["CIB-INT-0020"]).inclusiveJoinReach, "outgoingOnly");
   assert.equal(kernelProfileOptions(["CIB-OP-0016"]).branchSchedule, "declarationDepthFirst");
   assert.equal(kernelProfileOptions(["CIB-EXT-0034"]).raisedCallOutputs, "atCalledRoot");
+  assert.equal(kernelProfileOptions(["CIB-EXT-0035"]).conditionalRetrigger, "eachWrite");
+  assert.equal(kernelProfileOptions(["CIB-EXT-0036"]).malformedTimer, "rollsBackArming");
+  assert.equal(kernelProfileOptions(["CIB-LIM-0022"]).messageNames, "addresses");
   assert.equal(kernelProfileOptions(["CIB-EXT-0005"]).submission, "installsVariables");
   for (const creates of ["CIB-EXT-0005", "CIB-EXT-0007", "CIB-EXT-0009", "CIB-EXT-0020"]) {
     assert.equal(kernelProfileOptions([creates]).undeclaredWrite, "atInstanceRoot", creates);
@@ -335,7 +344,8 @@ test("semantic choices are emitted in full shape and left to Kernel.Admission", 
     <bpmn:sequenceFlow id="ef" sourceRef="ES" targetRef="EE"/></bpmn:subProcess>`, `<bpmn:message id="M"/>`));
   const kind = element(eventSubProcess, "ESP").scope.payload.kind.eventSubProcess;
   assert.equal(kind.interrupting, true);
-  assert.deepEqual(kind.start.trigger.message.payload.name, { literal: { value: "M" } });
+  assert.equal(kind.start.trigger.message.payload.messageRef, "M");
+  assert.equal(kind.start.trigger.message.payload.name, null);
   assert.ok(element(eventSubProcess, "ES").start.payload.subscription);
 
   const foreignCondition = await program(model(`<bpmn:exclusiveGateway id="X"/><bpmn:endEvent id="E"/>

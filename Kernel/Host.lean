@@ -93,14 +93,14 @@ def definitionCapabilities (program : Program) : Capabilities :=
   let starts := (program.children none).filterMap (·.start?) |>.filterMap fun (header, payload) =>
     let trigger := payload.subscription.map (·.trigger)
     let offered (timer : Option Timer.Resolved) : StartCapability :=
-      { startEventId := header.id, channel := (trigger.bind (·.message?)).bind (·.channel?), timer }
+      { startEventId := header.id, channel := (trigger.bind (·.message?)).map (·.channel), timer }
     match trigger.bind (·.timer?) with
     | none => some (offered none)
     | some timer => (Timer.resolve timer.schedule).toOption.map (offered ∘ some)
   let correlated := (subscriptions program).filterMap fun (element, subscription) =>
     subscription.trigger.message?.bind fun trigger =>
       if trigger.correlation.isEmpty then none
-      else trigger.channel?.map ((·, { element := program.publicId element, criteria := trigger.correlation }))
+      else some (trigger.channel, { element := program.publicId element, criteria := trigger.correlation })
   { starts, correlatedChannels := byChannel correlated, relations := program.options.relations }
 
 /-- One open wait: its public occurrence identity, the called definition it runs in (`none` in the root instance, whose

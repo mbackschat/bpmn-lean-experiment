@@ -2,6 +2,7 @@ module
 
 public import Kernel.Hooks
 public import Kernel.IL.Timer
+public import Kernel.Feature.Subscriptions.Conditions
 
 /-! # Subscriptions: catch Events, boundaries, Event Sub-Process starts and Event-Based Gateway arms
 
@@ -13,46 +14,104 @@ Firing rules: a Timer fires only at exactly its deadline, which becomes the logi
 own channel, with a payload exactly when the subscription writes one. Anything else is `rejected` and changes nothing.
 
 A subscription's item holds a reservation (`State.openSubscription`) that its firing begins. A boundary item is
-attached to its host occurrence; the arms of one Event-Based Gateway are attached to the gateway's occurrence, so
-completing that occurrence disarms the siblings of the arm that fired.
+attached to its host occurrence; the arms of one Event-Based Gateway are attached to the gateway's occurrence. A
+firing that ends other items (a gateway arm its siblings, an interrupting boundary its host's items, an interrupting
+Event Sub-Process start its parent scope's) withdraws them in its own micro-step, though the completion or cancellation
+that ends them is queued: several Conditional items can be true in one step, and a firing queued after this one must
+find them closed (BPMN 2.0.2 §10.5.6: a gateway takes only its first event).
 -/
 
 public section
 
 namespace Kernel.Feature.Subscriptions
 
-/-- A Timer armed at `now`, from its one resolution (`Kernel.Timer.resolve`). A cycle's first deadline is one
-period after arming. Admission refuses every form this answers `unsupported`. -/
-def timerDetail (now : Nat) (trigger : TimerTrigger) : Except Failure TimerDetail :=
-  match Timer.resolve trigger.schedule with
-  | .ok (.duration ms) => .ok { deadlineMs := now + ms }
-  | .ok (.cycle periodMs repetitions) =>
-    .ok { deadlineMs := now + periodMs, recurrence := some { periodMs := some periodMs, remaining := repetitions } }
-  | .error code => .error (.unsupported code)
+/-- Where a subscription is armed: what a Timer value given by an expression reads (`values`), what a Message name
+given by an expression reads (`names`), and whether the subscription may fire again (`repeats`: a non-interrupting
+boundary or Event Sub-Process start). CIB resolves a Message name when the subscription's scope execution is initialized
+(`ExecutionEntity.java:409-413`), before the host's input mappings and a root's start variables, and a Timer value after
+them (`PvmExecutionImpl.java:278-292`, `:1304-1318`). -/
+structure Arming where
+  values : EvalContext
+  names : EvalContext := values
+  repeats : Bool := false
+
+/-- A Message name given by an expression, resolved once when the subscription opens; it is not kept, since the channel
+addresses the subscription (PC-MESSAGE-01). CIB casts the value to a String (`EventSubscriptionDeclaration.java:172-184`):
+a failure or another type rolls the arming back, and `null` or `""` opens a subscription no name reaches, which the
+kernel does not claim. -/
+def resolveName (ctx : Ctx) (context : EvalContext) : Option ValueSource → Except Failure Unit
+  | none | some (.literal _) => .ok ()
+  | some (.expression body) =>
+    match ctx.evaluate context body with
+    -- dynamic-only: the resolved name is the run's data.
+    | .value (.string "") | .value .null => .error (.unsupported "message-name-empty")
+    | .value (.string _) => .ok ()
+    | .value _ => .error (.rolledBack "message-name-type")
+    | .failure code => .error (.rolledBack code)
+    | .unsupported code => .error (.unsupported code)
+
+/-- The text a Timer value holds when it is armed: a literal's, or an expression's String value, evaluated once
+(`TimerDeclarationImpl.java:109-153`, PC-TIMER-03). A failure or a value that is no String is CIB's
+`ProcessEngineException` at arming, which rolls back the input that reached it; `true` marks an evaluated value. -/
+def timerText (ctx : Ctx) (context : EvalContext) : ValueSource → Except Failure (String × Bool)
+  | .literal text => .ok (text, false)
+  | .expression body =>
+    match ctx.evaluate context body with
+    | .value (.string text) => .ok (text, true)
+    -- dynamic-only: a value's type is the run's data.
+    | .value _ => .error (.rolledBack "timer-value-type")
+    | .failure code => .error (.rolledBack code)
+    | .unsupported code => .error (.unsupported code)
+
+/-- A Timer armed at `context.nowMs`, classified by the one Timer lexeme rule (`Kernel.Timer.classify`), the dialect
+of a cycle read from its text as CIB reads it (`CycleBusinessCalendar.java:55`). A lexeme outside the subset is
+`unsupported`, statically refused when it is a literal; a malformed one rolls back an evaluated value always and a
+literal under `MalformedTimer.rollsBackArming`. A site that fires once keeps only the first occurrence. -/
+def timerDetail (ctx : Ctx) (arming : Arming) (trigger : TimerTrigger) : Except Failure TimerDetail := do
+  let (kind, value) : Timer.Kind × ValueSource := match trigger.schedule with
+    | .duration value => (.duration, value)
+    | .date value => (.date, value)
+    | .cycle value _ => (.cycle, value)
+  let (text, evaluated) ← timerText ctx arming.values value
+  match Timer.classify kind text with
+  | .admitted parsed =>
+    match Timer.armAt arming.values.nowMs parsed with
+    | some armed =>
+      .ok { deadlineMs := armed.deadlineMs, recurrence := if arming.repeats then armed.recurrence.map fun recurrence =>
+        { periodMs := recurrence.periodMs, cron := recurrence.cron, remaining := recurrence.remaining } else none }
+    -- dynamic-only: the deadline depends on the arming instant.
+    | none => .error (.unsupported "timer-deadline")
+  | .outside code => .error (.unsupported code.dynamic)
+  | .malformed code =>
+    if evaluated || ctx.program.options.malformedTimer == .rollsBackArming then .error (.rolledBack code.dynamic)
+    else .error (.unsupported code.dynamic)
 
 /-- The item a subscription opens, or `none` for a trigger that propagation delivers. -/
-def waitKind (now : Nat) (subscription : Subscription) : Except Failure (Option OpenKind) :=
+def waitKind (ctx : Ctx) (arming : Arming) (subscription : Subscription) : Except Failure (Option OpenKind) :=
   match subscription.trigger with
-  | .timer trigger => (some ∘ OpenKind.timer) <$> timerDetail now trigger
+  | .timer trigger => (some ∘ OpenKind.timer) <$> timerDetail ctx arming trigger
   | .message trigger => do
-    -- Admission refuses it (`message.nameExpression`).
-    let some channel := trigger.channel? | throw (.unsupported "message-name-expression")
+    resolveName ctx arming.names trigger.name
+    let channel := trigger.channel
     -- Admission refuses it (`message.correlation.keys`).
     if trigger.correlation.length > 1 then throw (.unsupported "message-correlation-keys")
     pure (some (.message { channel, payload := !subscription.outputs.isEmpty, criteria := trigger.correlation.map (·.key) }))
   -- Admission refuses both (`event.catch.signal`, `boundary.signal`, `start.signal` and their conditional counterparts).
   | .signal _ => .error (.unsupported "event-catch-signal")
-  | .condition _ => .error (.unsupported "event-catch-condition")
+  | .condition trigger =>
+    .ok (some (.conditional { variableName := trigger.variableName, variableEvents := trigger.variableEvents }))
   | .error _ => .ok none
   | .escalation _ => .ok none
   | .compensation => .ok none
   | .cancel => .ok none
 
-def subscribe (state : State) (subscription : Subscription) (element : ElementId) (scope : ScopeOccurrenceId)
-    (host : Option Nat) (passive : Bool) : Except Failure State := do
-  match ← waitKind state.logicalTimeMs subscription with
+def subscribe (ctx : Ctx) (arming : Arming) (state : State) (subscription : Subscription) (element : ElementId)
+    (scope : ScopeOccurrenceId) (host : Option Nat) (passive : Bool) : Outcome := do
+  match ← waitKind ctx arming subscription with
   | none => pure state
-  | some kind => pure (state.openSubscription kind element scope host passive).1
+  | some kind =>
+    let (state, item) := state.openSubscription kind element scope host passive
+    armed ctx subscription item state
 
 /-- `Signal.arm`: open the boundaries of `element`, attached to `host`, in the host's scope `scope`. -/
 def arm (ctx : Ctx) (host : Nat) (element : ElementId) (scope : ScopeOccurrenceId) (state : State) : Outcome :=
@@ -60,7 +119,10 @@ def arm (ctx : Ctx) (host : Nat) (element : ElementId) (scope : ScopeOccurrenceI
   | none => .error (.semanticFailure "arm-without-envelope")
   | some envelope =>
     envelope.boundaries.foldlM (fun state boundary =>
-      subscribe state boundary.subscription boundary.id scope (some host) false) state
+      let arming : Arming :=
+        { values := state.evalContext (ownScope state host scope), names := state.evalContext scope
+          repeats := !boundary.interrupting }
+      subscribe ctx arming state boundary.subscription boundary.id scope (some host) false) state
 
 /-- `Signal.armGateway`: open one subscription per arm, the catch Events the gateway's outgoing flows reach, attached
 to the gateway's occurrence. A Receive Task arm would need the work feature's wait and is refused
@@ -74,8 +136,15 @@ def armGateway (ctx : Ctx) (occurrence : Nat) (gateway : ElementId) (scope : Sco
       let arm := (ctx.program.target? flow).bind ctx.program.element? |>.bind fun target =>
         target.event?.bind fun (header, event) => event.catch?.map (header.id, ·)
       match arm with
-      | some (element, subscription) => subscribe state subscription element scope (some occurrence) false
+      | some (element, subscription) =>
+        subscribe ctx { values := state.evalContext scope } state subscription element scope (some occurrence) false
       | none => .error (.unsupported "gateway-event-based-receive-arm")) state
+
+/-- What the variables visible from `scope`'s parent read, without `scope`'s own: none at a root or a called root,
+whose start or call variables CIB sets after it subscribes (`PvmExecutionImpl.java:278-286`). -/
+def enclosingContext (state : State) (scope : ScopeOccurrenceId) : EvalContext :=
+  let parent := if state.calledRoot scope then none else (state.scopes.find? (·.id == scope)).bind (·.parent)
+  { variables := (parent.map state.visible).getD [], nowMs := state.logicalTimeMs }
 
 /-- The start Event of an Event Sub-Process. -/
 def startEvent? (ctx : Ctx) (eventSubProcess : ElementId) : Option ElementId :=
@@ -88,9 +157,10 @@ def armScope (ctx : Ctx) (scope : ScopeOccurrenceId) (state : State) : Outcome :
   (state.childrenOf ctx.program scope).foldlM (fun state child =>
     match child.scope?.bind fun (header, payload) => (ctx.eventStart payload).map (header.id, ·) with
     | none => .ok state
-    | some (eventSubProcess, subscription, _) => do
-      match startEvent? ctx eventSubProcess, ← waitKind state.logicalTimeMs subscription with
-      | some start, _ => subscribe state subscription start scope none true
+    | some (eventSubProcess, subscription, interrupting) => do
+      let arming := { values := state.evalContext scope, names := enclosingContext state scope, repeats := !interrupting }
+      match startEvent? ctx eventSubProcess, ← waitKind ctx arming subscription with
+      | some start, _ => subscribe ctx arming state subscription start scope none true
       | none, none => .ok state
       | none, some _ => .error (.semanticFailure "event-subprocess-without-start")) state
 
@@ -117,15 +187,8 @@ scope; the delivered value is the Message payload's. Both must be non-empty Stri
 criterion is evaluated when a delivery is matched, never when the subscription opens, so the current Property value
 decides. -/
 
-def criteria : Trigger → List CorrelationCriterion
-  | .message trigger => trigger.correlation
-  | .timer _ => []
-  | .signal _ => []
-  | .condition _ => []
-  | .error _ => []
-  | .escalation _ => []
-  | .compensation => []
-  | .cancel => []
+def criteria (trigger : Trigger) : List CorrelationCriterion :=
+  (trigger.message?.map (·.correlation)).getD []
 
 /-- The key a criterion binds, evaluated in `variables`. -/
 def keyValue (ctx : Ctx) (context : EvalContext) (criterion : CorrelationCriterion) :
@@ -154,18 +217,6 @@ def correlationMatches (ctx : Ctx) (context : EvalContext) (bound : List Correla
     | .localVariable _ => .error (.unsupported "profile-message-correlation-api-criteria")
     | .businessKey => .error (.unsupported "profile-message-correlation-api-criteria")
     | .processInstance => .error (.unsupported "profile-message-correlation-api-criteria")
-
-/-- The subscription an open item belongs to: a boundary's, a catch Event's or an Event Sub-Process start's; an
-Activity's own subscription (a Receive Task) is the work feature's. -/
-def subscription? (ctx : Ctx) (item : OpenItem) : Option Subscription :=
-  match ctx.program.boundary? item.element with
-  | some (_, boundary) => some boundary.subscription
-  | none =>
-    let element := ctx.program.element? item.element
-    let catchEvent := element.bind (·.event?) |>.bind fun (_, event) => event.catch?
-    let eventStart := element.bind (·.start?) |>.bind (·.1.parent) |>.bind ctx.program.element?
-      |>.bind (·.scope?) |>.bind fun (_, payload) => (ctx.eventStart payload).map (·.1)
-    catchEvent <|> eventStart
 
 /-- `Hooks.correlates`. -/
 def correlates (ctx : Ctx) (item : OpenItem) (channel : MessageChannel) (correlation : List CorrelationMatch)
@@ -207,26 +258,28 @@ def admitFiring (ctx : Ctx) (subscription : Subscription) (item : OpenItem) (fir
           | true, none => .error (.rejected "message-payload-required")
           | false, some _ => .error (.rejected "message-payload-not-accepted")
           | false, none => .ok (state, [])
-  -- Dynamic-only: admission refuses every Signal and conditional subscription (`event.catch.signal`, `boundary.signal`,
-  -- `start.signal` and their conditional counterparts), so none is open to fire.
+  -- Dynamic-only: admission refuses every Signal subscription (`event.catch.signal`, `boundary.signal`,
+  -- `start.signal`), so none is open to fire.
   | .signal _ => .error (.unsupported "event-catch-signal")
-  | .condition _ => .error (.unsupported "event-catch-condition")
+  -- Only `evaluateItem` fires a Conditional item, after its predicate held.
+  | .condition _ => if view.conditional.isSome then .ok (state, []) else .error (.rejected "not-a-conditional-subscription")
 
 /-- What remains of a fired subscription that does not interrupt: a Message subscription stays open with the same
-identity, a cycle Timer opens its next occurrence one period after the deadline it fired at, keeping its attachment,
-and any other Timer closes. The result is the reservation the firing may begin, `none` when the item stays open, whose
+identity, a cycle Timer opens its next occurrence (`Timer.successor`: one period, or the next Cron match, after the
+deadline it fired at, never after the firing's own time) keeping its attachment, until its count is spent, and any
+other Timer closes. The result is the reservation the firing may begin, `none` when the item stays open, whose
 identity then remains the subscription's. -/
 def afterFiring (state : State) (item : OpenItem) : State × Option Nat :=
   let view := item.kind.view
   match view.deadlineMs, view.recurrence with
   | some deadlineMs, some recurrence =>
     let closed := state.closeItem item.id
-    let remaining := recurrence.remaining.map (· - 1)
-    match recurrence.periodMs, remaining with
-    | none, _ | _, some 0 => (closed, some item.occurrence)
-    | some period, _ =>
+    match Timer.successor deadlineMs
+        { periodMs := recurrence.periodMs, cron := recurrence.cron, remaining := recurrence.remaining } with
+    | none => (closed, some item.occurrence)
+    | some (next, followed) =>
       let (state, _) := closed.openSubscription
-        (.timer { deadlineMs := deadlineMs + period, recurrence := some { recurrence with remaining } })
+        (.timer { deadlineMs := next, recurrence := some { recurrence with remaining := followed.remaining } })
         item.element item.scope item.attachedTo item.passive
       (state, some item.occurrence)
   | some _, none => (state.closeItem item.id, some item.occurrence)
@@ -242,7 +295,8 @@ def fireBoundary (ctx : Ctx) (boundary : Boundary) (item : OpenItem) (fired : Fi
     | some host =>
       if (state.occurrence? host).isNone then .error (.semanticFailure "boundary-host-gone")
       else
-        .ok (boundary.fire (some host) (some item.occurrence) item.scope values (state.closeItem item.id))
+        .ok (boundary.fire (some host) (some item.occurrence) item.scope values
+          ((state.closeItem item.id).withdrawOccurrence host))
   else
     let (state, reserved) := afterFiring state item
     .ok (boundary.fire none reserved item.scope values state)
@@ -252,7 +306,7 @@ def fireCatch (ctx : Ctx) (subscription : Subscription) (item : OpenItem) (fired
   let (state, values) ← admitFiring ctx subscription item fired state
   let state := state.closeItem item.id
   let state := match item.attachedTo with
-    | some gateway => state.signal (.complete gateway (.flows []) [] .outward)
+    | some gateway => (state.disarm gateway).signal (.complete gateway (.flows []) [] .outward)
     | none => state
   .ok (state.signal (.complete item.occurrence .outgoing values .outward))
 
@@ -266,7 +320,8 @@ def fireEventStart (ctx : Ctx) (eventSubProcess : ElementId) (item : OpenItem) (
   | some (subscription, interrupting) =>
     let (state, values) ← admitFiring ctx subscription item fired state
     let (state, inner) :=
-      if interrupting then (state.closeItem item.id, some item.occurrence) else afterFiring state item
+      if interrupting then ((state.closeItem item.id).withdrawInside item.scope, some item.occurrence)
+      else afterFiring state item
     .ok (state.signal (.begin { element := eventSubProcess, scope := item.scope, locals := values, inner }))
 
 /-- `Hooks.trigger`: the item's element is a boundary, a catch Event or an Event Sub-Process start Event. -/
@@ -291,7 +346,7 @@ def fires (trigger : StartTrigger) (subscription : Option Subscription) : Bool :
   | .none, _ => true
   | _, none => false
   | .timer _, some (.timer _) => true
-  | .message channel _, some (.message subscribed) => subscribed.channel? == some channel
+  | .message channel _, some (.message subscribed) => subscribed.channel == channel
   | .signal name _, some (.signal subscribed) => ValueSource.literal? subscribed.name == some name
   | .condition, some (.condition _) => true
   | _, some (.timer _) | _, some (.message _) | _, some (.signal _) | _, some (.condition _) | _, some (.error _)
@@ -329,10 +384,14 @@ def arriveStart (ctx : Ctx) (_ : Header) (payload : StartPayload) (trigger : Sta
   .ok (state.signal (.complete occurrence.id .outgoing values .outward))
 
 /-- `Hooks.arriveCatch`: the catch Event's occurrence waits on its subscription. -/
-def arriveCatch (_ : Ctx) (_ : Header) (_ : EventPayload) (subscription : Subscription) (occurrence : Occurrence)
+def arriveCatch (ctx : Ctx) (_ : Header) (_ : EventPayload) (subscription : Subscription) (occurrence : Occurrence)
     (state : State) : Outcome := do
-  match ← waitKind state.logicalTimeMs subscription with
-  | some kind => .ok (state.openItem kind occurrence)
+  match ← waitKind ctx { values := state.evalContext occurrence.scope } subscription with
+  | some kind =>
+    let state := state.openItem kind occurrence
+    match state.openItems.getLast? with
+    | some item => armed ctx subscription item state
+    | none => .ok state
   -- Admission refuses every trigger reaching here (`event.catch.error`, `.escalation`, `.compensation`, `.cancel`); the
   -- code names the first.
   | none => .error (.unsupported "event-catch-error")

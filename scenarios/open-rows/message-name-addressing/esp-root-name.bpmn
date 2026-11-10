@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_EspRootName"
+  targetNamespace="urn:bpmn-lean:scenarios:message-name-addressing:esp-root-name">
+  <bpmn:message id="Message_EspName" name="${k}" />
+  <bpmn:process id="Process_EspRootName" name="Work with a root listener named by data" isExecutable="true">
+    <bpmn:startEvent id="Start_Work" />
+    <bpmn:userTask id="Work" name="Do the work" />
+    <bpmn:endEvent id="End_Work" />
+    <bpmn:sequenceFlow id="Flow_Start_Work_Work" sourceRef="Start_Work" targetRef="Work" />
+    <bpmn:sequenceFlow id="Flow_Work_End_Work" sourceRef="Work" targetRef="End_Work" />
+    <bpmn:subProcess id="ESP_Notice" triggeredByEvent="true">
+      <bpmn:startEvent id="Start_Notice" isInterrupting="false">
+        <bpmn:messageEventDefinition id="MED_Notice" messageRef="Message_EspName" />
+      </bpmn:startEvent>
+      <bpmn:userTask id="Handle_Notice" name="Handle the notice" />
+      <bpmn:endEvent id="End_Notice" />
+      <bpmn:sequenceFlow id="Flow_Start_Notice_Handle_Notice" sourceRef="Start_Notice" targetRef="Handle_Notice" />
+      <bpmn:sequenceFlow id="Flow_Handle_Notice_End_Notice" sourceRef="Handle_Notice" targetRef="End_Notice" />
+    </bpmn:subProcess>
+  </bpmn:process>
+</bpmn:definitions>

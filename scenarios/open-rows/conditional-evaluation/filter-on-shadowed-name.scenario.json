@@ -1,0 +1,91 @@
+{
+  "kind": "scenario",
+  "id": "conditional-evaluation-filter-on-shadowed-name",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "conditional-evaluation-shadowed-filter",
+    "relativePath": "scenarios/open-rows/conditional-evaluation/shadowed-filter.bpmn",
+    "sha256": "db1bf14c5944da51489718641512e7b7f9398e706c5e2d0fc0c9614d84c288d3",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "level",
+          "value": {
+            "kind": "integer",
+            "value": 1
+          }
+        }
+      ]
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-set-process-level-and-level2",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Host",
+        "activation": 1
+      },
+      "action": {
+        "kind": "setVariables",
+        "values": [
+          {
+            "name": "level",
+            "value": {
+              "kind": "integer",
+              "value": 9
+            }
+          },
+          {
+            "name": "level2",
+            "value": {
+              "kind": "integer",
+              "value": 1
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-set-local-level2",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Host_Local",
+        "activation": 1
+      },
+      "action": {
+        "kind": "setVariables",
+        "values": [
+          {
+            "name": "level2",
+            "value": {
+              "kind": "integer",
+              "value": 2
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 Table 10.95"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/IntermediateConditionalEventBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/ConditionalEventDefinition.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/event/ConditionalEventHandler.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/el/UelExpressionCondition.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/persistence/entity/ExecutionEntity.java",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/event/conditional/BoundaryConditionalEventTest.java"
+    ]
+  }
+}

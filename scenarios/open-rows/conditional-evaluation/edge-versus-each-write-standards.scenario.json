@@ -1,0 +1,111 @@
+{
+  "kind": "scenario",
+  "id": "conditional-evaluation-edge-versus-each-write-standards",
+  "profile": "bpmn-2.0.2",
+  "bpmn": {
+    "id": "conditional-evaluation-edge-each-write-standards",
+    "relativePath": "scenarios/open-rows/conditional-evaluation/edge-each-write-standards.bpmn",
+    "sha256": "666de899b1bd1e8d3653d7a622bcdb26cc0d647301f0db695f4f6c5caf337d62",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-set-level",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Host",
+        "activation": 1
+      },
+      "action": {
+        "kind": "setVariables",
+        "values": [
+          {
+            "name": "level",
+            "value": {
+              "kind": "string",
+              "value": "high"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-set-level",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Host",
+        "activation": 1
+      },
+      "action": {
+        "kind": "setVariables",
+        "values": [
+          {
+            "name": "level",
+            "value": {
+              "kind": "string",
+              "value": "high"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s04-set-level",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Host",
+        "activation": 1
+      },
+      "action": {
+        "kind": "setVariables",
+        "values": [
+          {
+            "name": "level",
+            "value": {
+              "kind": "string",
+              "value": "low"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s05-set-level",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Host",
+        "activation": 1
+      },
+      "action": {
+        "kind": "setVariables",
+        "values": [
+          {
+            "name": "level",
+            "value": {
+              "kind": "string",
+              "value": "high"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 Table 10.95"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

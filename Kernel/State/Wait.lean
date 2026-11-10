@@ -50,8 +50,8 @@ structure SignalWaitDetail where
   payload : Bool := false
   deriving Repr
 
-/-- `lastValue` is the most recent evaluation; a false to true change and each filtered event are separate facts
-(PC-CONDITION-01). -/
+/-- `lastValue` is the most recent evaluation under `conditionalRetrigger.edge`; `none` under `eachWrite`, where every
+passing write is its own fact (PC-CONDITION-01). -/
 structure ConditionalWaitDetail where
   variableName : Option String := none
   variableEvents : List String := []

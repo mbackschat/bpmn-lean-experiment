@@ -1,0 +1,51 @@
+{
+  "kind": "scenario",
+  "id": "timer-duration-forms-form-five-weeks-in-february",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "timer-duration-forms-calendar-steps",
+    "relativePath": "scenarios/open-rows/timer-duration-forms/calendar-steps.bpmn",
+    "sha256": "99893ef911e810916de6ac459323152ae1f3ae5fc6e71808144993415a7462ef",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "form",
+          "value": {
+            "kind": "string",
+            "value": "five-weeks-in-february"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "timerFire",
+      "commandId": "s02-fire-Catch_WeeksLead",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Catch_WeeksLead",
+        "activation": 1
+      },
+      "logicalTimeMs": 2678400000
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.5.4",
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 Table 10.101"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/jobexecutor/TimerDeclarationImpl.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/calendar/DurationBusinessCalendar.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/calendar/DurationHelper.java",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/event/timer/IntermediateTimerEventTest.java"
+    ]
+  }
+}

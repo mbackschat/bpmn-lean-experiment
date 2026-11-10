@@ -108,12 +108,16 @@ function correlationCriteria(ctx: ReadContext, owner: ElementRecord, ownerId: st
   });
 }
 
-/** The `MessageTrigger` of a Message Event Definition or Receive Task; a Message is named by its identifier. */
+/**
+ * The `MessageTrigger` of a Message Event Definition or Receive Task: the Message's identifier, which addresses it, and
+ * its `name`, a literal or, with an expression marker, a JUEL value as CIB reads it (`BpmnParse.java:454-465`).
+ */
 export function messageTrigger(ctx: ReadContext, owner: ElementRecord, event: ElementRecord): KernelJson {
   const message = reference(owner, "messageRef", "bpmn:Message");
   const operation = reference(owner, "operationRef", "bpmn:Operation");
   return {
-    name: message === null ? null : literalSource(requireId(message)),
+    messageRef: message === null ? null : requireId(message),
+    name: message === null || typeof message.name !== "string" ? null : valueSource(message.name),
     correlation: correlationCriteria(ctx, event, requireId(event)),
     interfaceRef: operation === null ? null : optionalId(asElement(operation.$parent) ?? {}),
     operationRef: operation === null ? null : requireId(operation),

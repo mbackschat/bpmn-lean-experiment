@@ -33,7 +33,8 @@
     "multiInstanceBinding": "dataAssociations",
     "effectResultValues": "outputSet", "outputContext": "submission",
     "multiInstanceCounters": "none", "multiInstanceInputFailure": "hold", "multiInstanceCount": "integer", "businessRuleTask": "refused",
-    "inclusiveJoinReach": "withBoundaries", "branchSchedule": "orderInvariant"
+    "inclusiveJoinReach": "withBoundaries", "branchSchedule": "orderInvariant",
+    "conditionalRetrigger": "edge", "malformedTimer": "refused", "messageNames": "description"
   },
   "elements": [
     {

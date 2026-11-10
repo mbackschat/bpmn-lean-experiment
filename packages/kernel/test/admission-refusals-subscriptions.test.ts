@@ -1,9 +1,10 @@
 /**
  * Refusal tests of `admission/subscriptions.ts`: what a catch Event, a boundary, a triggered start and an Event
- * Sub-Process may wait for. Timers carry an exact literal duration (a cycle only on a repeating boundary or start),
- * Messages carry a literal name and one correlation key bound to a variable, and only a Message writes its payload.
- * Signal and Conditional triggers have no kernel meaning anywhere; Error, Escalation, Compensation and Cancel are
- * caught by boundaries and nested starts only.
+ * Sub-Process may wait for. Timers carry a literal `Kernel.Timer.classify` admits (a cycle at every subscription site,
+ * not at a root start), Messages carry a literal name and one correlation key bound to a variable, and only a Message
+ * writes its payload. Signal triggers have no kernel meaning anywhere; a Conditional one is admitted except at a
+ * process start, with CIB's write filters only under the each-write reading; Error, Escalation, Compensation and
+ * Cancel are caught by boundaries and nested starts only.
  */
 import {
   activity, append, boundary, cancelTrigger, catchEvent, channel, compensationTrigger, condition, criterion, cycle, date, duration,
@@ -38,7 +39,20 @@ const eventSubProcessOn = (trigger: Json | string, interrupting: boolean) => (pr
   task(scope("T", eventSubProcess(trigger, interrupting)))(
     interrupting ? withOptions(program, { abnormalScopeEnd: "completesNormally" }) : program);
 
-const named = message({ name: text("M") });
+const named = message({ messageRef: "M", name: text("M") });
+
+/** The profile selection under which a Message's name addresses its subscriptions (CIB-LIM-0022). */
+const addresses = (placed: (program: Json) => Json) => (program: Json): Json =>
+  placed(withOptions(program, { messageNames: "addresses", evaluator: "juel" }));
+
+/** A Conditional trigger with `over` replacing its predicate or filters. */
+const conditionWith = (over: Json): Json => {
+  const base = condition() as { condition: { payload: Json } };
+  return { condition: { payload: { ...base.condition.payload, ...over } } };
+};
+
+/** The profile selection under which a Conditional fires on each matching write, filtered (CIB-EXT-0035). */
+const eachWrite = (program: Json): Json => withOptions(program, { conditionalRetrigger: "eachWrite" });
 
 /** The profile selection under which an Error catcher may name its code and message variables (CIB-EXT-0028). */
 const eventScopeVariables = { errorCatchVariables: "eventScope" };
@@ -108,7 +122,7 @@ export const rows: readonly Row[] = [
     mutate: multiple(bounded(named), [duration("PT1S")], true),
     control: bounded(named),
   },
-  // Timers.
+  // Timers: outside the subset (CIB commits it) or malformed for CIB's parser, under `malformedTimer = refused`.
   {
     code: "timer.duration",
     description: "a catch Timer whose duration does not parse",
@@ -117,15 +131,15 @@ export const rows: readonly Row[] = [
   },
   {
     code: "timer.duration",
-    description: "a catch Timer whose duration is zero",
-    mutate: catching(duration("PT0S")),
-    control: catching(duration("PT1S")),
+    description: "a catch Timer whose duration is finer than a millisecond",
+    mutate: catching(duration("PT0.0001S")),
+    control: catching(duration("PT0.001S")),
   },
   {
     code: "timer.date",
-    description: "a catch Timer firing at a date",
-    mutate: catching(date("2030-01-01T00:00:00Z")),
-    control: catching(duration("PT1S")),
+    description: "a catch Timer firing at a date without a zone designator",
+    mutate: catching(date("2030-01-01T00:00:00")),
+    control: catching(date("2030-01-01T00:00:00Z")),
   },
   {
     code: "timer.cycle",
@@ -134,46 +148,40 @@ export const rows: readonly Row[] = [
     control: bounded(cycle("R/PT1M"), { interrupting: false }),
   },
   {
+    code: "timer.cycle",
+    description: "a repeating boundary Timer with a dated interval",
+    mutate: bounded(cycle("R2/2030-01-01T00:00:00Z/PT1M"), { interrupting: false }),
+    control: bounded(cycle("R2/PT1M"), { interrupting: false }),
+  },
+  {
     code: "timer.cycleNotAttached",
-    description: "a catch Timer that repeats",
-    mutate: catching(cycle("R/PT1M")),
-    control: bounded(cycle("R/PT1M"), { interrupting: false }),
+    description: "a root start Timer that repeats",
+    mutate: starting(cycle("R/PT1M")),
+    control: starting(duration("PT1M")),
   },
   {
     code: "timer.cron",
-    description: "a repeating boundary Timer given as a cron expression",
-    mutate: bounded(cycle("0 0 * * * ?", "cron"), { interrupting: false }),
-    control: bounded(cycle("R/PT1M"), { interrupting: false }),
-  },
-  {
-    code: "timer.interruptingCycle",
-    description: "an interrupting boundary Timer that repeats",
-    mutate: bounded(cycle("R/PT1M")),
-    control: bounded(cycle("R/PT1M"), { interrupting: false }),
-  },
-  {
-    code: "timer.interruptingCycle",
-    description: "an interrupting Event Sub-Process started by a repeating Timer",
-    mutate: eventSubProcessOn(cycle("R/PT1M"), true),
-    control: eventSubProcessOn(cycle("R/PT1M"), false),
+    description: "a repeating boundary Timer given as a cron expression outside the subset",
+    mutate: bounded(cycle("0 0 12 L * ?", "cron"), { interrupting: false }),
+    control: bounded(cycle("0 0 12 * * ?", "cron"), { interrupting: false }),
   },
   // Messages.
   {
     code: "message.correlation",
     description: "a boundary Message with a correlation key",
-    mutate: bounded(message({ name: text("M"), correlation: [key] })),
+    mutate: bounded(message({ messageRef: "M", name: text("M"), correlation: [key] })),
     control: bounded(named),
   },
   {
     code: "message.nameExpression",
     description: "a boundary Message whose name is an expression",
-    mutate: bounded(message({ name: computed(variable("n")) })),
+    mutate: bounded(message({ messageRef: "M", name: computed(variable("n")) })),
     control: bounded(named),
   },
   {
     code: "message.nameExpression",
     description: "a catch Message whose name is an expression",
-    mutate: catching(message({ name: computed(variable("n")) })),
+    mutate: catching(message({ messageRef: "M", name: computed(variable("n")) })),
     control: catching(named),
   },
   {
@@ -191,13 +199,13 @@ export const rows: readonly Row[] = [
   {
     code: "message.correlation.channel",
     description: "a correlated catch Message with no Operation channel",
-    mutate: catching(message({ name: text("M"), correlation: [key] })),
+    mutate: catching(message({ messageRef: "M", name: text("M"), correlation: [key] })),
     control: catching(correlated(key)),
   },
   {
     code: "message.correlation.channel",
-    description: "a correlated catch Message with no name",
-    mutate: catching(message(channel({ name: null, correlation: [key] }))),
+    description: "a correlated catch Message with no Message",
+    mutate: catching(message(channel({ messageRef: null, correlation: [key] }))),
     control: catching(correlated(key)),
   },
   {
@@ -267,14 +275,37 @@ export const rows: readonly Row[] = [
   },
   // Catch Events.
   { code: "event.catch.signal", description: "a catch Signal", mutate: catching(signal()) },
-  { code: "event.catch.condition", description: "a catch Conditional", mutate: catching(condition()) },
   { code: "event.catch.error", description: "a catch Error", mutate: catching(errorTrigger()) },
   { code: "event.catch.escalation", description: "a catch Escalation", mutate: catching(escalationTrigger()) },
   { code: "event.catch.compensation", description: "a catch Compensation", mutate: catching(compensationTrigger) },
   { code: "event.catch.cancel", description: "a catch Cancel", mutate: catching(cancelTrigger) },
   // Boundaries.
   { code: "boundary.signal", description: "a Signal boundary", mutate: bounded(signal()) },
-  { code: "boundary.condition", description: "a Conditional boundary", mutate: bounded(condition()) },
+  // Conditional Events: catches, boundaries and Event Sub-Process starts are admitted with their predicate.
+  {
+    code: "event.condition.filter",
+    description: "a Conditional catch naming a variable under the edge-triggered reading",
+    mutate: catching(conditionWith({ variableName: "x" })),
+    control: catching(condition()),
+  },
+  {
+    code: "event.condition.filter",
+    description: "a Conditional boundary naming write events under the edge-triggered reading",
+    mutate: bounded(conditionWith({ variableEvents: ["update"] }), { interrupting: false }),
+    control: bounded(condition(), { interrupting: false }),
+  },
+  {
+    code: "event.condition.variableEvents",
+    description: "a Conditional Event Sub-Process start naming a write event CIB does not dispatch",
+    mutate: (program) => nested(conditionWith({ variableEvents: ["change"] }))(eachWrite(program)),
+    control: (program) => nested(conditionWith({ variableEvents: ["create", "delete"] }))(eachWrite(program)),
+  },
+  {
+    code: "event.condition.foreign",
+    description: "a Conditional catch whose predicate is in a foreign language",
+    mutate: catching(conditionWith({ condition: foreign() })),
+    control: catching(condition()),
+  },
   // Triggered starts.
   {
     code: "start.message.outputs",
@@ -303,24 +334,52 @@ export const rows: readonly Row[] = [
     control: nested(compensationTrigger),
   },
   { code: "start.cancel", description: "a Cancel start", mutate: nested(cancelTrigger) },
-  // BPMN structure and nameless Messages.
+  // BPMN structure, unspecified and nameless Messages.
   {
-    code: "message.unnamed",
+    code: "message.unspecified",
     description: "a catch Message without a Message",
     mutate: catching(message()),
     control: catching(named),
   },
   {
-    code: "message.unnamed",
+    code: "message.unspecified",
     description: "a boundary Message without a Message",
     mutate: bounded(message()),
     control: bounded(named),
   },
   {
-    code: "message.unnamed",
+    code: "message.unspecified",
     description: "a process Message start without a Message",
     mutate: starting(message()),
     control: starting(named),
+  },
+  {
+    code: "message.unnamed",
+    description: "a catch Message whose Message has no name, where names address",
+    mutate: addresses(catching(message({ messageRef: "M" }))),
+    control: catching(message({ messageRef: "M" })),
+  },
+  {
+    code: "message.unnamed",
+    description: "a boundary Message whose Message's name is blank, where names address",
+    mutate: addresses(bounded(message({ messageRef: "M", name: text("  ") }))),
+    control: addresses(bounded(named)),
+  },
+  {
+    code: "message.duplicateName",
+    description: "two boundaries of one host on distinct Messages of one name, where names address",
+    mutate: addresses(task(activity("T", "manual", {
+      boundaries: [boundary("B", named), boundary("B2", message({ messageRef: "M2", name: text("M") }))],
+    }))),
+    control: addresses(task(activity("T", "manual", {
+      boundaries: [boundary("B", named), boundary("B2", message({ messageRef: "M2", name: text("N") }))],
+    }))),
+  },
+  {
+    code: "start.messageNameExpression",
+    description: "a process Message start whose name is an expression, where names address",
+    mutate: addresses(starting(message({ messageRef: "M", name: computed(variable("n")) }))),
+    control: addresses(nested(message({ messageRef: "M", name: computed(variable("n")) }))),
   },
   {
     code: "boundary.error.nonInterrupting",

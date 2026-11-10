@@ -39,7 +39,7 @@ const timer = (schedule: Json): Json => ({ timer: { payload: { schedule } } });
 export const duration = (lexeme: string): Json => timer({ duration: { value: text(lexeme) } });
 export const date = (lexeme: string): Json => timer({ date: { value: text(lexeme) } });
 export const cycle = (lexeme: string, dialect = "iso8601"): Json => timer({ cycle: { value: text(lexeme), dialect } });
-export const messageBody = (over: Json = {}): Json => ({ name: null, correlation: [], interfaceRef: null, operationRef: null, ...over });
+export const messageBody = (over: Json = {}): Json => ({ messageRef: null, name: null, correlation: [], interfaceRef: null, operationRef: null, ...over });
 export const message = (over: Json = {}): Json => ({ message: { payload: messageBody(over) } });
 export const signal = (): Json => ({ signal: { payload: { name: text("S") } } });
 export const condition = (): Json => ({ condition: { payload: { condition: simpleBoolean(), variableName: null, variableEvents: [] } } });
@@ -52,7 +52,7 @@ export const subscription = (trigger: Json | string, outputs: Json[] = [], alter
   ({ trigger, outputs, alternatives, parallelMultiple });
 export const criterion = (key: string, value: Json): Json => ({ key, value });
 /** A message trigger an Operation carries, the channel a correlated catch needs. */
-export const channel = (over: Json = {}): Json => ({ name: text("M"), interfaceRef: "I", operationRef: "O", ...over });
+export const channel = (over: Json = {}): Json => ({ messageRef: "M", name: text("M"), interfaceRef: "I", operationRef: "O", ...over });
 
 // Elements.
 

@@ -141,6 +141,8 @@
       "CIB-AGR-0007",
       "CIB-AGR-0021",
       "CIB-CFG-0001",
+      "CIB-CFG-0013",
+      "CIB-CFG-0014",
       "CIB-DEV-0001",
       "CIB-DEV-0002",
       "CIB-EXT-0011",
@@ -148,6 +150,7 @@
       "CIB-INT-0012",
       "CIB-INT-0015",
       "CIB-INT-0016",
+      "CIB-INT-0026",
       "CIB-LIM-0002",
       "CIB-LIM-0003",
       "CIB-OP-0001"

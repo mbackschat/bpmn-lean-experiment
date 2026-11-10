@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_NameExpressions"
+  targetNamespace="urn:bpmn-lean:scenarios:message-name-addressing:name-expressions">
+  <bpmn:message id="Message_HostName" name="${k}" />
+  <bpmn:message id="Message_NullName" name="${k}" />
+  <bpmn:process id="Process_NameExpressions" name="Notices named by expressions" isExecutable="true">
+    <bpmn:startEvent id="Start_Names" />
+    <bpmn:exclusiveGateway id="Gateway_Route" gatewayDirection="Diverging" />
+    <bpmn:sequenceFlow id="Flow_Start_Names_Gateway_Route" sourceRef="Start_Names" targetRef="Gateway_Route" />
+    <bpmn:userTask id="Host_Input" name="Work with a host-local name">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="k">local</camunda:inputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+    </bpmn:userTask>
+    <bpmn:boundaryEvent id="Notice_Host" name="Notice named by the host-local value" attachedToRef="Host_Input">
+      <bpmn:messageEventDefinition id="MED_Notice_Host" messageRef="Message_HostName" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handler_Host" name="Handle the notice" />
+    <bpmn:endEvent id="End_Host_Input" />
+    <bpmn:endEvent id="End_Handler_Host" />
+    <bpmn:sequenceFlow id="Flow_Gateway_Route_Host_Input" sourceRef="Gateway_Route" targetRef="Host_Input">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${route == 'host-input'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Host_Input_End_Host_Input" sourceRef="Host_Input" targetRef="End_Host_Input" />
+    <bpmn:sequenceFlow id="Flow_Notice_Host_Handler_Host" sourceRef="Notice_Host" targetRef="Handler_Host" />
+    <bpmn:sequenceFlow id="Flow_Handler_Host_End_Handler_Host" sourceRef="Handler_Host" targetRef="End_Handler_Host" />
+    <bpmn:intermediateCatchEvent id="Catch_Null" name="Await a notice named by a null">
+      <bpmn:messageEventDefinition id="MED_Catch_Null" messageRef="Message_NullName" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:userTask id="Proceed_Null" name="Proceed with the notice" />
+    <bpmn:endEvent id="End_Null" />
+    <bpmn:sequenceFlow id="Flow_Gateway_Route_Catch_Null" sourceRef="Gateway_Route" targetRef="Catch_Null">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${route == 'null-name'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Catch_Null_Proceed_Null" sourceRef="Catch_Null" targetRef="Proceed_Null" />
+    <bpmn:sequenceFlow id="Flow_Proceed_Null_End_Null" sourceRef="Proceed_Null" targetRef="End_Null" />
+  </bpmn:process>
+</bpmn:definitions>

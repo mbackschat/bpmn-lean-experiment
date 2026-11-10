@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_WriteOrder"
+  targetNamespace="urn:bpmn-lean:scenarios:conditional-evaluation:write-order">
+  <bpmn:process id="Process_WriteOrder" name="Two Conditional items on one write" isExecutable="true">
+    <bpmn:startEvent id="Start_Order" />
+    <bpmn:parallelGateway id="Fork_Order" gatewayDirection="Diverging" />
+    <bpmn:sequenceFlow id="Flow_Start_Order_Fork_Order" sourceRef="Start_Order" targetRef="Fork_Order" />
+    <bpmn:userTask id="Work" name="Prepare the file" />
+    <bpmn:endEvent id="End_Work" />
+    <bpmn:sequenceFlow id="Flow_Fork_Order_Work" sourceRef="Fork_Order" targetRef="Work" />
+    <bpmn:sequenceFlow id="Flow_Work_End_Work" sourceRef="Work" targetRef="End_Work" />
+    <bpmn:subProcess id="Region" name="Wait inside a region">
+      <bpmn:startEvent id="Start_Region" />
+      <bpmn:intermediateCatchEvent id="Catch_Level" name="Wait for the level">
+        <bpmn:conditionalEventDefinition id="CED_Catch" camunda:variableName="level">
+          <bpmn:condition xsi:type="bpmn:tFormalExpression">${level &gt; 5}</bpmn:condition>
+        </bpmn:conditionalEventDefinition>
+      </bpmn:intermediateCatchEvent>
+      <bpmn:task id="Mark_Catch" name="Mark the catch">
+        <bpmn:extensionElements>
+          <camunda:inputOutput>
+            <camunda:outputParameter name="winner">catch</camunda:outputParameter>
+          </camunda:inputOutput>
+        </bpmn:extensionElements>
+      </bpmn:task>
+      <bpmn:userTask id="Hold_Catch" name="Hold the region" />
+      <bpmn:endEvent id="End_Region_Inner" />
+      <bpmn:sequenceFlow id="Flow_Start_Region_Catch_Level" sourceRef="Start_Region" targetRef="Catch_Level" />
+      <bpmn:sequenceFlow id="Flow_Catch_Level_Mark_Catch" sourceRef="Catch_Level" targetRef="Mark_Catch" />
+      <bpmn:sequenceFlow id="Flow_Mark_Catch_Hold_Catch" sourceRef="Mark_Catch" targetRef="Hold_Catch" />
+      <bpmn:sequenceFlow id="Flow_Hold_Catch_End_Region_Inner" sourceRef="Hold_Catch" targetRef="End_Region_Inner" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_Region" />
+    <bpmn:sequenceFlow id="Flow_Fork_Order_Region" sourceRef="Fork_Order" targetRef="Region" />
+    <bpmn:sequenceFlow id="Flow_Region_End_Region" sourceRef="Region" targetRef="End_Region" />
+    <bpmn:subProcess id="ESP_Level" triggeredByEvent="true">
+      <bpmn:startEvent id="Start_Level" isInterrupting="false">
+        <bpmn:conditionalEventDefinition id="CED_Esp" camunda:variableName="level">
+          <bpmn:condition xsi:type="bpmn:tFormalExpression">${level &gt; 5}</bpmn:condition>
+        </bpmn:conditionalEventDefinition>
+      </bpmn:startEvent>
+      <bpmn:task id="Mark_Esp" name="Mark the listener">
+        <bpmn:extensionElements>
+          <camunda:inputOutput>
+            <camunda:outputParameter name="winner">listener</camunda:outputParameter>
+          </camunda:inputOutput>
+        </bpmn:extensionElements>
+      </bpmn:task>
+      <bpmn:userTask id="Hold_Esp" name="Hold the listener" />
+      <bpmn:endEvent id="End_Esp" />
+      <bpmn:sequenceFlow id="Flow_Start_Level_Mark_Esp" sourceRef="Start_Level" targetRef="Mark_Esp" />
+      <bpmn:sequenceFlow id="Flow_Mark_Esp_Hold_Esp" sourceRef="Mark_Esp" targetRef="Hold_Esp" />
+      <bpmn:sequenceFlow id="Flow_Hold_Esp_End_Esp" sourceRef="Hold_Esp" targetRef="End_Esp" />
+    </bpmn:subProcess>
+  </bpmn:process>
+</bpmn:definitions>

@@ -48,6 +48,7 @@ export const hooks: Hooks = {
   compensate: Compensation.compensate,
   failCompensation: Compensation.failCompensation,
   leave: Subscriptions.leave,
+  written: Subscriptions.offerWrites,
   select: Flow.select,
   writeOutputs: Data.writeOutputs,
   removeVariables: Data.removeVariables,

@@ -23,12 +23,12 @@ The counts below cover only entries recorded by this project, including the sepa
 | Lane | Recorded entries | Open candidates | Meaning |
 |---|---:|---:|---|
 | Normative agreement records | 19 | 2 | A bounded BPMN requirement and pinned CIB observation agree; candidates remain unapproved |
-| Permitted operational details | 16 | 0 | CIB or the oracle adapter chooses host mechanics without changing required BPMN observations |
-| Confirmed normative deviations | 0 | 3 | Clear BPMN requirement and pinned CIB evidence establish incompatible behavior |
-| CIB interpretations of BPMN gaps or inconsistencies | 21 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
-| CIB extension records | 34 | 3 | Project profile deliberately includes behavior beyond bare BPMN execution; candidates remain unselected |
-| Configuration-specific realizations | 11 | 1 | Behavior is permitted or meaningful only under a declared CIB environment |
-| Known CIB limitations within reviewed scope | 21 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
+| Permitted operational details | 18 | 0 | CIB or the oracle adapter chooses host mechanics without changing required BPMN observations |
+| Confirmed normative deviations | 0 | 9 | Clear BPMN requirement and pinned CIB evidence establish incompatible behavior |
+| CIB interpretations of BPMN gaps or inconsistencies | 25 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
+| CIB extension records | 37 | 3 | Project profile deliberately includes behavior beyond bare BPMN execution; candidates remain unselected |
+| Configuration-specific realizations | 14 | 1 | Behavior is permitted or meaningful only under a declared CIB environment |
+| Known CIB limitations within reviewed scope | 23 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
 
 The sequential User Task account has no recorded CIB deviation. That statement is bounded to its clauses, pinned environment, witnesses, and observation surface; it is not a general CIB conformance result.
 
@@ -157,6 +157,66 @@ Ready joins are independent. When they are offered, the arrivals parked at one j
 **Owner decision:** Refusal decided by the root under the owner's standing direction of 2026-11-10; the cold review of 2026-11-10 required the §13.5.4 basis.
 
 **Last reviewed:** 2026-11-10.
+
+### CIB-DEV-0004 — a non-interrupting Conditional Event fires again while its condition stays true
+
+**Status:** Candidate deviation; the standards profile keeps BPMN's edge
+
+Tables 10.89 and 10.90 trigger a Conditional Event when its condition becomes true; a re-fire on a write that leaves the condition true (150 → 150) fires without the condition becoming true. For Event Sub-Process starts the basis is weaker: Table 10.86 is silent and `:7378` only lets them use the boundary Event types. Interrupting subscriptions and catches fire once under either reading.
+
+**Evidence:** Retained `conditional-evaluation/create-false-then-update-true` (`Handle_Update#2`), `conditional-esp/process-alert-repeats`; pinned `BoundaryConditionalEventActivityBehavior.java:46-52`, `EventSubProcessStartConditionalEventActivityBehavior.java:44-50`.
+
+**Boundary:** Non-interrupting Conditional boundaries and Event Sub-Process starts under the cibseven profiles.
+
+### CIB-DEV-0005 — a task's submitted variables reach its own Conditional boundaries before it leaves
+
+**Status:** Candidate deviation (open question 2)
+
+CIB dispatches the variable events of a task's completion before the task leaves (`FlowNodeActivityBehavior.java:52`), so a submission that makes a task's own interrupting Conditional boundary true cancels the completing task; its own output mapping does not reach it (`BoundaryConditionalEventTest#testSetVariableInOutputMapping`). The kernel drains a completion's writes after the host has left, so none of its own boundaries sees them.
+
+**Evidence:** Pinned `FlowNodeActivityBehavior.java:52`, `PvmExecutionImpl.java:2005-2023`; witness `conditional-boundary-hosts/completion-write-read-by-own-boundary` (no evidence yet).
+
+**Boundary:** Submissions of User Tasks with Conditional boundaries.
+
+### CIB-DEV-0006 — the last firing of a finite cycle starts an endless chain at its deadline
+
+**Status:** Deviation candidate from the pinned source; awaits a retake after the runner change
+
+When a finite cycle fires its `n`-th time with the clock exactly at that deadline, `DurationHelper#getDateAfterRepeat` (`:116-129`) exhausts the count with `cur` equal to the clock, does not end the cycle (`cur.before(date)` is false), and returns that instant; `TimerEntity#preExecute` creates a follow-up job due then, and every such firing repeats it. BPMN's `R<n>` has `n` recurrences; CIB's own test (`StartTimerEventTest:160-194`) avoids the artifact by moving the clock past each deadline. The kernel ends the cycle after `n` firings.
+
+**Evidence:** The cited source; witness `timer-recurrence/count-finite-overlap` after the retake (the observation after the third firing).
+
+**Boundary:** Finite ISO cycles whose firing happens exactly at the deadline; a runner firing later is outside today's observation boundary.
+
+### CIB-DEV-0007 — a cycle armed between whole seconds drifts to the whole-second grid
+
+**Status:** Deviation candidate from the pinned source
+
+CIB stores an undated cycle's start formatted `yyyy-MM-dd'T'HH:mm:ss` (`TimerEntity.java:47,178-183`), so after the first firing the grid is anchored at the arming second: `R3/PT10S` armed at 10,500 fires at 20,500, then 30,000. The kernel keeps arming + k·period (20,500, 30,500).
+
+**Evidence:** The cited source; witness `timer-recurrence/count-sub-second-arming` (to author, needs evidence).
+
+**Boundary:** ISO cycles armed at a logical time that is not a whole second.
+
+### CIB-DEV-0008 — a late cycle firing skips missed occurrences and spends their count
+
+**Status:** Deviation candidate from the pinned source; outside today's observation boundary
+
+The kernel's successor is the fired deadline plus one period whatever the firing's `at` (no drift, PC-TIMER-02). CIB computes the follow-up from the clock at the firing (`TimerEntity.java:199-205`, `CycleBusinessCalendar.java:53-58`): the first grid point after it, so occurrences missed while the job was late are skipped and the skipped steps use up the count.
+
+**Evidence:** The cited source. The runner fires every job at its due date, so no retained witness observes a late firing.
+
+**Boundary:** Cycle firings with `at` after the deadline; recorded so the observation boundary is explicit.
+
+### CIB-DEV-0009 — `PnW` is not seven days per week
+
+**Status:** Deviation candidate from the pinned source
+
+ISO 8601 makes `PnW` `7n` days. CIB parses `P\\d+W` as `newDuration(n·604,800,000)` (`DurationHelper.java:148-159`), which the JDK spreads into years, months and days counted from 1970-01-01 (`DurationImpl.java:359-398`), so `P5W` is `P1M4D` and armed on 1970-02-01 adds 32 days. CIB's result equals seven-day weeks only up to `P4W`, or when the arming month compensates. The kernel keeps the ISO week. The same mechanism makes a dated `start/end` cycle period epoch-anchored (dated cycles are refused).
+
+**Evidence:** The cited source; witness `timer-duration-forms/form-five-weeks-in-february` (to author).
+
+**Boundary:** `PnW` with `n ≥ 5` (and `n = 4` armed in a 28-day February window where the months differ).
 
 A candidate must appear here immediately when evidence suggests conflict with a clear BPMN requirement. It remains a candidate until the evidence threshold below is satisfied. Implementation of the disputed profile-dependent behavior pauses unless the capsule explicitly preserves competing accounts as an unresolved experiment.
 
@@ -412,7 +472,7 @@ The repository-wide audit on 2026-07-24 found no previously visited observation 
 
 **Fidelity boundary:** the due date, ineligibility before the advance, eligibility at the due date and completion are engine-observed; ineligibility at 1 ms before the due date follows from the exact due date and is not separately observed. The logical deadline is adapter-derived as in `CIB-AGR-0004`.
 
-**Boundary:** an exact `PT[nH][nM][nS]` lexeme from 1 ms to `PT87660H` at the Intermediate Catch Timer only. The boundary, race-arm, Timer Start and repeatable-catch sites keep `CIB-AGR-0004`'s single literal; the refused forms are `CIB-LIM-0003`.
+**Boundary:** an exact `PT[nH][nM][nS]` lexeme whose deadline is at most 2^53 − 1 at the Intermediate Catch Timer only. The boundary, race-arm, Timer Start and repeatable-catch sites keep `CIB-AGR-0004`'s single literal; the refused forms are `CIB-LIM-0003`.
 
 ### CIB-AGR-0022 — a None Start's start and an embedded Sub-Process's completion take every unconditioned outgoing flow in their one step
 
@@ -504,23 +564,23 @@ The project standards profile does not adopt that counter identity. It keeps nor
 
 ### CIB-INT-0007 — a Sub-Process left abnormally completes normally
 
-**Status:** Recorded bounded interpretation from the pinned source; selected by `ProfileOptions.abnormalScopeEnd` through the [cibseven-2.2.0 cumulative profile](../profiles/cibseven-2.2.0/profile.json); no calibration probe yet
+**Status:** Recorded bounded interpretation from the pinned source and retained evidence; selected by `ProfileOptions.abnormalScopeEnd` through the [cibseven-2.2.0 cumulative profile](../profiles/cibseven-2.2.0/profile.json)
 
-BPMN says a Sub-Process left by a Terminate End or by an interrupting Event Sub-Process is "abnormally terminated" (§13.3.4, §13.5.6) and leaves the parent's continuation open. CIB Seven `2.2.0` completes such a Sub-Process normally and takes its outgoing flows.
+BPMN says a Sub-Process left by a Terminate End or by an interrupting Event Sub-Process is "abnormally terminated" (§13.3.4, §13.5.6) and leaves the parent's continuation open. A called process ended by a Terminate End at its process level is abnormally terminated the same way (§13.5.6), and §13.3.4 gives the Call Activity the Sub-Process's termination semantics, so the Call's continuation is open too. CIB Seven `2.2.0` completes such a Sub-Process normally and takes its outgoing flows; a called instance left by a Terminate End ends normally, passes the Call's outputs, and the Call leaves on its outgoing flows.
 
-**Evidence:** Pinned `SubProcessActivityBehavior#complete`, and the kernel rule basis in the [row traceability](kernel/ROW-TRACEABILITY-MAP.md#rule-basis) (`Propagation`, `Scopes.startEventSubProcess`, `Step`).
+**Evidence:** Pinned `SubProcessActivityBehavior#complete`, and the kernel rule basis in the [row traceability](kernel/ROW-TRACEABILITY-MAP.md#rule-basis) (`Propagation`, `Scopes.startEventSubProcess`, `Step`). For a called instance, pinned `BpmnParse.java:3170-3173` (a Terminate interrupts its flow scope), `PvmAtomicOperationInterruptScope.java:29-47`, `TerminateEndEventActivityBehavior.java:35-38` and `PvmAtomicOperationProcessEnd.java:61` (the Call's outputs); the kernel's `AdmissionRegistry.abnormalScope`, which counts a Terminate End at a called process's level since `3a0e71aa1`, with its guard row in `packages/kernel/test/admission-refusals-profile.test.ts`. The retained witnesses agree (CIB Seven `2.2.0`): [terminate-containing-region](../scenarios/open-rows/terminate-containing-region/README.md) `inner-scope-terminate` and `region-terminate-with-incident` (a Sub-Process left by a Terminate End goes on to its successor), [error-event-subprocess-recovery](../scenarios/open-rows/error-event-subprocess-recovery/README.md) `recover-and-continue` (the region of an interrupting handler goes on) and [terminate-called-child](../scenarios/open-rows/terminate-called-child/README.md) `terminate-one-call-sibling-survives` and `terminate-both-calls-reversed` (the Call passes its output and leaves).
 
-**Boundary:** The kernel implements only this normal continuation; the standards reading (`AbnormalScopeEnd.withoutOutflow`) refuses a program whose shape reaches it with `profile.abnormalScopeEnd.withoutOutflow`.
+**Boundary:** The kernel implements only this normal continuation; the standards reading (`AbnormalScopeEnd.withoutOutflow`) refuses a program whose shape reaches it, a Terminate End in a Sub-Process or at a called process's level or an interrupting Event Sub-Process, with `profile.abnormalScopeEnd.withoutOutflow`. A Terminate End inside a Multi-Instance body instance or a non-interrupting Event Sub-Process instance stays with PC-TERMINATE-02 ([scopes](kernel/semantics/SCOPES-SEMANTICS-SPEC.md#pc-terminate-02-terminate-inside-called-children-multi-instance-bodies-and-event-sub-process-instances)).
 
 ### CIB-INT-0008 — a repeating Timer without a start date first fires one period after arming
 
-**Status:** Recorded bounded interpretation from the pinned source; no calibration probe yet
+**Status:** Recorded bounded interpretation from the pinned source; selected by every profile
 
-BPMN §10.5.6 does not fix the first firing of an ISO-8601 cycle `R/<duration>` that has no start date. CIB Seven `2.2.0` takes the arming time as the start and returns the first date after it, which is one period after arming.
+BPMN §10.5.5 does not fix the first firing of an ISO 8601 cycle that has no start date. CIB Seven `2.2.0` takes the arming time as the start and returns the first date after it, one period after arming; a count `R<n>` gives `n` firings at arming + k·period, each one period after the deadline it fired at, after which none follows.
 
-**Evidence:** Pinned `DurationHelper` (the constructor defaults an absent start and end to the current time) and `DurationHelper#getDateAfterRepeat`; the kernel's `Subscriptions.timerDetail`.
+**Evidence:** Pinned `DurationHelper` (constructor `:70-90`, `getDateAfterRepeat` `:116-129`), `TimerEntity#preExecute` and `#calculateNewDueDate`; `StartTimerEventTest#testCycleWithLimitStartTimerEvent` (two firings of `R2/PT5M`, then no job); retained `timer-recurrence/count-finite-overlap` (first deadline 10,000 after arming at 0); the kernel's `Timer.arm` and `Timer.successor`.
 
-**Boundary:** Iso-8601 cycles with a literal `R/<duration>` on attached subscriptions and Event Sub-Process starts only. Cron cycles, cycles with a start or end date, and a process zone are refused at admission.
+**Boundary:** Undated ISO cycles `R/<p>` and `R<n>/<p>` (`1 ≤ n ≤ 2^31 − 1`) with an exact period (no years or months, not zero) at every subscription site. Dated intervals, `R0`, signed counts and nominal periods are refused (`timer.cycle`). The last-fire chain, sub-second start truncation and late-firing skip are CIB-DEV-0006, CIB-DEV-0007 and CIB-DEV-0008.
 
 ### CIB-INT-0009 — on the final Multi-Instance completion, sequential tests exhaustion first and parallel tests the condition first
 
@@ -684,6 +744,46 @@ The kernel passes an Event Sub-Process the raise originates inside at the scope 
 
 **Boundary:** Errors from any depth inside the handler, and Escalations from directly inside it. Refused as dynamic-only `unsupported`: an Escalation raised deeper inside a handler that matches it, which CIB catches with that handler again and so re-enters it without bound (`escalation-rethrow-reenters-handler`); and a raise from an interrupting handler that a sibling Event Sub-Process of the same scope would catch (`rethrow-caught-by-sibling-handler`, CIB-DEV-0003). An Error raised from a Sub-Process nested inside the handler is not yet witnessed against CIB.
 
+### CIB-INT-0023 — a data-derived Timer value is evaluated once when the Timer is armed
+
+**Status:** Recorded bounded interpretation from the pinned source; selected by every profile that admits a Timer expression
+
+BPMN Table 10.101 makes `timeDate`, `timeDuration` and `timeCycle` Expressions whose result conforms to ISO 8601, but says neither when the Expression is evaluated nor whether a later data change moves the Timer. CIB Seven `2.2.0` evaluates the value once when it creates the timer job, in the arming execution after its input mappings, and stores the due date and the cycle text on the job. The kernel evaluates the value once at arming (a catch on arrival in its scope, a boundary in its host's own scope after the host's input mappings, an Event Sub-Process start in its scope after entry, at the root after the start variables) and captures the deadline and recurrence in the open item. A value CIB itself rejects (a failing evaluation, `null`, a non-String) rolls back the input that reached the arming; a String CIB parses that the kernel does not admit is `unsupported` (`timer-duration`, `timer-date`, `timer-cycle`, `timer-cron`); a cycle's dialect is read from its value (`R…` ISO 8601, otherwise Cron).
+
+**Evidence:** Pinned `TimerDeclarationImpl.java:96-153`, `PvmExecutionImpl.java:278-292`, `:1304-1318`, `ExecutionEntity.java:418-424`, `CycleBusinessCalendar.java:55`; retained `timer-data-derived/*` (captured deadline after a later write, rollback on absent, null, Integer and malformed values); `Kernel.Feature.Subscriptions.timerDetail`.
+
+**Boundary:** Timer catches, boundaries and Event Sub-Process starts at the Events JUEL level under `Evaluator.juel`; root Timer starts stay PC-TIMER-04's (`start.timerExpression`). Date-valued results (`dateTime()`) stay refused until the Events level delivers dates.
+
+### CIB-INT-0024 — a Message name given by an expression is resolved when its subscription opens
+
+**Status:** Recorded bounded interpretation from the pinned source; selected by `MessageNames.addresses`
+
+BPMN 2.0.2 has no Message name expressions (Table 8.48). CIB Seven `2.2.0` reads a `${…}` name as a JUEL expression and resolves it when the subscription's scope execution is initialized: before the host's input mappings for a boundary, and before the start or call variables for a root or called-root Event Sub-Process start. A failing evaluation or a non-String result rolls back the command; a `null` or empty result opens a subscription no name-addressed delivery reaches. The kernel resolves the name at the same point, rolls back on a failure or a non-String, answers `unsupported` (`message-name-empty`) for `null` or `""`, and keeps addressing the subscription by its channel.
+
+**Evidence:** Pinned `BpmnParse.java:454-465`, `EventSubscriptionDeclaration.java:153-184`, `ExecutionEntity.java:409-413`, `PvmAtomicOperationCreateScope.java:46`, `PvmExecutionImpl.java:278-286`, `:1304-1314`; retained `message-name-addressing/expression-name-*`.
+
+**Boundary:** Running catches, Event-Based Gateway arms, boundaries and Event Sub-Process starts. A root Message start with an expression name is refused (`start.messageNameExpression`), as CIB refuses it at deployment; the Receive Task site stays refused (`work.receive.messageExpression`).
+
+### CIB-INT-0025 — a Conditional predicate that reads an absent variable or property is false
+
+**Status:** Recorded bounded interpretation from the pinned source; selected by every profile
+
+BPMN states no outcome for a condition that cannot be evaluated. CIB Seven `2.2.0` swallows a `PropertyNotFoundException` while it evaluates a Conditional Event and reads the predicate as false at that point, and rolls back on a `null` or non-Boolean result or any other failure. The kernel reads `unknown-variable` and `juel.propertyNotFound` as false where they are reached (`${a == 1 || b == 2}` with `a` absent is false; `${b == 2 || a == 1}` with `b == 2` is true) and rolls back otherwise (`condition-not-boolean`).
+
+**Evidence:** Pinned `UelExpressionCondition.java:51`, `:57-67`, `JuelExpression.java:62-63`; retained `conditional-evaluation/unrelated-write-with-absent-variables`, `non-boolean-result`, `conditional-catch/absent-then-false-then-true`.
+
+**Boundary:** Conditional Event predicates; Sequence Flow conditions keep their own rule.
+
+### CIB-INT-0026 — a cycle on a site that fires once waits for its first occurrence only
+
+**Status:** Recorded bounded interpretation from the pinned source; selected by every profile
+
+BPMN Table 10.101 lets `timeCycle` stand on any Timer Event but states nothing about a recurrence at a site already triggered: a normal-flow catch consumes its token, an interrupting boundary cancels its host and an interrupting Event Sub-Process cancels its parent's work. CIB Seven `2.2.0` creates no repeat for a cycle on an Intermediate catch or an interrupting Timer and fires it once at the cycle's first occurrence. The kernel arms such a cycle as one wait at its first occurrence, published without recurrence.
+
+**Evidence:** Pinned `TimerDeclarationImpl.java:96-106`, `BpmnParse.java:3417-3421`, `:3488-3492`, `:3567-3571`; retained `timer-recurrence/cycle-on-catch`, `cron-on-catch`, `cycle-on-interrupting-boundary`, `timer-catch-cycles/*`.
+
+**Boundary:** Normal-flow catches, Event-Based Gateway arms, interrupting boundaries and interrupting Event Sub-Process starts, ISO and Cron cycles alike. Root Timer starts stay refused (`timer.cycleNotAttached`, PC-TIMER-04).
+
 ## Known limitation register
 
 ### CIB-LIM-0001: standard sequential Multi-Instance output aggregation is absent
@@ -716,15 +816,15 @@ This remains a limitation rather than a confirmed deviation because the phase-ze
 
 **Boundary:** The finding covers one non-instantiating Intermediate Catch Message Event, one non-empty string property, one key, one retrieval expression, one Process subscription binding, two waiting Process instances, one ambiguous no-criterion call, and one successful Process-variable API criterion under `CIB-CFG-0001`. The fixture separates correlation selection only: it does not select Intermediate Catch Message compatibility, the fixture's expression language, Message payload mediation, initialization by a first Message, dynamic context updates, multiple keys or properties, Conversation execution, start-Message correlation, broadcast, local-variable or business-key criteria, or a general CIB correlation profile.
 
-### CIB-LIM-0003: zero, fractional, nominal, interval and over-maximum durations are refused
+### CIB-LIM-0003: Timer forms CIB accepts outside the profile's subset are refused
 
 **Status:** Profile limitation; not a deviation
 
-CIB accepts `timeDuration` text that the [Timer exact durations](kernel/semantics/SUBSCRIPTIONS-SEMANTICS-SPEC.md) profile refuses: zero (`PT0S`, due at once in CIB), fractional components (`PT1.5S`), nominal components (`P1D`, `P1W`, `P1M`, `P1Y`, `P0DT1S`), which CIB adds as calendar units in the engine's default zone, intervals with a start or end, and lexemes above `PT87660H`. These forms are conforming but deferred until `PC-TIMER-01` settles immediate-due hosting, precision, and the calendar and zone account. Source compilation names the lexeme and its refusal class.
+CIB accepts Timer text that the kernel refuses with `timer.duration`, `timer.date`, `timer.cycle` or `timer.cron` under every profile: interval forms in `timeDuration` (`S/PT5S`, `PT5S/E`, `S/E`, `R…`), seconds finer than a millisecond, a component above 2^31 − 1 (CIB's `int` getters truncate it silently, `DurationImpl.java:1162-1169`), zone-less, date-only, week, ordinal and basic-format dates, `±hh` and `±hhmm` offsets, dates before 1970 (CIB commits a job due at once), a `P` lexeme in `timeDate` (a Joda period from now), dated cycles, `R0` and signed counts, nominal or zero cycle periods, and Cron outside the Quartz subset (the year field, `L`, `W`, `#`, names, both day fields concrete, a reversed range, a Cron that never matches). A value reaching such a form at run time (PC-TIMER-03) is `unsupported` with the dynamic twin.
 
-**Evidence:** `DurationHelper` at `834a9874`; the shared refused-lexeme list in [`timer-duration-lexeme.test.ts`](https://github.com/mbackschat/bpmn-lean-experiment/blob/404a39d7/packages/semantic-core/test/timer-duration-lexeme.test.ts) and [`SemanticProcessAdmissionConformance`](https://github.com/mbackschat/bpmn-lean-experiment/blob/404a39d7/BpmnSemantics/SemanticProcessAdmissionConformance.lean).
+**Evidence:** Pinned `DurationHelper.java:60-91`, `DateTimeUtil.java:48-63`, `DueDateBusinessCalendar.java:44-51`, `CronTimer.java:83-121`; the kernel's `Timer.classify` (`outside`); `timer-lexemes.test.ts`, `timer-recurrence.test.ts`, `admission-refusals-subscriptions.test.ts`.
 
-**Boundary:** the Intermediate Catch Timer of the two profiles that select `CIB-AGR-0021`.
+**Boundary:** Every Timer site under every profile.
 
 ### CIB-LIM-0004: a Call output targeting a Multi-Instance counter is refused
 
@@ -917,6 +1017,26 @@ BPMN 2.0.2 §10.5.6 allows one interrupting and any number of non-interrupting h
 **Evidence:** Pinned `BpmnParse.java:3702-3735` (`addEscalationEventDefinition`); the retained witnesses [escalation-boundary-conflicts](../scenarios/open-rows/escalation-boundary-conflicts/README.md) (CIB Seven `2.2.0`, 2026-11-10); the kernel tests `packages/kernel/test/admission-refusals-escalation.test.ts`.
 
 **Boundary:** Escalation boundaries of one host and Escalation Event Sub-Processes of one scope. Within what both admit, at most one handler per level matches a code, so the missing exact-before-catch-all rank of CIB's finder never decides (CIB-INT-0010).
+
+### CIB-LIM-0022 — CIB addresses a Message subscription by a required, scope-unique name
+
+**Status:** Profile limitation selected by the cibseven profiles (`MessageNames.addresses`)
+
+BPMN addresses a Message by its identifier and lets it be nameless. CIB Seven `2.2.0` subscribes by the Message's `name`, refuses a Message subscription whose name is missing or blank after trimming, and refuses two Message subscriptions of one unresolved name in one event scope. Under the cibseven profiles the kernel refuses the same models (`message.unnamed`, `message.duplicateName` for two boundaries of one host) and keeps channel addressing, the runner mapping the channel onto the name (CIB-OP-0005). Under `bpmn-2.0.2` a nameless Message is admitted.
+
+**Evidence:** Pinned `BpmnParse.java:1271-1282`, `:1297-1299`, `EventSubscriptionDeclaration.java:85-87`; retained `message-name-addressing/unnamed-message` (refused at deployment).
+
+**Boundary:** Catches, boundaries, Event Sub-Process starts and root starts. The duplicate rule is checked among the boundaries of one host only; two Event Sub-Process starts of one scope and two Event-Based Gateway arms of one name are not yet refused (remaining work of PC-MESSAGE-01). A Receive Task with a nameless Message is not yet refused under the cibseven profiles (work admission).
+
+### CIB-LIM-0023 — CIB ignores a Message Event's `operationRef`
+
+**Status:** Profile limitation; not a deviation
+
+BPMN lets a Message Event name the Operation that carries its Message (Table 10.99). CIB Seven `2.2.0` reads only `messageRef` and matches by name. The kernel's channel also carries the Operation and rejects a delivery on another Operation; an `operationRef` naming no Operation is a dangling reference the source refuses. The `operation-*` schedules agree only because the runner's channel check rejects a foreign channel before CIB is called.
+
+**Evidence:** Pinned `BpmnParse.java:1259-1269`; retained `message-name-addressing/operation-*`.
+
+**Boundary:** Every Message subscription.
 
 ## Extension register
 
@@ -1315,6 +1435,36 @@ The kernel's `Propagation.passCallOutputs` calls `PropagationHooks.callOutputs` 
 
 **Boundary:** `camunda:out` name mappings of `CIB-EXT-0021` only: no `variables="all"` and no delegate mapping. Refused as dynamic-only `unsupported`: a raise that runs directly at a called root while another path stands there, where the root's own Event Sub-Process catches and the Call maps outputs (`raise-caught-at-busy-called-root`). For a thrower that is no CIB scope, an Error or Escalation End Event, CIB's walk then visits the root first with the thrower's concurrent execution and stops at that catch before the propagator sees the process-instance execution (`tree/ActivityExecutionHierarchyWalker.java:52-54`), so whether the outputs pass rests on its execution tree. A catcher further out, the Call's own boundary included, lets the walk reach the process-instance execution, where the outputs pass, and the kernel passes them. A raising Service Task that CIB makes a scope (output parameters or a boundary, `BpmnParse.java:3297`, `:4803-4814`) starts the walk at its own execution, which reaches the root's process-instance execution (`:55-58`), so CIB passes the outputs; the refusal is conservative for that class. A Call that an interrupting boundary cancels passes nothing, as `deleteCascade` deletes its called instance (`PvmAtomicOperationDeleteCascade.java:57-64`); nor does one a removed caller region or an interrupting Event Sub-Process clears (`PvmExecutionImpl.java:345-359`, `clearScope`).
 
+### CIB-EXT-0035 — CIB fires a Conditional Event on each matching variable write, filtered by its variable name and events
+
+**Status:** Optional CIB extension; selected by `ConditionalRetrigger.eachWrite` through the cibseven profiles
+
+BPMN triggers an intermediate or boundary Conditional Event "when a condition becomes true" (Tables 10.89, 10.90). CIB Seven `2.2.0` evaluates a Conditional subscription on every variable create, update (same value included) and delete in the subtree of the scope that owns the variable, filtered by `camunda:variableName` and `camunda:variableEvents`, and fires a non-interrupting one each time the predicate holds; arming evaluation ignores the filters. Under `eachWrite` the kernel does the same and publishes `lastValue: null`; under `edge` (the standards profile) it fires only on a false-to-true change, tracks `lastValue`, and refuses the two filters (`event.condition.filter`).
+
+**Evidence:** Pinned `ConditionalEventDefinition.java:91-113`, `VariableListenerInvocationListener.java:75-80`, `ExecutionEntity.java:1731-1755`, `PvmExecutionImpl.java:1999-2010`, `:2185-2203`; retained `conditional-evaluation/create-false-then-update-true`, `conditional-esp/process-alert-repeats`.
+
+**Boundary:** Conditional catches, boundaries, Event Sub-Process starts and Event-Based Gateway arms; root Conditional starts are PC-CONDITION-02's. An event name other than `create`, `update`, `delete` is refused (`event.condition.variableEvents`).
+
+### CIB-EXT-0036 — a malformed Timer literal deploys and rolls back the command that arms it
+
+**Status:** Optional CIB extension; selected by `ProfileOptions.malformedTimer.rollsBackArming` through the cibseven-2.2.0 profiles
+
+BPMN Table 10.101 requires `timeDate`, `timeDuration` and `timeCycle` to conform to ISO 8601; a model whose literal does not is non-conforming, and BPMN states no run-time outcome for it. CIB Seven `2.2.0` deploys such a model and fails only when the Timer is armed (`exceptionWhileResolvingDuedate`, `exceptionWhileParsingCycleExpresison`), which rolls back the command that reached it. Under the CIB profiles the kernel admits a literal the pinned parser certainly rejects and rolls back the input that arms it; under `bpmn-2.0.2` (`malformedTimer.refused`) it refuses the model with the literal's `timer.*` code. A literal CIB commits but the kernel does not admit is refused under every profile (CIB-LIM-0003), never rolled back.
+
+**Evidence:** Pinned `DurationBusinessCalendar.java:43-50`, `DueDateBusinessCalendar.java:42-58`, `CycleBusinessCalendar.java:53-67`, `DurationHelper.java:60-91`; retained `timer-duration-forms/form-negative`, `form-bare-number`, `form-lower-case` (`-PT5S`, `PT5`, `pt5s`) and `timer-date-forms/out-of-range-fields` (`1970-13-45T25:61:61Z`) roll the reaching start back; the kernel's `Timer.classify` (`malformed`).
+
+**Boundary:** Literal Timer values classified malformed by `Timer.classify`: a duration not starting with `P` or not `xsd:duration`/`PnW`, more than three `/` parts, a date of the extended shape with an out-of-range field or a character no ISO date has, a cycle with a count `parseInt` rejects or a malformed period, a Cron with the wrong field count, a foreign character or a number out of range. Root Timer starts are refused whatever the profile.
+
+### CIB-EXT-0037 — CIB recalculates an armed Timer's due date on request
+
+**Status:** Optional CIB extension; selected by no profile
+
+`RecalculateJobDuedateCmd` (`ManagementService#recalculateJobDuedate`) re-evaluates an armed Timer's definition on an API call. BPMN has no such operation and the kernel offers none; an armed Timer keeps its captured deadline.
+
+**Evidence:** Pinned `cmd/RecalculateJobDuedateCmd.java`.
+
+**Boundary:** Not reachable through the scenario stimuli.
+
 ## Permitted operational-detail register
 
 ### CIB-OP-0001 — CIB host task identity mapped to project semantic task identity
@@ -1371,7 +1521,7 @@ For the one admitted non-repeating Receive Task, the oracle adapter maps the sol
 
 This mapping preserves the subscription lifecycle classified by `CIB-AGR-0009` without claiming identity equivalence across CIB, Lean, TypeScript, and Temporal. Evidence belongs to the [Message-addressed Receive Task scenario](../scenarios/message-addressed-receive-task/README.md), its content-bound retained result, and the [Receive Task specification](kernel/semantics/WORK-SEMANTICS-SPEC.md).
 
-**Boundary:** The mapping is limited to one live, direct-Message, activation-`1` Receive Task subscription in one Process instance. It does not establish Message-name/Message-ID equivalence, general correlation, repeated activation, multiple subscriptions, buffered delivery, Message Event compatibility, or global Message routing.
+**Boundary:** The mapping is limited to one live, direct-Message, activation-`1` Receive Task subscription in one Process instance. It does not establish Message-name/Message-ID equivalence, general correlation, repeated activation, multiple subscriptions, buffered delivery, Message Event compatibility, or global Message routing. The runner also resolves a catch's, boundary's or Event Sub-Process start's subscription from the published Message identifier to the name CIB subscribed by, the resolved value for a name expression (CIB-INT-0024).
 
 ### CIB-OP-0006 - synchronous mapped-success transaction mapped to a durable effect boundary
 
@@ -1519,6 +1669,26 @@ The retained witnesses agree: `parallel-two-bodies-natural`, `parallel-two-bodie
 
 **Boundary:** Branches within one closure, and the instances of a parallel body begun within one closure. The order across inputs is fixed by the inputs. A decision task's `resultVariable` is not in the footprint, since every profile that reads `orderInvariant` refuses a decision task (`work.rule`); a profile that admits both must add it first.
 
+### CIB-OP-0017 — the engine clock after a rolled-back input is the runner's environment clock
+
+**Status:** Operational mapping
+
+A rolled-back input leaves the kernel's state, its logical time included, as before the input (the Outcome contract). The CIB runner sets `ClockUtil` to the stimulus's time before it executes the job or command, so CIB's next observation shows that time even though the command rolled back (`business-rule-hit-policies/after-timer-failure`: the Timer still open at 10,000, the clock at 10,000). The clock reading after a rolled-back input is the harness's environment, not a semantic fact; the comparison maps it to the kernel's.
+
+**Evidence:** `runners/cibseven/.../CibSevenCommandExecutor.java:184-196`; retained `after-timer-failure`.
+
+**Boundary:** Observations after a `rolledBack` input that stated a later time.
+
+### CIB-OP-0018 — CIB attached subscriptions numbered by counting the kernel's reservations
+
+**Status:** Operational mapping of the CIB runner
+
+CIB has no activation numbers and keeps a non-interrupting attached subscription on its host's execution, a cycle successor as a new job there. The runner numbers each subscription without an activity instance of its own (Timer, Message, Signal or Conditional boundary, Event Sub-Process start, Event-Based Gateway arm) and each begun occurrence of such an element as the kernel reserves them: one reservation per host activation (observed or not), one per cycle successor at its predecessor's firing, a fresh one per firing whose subscription stays open, the subscription's own for a firing that closes it; a begin the runner did not drive takes a fresh activation when its element does not interrupt, otherwise its element's oldest live reservation. `recurrence.remaining` is the declared count less the chain's earlier firings.
+
+**Evidence:** `CibSevenOccurrences` (class comment, `subscriptionActivation`, `timerFired`, `delivered`), `CibSevenOccurrenceNumberingTest`; `repeatable-event-subscriptions/boundary-timer-repeat`, `message-boundary-repeated/user-host-reentered-after-delivery`, `timer-recurrence/count-finite-overlap` after the retake.
+
+**Boundary:** CIB runner projection only; no kernel meaning. Non-runner-driven interrupting firings (Conditional, Signal) of an element with several live reservations take the oldest, which is unwitnessed. CIB-OP-0005 keeps its Receive Task boundary.
+
 ## Configuration-specific register
 
 ### CIB-CFG-0001 — pinned Milestone 0 oracle environment
@@ -1616,6 +1786,36 @@ The kernel's [core JUEL level](kernel/semantics/EXPRESSION-SEMANTICS-SPEC.md) is
 **Evidence:** Pinned `JuelExpressionManager.java:142-163`, `el/VariableScopeElResolver.java:51-90`, `cfg/ProcessEngineConfigurationImpl.java:2723-2731`; the retained [core witness table](../scenarios/open-rows/juel-core-table/README.md) and the `bean-reference` witness of [juel-evaluation-failures](../scenarios/open-rows/juel-evaluation-failures/README.md) (CIB Seven `2.2.0`).
 
 **Boundary:** That environment and locale only; other bean sets, function mappers or locales are outside it.
+
+### CIB-CFG-0012 — CIB does not re-evaluate an armed Timer cycle
+
+**Status:** Configuration-dependent CIB behavior; the oracle environment keeps CIB's default
+
+CIB Seven `2.2.0` re-evaluates a cycle's expression when a successor job is created only under `reevaluateTimeCycleWhenDue = true`; its default is `false`, which the cibseven profiles' oracle environment keeps. The kernel captures the recurrence at arming (CIB-INT-0023), which equals the default.
+
+**Evidence:** Pinned `TimerEntity.java:82-96`, `ProcessEngineConfigurationImpl.java:1071`.
+
+**Boundary:** The CIB oracle environment; a CIB deployment with the switch on is outside every claim.
+
+### CIB-CFG-0013 — CIB's Timer calendars read the JVM default time zone
+
+**Status:** Configuration-dependent CIB behavior; the oracle environment pins UTC
+
+CIB Seven `2.2.0` adds a Timer duration on a `GregorianCalendar` in the JVM default zone, reads a zone-less date in it and evaluates Cron in `ZoneId.systemDefault()`. The kernel computes every calendar step over UTC from logical time (owner decision 2026-11-08 for Cron, applied to calendar durations alike) and refuses zone-less dates. In a zone with offset changes CIB's calendar months, days and Cron matches differ from UTC around each change. The oracle runs with `-Duser.timezone=UTC`, fails closed in any other zone, and records `producer.timeZone`.
+
+**Evidence:** Pinned `DurationHelper.java:141-146`, `DateTimeUtil.java:48`, `CronTimer.java:45-53`; `runners/cibseven/pom.xml` argLine, `CibSevenScenarioRunner.create`.
+
+**Boundary:** The CIB oracle environment; a non-UTC CIB deployment is outside every claim.
+
+### CIB-CFG-0014 — CIB's Cron dialect is Quartz with the legacy day-field patch
+
+**Status:** Configuration-dependent CIB behavior; the kernel admits a subset of the default dialect
+
+With the default `cronType = QUARTZ` and `supportLegacyQuartzSyntax = true` (`ProcessEngineConfigurationImpl.java:656,2739`, `CronProperty.java:33,45`), CIB rewrites the day fields before parsing (`CronTimer.java:83-121`): a wildcard in one day field leaves the other governing, `*`/`*` and `?`/`?` mean every day, and two concrete day fields silently drop the day of month. The kernel admits six fields with `*`, `?` in the day fields, numbers, ranges, lists and `x/y`, days of week 1-7 from Sunday, the first match strictly after arming and each successor strictly after the deadline it fired at, and refuses two concrete day fields (`timer.cron`).
+
+**Evidence:** The cited pinned source; retained `timer-recurrence/cron-seconds-field` (30,000 then 60,000) and `cron-on-catch`.
+
+**Boundary:** The default Cron configuration; another `cronType` is outside every claim.
 
 ## Audit of previously visited findings
 

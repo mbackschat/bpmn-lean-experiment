@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_ShadowedFilter"
+  targetNamespace="urn:bpmn-lean:scenarios:conditional-evaluation:shadowed-filter">
+  <bpmn:process id="Process_ShadowedFilter" name="A filter on a name a host shadows" isExecutable="true">
+    <bpmn:startEvent id="Start_Shadow" />
+    <bpmn:parallelGateway id="Fork_Shadow" gatewayDirection="Diverging" />
+    <bpmn:sequenceFlow id="Flow_Start_Shadow_Fork_Shadow" sourceRef="Start_Shadow" targetRef="Fork_Shadow" />
+    <bpmn:userTask id="Host" name="Review the account" />
+    <bpmn:endEvent id="End_Host" />
+    <bpmn:sequenceFlow id="Flow_Fork_Shadow_Host" sourceRef="Fork_Shadow" targetRef="Host" />
+    <bpmn:sequenceFlow id="Flow_Host_End_Host" sourceRef="Host" targetRef="End_Host" />
+    <bpmn:userTask id="Host_Local" name="Review the local account">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="level2">${0}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+    </bpmn:userTask>
+    <bpmn:endEvent id="End_Host_Local" />
+    <bpmn:sequenceFlow id="Flow_Fork_Shadow_Host_Local" sourceRef="Fork_Shadow" targetRef="Host_Local" />
+    <bpmn:sequenceFlow id="Flow_Host_Local_End_Host_Local" sourceRef="Host_Local" targetRef="End_Host_Local" />
+    <bpmn:boundaryEvent id="Cond_Shadow" name="Condition filtered by a shadowed name" attachedToRef="Host_Local" cancelActivity="false">
+      <bpmn:conditionalEventDefinition id="CED_Shadow" camunda:variableName="level2">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">${level &gt; 5}</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handle_Shadow" name="Handle the shadow condition" />
+    <bpmn:endEvent id="End_Shadow" />
+    <bpmn:sequenceFlow id="Flow_Cond_Shadow_Handle_Shadow" sourceRef="Cond_Shadow" targetRef="Handle_Shadow" />
+    <bpmn:sequenceFlow id="Flow_Handle_Shadow_End_Shadow" sourceRef="Handle_Shadow" targetRef="End_Shadow" />
+  </bpmn:process>
+</bpmn:definitions>

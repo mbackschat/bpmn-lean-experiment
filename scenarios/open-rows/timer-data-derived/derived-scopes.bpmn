@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_DerivedScopes"
+  targetNamespace="urn:bpmn-lean:scenarios:timer-data-derived:scopes">
+  <bpmn:process id="Process_DerivedScopes" name="Deadlines read in the scope of their site" isExecutable="true">
+    <bpmn:startEvent id="Start_Scopes" />
+    <bpmn:exclusiveGateway id="Gateway_Route" gatewayDirection="Diverging" />
+    <bpmn:sequenceFlow id="Flow_Start_Scopes_Gateway_Route" sourceRef="Start_Scopes" targetRef="Gateway_Route" />
+    <bpmn:userTask id="Host_Local" name="Work against a host-local limit">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="d">PT5S</camunda:inputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+    </bpmn:userTask>
+    <bpmn:boundaryEvent id="Limit_Local" name="Host-local limit reached" attachedToRef="Host_Local">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">${d}</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handler_Local" name="Handle the host-local limit" />
+    <bpmn:endEvent id="End_Host_Local" />
+    <bpmn:endEvent id="End_Limit_Local" />
+    <bpmn:sequenceFlow id="Flow_Gateway_Route_Host_Local" sourceRef="Gateway_Route" targetRef="Host_Local">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${route == 'host-local'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Host_Local_End_Host_Local" sourceRef="Host_Local" targetRef="End_Host_Local" />
+    <bpmn:sequenceFlow id="Flow_Limit_Local_Handler_Local" sourceRef="Limit_Local" targetRef="Handler_Local" />
+    <bpmn:sequenceFlow id="Flow_Handler_Local_End_Limit_Local" sourceRef="Handler_Local" targetRef="End_Limit_Local" />
+    <bpmn:subProcess id="Scope_Esp" name="Work in a scope with a deadline listener">
+      <bpmn:startEvent id="Start_Esp_Scope" />
+      <bpmn:userTask id="Inner_Write" name="Write the listener's deadline" />
+      <bpmn:userTask id="Inner_Hold" name="Hold the scope open" />
+      <bpmn:endEvent id="End_Esp_Scope" />
+      <bpmn:sequenceFlow id="Flow_Start_Esp_Scope_Inner_Write" sourceRef="Start_Esp_Scope" targetRef="Inner_Write" />
+      <bpmn:sequenceFlow id="Flow_Inner_Write_Inner_Hold" sourceRef="Inner_Write" targetRef="Inner_Hold" />
+      <bpmn:sequenceFlow id="Flow_Inner_Hold_End_Esp_Scope" sourceRef="Inner_Hold" targetRef="End_Esp_Scope" />
+      <bpmn:subProcess id="ESP_Deadline" triggeredByEvent="true">
+      <bpmn:startEvent id="Start_Deadline" isInterrupting="false">
+        <bpmn:timerEventDefinition>
+          <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">${d}</bpmn:timeDuration>
+        </bpmn:timerEventDefinition>
+      </bpmn:startEvent>
+        <bpmn:userTask id="Handle_Deadline" name="Handle the deadline" />
+        <bpmn:endEvent id="End_Deadline" />
+        <bpmn:sequenceFlow id="Flow_Start_Deadline_Handle_Deadline" sourceRef="Start_Deadline" targetRef="Handle_Deadline" />
+        <bpmn:sequenceFlow id="Flow_Handle_Deadline_End_Deadline" sourceRef="Handle_Deadline" targetRef="End_Deadline" />
+      </bpmn:subProcess>
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_Scope_Esp" />
+    <bpmn:sequenceFlow id="Flow_Gateway_Route_Scope_Esp" sourceRef="Gateway_Route" targetRef="Scope_Esp">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${route == 'esp'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Scope_Esp_End_Scope_Esp" sourceRef="Scope_Esp" targetRef="End_Scope_Esp" />
+    <bpmn:parallelGateway id="Fork_Cycle" gatewayDirection="Diverging" />
+    <bpmn:userTask id="Host_Remind" name="Work with reminders" />
+    <bpmn:userTask id="Writer" name="Revise the cadence" />
+    <bpmn:boundaryEvent id="Cadence" name="Reminder cadence" attachedToRef="Host_Remind" cancelActivity="false">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeCycle xsi:type="bpmn:tFormalExpression">${c}</bpmn:timeCycle>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handler_Cadence" name="Respond to the reminder" />
+    <bpmn:endEvent id="End_Remind" />
+    <bpmn:endEvent id="End_Writer" />
+    <bpmn:endEvent id="End_Cadence" />
+    <bpmn:sequenceFlow id="Flow_Gateway_Route_Fork_Cycle" sourceRef="Gateway_Route" targetRef="Fork_Cycle">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${route == 'cycle-change'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Fork_Cycle_Host_Remind" sourceRef="Fork_Cycle" targetRef="Host_Remind" />
+    <bpmn:sequenceFlow id="Flow_Fork_Cycle_Writer" sourceRef="Fork_Cycle" targetRef="Writer" />
+    <bpmn:sequenceFlow id="Flow_Host_Remind_End_Remind" sourceRef="Host_Remind" targetRef="End_Remind" />
+    <bpmn:sequenceFlow id="Flow_Writer_End_Writer" sourceRef="Writer" targetRef="End_Writer" />
+    <bpmn:sequenceFlow id="Flow_Cadence_Handler_Cadence" sourceRef="Cadence" targetRef="Handler_Cadence" />
+    <bpmn:sequenceFlow id="Flow_Handler_Cadence_End_Cadence" sourceRef="Handler_Cadence" targetRef="End_Cadence" />
+    <bpmn:intermediateCatchEvent id="Catch_Outside" name="Wait for the value">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">${d}</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:userTask id="Proceed_Outside" name="Proceed after the wait" />
+    <bpmn:endEvent id="End_Outside" />
+    <bpmn:sequenceFlow id="Flow_Gateway_Route_Catch_Outside" sourceRef="Gateway_Route" targetRef="Catch_Outside">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${route == 'outside'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Catch_Outside_Proceed_Outside" sourceRef="Catch_Outside" targetRef="Proceed_Outside" />
+    <bpmn:sequenceFlow id="Flow_Proceed_Outside_End_Outside" sourceRef="Proceed_Outside" targetRef="End_Outside" />
+    <bpmn:userTask id="Host_Cron" name="Work with Cron reminders" />
+    <bpmn:boundaryEvent id="Cadence_Cron" name="Cron reminder" attachedToRef="Host_Cron" cancelActivity="false">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeCycle xsi:type="bpmn:tFormalExpression">${c}</bpmn:timeCycle>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handler_Cron" name="Respond to the Cron reminder" />
+    <bpmn:endEvent id="End_Host_Cron" />
+    <bpmn:endEvent id="End_Handler_Cron" />
+    <bpmn:sequenceFlow id="Flow_Gateway_Route_Host_Cron" sourceRef="Gateway_Route" targetRef="Host_Cron">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${route == 'cron'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Host_Cron_End_Host_Cron" sourceRef="Host_Cron" targetRef="End_Host_Cron" />
+    <bpmn:sequenceFlow id="Flow_Cadence_Cron_Handler_Cron" sourceRef="Cadence_Cron" targetRef="Handler_Cron" />
+    <bpmn:sequenceFlow id="Flow_Handler_Cron_End_Handler_Cron" sourceRef="Handler_Cron" targetRef="End_Handler_Cron" />
+  </bpmn:process>
+</bpmn:definitions>

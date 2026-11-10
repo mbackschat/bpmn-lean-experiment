@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_EdgeEachWriteStandards"
+  targetNamespace="urn:bpmn-lean:scenarios:conditional-evaluation:edge-each-write-standards"
+  expressionLanguage="urn:bpmn-lean:expression:simple-boolean:v1">
+  <bpmn:process id="Process_EdgeEachWriteStandards" name="Account review with one Conditional boundary (Simple Boolean)" isExecutable="true">
+    <bpmn:property id="level" name="Account level" />
+    <bpmn:startEvent id="Start_Edge" />
+    <bpmn:userTask id="Host" name="Review the account" />
+    <bpmn:endEvent id="End_Host" />
+    <bpmn:sequenceFlow id="Flow_Start_Edge_Host" sourceRef="Start_Edge" targetRef="Host" />
+    <bpmn:sequenceFlow id="Flow_Host_End_Host" sourceRef="Host" targetRef="End_Host" />
+    <bpmn:boundaryEvent id="Cond_Level" name="Condition Level" attachedToRef="Host" cancelActivity="false">
+      <bpmn:conditionalEventDefinition id="CED_Level">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">stringEquals(level,"high")</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handle_Level" name="Handle the level condition" />
+    <bpmn:endEvent id="End_Level" />
+    <bpmn:sequenceFlow id="Flow_Cond_Level_Handle_Level" sourceRef="Cond_Level" targetRef="Handle_Level" />
+    <bpmn:sequenceFlow id="Flow_Handle_Level_End_Level" sourceRef="Handle_Level" targetRef="End_Level" />
+  </bpmn:process>
+</bpmn:definitions>

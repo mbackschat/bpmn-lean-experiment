@@ -15,7 +15,7 @@ import {
   MultiInstanceFinalBody, MultiInstanceOutputs, type ProfileOptions, SubmissionRule, TechnicalFailure, UndeclaredWrite,
   UnhandledError, ErrorCatchVariables,
   MultiInstanceBinding, ResultValues, OutputContext, MultiInstanceCounters, MultiInstanceInputFailure, MultiInstanceCount,
-  multiInstanceCounterNames, BusinessRuleTask, InclusiveJoinReach, BranchSchedule,
+  multiInstanceCounterNames, BusinessRuleTask, InclusiveJoinReach, BranchSchedule, ConditionalRetrigger, MalformedTimer, MessageNames,
 } from "./types/options.js";
 import {
   ExpressionTag, MappingDialect, SimpleBooleanTag, ValueSourceTag, ValueTag, type Expression, type Mapping,
@@ -29,7 +29,7 @@ export {
   MultiInstanceFinalBody, MultiInstanceOutputs, type ProfileOptions, SubmissionRule, TechnicalFailure, UndeclaredWrite,
   UnhandledError, ErrorCatchVariables,
   MultiInstanceBinding, ResultValues, OutputContext, MultiInstanceCounters, MultiInstanceInputFailure, MultiInstanceCount,
-  multiInstanceCounterNames, BusinessRuleTask, InclusiveJoinReach, BranchSchedule,
+  multiInstanceCounterNames, BusinessRuleTask, InclusiveJoinReach, BranchSchedule, ConditionalRetrigger, MalformedTimer, MessageNames,
 };
 export {
   ExpressionTag, MappingDialect, SimpleBooleanTag, ValueSourceTag, ValueTag, type Expression, type Mapping,
@@ -121,11 +121,12 @@ export interface TimerTrigger { readonly schedule: TimerSchedule; }
 export interface CorrelationCriterion { readonly key: string; readonly value: Expression; }
 
 /**
- * `name` is the BPMN Message's identifier, `null` for an unspecified Message (a Receive Task without `messageRef`,
- * which only its waiting occurrence addresses); `interfaceRef` and `operationRef` name the Operation that carries it,
- * when the model gives one.
+ * `messageRef` is the BPMN Message's identifier, `null` for an unspecified Message (a Receive Task without
+ * `messageRef`, which only its waiting occurrence addresses); `name` is that Message's `name` (BPMN 2.0.2 Table 8.48),
+ * `null` when it has none; `interfaceRef` and `operationRef` name the Operation that carries it, when the model gives one.
  */
 export interface MessageTrigger {
+  readonly messageRef: string | null;
   readonly name: ValueSource | null;
   readonly correlation: readonly CorrelationCriterion[];
   readonly interfaceRef: string | null;
@@ -136,9 +137,7 @@ export interface SignalTrigger { readonly name: ValueSource; }
 
 export interface ConditionTrigger {
   readonly condition: Expression;
-  // guard-exception(19): a Conditional trigger is refused whole (`event.catch.condition`, `boundary.condition`, `start.condition`).
   readonly variableName: string | null;
-  // guard-exception(19): refused with its trigger, as `variableName` above.
   readonly variableEvents: readonly string[];
 }
 

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_ShortCircuit"
+  targetNamespace="urn:bpmn-lean:scenarios:conditional-evaluation:short-circuit">
+  <bpmn:process id="Process_ShortCircuit" name="A predicate that reads an absent variable after its decisive operand" isExecutable="true">
+    <bpmn:startEvent id="Start_Short" />
+    <bpmn:intermediateCatchEvent id="Catch_Short" name="Wait for b">
+      <bpmn:conditionalEventDefinition id="CED_Short">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">${b == 2 || a == 1}</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:userTask id="Proceed_Short" name="Proceed once b holds" />
+    <bpmn:endEvent id="End_Short" />
+    <bpmn:sequenceFlow id="Flow_Start_Short_Catch_Short" sourceRef="Start_Short" targetRef="Catch_Short" />
+    <bpmn:sequenceFlow id="Flow_Catch_Short_Proceed_Short" sourceRef="Catch_Short" targetRef="Proceed_Short" />
+    <bpmn:sequenceFlow id="Flow_Proceed_Short_End_Short" sourceRef="Proceed_Short" targetRef="End_Short" />
+  </bpmn:process>
+</bpmn:definitions>

@@ -48,9 +48,9 @@ const message = `<bpmn:message id="Msg" name="reply"/><bpmn:signal id="Sg" name=
 
 test("a message reference prefixed with the target namespace's root prefix binds like an unprefixed one", async () => {
   // `BpmnParse#resolveName` qualifies a messageRef with the Definitions' targetNamespace (pinned `BpmnParse:1264`).
-  assert.match(await admitted(await witness("message-ref-qname")), /"literal":\{"value":"Message_Reply"\}/u);
+  assert.match(await admitted(await witness("message-ref-qname")), /"messageRef":"Message_Reply"/u);
   assert.match(await admitted(model(catching(`<bpmn:messageEventDefinition messageRef="tns:Msg"/>`), message)),
-    /"literal":\{"value":"Msg"\}/u);
+    /"messageRef":"Msg"/u);
 });
 
 test("a signal reference prefixed with the target namespace's root prefix binds", async () => {

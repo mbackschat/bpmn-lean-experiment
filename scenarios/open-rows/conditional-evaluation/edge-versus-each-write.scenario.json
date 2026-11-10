@@ -1,0 +1,118 @@
+{
+  "kind": "scenario",
+  "id": "conditional-evaluation-edge-versus-each-write",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "conditional-evaluation-edge-each-write",
+    "relativePath": "scenarios/open-rows/conditional-evaluation/edge-each-write.bpmn",
+    "sha256": "9552428341b55736ce153bb04a4d2f6bdd14f604b4e61b330aa777ceb208aa8c",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-set-level",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Host",
+        "activation": 1
+      },
+      "action": {
+        "kind": "setVariables",
+        "values": [
+          {
+            "name": "level",
+            "value": {
+              "kind": "integer",
+              "value": 150
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-set-level",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Host",
+        "activation": 1
+      },
+      "action": {
+        "kind": "setVariables",
+        "values": [
+          {
+            "name": "level",
+            "value": {
+              "kind": "integer",
+              "value": 150
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s04-set-level",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Host",
+        "activation": 1
+      },
+      "action": {
+        "kind": "setVariables",
+        "values": [
+          {
+            "name": "level",
+            "value": {
+              "kind": "integer",
+              "value": 50
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s05-set-level",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Host",
+        "activation": 1
+      },
+      "action": {
+        "kind": "setVariables",
+        "values": [
+          {
+            "name": "level",
+            "value": {
+              "kind": "integer",
+              "value": 150
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 Table 10.95"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/IntermediateConditionalEventBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/ConditionalEventDefinition.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/event/ConditionalEventHandler.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/el/UelExpressionCondition.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/persistence/entity/ExecutionEntity.java",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/event/conditional/BoundaryConditionalEventTest.java"
+    ]
+  }
+}

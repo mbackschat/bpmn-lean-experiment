@@ -186,7 +186,7 @@
   {
     "evidence": "scenarios/open-rows/business-rule-hit-policies/after-timer-failure.cibseven-evidence.json",
     "owners": [
-      "PC-TIMER-03"
+      "CIB-OP-0017"
     ]
   },
   {
@@ -563,147 +563,57 @@
     ]
   },
   {
-    "evidence": "scenarios/open-rows/conditional-catch/absent-then-false-then-true.cibseven-evidence.json",
-    "owners": [
-      "PC-CONDITION-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/conditional-catch/change-before-arrival.cibseven-evidence.json",
-    "owners": [
-      "PC-CONDITION-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/conditional-catch/changes-after-consumption.cibseven-evidence.json",
-    "owners": [
-      "PC-CONDITION-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/conditional-catch/condition-wins.cibseven-evidence.json",
-    "owners": [
-      "PC-CONDITION-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/conditional-catch/immediate-true.cibseven-evidence.json",
-    "owners": [
-      "PC-CONDITION-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/conditional-catch/message-wins-then-condition-changes.cibseven-evidence.json",
-    "owners": [
-      "PC-CONDITION-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/conditional-catch/passive-false.cibseven-evidence.json",
-    "owners": [
-      "PC-CONDITION-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/conditional-catch/timer-wins-then-condition-changes.cibseven-evidence.json",
-    "owners": [
-      "PC-CONDITION-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/conditional-catch/true-at-the-gateway.cibseven-evidence.json",
-    "owners": [
-      "PC-CONDITION-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/conditional-esp/called-instance-has-its-own-scope.cibseven-evidence.json",
-    "owners": [
-      "PC-CONDITION-05"
-    ]
-  },
-  {
     "evidence": "scenarios/open-rows/conditional-esp/handler-writes-bounded-chain.cibseven-evidence.json",
     "owners": [
-      "PC-CONDITION-05"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/conditional-esp/handler-writes-through-effect-result.cibseven-evidence.json",
-    "owners": [
-      "PC-CONDITION-05"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/conditional-esp/one-command-two-scopes.cibseven-evidence.json",
-    "owners": [
-      "PC-CONDITION-05"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/conditional-esp/process-alert-repeats.cibseven-evidence.json",
-    "owners": [
-      "PC-CONDITION-05"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/conditional-esp/process-stop-interrupts.cibseven-evidence.json",
-    "owners": [
-      "PC-CONDITION-05"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/conditional-esp/region-ended-before-write.cibseven-evidence.json",
-    "owners": [
-      "PC-CONDITION-05"
+      "CIB-LIM-0009"
     ]
   },
   {
     "evidence": "scenarios/open-rows/conditional-evaluation/create-false-then-update-true.cibseven-evidence.json",
     "owners": [
-      "PC-CONDITION-01"
+      "CIB-LIM-0009"
     ]
   },
   {
     "evidence": "scenarios/open-rows/conditional-evaluation/create-true.cibseven-evidence.json",
     "owners": [
-      "PC-CONDITION-01"
+      "CIB-LIM-0009"
     ]
   },
   {
     "evidence": "scenarios/open-rows/conditional-evaluation/delete-and-recreate.cibseven-evidence.json",
     "owners": [
-      "PC-CONDITION-01"
+      "CIB-LIM-0009"
     ]
   },
   {
     "evidence": "scenarios/open-rows/conditional-evaluation/entry-true.cibseven-evidence.json",
     "owners": [
-      "PC-CONDITION-01"
+      "CIB-LIM-0009"
     ]
   },
   {
     "evidence": "scenarios/open-rows/conditional-evaluation/nearest-visible-scope.cibseven-evidence.json",
     "owners": [
-      "PC-CONDITION-01"
+      "CIB-LIM-0009"
     ]
   },
   {
     "evidence": "scenarios/open-rows/conditional-evaluation/non-boolean-result.cibseven-evidence.json",
     "owners": [
-      "PC-CONDITION-01"
+      "CIB-LIM-0009"
     ]
   },
   {
     "evidence": "scenarios/open-rows/conditional-evaluation/null-and-false-values.cibseven-evidence.json",
     "owners": [
-      "PC-CONDITION-01"
+      "CIB-LIM-0009"
     ]
   },
   {
     "evidence": "scenarios/open-rows/conditional-evaluation/unrelated-write-with-absent-variables.cibseven-evidence.json",
     "owners": [
-      "PC-CONDITION-01"
+      "CIB-LIM-0009"
     ]
   },
   {
@@ -1187,24 +1097,6 @@
     "evidence": "scenarios/open-rows/message-esp-repeatable/sequential-body-listener-before-replacement.cibseven-evidence.json",
     "owners": [
       "PC-MESSAGE-07"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/message-name-addressing/expression-name-unresolved.cibseven-evidence.json",
-    "owners": [
-      "PC-MESSAGE-01"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/message-name-addressing/start-expression-name.cibseven-evidence.json",
-    "owners": [
-      "PC-MESSAGE-01"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/message-name-addressing/unnamed-message.cibseven-evidence.json",
-    "owners": [
-      "PC-MESSAGE-01"
     ]
   },
   {
@@ -1923,72 +1815,6 @@
     ]
   },
   {
-    "evidence": "scenarios/open-rows/timer-catch-cycles/single-round.cibseven-evidence.json",
-    "owners": [
-      "PC-TIMER-05"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/timer-catch-cycles/two-rounds-with-stale-deadlines.cibseven-evidence.json",
-    "owners": [
-      "PC-TIMER-05"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/timer-data-derived/boundary-change-after-host-entry.cibseven-evidence.json",
-    "owners": [
-      "PC-TIMER-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/timer-data-derived/boundary-value-at-host-entry.cibseven-evidence.json",
-    "owners": [
-      "PC-TIMER-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/timer-data-derived/catch-absent-variable.cibseven-evidence.json",
-    "owners": [
-      "PC-TIMER-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/timer-data-derived/catch-change-after-arming.cibseven-evidence.json",
-    "owners": [
-      "PC-TIMER-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/timer-data-derived/catch-integer-value.cibseven-evidence.json",
-    "owners": [
-      "PC-TIMER-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/timer-data-derived/catch-malformed-text.cibseven-evidence.json",
-    "owners": [
-      "PC-TIMER-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/timer-data-derived/catch-null-value.cibseven-evidence.json",
-    "owners": [
-      "PC-TIMER-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/timer-data-derived/catch-value-at-start.cibseven-evidence.json",
-    "owners": [
-      "PC-TIMER-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/timer-data-derived/catch-value-written-by-completion.cibseven-evidence.json",
-    "owners": [
-      "PC-TIMER-03"
-    ]
-  },
-  {
     "evidence": "scenarios/open-rows/timer-data-derived/cycle-value-at-host-entry.cibseven-evidence.json",
     "owners": [
       "PC-TIMER-02",
@@ -1996,133 +1822,7 @@
     ]
   },
   {
-    "evidence": "scenarios/open-rows/timer-data-derived/date-value-at-arming.cibseven-evidence.json",
-    "owners": [
-      "PC-TIMER-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/timer-date-forms/far-future.cibseven-evidence.json",
-    "owners": [
-      "PC-TIMER-01"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/timer-date-forms/fraction.cibseven-evidence.json",
-    "owners": [
-      "PC-TIMER-01"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/timer-date-forms/future-early-then-exact.cibseven-evidence.json",
-    "owners": [
-      "PC-TIMER-01"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/timer-date-forms/future.cibseven-evidence.json",
-    "owners": [
-      "PC-TIMER-01"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/timer-date-forms/lowercase-designators.cibseven-evidence.json",
-    "owners": [
-      "PC-TIMER-01"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/timer-date-forms/malformed-date.cibseven-evidence.json",
-    "owners": [
-      "PC-TIMER-01"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/timer-date-forms/utc-offset-notation.cibseven-evidence.json",
-    "owners": [
-      "PC-TIMER-01"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/timer-duration-forms/baseline-early-then-exact.cibseven-evidence.json",
-    "owners": [
-      "PC-TIMER-01"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/timer-duration-forms/form-above-bound.cibseven-evidence.json",
-    "owners": [
-      "PC-TIMER-01"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/timer-duration-forms/form-bare-number.cibseven-evidence.json",
-    "owners": [
-      "PC-TIMER-01"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/timer-duration-forms/form-fraction.cibseven-evidence.json",
-    "owners": [
-      "PC-TIMER-01"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/timer-duration-forms/form-lowercase.cibseven-evidence.json",
-    "owners": [
-      "PC-TIMER-01"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/timer-duration-forms/form-mixed-nominal.cibseven-evidence.json",
-    "owners": [
-      "PC-TIMER-01"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/timer-duration-forms/form-negative.cibseven-evidence.json",
-    "owners": [
-      "PC-TIMER-01"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/timer-duration-forms/form-nominal-day.cibseven-evidence.json",
-    "owners": [
-      "PC-TIMER-01"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/timer-duration-forms/form-nominal-month.cibseven-evidence.json",
-    "owners": [
-      "PC-TIMER-01"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/timer-duration-forms/form-nominal-week.cibseven-evidence.json",
-    "owners": [
-      "PC-TIMER-01"
-    ]
-  },
-  {
     "evidence": "scenarios/open-rows/timer-event-subprocess/cycle-handlers-overlap-past-the-ordinary-path.cibseven-evidence.json",
-    "owners": [
-      "PC-TIMER-07"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/timer-event-subprocess/dated-start-beside-ordinary-work.cibseven-evidence.json",
-    "owners": [
-      "PC-TIMER-07"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/timer-event-subprocess/interrupting-start-cancels-work.cibseven-evidence.json",
-    "owners": [
-      "PC-TIMER-07"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/timer-event-subprocess/nested-listener-ends-with-its-region.cibseven-evidence.json",
     "owners": [
       "PC-TIMER-07"
     ]

@@ -1,0 +1,68 @@
+{
+  "kind": "scenario",
+  "id": "conditional-evaluation-short-circuit-absent",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "conditional-evaluation-short-circuit",
+    "relativePath": "scenarios/open-rows/conditional-evaluation/short-circuit.bpmn",
+    "sha256": "060a882928e354753f80807be605ece3e093c609fc039d4ba4c3e378ed65e6cd",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-set-b",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Catch_Short",
+        "activation": 1
+      },
+      "action": {
+        "kind": "setVariables",
+        "values": [
+          {
+            "name": "b",
+            "value": {
+              "kind": "integer",
+              "value": 2
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-complete-Proceed_Short",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Proceed_Short",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 Table 10.95"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/IntermediateConditionalEventBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/ConditionalEventDefinition.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/event/ConditionalEventHandler.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/el/UelExpressionCondition.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/persistence/entity/ExecutionEntity.java",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/event/conditional/BoundaryConditionalEventTest.java"
+    ]
+  }
+}

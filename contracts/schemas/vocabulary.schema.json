@@ -331,6 +331,24 @@
             "orderInvariant",
             "declarationDepthFirst"
           ]
+        },
+        "conditionalRetrigger": {
+          "enum": [
+            "edge",
+            "eachWrite"
+          ]
+        },
+        "malformedTimer": {
+          "enum": [
+            "refused",
+            "rollsBackArming"
+          ]
+        },
+        "messageNames": {
+          "enum": [
+            "description",
+            "addresses"
+          ]
         }
       }
     },
@@ -343,7 +361,6 @@
         "activity.outputMappings",
         "boundary.cancel.host",
         "boundary.cancel.nonInterrupting",
-        "boundary.condition",
         "boundary.error.duplicateCode",
         "boundary.error.nonInterrupting",
         "boundary.escalation.duplicate",
@@ -375,10 +392,12 @@
         "element.origin.sourceId",
         "event.catch.cancel",
         "event.catch.compensation",
-        "event.catch.condition",
         "event.catch.error",
         "event.catch.escalation",
         "event.catch.signal",
+        "event.condition.filter",
+        "event.condition.foreign",
+        "event.condition.variableEvents",
         "event.error.codeVariable",
         "event.error.messageVariable",
         "event.escalation.codeVariable",
@@ -417,8 +436,10 @@
         "message.correlation.keys",
         "message.correlation.output",
         "message.correlation.value",
+        "message.duplicateName",
         "message.nameExpression",
         "message.unnamed",
+        "message.unspecified",
         "multiInstance.cardinality",
         "multiInstance.collectionExpression",
         "multiInstance.completionConditionExpression",
@@ -488,6 +509,7 @@
         "start.error.nonInterrupting",
         "start.escalation",
         "start.message.outputs",
+        "start.messageNameExpression",
         "start.rootCombination",
         "start.signal",
         "start.subProcessCombination",
@@ -502,7 +524,6 @@
         "timer.cycleNotAttached",
         "timer.date",
         "timer.duration",
-        "timer.interruptingCycle",
         "work.call.binding",
         "work.call.businessKey",
         "work.call.calledElementExpression",

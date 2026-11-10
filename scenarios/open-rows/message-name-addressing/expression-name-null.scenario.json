@@ -1,0 +1,47 @@
+{
+  "kind": "scenario",
+  "id": "message-name-addressing-expression-name-null",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "message-name-name-expressions",
+    "relativePath": "scenarios/open-rows/message-name-addressing/name-expressions.bpmn",
+    "sha256": "a87a929bca7ef5d3ca15186f65abd203d4a14ec3744d2b74334d46552052bf3e",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "k",
+          "value": {
+            "kind": "null"
+          }
+        },
+        {
+          "name": "route",
+          "value": {
+            "kind": "string",
+            "value": "null-name"
+          }
+        }
+      ]
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 Table 10.99"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/EventSubscriptionDeclaration.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/cmd/MessageEventReceivedCmd.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/persistence/entity/EventSubscriptionEntity.java",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/event/message/MessageIntermediateEventTest.java"
+    ]
+  }
+}

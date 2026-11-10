@@ -32,7 +32,7 @@ export const outsideInstances: Site = { counters: false, hidden: [] };
  * engine objects of `VariableScopeElResolver.java:51-90`, the loop counters, which a site inside an instance admits,
  * and a decision task's `decisionResult`.
  */
-function juelName(site: Site, name: string): string | null {
+export function juelName(site: Site, name: string): string | null {
   if (site.hidden.includes(name)) return "multiInstance.ownInputReadsInstance";
   if (["execution", "task", "caseExecution", "externalTask", "authenticatedUserId"].includes(name)) {
     return "expression.juel.engineContext";

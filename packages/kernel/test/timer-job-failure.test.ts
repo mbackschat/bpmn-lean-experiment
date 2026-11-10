@@ -1,8 +1,8 @@
 /**
- * A Timer firing whose closure cannot go on is `unsupported` as `timer-job-failure`, never a rollback: CIB fires a timer
- * in a job, whose failure is a retry and then an incident, and no track models a failed timer job yet
- * (EXPRESSION-SEMANTICS-SPEC, failure outcomes per stimulus). The witness reaches the failure through an Activity that
- * takes none of its conditioned outgoing flows (CIB-INT-0012), so the same closure run from a command rolls back.
+ * A Timer firing whose closure cannot go on reads `ContinuationFailure`: rolled back with the state before it under
+ * `rolledBack`, the Timer still open at its deadline (CIB lowers the job's retries, which is outside the claim,
+ * PC-TIMER-03), and `unsupported` as `timer-job-failure` under `incident`, which no row models for a timer job. The
+ * witness reaches the failure through an Activity that takes none of its conditioned outgoing flows (CIB-INT-0012).
  */
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -22,8 +22,9 @@ const end = (id: string, incoming: string): Json => ({
 });
 
 /** `Start → Timer → Check`, a work-less Task whose two outgoing flows both carry a condition that never holds. */
-const decoded = decodeProgram({
+const decode = (continuationFailure: string) => decodeProgram({
   ...slice,
+  options: { ...(slice.options as Json), continuationFailure },
   elements: [
     { start: { header: header("Start", "startEvent"), payload: { subscription: null, outgoing: ["To_Timer"] } } },
     {
@@ -57,21 +58,36 @@ const decoded = decodeProgram({
     { id: "To_B", source: "Check", target: "End_B", condition: never },
   ],
 });
-assert.ok(decoded.ok, decoded.ok ? "" : decoded.refusal);
-const program = decoded.value;
 
-function run(state: State | null, stimulus: Json): Outcome {
+function programFor(continuationFailure: string) {
+  const decoded = decode(continuationFailure);
+  assert.ok(decoded.ok, decoded.ok ? "" : decoded.refusal);
+  return decoded.value;
+}
+
+function run(program: ReturnType<typeof programFor>, state: State | null, stimulus: Json): Outcome {
   const input = stimulusFromJson(stimulus);
   assert.ok(input.ok);
   return step(hooks, program, state, input.value[1]);
 }
 
-test("a Timer firing whose closure cannot go on is unsupported, not rolled back", () => {
-  const started = run(null, { kind: "start", commandId: "start", instanceId: "Instance_1", variables: [] });
+function fireFailing(continuationFailure: string): { started: State; fired: Outcome } {
+  const program = programFor(continuationFailure);
+  const started = run(program, null, { kind: "start", commandId: "start", instanceId: "Instance_1", variables: [] });
   assert.ok(started.ok, started.ok ? "" : started.failure.code);
-  const fired = run(started.value, {
+  const fired = run(program, started.value, {
     kind: "timerFire", commandId: "fire", logicalTimeMs: 2000,
     occurrence: { processInstanceId: "Instance_1", elementId: "Timer", activation: 1 },
   });
+  return { started: started.value, fired };
+}
+
+test("a Timer firing whose closure cannot go on rolls back under ContinuationFailure.rolledBack", () => {
+  const { fired } = fireFailing("rolledBack");
+  assert.equal(fired.ok ? null : fired.failure.tag, "rolledBack");
+});
+
+test("a Timer firing whose closure cannot go on is unsupported under ContinuationFailure.incident", () => {
+  const { fired } = fireFailing("incident");
   assert.deepEqual(fired.ok ? null : fired.failure, { tag: "unsupported", code: "timer-job-failure" });
 });

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_ConditionalArms"
+  targetNamespace="urn:bpmn-lean:scenarios:conditional-catch:arms">
+  <bpmn:process id="Process_ConditionalArms" name="Two Conditional arms behind one gateway" isExecutable="true">
+    <bpmn:startEvent id="Start_Arms" />
+    <bpmn:eventBasedGateway id="Gateway_Arms" />
+    <bpmn:sequenceFlow id="Flow_Start_Arms_Gateway_Arms" sourceRef="Start_Arms" targetRef="Gateway_Arms" />
+    <bpmn:intermediateCatchEvent id="Catch_Alpha" name="Alpha is ready">
+      <bpmn:conditionalEventDefinition id="CED_Alpha" camunda:variableName="ready">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">${ready == true}</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="Catch_Beta" name="Beta is ready">
+      <bpmn:conditionalEventDefinition id="CED_Beta" camunda:variableName="ready">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">${ready == true}</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:userTask id="Chosen_Alpha" name="Take the alpha arm" />
+    <bpmn:userTask id="Chosen_Beta" name="Take the beta arm" />
+    <bpmn:endEvent id="End_Alpha" />
+    <bpmn:endEvent id="End_Beta" />
+    <bpmn:sequenceFlow id="Flow_Gateway_Arms_Catch_Beta" sourceRef="Gateway_Arms" targetRef="Catch_Beta" />
+    <bpmn:sequenceFlow id="Flow_Gateway_Arms_Catch_Alpha" sourceRef="Gateway_Arms" targetRef="Catch_Alpha" />
+    <bpmn:sequenceFlow id="Flow_Catch_Alpha_Chosen_Alpha" sourceRef="Catch_Alpha" targetRef="Chosen_Alpha" />
+    <bpmn:sequenceFlow id="Flow_Catch_Beta_Chosen_Beta" sourceRef="Catch_Beta" targetRef="Chosen_Beta" />
+    <bpmn:sequenceFlow id="Flow_Chosen_Alpha_End_Alpha" sourceRef="Chosen_Alpha" targetRef="End_Alpha" />
+    <bpmn:sequenceFlow id="Flow_Chosen_Beta_End_Beta" sourceRef="Chosen_Beta" targetRef="End_Beta" />
+  </bpmn:process>
+</bpmn:definitions>

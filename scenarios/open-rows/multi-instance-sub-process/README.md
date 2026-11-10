@@ -13,6 +13,9 @@ Every model wraps one embedded Sub-Process `SubProcess_Item` in Multi-Instance l
 | [sequential-cardinality](sequential-cardinality.bpmn), [parallel-cardinality](parallel-cardinality.bpmn) | sequential, parallel | `loopCardinality` `${count}` | `UserTask_Inspect` publishing `position` and `instances` |
 | [sequential-computed](sequential-computed.bpmn) | sequential | `loopCardinality` `${(count - offset) / divisor}` | the same body; the cardinality-domain vehicle |
 | [sequential-boundary](sequential-boundary.bpmn), [parallel-boundary](parallel-boundary.bpmn) | sequential, parallel | collection `items` | interrupting `PT5S` Timer Boundary Event on the Sub-Process, routed to `UserTask_Escalation` |
+| [parallel-entry-read](parallel-entry-read.bpmn) | parallel | collection `items`, element `item`, no completion condition | `SubProcess_Lot` declares the body-local input `prior` (`${last}`). The body is `Task_Mark`, which writes `last` from `item`, then the User Task `UserTask_Check`, which publishes `seenPrior` and `position`. |
+| [parallel-early-completion](parallel-early-completion.bpmn) | parallel | collection `items`, element `item`; completion condition `${nrOfCompletedInstances >= 1}` | The body is `Task_Mark`, which writes `last` from `item`, and ends without a wait. `UserTask_After` publishes `seenLast`. |
+| [parallel-beside-branch](parallel-beside-branch.bpmn) | parallel | collection `items`, element `item` | A Parallel Gateway whose first Sequence Flow reaches `SubProcess_Lot`, the body of `parallel-entry-read`, and whose second reaches `Task_Flag`, which writes `last` from `fresh`, then the User Task `UserTask_Sibling`. |
 
 ## Schedules
 
@@ -48,5 +51,10 @@ Inner tasks and effects are addressed by activation, counted per begun occurrenc
 | [sequential-zero-items-timer](sequential-zero-items-timer.scenario.json) | sequential-boundary | empty collection, then the Timer is fired | PC-MI-12 |
 | [parallel-timer-while-work-remains](parallel-timer-while-work-remains.scenario.json) | parallel-boundary | body 2 completes, the Timer fires, bodies 1 and 3 are completed late, then the escalation | PC-MI-12 |
 | [parallel-completion-then-timer](parallel-completion-then-timer.scenario.json) | parallel-boundary | both bodies complete, then the Timer is fired | PC-MI-12 |
+| [parallel-entry-reads-earlier-instance](parallel-entry-reads-earlier-instance.scenario.json) | parallel-entry-read | items `a, b`, `last = "none"`; the two checks and `UserTask_Publish` complete. Separates a second instance whose entry read sees the first instance's write from one that begins before any body writes. No evidence yet. | PC-MI-05, PC-MI-10 |
+| [parallel-first-instance-completes-early](parallel-first-instance-completes-early.scenario.json) | parallel-early-completion | items `a, b, c`; the first body completes at once and the condition holds, then `UserTask_After` completes. Separates instances that never begin from instances that all run `Task_Mark`. No evidence yet. | PC-MI-05, PC-MI-09 |
+| [parallel-body-above-sibling-branch](parallel-body-above-sibling-branch.scenario.json) | parallel-beside-branch | items `a, b`, `last = "none"`, `fresh = "new"`; the two checks, the sibling review and the publish complete. Separates every instance beginning before the sibling branch's write from an instance beginning after it. No evidence yet. | PC-MI-05 |
+
+The three schedules `parallel-entry-reads-earlier-instance`, `parallel-first-instance-completes-early` and `parallel-body-above-sibling-branch` separate the begin order of [CIB-OP-0016](../../../docs/CIB-BPMN-RELATION-REGISTER.md#cib-op-0016--a-splits-branches-run-in-declaration-order-each-to-its-next-wait-join-or-end) from one that begins every instance at entry; they have no retained evidence yet.
 
 The Timer is one outer deadline over the whole body, so its occurrence is addressed as `BoundaryTimer_Item` activation 1 throughout. The `parallel-sixteen-bodies-*` schedules carry sixteen completion commands each.

@@ -45,6 +45,7 @@ def hooks : Hooks :=
     compensate := Feature.Compensation.compensate
     failCompensation := Feature.Compensation.failCompensation
     leave := Feature.Subscriptions.leave
+    written := Feature.Subscriptions.offerWrites
     select := Feature.Flow.select
     writeOutputs := Feature.Data.writeOutputs
     removeVariables := Feature.Data.removeVariables

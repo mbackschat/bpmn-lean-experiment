@@ -36,6 +36,10 @@ def site (program : Program) (id : Option ElementId) : Admission.Data.Site :=
 
 def targets (mappings : List Mapping) : List String := mappings.map (·.target)
 
+/-- How a subscription in the scope of `id` reads an expression of its trigger: the Core JUEL table at that site. -/
+def subscriptionReading (program : Program) (id : Option ElementId) : Admission.Subscriptions.Reading :=
+  { juel := fun nodes => Admission.Data.juelNodes nodes (site program id), name := Admission.Data.juelName (site program id) }
+
 /-- A subscription's outputs read and write in the scope of `id`. -/
 def subscriptionData (program : Program) (id : Option ElementId) (subscription : Subscription) : Option String :=
   Admission.Data.mappings program.options.evaluator (site program id) subscription.outputs <|>
@@ -97,7 +101,7 @@ def element (program : Program) (throws : List Element) : Element → Option Str
         (Admission.MultiInstance.activityLoop program.options Admission.Data.loopExpression
           (Admission.Work.instanceBody payload.work) payload.envelope) <|>
       outputTargets program header (payload.envelope.outputs ++ ((payload.work.call?.map (·.outputs)).getD [])) <|>
-      Admission.Subscriptions.boundaries program.options.errorCatchVariables false payload.envelope.boundaries <|>
+      Admission.Subscriptions.boundaries program.options (subscriptionReading program header.parent) false payload.envelope.boundaries <|>
       boundaryData program header payload.envelope.boundaries <|>
       Admission.Scopes.nestedCompensation program throws header payload.envelope
   | .scope header payload =>
@@ -110,7 +114,7 @@ def element (program : Program) (throws : List Element) : Element → Option Str
       (Admission.Scopes.eventSubProcess? payload).bind (fun (start, interrupting) =>
         Admission.Subscriptions.eventSubProcess start interrupting) <|>
       Admission.Subscriptions.eventSubProcessDeclarations (eventSubProcessStarts (program.children (some header.id))) <|>
-      Admission.Subscriptions.boundaries program.options.errorCatchVariables (Admission.Scopes.isTransaction payload)
+      Admission.Subscriptions.boundaries program.options (subscriptionReading program header.parent) (Admission.Scopes.isTransaction payload)
         payload.envelope.boundaries <|>
       boundaryData program header payload.envelope.boundaries <|>
       Admission.Scopes.nestedCompensation program throws header payload.envelope
@@ -118,7 +122,8 @@ def element (program : Program) (throws : List Element) : Element → Option Str
     Admission.Data.origin header <|>
       match payload.role with
       | .catch subscription =>
-        Admission.Subscriptions.catchEvent subscription <|> subscriptionData program (some header.id) subscription
+        Admission.Subscriptions.catchEvent program.options (subscriptionReading program (some header.id)) subscription <|>
+          subscriptionData program (some header.id) subscription
       -- A Multiple throw Event (BPMN 2.0.2 §10.5.1); pinned CIB keeps one definition (CIB-LIM-0008) (PC-BASIC-04).
       | .throw record =>
         (if payload.alternativeThrows.isEmpty then none else some "event.multipleDefinitions") <|>
@@ -130,7 +135,7 @@ def element (program : Program) (throws : List Element) : Element → Option Str
   | .start header payload =>
     Admission.Data.origin header <|> Admission.Flow.startCombination program header <|>
       payload.subscription.bind fun subscription =>
-        Admission.Subscriptions.start program.options.errorCatchVariables header.parent.isSome subscription <|>
+        Admission.Subscriptions.start program.options (subscriptionReading program (some header.id)) header.parent.isSome subscription <|>
           subscriptionData program (some header.id) subscription
 
 /-- Whether the program's shape reaches an abnormal scope end: a Terminate in a Sub-Process or at a called process's

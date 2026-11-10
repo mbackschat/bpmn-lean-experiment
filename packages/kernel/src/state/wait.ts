@@ -57,7 +57,7 @@ export interface MessageWaitDetail {
 
 export interface SignalWaitDetail { readonly name: string; readonly payload: boolean; }
 
-/** `lastValue` is the most recent evaluation; a false to true change and each filtered event are separate facts (PC-CONDITION-01). */
+/** `lastValue` is the most recent evaluation under `conditionalRetrigger.edge`; `null` under `eachWrite`, where every passing write is its own fact (PC-CONDITION-01). */
 export interface ConditionalWaitDetail {
   readonly variableName: string | null;
   readonly variableEvents: readonly string[];

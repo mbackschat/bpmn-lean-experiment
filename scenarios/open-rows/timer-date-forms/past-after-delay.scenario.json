@@ -48,7 +48,8 @@
         "elementId": "Catch_Future",
         "activation": 1
       },
-      "logicalTimeMs": 3600000
+      "logicalTimeMs": 3600000,
+      "at": 7200000
     },
     {
       "kind": "command",

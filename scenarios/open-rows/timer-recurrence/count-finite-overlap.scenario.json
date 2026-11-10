@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "timer-recurrence",
     "relativePath": "scenarios/open-rows/timer-recurrence/reminder-cycles.bpmn",
-    "sha256": "77542da5f76aecdd2111cb3bc66235de0bc9826651a5e3bd134273d928f9936c",
+    "sha256": "74a2e524ebf1becf0de6e62cc4aa73c6bb1cea6c3d074c51f8ba91f48e80ef2d",
     "sourceOverlay": null
   },
   "stimuli": [

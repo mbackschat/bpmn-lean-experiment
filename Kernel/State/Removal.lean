@@ -55,14 +55,25 @@ def removeOccurrence (state : State) (id : Nat) : State :=
   let removed := { state with occurrences := state.occurrences.filter (·.id != id) }
   (removed.scopes.filter (·.occurrence == some id)).foldl (fun state scope => state.leaveScope scope.id) removed
 
+/-- Close the open items inside `scope`, its own included; the occurrences they reserved go when the scope is
+cleared. -/
+def withdrawInside (state : State) (scope : ScopeOccurrenceId) : State :=
+  let inside := state.subtree scope
+  { state with openItems := state.openItems.filter (!inside.contains ·.scope) }
+
+/-- Close the open items `cancelOccurrence` removes with the occurrence `id`: its own, those attached to it with
+their reservations, and those inside the scope occurrences it owns. A firing that interrupts withdraws them at once,
+while the cancellation itself is still queued, so that no firing queued before it finds them open. -/
+def withdrawOccurrence (state : State) (id : Nat) : State :=
+  let closed := (state.closeOwnItems id).disarm id
+  (closed.scopes.filter (·.occurrence == some id)).foldl (fun state scope => state.withdrawInside scope.id) closed
+
 /-- Cancel the occurrence `id` wherever it stands: its items and subscriptions go, the scope occurrence it owns is
 left, and it is journalled cancelled. -/
 def cancelOccurrence (state : State) (id : Nat) : State :=
   match state.occurrence? id with
   | none => state
-  | some occurrence =>
-    let closed := (state.closeOwnItems id).disarm id
-    (recordCancelled (closed.removeOccurrence id) [occurrence])
+  | some occurrence => recordCancelled ((state.withdrawOccurrence id).removeOccurrence id) [occurrence]
 
 /-- Whether `scope` would be idle once the occurrence `id`, its items, what is attached to it and the scope occurrence
 it owns were gone: nothing else remains there. -/

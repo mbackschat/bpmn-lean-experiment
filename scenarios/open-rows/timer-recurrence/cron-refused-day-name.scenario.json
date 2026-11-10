@@ -1,0 +1,36 @@
+{
+  "kind": "scenario",
+  "id": "timer-recurrence-cron-refused-day-name",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "timer-recurrence-cron-day-name",
+    "relativePath": "scenarios/open-rows/timer-recurrence/cron-day-name.bpmn",
+    "sha256": "4b40a8c356b1aaa507d2d402c1c37783986a40566e4bbbc0bccbc43299a2294c",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.5.4",
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 Table 10.101",
+      "BPMN 2.0.2 §10.5.6"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/jobexecutor/TimerDeclarationImpl.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/persistence/entity/TimerEntity.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/calendar/CycleBusinessCalendar.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/calendar/DurationHelper.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/calendar/CronTimer.java",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/event/timer/BoundaryTimerNonInterruptingEventTest.java"
+    ]
+  }
+}

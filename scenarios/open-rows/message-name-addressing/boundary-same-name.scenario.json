@@ -1,0 +1,33 @@
+{
+  "kind": "scenario",
+  "id": "message-name-addressing-boundary-same-name",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "message-name-duplicate-boundary-names",
+    "relativePath": "scenarios/open-rows/message-name-addressing/duplicate-boundary-names.bpmn",
+    "sha256": "f20dd4355cbab20d988435b058d9e3424a82eb0a25ec48cf2bdfb9bb8567af63",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 Table 10.99"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/EventSubscriptionDeclaration.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/cmd/MessageEventReceivedCmd.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/persistence/entity/EventSubscriptionEntity.java",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/event/message/MessageIntermediateEventTest.java"
+    ]
+  }
+}

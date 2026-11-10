@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_CalendarSteps"
+  targetNamespace="urn:bpmn-lean:scenarios:timer-duration-forms:calendar-steps">
+  <bpmn:process id="Process_CalendarSteps" name="Wait calendar durations" isExecutable="true">
+    <bpmn:startEvent id="Start_Steps" />
+    <bpmn:exclusiveGateway id="Gateway_Pick" gatewayDirection="Diverging" />
+    <bpmn:sequenceFlow id="Flow_Start_Steps_Gateway_Pick" sourceRef="Start_Steps" targetRef="Gateway_Pick" />
+    <bpmn:intermediateCatchEvent id="Catch_FebLead" name="Wait PT744H">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT744H</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="Catch_FebMonth" name="Wait P1M">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">P1M</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:endEvent id="End_FebMonth" />
+    <bpmn:sequenceFlow id="Flow_Gateway_Pick_Catch_FebLead" sourceRef="Gateway_Pick" targetRef="Catch_FebLead">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${form == 'month-from-february'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Catch_FebLead_Catch_FebMonth" sourceRef="Catch_FebLead" targetRef="Catch_FebMonth" />
+    <bpmn:sequenceFlow id="Flow_Catch_FebMonth_End_FebMonth" sourceRef="Catch_FebMonth" targetRef="End_FebMonth" />
+    <bpmn:intermediateCatchEvent id="Catch_LateLead" name="Wait PT696H">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT696H</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="Catch_MonthDay" name="Wait P1M1D">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">P1M1D</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:endEvent id="End_MonthDay" />
+    <bpmn:sequenceFlow id="Flow_Gateway_Pick_Catch_LateLead" sourceRef="Gateway_Pick" targetRef="Catch_LateLead">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${form == 'month-then-day'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Catch_LateLead_Catch_MonthDay" sourceRef="Catch_LateLead" targetRef="Catch_MonthDay" />
+    <bpmn:sequenceFlow id="Flow_Catch_MonthDay_End_MonthDay" sourceRef="Catch_MonthDay" targetRef="End_MonthDay" />
+    <bpmn:intermediateCatchEvent id="Catch_WeeksLead" name="Wait PT744H">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT744H</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="Catch_FiveWeeks" name="Wait P5W">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">P5W</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:endEvent id="End_FiveWeeks" />
+    <bpmn:sequenceFlow id="Flow_Gateway_Pick_Catch_WeeksLead" sourceRef="Gateway_Pick" targetRef="Catch_WeeksLead">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${form == 'five-weeks-in-february'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Catch_WeeksLead_Catch_FiveWeeks" sourceRef="Catch_WeeksLead" targetRef="Catch_FiveWeeks" />
+    <bpmn:sequenceFlow id="Flow_Catch_FiveWeeks_End_FiveWeeks" sourceRef="Catch_FiveWeeks" targetRef="End_FiveWeeks" />
+    <bpmn:intermediateCatchEvent id="Catch_Year" name="Wait P1Y">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">P1Y</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:endEvent id="End_Year" />
+    <bpmn:sequenceFlow id="Flow_Gateway_Pick_Catch_Year" sourceRef="Gateway_Pick" targetRef="Catch_Year">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${form == 'year'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Catch_Year_End_Year" sourceRef="Catch_Year" targetRef="End_Year" />
+  </bpmn:process>
+</bpmn:definitions>

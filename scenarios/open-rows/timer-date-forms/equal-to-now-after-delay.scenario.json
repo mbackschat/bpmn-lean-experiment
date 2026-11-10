@@ -48,7 +48,8 @@
         "elementId": "Catch_Now",
         "activation": 1
       },
-      "logicalTimeMs": 7200000
+      "logicalTimeMs": 7200000,
+      "at": 7200000
     },
     {
       "kind": "command",

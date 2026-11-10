@@ -108,15 +108,18 @@ def deferred (program : Program) (state : State) (outcome : Outcome) : Outcome :
     if crossed program state then .error (.unsupported "async-boundary-failure") else outcome
   | .error (.rejected _) | .error (.unsupported _) | .ok _ => outcome
 
-/-- `outcome` of a timer firing, unless it rolls back: CIB fires a timer in a job, whose failure is a retry and then an
-incident, never the rollback of a command (EXPRESSION-SEMANTICS-SPEC, failure outcomes per stimulus), and no track models
-a failed timer job yet, so such a firing is `unsupported`. -/
-def timerJob (outcome : Outcome) : Outcome :=
-  match outcome with
-  | .error (.rolledBack _) =>
+/-- `outcome` of a timer firing. CIB fires a timer in a job, whose failure lowers its retries and ends in an incident,
+never the rollback of a command (EXPRESSION-SEMANTICS-SPEC, failure outcomes per stimulus). Under
+`ContinuationFailure.rolledBack` the firing is `rolledBack` with the state before it, the Timer still open at its
+deadline: CIB's later retries are outside the claim, as for an effect result (PC-TIMER-03). Under `.incident` no row
+models a timer job's retries and incident, so the firing is `unsupported`. -/
+def timerJob (failure : ContinuationFailure) (outcome : Outcome) : Outcome :=
+  match outcome, failure with
+  | .error (.rolledBack _), .incident =>
     -- dynamic-only: whether a firing's closure rolls back depends on the run's data
     .error (.unsupported "timer-job-failure")
-  | .error (.rejected _) | .error (.semanticFailure _) | .error (.unsupported _) | .ok _ => outcome
+  | .error (.rolledBack _), .rolledBack => outcome
+  | .error (.rejected _), _ | .error (.semanticFailure _), _ | .error (.unsupported _), _ | .ok _, _ => outcome
 
 /-- Begin the occurrence `request` names and hand it to its feature. -/
 def begin (hooks : Hooks) (ctx : Ctx) (request : BeginRequest) (state : State) : Outcome := do
@@ -345,10 +348,12 @@ def item? {α : Type} (ctx : Ctx) (state : State) (occurrence : OccurrenceRef) (
       ((state.occurrence? item.occurrence).map (·.activation)) == some occurrence.activation &&
       (detail item.kind.view).isSome && state.instanceOf item.scope == occurrence.processInstanceId
 
-/-- The begun occurrence with the public identity `ref`, the instance rather than the body of a Multi-Instance element. -/
+/-- The occurrence with the public identity `ref`, the instance rather than the body of a Multi-Instance element: a begun
+one, or a reservation an open item holds, as a Conditional arm of an Event-Based Gateway is addressed before it fires
+(`conditional-catch/condition-wins`). -/
 def occurrenceOf? (ctx : Ctx) (state : State) (ref : OccurrenceRef) : Option Occurrence :=
   state.occurrences.find? fun occurrence =>
-    occurrence.begun && occurrence.role == .element && occurrence.activation == ref.activation &&
+    (occurrence.begun || state.openItems.any (·.occurrence == occurrence.id)) && occurrence.role == .element && occurrence.activation == ref.activation &&
       ctx.program.publicId occurrence.element == ref.element && state.instanceOf occurrence.scope == ref.processInstanceId
 
 /-- Run `onActivity` on the Activity an open item belongs to. -/
@@ -448,7 +453,7 @@ def step (hooks : Hooks) (program : Program) (before : Option State) (input : In
       match item? ctx state data.occurrence (·.signal) with
       | none => .error (.rejected "unknown-signal-subscription")
       | some item => fireItem hooks ctx item (.signal data) state
-  | .timerFire data => timerJob <| onRunning hooks ctx input before fun state =>
+  | .timerFire data => timerJob ctx.program.options.continuationFailure <| onRunning hooks ctx input before fun state =>
     match item? ctx state data.occurrence (·.deadlineMs) with
     | none => .error (.rejected "unknown-timer")
     | some item => fireItem hooks ctx item (.timer data.logicalTimeMs) state

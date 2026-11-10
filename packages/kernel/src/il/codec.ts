@@ -41,6 +41,9 @@ import {
   BusinessRuleTask,
   InclusiveJoinReach,
   BranchSchedule,
+  ConditionalRetrigger,
+  MalformedTimer,
+  MessageNames,
   MultiInstanceCounters,
   MultiInstanceInputFailure,
   MultiInstanceFinalBody,
@@ -194,6 +197,7 @@ const timerSchedule = inductive<TimerSchedule>("TimerSchedule", {
 const correlationCriterion = struct<CorrelationCriterion>("CorrelationCriterion", { key: string, value: expression });
 
 const messageTrigger = struct<MessageTrigger>("MessageTrigger", {
+  messageRef: option(string),
   name: option(valueSource),
   correlation: list(correlationCriterion),
   interfaceRef: option(string),
@@ -450,6 +454,9 @@ const profileOptions = struct<ProfileOptions>("ProfileOptions", {
   businessRuleTask: members("BusinessRuleTask", BusinessRuleTask),
   inclusiveJoinReach: members("InclusiveJoinReach", InclusiveJoinReach),
   branchSchedule: members("BranchSchedule", BranchSchedule),
+  conditionalRetrigger: members("ConditionalRetrigger", ConditionalRetrigger),
+  malformedTimer: members("MalformedTimer", MalformedTimer),
+  messageNames: members("MessageNames", MessageNames),
 });
 
 const program = struct<Program>("Program", {

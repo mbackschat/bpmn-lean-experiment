@@ -80,8 +80,23 @@ export function removeOccurrence(state: State, id: number): State {
 export function cancelOccurrence(state: State, id: number): State {
   const occurrence = occurrenceOf(state, id);
   if (occurrence === null) return state;
+  return recordCancelled(removeOccurrence(withdrawOccurrence(state, id), id), [occurrence]);
+}
+
+/** Close the open items inside `scope`, its own included; the occurrences they reserved go when the scope is cleared. */
+export function withdrawInside(state: State, scope: ScopeOccurrenceId): State {
+  const inside = subtree(state, scope);
+  return { ...state, openItems: state.openItems.filter((item) => !inside.includes(item.scope)) };
+}
+
+/**
+ * Close the open items `cancelOccurrence` removes with the occurrence `id`: its own, those attached to it with their
+ * reservations, and those inside the scope occurrences it owns. A firing that interrupts withdraws them at once, while
+ * the cancellation itself is still queued, so that no firing queued before it finds them open.
+ */
+export function withdrawOccurrence(state: State, id: number): State {
   const closed = disarm(closeOwnItems(state, id), id);
-  return recordCancelled(removeOccurrence(closed, id), [occurrence]);
+  return closed.scopes.filter((scope) => scope.occurrence === id).reduce((current, scope) => withdrawInside(current, scope.id), closed);
 }
 
 /**

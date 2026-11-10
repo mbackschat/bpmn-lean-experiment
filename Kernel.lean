@@ -20,6 +20,7 @@ public import Kernel.Feature.MultiInstance
 public import Kernel.Feature.Propagation
 public import Kernel.Feature.Scopes
 public import Kernel.Feature.Subscriptions
+public import Kernel.Feature.Subscriptions.Conditions
 public import Kernel.Feature.Work
 public import Kernel.Feature.Work.Call
 public import Kernel.Feature.Work.Submission

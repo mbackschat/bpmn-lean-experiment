@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_DateNoDesignator"
+  targetNamespace="urn:bpmn-lean:scenarios:timer-date-forms:date-no-designator">
+  <bpmn:process id="Process_DateNoDesignator" name="Wait until a date without a zone" isExecutable="true">
+    <bpmn:startEvent id="Start_Date" />
+    <bpmn:intermediateCatchEvent id="Catch_NoDesignator" name="Wait until 1970-01-01T01:00:00">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDate xsi:type="bpmn:tFormalExpression">1970-01-01T01:00:00</bpmn:timeDate>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:userTask id="Proceed" name="Proceed after the date" />
+    <bpmn:endEvent id="End_Date" />
+    <bpmn:sequenceFlow id="Flow_Start_Date_Catch_NoDesignator" sourceRef="Start_Date" targetRef="Catch_NoDesignator" />
+    <bpmn:sequenceFlow id="Flow_Catch_NoDesignator_Proceed" sourceRef="Catch_NoDesignator" targetRef="Proceed" />
+    <bpmn:sequenceFlow id="Flow_Proceed_End_Date" sourceRef="Proceed" targetRef="End_Date" />
+  </bpmn:process>
+</bpmn:definitions>

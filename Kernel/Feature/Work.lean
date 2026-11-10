@@ -145,9 +145,7 @@ def arriveActivity (hooks : WorkHooks) (ctx : Ctx) (header : Header) (payload : 
   | .user task => .ok (openWork (.userTask (userTaskDetail task inputs)) header payload occurrence state)
   | .receive work => do
     if !begunByToken then .error (.unsupported "scope-implicit-start") else
-    -- Admission refuses it (`work.receive.messageExpression`).
-    let some channel := work.message.channel? | .error (.unsupported "work-receive-message-expression")
-    .ok (openWork (.message { channel }) header payload occurrence state)
+    .ok (openWork (.message { channel := work.message.channel }) header payload occurrence state)
   | .service work =>
     .ok (openWork (.effect { protocol := work.protocol, operation := work.operation, arguments := inputs })
       header payload occurrence state)

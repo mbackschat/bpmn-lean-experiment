@@ -57,7 +57,7 @@ The [row traceability map](ROW-TRACEABILITY-MAP.md) maps every open row to the I
 
 ### Runtime state and step
 
-State is flat and identifier-indexed: scope occurrences (parent by identifier); tokens; variables per scope occurrence; one list of open items (waits, timers, subscriptions, effects) keyed by engine-issued identity; Multi-Instance controllers; completed-work records; one slot per feature. The open-item kind is a fixed guarded type that only `Step` and `Publish` match. Feature slots are fixed from the traceability map, always present and empty by default, so the state codec never varies by program. Cancellation is one generic subtree removal that notifies the owning features through `Hooks`; publication is one generic projection.
+State is flat and identifier-indexed: scope occurrences (parent by identifier); tokens (the closure's work stack: flow tokens and deferred begins); variables per scope occurrence; one list of open items (waits, timers, subscriptions, effects) keyed by engine-issued identity; Multi-Instance controllers; completed-work records; one slot per feature. The open-item kind is a fixed guarded type that only `Step` and `Publish` match. Feature slots are fixed from the traceability map, always present and empty by default, so the state codec never varies by program. Cancellation is one generic subtree removal that notifies the owning features through `Hooks`; publication is one generic projection.
 
 The step function is pure and total. Its inputs:
 

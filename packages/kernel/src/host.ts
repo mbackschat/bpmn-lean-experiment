@@ -159,10 +159,9 @@ export function definitionCapabilities(program: Program): Capabilities {
   });
   const correlated = subscriptions(program).flatMap(([element, subscription]) => {
     const trigger = triggerMessage(subscription.trigger);
-    const channel = trigger === null || trigger.correlation.length === 0 ? null : messageTriggerChannel(trigger);
-    return channel === null || trigger === null
+    return trigger === null || trigger.correlation.length === 0
       ? []
-      : [[channel, { element: programPublicId(program, element), criteria: trigger.correlation }] as const];
+      : [[messageTriggerChannel(trigger), { element: programPublicId(program, element), criteria: trigger.correlation }] as const];
   });
   return { starts, correlatedChannels: byChannel(correlated), relations: program.options.relations };
 }

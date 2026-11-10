@@ -58,6 +58,11 @@ function site(program: Program, id: ElementId | null): Data.Site {
   return { counters: MultiInstance.countersAt(program, id), hidden: [] };
 }
 
+/** How a subscription in the scope of `id` reads an expression of its trigger: the Core JUEL table at that site. */
+function subscriptionReading(program: Program, id: ElementId | null): Subscriptions.Reading {
+  return { juel: (nodes) => Data.juelNodes(nodes, site(program, id)), name: (name) => Data.juelName(site(program, id), name) };
+}
+
 function targets(mappings: readonly Mapping[]): string[] {
   return mappings.map((entry) => entry.target);
 }
@@ -130,7 +135,7 @@ function eventRole(program: Program, header: Header, payload: EventPayload): str
   const role = payload.role;
   switch (role.tag) {
     case EventRoleTag.Catch:
-      return Subscriptions.catchEvent(role.subscription) ?? subscriptionData(program, header.id, role.subscription);
+      return Subscriptions.catchEvent(program.options, subscriptionReading(program, header.id), role.subscription) ?? subscriptionData(program, header.id, role.subscription);
     case EventRoleTag.Throw:
       // A Multiple throw Event (BPMN 2.0.2 §10.5.1); pinned CIB keeps one definition (CIB-LIM-0008) (PC-BASIC-04).
       if (payload.alternativeThrows.length > 0) return "event.multipleDefinitions";
@@ -181,7 +186,7 @@ function element(program: Program, throws: readonly Element[], entry: Element): 
         () => (loop === null ? null
           : MultiInstance.activityLoop(program.options, Data.loopExpression, Work.instanceBody(payload.work), payload.envelope, loop)),
         () => outputTargets(program, header, [...payload.envelope.outputs, ...(call?.outputs ?? [])]),
-        () => Subscriptions.boundaries(program.options.errorCatchVariables, false, payload.envelope.boundaries),
+        () => Subscriptions.boundaries(program.options, subscriptionReading(program, header.parent), false, payload.envelope.boundaries),
         () => boundaryData(program, header, payload.envelope.boundaries),
         () => Scopes.nestedCompensation(program, throws, header, payload.envelope),
       );
@@ -201,7 +206,7 @@ function element(program: Program, throws: readonly Element[], entry: Element): 
         () => (subProcess === null ? null : Subscriptions.eventSubProcess(subProcess[0], subProcess[1])),
         () => Subscriptions.eventSubProcessDeclarations(eventSubProcessStarts(programChildren(program, header.id))),
         () => Subscriptions.boundaries(
-          program.options.errorCatchVariables, Scopes.isTransaction(payload), payload.envelope.boundaries),
+          program.options, subscriptionReading(program, header.parent), Scopes.isTransaction(payload), payload.envelope.boundaries),
         () => boundaryData(program, header, payload.envelope.boundaries),
         () => Scopes.nestedCompensation(program, throws, header, payload.envelope),
       );
@@ -217,7 +222,7 @@ function element(program: Program, throws: readonly Element[], entry: Element): 
         () => FlowAdmission.startCombination(program, header),
         () => (subscription === null
           ? null
-          : Subscriptions.start(program.options.errorCatchVariables, header.parent !== null, subscription) ??
+          : Subscriptions.start(program.options, subscriptionReading(program, header.id), header.parent !== null, subscription) ??
             subscriptionData(program, header.id, subscription)),
       );
     }

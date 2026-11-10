@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_CycleForms"
+  targetNamespace="urn:bpmn-lean:scenarios:timer-recurrence:cycle-forms">
+  <bpmn:process id="Process_CycleForms" name="Cycles whose first and last firings fix the grid" isExecutable="true">
+    <bpmn:startEvent id="Start_Forms" />
+    <bpmn:exclusiveGateway id="Gateway_Pick" gatewayDirection="Diverging" />
+    <bpmn:sequenceFlow id="Flow_Start_Forms_Gateway_Pick" sourceRef="Start_Forms" targetRef="Gateway_Pick" />
+    <bpmn:userTask id="Host_Weekday" name="Review (Friday 09:00)" />
+    <bpmn:boundaryEvent id="Cycle_Weekday" name="Reminder 0 0 9 ? * 6" attachedToRef="Host_Weekday" cancelActivity="false">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeCycle xsi:type="bpmn:tFormalExpression">0 0 9 ? * 6</bpmn:timeCycle>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handler_Weekday" name="Respond to the reminder (Friday 09:00)" />
+    <bpmn:endEvent id="End_Host_Weekday" />
+    <bpmn:endEvent id="End_Handler_Weekday" />
+    <bpmn:sequenceFlow id="Flow_Host_Weekday_End_Host_Weekday" sourceRef="Host_Weekday" targetRef="End_Host_Weekday" />
+    <bpmn:sequenceFlow id="Flow_Cycle_Weekday_Handler_Weekday" sourceRef="Cycle_Weekday" targetRef="Handler_Weekday" />
+    <bpmn:sequenceFlow id="Flow_Handler_Weekday_End_Handler_Weekday" sourceRef="Handler_Weekday" targetRef="End_Handler_Weekday" />
+    <bpmn:sequenceFlow id="Flow_Gateway_Pick_Host_Weekday" sourceRef="Gateway_Pick" targetRef="Host_Weekday">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${form == 'weekday'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:intermediateCatchEvent id="Catch_Half" name="Wait PT0.5S">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT0.5S</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:userTask id="Host_SubSecond" name="Review (armed after half a second)" />
+    <bpmn:boundaryEvent id="Cycle_SubSecond" name="Reminder R3/PT10S" attachedToRef="Host_SubSecond" cancelActivity="false">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeCycle xsi:type="bpmn:tFormalExpression">R3/PT10S</bpmn:timeCycle>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handler_SubSecond" name="Respond to the reminder (armed after half a second)" />
+    <bpmn:endEvent id="End_Host_SubSecond" />
+    <bpmn:endEvent id="End_Handler_SubSecond" />
+    <bpmn:sequenceFlow id="Flow_Host_SubSecond_End_Host_SubSecond" sourceRef="Host_SubSecond" targetRef="End_Host_SubSecond" />
+    <bpmn:sequenceFlow id="Flow_Cycle_SubSecond_Handler_SubSecond" sourceRef="Cycle_SubSecond" targetRef="Handler_SubSecond" />
+    <bpmn:sequenceFlow id="Flow_Handler_SubSecond_End_Handler_SubSecond" sourceRef="Handler_SubSecond" targetRef="End_Handler_SubSecond" />
+    <bpmn:sequenceFlow id="Flow_Gateway_Pick_Catch_Half" sourceRef="Gateway_Pick" targetRef="Catch_Half">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${form == 'sub-second'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Catch_Half_Host_SubSecond" sourceRef="Catch_Half" targetRef="Host_SubSecond" />
+    <bpmn:userTask id="Host_Last" name="Review (two firings)" />
+    <bpmn:boundaryEvent id="Cycle_Last" name="Reminder R2/PT10S" attachedToRef="Host_Last" cancelActivity="false">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeCycle xsi:type="bpmn:tFormalExpression">R2/PT10S</bpmn:timeCycle>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handler_Last" name="Respond to the reminder (two firings)" />
+    <bpmn:endEvent id="End_Host_Last" />
+    <bpmn:endEvent id="End_Handler_Last" />
+    <bpmn:sequenceFlow id="Flow_Host_Last_End_Host_Last" sourceRef="Host_Last" targetRef="End_Host_Last" />
+    <bpmn:sequenceFlow id="Flow_Cycle_Last_Handler_Last" sourceRef="Cycle_Last" targetRef="Handler_Last" />
+    <bpmn:sequenceFlow id="Flow_Handler_Last_End_Handler_Last" sourceRef="Handler_Last" targetRef="End_Handler_Last" />
+    <bpmn:sequenceFlow id="Flow_Gateway_Pick_Host_Last" sourceRef="Gateway_Pick" targetRef="Host_Last">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${form == 'last-fire'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+  </bpmn:process>
+</bpmn:definitions>

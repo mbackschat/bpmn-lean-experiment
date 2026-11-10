@@ -10,12 +10,18 @@
  * own channel, with a payload exactly when the subscription writes one. Anything else is `rejected` and changes nothing.
  *
  * A subscription's item holds a reservation (`openSubscription`) that its firing begins. A boundary item is attached to
- * its host occurrence; the arms of one Event-Based Gateway are attached to the gateway's occurrence, so completing that
- * occurrence disarms the siblings of the arm that fired.
+ * its host occurrence; the arms of one Event-Based Gateway are attached to the gateway's occurrence. A firing that ends
+ * other items (a gateway arm its siblings, an interrupting boundary its host's items, an interrupting Event Sub-Process
+ * start its parent scope's) withdraws them in its own micro-step, though the completion or cancellation that ends them
+ * is queued: several Conditional items can be true in one step, and a firing queued after this one must find them
+ * closed (BPMN 2.0.2 §10.5.6: a gateway takes only its first event).
  */
 import {
   ExpressionTag,
+  MalformedTimer,
+  TimerScheduleTag,
   TriggerTag,
+  ValueSourceTag,
   ValueTag,
   assertNever,
   elementEnvelope,
@@ -29,6 +35,7 @@ import {
   programChildren,
   programElement,
   programTarget,
+  triggerMessage,
   valueSourceLiteral,
   type Boundary,
   type CorrelationCriterion,
@@ -41,6 +48,7 @@ import {
   type TimerTrigger,
   type Trigger,
   type Value,
+  type ValueSource,
 } from "../il/types.js";
 import {
   CriterionTargetTag,
@@ -83,53 +91,149 @@ import {
   type StartTrigger,
   type State,
   type TimerDetail,
+  calledRoot,
   childrenOf,
+  visible,
 } from "../state.js";
 import {
-  EvaluationTag,
-  admitValues,
-  boundaryFire,
-  ctxRequireMappings,
-  deliveryTriggerChannel,
-  evalContext,
-  messageTriggerChannel,
-  type Catch,
-  type Ctx,
+  EvaluationTag, admitValues, boundaryFire, ctxRequireMappings, deliveryTriggerChannel, evalContext,
+  messageTriggerChannel, withdrawInside, withdrawOccurrence, type Catch, type Ctx,
 } from "../hooks.js";
-import { ResolvedTag, resolve } from "../il/timer.js";
+import { ClassifiedTag, TimerKind, armAt as armTimer, classify, dynamicCode, successor } from "../il/timer.js";
+import { armed, ownScope, subscriptionOf } from "./subscriptions/conditions.js";
+
+export { offerWrites } from "./subscriptions/conditions.js";
 
 /**
- * A Timer armed at `now`, from its one resolution (`il/timer.ts#resolve`). A cycle's first deadline is one period after
- * arming. Admission refuses every form this answers `unsupported`.
+ * Where a subscription is armed: what a Timer value given by an expression reads (`values`), what a Message name given
+ * by an expression reads (`names`), and whether the subscription may fire again (`repeats`: a non-interrupting boundary
+ * or Event Sub-Process start). CIB resolves a Message name when the subscription's scope execution is initialized
+ * (`ExecutionEntity.java:409-413`), before the host's input mappings and a root's start variables, and a Timer value
+ * after them (`PvmExecutionImpl.java:278-292`, `:1304-1318`).
  */
-function timerDetail(now: number, trigger: TimerTrigger): Result<TimerDetail> {
-  const resolved = resolve(trigger.schedule);
-  if (!resolved.ok) return failed(FailureTag.Unsupported, resolved.code);
-  const timer = resolved.value;
-  switch (timer.tag) {
-    case ResolvedTag.Duration:
-      return committed({ deadlineMs: now + timer.ms, recurrence: null });
-    case ResolvedTag.Cycle:
-      return committed({
-        deadlineMs: now + timer.periodMs,
-        recurrence: { periodMs: timer.periodMs, cron: null, remaining: timer.repetitions },
-      });
+interface Arming {
+  readonly values: EvalContext;
+  readonly names: EvalContext;
+  readonly repeats: boolean;
+}
+
+/**
+ * A Message name given by an expression, resolved once when the subscription opens; it is not kept, since the channel
+ * addresses the subscription (PC-MESSAGE-01). CIB casts the value to a String (`EventSubscriptionDeclaration.java:172-184`):
+ * a failure or another type rolls the arming back, and `null` or `""` opens a subscription no name reaches, which the
+ * kernel does not claim.
+ */
+function resolveName(ctx: Ctx, context: EvalContext, name: ValueSource | null): Result<null> {
+  if (name === null) return committed(null);
+  switch (name.tag) {
+    case ValueSourceTag.Literal:
+      return committed(null);
+    case ValueSourceTag.Expression: {
+      const evaluation = ctx.evaluate(context, name.body);
+      switch (evaluation.tag) {
+        case EvaluationTag.Value: {
+          const result = evaluation.result;
+          if (result.tag === ValueTag.Null || (result.tag === ValueTag.String && result.value === "")) {
+            // dynamic-only: the resolved name is the run's data.
+            return failed(FailureTag.Unsupported, "message-name-empty");
+          }
+          return result.tag === ValueTag.String ? committed(null) : failed(FailureTag.RolledBack, "message-name-type");
+        }
+        case EvaluationTag.Failure:
+          return failed(FailureTag.RolledBack, evaluation.code);
+        case EvaluationTag.Unsupported:
+          return failed(FailureTag.Unsupported, evaluation.code);
+      }
+      return assertNever(evaluation);
+    }
   }
-  return assertNever(timer);
+  return assertNever(name);
+}
+
+/**
+ * What the variables visible from `scope`'s parent read, without `scope`'s own: none at a root or a called root, whose
+ * start or call variables CIB sets after it subscribes (`PvmExecutionImpl.java:278-286`).
+ */
+function enclosingContext(state: State, scope: ScopeOccurrenceId): EvalContext {
+  const parent = calledRoot(state, scope) ? null : state.scopes.find((entry) => entry.id === scope)?.parent ?? null;
+  return { variables: parent === null ? [] : visible(state, parent), nowMs: state.logicalTimeMs };
+}
+
+/**
+ * The text a Timer value holds when it is armed: a literal's, or an expression's String value, evaluated once
+ * (`TimerDeclarationImpl.java:109-153`, PC-TIMER-03). A failure or a value that is no String is CIB's
+ * `ProcessEngineException` at arming, which rolls back the input that reached it; `evaluated` marks an evaluated value.
+ */
+function timerText(ctx: Ctx, context: EvalContext, value: ValueSource): Result<readonly [string, boolean]> {
+  switch (value.tag) {
+    case ValueSourceTag.Literal:
+      return committed([value.value, false]);
+    case ValueSourceTag.Expression: {
+      const evaluation = ctx.evaluate(context, value.body);
+      switch (evaluation.tag) {
+        case EvaluationTag.Value:
+          // dynamic-only: a value's type is the run's data.
+          return evaluation.result.tag === ValueTag.String
+            ? committed([evaluation.result.value, true])
+            : failed(FailureTag.RolledBack, "timer-value-type");
+        case EvaluationTag.Failure:
+          return failed(FailureTag.RolledBack, evaluation.code);
+        case EvaluationTag.Unsupported:
+          return failed(FailureTag.Unsupported, evaluation.code);
+      }
+      return assertNever(evaluation);
+    }
+  }
+  return assertNever(value);
+}
+
+/**
+ * A Timer armed at `context.nowMs`, classified by the one Timer lexeme rule (`il/timer.ts#classify`), the dialect of a
+ * cycle read from its text as CIB reads it (`CycleBusinessCalendar.java:55`). A lexeme outside the subset is
+ * `unsupported`, statically refused when it is a literal; a malformed one rolls back an evaluated value always and a
+ * literal under `MalformedTimer.RollsBackArming`. A site that fires once keeps only the first occurrence.
+ */
+function timerDetail(ctx: Ctx, arming: Arming, trigger: TimerTrigger): Result<TimerDetail> {
+  const schedule = trigger.schedule;
+  const kind = schedule.tag === TimerScheduleTag.Duration ? TimerKind.Duration
+    : schedule.tag === TimerScheduleTag.Date ? TimerKind.Date : TimerKind.Cycle;
+  const text = timerText(ctx, arming.values, schedule.value);
+  if (!text.ok) return failedWith(text.failure);
+  const [lexeme, evaluated] = text.value;
+  const classified = classify(kind, lexeme);
+  switch (classified.tag) {
+    case ClassifiedTag.Admitted: {
+      const armedTimer = armTimer(arming.values.nowMs, classified.parsed);
+      // dynamic-only: the deadline depends on the arming instant.
+      if (armedTimer === null) return failed(FailureTag.Unsupported, "timer-deadline");
+      const recurrence = arming.repeats ? armedTimer.recurrence : null;
+      return committed({
+        deadlineMs: armedTimer.deadlineMs,
+        recurrence: recurrence === null ? null : { periodMs: recurrence.periodMs, cron: recurrence.cron, remaining: recurrence.remaining },
+      });
+    }
+    case ClassifiedTag.Outside:
+      return failed(FailureTag.Unsupported, dynamicCode(classified.code));
+    case ClassifiedTag.Malformed:
+      return evaluated || ctx.program.options.malformedTimer === MalformedTimer.RollsBackArming
+        ? failed(FailureTag.RolledBack, dynamicCode(classified.code))
+        : failed(FailureTag.Unsupported, dynamicCode(classified.code));
+  }
+  return assertNever(classified);
 }
 
 /** The item a subscription opens, or `null` for a trigger that propagation delivers. */
-function waitKind(now: number, subscription: Subscription): Result<OpenKind | null> {
+function waitKind(ctx: Ctx, arming: Arming, subscription: Subscription): Result<OpenKind | null> {
   const trigger = subscription.trigger;
   switch (trigger.tag) {
     case TriggerTag.Timer: {
-      const detail = timerDetail(now, trigger.payload);
+      const detail = timerDetail(ctx, arming, trigger.payload);
       return detail.ok ? committed({ tag: OpenKindTag.Timer, detail: detail.value }) : failedWith(detail.failure);
     }
     case TriggerTag.Message: {
+      const named = resolveName(ctx, arming.names, trigger.payload.name);
+      if (!named.ok) return failedWith(named.failure);
       const channel = messageTriggerChannel(trigger.payload);
-      // Admission refuses it (`message.nameExpression`).
-      if (channel === null) return failed(FailureTag.Unsupported, "message-name-expression");
       // Admission refuses it (`message.correlation.keys`).
       if (trigger.payload.correlation.length > 1) return failed(FailureTag.Unsupported, "message-correlation-keys");
       const criteria = trigger.payload.correlation.map((criterion) => criterion.key);
@@ -139,7 +243,10 @@ function waitKind(now: number, subscription: Subscription): Result<OpenKind | nu
     case TriggerTag.Signal:
       return failed(FailureTag.Unsupported, "event-catch-signal");
     case TriggerTag.Condition:
-      return failed(FailureTag.Unsupported, "event-catch-condition");
+      return committed({
+        tag: OpenKindTag.Conditional,
+        detail: { variableName: trigger.payload.variableName, variableEvents: trigger.payload.variableEvents, lastValue: null },
+      });
     case TriggerTag.Error:
     case TriggerTag.Escalation:
     case TriggerTag.Compensation:
@@ -150,6 +257,8 @@ function waitKind(now: number, subscription: Subscription): Result<OpenKind | nu
 }
 
 function subscribe(
+  ctx: Ctx,
+  arming: Arming,
   state: State,
   subscription: Subscription,
   element: ElementId,
@@ -157,9 +266,11 @@ function subscribe(
   host: number | null,
   passive: boolean,
 ): Outcome {
-  const kind = waitKind(state.logicalTimeMs, subscription);
+  const kind = waitKind(ctx, arming, subscription);
   if (!kind.ok) return failedWith(kind.failure);
-  return committed(kind.value === null ? state : openSubscription(state, kind.value, element, scope, host, passive)[0]);
+  if (kind.value === null) return committed(state);
+  const [opened, item] = openSubscription(state, kind.value, element, scope, host, passive);
+  return armed(ctx, subscription, item, opened);
 }
 
 /** `Signal.arm`: open the boundaries of `element`, attached to `host`, in the host's scope `scope`. */
@@ -169,7 +280,10 @@ export function arm(ctx: Ctx, host: number, element: ElementId, scope: ScopeOccu
   if (envelope === null) return failed(FailureTag.SemanticFailure, "arm-without-envelope");
   let current = state;
   for (const boundary of envelope.boundaries) {
-    const next = subscribe(current, boundary.subscription, boundary.id, scope, host, false);
+    const arming = {
+      values: evalContext(current, ownScope(current, host, scope)), names: evalContext(current, scope), repeats: !boundary.interrupting,
+    };
+    const next = subscribe(ctx, arming, current, boundary.subscription, boundary.id, scope, host, false);
     if (!next.ok) return next;
     current = next.value;
   }
@@ -192,7 +306,8 @@ export function armGateway(ctx: Ctx, occurrence: number, gateway: ElementId, sco
     const event = element === null ? null : elementEvent(element);
     const subscription = event === null ? null : eventPayloadCatch(event[1]);
     if (event === null || subscription === null) return failed(FailureTag.Unsupported, "gateway-event-based-receive-arm");
-    const next = subscribe(current, subscription, event[0].id, scope, occurrence, false);
+    const values = evalContext(current, scope);
+    const next = subscribe(ctx, { values, names: values, repeats: false }, current, subscription, event[0].id, scope, occurrence, false);
     if (!next.ok) return next;
     current = next.value;
   }
@@ -220,11 +335,12 @@ export function armScope(ctx: Ctx, scope: ScopeOccurrenceId, state: State): Outc
     const start = declared === null ? null : ctx.eventStart(declared[1]);
     if (declared === null || start === null) continue;
     const subscription = start[0];
-    const kind = waitKind(current.logicalTimeMs, subscription);
+    const arming = { values: evalContext(current, scope), names: enclosingContext(current, scope), repeats: !start[1] };
+    const kind = waitKind(ctx, arming, subscription);
     if (!kind.ok) return failedWith(kind.failure);
     const startId = startEvent(ctx, declared[0].id);
     if (startId !== null) {
-      const next = subscribe(current, subscription, startId, scope, null, true);
+      const next = subscribe(ctx, arming, current, subscription, startId, scope, null, true);
       if (!next.ok) return next;
       current = next.value;
     } else if (kind.value !== null) {
@@ -260,19 +376,7 @@ function payloadBindings(ctx: Ctx, nowMs: number, outputs: readonly Mapping[], p
 // delivery is matched, never when the subscription opens, so the current Property value decides.
 
 function criteria(trigger: Trigger): readonly CorrelationCriterion[] {
-  switch (trigger.tag) {
-    case TriggerTag.Message:
-      return trigger.payload.correlation;
-    case TriggerTag.Timer:
-    case TriggerTag.Signal:
-    case TriggerTag.Condition:
-    case TriggerTag.Error:
-    case TriggerTag.Escalation:
-    case TriggerTag.Compensation:
-    case TriggerTag.Cancel:
-      return [];
-  }
-  return assertNever(trigger);
+  return triggerMessage(trigger)?.correlation ?? [];
 }
 
 /** The key a criterion binds, evaluated in `variables`. */
@@ -331,23 +435,6 @@ function criterionMatches(criterion: CorrelationCriterion, delivered: Correlatio
   return assertNever(target);
 }
 
-/**
- * The subscription an open item belongs to: a boundary's, a catch Event's or an Event Sub-Process start's; an
- * Activity's own subscription (a Receive Task) is the work feature's.
- */
-function subscriptionOf(ctx: Ctx, item: OpenItem): Subscription | null {
-  const boundary = programBoundary(ctx.program, item.element);
-  if (boundary !== null) return boundary[1].subscription;
-  const element = programElement(ctx.program, item.element);
-  const event = element === null ? null : elementEvent(element);
-  const catchEvent = event === null ? null : eventPayloadCatch(event[1]);
-  if (catchEvent !== null) return catchEvent;
-  const start = element === null ? null : elementStart(element);
-  const parent = start === null || start[0].parent === null ? null : programElement(ctx.program, start[0].parent);
-  const scope = parent === null ? null : elementScope(parent);
-  return (scope === null ? null : ctx.eventStart(scope[1]))?.[0] ?? null;
-}
-
 /** `Hooks.correlates`. */
 export function correlates(
   ctx: Ctx,
@@ -396,20 +483,22 @@ function admitFiring(ctx: Ctx, subscription: Subscription, item: OpenItem, fired
       if (delivery.payload !== null) return failed(FailureTag.Rejected, "message-payload-not-accepted");
       return committed([state, []]);
     }
-    // Dynamic-only: admission refuses every Signal and conditional subscription (`event.catch.signal`, `boundary.signal`,
-    // `start.signal` and their conditional counterparts), so none is open to fire.
+    // Dynamic-only: admission refuses every Signal subscription (`event.catch.signal`, `boundary.signal`,
+    // `start.signal`), so none is open to fire.
     case FiredTag.Signal:
       return failed(FailureTag.Unsupported, "event-catch-signal");
+    // Only `evaluateItem` fires a Conditional item, after its predicate held.
     case FiredTag.Condition:
-      return failed(FailureTag.Unsupported, "event-catch-condition");
+      return view.conditional === null ? failed(FailureTag.Rejected, "not-a-conditional-subscription") : committed([state, []]);
   }
   return assertNever(fired);
 }
 
 /**
  * What remains of a fired subscription that does not interrupt: a Message subscription stays open with the same
- * identity, a cycle Timer opens its next occurrence one period after the deadline it fired at, keeping its attachment,
- * and any other Timer closes. The result is the reservation the firing may begin, `null` when the item stays open, whose
+ * identity, a cycle Timer opens its next occurrence (`il/timer.ts#successor`: one period, or the next Cron match, after
+ * the deadline it fired at, never after the firing's own time) keeping its attachment, until its count is spent, and
+ * any other Timer closes. The result is the reservation the firing may begin, `null` when the item stays open, whose
  * identity then remains the subscription's.
  */
 function afterFiring(state: State, item: OpenItem): readonly [State, number | null] {
@@ -418,11 +507,11 @@ function afterFiring(state: State, item: OpenItem): readonly [State, number | nu
   const closed = closeItem(state, item.id);
   const recurrence = view.recurrence;
   if (recurrence === null) return [closed, item.occurrence];
-  const remaining = recurrence.remaining === null ? null : Math.max(0, recurrence.remaining - 1);
-  if (recurrence.periodMs === null || remaining === 0) return [closed, item.occurrence];
+  const followed = successor(view.deadlineMs, recurrence);
+  if (followed === null) return [closed, item.occurrence];
   const next: OpenKind = {
     tag: OpenKindTag.Timer,
-    detail: { deadlineMs: view.deadlineMs + recurrence.periodMs, recurrence: { ...recurrence, remaining } },
+    detail: { deadlineMs: followed[0], recurrence: { ...recurrence, remaining: followed[1].remaining } },
   };
   return [openSubscription(closed, next, item.element, item.scope, item.attachedTo, item.passive)[0], item.occurrence];
 }
@@ -438,7 +527,8 @@ function fireBoundary(ctx: Ctx, boundary: Boundary, item: OpenItem, fired: Fired
   if (boundary.interrupting) {
     if (item.attachedTo === null) return failed(FailureTag.SemanticFailure, "boundary-without-host");
     if (occurrenceOf(current, item.attachedTo) === null) return failed(FailureTag.SemanticFailure, "boundary-host-gone");
-    return committed(boundaryFire(boundary, item.attachedTo, item.occurrence, item.scope, values, closeItem(current, item.id)));
+    const withdrawn = withdrawOccurrence(closeItem(current, item.id), item.attachedTo);
+    return committed(boundaryFire(boundary, item.attachedTo, item.occurrence, item.scope, values, withdrawn));
   }
   const [after, reserved] = afterFiring(current, item);
   return committed(boundaryFire(boundary, null, reserved, item.scope, values, after));
@@ -452,7 +542,7 @@ function fireCatch(ctx: Ctx, subscription: Subscription, item: OpenItem, fired: 
   const closed = closeItem(current, item.id);
   const gateway = item.attachedTo === null
     ? closed
-    : signal(closed, completeSignal(item.attachedTo, leaveFlows([]), [], WriteRule.Outward));
+    : signal(disarm(closed, item.attachedTo), completeSignal(item.attachedTo, leaveFlows([]), [], WriteRule.Outward));
   return committed(signal(gateway, completeSignal(item.occurrence, leaveOutgoing, values, WriteRule.Outward)));
 }
 
@@ -469,7 +559,9 @@ function fireEventStart(ctx: Ctx, eventSubProcess: ElementId, item: OpenItem, fi
   const admitted = admitFiring(ctx, subscription, item, fired, state);
   if (!admitted.ok) return failedWith(admitted.failure);
   const [current, values] = admitted.value;
-  const [after, inner] = interrupting ? [closeItem(current, item.id), item.occurrence] as const : afterFiring(current, item);
+  const [after, inner] = interrupting
+    ? [withdrawInside(closeItem(current, item.id), item.scope), item.occurrence] as const
+    : afterFiring(current, item);
   return committed(signal(after, {
     tag: SignalTag.Begin,
     request: beginRequest({ element: eventSubProcess, scope: item.scope, locals: values, inner }),
@@ -502,7 +594,7 @@ function fires(trigger: StartTrigger, subscription: Subscription | null): boolea
       return trigger.tag === StartTriggerTag.Timer;
     case TriggerTag.Message:
       return trigger.tag === StartTriggerTag.Message &&
-        optionalChannelEquals(messageTriggerChannel(subscribed.payload), trigger.channel);
+        trigger.channel !== null && messageChannelEquals(messageTriggerChannel(subscribed.payload), trigger.channel);
     case TriggerTag.Signal:
       return trigger.tag === StartTriggerTag.Signal && valueSourceLiteral(subscribed.payload.name) === trigger.name;
     case TriggerTag.Condition:
@@ -566,12 +658,16 @@ function startValues(ctx: Ctx, payload: StartPayload, trigger: StartTrigger, sta
 }
 
 /** `Hooks.arriveCatch`: the catch Event's occurrence waits on its subscription. */
-export function arriveCatch(_ctx: Ctx, _header: Header, _payload: EventPayload, subscription: Subscription, occurrence: Occurrence, state: State): Outcome {
-  const kind = waitKind(state.logicalTimeMs, subscription);
+export function arriveCatch(ctx: Ctx, _header: Header, _payload: EventPayload, subscription: Subscription, occurrence: Occurrence, state: State): Outcome {
+  const values = evalContext(state, occurrence.scope);
+  const kind = waitKind(ctx, { values, names: values, repeats: false }, subscription);
   if (!kind.ok) return failedWith(kind.failure);
   // Admission refuses every trigger reaching `null` here (`event.catch.error`, `.escalation`, `.compensation`, `.cancel`);
   // the code names the first.
-  return kind.value === null ? failed(FailureTag.Unsupported, "event-catch-error") : committed(openItem(state, kind.value, occurrence));
+  if (kind.value === null) return failed(FailureTag.Unsupported, "event-catch-error");
+  const opened = openItem(state, kind.value, occurrence);
+  const item = opened.openItems[opened.openItems.length - 1];
+  return item === undefined ? committed(opened) : armed(ctx, subscription, item, opened);
 }
 
 /** `Hooks.leave`: a completing occurrence's attached items go. */

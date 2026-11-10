@@ -78,6 +78,9 @@ export type KernelProfileOptions = Readonly<{
   businessRuleTask: "refused" | "decisionTable";
   inclusiveJoinReach: "withBoundaries" | "outgoingOnly";
   branchSchedule: "orderInvariant" | "declarationDepthFirst";
+  conditionalRetrigger: "edge" | "eachWrite";
+  malformedTimer: "refused" | "rollsBackArming";
+  messageNames: "description" | "addresses";
 }>;
 
 /** One portable value's allowance, which bounds a scope-chain submission (`NSD-TASK-01`). */
@@ -123,6 +126,9 @@ export function kernelProfileOptions(relations: readonly string[]): KernelProfil
     businessRuleTask: selects("CIB-EXT-0032") ? "decisionTable" : "refused",
     inclusiveJoinReach: selects("CIB-INT-0020") ? "outgoingOnly" : "withBoundaries",
     branchSchedule: selects("CIB-OP-0016") ? "declarationDepthFirst" : "orderInvariant",
+    conditionalRetrigger: selects("CIB-EXT-0035") ? "eachWrite" : "edge",
+    malformedTimer: selects("CIB-EXT-0036") ? "rollsBackArming" : "refused",
+    messageNames: selects("CIB-LIM-0022") ? "addresses" : "description",
   };
 }
 

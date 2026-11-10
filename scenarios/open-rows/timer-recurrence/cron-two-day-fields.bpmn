@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_CronTwoDayFields"
+  targetNamespace="urn:bpmn-lean:scenarios:timer-recurrence:cron-two-day-fields">
+  <bpmn:process id="Process_CronTwoDayFields" name="Reminders on a Cron outside the subset (two concrete day fields)" isExecutable="true">
+    <bpmn:startEvent id="Start_Cron" />
+    <bpmn:userTask id="Host_Cron" name="Review (two concrete day fields)" />
+    <bpmn:boundaryEvent id="Cycle_Cron" name="Reminder 0 0 12 1 * 2" attachedToRef="Host_Cron" cancelActivity="false">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeCycle xsi:type="bpmn:tFormalExpression">0 0 12 1 * 2</bpmn:timeCycle>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handler_Cron" name="Respond to the reminder (two concrete day fields)" />
+    <bpmn:endEvent id="End_Host_Cron" />
+    <bpmn:endEvent id="End_Handler_Cron" />
+    <bpmn:sequenceFlow id="Flow_Host_Cron_End_Host_Cron" sourceRef="Host_Cron" targetRef="End_Host_Cron" />
+    <bpmn:sequenceFlow id="Flow_Cycle_Cron_Handler_Cron" sourceRef="Cycle_Cron" targetRef="Handler_Cron" />
+    <bpmn:sequenceFlow id="Flow_Handler_Cron_End_Handler_Cron" sourceRef="Handler_Cron" targetRef="End_Handler_Cron" />
+    <bpmn:sequenceFlow id="Flow_Start_Cron_Host_Cron" sourceRef="Start_Cron" targetRef="Host_Cron" />
+  </bpmn:process>
+</bpmn:definitions>

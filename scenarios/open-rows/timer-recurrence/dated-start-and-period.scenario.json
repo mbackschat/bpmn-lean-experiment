@@ -3,9 +3,9 @@
   "id": "timer-recurrence-dated-start-and-period",
   "profile": "cibseven-2.2.0",
   "bpmn": {
-    "id": "timer-recurrence",
-    "relativePath": "scenarios/open-rows/timer-recurrence/reminder-cycles.bpmn",
-    "sha256": "77542da5f76aecdd2111cb3bc66235de0bc9826651a5e3bd134273d928f9936c",
+    "id": "timer-recurrence-dated-cycles",
+    "relativePath": "scenarios/open-rows/timer-recurrence/dated-cycles.bpmn",
+    "sha256": "52d98f4678c1abb990bbf1c94abb4bb32b3c6d90881736ff5073dad520405e08",
     "sourceOverlay": null
   },
   "stimuli": [

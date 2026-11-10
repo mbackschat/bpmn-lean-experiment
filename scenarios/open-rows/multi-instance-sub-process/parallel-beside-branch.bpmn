@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_MiSubProcessParallelBesideBranch"
+  targetNamespace="urn:bpmn-lean:scenarios:multi-instance-sub-process:parallel-beside-branch">
+
+  <bpmn:process id="Process_MiSubProcessParallelBesideBranch" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Start" />
+    <bpmn:sequenceFlow id="Flow_Start_Fork" sourceRef="StartEvent_Start" targetRef="Gateway_Fork" />
+    <bpmn:parallelGateway id="Gateway_Fork" gatewayDirection="Diverging" />
+    <bpmn:sequenceFlow id="Flow_Fork_Lot" sourceRef="Gateway_Fork" targetRef="SubProcess_Lot" />
+    <bpmn:sequenceFlow id="Flow_Fork_Flag" sourceRef="Gateway_Fork" targetRef="Task_Flag" />
+    <bpmn:subProcess id="SubProcess_Lot" name="Mark and check one item">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="prior">${last}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+      <bpmn:multiInstanceLoopCharacteristics isSequential="false" camunda:collection="items" camunda:elementVariable="item" />
+      <bpmn:startEvent id="StartEvent_Lot" />
+      <bpmn:sequenceFlow id="Flow_Lot_Mark" sourceRef="StartEvent_Lot" targetRef="Task_Mark" />
+      <bpmn:task id="Task_Mark" name="Mark the item">
+        <bpmn:extensionElements>
+          <camunda:inputOutput>
+            <camunda:outputParameter name="last">${item}</camunda:outputParameter>
+          </camunda:inputOutput>
+        </bpmn:extensionElements>
+      </bpmn:task>
+      <bpmn:sequenceFlow id="Flow_Mark_Check" sourceRef="Task_Mark" targetRef="UserTask_Check" />
+      <bpmn:userTask id="UserTask_Check" name="Check the item">
+        <bpmn:extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="seenPrior">${prior}</camunda:inputParameter>
+            <camunda:inputParameter name="position">${loopCounter}</camunda:inputParameter>
+          </camunda:inputOutput>
+        </bpmn:extensionElements>
+      </bpmn:userTask>
+      <bpmn:sequenceFlow id="Flow_Check_End" sourceRef="UserTask_Check" targetRef="EndEvent_Lot" />
+      <bpmn:endEvent id="EndEvent_Lot" />
+    </bpmn:subProcess>
+    <bpmn:sequenceFlow id="Flow_Lot_Publish" sourceRef="SubProcess_Lot" targetRef="UserTask_Publish" />
+    <bpmn:userTask id="UserTask_Publish" name="Publish outcome" />
+    <bpmn:sequenceFlow id="Flow_Publish_End" sourceRef="UserTask_Publish" targetRef="EndEvent_Publish" />
+    <bpmn:endEvent id="EndEvent_Publish" />
+    <bpmn:task id="Task_Flag" name="Flag the sibling branch">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:outputParameter name="last">${fresh}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+    </bpmn:task>
+    <bpmn:sequenceFlow id="Flow_Flag_Sibling" sourceRef="Task_Flag" targetRef="UserTask_Sibling" />
+    <bpmn:userTask id="UserTask_Sibling" name="Review the sibling branch" />
+    <bpmn:sequenceFlow id="Flow_Sibling_End" sourceRef="UserTask_Sibling" targetRef="EndEvent_Sibling" />
+    <bpmn:endEvent id="EndEvent_Sibling" />
+  </bpmn:process>
+</bpmn:definitions>

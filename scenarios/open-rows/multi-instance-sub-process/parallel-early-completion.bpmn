@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_MiSubProcessParallelEarlyCompletion"
+  targetNamespace="urn:bpmn-lean:scenarios:multi-instance-sub-process:parallel-early-completion">
+
+  <bpmn:process id="Process_MiSubProcessParallelEarlyCompletion" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Start" />
+    <bpmn:sequenceFlow id="Flow_Start_Lot" sourceRef="StartEvent_Start" targetRef="SubProcess_Lot" />
+    <bpmn:subProcess id="SubProcess_Lot" name="Mark one item">
+      <bpmn:multiInstanceLoopCharacteristics isSequential="false" camunda:collection="items" camunda:elementVariable="item">
+        <bpmn:completionCondition>${nrOfCompletedInstances &gt;= 1}</bpmn:completionCondition>
+      </bpmn:multiInstanceLoopCharacteristics>
+      <bpmn:startEvent id="StartEvent_Lot" />
+      <bpmn:sequenceFlow id="Flow_Lot_Mark" sourceRef="StartEvent_Lot" targetRef="Task_Mark" />
+      <bpmn:task id="Task_Mark" name="Mark the item">
+        <bpmn:extensionElements>
+          <camunda:inputOutput>
+            <camunda:outputParameter name="last">${item}</camunda:outputParameter>
+          </camunda:inputOutput>
+        </bpmn:extensionElements>
+      </bpmn:task>
+      <bpmn:sequenceFlow id="Flow_Mark_End" sourceRef="Task_Mark" targetRef="EndEvent_Lot" />
+      <bpmn:endEvent id="EndEvent_Lot" />
+    </bpmn:subProcess>
+    <bpmn:sequenceFlow id="Flow_Lot_After" sourceRef="SubProcess_Lot" targetRef="UserTask_After" />
+    <bpmn:userTask id="UserTask_After" name="Read what the bodies marked">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="seenLast">${last}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="Flow_After_End" sourceRef="UserTask_After" targetRef="EndEvent_Done" />
+    <bpmn:endEvent id="EndEvent_Done" />
+  </bpmn:process>
+</bpmn:definitions>

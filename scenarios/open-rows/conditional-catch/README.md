@@ -8,6 +8,7 @@ Answer-free schedules for [PC-CONDITION-03](../../../docs/PRACTICAL-CIB7-COVERAG
 |---|---|
 | [catches.bpmn](catches.bpmn) | A None Start, the Human Task `Prepare`, the Conditional catch `Catch_Ready` (`${ready == true}`, variable `ready`) and the Human Task `Proceed_Ready`. |
 | [race.bpmn](race.bpmn) | A None Start, the Human Task `Prepare` and an Event-Based Gateway over the Conditional catch `Catch_Approved` (`${approved == true}`, variable `approved`) to `Approved`, the Message catch `Catch_Rejected` (`reject`) to `Rejected`, and the Timer catch `Catch_Expired` (`PT30S`) to `Expired`. |
+| [arms.bpmn](arms.bpmn) | A None Start and an Event-Based Gateway over two Conditional catches, `Catch_Alpha` and `Catch_Beta`, both `${ready == true}` (variable `ready`), to the Human Tasks `Chosen_Alpha` and `Chosen_Beta`. The catches are declared alpha first; the gateway's Sequence Flows leave for beta first. |
 
 ## Schedules
 
@@ -22,6 +23,7 @@ Answer-free schedules for [PC-CONDITION-03](../../../docs/PRACTICAL-CIB7-COVERAG
 | [message-wins-then-condition-changes](message-wins-then-condition-changes.scenario.json) | race | PC-CONDITION-03 | `approved` is `false` at the start; `Prepare` completes; the Message arm is delivered; `approved` is then set to `true` on `Rejected`; `Rejected` completes. |
 | [true-at-the-gateway](true-at-the-gateway.scenario.json) | race | PC-CONDITION-03 | `approved` is `true` at the start; `Prepare` completes and reaches the gateway; the Message arm is then delivered. |
 | [timer-wins-then-condition-changes](timer-wins-then-condition-changes.scenario.json) | race | PC-CONDITION-03 | `approved` is `false` at the start; `Prepare` completes; the Timer arm fires at 30,000; `approved` is then set to `true` on `Expired`; `Expired` completes. |
+| [gateway-two-true-arms](gateway-two-true-arms.scenario.json) | arms | PC-CONDITION-03 | `ready` is `true` at the start, so both arms are true when the token arrives; the schedule is the start alone. Separates the order of the gateway's Sequence Flows from the declaration order of its catch Events. No evidence yet. |
 
 ## Notes for the target runners
 

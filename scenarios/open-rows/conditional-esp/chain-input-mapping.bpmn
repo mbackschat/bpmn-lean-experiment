@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_ChainInputMapping"
+  targetNamespace="urn:bpmn-lean:scenarios:conditional-esp:chain-input-mapping">
+  <bpmn:process id="Process_ChainInputMapping" name="File work whose first handler maps the next listener's variable" isExecutable="true">
+    <bpmn:startEvent id="Start_Chain_Root" />
+    <bpmn:userTask id="Work" name="Prepare the file" />
+    <bpmn:userTask id="Finish" name="Release the file" />
+    <bpmn:endEvent id="End_Chain_Root" />
+    <bpmn:sequenceFlow id="Flow_Start_Chain_Root_Work" sourceRef="Start_Chain_Root" targetRef="Work" />
+    <bpmn:sequenceFlow id="Flow_Work_Finish" sourceRef="Work" targetRef="Finish" />
+    <bpmn:sequenceFlow id="Flow_Finish_End_Chain_Root" sourceRef="Finish" targetRef="End_Chain_Root" />
+    <bpmn:subProcess id="ESP_First" triggeredByEvent="true">
+      <bpmn:startEvent id="Start_First" isInterrupting="false">
+        <bpmn:conditionalEventDefinition id="CED_First" camunda:variableName="first">
+          <bpmn:condition xsi:type="bpmn:tFormalExpression">${first &gt; 0}</bpmn:condition>
+        </bpmn:conditionalEventDefinition>
+      </bpmn:startEvent>
+      <bpmn:userTask id="Handle_First" name="Handle the first step">
+        <bpmn:extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="second">${first + 1}</camunda:inputParameter>
+          </camunda:inputOutput>
+        </bpmn:extensionElements>
+      </bpmn:userTask>
+      <bpmn:endEvent id="End_First" />
+      <bpmn:sequenceFlow id="Flow_Start_First_Handle_First" sourceRef="Start_First" targetRef="Handle_First" />
+      <bpmn:sequenceFlow id="Flow_Handle_First_End_First" sourceRef="Handle_First" targetRef="End_First" />
+    </bpmn:subProcess>
+    <bpmn:subProcess id="ESP_Second" triggeredByEvent="true">
+      <bpmn:startEvent id="Start_Second" isInterrupting="false">
+        <bpmn:conditionalEventDefinition id="CED_Second" camunda:variableName="second">
+          <bpmn:condition xsi:type="bpmn:tFormalExpression">${second &gt; 0}</bpmn:condition>
+        </bpmn:conditionalEventDefinition>
+      </bpmn:startEvent>
+      <bpmn:userTask id="Handle_Second" name="Handle the second step" />
+      <bpmn:endEvent id="End_Second" />
+      <bpmn:sequenceFlow id="Flow_Start_Second_Handle_Second" sourceRef="Start_Second" targetRef="Handle_Second" />
+      <bpmn:sequenceFlow id="Flow_Handle_Second_End_Second" sourceRef="Handle_Second" targetRef="End_Second" />
+    </bpmn:subProcess>
+  </bpmn:process>
+</bpmn:definitions>

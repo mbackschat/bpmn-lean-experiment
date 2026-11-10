@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_DuplicateBoundaryNames"
+  targetNamespace="urn:bpmn-lean:scenarios:message-name-addressing:duplicate-boundary-names">
+  <bpmn:message id="Message_Dup1" name="shared notice" />
+  <bpmn:message id="Message_Dup2" name="shared notice" />
+  <bpmn:process id="Process_DuplicateBoundaryNames" name="Two notices of one name on one host" isExecutable="true">
+    <bpmn:startEvent id="Start_Dup" />
+    <bpmn:userTask id="Host_Dup" name="Work with two notices" />
+    <bpmn:endEvent id="End_Dup" />
+    <bpmn:sequenceFlow id="Flow_Start_Dup_Host_Dup" sourceRef="Start_Dup" targetRef="Host_Dup" />
+    <bpmn:sequenceFlow id="Flow_Host_Dup_End_Dup" sourceRef="Host_Dup" targetRef="End_Dup" />
+    <bpmn:boundaryEvent id="Notice_One" name="First notice" attachedToRef="Host_Dup">
+      <bpmn:messageEventDefinition id="MED_Notice_One" messageRef="Message_Dup1" />
+    </bpmn:boundaryEvent>
+    <bpmn:boundaryEvent id="Notice_Two" name="Second notice" attachedToRef="Host_Dup">
+      <bpmn:messageEventDefinition id="MED_Notice_Two" messageRef="Message_Dup2" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handler_One" name="Handle the first notice" />
+    <bpmn:userTask id="Handler_Two" name="Handle the second notice" />
+    <bpmn:endEvent id="End_Handler_One" />
+    <bpmn:endEvent id="End_Handler_Two" />
+    <bpmn:sequenceFlow id="Flow_Notice_One_Handler_One" sourceRef="Notice_One" targetRef="Handler_One" />
+    <bpmn:sequenceFlow id="Flow_Notice_Two_Handler_Two" sourceRef="Notice_Two" targetRef="Handler_Two" />
+    <bpmn:sequenceFlow id="Flow_Handler_One_End_Handler_One" sourceRef="Handler_One" targetRef="End_Handler_One" />
+    <bpmn:sequenceFlow id="Flow_Handler_Two_End_Handler_Two" sourceRef="Handler_Two" targetRef="End_Handler_Two" />
+  </bpmn:process>
+</bpmn:definitions>

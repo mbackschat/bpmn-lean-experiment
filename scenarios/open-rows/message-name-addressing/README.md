@@ -13,6 +13,10 @@ Answer-free schedules for [PC-MESSAGE-01](../../../docs/PRACTICAL-CIB7-COVERAGE-
 | [unresolved-operation.bpmn](unresolved-operation.bpmn) | One catch `Catch_Dangling` names `Message_Dangling` and an `operationRef` to `Operation_Missing`, which no Interface declares. |
 | [unnamed-message.bpmn](unnamed-message.bpmn) | One catch `Catch_Unnamed` names `Message_Unnamed`, a Message without a `name`. |
 | [start-expression.bpmn](start-expression.bpmn) | A Process whose Message Start Event `Start_Order` names `Message_StartExpr`, whose name is the expression `${startName}`. |
+| [esp-root-name.bpmn](esp-root-name.bpmn) | A None Start, the Human Task `Work` and a root non-interrupting Message Event Sub-Process `ESP_Notice` whose start `Start_Notice` waits on `Message_EspName`, whose name is the expression `${k}`. |
+| [name-expressions.bpmn](name-expressions.bpmn) | A None Start and an Exclusive Gateway on the String Process variable `route`. `host-input` runs the Human Task `Host_Input`, whose input mapping declares the local `k` as `local`, with the interrupting Message boundary `Notice_Host` on `Message_HostName` (name `${k}`). `null-name` runs the Message catch `Catch_Null` on `Message_NullName` (name `${k}`) and the Human Task `Proceed_Null`. |
+| [duplicate-boundary-names.bpmn](duplicate-boundary-names.bpmn) | A None Start and the Human Task `Host_Dup` with two interrupting Message boundaries `Notice_One` and `Notice_Two`, on `Message_Dup1` and `Message_Dup2`, two Messages that share the name `shared notice`. |
+| [unnamed-receive.bpmn](unnamed-receive.bpmn) | A None Start and the Receive Task `Receive_Unnamed` on `Message_UnnamedReceive`, a Message without a `name`. |
 
 ## Schedules
 
@@ -33,11 +37,17 @@ Answer-free schedules for [PC-MESSAGE-01](../../../docs/PRACTICAL-CIB7-COVERAGE-
 | [unresolved-operation](unresolved-operation.scenario.json) | unresolved-operation | PC-MESSAGE-01 | The Message is delivered to the catch with a channel that names the missing Operation. |
 | [unnamed-message](unnamed-message.scenario.json) | unnamed-message | PC-MESSAGE-01 | The Message is delivered to the catch. |
 | [start-expression-name](start-expression-name.scenario.json) | start-expression | PC-MESSAGE-01 | The Message start is triggered with the name expression's Message. |
+| [esp-root-name-from-start-variable](esp-root-name-from-start-variable.scenario.json) | esp-root-name | PC-MESSAGE-01 | `k` is `A` at the start; the Message `Message_EspName` is then delivered to `Start_Notice`. Separates a root listener whose name expression sees the start variables from one that sees an empty context. No evidence yet. |
+| [boundary-name-from-host-input](boundary-name-from-host-input.scenario.json) | name-expressions | PC-MESSAGE-01 | `route` is `host-input` and `k` exists only as the host's local; the schedule is the start alone. Separates a boundary name resolved in the enclosing scope before the host's input mappings from one resolved after them. No evidence yet. |
+| [expression-name-null](expression-name-null.scenario.json) | name-expressions | PC-MESSAGE-01 | `route` is `null-name` and `k` is a present null; the schedule is the start alone. Separates a catch whose name evaluates to null from a catch that is addressable by name. No evidence yet. |
+| [boundary-same-name](boundary-same-name.scenario.json) | duplicate-boundary-names | PC-MESSAGE-01 | The schedule is the start alone. Separates two boundaries of one host whose distinct Messages share a name from the same-name rule the row decides. No evidence yet. |
+| [unnamed-receive-task](unnamed-receive-task.scenario.json) | unnamed-receive | PC-MESSAGE-01 | The Message `Message_UnnamedReceive` is delivered to `Receive_Unnamed`. Separates a Receive Task whose Message has no name, which a name-addressed API cannot address, from addressing it by Message identifier. No evidence yet. |
 
 ## Notes for the target runners
 
 - A schedule over a model CIB may refuse at deployment (`twin-same-scope`, `unresolved-operation`, `unnamed-message`, `start-expression`) carries the stimuli that would separate the readings if it is accepted; a refused deployment ends the run at it.
 - A channel that differs from the one the runner publishes for the addressed wait (another Message identifier, or another Operation of the same Message) is rejected by the runner's channel equality before CIB is called, so those controls need the runner to state them as deliveries to CIB's name-addressed API.
 - `wire` is the String Process variable that `Message_Expr` reads when `Catch_Expr` is reached, which is the start command.
+- `unnamed-receive` carries the delivery that would separate the readings if the engine accepts the model, like `unnamed-message`; `esp-root-name-from-start-variable` carries a delivery that a start the engine rolls back never reaches, and the three other new schedules end at the start, where the name is resolved or refused.
 
 The schedules carry no expected route, open wait, variable or Process state; the retained CIB evidence is the answer.

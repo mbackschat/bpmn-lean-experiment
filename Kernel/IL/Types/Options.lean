@@ -223,6 +223,35 @@ inductive BranchSchedule where
   | declarationDepthFirst
   deriving DecidableEq, Repr
 
+/-- How often a non-interrupting Conditional boundary or Event Sub-Process start fires while its condition holds
+([subscriptions semantics](../../../docs/kernel/semantics/SUBSCRIPTIONS-SEMANTICS-SPEC.md#conditions)). -/
+inductive ConditionalRetrigger where
+  /-- BPMN 2.0.2 Tables 10.89, 10.90: it is triggered when its condition becomes true, so it fires again only after an
+  evaluation found the condition false. `camunda:variableName` and `camunda:variableEvents` are refused. -/
+  | edge
+  /-- CIB-EXT-0035: each offered write whose evaluation is true fires it, same-value updates included, filtered by
+  `camunda:variableName` and `camunda:variableEvents` (`ConditionalEventDefinition.java:91-113`). -/
+  | eachWrite
+  deriving DecidableEq, Repr
+
+/-- What a literal Timer value the pinned parser cannot read does. -/
+inductive MalformedTimer where
+  /-- BPMN 2.0.2 Table 10.101: the value MUST conform to ISO 8601, so such a model is refused at admission. -/
+  | refused
+  /-- CIB-EXT-0036: the model deploys and the arming fails, rolling back the input that reached it. -/
+  | rollsBackArming
+  deriving DecidableEq, Repr
+
+/-- What a Message's `name` is. -/
+inductive MessageNames where
+  /-- BPMN 2.0.2 Table 8.48: a text description; a Message is addressed by its identifier, so a nameless Message is
+  admitted and a name is never an expression. -/
+  | description
+  /-- CIB-LIM-0022: CIB addresses a Message subscription by its name, which must be non-blank and unique among the
+  subscriptions of one event scope, and may be an expression resolved when the subscription opens. -/
+  | addresses
+  deriving DecidableEq, Repr
+
 structure ProfileOptions where
   relations : List String := []
   evaluator : Evaluator := .simpleBoolean
@@ -258,6 +287,9 @@ structure ProfileOptions where
   businessRuleTask : BusinessRuleTask := .refused
   inclusiveJoinReach : InclusiveJoinReach := .withBoundaries
   branchSchedule : BranchSchedule := .orderInvariant
+  conditionalRetrigger : ConditionalRetrigger := .edge
+  malformedTimer : MalformedTimer := .refused
+  messageNames : MessageNames := .description
   deriving Repr
 
 end Kernel

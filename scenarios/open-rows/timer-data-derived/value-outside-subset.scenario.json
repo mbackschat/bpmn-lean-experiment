@@ -1,0 +1,49 @@
+{
+  "kind": "scenario",
+  "id": "timer-data-derived-value-outside-subset",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "timer-data-derived-scopes",
+    "relativePath": "scenarios/open-rows/timer-data-derived/derived-scopes.bpmn",
+    "sha256": "17c629b55b0c44005b77925909d41d62a5e924ebcaa0971fc8acc1981922d28a",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "d",
+          "value": {
+            "kind": "string",
+            "value": "PT0.0001S"
+          }
+        },
+        {
+          "name": "route",
+          "value": {
+            "kind": "string",
+            "value": "outside"
+          }
+        }
+      ]
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.5.4",
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 Table 10.101",
+      "BPMN 2.0.2 §10.5.6"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/jobexecutor/TimerDeclarationImpl.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/calendar/DueDateBusinessCalendar.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/persistence/entity/TimerEntity.java",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/event/timer/IntermediateTimerEventTest.java"
+    ]
+  }
+}

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_SubMillisecond"
+  targetNamespace="urn:bpmn-lean:scenarios:timer-duration-forms:sub-millisecond">
+  <bpmn:process id="Process_SubMillisecond" name="Wait finer than a millisecond" isExecutable="true">
+    <bpmn:startEvent id="Start_Fine" />
+    <bpmn:intermediateCatchEvent id="Catch_Fine" name="Wait PT0.0001S">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT0.0001S</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:userTask id="Proceed" name="Proceed after the wait" />
+    <bpmn:endEvent id="End_Fine" />
+    <bpmn:sequenceFlow id="Flow_Start_Fine_Catch_Fine" sourceRef="Start_Fine" targetRef="Catch_Fine" />
+    <bpmn:sequenceFlow id="Flow_Catch_Fine_Proceed" sourceRef="Catch_Fine" targetRef="Proceed" />
+    <bpmn:sequenceFlow id="Flow_Proceed_End_Fine" sourceRef="Proceed" targetRef="End_Fine" />
+  </bpmn:process>
+</bpmn:definitions>

@@ -5,7 +5,7 @@ public import Kernel.IL.Timer
 
 /-! # Admission of catch Events, boundaries and triggered starts. A refusal carries a stable code.
 
-Admitted: Timers with a literal exact duration (a cycle only on a boundary), Messages with a literal name and no
+Admitted: Timers with a literal `Kernel.Timer.classify` admits, Messages with a literal name and no
 correlation, a correlated Message only on a catch Event, and, on boundaries, the triggers that
 `Kernel.Feature.Propagation` delivers (an interrupting Error, Escalation, Compensation, and Cancel on a Transaction).
 -/
@@ -14,52 +14,116 @@ public section
 
 namespace Kernel.Admission.Subscriptions
 
-/-- `cycles` admits an unbounded cycle, which only an attached subscription can repeat. -/
-def timer (cycles : Bool) (trigger : TimerTrigger) : Option String :=
-  match trigger.schedule with
-  | .duration value =>
-    match (ValueSource.literal? value).bind Timer.durationMs? with
-    | some _ => none
-    | none => some "timer.duration"
-  | .date _ => some "timer.date"
-  | .cycle value dialect =>
-    match dialect, cycles, (ValueSource.literal? value).bind Timer.cyclePeriodMs? with
-    | .iso8601, true, some _ => none
-    | .iso8601, true, none => some "timer.cycle"
-    | .iso8601, false, _ => some "timer.cycleNotAttached"
-    | .cron, _, _ => some "timer.cron"
+/-- How a subscription's site reads an expression, given by the registry from `Kernel.Admission.Data` at that site: the
+Core JUEL table, which the Events level reuses for Timer values, Message names and Conditional predicates
+(ARCHITECTURE-SPEC JUEL levels), and a plain variable read. -/
+structure Reading where
+  juel : List JuelNode → Option String := fun _ => none
+  name : String → Option String := fun _ => none
 
-/-- An interrupting catch ends what it interrupts at its first firing, so a repeating Timer has no second firing to
-give; no row selects a meaning for it. -/
-def interruptingCycle (trigger : TimerTrigger) : Option String :=
-  match trigger.schedule with
-  | .cycle _ _ => some "timer.interruptingCycle"
-  | .duration _ => none
-  | .date _ => none
+/-- An Events-level expression under `Evaluator.juel`: a JUEL table or a plain variable read; any other form, and
+every expression under Simple Boolean, is refused as `refusal`. -/
+def eventsExpression (options : ProfileOptions) (reading : Reading) (refusal : String) : Expression → Option String
+  | .juel nodes => if options.evaluator == .juel then reading.juel nodes else some refusal
+  | .variable name => if options.evaluator == .juel then reading.name name else some refusal
+  | .simpleBoolean _ => some refusal
+  | .literal _ => some refusal
+  | .foreign _ _ => some refusal
+
+/-- A Conditional catch, boundary or Event Sub-Process start. Its predicate is read by the profile's evaluator: Simple
+Boolean, or JUEL at the Events level (CIB-EXT-0030 for a condition without a language). CIB's filters
+`camunda:variableName` and `camunda:variableEvents` belong to its each-write model (CIB-EXT-0035), so they are refused
+under `edge`, and an event name CIB does not dispatch is refused under `eachWrite`. -/
+def conditionRefusal (options : ProfileOptions) (reading : Reading) (trigger : ConditionTrigger) : Option String :=
+  let filters := match options.conditionalRetrigger with
+    | .edge => if trigger.variableName.isSome || !trigger.variableEvents.isEmpty then some "event.condition.filter" else none
+    | .eachWrite =>
+      if trigger.variableEvents.all (["create", "update", "delete"].contains ·) then none
+      else some "event.condition.variableEvents"
+  let predicate := match trigger.condition with
+    | .simpleBoolean _ => if options.evaluator == .juel then some "expression.outsideJuel" else none
+    | other => eventsExpression options reading "event.condition.foreign" other
+  filters <|> predicate
+
+/-- The static refusal of a Timer lexeme family; `Kernel.Timer.Code.dynamic` is its run-time twin. -/
+def timerRefusal : Timer.Code → String
+  | .duration => "timer.duration"
+  | .date => "timer.date"
+  | .cycle => "timer.cycle"
+  | .cron => "timer.cron"
+
+/-- A Timer literal as `Kernel.Timer.classify` reads it: outside the subset is refused everywhere, malformed unless
+`admitMalformed` (`ProfileOptions.malformedTimer = rollsBackArming`), where arming it rolls back. A cycle is admitted at
+every subscription site, one that fires once taking only its first occurrence (I1). A root start (`rootStart`) is armed
+by its host from `Timer.resolve`, so it takes only what that offers, and a cycle there is PC-TIMER-04's. -/
+def timer (admitMalformed rootStart : Bool) (trigger : TimerTrigger) : Option String :=
+  let lexeme (kind : Timer.Kind) (code : Timer.Code) (value : ValueSource) : Option String :=
+    match value with
+    | .expression _ => some (timerRefusal code)
+    | .literal text =>
+      match Timer.classify kind text with
+      | .admitted _ => none
+      | .outside code => some (timerRefusal code)
+      | .malformed code => if admitMalformed then none else some (timerRefusal code)
+  match trigger.schedule, rootStart with
+  | .cycle _ _, true => some "timer.cycleNotAttached"
+  | .date _, true => some "timer.date"
+  | .duration _, true =>
+    match Timer.resolve trigger.schedule with
+    | .ok _ => none
+    | .error _ => some "timer.duration"
+  | .duration value, false => lexeme .duration .duration value
+  | .date value, false => lexeme .date .date value
+  | .cycle value .iso8601, false => lexeme .cycle .cycle value
+  | .cycle value .cron, false => lexeme .cycle .cron value
+
+/-- A Timer at a subscription site: a value given by an expression is read at the Events level and classified when it
+is armed (PC-TIMER-03); a literal is classified now (`timer`). A root start's expression is PC-TIMER-04's. -/
+def timerAt (options : ProfileOptions) (reading : Reading) (rootStart : Bool) (trigger : TimerTrigger) : Option String :=
+  let (value, code) : ValueSource × String := match trigger.schedule with
+    | .duration value => (value, "timer.duration")
+    | .date value => (value, "timer.date")
+    | .cycle value _ => (value, "timer.cycle")
+  match value, rootStart with
+  | .expression body, false => eventsExpression options reading code body
+  | .expression _, true => timer (options.malformedTimer == .rollsBackArming) rootStart trigger
+  | .literal _, _ => timer (options.malformedTimer == .rollsBackArming) rootStart trigger
+
+/-- A Message's name (PC-MESSAGE-01). Under `MessageNames.description` it is a description: absent or blank is admitted
+and an expression, which BPMN 2.0.2 does not have, is refused. Under `addresses` CIB subscribes by it: a missing or
+blank one (Java's `trim`, `EventSubscriptionDeclaration.java:85-87`) is refused (`BpmnParse.java:1271-1274`), and an
+expression is read at the Events level, except at a root start (`BpmnParse.java:4888-4899`). -/
+def messageName (options : ProfileOptions) (reading : Reading) (rootStart : Bool) : Option ValueSource → Option String
+  | none => if options.messageNames == .addresses then some "message.unnamed" else none
+  | some (.literal text) =>
+    if options.messageNames == .addresses && text.toList.all (· ≤ ' ') then some "message.unnamed" else none
+  | some (.expression body) =>
+    match options.messageNames, rootStart with
+    | .description, _ => some "message.nameExpression"
+    | .addresses, true => some "start.messageNameExpression"
+    | .addresses, false => eventsExpression options reading "message.nameExpression" body
 
 /-- A Message subscription is addressed by its Message (`messageRef`, BPMN 2.0.2 §10.5.5); without one only an
-occurrence-addressed command could reach it, which CIB-INT-0004 selects for a Receive Task alone, and
-`BpmnParse#parseMessageEventDefinition` refuses it (PC-MESSAGE-01). -/
-def message (trigger : MessageTrigger) : Option String :=
+occurrence-addressed command could reach it, which CIB-INT-0004 selects for a Receive Task alone (PC-MESSAGE-01). -/
+def message (options : ProfileOptions) (reading : Reading) (rootStart : Bool) (trigger : MessageTrigger) :
+    Option String :=
   if !trigger.correlation.isEmpty then some "message.correlation"
-  else
-    match trigger.name with
-    | some (.expression _) => some "message.nameExpression"
-    | some (.literal _) => none
-    | none => some "message.unnamed"
+  else if trigger.messageRef.isNone then some "message.unspecified"
+  else messageName options reading rootStart trigger.name
 
 /-- A correlated catch, as the [specification](../../docs/kernel/semantics/SUBSCRIPTIONS-SEMANTICS-SPEC.md)
 bounds it: one key bound to a variable, an Operation channel, and no output, since its payload is never written. -/
-def correlatedCatch (subscription : Subscription) (trigger : MessageTrigger) : Option String :=
+def correlatedCatch (options : ProfileOptions) (reading : Reading) (subscription : Subscription)
+    (trigger : MessageTrigger) : Option String :=
   match trigger.correlation with
-  | [] => message trigger
+  | [] => message options reading false trigger
   | [criterion] =>
     if !subscription.outputs.isEmpty then some "message.correlation.output"
-    else if trigger.name.isNone || trigger.interfaceRef.isNone || trigger.operationRef.isNone then
+    else if trigger.messageRef.isNone || trigger.interfaceRef.isNone || trigger.operationRef.isNone then
       some "message.correlation.channel"
     else
       match criterion.value with
-      | .variable _ => message { trigger with correlation := [] }
+      | .variable _ => message options reading false { trigger with correlation := [] }
       | .literal _ => some "message.correlation.value"
       | .simpleBoolean _ => some "message.correlation.value"
       | .juel _ => some "expression.juel.site"
@@ -93,11 +157,12 @@ def escalationTrigger (variables : ErrorCatchVariables) (trigger : EscalationTri
   | .eventScope => none
   | .refused => if trigger.codeVariable.isSome then some "event.escalation.codeVariable" else none
 
-/-- The codes of the raised-event boundaries a host declared before the one being admitted; `none` is an Escalation
-catch-all. -/
+/-- The codes of the raised-event boundaries and the literal Message names a host declared before the one being
+admitted; `none` is an Escalation catch-all. -/
 structure Declared where
   errorCodes : List String := []
   escalations : List (Option String) := []
+  messageNames : List String := []
 
 /-- At most one Escalation handler of one kind in one place may match any code: among the boundaries of a host, or among
 the Event Sub-Processes of a scope, a second one of the same code, a catch-all beside any other, or two catch-alls are
@@ -126,7 +191,7 @@ def eventSubProcessAfter (earlier : List (Option String)) (start : Subscription)
   | none =>
     match start.trigger with
     | .message _ => refused (if interrupting then some "scope.eventSubProcess.interruptingMessage" else none)
-    | .timer trigger => refused (if interrupting then interruptingCycle trigger else none)
+    | .timer _ => .ok earlier
     | .error _ => refused (if interrupting then none else some "start.error.nonInterrupting")
     | .signal _ => .ok earlier
     | .condition _ => .ok earlier
@@ -145,13 +210,13 @@ def eventSubProcessDeclarations (starts : List (Subscription × Bool)) : Option 
   | .error code => some code
   | .ok _ => none
 
-def catchEvent (subscription : Subscription) : Option String :=
+def catchEvent (options : ProfileOptions) (reading : Reading) (subscription : Subscription) : Option String :=
   definitions subscription <|> subscriptionOutputs subscription <|>
   match subscription.trigger with
-  | .timer trigger => timer false trigger
-  | .message trigger => correlatedCatch subscription trigger
+  | .timer trigger => timerAt options reading false trigger
+  | .message trigger => correlatedCatch options reading subscription trigger
   | .signal _ => some "event.catch.signal"
-  | .condition _ => some "event.catch.condition"
+  | .condition trigger => conditionRefusal options reading trigger
   | .error _ => some "event.catch.error"
   | .escalation _ => some "event.catch.escalation"
   | .compensation => some "event.catch.compensation"
@@ -164,8 +229,9 @@ before this one, and an admitted Error boundary adds its own. Two with one code 
 allows one interrupting handler per Event Declaration and states no precedence between two declarations of one code,
 so the kernel restricts a host to one boundary per code, and CIB's first in document order (`BpmnParse:3646`) is not
 adopted (PC-ERROR-01). `seen.escalations` holds the host's earlier Escalation boundary codes (`escalationDeclared`). -/
-def boundary (variables : ErrorCatchVariables) (transactionHost : Bool) (seen : Declared) (boundary : Boundary) :
-    Except String Declared :=
+def boundary (options : ProfileOptions) (reading : Reading) (transactionHost : Bool) (seen : Declared)
+    (boundary : Boundary) : Except String Declared :=
+  let variables := options.errorCatchVariables
   let check (refusal : Option String) : Except String Declared :=
     match refusal with
     | some code => .error code
@@ -174,10 +240,17 @@ def boundary (variables : ErrorCatchVariables) (transactionHost : Bool) (seen : 
   | some code => .error code
   | none =>
     match boundary.subscription.trigger with
-    | .timer trigger => check ((if boundary.interrupting then interruptingCycle trigger else none) <|> timer true trigger)
-    | .message trigger => check (message trigger)
+    | .timer trigger => check (timerAt options reading false trigger)
+    | .message trigger => do
+      let seen ← check (message options reading false trigger)
+      -- CIB refuses two Message subscriptions of one name in one event scope (`BpmnParse.java:1277-1282`).
+      match options.messageNames, trigger.name with
+      | .addresses, some (.literal name) =>
+        if seen.messageNames.contains name then .error "message.duplicateName"
+        else .ok { seen with messageNames := name :: seen.messageNames }
+      | .addresses, some (.expression _) | .addresses, none | .description, _ => .ok seen
     | .signal _ => .error "boundary.signal"
-    | .condition _ => .error "boundary.condition"
+    | .condition trigger => check (conditionRefusal options reading trigger)
     | .error trigger => do
       let seen ← check ((if boundary.interrupting then none else some "boundary.error.nonInterrupting") <|>
         errorTrigger variables trigger)
@@ -196,22 +269,26 @@ def boundary (variables : ErrorCatchVariables) (transactionHost : Bool) (seen : 
         else if boundary.interrupting then none
         else some "boundary.cancel.nonInterrupting")
 
-def boundaries (variables : ErrorCatchVariables) (transactionHost : Bool) (list : List Boundary) : Option String :=
-  match list.foldlM (boundary variables transactionHost) {} with
+def boundaries (options : ProfileOptions) (reading : Reading) (transactionHost : Bool) (list : List Boundary) :
+    Option String :=
+  match list.foldlM (boundary options reading transactionHost) {} with
   | .error code => some code
   | .ok _ => none
 
 /-- A triggered start. At process level (`nested = false`) the start input names it; nested, it is an Event
 Sub-Process start, which may also repeat a cycle and catch what `Kernel.Feature.Propagation` raises. -/
-def start (variables : ErrorCatchVariables) (nested : Bool) (subscription : Subscription) : Option String :=
+def start (options : ProfileOptions) (reading : Reading) (nested : Bool) (subscription : Subscription) :
+    Option String :=
+  let variables := options.errorCatchVariables
   let raised (code : String) : Option String := if nested then none else some code
   definitions subscription <|> subscriptionOutputs subscription <|>
   match subscription.trigger with
-  | .timer trigger => timer nested trigger
+  | .timer trigger => timerAt options reading (!nested) trigger
   | .message trigger =>
-    (if !nested && !subscription.outputs.isEmpty then some "start.message.outputs" else none) <|> message trigger
+    (if !nested && !subscription.outputs.isEmpty then some "start.message.outputs" else none) <|>
+      message options reading (!nested) trigger
   | .signal _ => some "start.signal"
-  | .condition _ => some "start.condition"
+  | .condition trigger => if nested then conditionRefusal options reading trigger else some "start.condition"
   | .error trigger => raised "start.error" <|> errorTrigger variables trigger
   | .escalation trigger => raised "start.escalation" <|> escalationTrigger variables trigger
   | .compensation => raised "start.compensation"

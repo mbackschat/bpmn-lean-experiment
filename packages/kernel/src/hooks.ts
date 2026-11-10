@@ -74,7 +74,7 @@ import {
 // Lean's `Kernel.Hooks` re-exports `Kernel.State.Removal` to the features and `Kernel.Step`; so does this module, which
 // keeps the removal module's direct importers to this hub (guard 15).
 export {
-  cancelOccurrence, clearInside, idleWithout, leaveScope, removeOccurrence,
+  cancelOccurrence, clearInside, idleWithout, leaveScope, removeOccurrence, withdrawInside, withdrawOccurrence,
 } from "./state/removal.js";
 
 /**
@@ -104,18 +104,9 @@ export enum ScopeRole {
   CompensationHandler = "compensationHandler",
 }
 
-/** The channel a Message trigger waits on, `null` for a Message named by an expression. */
-export function messageTriggerChannel(trigger: MessageTrigger): MessageChannel | null {
-  const address = (messageId: string | null): MessageChannel =>
-    ({ messageId, interfaceRef: trigger.interfaceRef, operationRef: trigger.operationRef });
-  if (trigger.name === null) return address(null);
-  switch (trigger.name.tag) {
-    case ValueSourceTag.Literal:
-      return address(trigger.name.value);
-    case ValueSourceTag.Expression:
-      return null;
-  }
-  return assertNever(trigger.name);
+/** The channel a Message trigger waits on: its Message's and Operation's identifiers, never its name (PC-MESSAGE-01). */
+export function messageTriggerChannel(trigger: MessageTrigger): MessageChannel {
+  return { messageId: trigger.messageRef, interfaceRef: trigger.interfaceRef, operationRef: trigger.operationRef };
 }
 
 export function deliveryTriggerChannel(trigger: DeliveryTrigger): MessageChannel | null {
