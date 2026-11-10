@@ -10,6 +10,7 @@ import {
   elementEvent,
   elementScope,
   firstOf,
+  programInCalledProcess,
   workCall,
   type ActivityPayload,
   type Boundary,
@@ -166,12 +167,16 @@ function element(program: Program, throws: readonly Element[], entry: Element): 
   return assertNever(entry);
 }
 
-/** Whether the program's shape reaches an abnormal scope end: a Terminate in a Sub-Process or an interrupting Event Sub-Process. */
+/**
+ * Whether the program's shape reaches an abnormal scope end: a Terminate in a Sub-Process or at a called process's level
+ * (which ends the called instance, not the caller), or an interrupting Event Sub-Process.
+ */
 function abnormalScope(program: Program): boolean {
   return program.elements.some((entry) => {
     const throw_ = thrown(entry);
     const scope = elementScope(entry);
-    return (throw_ !== null && throw_[0].parent !== null && throw_[1].terminates) ||
+    return (throw_ !== null && (throw_[0].parent !== null || programInCalledProcess(program, throw_[0].id)) &&
+      throw_[1].terminates) ||
       (scope !== null && Scopes.interruptingStart(scope[1]) !== null);
   });
 }

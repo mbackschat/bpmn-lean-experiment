@@ -46,7 +46,7 @@ A profile may select only behaviour the kernel implements ([`Kernel/Admission/Pr
 | `profile.compensationHandlerFailure.selected` | a selected handler-failure code | PC-COMPENSATION rows |
 | `profile.callBindingTime.invocation` | binding the called definition at invocation | PC-SCOPE-03 |
 | `profile.timerZone` | a timer zone other than UTC | PC-TIMER-02 |
-| `profile.abnormalScopeEnd.withoutOutflow` | the standards reading of an abnormal Sub-Process end, for a program that reaches one (a Terminate in a Sub-Process or an interrupting Event Sub-Process): the kernel has only the normal continuation | PC-TERMINATE-01, PC-SCOPE rows |
+| `profile.abnormalScopeEnd.withoutOutflow` | the standards reading of an abnormal Sub-Process end, for a program that reaches one (a Terminate in a Sub-Process or at a called process's level, or an interrupting Event Sub-Process): the kernel has only the normal continuation | PC-TERMINATE-01, PC-SCOPE rows |
 
 ## Registry-level refusals
 

@@ -94,11 +94,12 @@ def element (program : Program) (throws : List Element) : Element → Option Str
         Admission.Subscriptions.start program.options.errorCatchVariables header.parent.isSome subscription <|>
           subscriptionData program subscription
 
-/-- Whether the program's shape reaches an abnormal scope end: a Terminate in a Sub-Process or an interrupting Event
-Sub-Process. -/
+/-- Whether the program's shape reaches an abnormal scope end: a Terminate in a Sub-Process or at a called process's
+level (which ends the called instance, not the caller), or an interrupting Event Sub-Process. -/
 def abnormalScope (program : Program) : Bool :=
   program.elements.any fun element =>
-    (thrown element).any (fun (header, reading) => header.parent.isSome && reading.terminates) ||
+    (thrown element).any (fun (header, reading) =>
+      (header.parent.isSome || program.inCalledProcess header.id) && reading.terminates) ||
     element.scope?.any fun (_, payload) => (Admission.Scopes.interruptingStart payload).isSome
 
 /-- Whether the program has a Multi-Instance loop, which `Admission.Profile.multiInstance` reads. -/
