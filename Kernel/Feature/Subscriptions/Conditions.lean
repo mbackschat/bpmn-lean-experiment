@@ -14,18 +14,10 @@ public section
 
 namespace Kernel.Feature.Subscriptions
 
-/-- The scope occurrence a subscription attached to `host` reads from and lies in: the host's own local or child scope,
-so its input-mapped locals are visible (`PvmExecutionImpl.java:1304-1318`), otherwise `scope`, the enclosing one. A
-called instance's root belongs to the callee and is never the host's own. -/
-def ownScope (state : State) (host : Nat) (scope : ScopeOccurrenceId) : ScopeOccurrenceId :=
-  match state.scopes.find? fun own => own.occurrence == some host && own.calledInstance.isNone with
-  | some own => own.id
-  | none => scope
-
 /-- `ownScope` of an open item: its host's own scope, else the item's scope. -/
 def homeScope (state : State) (item : OpenItem) : ScopeOccurrenceId :=
   match item.attachedTo with
-  | some host => ownScope state host item.scope
+  | some host => state.ownScope host item.scope
   | none => item.scope
 
 /-- A predicate's reading. An unknown variable or property makes it false where the read is reached, as CIB's

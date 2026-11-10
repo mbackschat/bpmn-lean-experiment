@@ -81,6 +81,19 @@ export const rows: readonly Row[] = [
     control: withTask(receiveWork({ name: text("M") })),
   },
   {
+    // CIB subscribes a Receive Task's Message by name (`BpmnParse.java:2753-2759`, `:1271-1274`; CIB-LIM-0022).
+    code: "message.unnamed",
+    description: "under name addressing, a Receive Task whose Message has no name",
+    mutate: (program) => withTask(receiveWork({ messageRef: "M" }))(withOptions(program, { messageNames: "addresses" })),
+    control: (program) => withTask(receiveWork({ messageRef: "M", name: text("M") }))(withOptions(program, { messageNames: "addresses" })),
+  },
+  {
+    code: "message.unnamed",
+    description: "under name addressing, a Receive Task whose Message name is blank",
+    mutate: (program) => withTask(receiveWork({ messageRef: "M", name: text(" ") }))(withOptions(program, { messageNames: "addresses" })),
+    control: withTask(receiveWork({ messageRef: "M", name: text(" ") })),
+  },
+  {
     code: "work.call.dataCorrespondence",
     description: "a Call Activity with an input Data Association and no output",
     mutate: calling({ inputs: [dataAssociation("in")] }),

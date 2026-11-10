@@ -32,6 +32,7 @@ import {
   failed,
   failedWith,
   openKindView,
+  ownScope,
   signal,
   type OpenItem,
   type Outcome,
@@ -41,16 +42,6 @@ import {
   type WriteEvent,
 } from "../../state.js";
 import { EvaluationTag, evalContext, type Ctx } from "../../hooks.js";
-
-/**
- * The scope occurrence a subscription attached to `host` reads from and lies in: the host's own local or child scope, so
- * its input-mapped locals are visible (`PvmExecutionImpl.java:1304-1318`), otherwise `scope`, the enclosing one. A called
- * instance's root belongs to the callee and is never the host's own.
- */
-export function ownScope(state: State, host: number, scope: ScopeOccurrenceId): ScopeOccurrenceId {
-  const own = state.scopes.find((entry) => entry.occurrence === host && entry.calledInstance === null);
-  return own === undefined ? scope : own.id;
-}
 
 /** `ownScope` of an open item: its host's own scope, else the item's scope. */
 function homeScope(state: State, item: OpenItem): ScopeOccurrenceId {

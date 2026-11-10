@@ -288,6 +288,14 @@ def signal (state : State) (signal : Signal) : State :=
 def calledRoot (state : State) (scope : ScopeOccurrenceId) : Bool :=
   ((state.scopes.find? (·.id == scope)).bind (·.calledInstance)).isSome
 
+/-- The scope occurrence an occurrence `host` reads from and writes outward from: its own local or child scope, so its
+input-mapped locals are visible (`PvmExecutionImpl.java:1304-1318`), otherwise `scope`, the enclosing one. A called
+instance's root belongs to the callee and is never the host's own. -/
+def ownScope (state : State) (host : Nat) (scope : ScopeOccurrenceId) : ScopeOccurrenceId :=
+  match state.scopes.find? fun own => own.occurrence == some host && own.calledInstance.isNone with
+  | some own => own.id
+  | none => scope
+
 /-- The root of the process instance `scope` belongs to: the nearest called-instance root, else the process root. -/
 def instanceRoot (state : State) (scope : ScopeOccurrenceId) : ScopeOccurrenceId :=
   let rec go (fuel : Nat) (current : ScopeOccurrenceId) : ScopeOccurrenceId :=

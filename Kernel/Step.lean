@@ -367,10 +367,12 @@ def command (hooks : Hooks) (ctx : Ctx) (input : CommandInput) (state : State) :
     match item? ctx state input.occurrence (·.incident) with
     | none => .error (.rejected "unknown-incident")
     | some item => hooks.resolveIncident ctx item action state
-  let variables (act : Occurrence → Signal) : Outcome :=
+  -- A variable command acts from the occurrence's own scope outward, its input-mapped locals first, as CIB's
+  -- `setVariables` on the waiting activity's execution does (`AbstractVariableScope#setVariable`).
+  let variables (act : ScopeOccurrenceId → Signal) : Outcome :=
     match occurrenceOf? ctx state input.occurrence with
     | none => .error (.rejected "unknown-occurrence")
-    | some occurrence => .ok (state.signal (act occurrence))
+    | some occurrence => .ok (state.signal (act (state.ownScope occurrence.id occurrence.scope)))
   match input.action with
   | .completeUserTask values =>
     match item? ctx state input.occurrence (·.userTask) with
@@ -380,8 +382,8 @@ def command (hooks : Hooks) (ctx : Ctx) (input : CommandInput) (state : State) :
   | .retryIncident generation => incident (.retryIncident generation)
   | .cancelIncidentProcess generation => incident (.cancelIncidentProcess generation)
   | .setVariables values =>
-    admitValues (values.map (·.2)) *> variables fun occurrence => .write occurrence.scope values .outward
-  | .removeVariables names => variables fun occurrence => .remove occurrence.scope names
+    admitValues (values.map (·.2)) *> variables fun scope => .write scope values .outward
+  | .removeVariables names => variables fun scope => .remove scope names
 
 def deliverEffectResult (hooks : Hooks) (ctx : Ctx) (input : EffectInput) (state : State) : Outcome :=
   match item? ctx state input.occurrence (·.effect) with

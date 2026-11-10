@@ -95,14 +95,16 @@ def handlerKey (program : Program) : Option String → Option String
   | some token => if (declaredNames program).contains token then some "work.handlerKeyName" else none
 
 /-- An instantiating Receive Task starts its Process (BPMN 2.0.2 §10.3.3, Table 10.10), which pinned CIB never reads
-(CIB-LIM-0008) (PC-BASIC-04). -/
-def receive (work : ReceiveWork) : Option String :=
+(CIB-LIM-0008) (PC-BASIC-04). Under name addressing a Receive Task with a Message subscribes by its name as a Message
+Event does (`BpmnParse.java:2753-2759`), so a missing or blank name is refused (CIB-LIM-0022). -/
+def receive (options : ProfileOptions) (work : ReceiveWork) : Option String :=
+  let unnamed := options.messageNames == .addresses && work.message.messageRef.isSome
   if work.instantiate then some "work.receive.instantiate"
   else if !work.message.correlation.isEmpty then some "work.receive.correlation"
   else
     match work.message.name with
-    | none => none
-    | some (.literal _) => none
+    | none => if unnamed then some "message.unnamed" else none
+    | some (.literal text) => if unnamed && text.toList.all (· ≤ ' ') then some "message.unnamed" else none
     | some (.expression _) => some "work.receive.messageExpression"
 
 /-- The called process's Data Associations correspond to the Call's by position (BPMN 2.0.2 §10.3.6): the kernel reads
@@ -216,7 +218,7 @@ def activity (program : Program) (payload : ActivityPayload) : Option String :=
     | .none => none
     | .manual => none
     | .user task => userTask task
-    | .receive work => receive work
+    | .receive work => receive program.options work
     | .service work => service work
     | .send _ => some "work.send"
     | .script _ => some "work.script"

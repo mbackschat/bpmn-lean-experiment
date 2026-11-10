@@ -73,6 +73,7 @@ import {
   openItem,
   openKindView,
   openSubscription,
+  ownScope,
   optionalChannelEquals,
   raisedIsCancel,
   signal,
@@ -100,7 +101,7 @@ import {
   messageTriggerChannel, withdrawInside, withdrawOccurrence, type Catch, type Ctx,
 } from "../hooks.js";
 import { ClassifiedTag, TimerKind, armAt as armTimer, classify, dynamicCode, successor } from "../il/timer.js";
-import { armed, ownScope, subscriptionOf } from "./subscriptions/conditions.js";
+import { armed, subscriptionOf } from "./subscriptions/conditions.js";
 
 export { offerWrites } from "./subscriptions/conditions.js";
 

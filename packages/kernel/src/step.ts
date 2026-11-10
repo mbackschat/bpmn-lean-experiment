@@ -25,7 +25,7 @@ import {
   ActivationRole, CauseTag, CommandActionTag, ContinuationTag, DeliveryTriggerTag, EffectOutcomeTag, FailureTag,
   FiredTag, InputTag, InstanceStatus, IterationTag, LeaveTag, SignalTag, Terminal, TokenTag, WriteRule, beginOccurrence,
   beginRequest, busyScopes, closeOwnItems, committed, crossed, emptyDraft, entryCount, failed, idle,
-  initial, instanceOf, keyOf, occurrenceOf, openKindView, recordEnd, reserve, root, signal as enqueue,
+  initial, instanceOf, keyOf, occurrenceOf, openKindView, ownScope, recordEnd, reserve, root, signal as enqueue,
   startReserved,
   type BeginRequest, type Binding, type Cause, type CommandAction, type CommandInput, type EffectInput, type Fired,
   type Input, type InstanceFailure, type Iteration, type Leave, type Occurrence, type OccurrenceRef,
@@ -470,9 +470,13 @@ function command(hooks: Hooks, ctx: Ctx, input: CommandInput, state: State): Out
     const item = itemOf(ctx, state, input.occurrence, (view) => view.incident);
     return item === null ? failed(FailureTag.Rejected, "unknown-incident") : hooks.resolveIncident(ctx, item, action, state);
   };
-  const variables = (act: (occurrence: Occurrence) => Signal): Outcome => {
+  // A variable command acts from the occurrence's own scope outward, its input-mapped locals first, as CIB's
+  // `setVariables` on the waiting activity's execution does (`AbstractVariableScope#setVariable`).
+  const variables = (act: (scope: ScopeOccurrenceId) => Signal): Outcome => {
     const occurrence = occurrenceOfRef(ctx, state, input.occurrence);
-    return occurrence === null ? failed(FailureTag.Rejected, "unknown-occurrence") : committed(enqueue(state, act(occurrence)));
+    return occurrence === null
+      ? failed(FailureTag.Rejected, "unknown-occurrence")
+      : committed(enqueue(state, act(ownScope(state, occurrence.id, occurrence.scope))));
   };
   const action = input.action;
   switch (action.tag) {
@@ -488,9 +492,9 @@ function command(hooks: Hooks, ctx: Ctx, input: CommandInput, state: State): Out
     case CommandActionTag.CancelIncidentProcess:
       return incident(action);
     case CommandActionTag.SetVariables:
-      return admitThen(action.values.map(([, value]) => value), () => variables((occurrence) => ({ tag: SignalTag.Write, scope: occurrence.scope, writes: action.values, rule: WriteRule.Outward })));
+      return admitThen(action.values.map(([, value]) => value), () => variables((scope) => ({ tag: SignalTag.Write, scope, writes: action.values, rule: WriteRule.Outward })));
     case CommandActionTag.RemoveVariables:
-      return variables((occurrence) => ({ tag: SignalTag.Remove, scope: occurrence.scope, names: action.names }));
+      return variables((scope) => ({ tag: SignalTag.Remove, scope, names: action.names }));
   }
   return assertNever(action);
 }

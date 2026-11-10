@@ -135,11 +135,21 @@ def publicFailure (program : Program) (failure : InstanceFailure) : InstanceFail
     occurrence := publicRef program failure.occurrence
     related := failure.related.map fun (name, ref) => (name, publicRef program ref) }
 
+/-- An open User Task's inputs are its occurrence's input-mapped locals as they stand now, which a variable command can
+rewrite or remove while it waits (CIB projects `RuntimeService#getVariablesLocal`); an effect's arguments stay the
+snapshot taken when it opened. -/
+def currentInputs (state : State) (item : OpenItem) (view : WaitView) : WaitView :=
+  match view.userTask with
+  | none => view
+  | some task =>
+    let own := state.ownVariables (state.ownScope item.occurrence item.scope)
+    { view with userTask := some { task with inputs := task.inputs.flatMap fun (name, _) => own.filter (·.1 == name) } }
+
 def openWait (program : Program) (state : State) (item : OpenItem) : OpenWait :=
   { id := publicRef program { processInstanceId := state.instanceOf item.scope, element := item.element
                               activation := ((state.occurrence? item.occurrence).map (·.activation)).getD 0 }
     definition := (state.slots.instances.find? (·.root == state.instanceRoot item.scope)).bind (·.definition)
-    view := item.kind.view }
+    view := currentInputs state item item.kind.view }
 
 def hostView (program : Program) (state : State) : View :=
   { status := state.status, failure := state.failure.map (publicFailure program)

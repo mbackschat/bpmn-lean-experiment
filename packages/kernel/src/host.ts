@@ -37,6 +37,7 @@ import {
   messageChannelEquals,
   occurrenceOf,
   openKindView,
+  ownScope,
   type InstanceFailure,
   type InstanceStatus,
   type MessageChannel,
@@ -47,7 +48,7 @@ import {
   type Transition,
   type WaitView,
 } from "./state.js";
-import { messageTriggerChannel } from "./hooks.js";
+import { messageTriggerChannel, ownVariables } from "./hooks.js";
 
 /**
  * What a program needs from its host. `maxConcurrentWaits` is `null` when the shape bounds nothing, which is every
@@ -208,6 +209,18 @@ function publicFailure(program: Program, failure: InstanceFailure): InstanceFail
   };
 }
 
+/**
+ * An open User Task's inputs are its occurrence's input-mapped locals as they stand now, which a variable command can
+ * rewrite or remove while it waits (CIB projects `RuntimeService#getVariablesLocal`); an effect's arguments stay the
+ * snapshot taken when it opened.
+ */
+function currentInputs(state: State, item: OpenItem, view: WaitView): WaitView {
+  if (view.userTask === null) return view;
+  const own = ownVariables(state, ownScope(state, item.occurrence, item.scope));
+  const inputs = view.userTask.inputs.flatMap(([name]) => own.filter(([key]) => key === name));
+  return { ...view, userTask: { ...view.userTask, inputs } };
+}
+
 function openWait(program: Program, state: State, item: OpenItem): OpenWait {
   const root = instanceRoot(state, item.scope);
   return {
@@ -217,7 +230,7 @@ function openWait(program: Program, state: State, item: OpenItem): OpenWait {
       activation: occurrenceOf(state, item.occurrence)?.activation ?? 0,
     }),
     definition: state.slots.instances.find((instance) => instance.root === root)?.definition ?? null,
-    view: openKindView(item.kind),
+    view: currentInputs(state, item, openKindView(item.kind)),
   };
 }
 

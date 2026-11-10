@@ -451,6 +451,16 @@ export function calledRoot(state: State, scope: ScopeOccurrenceId): boolean {
   return (scopeOf(state, scope)?.calledInstance ?? null) !== null;
 }
 
+/**
+ * The scope occurrence an occurrence `host` reads from and writes outward from: its own local or child scope, so its
+ * input-mapped locals are visible (`PvmExecutionImpl.java:1304-1318`), otherwise `scope`, the enclosing one. A called
+ * instance's root belongs to the callee and is never the host's own.
+ */
+export function ownScope(state: State, host: number, scope: ScopeOccurrenceId): ScopeOccurrenceId {
+  const own = state.scopes.find((entry) => entry.occurrence === host && entry.calledInstance === null);
+  return own === undefined ? scope : own.id;
+}
+
 /** The root of the process instance `scope` belongs to: the nearest called-instance root, else the process root. */
 export function instanceRoot(state: State, scope: ScopeOccurrenceId): ScopeOccurrenceId {
   let current = scope;

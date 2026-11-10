@@ -120,7 +120,7 @@ def arm (ctx : Ctx) (host : Nat) (element : ElementId) (scope : ScopeOccurrenceI
   | some envelope =>
     envelope.boundaries.foldlM (fun state boundary =>
       let arming : Arming :=
-        { values := state.evalContext (ownScope state host scope), names := state.evalContext scope
+        { values := state.evalContext (state.ownScope host scope), names := state.evalContext scope
           repeats := !boundary.interrupting }
       subscribe ctx arming state boundary.subscription boundary.id scope (some host) false) state
 
