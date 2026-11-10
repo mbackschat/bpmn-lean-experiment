@@ -7,6 +7,7 @@ Answer-free schedules for [PC-CONDITION-01](../../../docs/PRACTICAL-CIB7-COVERAG
 | Model | What it holds |
 |---|---|
 | [evaluation.bpmn](evaluation.bpmn) | After a Parallel fork two Human Tasks run. `Host` carries seven non-interrupting Conditional boundaries, each leading to its own handler Human Task `Handle_*`: `Cond_Create` (`${amount > 100}`, variable `amount`, event `create`), `Cond_Update` (the same predicate, event `update`), `Cond_Any` (`${flag == true}`, no filter), `Cond_Delete` (`${!execution.hasVariable('note')}`, variable `note`, event `delete`), `Cond_Null` (`${status == null}`, variable `status`), `Cond_False` (`${approved == false}`, variable `approved`) and `Cond_NonBoolean` (`${level}`, variable `level`). `Host_Local` declares the local variable `level2` (input mapping, value 0) and carries `Cond_Local` (`${level2 > 5}`, variable `level2`). |
+| [evaluation-portable.bpmn](evaluation-portable.bpmn) | `evaluation.bpmn` with `Cond_Delete`'s predicate replaced by `${phase == 'cleanup'}` (still variable `note`, event `delete`). The original predicate names `execution`, which the kernel's JUEL levels refuse at admission, so the kernel answers every schedule of `evaluation.bpmn` with a whole-model refusal; this model keeps the other seven boundaries byte-identical and lets the kernel answer them. |
 
 ## Schedules
 
@@ -20,6 +21,14 @@ Answer-free schedules for [PC-CONDITION-01](../../../docs/PRACTICAL-CIB7-COVERAG
 | [null-and-false-values](null-and-false-values.scenario.json) | evaluation | PC-CONDITION-01 | `status` is created as a present null, `approved` as a present null and then as `false`, `flag` as `false` and then as `true`. |
 | [non-boolean-result](non-boolean-result.scenario.json) | evaluation | PC-CONDITION-01 | `level` is created as the Integer 3, so the predicate `${level}` is not Boolean. |
 | [nearest-visible-scope](nearest-visible-scope.scenario.json) | evaluation | PC-CONDITION-01 | `level2` is created as 9 on `Host` at the Process level, then written as 9 on `Host_Local`, which declares it locally. |
+| [portable-entry-true](portable-entry-true.scenario.json) | evaluation-portable | PC-CONDITION-01 | As `entry-true`. |
+| [portable-create-true](portable-create-true.scenario.json) | evaluation-portable | PC-CONDITION-01 | As `create-true`. |
+| [portable-create-false-then-update-true](portable-create-false-then-update-true.scenario.json) | evaluation-portable | PC-CONDITION-01 | As `create-false-then-update-true`. |
+| [portable-delete-and-recreate](portable-delete-and-recreate.scenario.json) | evaluation-portable | PC-CONDITION-01 | `phase` is created as `cleanup` on `Host`, a write `Cond_Delete`'s filters do not select; `note` is then removed, which the filters select, and written again, which they do not. |
+| [portable-unrelated-write-with-absent-variables](portable-unrelated-write-with-absent-variables.scenario.json) | evaluation-portable | PC-CONDITION-01 | As `unrelated-write-with-absent-variables`. |
+| [portable-null-and-false-values](portable-null-and-false-values.scenario.json) | evaluation-portable | PC-CONDITION-01 | As `null-and-false-values`. |
+| [portable-non-boolean-result](portable-non-boolean-result.scenario.json) | evaluation-portable | PC-CONDITION-01 | As `non-boolean-result`. |
+| [portable-nearest-visible-scope](portable-nearest-visible-scope.scenario.json) | evaluation-portable | PC-CONDITION-01 | As `nearest-visible-scope`. |
 
 ## Notes for the target runners
 

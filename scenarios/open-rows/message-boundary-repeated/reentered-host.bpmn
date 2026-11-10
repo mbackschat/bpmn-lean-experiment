@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_ReenteredHost"
+  targetNamespace="urn:bpmn-lean:scenarios:message-boundary-repeated:reentered-host">
+  <bpmn:message id="Message_PingLoop" name="pingLoop" />
+  <bpmn:process id="Process_ReenteredHost" name="Order review sent back for another round" isExecutable="true">
+    <bpmn:startEvent id="Start_Loop" />
+    <bpmn:exclusiveGateway id="Merge_Loop" gatewayDirection="Converging" />
+    <bpmn:userTask id="Host_Loop" name="Review the order" />
+    <bpmn:boundaryEvent id="Ping_Loop" attachedToRef="Host_Loop" cancelActivity="false">
+      <bpmn:messageEventDefinition id="MED_Ping_Loop" messageRef="Message_PingLoop" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handler_Loop" name="Respond to the ping" />
+    <bpmn:endEvent id="End_Handler_Loop" />
+    <bpmn:exclusiveGateway id="Gateway_Again" gatewayDirection="Diverging" default="Flow_Gateway_Again_End_Loop" />
+    <bpmn:endEvent id="End_Loop" />
+    <bpmn:sequenceFlow id="Flow_Start_Loop_Merge_Loop" sourceRef="Start_Loop" targetRef="Merge_Loop" />
+    <bpmn:sequenceFlow id="Flow_Merge_Loop_Host_Loop" sourceRef="Merge_Loop" targetRef="Host_Loop" />
+    <bpmn:sequenceFlow id="Flow_Host_Loop_Gateway_Again" sourceRef="Host_Loop" targetRef="Gateway_Again" />
+    <bpmn:sequenceFlow id="Flow_Gateway_Again_Merge_Loop" sourceRef="Gateway_Again" targetRef="Merge_Loop">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${again == true}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Gateway_Again_End_Loop" sourceRef="Gateway_Again" targetRef="End_Loop" />
+    <bpmn:sequenceFlow id="Flow_Ping_Loop_Handler_Loop" sourceRef="Ping_Loop" targetRef="Handler_Loop" />
+    <bpmn:sequenceFlow id="Flow_Handler_Loop_End_Handler_Loop" sourceRef="Handler_Loop" targetRef="End_Handler_Loop" />
+  </bpmn:process>
+</bpmn:definitions>
