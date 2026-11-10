@@ -6,13 +6,9 @@ Adopted kernel owner document (W0 extraction, 2026-11-09). The kernel modules it
 
 How work on the kernel, its boundaries and Product 2 is reviewed, verified, documented, written and set up. [CLAUDE.md](../../CLAUDE.md) holds the triggers every contributor must see before acting, the [kernel architecture](ARCHITECTURE-SPEC.md) owns the design, the [guardrails](ARCHITECTURE-SPEC.md#guardrails-against-degradation) and the definition of done, and [PLAN](../PLAN.md) the delivery plan; this document owns the procedure behind them and never restates them. It replaces the old review, testing, documentation, code-style and verification policies ([review][review], [testing][testing], [documentation][docs], [code style][style], [infrastructure][infra], [semantic][semantic], [Temporal][temporal], [platform][platform]); what the [process reset](https://github.com/mbackschat/bpmn-lean-experiment/blob/404a39d7/docs/LEAN-KERNEL-REWRITE-PROPOSAL.md#process-and-rule-reset) of the kernel rewrite dropped is not carried here.
 
-## Bulk changes
-
-A script that creates, edits, moves or deletes repository files, a repeated mechanical pass, or a change touching more than 20 files declares in its header its scope (the exact file set or selector and what it must never touch) and its target effect (expected files and net lines, as limits), and stops when it exceeds them. After it runs, a post-run diff against the commit it started from is compared with the declaration before anything builds on the result. An effect beyond the declaration or a file outside the scope is reverted in full; the script is fixed after its root cause is named, never the result patched in place. A repository-owned generator whose complete output a guard verifies is exempt.
-
 ## Reviews
 
-The review points are fixed by the [kernel architecture](ARCHITECTURE-SPEC.md#review): one cold review of the W0.1 architecture checkpoint, one combined review of meaning and structure per mechanism track, one cold interpretation review before code for a row that needs a new BPMN or CIB interpretation, and at most one audit of a correction.
+The review points are fixed by CLAUDE.md and the [kernel architecture](ARCHITECTURE-SPEC.md#review): one cold review of the W0.1 architecture checkpoint, one combined review of meaning and structure per mechanism track, one cold interpretation review before code for a row that needs a new BPMN or CIB interpretation, and at most one audit of a correction.
 
 - A cold reviewer is a fresh agent on the root's model and reasoning effort, read-only, briefed with the committed target and the claim it must check, never the author's diagnosis, findings or verdict ([isolation][review-gate]). It reads the committed documents and code, not summaries. Implementers never review their own work.
 - An interpretation review checks the normative account against BPMN 2.0.2, the CIB relation and its register entry, the [forward-compatible restriction](../../CLAUDE.md#forward-compatible-restrictions) of every field the row leaves unadmitted, and the nearest realistic wrong account with the witness that separates it.
@@ -20,8 +16,6 @@ The review points are fixed by the [kernel architecture](ARCHITECTURE-SPEC.md#re
 - A required finding names the violated contract, the unsupported claim or the concrete defect, with its locus; an unmeasured preference is advisory and never blocks. Writes to the reviewed files pause until the verdict. The single audit of a correction is recorded in the correction commit's message.
 
 ## Commits and delegation
-
-The root is HIGH: it decides scope, meaning, design, bounds and acceptance, accepts kernel shape edits, runs full builds, the full runner and every hosted lane, and integrates. HIGH track agents author kernel feature, admission and laws modules in Lean and their TypeScript pairs on disjoint files, and run only narrow Lean builds of their own modules and `Kernel.Run` for their own scenarios, waiting and retrying when the project lock is held. MEDIUM agents build against an exact contract a deterministic check settles (fixtures, scenarios, models, documentation sweeps); LOW agents execute fully specified procedures. MEDIUM and LOW agents are fresh agents, never forks. Agents never run a heavy lane.
 
 - One commit is one coherent, verified change: a feature, a defect repair or a material checkpoint, with its tests and documents. A helper, a green module or an agent handback is no separate outcome ([commit boundaries][review-commits]).
 - While several lanes share the working tree, stage named paths only; never `git add -A`, `git add .`, `git stash`, `git restore .` or `git reset --hard`.
@@ -51,31 +45,15 @@ Locally run only: the Lean build of touched modules through [the Lean wrapper](.
 
 - Lean: never `lake` or `lean` directly; the wrapper holds one fail-closed project lock across every checkout and refuses a full-library build unless `LEAN_FULL_GATE=<gate>` names its gate. Lake passes `-M2048`; local Lean work stays under 5 GB in total; the thread pin and the [memory brake](../../scripts/lean-memory-brake.sh) change only by owner decision ([Lean execution][infra-lean]). Exit `70` is a resource-ceiling breach, exit `75` a refused build: stop, never retry blindly.
 - A deadline is chosen before launch from the gate's own allowance (focused tests 60 s, focused builds 120 s when no owner states otherwise). Tool yields are not deadlines: resume the same process; never kill and restart a build to accumulate progress ([deadlines][infra-deadline]).
-
-In a managed sandbox, request host port-binding authorization before the first attempt to run `./scripts/verify.sh`, `./scripts/pnpm.sh run test:infrastructure`, `./scripts/pnpm.sh run test:temporal-host:hosted`, `./scripts/pnpm.sh run test:differential:hosted` or `./scripts/pnpm.sh run test:pipeline`; never probe inside the sandbox first. A loopback `EPERM` is a sandbox denial, not a port collision or test failure. Every helper process you start must terminate itself (bounded by `timeout`, a deadline or a fixed iteration count); capture each `$!` right after its own `&`.
-
-Heavy lanes (full Lean, Docker, Temporal server, the complete pipeline, `verify.sh`) run one at a time across every checkout of this project, from the root only. The Lean wrapper accepts `build`, `test`, `run`, `exe` and `env lean`.
+- In a managed sandbox, request host port-binding authorization before the first run of a gate that binds loopback ports; `EPERM` there is a sandbox denial.
 
 ### Hosted lanes and budgets
 
-- Do not add macOS to a push, pull-request, scheduled, matrix, ordinary release or other routine workflow: no macOS-native artifact ships, the development computer owns local macOS validation, and Ubuntu is the routine portability lane. A focused macOS smoke job is allowed only for an explicit clean-machine or ARM purpose, guarded by `github.event_name == 'workflow_dispatch'`, never running the complete suite. [Larger macOS runners stay billable](https://docs.github.com/en/actions/reference/runners/github-hosted-runners) and need an owner decision. The executable runner policy rejects every macOS label outside that boundary.
+- Ubuntu is the routine lane; macOS follows [Rule 1](../../CLAUDE.md#rule-1-no-routine-github-hosted-macos).
 - Each hosted job stays below about 70% of its `timeout-minutes`; past that it is split by owned contract, never given a larger limit ([feedback budgets][infra-budget]). A feedback budget is met by removing duplicate work, splitting or making a timing diagnostic, never by deleting a discriminator, merging independent producers, skipping a lane or relaxing an oracle. Bounds change only by owner decision.
 - Hosted CI is the complete gate, not the first oracle: reproduce a locally reproducible failure, correct its mechanism and push again; never rerun an unchanged failure for a better result. Distinguish running, failed, interrupted and missing results from green.
 - Branch push flow: push the branch, open a pull request, and fast-forward `main` to the exact SHA whose checks, `verify-complete` included, are green; never through an administrator bypass ([push flow][testing-push]).
 - Tags only on explicit owner request, at a clean, completely verified `HEAD`, through `node scripts/project-tags.ts` with the receipts of every applicable gate; annotated `phase/<kebab-case>` for completion points and `vMAJOR.MINOR.PATCH[-prerelease]` (equal to the root and web `package.json` versions) for qualified distributions; a published tag is never forced or moved ([tags][infra-tags]).
-
-### Semantic invariants
-
-- Commands distinguish committed, rolled back, rejected, semantic failure and unsupported outcomes.
-- Harness and infrastructure failures remain separate from semantic outcomes.
-- Logical time, scheduler actions, races and other nondeterministic choices are explicit inputs.
-- Enabled external interactions are part of the observation contract.
-- Collections preserve multiplicity; variables preserve scope and semantic type.
-- Definition identity, semantic instance identity and host-runtime identity remain distinct.
-- External-effect lifecycle remains distinct from internal semantic state.
-- Temporal transport retries remain distinct from CIB-visible retries and incidents.
-- Speculative command state is not exposed as committed observation.
-- No claim exceeds the declared profile, environment, feature surface, observation boundary and evidence.
 
 ### Contracts and evidence
 
@@ -134,14 +112,6 @@ A profile is release-ready only when each block holds or every remaining item is
 - TypeScript: deeply immutable data and wire contracts through the one `DeepReadonly<T>`; `as const satisfies Contract`, never `as Contract`; closed discriminated unions; exhaustive `switch` ending in `assertNever`; `unknown` narrowed by validators at untrusted boundaries, no `any`, non-null assertions or unchecked casts; typed domain results kept apart from thrown infrastructure failures; small pure functions and ES modules over stateful classes. Directly executed harnesses stay inside Node's erasable syntax (`as const` objects with derived unions instead of `enum`); compiled packages, the kernel included, use enums for guarded kinds as the [kernel architecture](ARCHITECTURE-SPEC.md#modules-and-build-shape) prescribes ([TypeScript idiom][style-hygiene], [harnesses][infra-harness]).
 - Wire decoding, semantic orchestration, host lifecycle, evidence extraction and canonical projection are separate owners.
 - Comments carry semantic surplus only: contracts, invariants, ordering, failure distinctions, ownership, resource limits, evidence provenance and a tempting wrong alternative, added in the change that introduces the fact; a kernel rule's comment cites a BPMN clause or a register identifier (guard 24). No status, chronology or "currently" in a comment; a stale comment is a defect; never write stubs or comments to meet a ratio ([comments][style-comments]).
-
-## Dependencies
-
-Routine npm updates use stable releases at least 14 days old, including transitive dependencies, with strict age enforcement, frozen lockfiles and install scripts disabled unless individually reviewed. An urgent security fix follows the [security update procedure](../CONTRIBUTOR-SETUP-GUIDE.md#dependency-security-procedure). The [dependency approval rule](../../CLAUDE.md#dependencies) applies to the engine and platform alike.
-
-## Reference and source discipline
-
-Reference checkouts live under sibling `../oss` (override `BPMN_EXTERNAL_ROOT`), provisioned by `./scripts/doctor.sh`, and are research inputs, never runtime dependencies of Lean or the kernel; link them via [SOURCES](../SOURCES.md) and never commit absolute home paths, usernames, hostnames or credentials. Inspect the pinned checkout before relying on memory or web search. Project-authored code and documentation are [MIT](../../LICENSE); never copy external material without verifying compatibility and recording it in SOURCES. The OMG BPMN corpus stays external; read it through the [reading workflow](../reference/bpmn-2.0.2/README.md#reading-workflow). Before opening a PDF, name the specific gap in the text or extracted figures and the page or clause needed. Do not bypass the search exclusions for routine reading.
 
 ## Setup
 
