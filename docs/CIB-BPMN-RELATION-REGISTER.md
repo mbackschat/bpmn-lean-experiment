@@ -828,15 +828,15 @@ CIB Seven `2.2.0` resolves `${task.assignee}` and its siblings inside a task lis
 
 **Boundary:** Expressions naming the `task` bean in User Task metadata and conditions.
 
-### CIB-LIM-0013: pinned CIB ignores an Activity's Data Input and Output Associations
+### CIB-LIM-0013: pinned CIB ignores the Data Input and Output Associations of an Activity or a catch Event
 
 **Status:** Known CIB limitation within reviewed scope
 
-BPMN 2.0.2 §10.4.1 and §13.3.2 make an Activity's InputSet available only through its Data Input Associations and copy its OutputSet through its Data Output Associations. CIB Seven `2.2.0`'s `BpmnParse` never reads `ioSpecification`, `dataInputAssociation` or `dataOutputAssociation` outside a Multi-Instance loop's `loopDataInputRef` (`BpmnParse.java:1841-1858`, `CIB-INT-0014`): the task opens with no input whatever the source's availability, and a completion's submitted values are installed by name (`CIB-EXT-0005`) instead of being associated to their targets. The standards profile follows BPMN; no CIB profile imitates the omission.
+BPMN 2.0.2 §10.4.1 and §13.3.2 make an Activity's InputSet available only through its Data Input Associations and copy its OutputSet through its Data Output Associations. CIB Seven `2.2.0`'s `BpmnParse` never reads `ioSpecification`, `dataInputAssociation` or `dataOutputAssociation` outside a Multi-Instance loop's `loopDataInputRef` (`BpmnParse.java:1841-1858`, `CIB-INT-0014`): the task opens with no input whatever the source's availability, and a completion's submitted values are installed by name (`CIB-EXT-0005`) instead of being associated to their targets. On an Intermediate Catch, boundary or Event Sub-Process start Message Event the same parser omission leaves the declared Data Output without effect (BPMN 2.0.2 §10.5.1 Table 10.82): a delivery without variables commits and writes nothing, where the kernel refuses it under account P1 (`message-payload-required`) and, with a payload, writes the associated target. The standards profile follows BPMN; no CIB profile imitates the omission.
 
-**Evidence:** The retained answers of `activity-data-input-user-task/{absent,null,present}`, `activity-data-output-user-task/{null,omitted,supplied}` and `activity-data-input-output-user-task/{absent,null,omitted,present}` (standards profile `bpmn-2.0.2`, CIB Seven `2.2.0`): CIB opens the task with no inputs, publishes the submitted `DataOutput_*` name instead of the associated Property, and commits an omitted required output.
+**Evidence:** The retained answers of `activity-data-input-user-task/{absent,null,present}`, `activity-data-output-user-task/{null,omitted,supplied}` and `activity-data-input-output-user-task/{absent,null,omitted,present}` (standards profile `bpmn-2.0.2`, CIB Seven `2.2.0`): CIB opens the task with no inputs, publishes the submitted `DataOutput_*` name instead of the associated Property, and commits an omitted required output; the retained answer of `message-payload-catch/absent-payload` (standards profile `bpmn-2.0.2`, CIB Seven `2.2.0`), where CIB commits a delivery without variables to a catch with a required Data Output. CIB's answer to a delivery with a payload is inferred from the source only: the payload witnesses carry no evidence yet.
 
-**Boundary:** Standard Data Associations on Activities; Multi-Instance loop references stay `CIB-INT-0014`.
+**Boundary:** Standard Data Associations on Activities and the Data Output Associations of Message catch Events; Multi-Instance loop references stay `CIB-INT-0014`, and variables a delivery installs by name stay `CIB-EXT-0025`.
 
 ### CIB-LIM-0014: the portable value domain rejects at ingress a structured value CIB stores
 

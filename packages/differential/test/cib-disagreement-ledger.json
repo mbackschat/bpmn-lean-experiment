@@ -168,7 +168,7 @@
   {
     "evidence": "scenarios/message-payload-catch/absent-payload.cibseven-evidence.json",
     "owners": [
-      "PC-MESSAGE-03"
+      "CIB-LIM-0013"
     ]
   },
   {
