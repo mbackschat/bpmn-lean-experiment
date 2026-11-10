@@ -91,6 +91,23 @@ public class CibSevenOracleMainTest {
   }
 
   @Test
+  public void numbersEachArmingOfARearmedRaceByItsGatewayActivationWithoutIncomingReferences() throws Exception {
+    // reply-race.bpmn declares no `incoming` references, so the arms' gateway is found from the Sequence Flows; a
+    // delivery to the first race's arm after the second arming must not reach the second race.
+    var scenario = ScenarioJson.writeScenario(ScenarioJson.read(PROJECT_ROOT.resolve(
+        "scenarios/open-rows/event-race-compositions/reply-race-repeated-previous-race-identity.scenario.json")));
+    var output = new StringWriter();
+
+    CibSevenOracleMain.serve(new StringReader(scenario + System.lineSeparator()), output, PROJECT_ROOT);
+
+    var trace = ScenarioJson.readResult(output.toString().lines().findFirst().orElseThrow()).trace();
+    assertTrue(trace.contains(new ScenarioProtocol.CommandObservation(
+        "s04-deliver-ReplyReceived-1", ScenarioProtocol.CommandOutcome.REJECTED)));
+    assertTrue(trace.contains(new ScenarioProtocol.CommandObservation(
+        "s06-fire-ReplyOverdue-2", ScenarioProtocol.CommandOutcome.COMMITTED)));
+  }
+
+  @Test
   public void servesTheInteractionCapsuleInRequestOrderThroughOneEngine()
       throws Exception {
     var capsuleRoot =

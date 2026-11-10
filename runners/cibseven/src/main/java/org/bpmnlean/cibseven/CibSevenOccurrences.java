@@ -17,6 +17,7 @@ import org.cibseven.bpm.model.bpmn.instance.BoundaryEvent;
 import org.cibseven.bpm.model.bpmn.instance.EventBasedGateway;
 import org.cibseven.bpm.model.bpmn.instance.FlowNode;
 import org.cibseven.bpm.model.bpmn.instance.MultiInstanceLoopCharacteristics;
+import org.cibseven.bpm.model.bpmn.instance.SequenceFlow;
 import org.cibseven.bpm.model.bpmn.instance.StartEvent;
 import org.cibseven.bpm.model.bpmn.instance.SubProcess;
 
@@ -204,8 +205,15 @@ final class CibSevenOccurrences {
       return scope.getId();
     }
     if (element instanceof FlowNode node) {
+      // `FlowNode#getPreviousNodes` reads the optional `incoming` references (FlowNodeImpl:136-142), which a model may
+      // omit; a Sequence Flow's `sourceRef` and `targetRef` are required.
       var gateways =
-          node.getPreviousNodes().list().stream().filter(EventBasedGateway.class::isInstance).toList();
+          model.getModelElementsByType(SequenceFlow.class).stream()
+              .filter(flow -> flow.getTarget() == node)
+              .map(SequenceFlow::getSource)
+              .filter(EventBasedGateway.class::isInstance)
+              .distinct()
+              .toList();
       if (gateways.size() == 1) {
         return gateways.getFirst().getId();
       }
