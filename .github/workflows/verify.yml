@@ -319,9 +319,12 @@ jobs:
           retention-days: 14
           path: scenarios/**/*cibseven-evidence.json
 
+      # The CIB test Maven call took 99 s of the 120 s workstation deadline on main (run 42787486975, 733 retained
+      # evidence files, 2026-11-10), and each retained file adds a reproduction; 1,000 files breached it in three runs.
       - name: Verify runtime
         env:
           CI: "true"
+          BPMN_CIB_MAVEN_TIMEOUT_MS: "180000"
         run: ./scripts/verify.sh runtime
 
       - name: Stage runtime output for the integration lane
