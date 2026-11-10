@@ -22,15 +22,14 @@ import org.junit.Test;
  * (`ExclusiveGatewayActivityBehavior#doLeave`, pinned `5a45b47e`) takes the first true conditional flow in declaration
  * order and, when none holds and no default is declared, raises `ENGINE-02004`
  * (`BpmnBehaviorLogger#stuckExecutionException`), which aborts the engine command: a Start leaves no runtime or historic
- * Process instance, and a User Task completion leaves the task open with its values. CIB does not execute the project's
- * Simple Boolean v1 conditions, so each is rendered as JUEL under `CIB-CFG-0005`. Expected values are built here from the
+ * Process instance, and a User Task completion leaves the task open with its values. The retained model is
+ * deployed as it is, its conditions core JUEL under `CIB-CFG-0011`. Expected values are built here from the
  * account's journeys, never read from a target result.
  */
 public final class CibSevenExclusiveChoiceWithoutDefaultProbeTest {
   private static final Path MODELS =
       Path.of("../..").toAbsolutePath().normalize().resolve("scenarios/exclusive-choice-without-default");
-  private static final Pattern STRING_EQUALS = Pattern.compile("stringEquals\\((\\w+),\"([^\"]*)\"\\)");
-  private static final String SIMPLE_BOOLEAN = " expressionLanguage=\"urn:bpmn-lean:expression:simple-boolean:v1\"";
+  private static final Pattern JUEL_EQUALS = Pattern.compile("\\$\\{\\w+ == '[^']*'\\}");
   private static final String NO_FLOW_SELECTED = "ENGINE-02004";
 
   @Test
@@ -78,7 +77,7 @@ public final class CibSevenExclusiveChoiceWithoutDefaultProbeTest {
 
   @Test
   public void aPayoutWithOnlyItsBankFlowIsRefusedAtParse() throws Exception {
-    var source = Session.juelRendition("expense-routing", 5)
+    var source = Session.retainedModel("expense-routing", 5)
         .replace("      <outgoing>Flow_Payroll</outgoing>\n", "")
         .replaceAll("(?s)    <sequenceFlow id=\"Flow_Payroll\".*?</sequenceFlow>\n", "")
         .replace("    <sequenceFlow id=\"Flow_Payrolled\" sourceRef=\"AddToPayroll\" targetRef=\"ExpensePaid\" />\n", "")
@@ -148,18 +147,18 @@ public final class CibSevenExclusiveChoiceWithoutDefaultProbeTest {
           configuration -> configuration.setBeans(Map.<Object, Object>of(handler, delegate)));
       try {
         deployment = engine.getRepositoryService().createDeployment()
-            .addString(model + ".bpmn", juelRendition(model, conditions)).deploy().getId();
+            .addString(model + ".bpmn", retainedModel(model, conditions)).deploy().getId();
       } catch (Exception | Error failure) {
         engine.close();
         throw failure;
       }
     }
 
-    /** The model with each `stringEquals(n,"v")` condition rendered as the JUEL `${n == "v"}`, exactly `conditions` of them. */
-    static String juelRendition(String model, int conditions) throws Exception {
+    /** The retained model's bytes, which hold exactly `conditions` core-JUEL equality conditions. */
+    static String retainedModel(String model, int conditions) throws Exception {
       var source = Files.readString(MODELS.resolve(model + ".bpmn"));
-      assertEquals(conditions, STRING_EQUALS.matcher(source).results().count());
-      return STRING_EQUALS.matcher(source.replace(SIMPLE_BOOLEAN, "")).replaceAll("\\${$1 == \"$2\"}");
+      assertEquals(conditions, JUEL_EQUALS.matcher(source).results().count());
+      return source;
     }
 
     String start(String processId, Map<String, Object> variables) {

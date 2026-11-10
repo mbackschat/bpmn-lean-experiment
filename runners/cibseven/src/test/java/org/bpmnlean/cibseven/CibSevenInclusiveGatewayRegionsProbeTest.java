@@ -20,15 +20,13 @@ import org.junit.Test;
  * (`InclusiveGatewayActivityBehavior.java:61-86`), and its join activates once no other execution of the scope can reach
  * it (`activatesGateway`, `canReachActivity`). On these acyclic structured root regions that is exactly when every
  * selected branch has arrived: the next User Task after the join opens with the last selected branch and not before.
- * CIB does not execute the project's Simple Boolean v1 conditions, so each condition is rendered as JUEL under
- * `CIB-CFG-0005` before deployment; the probe compares activations, never condition truth. Expected values are built here
+ * The retained model is deployed as it is, its conditions core JUEL under `CIB-CFG-0011`; the probe compares activations, never condition truth. Expected values are built here
  * from the proposal's witness-model account, never read from a target result.
  */
 public final class CibSevenInclusiveGatewayRegionsProbeTest {
   private static final Path MODELS = Path.of("../..").toAbsolutePath().normalize()
       .resolve("scenarios/inclusive-gateway-regions");
-  private static final Pattern STRING_EQUALS = Pattern.compile("stringEquals\\((\\w+),\"([^\"]*)\"\\)");
-  private static final String SIMPLE_BOOLEAN = " expressionLanguage=\"urn:bpmn-lean:expression:simple-boolean:v1\"";
+  private static final Pattern JUEL_EQUALS = Pattern.compile("\\$\\{\\w+ == '[^']*'\\}");
   private static final List<String> ALL_CHECKS = List.of("CollectTaxResidencyForm", "VerifySourceOfFunds");
   private static final List<String> ALL_EXTRAS =
       List.of("BookTechnician", "BookVenue", "ConfirmAttendeeList", "OrderCatering", "RentProjector");
@@ -153,9 +151,8 @@ public final class CibSevenInclusiveGatewayRegionsProbeTest {
           configuration -> configuration.setBeans(Map.<Object, Object>of(handler, delegate)));
       try {
         var source = Files.readString(MODELS.resolve(model + ".bpmn"));
-        assertEquals(conditions, STRING_EQUALS.matcher(source).results().count());
-        var rendition = STRING_EQUALS.matcher(source.replace(SIMPLE_BOOLEAN, "")).replaceAll("\\${$1 == \"$2\"}");
-        deployment = engine.getRepositoryService().createDeployment().addString(model + ".bpmn", rendition).deploy()
+        assertEquals(conditions, JUEL_EQUALS.matcher(source).results().count());
+        deployment = engine.getRepositoryService().createDeployment().addString(model + ".bpmn", source).deploy()
             .getId();
       } catch (Exception | Error failure) {
         engine.close();

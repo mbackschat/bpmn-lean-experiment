@@ -21,8 +21,8 @@ import org.junit.Test;
 /**
  * Calibrates the scope re-entry specification's widening of `CIB-EXT-0020` and `CIB-EXT-0021` from one activation to each
  * activation (`SRE-FRESH-01`, `SRE-INIT-01`, `SRE-RETAIN-01`, `SRE-STALE-01`, `SRE-OUTPUT-01`) on the two retained
- * models. CIB does not execute the project's Simple Boolean v1 conditions, so each root condition is rendered as JUEL
- * under `CIB-CFG-0005` before deployment; the probe compares re-entry, frames and identities, never condition truth.
+ * models. Each retained model is deployed as it is, its conditions core JUEL
+ * under `CIB-CFG-0011`; the probe compares re-entry, frames and identities, never condition truth.
  * The complaint handling tests calibrate the Exclusive choice arity specification's widening of `CIB-AGR-0006`
  * (`XCA-ORDER-01`, `XCA-DEFAULT-01`): a three-condition and a one-condition Choice, each with a default, over the four
  * schedules of *Route complaint*, compared by the task or job each Choice selects in declaration order. The travel request
@@ -35,8 +35,7 @@ public final class CibSevenScopeReentryProbeTest {
   private static final Path MODELS = PROJECT_ROOT.resolve("scenarios/scope-reentry");
   private static final Path ARITY_MODELS = PROJECT_ROOT.resolve("scenarios/exclusive-choice-arity");
   private static final Path FAN_IN_MODELS = PROJECT_ROOT.resolve("scenarios/none-end-fan-in");
-  private static final Pattern STRING_EQUALS = Pattern.compile("stringEquals\\((\\w+),\"([^\"]*)\"\\)");
-  private static final String SIMPLE_BOOLEAN = " expressionLanguage=\"urn:bpmn-lean:expression:simple-boolean:v1\"";
+  private static final Pattern JUEL_EQUALS = Pattern.compile("\\$\\{\\w+ == '[^']*'\\}");
 
   @Test
   public void eachAssessmentStartsFromTheClaimSummaryAndTheStaleInspectionIsRefused() throws Exception {
@@ -195,14 +194,11 @@ public final class CibSevenScopeReentryProbeTest {
     }
   }
 
-  /**
-   * The model with each Simple Boolean v1 `stringEquals(n,"v")` condition rendered as the JUEL `${n == "v"}`, which must
-   * replace exactly `conditions` conditions.
-   */
-  private static String juelRendition(Path directory, String model, int conditions) throws Exception {
+  /** The retained model's bytes, which hold exactly `conditions` core-JUEL equality conditions. */
+  private static String retainedModel(Path directory, String model, int conditions) throws Exception {
     var source = Files.readString(directory.resolve(model + ".bpmn"));
-    assertEquals(conditions, STRING_EQUALS.matcher(source).results().count());
-    return STRING_EQUALS.matcher(source.replace(SIMPLE_BOOLEAN, "")).replaceAll("\\${$1 == \"$2\"}");
+    assertEquals(conditions, JUEL_EQUALS.matcher(source).results().count());
+    return source;
   }
 
   private static final class Session implements AutoCloseable {
@@ -217,7 +213,7 @@ public final class CibSevenScopeReentryProbeTest {
       engine = CibSevenTestEngine.create("scope-reentry-" + model, configuration -> configuration.setBeans(beans));
       try {
         deployment = engine.getRepositoryService().createDeployment()
-            .addString(model + ".bpmn", juelRendition(directory, model, conditions)).deploy().getId();
+            .addString(model + ".bpmn", retainedModel(directory, model, conditions)).deploy().getId();
       } catch (Exception | Error failure) {
         engine.close();
         throw failure;

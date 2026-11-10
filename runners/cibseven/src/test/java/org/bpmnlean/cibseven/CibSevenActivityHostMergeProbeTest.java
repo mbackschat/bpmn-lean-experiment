@@ -23,13 +23,12 @@ import org.junit.Test;
  * one task (`UserTaskActivityBehavior.java:54-62`) and each arriving at a Service Task invokes its delegate once
  * (`ServiceTaskDelegateExpressionActivityBehavior.java:101-119`). Per journey, the merging Task has one historic activity
  * instance per arrival, each with its own id, and nothing waits for or records the merge; in the Link twin no Link Event
- * has a historic instance. Conditions are rendered as JUEL under `CIB-CFG-0005`, so the probe compares activations, never
+ * has a historic instance. The retained model is deployed as it is, its conditions core JUEL under `CIB-CFG-0011`, so the probe compares activations, never
  * condition truth. Expected values are built from the proposal's witness-model account, never read from a target result.
  */
 public final class CibSevenActivityHostMergeProbeTest {
   private static final Path MODELS = Path.of("../..").toAbsolutePath().normalize().resolve("scenarios/activity-host-merge");
-  private static final Pattern STRING_EQUALS = Pattern.compile("stringEquals\\((\\w+),\"([^\"]*)\"\\)");
-  private static final String SIMPLE_BOOLEAN = " expressionLanguage=\"urn:bpmn-lean:expression:simple-boolean:v1\"";
+  private static final Pattern JUEL_EQUALS = Pattern.compile("\\$\\{\\w+ == '[^']*'\\}");
 
   /** A deployment of the claim review whose three delegates write their next queued local result. */
   private static final class Session implements AutoCloseable {
@@ -46,9 +45,8 @@ public final class CibSevenActivityHostMergeProbeTest {
           Map.<Object, Object>of("triageClaim", triage, "obtainExpertOpinion", expert, "fetchReviewOutcome", fetch)));
       try {
         var source = edit.apply(Files.readString(MODELS.resolve("claim-review.bpmn")));
-        assertEquals(2, STRING_EQUALS.matcher(source).results().count());
-        var rendition = STRING_EQUALS.matcher(source.replace(SIMPLE_BOOLEAN, "")).replaceAll("\\${$1 == \"$2\"}");
-        deployment = engine.getRepositoryService().createDeployment().addString("claim-review.bpmn", rendition).deploy()
+        assertEquals(2, JUEL_EQUALS.matcher(source).results().count());
+        deployment = engine.getRepositoryService().createDeployment().addString("claim-review.bpmn", source).deploy()
             .getId();
       } catch (Exception | Error failure) {
         engine.close();

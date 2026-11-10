@@ -29,8 +29,8 @@ import org.junit.Test;
  * only scope, where no Sub-Process instance exists. On the terminal forks specification's two witness models (`TFK-END-01`,
  * `TFK-QUIESCE-01`) it calibrates that each None End is one ended `noneEndEvent` instance consuming only its own execution,
  * reached without a wait on a wait-free branch, and that the Process instance, or the Sub-Process instance in a body, ends
- * only with its last execution (`PvmAtomicOperationActivityEnd`). CIB does not execute the project's Simple Boolean v1 conditions, so each
- * condition is rendered as JUEL under `CIB-CFG-0005` before deployment; the probe compares activations, never condition
+ * only with its last execution (`PvmAtomicOperationActivityEnd`). Each retained model is deployed as it
+ * is, its conditions core JUEL under `CIB-CFG-0011`; the probe compares activations, never condition
  * truth. Expected values are built here from the specification's witness-model account, never read from a target result.
  * On the data-declaring terminal branches proposal's expense claim (`DTB-COMMUTE-01`) it calibrates that both wait-free
  * Ends leave the entered Sub-Process instance and its local data in place, though the last concurrent End's
@@ -51,8 +51,7 @@ public final class CibSevenPassThroughTaskProbeTest {
   private static final Path SPLIT_MERGE_MODELS = PROJECT_ROOT.resolve("scenarios/pass-through-implicit-split-merge");
   private static final String NONE_END = "noneEndEvent";
   private static final String NONE_THROW = "intermediateNoneThrowEvent";
-  private static final Pattern STRING_EQUALS = Pattern.compile("stringEquals\\((\\w+),\"([^\"]*)\"\\)");
-  private static final String SIMPLE_BOOLEAN = " expressionLanguage=\"urn:bpmn-lean:expression:simple-boolean:v1\"";
+  private static final Pattern JUEL_EQUALS = Pattern.compile("\\$\\{\\w+ == '[^']*'\\}");
 
   @Test
   public void theManualTaskInsideTheInspectionAndTheClosingTaskPassThroughWithoutWaiting() throws Exception {
@@ -472,9 +471,8 @@ public final class CibSevenPassThroughTaskProbeTest {
           configuration -> configuration.setBeans(Map.<Object, Object>of(handler, delegate)));
       try {
         var source = edit.apply(Files.readString(models.resolve(model + ".bpmn")));
-        assertEquals(conditions, STRING_EQUALS.matcher(source).results().count());
-        var rendition = STRING_EQUALS.matcher(source.replace(SIMPLE_BOOLEAN, "")).replaceAll("\\${$1 == \"$2\"}");
-        deployment = engine.getRepositoryService().createDeployment().addString(model + ".bpmn", rendition).deploy()
+        assertEquals(conditions, JUEL_EQUALS.matcher(source).results().count());
+        deployment = engine.getRepositoryService().createDeployment().addString(model + ".bpmn", source).deploy()
             .getId();
       } catch (Exception | Error failure) {
         engine.close();
