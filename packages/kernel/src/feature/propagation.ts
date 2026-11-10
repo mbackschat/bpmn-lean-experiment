@@ -410,10 +410,12 @@ function leaveOccurrence(
 
 /**
  * Whether the raise runs directly at the called root `occurrence` while another path stands there and the Call maps
- * outputs. For a thrower that is no CIB scope, an Error or Escalation End Event, CIB's walk then starts at the thrower's
- * concurrent execution, not the process-instance execution (`tree/ActivityExecutionHierarchyWalker.java:53-55`,
- * `:76-95`), and stops at a catch at that level before its propagator sees the root, so whether the outputs pass rests
- * on CIB's execution tree (PC-SCOPE-06 item 4). A raising Service Task that CIB makes a scope, one with output
+ * outputs. For a thrower that is no CIB scope, an Error or Escalation End Event, CIB's walk then starts at the
+ * thrower's concurrent execution, not the process-instance execution
+ * (`tree/ActivityExecutionHierarchyWalker.java:52-54`), and stops at a catch by the root's own Event Sub-Process before
+ * its propagator sees the root, so whether the outputs pass rests on CIB's execution tree (PC-SCOPE-06 item 4). A
+ * catcher further out, the Call's own boundary included, lets the walk reach the process-instance execution, where the
+ * outputs pass (retained `caught-at-busy-called-root`). A raising Service Task that CIB makes a scope, one with output
  * parameters or a boundary (`BpmnParse.java:3297`, `:4803-4814`), starts the walk at its own execution, which reaches
  * the root's process-instance execution (`:55-58`), so CIB passes the outputs; the refusal is conservative there. An
  * Error End Event has left before its raise; an Escalation throw and a raising Activity still stand and are no other
@@ -432,8 +434,8 @@ function busyCalledRoot(ctx: Ctx, origin: Origin, occurrence: ScopeOccurrence, s
 
 /**
  * Under `RaisedCallOutputs.AtCalledRoot` (CIB-EXT-0034) a called root the search visits passes its Call's outputs.
- * When that level `catches` at a busy root (`busyCalledRoot`) the run is refused, dynamic-only, as what else runs at the
- * root decides it.
+ * When the root's own Event Sub-Process `catches` at a busy root (`busyCalledRoot`) the run is refused, dynamic-only, as
+ * what else runs at the root decides it.
  */
 function passCallOutputs(
   hooks: PropagationHooks,
@@ -487,7 +489,7 @@ function searchScopes(
       ? []
       : boundariesOf(ctx, occurrence.element);
     const caught = best(ctx, raised, (boundary) => boundary.subscription.trigger, attached);
-    const passed = passCallOutputs(hooks, ctx, origin, handled !== null || caught !== null, occurrence, state);
+    const passed = passCallOutputs(hooks, ctx, origin, handled !== null, occurrence, state);
     if (!passed.ok) return passed;
     state = passed.value;
     if (handled !== null) {

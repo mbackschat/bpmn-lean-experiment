@@ -809,12 +809,6 @@
     ]
   },
   {
-    "evidence": "scenarios/open-rows/escalation-busy-called-root/caught-at-busy-called-root.cibseven-evidence.json",
-    "owners": [
-      "CIB-EXT-0034"
-    ]
-  },
-  {
     "evidence": "scenarios/open-rows/escalation-multi-instance/parallel-interrupting.cibseven-evidence.json",
     "owners": [
       "PC-ESCALATION-02",

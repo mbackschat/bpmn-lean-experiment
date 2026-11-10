@@ -1,11 +1,14 @@
 /**
  * A raise that reaches a called root under `RaisedCallOutputs.atCalledRoot` (CIB-EXT-0034): the Call's outputs pass
- * there before the catch, except when the thrower runs directly at that root while another path stands there, that
- * level catches and the Call maps outputs. CIB's walk then starts at the thrower's concurrent execution and stops at the
- * catch before its propagator sees the root (`tree/ActivityExecutionHierarchyWalker.java:53-55`, `:76-95`), so the
- * kernel refuses the run (`raise-caught-at-busy-called-root`; scopes semantics PC-SCOPE-06 item 4). `T` calls `Called`
- * and has an interrupting Escalation boundary `B` on `X` leading to the User Task `W`; the called process forks into
- * the Intermediate throw `CX` and, when busy, the User Task `CW`.
+ * there before the catch, except when the thrower runs directly at that root while another path stands there, the
+ * root's own Event Sub-Process catches and the Call maps outputs. CIB's walk then visits the root first with the
+ * thrower's concurrent execution and stops at that catch before its propagator sees the instance execution
+ * (`tree/ActivityExecutionHierarchyWalker.java:52-54`), so the kernel refuses the run
+ * (`raise-caught-at-busy-called-root`; scopes semantics PC-SCOPE-06 item 4). A catcher further out, the Call's own
+ * boundary included, lets the walk reach the instance execution, where the outputs pass. `T` calls `Called` and has an
+ * interrupting Escalation boundary `B` on `X` leading to the User Task `W`, or the called root holds the interrupting
+ * Escalation Event Sub-Process `CH` instead; the called process forks into the Intermediate throw `CX` and, when busy,
+ * the User Task `CW`.
  */
 import assert from "node:assert/strict";
 import { test } from "node:test";
@@ -13,8 +16,8 @@ import { test } from "node:test";
 import { decodeProgram, hooks, step, stimulusFromJson } from "@bpmn-lean/kernel";
 
 import {
-  activity, append, base, boundary, callWork, definitionRef, end, errorTrigger, escalationTrigger, flow, gateway, literalValue, mapping, start,
-  task, userWork, withFlows, withOptions, wired,
+  activity, append, base, boundary, callWork, definitionRef, end, errorTrigger, escalationTrigger, eventSubProcess, flow, gateway, literalValue,
+  mapping, scope, start, task, userWork, withFlows, withOptions, wired,
 } from "./admission-refusal-support.ts";
 import type { Json } from "./admission-refusal-support.ts";
 
@@ -30,18 +33,24 @@ const throwing = (id: string): Json => ({
   },
 });
 
-function calling(outputs: Json[], busy: boolean): Json {
-  const caller = append(task(activity("T", callWork({ outputs }), { boundaries: [boundary("B", escalationTrigger({ code: "X" }))] }))(base()),
-    activity("W", userWork()));
-  const children = busy ? ["CS", "CG", "CX", "CE", "CW", "CE2"] : ["CS", "CX", "CE"];
+function calling(outputs: Json[], busy: boolean, catcher: "callBoundary" | "rootEventSubProcess" = "callBoundary"): Json {
+  const boundaries = catcher === "callBoundary" ? [boundary("B", escalationTrigger({ code: "X" }))] : [];
+  const callerTask = task(activity("T", callWork({ outputs }), { boundaries }))(base());
+  const caller = catcher === "callBoundary" ? append(callerTask, activity("W", userWork())) : callerTask;
+  const handler = catcher === "rootEventSubProcess"
+    ? [scope("CH", eventSubProcess(escalationTrigger({ code: "X" }), true)), start("CHS", escalationTrigger({ code: "X" }), [], "CH"),
+      end("CHE", "none", "CH")]
+    : [];
+  const children = [...(busy ? ["CS", "CG", "CX", "CE", "CW", "CE2"] : ["CS", "CX", "CE"]), ...(handler.length > 0 ? ["CH"] : [])];
   const called = append(caller, start("CS"), throwing("CX"), end("CE"),
-    ...(busy ? [gateway("CG", "parallel"), activity("CW", userWork()), end("CE2")] : []));
+    ...(busy ? [gateway("CG", "parallel"), activity("CW", userWork()), end("CE2")] : []), ...handler);
   const flows = busy
     ? [flow("cf1", "CS", "CG"), flow("cf2", "CG", "CX"), flow("cf3", "CG", "CW"), flow("cf4", "CX", "CE"), flow("cf5", "CW", "CE2")]
     : [flow("cf1", "CS", "CX"), flow("cf2", "CX", "CE")];
+  const caught = catcher === "callBoundary" ? [flow("fb", "B", "W"), flow("fw", "W", "E")] : [flow("ch1", "CHS", "CHE")];
   const program = withFlows({ ...called, processes: [{ definition: definitionRef("Called"), children, variables: [], executable: true }] },
-    flow("fb", "B", "W"), flow("fw", "W", "E"), ...flows);
-  return withOptions(program, cib);
+    ...caught, ...flows);
+  return withOptions(program, catcher === "rootEventSubProcess" ? { ...cib, abnormalScopeEnd: "completesNormally" } : cib);
 }
 
 function started(json: Json) {
@@ -52,8 +61,18 @@ function started(json: Json) {
   return step(hooks, decoded.value, null, stimulus.value[1]);
 }
 
-test("a raise caught at a busy called root whose Call maps outputs is refused", () => {
-  assert.deepEqual(started(calling(slot, true)), { ok: false, failure: { tag: "unsupported", code: "raise-caught-at-busy-called-root" } });
+test("a raise caught by the busy called root's own Event Sub-Process whose Call maps outputs is refused", () => {
+  assert.deepEqual(started(calling(slot, true, "rootEventSubProcess")),
+    { ok: false, failure: { tag: "unsupported", code: "raise-caught-at-busy-called-root" } });
+});
+
+// Retained CIB answer `escalation-busy-called-root/caught-at-busy-called-root`: the Call's boundary catches at a busy
+// root and CIB commits with the Call's output written.
+test("a raise from a busy called root caught by the Call's boundary passes the Call's outputs before the catch", () => {
+  const outcome = started(calling(slot, true));
+  assert.ok(outcome.ok, JSON.stringify(outcome));
+  assert.deepEqual(outcome.value.openItems.map((item) => item.element), ["W"]);
+  assert.deepEqual(outcome.value.variables.flatMap((entry) => entry.entries), [["slot", { tag: "string", value: "x" }]]);
 });
 
 test("a raise caught at an idle called root passes the Call's outputs before the catch", () => {
