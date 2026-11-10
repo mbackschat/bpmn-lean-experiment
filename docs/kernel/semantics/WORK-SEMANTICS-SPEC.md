@@ -166,12 +166,8 @@ Rejected commands: `unknown-user-task`, `unknown-effect`, `unknown-incident`, `u
 | Row | Decision owed or not yet implemented |
 |---|---|
 | PC-HUM-01 | User Task inputs and results across serial, branch, rework, scoped and Multi-Instance compositions; an output reading beyond the submission (PC-DATA-06) |
-| PC-HUM-02 | expression-valued fields (Task fields JUEL level); metadata through Multi-Instance bodies and delivery |
 | PC-HUM-03 | correlated and payload-bearing Receive Tasks in every ownership |
-| PC-HUM-05 (M1) | Manual Task in implicit split and merge; `Work.manual` already passes through |
-| PC-HUM-06 | addressless Receive in counted Multi-Instance positions (`multiInstance.cardinality`) |
 | PC-AUTO-01 | public named handlers across task and scope bodies |
-| PC-AUTO-02 | business failure into the selected Error path without output leakage |
 | PC-AUTO-03 | incidents in Multi-Instance Sub-Process bodies (`scope.multiInstance`) |
 | PC-AUTO-04 | Message-addressed Send Task with recipient and correlation (`SendWork`) |
 | PC-AUTO-05, PC-AUTO-06 | Script binding per the owner decision |

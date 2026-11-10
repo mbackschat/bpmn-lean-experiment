@@ -79,7 +79,6 @@ The propagation feature owns throw Events and the search for a catcher of a rais
 
 | Row | Decision owed or not yet implemented |
 |---|---|
-| PC-ERROR-01 | Implemented; awaits the track review. CIB's Java exception-class codes stay unrealized (CIB-EXT-0029) |
 | PC-ERROR-02 | Interrupting Error Event Sub-Processes are searched, non-interrupting Error boundaries and Event Sub-Processes are refused (`boundary.error.nonInterrupting`, `start.error.nonInterrupting`); rethrow is owed |
 | PC-ERROR-03 | Error propagation from called children and Multi-Instance with selected error-data mapping |
 | PC-ESCALATION-01 | Uncaught Escalation must continue rather than fail (today `unsupported`); code variables |
