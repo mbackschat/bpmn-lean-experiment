@@ -70,6 +70,7 @@ import {
   publicationQuery,
   rejectionType,
   settleUpdate,
+  snapshotView,
   timerFireUpdate,
   type CommandResult,
   type Halt,
@@ -152,7 +153,7 @@ async function hostProcess<P, S, I>(port: KernelPort<P, S, I>, args: RunProcessA
     instance === null ? null : port.observation(program, instance.state));
   setHandler(stateQuery, () => instance === null ? null : port.encodeState(instance.state));
   setHandler(hostViewQuery, () =>
-    ({ revision: log.cursor.revision, view: instance?.view ?? null, halt, registering: registrationsOwed().length > 0 }));
+    ({ revision: log.cursor.revision, view: instance === null ? null : snapshotView(instance.view), halt, registering: registrationsOwed().length > 0 }));
   setHandler(publicationQuery, (afterRevision, limit) => readPage(log, afterRevision, limit));
   setHandler(correlationQuery, (question) => instance === null || halt !== null ? []
     : port.matching(program, instance.state, question.channel, question.correlation));

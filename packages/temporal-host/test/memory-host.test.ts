@@ -65,6 +65,16 @@ test("a command commits through the kernel and publishes its journal; the ended 
   assert.deepEqual(await host.command("W", complete), { outcome: "rejected", code: "workflow-closed", revision: null });
 });
 
+// One input's journal grows with its closure: a 2,000-step automatic loop published 2.2 MB of it, beyond Temporal's
+// 2 MB query blob limit (PR #69, 2026-11-10). The publication pages carry those facts in bounded pages instead.
+test("a host snapshot carries the open state without the last input's journal", async () => {
+  const host = createMemoryProcessHost({ taskQueue: "queue" });
+  await host.start({ workflowId: "W", program: await userTaskProgram(), config: durable, start });
+  const snapshot = await host.hostView("W");
+  assert.equal(snapshot.view?.openWaits[0]?.id.elementId, "UserTask_Approve");
+  assert.equal(Object.hasOwn(snapshot.view ?? {}, "journal"), false);
+});
+
 test("under durable scheduling the host owns logical time: a stated time is refused, an absent one is stamped", async () => {
   const host = createMemoryProcessHost({ taskQueue: "queue", now: () => 7_000 });
   const program = await userTaskProgram();

@@ -89,10 +89,21 @@ export type ProcessResult =
   /** The program is not admitted: the admission registry's code. */
   | { readonly kind: ResultKind.Refused; readonly code: string };
 
+/**
+ * A host view without its journal. One input's journal grows with its closure (2.2 MB for a 2,000-step automatic loop,
+ * 2026-11-10), past Temporal's 2 MB query limit; the publication pages carry those facts in bounded pages.
+ */
+export type SnapshotView = Omit<HostView, "journal">;
+
+export function snapshotView(view: HostView): SnapshotView {
+  const { journal: _journal, ...open } = view;
+  return open;
+}
+
 export interface HostSnapshot {
   readonly revision: number;
   /** `null` before a committed start. */
-  readonly view: HostView | null;
+  readonly view: SnapshotView | null;
   readonly halt: Halt | null;
   /**
    * The instance's open correlated waits are not yet all registered with their ingress. An input's Update returns only

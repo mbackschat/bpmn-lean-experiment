@@ -23,6 +23,7 @@ export {
   ingressWorkflowType,
   notCorrelatedCode,
   rejectionType,
+  snapshotView,
   workflowClosed,
   workflowType,
   type CommandResult,

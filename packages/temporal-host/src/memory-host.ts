@@ -29,6 +29,7 @@ import {
   type HostConfig,
   type HostSnapshot,
   type PublicationResult,
+  snapshotView,
   workflowClosed,
 } from "./host-contract.js";
 import { applyInput, assertNever, clockStimulus, hostOwnsLogicalTime } from "./host-machine.js";
@@ -152,7 +153,7 @@ class MemoryHost<P, S, I> implements MemoryProcessHost {
 
   async hostView(workflowId: string): Promise<HostSnapshot> {
     const chain = this.#chain(workflowId);
-    return { revision: chain.log.cursor.revision, view: chain.instance?.view ?? null, halt: null, registering: false };
+    return { revision: chain.log.cursor.revision, view: chain.instance === null ? null : snapshotView(chain.instance.view), halt: null, registering: false };
   }
 
   async publication(workflowId: string, afterRevision: number, limit = 100): Promise<PublicationPage> {
