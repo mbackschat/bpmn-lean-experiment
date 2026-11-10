@@ -491,7 +491,7 @@ public final class ScenarioProtocol {
     }
   }
 
-  /** A structured List; its bounds are checked over the whole root value by the binding. */
+  /** A structured List; its wire shape is checked over the whole root value by the binding. */
   public record ListValue(List<VariableValue> value) implements VariableValue {
     public ListValue {
       value = List.copyOf(value);

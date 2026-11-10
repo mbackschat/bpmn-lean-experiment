@@ -108,6 +108,20 @@ public class CibSevenOracleMainTest {
   }
 
   @Test
+  public void passesASchemaValidValueBeyondTheKernelsIngressBoundsToCib() throws Exception {
+    // The depth, node and byte bounds are the kernel's ingress predicate, which the scenario schema does not state
+    // (DATA-SEMANTICS-SPEC "Values"), so the runner hands such a value to CIB and records what CIB does with it.
+    var scenario = ScenarioJson.writeScenario(ScenarioJson.read(
+        PROJECT_ROOT.resolve("scenarios/open-rows/structured-value-bounds/start-over-depth-bound.scenario.json")));
+    var output = new StringWriter();
+
+    CibSevenOracleMain.serve(new StringReader(scenario + System.lineSeparator()), output, PROJECT_ROOT);
+
+    var result = ScenarioJson.readResult(output.toString().lines().findFirst().orElseThrow());
+    assertEquals("structured-value-bounds-start-over-depth-bound", result.scenarioId());
+  }
+
+  @Test
   public void servesTheInteractionCapsuleInRequestOrderThroughOneEngine()
       throws Exception {
     var capsuleRoot =

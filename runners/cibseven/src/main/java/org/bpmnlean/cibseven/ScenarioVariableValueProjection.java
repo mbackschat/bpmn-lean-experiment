@@ -30,9 +30,6 @@ final class ScenarioVariableValueProjection {
   private static final int MAX_VALUE_BYTES = 16_384;
   private static final int MAX_BINDING_BYTES = 20_480;
   private static final int MAX_PATCH_BYTES = 65_536;
-  // The structured business-value bounds the wire schema cannot state (DATA-SEMANTICS-SPEC "Values").
-  private static final int MAX_CONTAINER_DEPTH = 4;
-  private static final int MAX_CONTAINER_NODES = 256;
   private static final int MAX_DECIMAL_SCALE = 6;
   private static final Pattern DECIMAL_COEFFICIENT = Pattern.compile("0|-?[1-9][0-9]*");
 
@@ -81,21 +78,23 @@ final class ScenarioVariableValueProjection {
     return detached;
   }
 
+  /**
+   * The wire shape the scenario and result schemas state: member counts, String members, Map key order, safe Integers.
+   * The portable domain's depth, node and byte bounds are the kernel's ingress predicate, not the wire's
+   * (DATA-SEMANTICS-SPEC "Values"), so a schema-valid value beyond them reaches CIB as a start or completion value and
+   * is observed as CIB stores it; the structured-value-bounds schedules separate exactly those values.
+   */
   static void requireWireValue(VariableValue value) {
     switch (value) {
       case IntegerValue integerValue -> requireInteger(integerValue.value());
       case StringListValue listValue -> requireStringList(listValue.value());
-      case ListValue ignored -> requireContainerNodes(value);
-      case MapValue ignored -> requireContainerNodes(value);
+      case ListValue ignored -> requireStructuredShape(value);
+      case MapValue ignored -> requireStructuredShape(value);
       case DecimalValue ignored -> {}
       case StringValue ignored -> {}
       case BooleanValue ignored -> {}
       case NullValue ignored -> {}
     }
-    requireByteCeiling(
-        wireValueShape(value),
-        MAX_VALUE_BYTES,
-        "tagged value exceeds 16384 UTF-8 bytes");
   }
 
   static void requireBindingSize(String name, VariableValue value) {
@@ -208,26 +207,15 @@ final class ScenarioVariableValueProjection {
     }
   }
 
-  private static void requireContainerNodes(VariableValue root) {
-    if (containerNodes(root, 1) > MAX_CONTAINER_NODES) {
-      throw new IllegalArgumentException("structured value exceeds 256 nodes");
-    }
-  }
-
-  /** The node count of a List or Map tree, checking depth, members, nested Strings and Map key order. */
-  private static int containerNodes(VariableValue value, int depth) {
-    return switch (value) {
+  /** A List or Map tree's wire shape: members per container, nested Strings and Map key order, at every depth. */
+  private static void requireStructuredShape(VariableValue value) {
+    switch (value) {
       case ListValue listValue -> {
-        requireContainerShape(depth, listValue.value().size());
-        var nodes = 1;
-        for (var item : listValue.value()) {
-          nodes += containerNodes(item, depth + 1);
-        }
-        yield nodes;
+        requireMembers(listValue.value().size());
+        listValue.value().forEach(ScenarioVariableValueProjection::requireStructuredShape);
       }
       case MapValue mapValue -> {
-        requireContainerShape(depth, mapValue.value().size());
-        var nodes = 1;
+        requireMembers(mapValue.value().size());
         String previous = null;
         for (var entry : mapValue.value()) {
           requireMember(entry.name());
@@ -235,27 +223,20 @@ final class ScenarioVariableValueProjection {
             throw new IllegalArgumentException("Map keys must be unique and in Unicode scalar order");
           }
           previous = entry.name();
-          nodes += containerNodes(entry.value(), depth + 1);
+          requireStructuredShape(entry.value());
         }
-        yield nodes;
       }
-      case StringValue stringValue -> {
-        requireMember(stringValue.value());
-        yield 1;
-      }
+      case StringValue stringValue -> requireMember(stringValue.value());
       case StringListValue ignored -> throw new IllegalArgumentException(
           "a legacy stringList is never nested in a structured value");
-      case IntegerValue ignored -> 1;
-      case DecimalValue ignored -> 1;
-      case BooleanValue ignored -> 1;
-      case NullValue ignored -> 1;
-    };
+      case IntegerValue ignored -> {}
+      case DecimalValue ignored -> {}
+      case BooleanValue ignored -> {}
+      case NullValue ignored -> {}
+    }
   }
 
-  private static void requireContainerShape(int depth, int members) {
-    if (depth > MAX_CONTAINER_DEPTH) {
-      throw new IllegalArgumentException("structured value exceeds four container levels");
-    }
+  private static void requireMembers(int members) {
     if (members > MAX_LIST_ITEMS) {
       throw new IllegalArgumentException("structured container has at most 32 members");
     }
