@@ -32,7 +32,8 @@
         "engineRevision",
         "runner",
         "java",
-        "database"
+        "database",
+        "timeZone"
       ],
       "properties": {
         "engine": {
@@ -56,6 +57,9 @@
         },
         "database": {
           "const": "H2 2.3.232"
+        },
+        "timeZone": {
+          "const": "UTC"
         }
       }
     },

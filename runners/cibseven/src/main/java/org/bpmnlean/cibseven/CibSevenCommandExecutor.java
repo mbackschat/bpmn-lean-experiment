@@ -155,8 +155,18 @@ final class CibSevenCommandExecutor {
         switch (wait.handle()) {
           case AddresslessHandle addressless when message.channel() instanceof UnspecifiedMessageChannel ->
               runtime.signal(addressless.executionId());
-          case SubscriptionHandle subscription ->
-              runtime.messageEventReceived(subscription.eventName(), subscription.executionId());
+          case SubscriptionHandle subscription -> {
+            var engineInstance = engineInstanceOf(subscription);
+            runtime.messageEventReceived(subscription.eventName(), subscription.executionId());
+            projector.occurrences().delivered(
+                engineInstance,
+                deliver.occurrence().elementId(),
+                subscription.subscriptionId(),
+                runtime.createEventSubscriptionQuery()
+                        .eventSubscriptionId(subscription.subscriptionId())
+                        .count()
+                    == 1);
+          }
           default -> throw new IllegalStateException("Message wait without a deliverable handle");
         }
         yield Execution.of(COMMITTED);
@@ -174,27 +184,53 @@ final class CibSevenCommandExecutor {
   }
 
   /**
-   * Advances the controlled clock only after proving the timer job is ineligible, then executes it only after the
-   * engine's executable query admits the same job.
+   * Advances the controlled clock to the firing's time (`at`, else the deadline), never backwards, and executes the
+   * job only after the engine's executable query admits it. A job is executable before the clock moves only when its
+   * deadline is not after the current clock (a zero or past Timer, PC-TIMER-01); any other executable job is a
+   * harness defect.
    */
   Execution timerFire(String engineRootId, String stableRootId, TimerFire fire) {
     var wait = open(engineRootId, stableRootId, fire.occurrence());
+    var nowMs = ClockUtil.getCurrentTime().getTime() - logicalEpoch.getTime();
     if (wait == null
         || !(wait.openWait().detail() instanceof TimerDetail detail)
         || detail.deadlineMs() != fire.logicalTimeMs()
-        || !(wait.handle() instanceof JobHandle job)) {
+        || !(wait.handle() instanceof JobHandle job)
+        || fire.firedAtMs() < fire.logicalTimeMs()
+        || fire.firedAtMs() < nowMs) {
       return Execution.of(REJECTED);
     }
     var management = engine.getManagementService();
-    if (management.createJobQuery().jobId(job.jobId()).executable().count() != 0) {
+    if (management.createJobQuery().jobId(job.jobId()).executable().count() != 0
+        && detail.deadlineMs() > nowMs) {
       throw new IllegalStateException("Timer job was executable before the controlled clock reached its due date");
     }
-    ClockUtil.setCurrentTime(new Date(logicalEpoch.getTime() + fire.logicalTimeMs()));
+    ClockUtil.setCurrentTime(new Date(logicalEpoch.getTime() + fire.firedAtMs()));
     if (management.createJobQuery().jobId(job.jobId()).executable().count() != 1) {
       throw new IllegalStateException("Timer job was not executable when the controlled clock reached its due date");
     }
+    var before = timerJobs(job);
     management.executeJob(job.jobId());
+    var successors = timerJobs(job).stream().filter(id -> !before.contains(id)).toList();
+    projector.occurrences().timerFired(job.engineInstanceId(), job.elementId(), job.jobId(), successors);
     return Execution.of(COMMITTED);
+  }
+
+  /** The Timer jobs of the fired job's element in its instance. */
+  private List<String> timerJobs(JobHandle job) {
+    return engine.getManagementService().createJobQuery().processInstanceId(job.engineInstanceId()).timers().list()
+        .stream()
+        .filter(candidate -> job.elementId().equals(
+            engine.getManagementService().createJobDefinitionQuery()
+                .jobDefinitionId(candidate.getJobDefinitionId()).singleResult().getActivityId()))
+        .map(org.cibseven.bpm.engine.runtime.Job::getId)
+        .toList();
+  }
+
+  /** The engine process instance an event subscription belongs to. */
+  private String engineInstanceOf(SubscriptionHandle subscription) {
+    return engine.getRuntimeService().createEventSubscriptionQuery()
+        .eventSubscriptionId(subscription.subscriptionId()).singleResult().getProcessInstanceId();
   }
 
   /**

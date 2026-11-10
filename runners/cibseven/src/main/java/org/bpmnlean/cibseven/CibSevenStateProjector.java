@@ -43,6 +43,11 @@ final class CibSevenStateProjector {
     this.occurrences = new CibSevenOccurrences(engine);
   }
 
+  /** The occurrence numbering the executor reports its firings to. */
+  CibSevenOccurrences occurrences() {
+    return occurrences;
+  }
+
   /** The open waits as commands see them, with their engine handles. */
   List<ProjectedWait> openWaits(String engineRootId, String stableRootId) {
     return waits.project(occurrences.running(engineRootId, stableRootId), occurrences).waits();

@@ -386,7 +386,15 @@ public final class ScenarioProtocol {
 
   public record ProcessInstanceTarget() implements CorrelationTarget {}
 
-  public record TimerFire(String commandId, OccurrenceId occurrence, long logicalTimeMs)
+  /**
+   * `logicalTimeMs` names the deadline fired; `at`, when present, is the later logical time the host woke at (a Timer
+   * already due when armed, PC-TIMER-01).
+   */
+  public record TimerFire(
+      String commandId,
+      OccurrenceId occurrence,
+      long logicalTimeMs,
+      @JsonInclude(JsonInclude.Include.NON_NULL) Long at)
       implements Stimulus {
     public TimerFire {
       Objects.requireNonNull(commandId, "commandId");
@@ -394,6 +402,18 @@ public final class ScenarioProtocol {
       if (logicalTimeMs < 0 || logicalTimeMs > MAX_SAFE_WIRE_INTEGER) {
         throw new IllegalArgumentException("logicalTimeMs must be a non-negative safe wire integer");
       }
+      if (at != null && (at < 0 || at > MAX_SAFE_WIRE_INTEGER)) {
+        throw new IllegalArgumentException("at must be a non-negative safe wire integer");
+      }
+    }
+
+    public TimerFire(String commandId, OccurrenceId occurrence, long logicalTimeMs) {
+      this(commandId, occurrence, logicalTimeMs, null);
+    }
+
+    /** The logical time the firing runs at. */
+    public long firedAtMs() {
+      return at == null ? logicalTimeMs : at;
     }
   }
 

@@ -81,8 +81,10 @@
           <forkCount>2</forkCount>
           <reuseForks>true</reuseForks>
           <!-- JUEL's String methods follow the JVM default locale (`toUpperCase` of `i` under a Turkish locale), so the
-               oracle environment pins it (CIB-CFG-0011). -->
-          <argLine>-Duser.language=en -Duser.country=US</argLine>
+               oracle environment pins it (CIB-CFG-0011). CIB adds Timer durations, reads zone-less dates and evaluates
+               Cron in the JVM default zone (`DurationHelper`, `DateTimeUtil`, `CronTimer`), so the oracle pins UTC, the
+               kernel's calendar, and the evidence records it (CIB-CFG draft, PC-TIMER-01). -->
+          <argLine>-Duser.language=en -Duser.country=US -Duser.timezone=UTC</argLine>
           <redirectTestOutputToFile>false</redirectTestOutputToFile>
           <trimStackTrace>false</trimStackTrace>
         </configuration>

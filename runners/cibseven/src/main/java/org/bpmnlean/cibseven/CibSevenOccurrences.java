@@ -2,11 +2,13 @@ package org.bpmnlean.cibseven;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -18,12 +20,18 @@ import org.cibseven.bpm.engine.runtime.TransitionInstance;
 import org.cibseven.bpm.model.bpmn.BpmnModelInstance;
 import org.cibseven.bpm.model.bpmn.instance.Activity;
 import org.cibseven.bpm.model.bpmn.instance.BoundaryEvent;
+import org.cibseven.bpm.model.bpmn.instance.CatchEvent;
+import org.cibseven.bpm.model.bpmn.instance.ConditionalEventDefinition;
 import org.cibseven.bpm.model.bpmn.instance.EventBasedGateway;
 import org.cibseven.bpm.model.bpmn.instance.FlowNode;
+import org.cibseven.bpm.model.bpmn.instance.IntermediateCatchEvent;
+import org.cibseven.bpm.model.bpmn.instance.MessageEventDefinition;
 import org.cibseven.bpm.model.bpmn.instance.MultiInstanceLoopCharacteristics;
 import org.cibseven.bpm.model.bpmn.instance.SequenceFlow;
+import org.cibseven.bpm.model.bpmn.instance.SignalEventDefinition;
 import org.cibseven.bpm.model.bpmn.instance.StartEvent;
 import org.cibseven.bpm.model.bpmn.instance.SubProcess;
+import org.cibseven.bpm.model.bpmn.instance.TimerEventDefinition;
 
 /**
  * Derives the public occurrence identity of engine state: the stable process-instance identifier and the activation
@@ -36,17 +44,39 @@ import org.cibseven.bpm.model.bpmn.instance.SubProcess;
  * (`orderPartiallyByOccurrence`) compares sequence counters, which concurrent executions do not share: read afresh, it
  * can place a later activation before an earlier one, and it cannot order the activations one step begins in
  * concurrent instances. Those are ordered by the `loopCounter`s of their enclosing Multi-Instance instances, outermost
- * first: the instances' generation order (BPMN 2.0.2 Table 10.30), in which the kernel begins them. A subscription without an activity instance of its own (a boundary Event, an Event
- * Sub-Process start, an arm of an Event-Based Gateway) takes the activation of the activity instance it hangs on:
- * one arming per host activation, which a repeatedly firing non-interrupting subscription would break.
+ * first: the instances' generation order (BPMN 2.0.2 Table 10.30), in which the kernel begins them.
+ *
+ * <p>A subscription without an activity instance of its own (a Timer, Message, Signal or Conditional boundary Event,
+ * Event Sub-Process start, or arm of an Event-Based Gateway) is numbered by counting the kernel's reservations of its
+ * element (CIB-OP draft, PC-TIMER-06): each activation of its host reserves one, observed or not; a cycle successor
+ * reserves one when the runner fires its predecessor; a firing whose subscription stays open (a repeating Message)
+ * begins a fresh one; a firing that closes its subscription begins that subscription's own. A begin the runner did not
+ * drive (a Conditional or Signal firing) takes a fresh activation when its element does not interrupt, otherwise the
+ * oldest live reservation of its element.
  */
 final class CibSevenOccurrences {
 
   private static final String LOOP_COUNTER = "loopCounter";
+  private static final String SEPARATOR = "\u0000";
 
   private final ProcessEngine engine;
   private final Map<String, List<String>> ordinals = new HashMap<>();
   private final Set<String> numbered = new HashSet<>();
+  private final Map<String, BpmnModelInstance> models = new HashMap<>();
+  /** Per instance and subscription element, the next activation the kernel reserves. */
+  private final Map<String, Long> nextReservation = new HashMap<>();
+  /** Per instance, host activity instance (the process instance for root starts) and element, its reservation. */
+  private final Map<String, Long> hostReservations = new HashMap<>();
+  /** Per instance and CIB subscription (Timer job or event subscription), its activation. */
+  private final Map<String, Long> subscriptions = new HashMap<>();
+  /** Per instance and CIB subscription, how many earlier firings its cycle chain has had. */
+  private final Map<String, Long> chainFirings = new HashMap<>();
+  /** Per instance and element, the activations of reservations not yet begun, oldest first. */
+  private final Map<String, LinkedHashSet<Long>> live = new HashMap<>();
+  /** Per instance and element, the activations the runner's firings begin, in firing order. */
+  private final Map<String, ArrayDeque<Long>> pendingBegins = new HashMap<>();
+  /** The activation each begun activity instance of a subscription element took. */
+  private final Map<String, Long> begun = new HashMap<>();
 
   CibSevenOccurrences(ProcessEngine engine) {
     this.engine = engine;
@@ -109,28 +139,244 @@ final class CibSevenOccurrences {
             definition,
             engine.getRepositoryService().getBpmnModelInstance(process.getProcessDefinitionId()),
             runtime.getActivityInstance(engineId));
+    if (models.putIfAbsent(engineId, found.model()) == null) {
+      // The process instance is the host of its root Event Sub-Process starts, armed when it starts.
+      for (var element : hosted(found.model(), null)) {
+        hostReservations.put(key(engineId, engineId, element), reserve(engineId, element));
+      }
+    }
     number(found);
     return found;
   }
 
   /** Appends the activity instances begun since the last observation of `instance` to their elements' activations. */
   private void number(Instance instance) {
-    var begun =
+    var unnumbered =
         engine.getHistoryService().createHistoricActivityInstanceQuery()
             .processInstanceId(instance.engineId()).orderPartiallyByOccurrence().asc().list().stream()
             .filter(historic -> !numbered.contains(historic.getId()))
             .toList();
     var byElement = new LinkedHashMap<String, List<String>>();
-    for (var historic : begun) {
+    for (var historic : unnumbered) {
       byElement.computeIfAbsent(historic.getActivityId(), ignored -> new ArrayList<>()).add(historic.getId());
     }
     var counters = loopCounters(instance.tree());
     for (var element : byElement.entrySet()) {
       var ids = generationOrder(element.getValue(), counters);
-      ordinals.computeIfAbsent(instance.engineId() + "\u0000" + element.getKey(), ignored -> new ArrayList<>())
-          .addAll(ids);
+      if (subscriptionElement(instance.model(), element.getKey())) {
+        for (var id : ids) {
+          begun.put(id, beginActivation(instance, element.getKey()));
+        }
+      } else {
+        ordinals.computeIfAbsent(instance.engineId() + "\u0000" + element.getKey(), ignored -> new ArrayList<>())
+            .addAll(ids);
+      }
+      for (var id : ids) {
+        for (var hosted : hosted(instance.model(), element.getKey())) {
+          hostReservations.put(key(instance.engineId(), id, hosted), reserve(instance.engineId(), hosted));
+        }
+      }
       numbered.addAll(ids);
     }
+  }
+
+  private static String key(String... parts) {
+    return String.join(SEPARATOR, parts);
+  }
+
+  private long reserve(String engineId, String element) {
+    var activation = nextReservation.merge(key(engineId, element), 1L, Long::sum);
+    live.computeIfAbsent(key(engineId, element), ignored -> new LinkedHashSet<>()).add(activation);
+    return activation;
+  }
+
+  /** The activation a begun activity instance of a subscription element takes (class comment). */
+  private long beginActivation(Instance instance, String element) {
+    var pending = pendingBegins.get(key(instance.engineId(), element));
+    if (pending != null && !pending.isEmpty()) {
+      return pending.poll();
+    }
+    var reservations = live.get(key(instance.engineId(), element));
+    if (interrupting(instance.model(), element) && reservations != null && !reservations.isEmpty()) {
+      var oldest = reservations.iterator().next();
+      reservations.remove(oldest);
+      return oldest;
+    }
+    var fresh = reserve(instance.engineId(), element);
+    live.get(key(instance.engineId(), element)).remove(fresh);
+    return fresh;
+  }
+
+  /**
+   * The runner fired the Timer job `jobId` of `element`; `successors` are the jobs of `element` CIB created by that
+   * firing. A successor reserves the next activation, and the fired job's own begins.
+   */
+  void timerFired(String engineId, String element, String jobId, List<String> successors) {
+    var model = models.get(engineId);
+    if (model == null || !subscriptionElement(model, element)) {
+      return;
+    }
+    var fired = subscriptions.get(key(engineId, jobId));
+    if (fired == null) {
+      throw new IllegalStateException("Timer job " + jobId + " fired before it was numbered");
+    }
+    for (var successor : successors) {
+      subscriptions.put(key(engineId, successor), reserve(engineId, element));
+      chainFirings.put(key(engineId, successor), chainFirings.getOrDefault(key(engineId, jobId), 0L) + 1);
+    }
+    begin(engineId, element, fired);
+  }
+
+  /**
+   * The runner delivered to the event subscription `subscriptionId` of `element`: one that stays open begins a fresh
+   * activation, one that closes begins its own.
+   */
+  void delivered(String engineId, String element, String subscriptionId, boolean stillOpen) {
+    var model = models.get(engineId);
+    if (model == null || !subscriptionElement(model, element)) {
+      return;
+    }
+    var fired = subscriptions.get(key(engineId, subscriptionId));
+    if (fired == null) {
+      throw new IllegalStateException("Event subscription " + subscriptionId + " fired before it was numbered");
+    }
+    if (stillOpen) {
+      var fresh = reserve(engineId, element);
+      live.get(key(engineId, element)).remove(fresh);
+      pendingBegins.computeIfAbsent(key(engineId, element), ignored -> new ArrayDeque<>()).add(fresh);
+    } else {
+      begin(engineId, element, fired);
+    }
+  }
+
+  private void begin(String engineId, String element, long activation) {
+    var reservations = live.get(key(engineId, element));
+    if (reservations != null) {
+      reservations.remove(activation);
+    }
+    pendingBegins.computeIfAbsent(key(engineId, element), ignored -> new ArrayDeque<>()).add(activation);
+  }
+
+  /** How many earlier firings the cycle chain of the Timer job `jobId` has had (`recurrence.remaining`). */
+  long chainFirings(String engineId, String jobId) {
+    return chainFirings.getOrDefault(key(engineId, jobId), 0L);
+  }
+
+  /**
+   * The activation of a subscription without an activity instance of its own: the one it already has, else the
+   * reservation its host's activation made.
+   */
+  long subscriptionActivation(Instance instance, String activityId, String executionId, String subscriptionId) {
+    var own = activityInstance(instance.tree(), activityId, executionId);
+    if (own != null || !subscriptionElement(instance.model(), activityId)) {
+      return activation(instance, activityId, executionId);
+    }
+    var known = subscriptions.get(key(instance.engineId(), subscriptionId));
+    if (known != null) {
+      return known;
+    }
+    var host = hostInstance(instance, activityId, executionId);
+    var reserved = hostReservations.remove(key(instance.engineId(), host, activityId));
+    if (reserved == null) {
+      throw new IllegalStateException("Subscription " + activityId + " has no reservation on its host " + host);
+    }
+    subscriptions.put(key(instance.engineId(), subscriptionId), reserved);
+    return reserved;
+  }
+
+  /** The activity instance a subscription hangs on, or the process instance for a root Event Sub-Process start. */
+  private String hostInstance(Instance instance, String activityId, String executionId) {
+    var host = hostOf(instance.model(), activityId);
+    if (host == null) {
+      return instance.engineId();
+    }
+    var hosts = new ArrayList<ActivityInstance>();
+    if (instance.model().getModelElementById(host) instanceof Activity activity
+        && activity.getLoopCharacteristics() instanceof MultiInstanceLoopCharacteristics
+        && instance.model().getModelElementById(activityId) instanceof BoundaryEvent) {
+      hosts.addAll(activityInstances(instance.tree(), host + BpmnParse.MULTI_INSTANCE_BODY_ID_SUFFIX));
+    } else {
+      hosts.addAll(activityInstances(instance.tree(), host));
+    }
+    var matching = hosts.stream().filter(candidate -> contains(candidate, executionId)).toList();
+    var selected = hosts.size() == 1 ? hosts : matching;
+    if (selected.size() != 1) {
+      throw new IllegalStateException("Subscription " + activityId + " has no unique host instance");
+    }
+    return selected.getFirst().getId();
+  }
+
+  /** Whether `element` waits as a subscription without an activity instance of its own (class comment). */
+  private static boolean subscriptionElement(BpmnModelInstance model, String element) {
+    var node = model.getModelElementById(element);
+    var attached =
+        node instanceof BoundaryEvent
+            || (node instanceof StartEvent start
+                && start.getParentElement() instanceof SubProcess scope
+                && scope.triggeredByEvent())
+            || (node instanceof IntermediateCatchEvent && hostOf(model, element) != null);
+    return attached
+        && node instanceof CatchEvent catchEvent
+        && catchEvent.getEventDefinitions().stream()
+            .anyMatch(
+                definition ->
+                    definition instanceof TimerEventDefinition
+                        || definition instanceof MessageEventDefinition
+                        || definition instanceof SignalEventDefinition
+                        || definition instanceof ConditionalEventDefinition);
+  }
+
+  private static boolean interrupting(BpmnModelInstance model, String element) {
+    return switch (model.getModelElementById(element)) {
+      case BoundaryEvent boundary -> boundary.cancelActivity();
+      case StartEvent start -> start.isInterrupting();
+      default -> true;
+    };
+  }
+
+  /**
+   * The subscription elements an activity instance of `historicActivityId` arms, in document order: a Multi-Instance
+   * body's or a plain Activity's boundaries, a Sub-Process's own Event Sub-Process starts, an Event-Based Gateway's
+   * arms; `null` names the process, which arms its root Event Sub-Process starts.
+   */
+  private static List<String> hosted(BpmnModelInstance model, String historicActivityId) {
+    var body = historicActivityId != null && historicActivityId.endsWith(BpmnParse.MULTI_INSTANCE_BODY_ID_SUFFIX);
+    var elementId =
+        body
+            ? historicActivityId.substring(
+                0, historicActivityId.length() - BpmnParse.MULTI_INSTANCE_BODY_ID_SUFFIX.length())
+            : historicActivityId;
+    var element = elementId == null ? null : model.getModelElementById(elementId);
+    var found = new ArrayList<String>();
+    var multiInstance =
+        element instanceof Activity activity
+            && activity.getLoopCharacteristics() instanceof MultiInstanceLoopCharacteristics;
+    if (element instanceof Activity && (body || !multiInstance)) {
+      for (var boundary : model.getModelElementsByType(BoundaryEvent.class)) {
+        if (boundary.getAttachedTo() == element) {
+          found.add(boundary.getId());
+        }
+      }
+    }
+    if (!body) {
+      for (var start : model.getModelElementsByType(StartEvent.class)) {
+        if (start.getParentElement() instanceof SubProcess scope
+            && scope.triggeredByEvent()
+            && (elementId == null
+                ? !(scope.getParentElement() instanceof SubProcess)
+                : scope.getParentElement() == element)) {
+          found.add(start.getId());
+        }
+      }
+    }
+    if (element instanceof EventBasedGateway) {
+      for (var flow : model.getModelElementsByType(SequenceFlow.class)) {
+        if (flow.getSource() == element) {
+          found.add(flow.getTarget().getId());
+        }
+      }
+    }
+    return found.stream().filter(id -> subscriptionElement(model, id)).toList();
   }
 
   /**
@@ -193,6 +439,10 @@ final class CibSevenOccurrences {
 
   /** The activation of the activity instance `activityInstanceId` of `activityId`. */
   long ordinal(String engineId, String activityId, String activityInstanceId) {
+    var subscriptionBegin = begun.get(activityInstanceId);
+    if (subscriptionBegin != null) {
+      return subscriptionBegin;
+    }
     var index = ordinals.getOrDefault(engineId + "\u0000" + activityId, List.of()).indexOf(activityInstanceId);
     if (index < 0) {
       throw new IllegalStateException("Activity instance " + activityInstanceId + " has no history");

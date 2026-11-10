@@ -15,7 +15,18 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
 
   private CibSevenScenarioRunner() {}
 
+  /** The JVM zone the evidence `producer` records; CIB's calendars read the default zone. */
+  static final String TIME_ZONE = "UTC";
+
+  /**
+   * Fails closed outside {@link #TIME_ZONE}: CIB adds Timer durations, reads zone-less dates and evaluates Cron in the
+   * JVM default zone, so evidence produced in another zone would not be the recorded one.
+   */
   public static CibSevenScenarioRunner create() {
+    var zone = java.util.TimeZone.getDefault().getID();
+    if (!TIME_ZONE.equals(zone)) {
+      throw new IllegalStateException("The CIB oracle runs in " + TIME_ZONE + ", not " + zone);
+    }
     return new CibSevenScenarioRunner();
   }
 

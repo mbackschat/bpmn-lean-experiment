@@ -364,6 +364,8 @@ async function replaceEvidence() {
               runner: "cibseven-oracle",
               java: profile.value.environment.java,
               database: profile.value.environment.database,
+              // The runner fails closed outside UTC (`CibSevenScenarioRunner.TIME_ZONE`).
+              timeZone: "UTC",
             },
             producerObservations: {
               stateQueries: result.diagnostics.stateQueries,

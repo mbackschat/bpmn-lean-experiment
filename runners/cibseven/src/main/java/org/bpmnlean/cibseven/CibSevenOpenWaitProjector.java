@@ -95,7 +95,7 @@ final class CibSevenOpenWaitProjector {
 
   record TaskHandle(String taskId) implements Handle {}
 
-  record SubscriptionHandle(String eventName, String executionId) implements Handle {}
+  record SubscriptionHandle(String eventName, String executionId, String subscriptionId) implements Handle {}
 
   record AddresslessHandle(String executionId) implements Handle {}
 
@@ -201,7 +201,9 @@ final class CibSevenOpenWaitProjector {
         engine.getRuntimeService().createEventSubscriptionQuery().processInstanceId(instance.engineId()).list();
     for (var subscription : subscriptions) {
       var elementId = subscription.getActivityId();
-      var handle = new SubscriptionHandle(subscription.getEventName(), subscription.getExecutionId());
+      var handle =
+          new SubscriptionHandle(
+              subscription.getEventName(), subscription.getExecutionId(), subscription.getId());
       var detail =
           switch (subscription.getEventType()) {
             case "message" -> messageDetail(instance, subscription, projection);
@@ -213,7 +215,9 @@ final class CibSevenOpenWaitProjector {
                 "Unsupported CIB event subscription type " + subscription.getEventType());
           };
       if (detail != null) {
-        var activation = occurrences.activation(instance, elementId, subscription.getExecutionId());
+        var activation =
+            occurrences.subscriptionActivation(
+                instance, elementId, subscription.getExecutionId(), subscription.getId());
         projection.waits().add(wait(instance, elementId, activation, detail, handle));
       }
     }
@@ -320,10 +324,12 @@ final class CibSevenOpenWaitProjector {
       if (job instanceof TimerEntity timer) {
         var deadlineMs = job.getDuedate().getTime() - logicalEpoch.getTime();
         projection.timers().add(new TimerJob(elementId, deadlineMs, executable));
-        var activation = occurrences.activation(instance, elementId, job.getExecutionId());
+        var activation =
+            occurrences.subscriptionActivation(instance, elementId, job.getExecutionId(), job.getId());
+        var recurrence =
+            remaining(recurrence(timer.getRepeat()), occurrences.chainFirings(instance.engineId(), job.getId()));
         projection.waits().add(
-            wait(instance, elementId, activation, new TimerDetail(deadlineMs, recurrence(timer.getRepeat())),
-                handle));
+            wait(instance, elementId, activation, new TimerDetail(deadlineMs, recurrence), handle));
       } else if (instance.model().getModelElementById(elementId) instanceof ServiceTask task) {
         projectEffect(instance, occurrences, projection, job,
             new DelegatedTask(task.getId(), task.getImplementation(), task.getCamundaDelegateExpression()),
@@ -414,6 +420,17 @@ final class CibSevenOpenWaitProjector {
 
   private static String instant(Date date) {
     return date == null ? null : date.toInstant().toString();
+  }
+
+  /**
+   * The firings left of a finite cycle, including the open one: the declared count less the chain's earlier firings,
+   * as the kernel counts them (CIB keeps the declared count on every job of the chain).
+   */
+  static Recurrence remaining(Recurrence recurrence, long earlierFirings) {
+    if (recurrence == null || recurrence.remaining() == null) {
+      return recurrence;
+    }
+    return new Recurrence(recurrence.periodMs(), recurrence.cron(), recurrence.remaining() - earlierFirings);
   }
 
   /** A timer's repetition from CIB's repeat expression: ISO `R[n]/[start/]period`, otherwise a cron expression. */
