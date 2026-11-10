@@ -7,6 +7,7 @@ The [profile artifact](profile.json) is the CIB Seven 2.2.0 compatibility profil
 | `submission` | `installsVariables` | `CIB-EXT-0005`, `CIB-EXT-0010` |
 | `undeclaredWrite` | `atInstanceRoot` | `CIB-EXT-0005`, `CIB-EXT-0007`, `CIB-EXT-0009`, `CIB-EXT-0020` |
 | `errorPathOutputs` | `mapped` | `CIB-EXT-0004`, `CIB-EXT-0009`, `CIB-EXT-0016` |
+| `raisedCallOutputs` | `atCalledRoot` | `CIB-EXT-0034` |
 | `technicalFailure` | `incident` | `CIB-EXT-0013`, `CIB-OP-0008`, `CIB-CFG-0008` |
 | `incidentProcessCancellation` | `true` | `CIB-OP-0009` |
 | `abnormalScopeEnd` | `completesNormally` | `CIB-INT-0007` |

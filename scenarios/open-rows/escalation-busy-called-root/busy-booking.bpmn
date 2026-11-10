@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  id="Definitions_BusyBooking"
+  targetNamespace="urn:bpmn-lean:scenarios:escalation-busy-called-root">
+  <bpmn:escalation id="Escalation_Slow" name="Slow booking" escalationCode="SLOW" />
+  <bpmn:process id="Process_BusyBooking" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_BookingRequested" />
+    <bpmn:callActivity id="Book" name="Book a slot" calledElement="Process_ReserveWithWait">
+      <bpmn:extensionElements>
+        <camunda:out source="slot" target="bookedSlot" />
+      </bpmn:extensionElements>
+    </bpmn:callActivity>
+    <bpmn:boundaryEvent id="Boundary_Book_Slow" attachedToRef="Book" cancelActivity="true">
+      <bpmn:escalationEventDefinition id="EscalationEventDefinition_Book_Slow" escalationRef="Escalation_Slow" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Confirm" name="Confirm the booking" />
+    <bpmn:userTask id="Handle" name="Handle the slow booking" />
+    <bpmn:endEvent id="EndEvent_Booked" />
+    <bpmn:endEvent id="EndEvent_Handled" />
+    <bpmn:sequenceFlow id="Flow_Start_Book" sourceRef="StartEvent_BookingRequested" targetRef="Book" />
+    <bpmn:sequenceFlow id="Flow_Book_Confirm" sourceRef="Book" targetRef="Confirm" />
+    <bpmn:sequenceFlow id="Flow_Confirm_End" sourceRef="Confirm" targetRef="EndEvent_Booked" />
+    <bpmn:sequenceFlow id="Flow_Slow_Handle" sourceRef="Boundary_Book_Slow" targetRef="Handle" />
+    <bpmn:sequenceFlow id="Flow_Handle_End" sourceRef="Handle" targetRef="EndEvent_Handled" />
+  </bpmn:process>
+  <bpmn:process id="Process_ReserveWithWait" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_ReserveRequested" />
+    <bpmn:parallelGateway id="Gateway_Fork" gatewayDirection="Diverging" />
+    <bpmn:userTask id="Reserve" name="Reserve a slot" />
+    <bpmn:intermediateThrowEvent id="RaiseSlow">
+      <bpmn:escalationEventDefinition id="EscalationEventDefinition_RaiseSlow" escalationRef="Escalation_Slow" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:userTask id="Settle" name="Settle the reservation" />
+    <bpmn:userTask id="Wait" name="Wait for the supplier" />
+    <bpmn:endEvent id="EndEvent_Settled" />
+    <bpmn:endEvent id="EndEvent_Waited" />
+    <bpmn:sequenceFlow id="Flow_Start_Fork" sourceRef="StartEvent_ReserveRequested" targetRef="Gateway_Fork" />
+    <bpmn:sequenceFlow id="Flow_Fork_Reserve" sourceRef="Gateway_Fork" targetRef="Reserve" />
+    <bpmn:sequenceFlow id="Flow_Fork_Wait" sourceRef="Gateway_Fork" targetRef="Wait" />
+    <bpmn:sequenceFlow id="Flow_Reserve_Raise" sourceRef="Reserve" targetRef="RaiseSlow" />
+    <bpmn:sequenceFlow id="Flow_Raise_Settle" sourceRef="RaiseSlow" targetRef="Settle" />
+    <bpmn:sequenceFlow id="Flow_Settle_End" sourceRef="Settle" targetRef="EndEvent_Settled" />
+    <bpmn:sequenceFlow id="Flow_Wait_End" sourceRef="Wait" targetRef="EndEvent_Waited" />
+  </bpmn:process>
+</bpmn:definitions>

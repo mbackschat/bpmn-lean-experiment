@@ -122,16 +122,16 @@ def endsInstanceWithOutputs (ctx : Ctx) (origin : Origin) (state : State) : Bool
   let outputs := (((ctx.program.element? origin.element).bind (·.envelope?)).map (·.outputs)).getD []
   !outputs.isEmpty && state.instanceRoot origin.scope == origin.scope && state.idle origin.scope
 
-/-- Refuse an uncaught Error whose path lies inside a Multi-Instance instance or a called instance, walking out from
-`current` to the root. What CIB's `execution.end(true)` does to either enclosing instance is PC-ERROR-03's to settle
-(CIB-INT-0013's boundary). -/
+/-- Refuse an uncaught Error whose path lies inside a Multi-Instance instance, walking out from `current` to the root.
+What CIB's `execution.end(true)` does to an enclosing instance is PC-ERROR-03's to settle (CIB-INT-0013's boundary).
+A called instance is no such boundary: the thrower's path ends there, and with nothing left the called instance ends
+and its Call returns normally, unless the thrower's outputs would run as it ends (`endsInstanceWithOutputs`,
+`finance-unlisted-code`, CIB-LIM-0006). -/
 def enclosingInstances (ctx : Ctx) (state : State) : Nat → ScopeOccurrenceId → Outcome
   | 0, _ => .ok state
   | fuel + 1, current =>
     if ctx.scopeRole state current == .multiInstanceInstance then
       .error (.unsupported "unhandled-error-leaves-multi-instance-instance") -- dynamic-only: where its thrower runs
-    else if state.calledRoot current then
-      .error (.unsupported "unhandled-error-leaves-called-instance") -- dynamic-only: where its thrower runs
     else match (state.scopes.find? (·.id == current)).bind (·.parent) with
       | some parent => enclosingInstances ctx state fuel parent
       | none => .ok state
@@ -220,10 +220,31 @@ structure PropagationHooks where
   mappedErrorOutputs : Ctx → Origin → List (String × Value) → State → Outcome := fun _ _ _ state => .ok state
   callOutputs : Ctx → ScopeOccurrence → State → Outcome := fun _ _ state => .ok state
 
-/-- Under `RaisedCallOutputs.atCalledRoot` (CIB-EXT-0034) a called root the search visits passes its Call's outputs. -/
-def passCallOutputs (hooks : PropagationHooks) (ctx : Ctx) (occurrence : ScopeOccurrence) (state : State) : Outcome :=
+/-- Whether the raise runs directly at the called root `occurrence` while another path stands there and the Call maps
+outputs. CIB's walk then starts at the thrower's concurrent execution, not the process-instance execution
+(`tree/ActivityExecutionHierarchyWalker.java:53-55`, `:76-95`), and stops at a catch at that level before its
+propagator sees the root, so whether the outputs pass rests on CIB's execution tree (PC-SCOPE-06 item 4). An Error's
+thrower has left before its raise; an Escalation's still stands and is no other path. -/
+def busyCalledRoot (ctx : Ctx) (origin : Origin) (occurrence : ScopeOccurrence) (state : State) : Bool :=
+  let mapsOutputs := (((occurrence.element.bind ctx.program.element?).bind (·.activity?)).bind (·.2.work.call?)).any
+    fun work => !work.outputs.isEmpty || work.propagateAllOutputs
+  let thrower (standing : Occurrence) : Bool :=
+    standing.element == origin.element && standing.activation == origin.activation
+  let otherPath := state.occurrences.any (fun standing => standing.scope == occurrence.id && !thrower standing) ||
+    state.tokens.any (·.scope == occurrence.id)
+  origin.scope == occurrence.id && mapsOutputs && otherPath
+
+/-- Under `RaisedCallOutputs.atCalledRoot` (CIB-EXT-0034) a called root the search visits passes its Call's outputs.
+When that level `catches` at a busy root (`busyCalledRoot`) the run is refused, dynamic-only, as what else runs at the
+root decides it. -/
+def passCallOutputs (hooks : PropagationHooks) (ctx : Ctx) (origin : Origin) (catches : Bool) (occurrence : ScopeOccurrence)
+    (state : State) : Outcome :=
   match ctx.program.options.raisedCallOutputs with
-  | .atCalledRoot => if state.calledRoot occurrence.id then hooks.callOutputs ctx occurrence state else .ok state
+  | .atCalledRoot =>
+    if !state.calledRoot occurrence.id then .ok state
+    else if catches && busyCalledRoot ctx origin occurrence state then
+      .error (.unsupported "raise-caught-at-busy-called-root") -- dynamic-only: what else runs at the called root
+    else hooks.callOutputs ctx occurrence state
   | .none => .ok state
 
 /-- Search outward from `current`; `fuel` bounds the walk by the number of scope occurrences. The search ends at the
@@ -240,22 +261,19 @@ def searchScopes (hooks : PropagationHooks) (ctx : Ctx) (raised : Raised) (origi
     | some occurrence =>
       let role := ctx.scopeRole state occurrence.id
       if role == .compensationHandler then exhausted ctx raised origin (some occurrence.id) state else do
-      let state ← passCallOutputs hooks ctx occurrence state
       let handlers ← handlerCandidates ctx raised origin state occurrence
-      match best? ctx raised (·.2.1.trigger) handlers with
-      | some ((element, _, interrupting), writes) =>
+      let handled := best? ctx raised (·.2.1.trigger) handlers
+      let attached := match occurrence.element, occurrence.parent with
+        | some element, some _ => if role == .multiInstanceInstance then [] else boundariesOf ctx element
+        | _, _ => []
+      let bounded := best? ctx raised (·.subscription.trigger) attached
+      let state ← passCallOutputs hooks ctx origin (handled.isSome || bounded.isSome) occurrence state
+      match handled, bounded, occurrence.parent with
+      | some ((element, _, interrupting), writes), _, _ =>
         let begun := (writeCaught occurrence.id writes state).signal (.begin { element, scope := occurrence.id })
         .ok (if interrupting then begun else throwerLeaves ctx origin begun)
-      | none =>
-        let caught := do
-          let element ← occurrence.element
-          let parent ← occurrence.parent
-          let attached := if role == .multiInstanceInstance then [] else boundariesOf ctx element
-          let (boundary, writes) ← best? ctx raised (·.subscription.trigger) attached
-          pure (leaveOccurrence ctx raised origin occurrence parent boundary writes state)
-        match caught with
-        | some next => next
-        | none => searchScopes hooks ctx raised origin state fuel occurrence.parent
+      | none, some (boundary, writes), some parent => leaveOccurrence ctx raised origin occurrence parent boundary writes state
+      | none, _, _ => searchScopes hooks ctx raised origin state fuel occurrence.parent
 
 /-- `Signal.raise`. An Activity that raised the event (`origin.host`) is still running: its own boundaries are searched
 first, and a catching one installs its variables through the Activity's frame before the Activity leaves with its

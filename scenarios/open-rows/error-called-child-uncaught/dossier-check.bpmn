@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  id="Definitions_DossierCheck"
+  targetNamespace="urn:bpmn-lean:scenarios:error-called-child-uncaught">
+  <bpmn:error id="Error_CheckRejected" name="Check rejected" errorCode="CHECK_REJECTED" />
+  <bpmn:process id="Process_DossierCheck" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_CheckRequested" />
+    <bpmn:callActivity id="Check" name="Check the dossier" calledElement="Process_CheckDossier">
+      <bpmn:extensionElements>
+        <camunda:out source="verdict" target="checkVerdict" />
+      </bpmn:extensionElements>
+    </bpmn:callActivity>
+    <bpmn:boundaryEvent id="Boundary_Check_Rejected" attachedToRef="Check" cancelActivity="true">
+      <bpmn:errorEventDefinition id="ErrorEventDefinition_Check_Rejected" errorRef="Error_CheckRejected" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Approve" name="Approve the dossier" />
+    <bpmn:userTask id="Rework" name="Rework the dossier" />
+    <bpmn:endEvent id="EndEvent_Approved" />
+    <bpmn:endEvent id="EndEvent_Reworked" />
+    <bpmn:sequenceFlow id="Flow_Start_Check" sourceRef="StartEvent_CheckRequested" targetRef="Check" />
+    <bpmn:sequenceFlow id="Flow_Check_Approve" sourceRef="Check" targetRef="Approve" />
+    <bpmn:sequenceFlow id="Flow_Approve_End" sourceRef="Approve" targetRef="EndEvent_Approved" />
+    <bpmn:sequenceFlow id="Flow_Rejected_Rework" sourceRef="Boundary_Check_Rejected" targetRef="Rework" />
+    <bpmn:sequenceFlow id="Flow_Rework_End" sourceRef="Rework" targetRef="EndEvent_Reworked" />
+  </bpmn:process>
+
+  <bpmn:process id="Process_CheckDossier" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_DossierReceived" />
+    <bpmn:userTask id="Prepare" name="Prepare the check" />
+    <bpmn:serviceTask
+      id="Assess"
+      name="Assess the dossier"
+      implementation="urn:bpmn-lean:effect:probe-v1"
+      camunda:delegateExpression="${bpmnLeanEffectHandler}"
+      camunda:asyncBefore="true" />
+    <bpmn:endEvent id="EndEvent_DossierChecked" />
+    <bpmn:sequenceFlow id="Flow_Child_Start_Prepare" sourceRef="StartEvent_DossierReceived" targetRef="Prepare" />
+    <bpmn:sequenceFlow id="Flow_Child_Prepare_Assess" sourceRef="Prepare" targetRef="Assess" />
+    <bpmn:sequenceFlow id="Flow_Child_Assess_End" sourceRef="Assess" targetRef="EndEvent_DossierChecked" />
+  </bpmn:process>
+</bpmn:definitions>

@@ -85,8 +85,11 @@ test("under CIB's reading the last path of the instance ending with the thrower'
     { ok: false, failure: { tag: "unsupported", code: "unhandled-error-ends-instance-with-outputs" } });
 });
 
-/** Start with `items`, then fail the effect of `T` in `instance` with the code `OTHER`, which no catcher names. */
-function failUnmatchedIn(json: Json, instance: string) {
+/**
+ * Start with `items`, then fail the effect of `T` in `instance` with the code `OTHER`, which no catcher names, and the
+ * result patch `outputs`.
+ */
+function failUnmatchedIn(json: Json, instance: string, outputs: Json[] = []) {
   const decoded = decodeProgram(wired(json));
   assert.ok(decoded.ok, decoded.ok ? "" : decoded.refusal);
   const items = { name: "items", value: { kind: "stringList", value: ["a", "b"] } };
@@ -96,12 +99,12 @@ function failUnmatchedIn(json: Json, instance: string) {
   return step(hooks, decoded.value, started.value, stimulus({
     kind: "effectResult",
     occurrence: { processInstanceId: instance, elementId: element, activation: 1 },
-    outcome: { kind: "businessFailure", code: "OTHER", message: "no stock", outputs: [] },
+    outcome: { kind: "businessFailure", code: "OTHER", message: "no stock", outputs },
   }));
 }
 
-// Until PC-ERROR-03 settles what CIB's `execution.end(true)` does to an enclosing Multi-Instance instance or called
-// instance, CIB's reading refuses an uncaught Error whose path lies inside one (CIB-INT-0013's boundary).
+// Until PC-ERROR-03 settles what CIB's `execution.end(true)` does to an enclosing Multi-Instance instance, CIB's reading
+// refuses an uncaught Error whose path lies inside one (CIB-INT-0013's boundary).
 test("under CIB's reading an uncaught Error inside a Multi-Instance instance is refused", () => {
   for (const mode of ["sequential", "parallel"]) {
     const program = withOptions(task(activity("T", serviceWork(), {
@@ -113,13 +116,28 @@ test("under CIB's reading an uncaught Error inside a Multi-Instance instance is 
   }
 });
 
-test("under CIB's reading an uncaught Error inside a called instance is refused", () => {
+/** `T` calls `Called`, whose Service Task `CT` maps `outputs` and has a `CAUGHT` boundary. */
+function calling(outputs: Json[]): Json {
   const called = append(task(activity("T", callWork()))(base()),
-    start("CS", null), activity("CT", serviceWork(), { boundaries: [boundary("CB", errorTrigger({ code: "CAUGHT" }))] }), end("CE"));
+    start("CS", null), activity("CT", serviceWork(), { outputs, boundaries: [boundary("CB", errorTrigger({ code: "CAUGHT" }))] }),
+    end("CE"));
   const program = withFlows({ ...called, processes: [{ definition: definitionRef("Called"), children: ["CS", "CT", "CE"], variables: [], executable: true }] },
     flow("cf1", "CS", "CT"), flow("cf2", "CT", "CE"), flow("cfb", "CB", "CE"));
-  assert.deepEqual(failUnmatchedIn(withOptions(program, cib), "call:1:I:1:T:1"),
-    { ok: false, failure: { tag: "unsupported", code: "unhandled-error-leaves-called-instance" } });
+  return withOptions(program, cib);
+}
+
+// CIB's `execution.end(true)` ends the thrower's path inside the called instance; with nothing left there the called
+// instance ends and its Call returns normally (PC-ERROR-03, CIB-INT-0013).
+test("under CIB's reading an uncaught Error ends only its path inside a called instance, which then returns", () => {
+  const state = committed(failUnmatchedIn(calling([]), "call:1:I:1:T:1"));
+  assert.equal(state.status, "completed");
+});
+
+// The same last path with the thrower's output parameters rolls CIB's command back (`finance-unlisted-code`), the
+// mechanism CIB-LIM-0006 records for an instance root, so it is refused as there.
+test("under CIB's reading the last path of a called instance ending with the thrower's outputs is refused", () => {
+  assert.deepEqual(failUnmatchedIn(calling(reservation), "call:1:I:1:T:1", result),
+    { ok: false, failure: { tag: "unsupported", code: "unhandled-error-ends-instance-with-outputs" } });
 });
 
 test("an uncaught Error End fails the instance under the standards reading and ends its path under CIB's", () => {

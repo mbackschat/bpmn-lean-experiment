@@ -32,11 +32,13 @@ import {
   ThrowTag,
   UnhandledError,
   assertNever,
+  elementActivity,
   elementEnvelope,
   elementEvent,
   elementScope,
   programElement,
   valueSourceLiteral,
+  workCall,
   type Boundary,
   type CompensationThrow,
   type ElementId,
@@ -200,18 +202,17 @@ function endsInstanceWithOutputs(ctx: Ctx, origin: Origin, state: State): boolea
 }
 
 /**
- * Refuse an uncaught Error whose path lies inside a Multi-Instance instance or a called instance, walking out from
- * `start` to the root. What CIB's `execution.end(true)` does to either enclosing instance is PC-ERROR-03's to settle
- * (CIB-INT-0013's boundary).
+ * Refuse an uncaught Error whose path lies inside a Multi-Instance instance, walking out from `start` to the root. What
+ * CIB's `execution.end(true)` does to an enclosing instance is PC-ERROR-03's to settle (CIB-INT-0013's boundary). A
+ * called instance is no such boundary: the thrower's path ends there, and with nothing left the called instance ends
+ * and its Call returns normally, unless the thrower's outputs would run as it ends (`endsInstanceWithOutputs`,
+ * `finance-unlisted-code`, CIB-LIM-0006).
  */
 function enclosingInstances(ctx: Ctx, state: State, start: ScopeOccurrenceId): Outcome {
   let current: ScopeOccurrenceId | null = start;
   for (let fuel = state.scopes.length + 1; fuel > 0 && current !== null; fuel -= 1) {
     if (ctx.scopeRole(state, current) === ScopeRole.MultiInstanceInstance) {
       return failed(FailureTag.Unsupported, "unhandled-error-leaves-multi-instance-instance"); // dynamic-only: where its thrower runs
-    }
-    if (calledRoot(state, current)) {
-      return failed(FailureTag.Unsupported, "unhandled-error-leaves-called-instance"); // dynamic-only: where its thrower runs
     }
     const id: ScopeOccurrenceId = current;
     current = state.scopes.find((scope) => scope.id === id)?.parent ?? null;
@@ -369,12 +370,45 @@ export const defaultPropagationHooks: PropagationHooks = {
   callOutputs: (_ctx, _root, state) => committed(state),
 };
 
-/** Under `RaisedCallOutputs.AtCalledRoot` (CIB-EXT-0034) a called root the search visits passes its Call's outputs. */
-function passCallOutputs(hooks: PropagationHooks, ctx: Ctx, occurrence: ScopeOccurrence, state: State): Outcome {
+/**
+ * Whether the raise runs directly at the called root `occurrence` while another path stands there and the Call maps
+ * outputs. CIB's walk then starts at the thrower's concurrent execution, not the process-instance execution
+ * (`tree/ActivityExecutionHierarchyWalker.java:53-55`, `:76-95`), and stops at a catch at that level before its
+ * propagator sees the root, so whether the outputs pass rests on CIB's execution tree (PC-SCOPE-06 item 4). An Error's
+ * thrower has left before its raise; an Escalation's still stands and is no other path.
+ */
+function busyCalledRoot(ctx: Ctx, origin: Origin, occurrence: ScopeOccurrence, state: State): boolean {
+  const element = occurrence.element === null ? null : programElement(ctx.program, occurrence.element);
+  const activity = element === null ? null : elementActivity(element);
+  const work = activity === null ? null : workCall(activity[1].work);
+  const mapsOutputs = work !== null && (work.outputs.length > 0 || work.propagateAllOutputs);
+  const otherPath = state.occurrences.some((standing) => standing.scope === occurrence.id &&
+    !(standing.element === origin.element && standing.activation === origin.activation)) ||
+    state.tokens.some((token) => token.scope === occurrence.id);
+  return origin.scope === occurrence.id && mapsOutputs && otherPath;
+}
+
+/**
+ * Under `RaisedCallOutputs.AtCalledRoot` (CIB-EXT-0034) a called root the search visits passes its Call's outputs.
+ * When that level `catches` at a busy root (`busyCalledRoot`) the run is refused, dynamic-only, as what else runs at the
+ * root decides it.
+ */
+function passCallOutputs(
+  hooks: PropagationHooks,
+  ctx: Ctx,
+  origin: Origin,
+  catches: boolean,
+  occurrence: ScopeOccurrence,
+  state: State,
+): Outcome {
   const selected = ctx.program.options.raisedCallOutputs;
   switch (selected) {
     case RaisedCallOutputs.AtCalledRoot:
-      return calledRoot(state, occurrence.id) ? hooks.callOutputs(ctx, occurrence, state) : committed(state);
+      if (!calledRoot(state, occurrence.id)) return committed(state);
+      if (catches && busyCalledRoot(ctx, origin, occurrence, state)) {
+        return failed(FailureTag.Unsupported, "raise-caught-at-busy-called-root"); // dynamic-only: what else runs at the called root
+      }
+      return hooks.callOutputs(ctx, occurrence, state);
     case RaisedCallOutputs.None:
       return committed(state);
   }
@@ -404,22 +438,24 @@ function searchScopes(
     if (occurrence === undefined) return failed(FailureTag.SemanticFailure, "raise-from-missing-scope");
     const role = ctx.scopeRole(state, occurrence.id);
     if (role === ScopeRole.CompensationHandler) return exhausted(ctx, raised, origin, occurrence.id, state);
-    const passed = passCallOutputs(hooks, ctx, occurrence, state);
-    if (!passed.ok) return passed;
-    state = passed.value;
     const handlers = handlerCandidates(ctx, raised, origin, state, occurrence);
     if (!handlers.ok) return failedWith(handlers.failure);
     const handled = best(ctx, raised, ([, subscription]) => subscription.trigger, handlers.value);
+    const attached = occurrence.element === null || occurrence.parent === null || role === ScopeRole.MultiInstanceInstance
+      ? []
+      : boundariesOf(ctx, occurrence.element);
+    const caught = best(ctx, raised, (boundary) => boundary.subscription.trigger, attached);
+    const passed = passCallOutputs(hooks, ctx, origin, handled !== null || caught !== null, occurrence, state);
+    if (!passed.ok) return passed;
+    state = passed.value;
     if (handled !== null) {
       const [[element, , interrupting], writes] = handled;
       const begun = signal(writeCaught(occurrence.id, writes, state),
         { tag: SignalTag.Begin, request: beginRequest({ element, scope: occurrence.id }) });
       return committed(interrupting ? begun : throwerLeaves(ctx, origin, begun));
     }
-    if (occurrence.element !== null && occurrence.parent !== null) {
-      const attached = role === ScopeRole.MultiInstanceInstance ? [] : boundariesOf(ctx, occurrence.element);
-      const caught = best(ctx, raised, (boundary) => boundary.subscription.trigger, attached);
-      if (caught !== null) return leaveOccurrence(ctx, raised, origin, occurrence, occurrence.parent, caught[0], caught[1], state);
+    if (caught !== null && occurrence.parent !== null) {
+      return leaveOccurrence(ctx, raised, origin, occurrence, occurrence.parent, caught[0], caught[1], state);
     }
     current = occurrence.parent;
   }

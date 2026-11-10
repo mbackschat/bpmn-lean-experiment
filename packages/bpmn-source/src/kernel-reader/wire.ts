@@ -98,7 +98,7 @@ export function kernelProfileOptions(relations: readonly string[]): KernelProfil
     scopeChainSubmissionBytes: selects("CIB-EXT-0020") ? portableValueAllowanceBytes : null,
     undeclaredWrite: selects("CIB-EXT-0005", "CIB-EXT-0007", "CIB-EXT-0009", "CIB-EXT-0020") ? "atInstanceRoot" : "refused",
     errorPathOutputs: selects("CIB-EXT-0004", "CIB-EXT-0009", "CIB-EXT-0016") ? "mapped" : "none",
-    raisedCallOutputs: "none",
+    raisedCallOutputs: selects("CIB-EXT-0034") ? "atCalledRoot" : "none",
     technicalFailure: selects("CIB-EXT-0013", "CIB-OP-0008", "CIB-CFG-0008") ? "incident" : "hostFailure",
     incidentProcessCancellation: selects("CIB-OP-0009"),
     continuationFailure: selects("CIB-EXT-0026") ? "incident" : "rolledBack",

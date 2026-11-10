@@ -262,30 +262,6 @@
     ]
   },
   {
-    "evidence": "scenarios/open-rows/call-exceptional-return/no-carrier-skips-nested-boundary.cibseven-evidence.json",
-    "owners": [
-      "PC-SCOPE-06"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/call-exceptional-return/no-slot-caught-by-nearest-boundary.cibseven-evidence.json",
-    "owners": [
-      "PC-SCOPE-06"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/call-exceptional-return/no-stock-handled-inside-child.cibseven-evidence.json",
-    "owners": [
-      "PC-SCOPE-06"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/call-exceptional-return/slow-booking-escalation-two-levels.cibseven-evidence.json",
-    "owners": [
-      "PC-SCOPE-06"
-    ]
-  },
-  {
     "evidence": "scenarios/open-rows/compensation-activity-ref-refusals/throw-names-a-start-event.cibseven-evidence.json",
     "owners": [
       "PC-COMPENSATION-02"
@@ -805,7 +781,7 @@
   {
     "evidence": "scenarios/open-rows/error-called-child/finance-unlisted-code.cibseven-evidence.json",
     "owners": [
-      "PC-ERROR-03"
+      "CIB-LIM-0006"
     ]
   },
   {
@@ -836,30 +812,6 @@
     "evidence": "scenarios/open-rows/error-unhandled-outcomes/root-last-path-with-outputs.cibseven-evidence.json",
     "owners": [
       "CIB-LIM-0006"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/escalation-call-propagation/interrupting-call.cibseven-evidence.json",
-    "owners": [
-      "PC-ESCALATION-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/escalation-call-propagation/non-interrupting-call-handler-first.cibseven-evidence.json",
-    "owners": [
-      "PC-ESCALATION-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/escalation-call-propagation/non-interrupting-call-ordinary-first.cibseven-evidence.json",
-    "owners": [
-      "PC-ESCALATION-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/escalation-call-relay/relayed-through-callee-handler.cibseven-evidence.json",
-    "owners": [
-      "PC-ESCALATION-03"
     ]
   },
   {
