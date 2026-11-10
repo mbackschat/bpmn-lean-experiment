@@ -211,7 +211,7 @@ final class CibSevenCommandExecutor {
     var management = engine.getManagementService();
     var initialRetries = management.createJobQuery().jobId(job.jobId()).singleResult().getRetries();
     Long retriesAfterFirstFailure = null;
-    effects.arm(result.outcome());
+    effects.arm(result.occurrence().elementId(), result.outcome());
     try {
       if (result.outcome() instanceof TechnicalFailure) {
         if (!incidentsEnabled) {

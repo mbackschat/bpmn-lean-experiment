@@ -46,6 +46,7 @@ final class CibSevenScriptedEffect {
   private final List<String> consumed = new ArrayList<>();
   private final List<MappingExecutionSnapshot> mappings = new ArrayList<>();
   private EffectOutcome armed;
+  private String armedElement;
   private String currentCommandId;
   private int invocations;
   private int mutations;
@@ -67,13 +68,19 @@ final class CibSevenScriptedEffect {
     currentCommandId = commandId;
   }
 
-  /** The outcome the next job execution applies; cleared by {@link #disarm()}. */
-  void arm(EffectOutcome outcome) {
+  /**
+   * The outcome the job's own Service Task applies once it succeeds in applying it; cleared then or by
+   * {@link #disarm()}. A Service Task the same job reaches synchronously after it answers from the scenario like any
+   * synchronous one, so the armed outcome never leaks to another element.
+   */
+  void arm(String elementId, EffectOutcome outcome) {
+    armedElement = Objects.requireNonNull(elementId, "elementId");
     armed = Objects.requireNonNull(outcome, "outcome");
   }
 
   void disarm() {
     armed = null;
+    armedElement = null;
   }
 
   boolean consumedSynchronously(String commandId) {
@@ -98,7 +105,7 @@ final class CibSevenScriptedEffect {
   }
 
   private void execute(String handler, DelegateExecution execution) {
-    if (armed != null) {
+    if (armed != null && execution.getCurrentActivityId().equals(armedElement)) {
       invocations += 1;
       mutations = 1;
       if (schedule == CibEffectExecutionSchedule.FAIL_AFTER_MUTATION_ONCE && failedOnce == 0) {
@@ -106,6 +113,7 @@ final class CibSevenScriptedEffect {
         throw new IllegalStateException("scripted failure after test-local external mutation");
       }
       apply(armed, execution);
+      disarm();
       return;
     }
     var result = consumeNext(execution.getCurrentActivityId());
