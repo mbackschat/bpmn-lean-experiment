@@ -75,6 +75,11 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <version>${maven.surefire.plugin.version}</version>
         <configuration>
+          <!-- One Maven call runs the suite under one fixed deadline (scripts/cibseven-maven-budget.ts), while
+               CibSevenRetainedEvidenceTest replays every retained evidence file: 27 s of 112 s at 733 files, measured
+               on the hosted runner on 2026-11-10. Two forks share the classes; each owns an in-memory H2 engine. -->
+          <forkCount>2</forkCount>
+          <reuseForks>true</reuseForks>
           <redirectTestOutputToFile>false</redirectTestOutputToFile>
           <trimStackTrace>false</trimStackTrace>
         </configuration>
