@@ -384,6 +384,8 @@ test("a Send Task without an implementation is read as Send work, a declared one
   } } });
   assert.equal(element(p, "Plain").activity.header.sourceType, "sendTask");
   assert.deepEqual(element(p, "Delegate").activity.payload.work, { service: { payload: { protocol: "##WebService", operation: "${d}", handlerKey: "d" } } });
+  // CIB records the tag name as the activity type (`BpmnParse.java:1912`), whichever behaviour performs the task.
+  assert.equal(element(p, "Delegate").activity.header.sourceType, "sendTask");
 });
 
 test("an unknown element, foreign attribute or unsafe source is refused with a stable code", async () => {

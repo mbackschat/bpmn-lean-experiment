@@ -213,7 +213,7 @@ function workOf(ctx: ReadContext, element: ElementRecord, kind: ActivityKind): R
       return { work: serviceWork(ctx, element), sourceType: kind };
     case FlowElementKind.SendTask:
       return configuredSendHandler(ctx, element)
-        ? { work: serviceWork(ctx, element), sourceType: FlowElementKind.ServiceTask }
+        ? { work: serviceWork(ctx, element), sourceType: kind }
         : { work: sendWork(ctx, element), sourceType: kind };
     case FlowElementKind.ReceiveTask:
       // BPMN 2.0.2 §10.3.3, Table 10.10; admission refuses an instantiating one (`work.receive.instantiate`).
