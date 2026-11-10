@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             id="Definitions_ActivityDefault" targetNamespace="urn:bpmn-lean:scenarios:flow-simple-boolean-outflow:activity-default"
+             expressionLanguage="urn:bpmn-lean:expression:simple-boolean:v1">
+  <process id="Process_ActivityDefault" name="A task with a conditioned, a plain and a default outgoing flow" isExecutable="true">
+    <startEvent id="Received" name="Received" />
+    <task id="Check" name="Check" default="Flow_Standard" />
+    <userTask id="Expedite" name="Expedite" />
+    <userTask id="Notify" name="Notify" />
+    <userTask id="Standard" name="Standard handling" />
+    <endEvent id="Expedited" name="Expedited" />
+    <endEvent id="Notified" name="Notified" />
+    <endEvent id="Handled" name="Handled" />
+    <sequenceFlow id="Flow_Received" sourceRef="Received" targetRef="Check" />
+    <sequenceFlow id="Flow_Expedite" sourceRef="Check" targetRef="Expedite">
+      <conditionExpression xsi:type="tFormalExpression">stringEquals(route,"fast")</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Standard" sourceRef="Check" targetRef="Standard" />
+    <sequenceFlow id="Flow_Notify" sourceRef="Check" targetRef="Notify">
+      <conditionExpression xsi:type="tFormalExpression">isPresent(contact)</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Expedited" sourceRef="Expedite" targetRef="Expedited" />
+    <sequenceFlow id="Flow_Notified" sourceRef="Notify" targetRef="Notified" />
+    <sequenceFlow id="Flow_Handled" sourceRef="Standard" targetRef="Handled" />
+  </process>
+</definitions>

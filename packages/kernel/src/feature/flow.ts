@@ -16,7 +16,8 @@
  * Each token that reaches a join is its own occurrence, parked in `state.slots.parked` until the join fires; then every
  * consumed occurrence completes, one with the outgoing flows and the others with none, since a join ends one activity
  * instance per joined execution (CIB `ParallelGatewayActivityBehavior`, `PvmExecutionImpl.leaveActivityViaTransitions`).
- * A diverging gateway that finds no outgoing flow rolls the command back.
+ * An element's own selection (`ownFlows`) is an inclusive choice over its outgoing flows, which only an Activity's or a
+ * Scope's may condition. A diverging gateway or an Activity that finds no outgoing flow rolls the command back.
  */
 import {
   ConditionOrder,
@@ -69,23 +70,6 @@ function complete(state: State, id: number, leave: Leave): State {
   return signal(state, completeSignal(id, leave, [], WriteRule.Outward));
 }
 
-/** `Hooks.outflow`: the only place tokens are added. An element's own selection is its outgoing flows. */
-export function outflow(ctx: Ctx, occurrence: Occurrence, leave: Leave, state: State): Outcome {
-  switch (leave.tag) {
-    case LeaveTag.Flows:
-      return committed(emit(state, leave.selected, occurrence.scope));
-    case LeaveTag.Outgoing: {
-      const element = programElement(ctx.program, occurrence.element);
-      return element === null
-        ? failed(FailureTag.SemanticFailure, "outflow-without-element")
-        : committed(emit(state, elementOutgoing(element), occurrence.scope));
-    }
-    case LeaveTag.Raised:
-      return failed(FailureTag.SemanticFailure, "outflow-of-raised-occurrence");
-  }
-  return assertNever(leave);
-}
-
 /** A candidate's condition, read from its Sequence Flow; an unconditioned candidate holds. */
 function condition(ctx: Ctx, context: EvalContext, candidate: FlowId): Result<boolean> {
   const flow = programFlow(ctx.program, candidate);
@@ -117,6 +101,54 @@ function holding(ctx: Ctx, context: EvalContext, candidates: readonly FlowId[], 
   return committed(chosen);
 }
 
+/**
+ * The flows an inclusive choice takes: every candidate whose condition holds, else the default; with neither the command
+ * rolls back with `noFlow`. A choice without candidates takes all of `outgoing`, which are unconditioned.
+ */
+function inclusiveChoice(
+  ctx: Ctx,
+  context: EvalContext,
+  candidates: readonly FlowId[],
+  fallback: FlowId | null,
+  outgoing: readonly FlowId[],
+  noFlow: string,
+): Result<readonly FlowId[]> {
+  if (candidates.length === 0) return committed(outgoing);
+  const chosen = holding(ctx, context, candidates, false);
+  if (!chosen.ok || chosen.value.length > 0) return chosen;
+  return fallback === null ? failed(FailureTag.RolledBack, noFlow) : committed([fallback]);
+}
+
+/**
+ * The flows an element's own selection takes. Several outgoing flows of an Activity form a parallel split, conditioned
+ * ones an inclusive split, and a mix of both (BPMN 2.0.2 §13.3.1, Figure 13.1): every flow whose condition holds or that
+ * has none, the default only when no other flow is taken (§10.3.1 `default`), and, when it takes none, Table 13.3's
+ * exception, read as a rollback (CIB-INT-0012; CIB `BpmnActivityBehavior#performOutgoingBehavior`). Admission puts
+ * conditions and a default only on Activities' and Scopes' flows, so every other element takes all its flows.
+ */
+function ownFlows(ctx: Ctx, element: Element, context: EvalContext): Result<readonly FlowId[]> {
+  const fallback = elementEnvelope(element)?.defaultFlow ?? null;
+  const outgoing = elementOutgoing(element);
+  return inclusiveChoice(ctx, context, outgoing.filter((flow) => flow !== fallback), fallback, outgoing, "activity-no-outgoing-flow");
+}
+
+/** `Hooks.outflow`: the only place tokens are added. An element's own selection is `ownFlows`, read after the completion's writes. */
+export function outflow(ctx: Ctx, occurrence: Occurrence, leave: Leave, state: State): Outcome {
+  switch (leave.tag) {
+    case LeaveTag.Flows:
+      return committed(emit(state, leave.selected, occurrence.scope));
+    case LeaveTag.Outgoing: {
+      const element = programElement(ctx.program, occurrence.element);
+      if (element === null) return failed(FailureTag.SemanticFailure, "outflow-without-element");
+      const selected = ownFlows(ctx, element, evalContext(state, occurrence.scope));
+      return selected.ok ? committed(emit(state, selected.value, occurrence.scope)) : failedWith(selected.failure);
+    }
+    case LeaveTag.Raised:
+      return failed(FailureTag.SemanticFailure, "outflow-of-raised-occurrence");
+  }
+  return assertNever(leave);
+}
+
 function exclusive(ctx: Ctx, candidates: readonly FlowId[], fallback: FlowId | null, occurrence: Occurrence, state: State): Outcome {
   const chosen = holding(ctx, evalContext(state, occurrence.scope), candidates, true);
   if (!chosen.ok) return failedWith(chosen.failure);
@@ -126,10 +158,7 @@ function exclusive(ctx: Ctx, candidates: readonly FlowId[], fallback: FlowId | n
     : committed(complete(state, occurrence.id, leaveFlows([flow])));
 }
 
-/**
- * The flows an inclusive split takes. A gateway that lists no candidates is a pure join whose outgoing flows are
- * unconditioned, so it takes all of them.
- */
+/** The flows an inclusive split takes. A gateway that lists no candidates is a pure join. */
 function inclusiveFlows(
   ctx: Ctx,
   candidates: readonly FlowId[],
@@ -138,10 +167,7 @@ function inclusiveFlows(
   scope: ScopeOccurrenceId,
   state: State,
 ): Result<readonly FlowId[]> {
-  if (candidates.length === 0) return committed(outgoing);
-  const chosen = holding(ctx, evalContext(state, scope), candidates, false);
-  if (!chosen.ok || chosen.value.length > 0) return chosen;
-  return fallback === null ? failed(FailureTag.RolledBack, "inclusive-gateway-no-outgoing-flow") : committed([fallback]);
+  return inclusiveChoice(ctx, evalContext(state, scope), candidates, fallback, outgoing, "inclusive-gateway-no-outgoing-flow");
 }
 
 /**
@@ -168,7 +194,7 @@ function selectBeforeOutputs(ctx: Ctx, occurrence: Occurrence, leave: Leave, sta
       const element = programElement(ctx.program, occurrence.element);
       if (element === null) return failed(FailureTag.SemanticFailure, "outflow-without-element");
       const inside = state.scopes.find((scope) => scope.occurrence === occurrence.id)?.id ?? occurrence.scope;
-      const chosen = holding(ctx, evalContext(state, inside), elementOutgoing(element), false);
+      const chosen = ownFlows(ctx, element, evalContext(state, inside));
       return chosen.ok ? committed(leaveFlows(chosen.value)) : failedWith(chosen.failure);
     }
   }

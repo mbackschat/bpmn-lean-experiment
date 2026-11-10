@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             id="Definitions_InclusiveWithoutDefault" targetNamespace="urn:bpmn-lean:scenarios:flow-simple-boolean-outflow:inclusive-without-default"
+             expressionLanguage="urn:bpmn-lean:expression:simple-boolean:v1">
+  <process id="Process_InclusiveWithoutDefault" name="An Inclusive split whose every flow is conditioned, without a default, and its join" isExecutable="true">
+    <startEvent id="Received" name="Received" />
+    <inclusiveGateway id="Select" name="Select checks" gatewayDirection="Diverging" />
+    <userTask id="CheckCredit" name="Check credit" />
+    <userTask id="CheckFraud" name="Check fraud" />
+    <inclusiveGateway id="Checked" name="Checked" gatewayDirection="Converging" />
+    <endEvent id="Done" name="Done" />
+    <sequenceFlow id="Flow_Received" sourceRef="Received" targetRef="Select" />
+    <sequenceFlow id="Flow_Credit" sourceRef="Select" targetRef="CheckCredit">
+      <conditionExpression xsi:type="tFormalExpression">stringEquals(credit,"yes")</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Fraud" sourceRef="Select" targetRef="CheckFraud">
+      <conditionExpression xsi:type="tFormalExpression">stringEquals(fraud,"yes")</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_CreditDone" sourceRef="CheckCredit" targetRef="Checked" />
+    <sequenceFlow id="Flow_FraudDone" sourceRef="CheckFraud" targetRef="Checked" />
+    <sequenceFlow id="Flow_Done" sourceRef="Checked" targetRef="Done" />
+  </process>
+</definitions>

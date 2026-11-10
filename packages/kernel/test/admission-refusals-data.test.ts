@@ -28,11 +28,6 @@ export const rows: readonly Row[] = [
     control: task(activity("T", userWork(), { outputs: [mapping("x", variable("y"))] })),
   },
   {
-    code: "activity.defaultFlow",
-    description: "an Activity naming a default flow",
-    mutate: task(activity("T", "manual", { defaultFlow: "f2" })),
-  },
-  {
     code: "flow.condition.foreign",
     description: "a gateway candidate whose condition is a literal",
     mutate: gatewayWith(literalValue(bool(true))),

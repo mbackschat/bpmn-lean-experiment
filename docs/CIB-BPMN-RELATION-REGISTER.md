@@ -25,10 +25,10 @@ The counts below cover only entries recorded by this project, including the sepa
 | Normative agreement records | 19 | 2 | A bounded BPMN requirement and pinned CIB observation agree; candidates remain unapproved |
 | Permitted operational details | 13 | 0 | CIB or the oracle adapter chooses host mechanics without changing required BPMN observations |
 | Confirmed normative deviations | 0 | 1 | Clear BPMN requirement and pinned CIB evidence establish incompatible behavior |
-| CIB interpretations of BPMN gaps or inconsistencies | 13 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
+| CIB interpretations of BPMN gaps or inconsistencies | 15 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
 | CIB extension records | 29 | 3 | Project profile deliberately includes behavior beyond bare BPMN execution; candidates remain unselected |
 | Configuration-specific realizations | 10 | 1 | Behavior is permitted or meaningful only under a declared CIB environment |
-| Known CIB limitations within reviewed scope | 6 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
+| Known CIB limitations within reviewed scope | 7 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
 
 The sequential User Task account has no recorded CIB deviation. That statement is bounded to its clauses, pinned environment, witnesses, and observation surface; it is not a general CIB conformance result.
 
@@ -292,7 +292,7 @@ The repository-wide audit on 2026-07-24 found no previously visited observation 
 
 **Evidence:** At pinned `5a45b47`, `BpmnParse#parseIntermediateThrowEvent` creates no activity for a Link throw (`BpmnParse.java:1611-1622`), `#parseSequenceFlow` retargets each flow into it to the catch of its name (`BpmnParse.java:4306-4316`), `#parseIntermediateLinkEventCatchBehavior` refuses a second catch of one name across the whole resource (`BpmnParse.java:313`, `1575-1576`), and `HistoryParseListener` writes no history for the catch (`HistoryParseListener.java:207-211`). The [Link probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenLinkEventsProbeTest.java) drives the [retained Link models](../scenarios/link-events/README.md) beside their explicit-flow twins through four journeys in CIB `2.2.0` (2026-11-04): after every command both hold the same open User Tasks and jobs, no historic activity instance names a Link Event, and the rework journey crosses the Go To loop once.
 
-**Boundary:** Single-source pairs in one scope of the executed Process with one unconditioned catch flow and no `source` or `target` reference, with JUEL renditions of the conditions under `CIB-CFG-0005`; public task, job and history APIs. Several throws of one name, chains, Links in called Processes and asynchronous or listened Link Events stay outside the class, and no Temporal refinement is claimed beyond the registered pipeline cases.
+**Boundary:** Single-source pairs in one scope of the executed Process with one unconditioned catch flow and no `source` or `target` reference, with JUEL renditions of the conditions under `CIB-CFG-0005`; public task, job and history APIs. A catching Link that a Sequence Flow also reaches passes that token on like any intermediate Event ([catch-with-incoming-both-arrivals](../scenarios/open-rows/link-event-compositions/README.md)). Several throws of one name, chains, Links in called Processes and asynchronous or listened Link Events stay outside the class, and no Temporal refinement is claimed beyond the registered pipeline cases.
 
 ### CIB-AGR-0019 — a pass-through node passes each arriving token on its own and one activation starts every outgoing flow
 
@@ -400,7 +400,7 @@ The nested scope-data profile adopts that reading: an absent condition is a cond
 
 **Evidence:** The [Inclusive regions probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenInclusiveGatewayRegionsProbeTest.java) runs the event booking with no extra ordered (2026-11-04): the unconditioned *Confirm attendee list* runs alone, and neither conditioned extra is activated.
 
-**Boundary:** Root Inclusive splits of the nested scope-data profile only. It does not cover Exclusive Gateways, whose candidates all carry conditions, conditional Sequence Flows from Activities, or any other profile.
+**Boundary:** Inclusive splits, and an Activity's or Scope's own outgoing flows (§13.3.1, Figure 13.1), whose unconditioned flows are always taken as CIB takes them (`BpmnActivityBehavior#performOutgoingBehavior`; the kernel's `Feature.Flow.ownFlows`). A diverging Exclusive Gateway's sole unconditioned flow is `CIB-INT-0015`.
 
 ### CIB-INT-0002: sequential Multi-Instance `nrOfInstances` is desired cardinality from outer entry
 
@@ -468,7 +468,7 @@ BPMN §13.3.2 writes an Activity's outputs before it leaves, so a condition read
 
 ### CIB-INT-0012 — a diverging Inclusive Gateway that selects no flow rolls its command back
 
-**Status:** Recorded bounded interpretation from the pinned source; no admitted row reaches it yet
+**Status:** Selected bounded interpretation from the pinned source
 
 BPMN Table 13.3 throws an exception when every condition of a diverging Inclusive Gateway is false and it has no default, and Clause 10.6.3 does not say what that exception does to the instance. CIB Seven `2.2.0` at pinned `5a45b47` collects the non-default transitions whose condition is absent or true, takes the default when none was collected, and otherwise raises `ENGINE-02004` through `stuckExecutionException`, which aborts the whole command as in `CIB-INT-0003`.
 
@@ -476,7 +476,7 @@ The kernel adopts that resolution as the semantic outcome `rolledBack` with the 
 
 **Evidence:** Pinned `InclusiveGatewayActivityBehavior.java:61-84`, with the throw at `:82`, and `BpmnBehaviorLogger.java:51-55` for the code; the kernel's `Feature.Flow.inclusiveFlows`.
 
-**Boundary:** A diverging Inclusive Gateway reached by a Start or a User Task completion. Admission refuses a split whose every output is conditioned and which has no default (`gateway.inclusive.conditionalWithoutDefault`), and an unconditioned output is always taken (`CIB-INT-0005`), so no admitted model reaches the no-match until `PC-CF-04` lifts that refusal. It does not cover a no-match after an effect result, incidents or job retries.
+**Boundary:** A diverging Inclusive Gateway reached by a Start or a User Task completion, and an Activity's own conditional outflow that takes no flow, which rolls back as `activity-no-outgoing-flow` as CIB throws from `BpmnActivityBehavior#performOutgoingBehavior` (witnesses [activity-outflow-none-holds and inclusive-without-default-none-selected](../scenarios/open-rows/flow-simple-boolean-outflow/README.md)). An unconditioned output is always taken (`CIB-INT-0005`). It does not cover a no-match after an effect result, incidents or job retries.
 
 ### CIB-INT-0013 — an Error that no catcher takes ends only its throwing path
 
@@ -501,6 +501,26 @@ The kernel reader carries both readings: `MultiInstance.count` and `inputDataIte
 **Evidence:** Pinned `BpmnParse#parseMultiInstanceLoopCharacteristics` (`BpmnParse.java:1850-1873`: `loopDataInputRef` text to `setCollectionVariable` or `setCollectionExpression`, `inputDataItem@name` to `setCollectionElementVariable`); the [Multi-Instance Service Task witnesses](../scenarios/open-rows/multi-instance-service-task/README.md), whose start variable is `DataInput_Recipients`; the kernel's `MultiInstance.collectionOf` and `MultiInstance.itemName`.
 
 **Boundary:** Standard-form loops on admitted Multi-Instance bodies. It claims nothing about general Data Association execution, Data Objects, a `loopDataInputRef` expression, `loopDataOutputRef` or `outputDataItem` (`CIB-LIM-0001`), or `camunda:elementVariable` (PC-MI-04, PC-MI-10).
+
+### CIB-INT-0015 — a diverging Exclusive Gateway's sole unconditioned flow is a candidate whose condition always holds
+
+**Status:** Selected bounded interpretation from the pinned source; the standards profile and the CIB profiles agree
+
+BPMN 2.0.2 §10.6.2 and Table 13.2 route a diverging Exclusive Gateway by its conditions and its default and say nothing of an unconditioned output that is not the default. CIB Seven `2.2.0` treats a flow without a condition as one whose condition holds, tried in declaration order (`ExclusiveGatewayActivityBehavior#doLeave`), and its parser refuses a second unconditioned flow, an unconditioned flow beside a default, and a sole conditioned flow without default (`BpmnParse#validateExclusiveGateway`). The kernel reads the sole unconditioned flow the same way, as `CIB-INT-0005` reads an Inclusive output, and refuses the shapes CIB's parser refuses as `gateway.exclusive.unconditionedFlow` and `gateway.exclusive.singleConditionWithoutDefault`.
+
+**Evidence:** Pinned `ExclusiveGatewayActivityBehavior#doLeave` and `BpmnParse#validateExclusiveGateway`; the kernel's `Admission.Flow.exclusive`; the witness [exclusive-sole-unconditioned-condition-holds](../scenarios/open-rows/flow-simple-boolean-outflow/README.md) (Lean and TypeScript agree; no retained CIB answer yet).
+
+**Boundary:** A diverging Exclusive Gateway with at least two outgoing flows, at most one of them unconditioned and no default beside it.
+
+### CIB-INT-0016 — a converging Inclusive Gateway fires when no further token of its scope occurrence can reach it
+
+**Status:** Selected bounded interpretation; the standards profile and the CIB profiles agree on admitted shapes except the duplicate-arrival class of `CIB-DEV-0001`
+
+BPMN 2.0.2 Table 13.3 activates a converging Inclusive Gateway when at least one incoming flow has a token and, for every empty incoming flow, no token upstream can reach it, without defining "upstream" in cyclic or multi-scope graphs. The kernel fires a join once no token of the same scope occurrence can reach an empty incoming flow without passing through the gateway, by a flow search over the IL that follows Links (`Feature.Flow.reaches`). CIB Seven `2.2.0` counts executions and reachability over the scope's process-virtual-machine graph (`InclusiveGatewayActivityBehavior#activatesGateway`, `#canReachActivity`). The two agree on every admitted witness except duplicate arrivals through one incoming flow, where CIB counts arrivals (`CIB-DEV-0001`).
+
+**Evidence:** Pinned `InclusiveGatewayActivityBehavior.java` (`activatesGateway`, `canReachActivity`); the retained witnesses [parallel-fed-join-a-then-b and parallel-fed-join-b-then-a](../scenarios/open-rows/inclusive-join-compositions/README.md), which agree, and [duplicate-arrival-join-left-pair-first](../scenarios/open-rows/parallel-region-compositions/README.md), which `CIB-DEV-0001` owns (CIB Seven `2.2.0`, 2026-11-09).
+
+**Boundary:** Converging Inclusive Gateways anywhere in one scope occurrence; arrivals from another scope occurrence are outside it, and the join after Sub-Processes, Calls and Multi-Instance bodies closes with `PC-SCOPE-01` and the Multi-Instance rows.
 
 ## Known limitation register
 
@@ -573,6 +593,16 @@ Under `CIB-INT-0013` an uncaught Error ends only its throwing path. When that pa
 **Evidence:** The retained witnesses [root-last-path-with-outputs](../scenarios/open-rows/error-unhandled-outcomes/README.md), against its controls root-without-outputs and parallel-root-branch-with-outputs, and [route-rejected-unmatched-code and scope-non-ancestor-after-completion](../scenarios/open-rows/automation-business-error-routing/README.md), whose throwers are a scope and a non-scope Service Task (CIB Seven `2.2.0`, 2026-11-09); pinned `BpmnExceptionHandler.java:136` and `OutputParameter#execute`; the kernel's `Propagation.endsInstanceWithOutputs`.
 
 **Boundary:** An uncaught Error of a Service Task whose output parameters read `${result}`, running directly in the process root with nothing else left there. The kernel refuses every thrower with output mappings in that position, so other output-parameter forms, which no witness covers, are refused conservatively; a thrower in a called instance is refused under `CIB-INT-0013`'s boundary first. A thrower inside a Sub-Process whose normal completion then ends the instance is not witnessed: the kernel completes that instance, and the CIB claim does not cover it.
+
+### CIB-LIM-0007: pinned CIB parses one initial start per process and one start per Sub-Process
+
+**Status:** Profile limitation; not a deviation
+
+BPMN 2.0.2 §10.5.2 admits several Start Events in a process or a Sub-Process. CIB Seven `2.2.0` keeps one None or Timer Start per process as its initial (`BpmnParse#selectInitial`) and one start per Sub-Process (`BpmnParse#parseScopeStartEvent`); what it does with a second one is a parse-time choice, not BPMN meaning. The kernel refuses both forms (`start.rootCombination`, `start.subProcessCombination`) rather than imitate it.
+
+**Evidence:** The retained witnesses [two-none-starts-start and subprocess-two-starts-start](../scenarios/open-rows/none-event-compositions/README.md) and [two-timer-starts-first](../scenarios/open-rows/timer-start-forms/README.md), where CIB rejects the deployment as the kernel refuses admission (CIB Seven `2.2.0`, 2026-11-09).
+
+**Boundary:** A second None or Timer Start of a process, and a second start of any kind in a Sub-Process. Message Starts beside one initial start stay admitted.
 
 ## Extension register
 

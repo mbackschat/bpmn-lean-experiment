@@ -81,9 +81,9 @@ def element (program : Program) (throws : List Element) : Element → Option Str
       | .linkCatch _ => Admission.Flow.link program header payload
       | .linkThrow _ => Admission.Flow.link program header payload
   | .gateway header payload =>
-    Admission.Data.origin header <|> Admission.Flow.gateway program Admission.Work.branchContent header payload
+    Admission.Data.origin header <|> Admission.Flow.gateway program payload
   | .start header payload =>
-    Admission.Data.origin header <|> Admission.Flow.start payload <|>
+    Admission.Data.origin header <|> Admission.Flow.start program header <|>
       payload.subscription.bind fun subscription =>
         Admission.Subscriptions.start program.options.errorCatchVariables header.parent.isSome subscription <|>
           subscriptionData subscription

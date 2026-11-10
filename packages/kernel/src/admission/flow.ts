@@ -4,17 +4,14 @@
  */
 import {
   GatewayKindTag,
-  Placement,
   assertNever,
   distinctCount,
-  elementActivity,
   elementEnvelope,
   elementEvent,
   elementGateway,
   elementHeader,
   elementIncoming,
   elementOutgoing,
-  elementScope,
   elementStart,
   eventPayloadCatch,
   eventPayloadLinkCatch,
@@ -24,6 +21,7 @@ import {
   programElement,
   programFlow,
   programTarget,
+  triggerTimer,
   type Element,
   type ElementId,
   type EventPayload,
@@ -33,13 +31,7 @@ import {
   type Header,
   type Program,
   type StartPayload,
-  type Work,
 } from "../il/types.js";
-
-/** The one entry of a list, `null` for any other length. */
-function single<T>(list: readonly T[]): T | null {
-  return list.length === 1 ? (list[0] ?? null) : null;
-}
 
 function distinct<T>(list: readonly T[]): boolean {
   return distinctCount(list) === list.length;
@@ -94,34 +86,25 @@ function listReference(program: Program, element: Element): boolean {
         envelope.boundaries.every((boundary) => distinct(boundary.outgoing) && boundary.outgoing.every(leaves(boundary.id)))));
 }
 
-/**
- * What the admissions read of a Gateway's kind: the candidates and default of a conditional Gateway, and whether it is
- * Inclusive or Parallel.
- */
-type Routing = Readonly<{
-  conditional: Readonly<{ candidates: readonly FlowId[]; defaultFlow: FlowId | null }> | null;
-  inclusive: boolean;
-  parallel: boolean;
-}>;
+/** The candidates and default of a conditional Gateway: what the admissions read of a Gateway's kind. */
+type Routing = Readonly<{ candidates: readonly FlowId[]; defaultFlow: FlowId | null }> | null;
 
 function routing(payload: GatewayPayload): Routing {
   const kind = payload.kind;
   switch (kind.tag) {
     case GatewayKindTag.Exclusive:
-      return { conditional: { candidates: kind.candidates, defaultFlow: kind.default }, inclusive: false, parallel: false };
     case GatewayKindTag.Inclusive:
-      return { conditional: { candidates: kind.candidates, defaultFlow: kind.default }, inclusive: true, parallel: false };
+      return { candidates: kind.candidates, defaultFlow: kind.default };
     case GatewayKindTag.Parallel:
-      return { conditional: null, inclusive: false, parallel: true };
     case GatewayKindTag.EventBased:
-      return { conditional: null, inclusive: false, parallel: false };
+      return null;
   }
   return assertNever(kind);
 }
 
 /** A gateway's candidates and default are its own outgoing flows, the default not a candidate. */
 function gatewayReference(payload: GatewayPayload): boolean {
-  const conditional = routing(payload).conditional;
+  const conditional = routing(payload);
   if (conditional === null) return true;
   const { candidates, defaultFlow } = conditional;
   return candidates.every((flow) => payload.outgoing.includes(flow)) && distinct(candidates) &&
@@ -151,14 +134,6 @@ function conditioned(program: Program, flow: FlowId): boolean {
   return (programFlow(program, flow)?.condition ?? null) !== null;
 }
 
-function parallel(payload: GatewayPayload): boolean {
-  return routing(payload).parallel;
-}
-
-function inclusive(payload: GatewayPayload): boolean {
-  return routing(payload).inclusive;
-}
-
 /**
  * An Event-Based Gateway's arms are catch Events: a Receive Task arm opens through the work feature's wait, which
  * `Hooks.armGateway` cannot name, and a catching Link has no incoming flow (BPMN 2.0.2 §10.5.5) (PC-CF-05, PC-BASIC-02).
@@ -181,13 +156,16 @@ function eventBasedArms(program: Program, payload: GatewayPayload): string | nul
 }
 
 /**
- * A diverging Exclusive Gateway routes by its conditions and its default only (BPMN 2.0.2 §10.6.2, Table 13.2): an
- * unconditioned non-default flow has no reading there, which CIB takes unconditionally
- * (`BpmnParse#validateExclusiveGateway`). A sole conditioned flow without a default CIB refuses to parse. A converging
- * gateway's one unconditioned flow is its merge (PC-CF-02).
+ * A diverging Exclusive Gateway routes by its conditions and its default (BPMN 2.0.2 §10.6.2, Table 13.2). A sole
+ * unconditioned non-default flow is a candidate whose condition always holds, tried in declaration order like the others
+ * (the reading CIB-INT-0005 gives an Inclusive output, which CIB's `ExclusiveGatewayActivityBehavior#doLeave` applies);
+ * CIB refuses to parse a second unconditioned flow, an unconditioned flow beside a default, and a sole conditioned flow
+ * without a default (`BpmnParse#validateExclusiveGateway`). A converging gateway's one unconditioned flow is its merge
+ * (PC-CF-02).
  */
 function exclusive(program: Program, payload: GatewayPayload, candidates: readonly FlowId[], defaultFlow: FlowId | null): string | null {
-  if (payload.outgoing.length >= 2 && candidates.some((flow) => !conditioned(program, flow))) {
+  const unconditioned = candidates.filter((flow) => !conditioned(program, flow)).length;
+  if (payload.outgoing.length >= 2 && (unconditioned >= 2 || (defaultFlow !== null && unconditioned >= 1))) {
     return "gateway.exclusive.unconditionedFlow";
   }
   if (defaultFlow === null && payload.outgoing.length === 1 && candidates.every((flow) => conditioned(program, flow)) &&
@@ -196,109 +174,17 @@ function exclusive(program: Program, payload: GatewayPayload, candidates: readon
 }
 
 /**
- * What a branch of a structured Inclusive region may hold, as the work feature's admission classifies an Activity:
- * `true` or `false` when it may stand on a branch, `true` when it waits for work before the join, `null` otherwise.
+ * An Inclusive Gateway joins by `feature/flow.ts`'s reachability rule wherever it converges, and a split that selects
+ * nothing rolls back (CIB-INT-0012), so only the Event-Based arms and the Exclusive shapes are refused here (PC-CF-04).
  */
-export type BranchWork = (work: Work) => boolean | null;
-
-type Arrival = readonly [ElementId, FlowId];
-
-/**
- * The first converging element a branch reaches from `flow`, with the flow it arrives on. Every element before it is an
- * Activity the branch admits, a Scope or an intermediate Event, each without boundaries and with one outgoing flow, or a
- * Parallel block closed by its own Parallel join; and an Activity or Scope arms every path before it converges.
- */
-function reach(program: Program, work: BranchWork, fuel: number, armed: boolean, flow: FlowId): Arrival | null {
-  if (fuel === 0) return null;
-  const id = programTarget(program, flow);
-  const element = id === null ? null : programElement(program, id);
-  if (id === null || element === null) return null;
-  const onward = (arms: boolean): Arrival | null => {
-    const next = single(elementOutgoing(element));
-    return next === null ? null : reach(program, work, fuel - 1, armed || arms, next);
-  };
-  const unbounded = (elementEnvelope(element)?.boundaries.length ?? 0) === 0;
-  if (elementIncoming(element).length >= 2) return armed ? [id, flow] : null;
-  if (!unbounded) return null;
-  const activity = elementActivity(element);
-  if (activity !== null) {
-    const arms = work(activity[1].work);
-    return arms === null ? null : onward(arms);
-  }
-  if (elementScope(element) !== null) return onward(true);
-  const event = elementEvent(element);
-  if (event !== null) return event[1].placement === Placement.Intermediate ? onward(false) : null;
-  const gateway = elementGateway(element);
-  if (gateway === null) return null;
-  const payload = gateway[1];
-  if (!parallel(payload) || payload.outgoing.length < 2) return null;
-  const ends: Arrival[] = [];
-  for (const branch of payload.outgoing) {
-    const end = reach(program, work, fuel - 1, armed, branch);
-    if (end === null) return null;
-    ends.push(end);
-  }
-  const join = ends[0]?.[0];
-  const joinElement = join === undefined ? null : programElement(program, join);
-  const closing = joinElement === null ? null : elementGateway(joinElement);
-  if (closing === null) return null;
-  const arrivals = ends.map((end) => end[1]);
-  if (!parallel(closing[1]) || !ends.every((end) => end[0] === join) || arrivals.length !== closing[1].incoming.length ||
-    !closing[1].incoming.every((incoming) => arrivals.includes(incoming))) return null;
-  const next = single(closing[1].outgoing);
-  return next === null ? null : reach(program, work, fuel - 1, true, next);
-}
-
-/**
- * BPMN 2.0.2 §13.4.3's join rule is reviewed only for the Structured Synchronizing Merge (Table 13.3) while BPMN21-450
- * is open: a converging Inclusive Gateway is admitted only as the one-output join of a region whose Inclusive split,
- * under the same parent, reaches it on one distinct incoming flow per split output through `reach` (PC-CF-04).
- */
-function inclusiveJoin(program: Program, work: BranchWork, header: Header, payload: GatewayPayload,
-  candidates: readonly FlowId[], defaultFlow: FlowId | null): string | null {
-  const fuel = program.elements.length + 1;
-  const closes = (split: Element): boolean => {
-    const gateway = elementGateway(split);
-    if (gateway === null) return false;
-    const [splitHeader, splitPayload] = gateway;
-    if (!inclusive(splitPayload) || splitHeader.parent !== header.parent || splitPayload.incoming.length !== 1 ||
-      splitPayload.outgoing.length < 2) return false;
-    const ends: Arrival[] = [];
-    for (const branch of splitPayload.outgoing) {
-      const end = reach(program, work, fuel, false, branch);
-      if (end === null) return false;
-      ends.push(end);
-    }
-    const arrivals = ends.map((end) => end[1]);
-    return ends.every((end) => end[0] === header.id) && arrivals.length === payload.incoming.length &&
-      payload.incoming.every((incoming) => arrivals.includes(incoming));
-  };
-  if (payload.incoming.length < 2) return null;
-  if (payload.outgoing.length === 1 && candidates.length === 0 && defaultFlow === null && program.elements.some(closes)) return null;
-  return "gateway.inclusive.join";
-}
-
-/**
- * A diverging Inclusive Gateway whose every candidate is conditioned and which has no default may select nothing, an
- * exception BPMN 2.0.2 §10.6.3 names without a selected reading (PC-CF-04); an unconditioned candidate always holds
- * (CIB-INT-0005).
- */
-function inclusiveSplit(program: Program, candidates: readonly FlowId[], defaultFlow: FlowId | null): string | null {
-  return defaultFlow === null && candidates.length > 0 && candidates.every((flow) => conditioned(program, flow))
-    ? "gateway.inclusive.conditionalWithoutDefault"
-    : null;
-}
-
-export function gateway(program: Program, work: BranchWork, header: Header, payload: GatewayPayload): string | null {
+export function gateway(program: Program, payload: GatewayPayload): string | null {
   const kind = payload.kind;
   switch (kind.tag) {
     case GatewayKindTag.Exclusive:
       return exclusive(program, payload, kind.candidates, kind.default);
     case GatewayKindTag.Parallel:
-      return null;
     case GatewayKindTag.Inclusive:
-      return inclusiveSplit(program, kind.candidates, kind.default) ??
-        inclusiveJoin(program, work, header, payload, kind.candidates, kind.default);
+      return null;
     case GatewayKindTag.EventBased:
       return eventBasedArms(program, payload);
   }
@@ -306,29 +192,44 @@ export function gateway(program: Program, work: BranchWork, header: Header, payl
 }
 
 /**
- * A condition is read only by the exclusive and inclusive gateways, on the flows they list as candidates; on any other
- * flow it would be silently ignored.
+ * A condition is read on a conditional Gateway's candidates and on an Activity's or Scope's flows other than its default
+ * (BPMN 2.0.2 §13.3.1; §10.3.1: a condition on the default "SHALL be ignored"); on any other flow it would be silently
+ * ignored (PC-CF-07).
  */
 export function conditionalOutflow(program: Program, flow: Flow): string | null {
   const refused = "flow.conditionalOutflow";
   if (flow.condition === null) return null;
   const source = programElement(program, flow.source);
-  const gateway = source === null ? null : elementGateway(source);
-  if (gateway === null) return refused;
-  const conditional = routing(gateway[1]).conditional;
-  return conditional !== null && conditional.candidates.includes(flow.id) ? null : refused;
+  if (source === null) return refused;
+  const gateway = elementGateway(source);
+  if (gateway !== null) return routing(gateway[1])?.candidates.includes(flow.id) === true ? null : refused;
+  const envelope = elementEnvelope(source);
+  return envelope === null || envelope.defaultFlow === flow.id ? refused : null;
 }
 
-export function start(_payload: StartPayload): string | null {
-  return null;
+/**
+ * Pinned CIB parses one initial start per process, a None or Timer Start (`BpmnParse#selectInitial`), and one start per
+ * Sub-Process (`BpmnParse#parseScopeStartEvent`); BPMN 2.0.2 §10.5.2 admits several, which lie outside the target
+ * (PC-BASIC-01).
+ */
+export function start(program: Program, header: Header): string | null {
+  const here = place(program, header.id);
+  const siblings = program.elements.flatMap((element): StartPayload[] => {
+    const other = elementStart(element);
+    return other !== null && place(program, other[0].id) === here ? [other[1]] : [];
+  });
+  const initial = (payload: StartPayload): boolean =>
+    payload.subscription === null || triggerTimer(payload.subscription.trigger) !== null;
+  if (header.parent !== null) return siblings.length >= 2 ? "start.subProcessCombination" : null;
+  return siblings.filter(initial).length >= 2 ? "start.rootCombination" : null;
 }
 
 // Links.
 
 /**
- * A throwing Link has exactly one catching Link of its name among its siblings. A catching Link has no incoming flow,
- * and one name has one target in the whole definition (BPMN 2.0.2 §10.5.5, Table 10.89; CIB pairs names resource-wide,
- * CIB-AGR-0018) (PC-BASIC-02).
+ * A throwing Link has exactly one catching Link of its name among its siblings, and one name has one target in the whole
+ * definition (BPMN 2.0.2 §10.5.5, Table 10.89; CIB pairs names resource-wide, CIB-AGR-0018). A catching Link that a flow
+ * also reaches passes that token on like any intermediate Event (PC-BASIC-02).
  */
 export function link(program: Program, header: Header, payload: EventPayload): string | null {
   const catches = (name: string) => (element: Element): boolean => {
@@ -339,6 +240,5 @@ export function link(program: Program, header: Header, payload: EventPayload): s
   if (thrown !== null) return programChildren(program, header.parent).filter(catches(thrown)).length === 1 ? null : "link.catch";
   const caught = eventPayloadLinkCatch(payload);
   if (caught === null) return null;
-  if (payload.incoming.length > 0) return "link.catch.incoming";
   return program.elements.filter(catches(caught)).length >= 2 ? "link.duplicateCatch" : null;
 }

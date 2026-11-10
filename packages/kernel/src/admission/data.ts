@@ -28,11 +28,10 @@ export function mappings(list: readonly Mapping[]): string | null {
 }
 
 /**
- * An Activity's default flow has no kernel meaning yet (PC-CF-07). The asynchronous continuations are admitted: `step.ts`
- * reads them as transaction boundaries (CIB-EXT-0027).
+ * An Activity's default flow is read by `feature/flow.ts` `ownFlows` (PC-CF-07). The asynchronous continuations are
+ * admitted: `step.ts` reads them as transaction boundaries (CIB-EXT-0027).
  */
 export function envelope(fields: Envelope): string | null {
-  if (fields.defaultFlow !== null) return "activity.defaultFlow";
   return mappings(fields.inputs) ?? mappings(fields.outputs);
 }
 

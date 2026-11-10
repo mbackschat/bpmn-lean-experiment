@@ -52,11 +52,6 @@ def beginsWithoutToken : Work → Bool
   | .rule _ => false
   | .call _ => false
 
-/-- What a branch of a structured Inclusive region may hold (`Kernel.Admission.Flow.BranchWork`): a User or Service Task,
-which arms the branch, or a task without work; any other work is outside the reviewed region (PC-CF-04). -/
-def branchContent (work : Work) : Option Bool :=
-  if beginsWithoutToken work then some (mapsData work) else none
-
 def envelope (work : Work) (envelope : Envelope) : Option String :=
   if !envelope.inputs.isEmpty && !mapsData work then some "activity.inputMappings"
   else if !envelope.outputs.isEmpty && !mapsData work then some "activity.outputMappings"

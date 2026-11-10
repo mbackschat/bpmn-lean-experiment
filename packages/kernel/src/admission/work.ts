@@ -69,14 +69,6 @@ export function instanceBody(work: Work): boolean | null {
   return assertNever(work);
 }
 
-/**
- * What a branch of a structured Inclusive region may hold (`admission/flow.ts` `BranchWork`): a User or Service Task,
- * which arms the branch, or a task without work; any other work is outside the reviewed region (PC-CF-04).
- */
-export function branchContent(work: Work): boolean | null {
-  return beginsWithoutToken(work) ? mapsData(work) : null;
-}
-
 /** The work an occurrence no token began may do: a task without work, a User Task or a Service Task. */
 export function beginsWithoutToken(work: Work): boolean {
   switch (work.tag) {

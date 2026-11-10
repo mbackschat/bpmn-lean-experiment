@@ -1,0 +1,42 @@
+{
+  "kind": "scenario",
+  "id": "flow-simple-boolean-outflow-activity-outflow-none-holds",
+  "profile": "bpmn-2.0.2",
+  "bpmn": {
+    "id": "flow-simple-boolean-outflow-activity-outflow",
+    "relativePath": "scenarios/open-rows/flow-simple-boolean-outflow/activity-outflow.bpmn",
+    "sha256": "b636774eaa2175a1cbb29668fc681cc3e8a650161b24fc4bf67bc81805be2205",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "route",
+          "value": {
+            "kind": "string",
+            "value": "slow"
+          }
+        },
+        {
+          "name": "level",
+          "value": {
+            "kind": "string",
+            "value": "low"
+          }
+        }
+      ]
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 \u00a713.3.1",
+      "BPMN 2.0.2 Table 13.3"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

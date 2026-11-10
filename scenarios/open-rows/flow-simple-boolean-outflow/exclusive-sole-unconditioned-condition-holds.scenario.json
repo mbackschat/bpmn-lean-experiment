@@ -1,0 +1,61 @@
+{
+  "kind": "scenario",
+  "id": "flow-simple-boolean-outflow-exclusive-sole-unconditioned-condition-holds",
+  "profile": "bpmn-2.0.2",
+  "bpmn": {
+    "id": "flow-simple-boolean-outflow-exclusive-sole-unconditioned",
+    "relativePath": "scenarios/open-rows/flow-simple-boolean-outflow/exclusive-sole-unconditioned.bpmn",
+    "sha256": "6ca440d6d05abfa4d203ac31f900c21e00ad0c4c41e74c0d9d0a3e36ac97a050",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "route",
+          "value": {
+            "kind": "string",
+            "value": "fast"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-complete-FirstPlain-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "FirstPlain",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-complete-LastConditioned-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "LastConditioned",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 \u00a713.4.2",
+      "BPMN 2.0.2 Table 13.2"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

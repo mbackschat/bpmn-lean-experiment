@@ -24,11 +24,10 @@ def mapping (entry : Mapping) : Option String :=
 def mappings (list : List Mapping) : Option String :=
   list.findSome? mapping
 
-/-- An Activity's default flow has no kernel meaning yet (PC-CF-07). The asynchronous continuations are admitted:
-`Kernel.Step` reads them as transaction boundaries (CIB-EXT-0027). -/
+/-- An Activity's default flow is read by `Kernel.Feature.Flow.ownFlows` (PC-CF-07). The asynchronous continuations are
+admitted: `Kernel.Step` reads them as transaction boundaries (CIB-EXT-0027). -/
 def envelope (fields : Envelope) : Option String :=
-  if fields.defaultFlow.isSome then some "activity.defaultFlow"
-  else mappings fields.inputs <|> mappings fields.outputs
+  mappings fields.inputs <|> mappings fields.outputs
 
 /-- A Sequence Flow condition must be Simple Boolean: the exclusive and inclusive split evaluates it in the kernel. -/
 def flowCondition (flow : Flow) : Option String :=

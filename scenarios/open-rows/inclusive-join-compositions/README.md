@@ -41,7 +41,7 @@ Answer-free schedules for [PC-CF-04](../../../docs/PRACTICAL-CIB7-COVERAGE-TARGE
 
 ## Kernel restrictions these inputs reconcile
 
-The [unpaired-merge](unpaired-merge.bpmn), [parallel-fed-join](parallel-fed-join.bpmn), [unselected-path](unselected-path.bpmn), [loop-reentry](loop-reentry.bpmn) and [scoped-join](scoped-join.bpmn) models are the witnesses for `gateway.inclusive.join`, and [no-default-split](no-default-split.bpmn) for `gateway.inclusive.conditionalWithoutDefault`, of the [flow semantics restrictions](../../../docs/kernel/semantics/FLOW-SEMANTICS-SPEC.md#restrictions), so that CIB's answer to each shape is fixed before the row decides whether to keep refusing it.
+The [unpaired-merge](unpaired-merge.bpmn), [parallel-fed-join](parallel-fed-join.bpmn), [unselected-path](unselected-path.bpmn), [loop-reentry](loop-reentry.bpmn) and [scoped-join](scoped-join.bpmn) models fixed CIB's answer for the unstructured Inclusive joins, and [no-default-split](no-default-split.bpmn) for a split that may select nothing, before the kernel admitted both under the [Inclusive Gateway semantics](../../../docs/kernel/semantics/FLOW-SEMANTICS-SPEC.md#inclusive-gateway).
 
 Notes for the target runners:
 

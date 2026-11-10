@@ -20,7 +20,8 @@ Each token that reaches a join is its own occurrence, parked in `state.slots.par
 consumed occurrence completes, one with the outgoing flows and the others with none, since a join ends one activity
 instance per joined execution (CIB `ParallelGatewayActivityBehavior`, `PvmExecutionImpl.leaveActivityViaTransitions`).
 
-A diverging gateway that finds no outgoing flow rolls the command back.
+An element's own selection (`ownFlows`) is an inclusive choice over its outgoing flows, which only an Activity's or a
+Scope's may condition. A diverging gateway or an Activity that finds no outgoing flow rolls the command back.
 -/
 
 public section
@@ -29,16 +30,6 @@ namespace Kernel.Feature.Flow
 
 def complete (state : State) (id : Nat) (leave : Leave) : State :=
   state.signal (.complete id leave [] .outward)
-
-/-- `Hooks.outflow`: the only place tokens are added. An element's own selection is its outgoing flows. -/
-def outflow (ctx : Ctx) (occurrence : Occurrence) (leave : Leave) (state : State) : Outcome :=
-  match leave with
-  | .flows selected => .ok (state.emit selected occurrence.scope)
-  | .outgoing =>
-    match ctx.program.element? occurrence.element with
-    | some element => .ok (state.emit element.outgoing occurrence.scope)
-    | none => .error (.semanticFailure "outflow-without-element")
-  | .raised => .error (.semanticFailure "outflow-of-raised-occurrence")
 
 /-- A candidate's condition, read from its Sequence Flow; an unconditioned candidate holds. -/
 def condition (ctx : Ctx) (context : EvalContext) (candidate : FlowId) : Except Failure Bool :=
@@ -53,6 +44,38 @@ def condition (ctx : Ctx) (context : EvalContext) (candidate : FlowId) : Except 
       | .value _ => .error (.semanticFailure "condition-not-boolean")
       | .failure code => .error (.semanticFailure code)
 
+/-- The flows an inclusive choice takes: every candidate whose condition holds, else the default; with neither the
+command rolls back with `noFlow`. A choice without candidates takes all of `outgoing`, which are unconditioned. -/
+def inclusiveChoice (ctx : Ctx) (context : EvalContext) (candidates : List FlowId) (default : Option FlowId)
+    (outgoing : List FlowId) (noFlow : String) : Except Failure (List FlowId) := do
+  if candidates.isEmpty then return outgoing
+  let chosen ← candidates.filterM (condition ctx context)
+  match chosen, default with
+  | [], some flow => .ok [flow]
+  | [], none => .error (.rolledBack noFlow)
+  | flows, _ => .ok flows
+
+/-- The flows an element's own selection takes. Several outgoing flows of an Activity form a parallel split, conditioned
+ones an inclusive split, and a mix of both (BPMN 2.0.2 §13.3.1, Figure 13.1): every flow whose condition holds or that
+has none, the default only when no other flow is taken (§10.3.1 `default`), and, when it takes none, Table 13.3's
+exception, read as a rollback (CIB-INT-0012; CIB `BpmnActivityBehavior#performOutgoingBehavior`). Admission puts
+conditions and a default only on Activities' and Scopes' flows, so every other element takes all its flows. -/
+def ownFlows (ctx : Ctx) (element : Element) (context : EvalContext) : Except Failure (List FlowId) :=
+  let default := element.envelope?.bind (·.defaultFlow)
+  inclusiveChoice ctx context (element.outgoing.filter (some · != default)) default element.outgoing
+    "activity-no-outgoing-flow"
+
+/-- `Hooks.outflow`: the only place tokens are added. An element's own selection is `ownFlows`, read after the
+completion's writes. -/
+def outflow (ctx : Ctx) (occurrence : Occurrence) (leave : Leave) (state : State) : Outcome :=
+  match leave with
+  | .flows selected => .ok (state.emit selected occurrence.scope)
+  | .outgoing =>
+    match ctx.program.element? occurrence.element with
+    | some element => do .ok (state.emit (← ownFlows ctx element (state.evalContext occurrence.scope)) occurrence.scope)
+    | none => .error (.semanticFailure "outflow-without-element")
+  | .raised => .error (.semanticFailure "outflow-of-raised-occurrence")
+
 /-- The first candidate whose condition holds. -/
 def firstTrue (ctx : Ctx) (context : EvalContext) : List FlowId → Except Failure (Option FlowId)
   | [] => .ok none
@@ -66,16 +89,10 @@ def exclusive (ctx : Ctx) (candidates : List FlowId) (default : Option FlowId) (
   | some flow => .ok (complete state occurrence.id (.flows [flow]))
   | none => .error (.rolledBack "exclusive-gateway-no-outgoing-flow")
 
-/-- The flows an inclusive split takes. A gateway that lists no candidates is a pure join whose outgoing flows are
-unconditioned, so it takes all of them. -/
+/-- The flows an inclusive split takes. A gateway that lists no candidates is a pure join. -/
 def inclusiveFlows (ctx : Ctx) (candidates : List FlowId) (default : Option FlowId) (outgoing : List FlowId)
-    (scope : ScopeOccurrenceId) (state : State) : Except Failure (List FlowId) := do
-  if candidates.isEmpty then return outgoing
-  let chosen ← candidates.filterM (condition ctx (state.evalContext scope))
-  match chosen, default with
-  | [], some flow => .ok [flow]
-  | [], none => .error (.rolledBack "inclusive-gateway-no-outgoing-flow")
-  | flows, _ => .ok flows
+    (scope : ScopeOccurrenceId) (state : State) : Except Failure (List FlowId) :=
+  inclusiveChoice ctx (state.evalContext scope) candidates default outgoing "inclusive-gateway-no-outgoing-flow"
 
 /-- `Hooks.select`. Under `ConditionOrder.beforeOutputs` a completion's outgoing conditions are evaluated before its
 output writes, from inside the scope occurrence it still owns, which holds an Activity's locals (CIB-INT-0011); under
@@ -90,7 +107,7 @@ def select (ctx : Ctx) (occurrence : Occurrence) (leave : Leave) (state : State)
     | none => .error (.semanticFailure "outflow-without-element")
     | some element => do
       let inside := ((state.scopes.find? (·.occurrence == some occurrence.id)).map (·.id)).getD occurrence.scope
-      .ok (.flows (← element.outgoing.filterM (condition ctx (state.evalContext inside))))
+      .ok (.flows (← ownFlows ctx element (state.evalContext inside)))
 
 /-- The flows leaving an element, its boundaries' flows included. -/
 def leaving (element : Element) : List FlowId :=

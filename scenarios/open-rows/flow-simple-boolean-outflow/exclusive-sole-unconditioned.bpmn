@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             id="Definitions_ExclusiveSoleUnconditioned" targetNamespace="urn:bpmn-lean:scenarios:flow-simple-boolean-outflow:exclusive-sole-unconditioned"
+             expressionLanguage="urn:bpmn-lean:expression:simple-boolean:v1">
+  <process id="Process_ExclusiveSoleUnconditioned" name="Two Exclusive Gateways with one conditioned and one unconditioned flow each" isExecutable="true">
+    <startEvent id="Received" name="Received" />
+    <parallelGateway id="Fork" name="Fork" gatewayDirection="Diverging" />
+    <exclusiveGateway id="PlainLast" name="Plain flow declared last" gatewayDirection="Diverging" />
+    <exclusiveGateway id="PlainFirst" name="Plain flow declared first" gatewayDirection="Diverging" />
+    <userTask id="LastConditioned" name="Last gateway, conditioned" />
+    <userTask id="LastPlain" name="Last gateway, plain" />
+    <userTask id="FirstConditioned" name="First gateway, conditioned" />
+    <userTask id="FirstPlain" name="First gateway, plain" />
+    <endEvent id="LastConditionedDone" />
+    <endEvent id="LastPlainDone" />
+    <endEvent id="FirstConditionedDone" />
+    <endEvent id="FirstPlainDone" />
+    <sequenceFlow id="Flow_Received" sourceRef="Received" targetRef="Fork" />
+    <sequenceFlow id="Flow_ToPlainLast" sourceRef="Fork" targetRef="PlainLast" />
+    <sequenceFlow id="Flow_ToPlainFirst" sourceRef="Fork" targetRef="PlainFirst" />
+    <sequenceFlow id="Flow_FirstPlain" sourceRef="PlainFirst" targetRef="FirstPlain" />
+    <sequenceFlow id="Flow_LastConditioned" sourceRef="PlainLast" targetRef="LastConditioned">
+      <conditionExpression xsi:type="tFormalExpression">stringEquals(route,"fast")</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_FirstConditioned" sourceRef="PlainFirst" targetRef="FirstConditioned">
+      <conditionExpression xsi:type="tFormalExpression">stringEquals(route,"fast")</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_LastPlain" sourceRef="PlainLast" targetRef="LastPlain" />
+    <sequenceFlow id="Flow_LastConditionedDone" sourceRef="LastConditioned" targetRef="LastConditionedDone" />
+    <sequenceFlow id="Flow_LastPlainDone" sourceRef="LastPlain" targetRef="LastPlainDone" />
+    <sequenceFlow id="Flow_FirstConditionedDone" sourceRef="FirstConditioned" targetRef="FirstConditionedDone" />
+    <sequenceFlow id="Flow_FirstPlainDone" sourceRef="FirstPlain" targetRef="FirstPlainDone" />
+  </process>
+</definitions>

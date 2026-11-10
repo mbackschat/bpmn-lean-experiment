@@ -1558,22 +1558,6 @@
     ]
   },
   {
-    "evidence": "scenarios/open-rows/inclusive-join-compositions/parallel-fed-join-a-then-b.cibseven-evidence.json",
-    "owners": [
-      "PC-BASIC-03",
-      "PC-CF-04",
-      "PC-CF-08"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/inclusive-join-compositions/parallel-fed-join-b-then-a.cibseven-evidence.json",
-    "owners": [
-      "PC-BASIC-03",
-      "PC-CF-04",
-      "PC-CF-08"
-    ]
-  },
-  {
     "evidence": "scenarios/open-rows/inclusive-join-compositions/scoped-join-all-selected.cibseven-evidence.json",
     "owners": [
       "PC-BASIC-03",
@@ -1821,13 +1805,6 @@
     "owners": [
       "PC-DATA-07",
       "PC-DATA-09"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/link-event-compositions/catch-with-incoming-both-arrivals.cibseven-evidence.json",
-    "owners": [
-      "PC-BASIC-02",
-      "PC-BASIC-03"
     ]
   },
   {
@@ -2550,18 +2527,6 @@
     ]
   },
   {
-    "evidence": "scenarios/open-rows/none-event-compositions/subprocess-two-starts-start.cibseven-evidence.json",
-    "owners": [
-      "PC-BASIC-01"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/none-event-compositions/two-none-starts-start.cibseven-evidence.json",
-    "owners": [
-      "PC-BASIC-01"
-    ]
-  },
-  {
     "evidence": "scenarios/open-rows/output-mapping-fanout/captured-input-fallback.cibseven-evidence.json",
     "owners": [
       "PC-DATA-06"
@@ -2594,7 +2559,7 @@
   {
     "evidence": "scenarios/open-rows/parallel-region-compositions/duplicate-arrival-join-left-pair-first.cibseven-evidence.json",
     "owners": [
-      "PC-CF-03"
+      "CIB-DEV-0001"
     ]
   },
   {
@@ -3130,12 +3095,6 @@
   },
   {
     "evidence": "scenarios/open-rows/timer-start-forms/duration-start-before-deadline.cibseven-evidence.json",
-    "owners": [
-      "PC-TIMER-04"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/timer-start-forms/two-timer-starts-first.cibseven-evidence.json",
     "owners": [
       "PC-TIMER-04"
     ]

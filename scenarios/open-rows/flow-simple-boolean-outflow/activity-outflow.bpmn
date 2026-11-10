@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             id="Definitions_ActivityOutflow" targetNamespace="urn:bpmn-lean:scenarios:flow-simple-boolean-outflow:activity-outflow"
+             expressionLanguage="urn:bpmn-lean:expression:simple-boolean:v1">
+  <process id="Process_ActivityOutflow" name="A task whose two conditioned outgoing flows have no default" isExecutable="true">
+    <startEvent id="Received" name="Received" />
+    <task id="Check" name="Check" />
+    <userTask id="Expedite" name="Expedite" />
+    <userTask id="Escalate" name="Escalate" />
+    <endEvent id="Expedited" name="Expedited" />
+    <endEvent id="Escalated" name="Escalated" />
+    <sequenceFlow id="Flow_Received" sourceRef="Received" targetRef="Check" />
+    <sequenceFlow id="Flow_Expedite" sourceRef="Check" targetRef="Expedite">
+      <conditionExpression xsi:type="tFormalExpression">stringEquals(route,"fast")</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Escalate" sourceRef="Check" targetRef="Escalate">
+      <conditionExpression xsi:type="tFormalExpression">stringEquals(level,"high")</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Expedited" sourceRef="Expedite" targetRef="Expedited" />
+    <sequenceFlow id="Flow_Escalated" sourceRef="Escalate" targetRef="Escalated" />
+  </process>
+</definitions>

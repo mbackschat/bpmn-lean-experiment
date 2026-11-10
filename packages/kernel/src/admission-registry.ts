@@ -143,12 +143,12 @@ function element(program: Program, throws: readonly Element[], entry: Element): 
     case ElementTag.Event:
       return Data.origin(header) ?? eventRole(program, header, entry.payload);
     case ElementTag.Gateway:
-      return Data.origin(header) ?? FlowAdmission.gateway(program, Work.branchContent, header, entry.payload);
+      return Data.origin(header) ?? FlowAdmission.gateway(program, entry.payload);
     case ElementTag.Start: {
       const subscription = entry.payload.subscription;
       return first(
         () => Data.origin(header),
-        () => FlowAdmission.start(entry.payload),
+        () => FlowAdmission.start(program, header),
         () => (subscription === null
           ? null
           : Subscriptions.start(program.options.errorCatchVariables, header.parent !== null, subscription) ??

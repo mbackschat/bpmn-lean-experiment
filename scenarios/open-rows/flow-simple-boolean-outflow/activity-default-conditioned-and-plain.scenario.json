@@ -1,0 +1,68 @@
+{
+  "kind": "scenario",
+  "id": "flow-simple-boolean-outflow-activity-default-conditioned-and-plain",
+  "profile": "bpmn-2.0.2",
+  "bpmn": {
+    "id": "flow-simple-boolean-outflow-activity-default",
+    "relativePath": "scenarios/open-rows/flow-simple-boolean-outflow/activity-default.bpmn",
+    "sha256": "5c59e6608b16cb38f9f1b114290f222fe135bbeb115d3cdd6966d9decc59fcce",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "route",
+          "value": {
+            "kind": "string",
+            "value": "fast"
+          }
+        },
+        {
+          "name": "contact",
+          "value": {
+            "kind": "string",
+            "value": "mail"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-complete-Notify-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Notify",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-complete-Expedite-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Expedite",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 \u00a713.3.1",
+      "BPMN 2.0.2 \u00a710.3.1"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}
