@@ -52,7 +52,7 @@ function program(order: readonly ["Task" | "Choice", "Task" | "Choice"], marks: 
       { start: { header: header("Start", "startEvent"), payload: { subscription: null, outgoing: [flowInto(first)] } } },
       task,
       choice,
-      { event: { header: header("End", "endEvent"), payload: { role: { throw: { record: "none" } }, placement: "finish", incoming: [flowInto("End"), "Spare"], outgoing: [] } } },
+      { event: { header: header("End", "endEvent"), payload: { role: { throw: { record: "none" } }, placement: "finish", incoming: [flowInto("End"), "Spare"], outgoing: [], alternativeThrows: [] } } },
     ],
     flows: [
       { id: flowInto(first), source: "Start", target: first, condition: null },

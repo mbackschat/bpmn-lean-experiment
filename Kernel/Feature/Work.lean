@@ -3,6 +3,7 @@ module
 public import Kernel.Hooks
 public import Kernel.Feature.Work.Call
 public import Kernel.Feature.Work.Submission
+public import Kernel.Feature.Work.Decision
 
 /-! # Work: what an Activity does
 
@@ -33,10 +34,10 @@ OutputSet ([BPMN 2.0.2 §10.4.1](../../docs/reference/bpmn-2.0.2/README.md)): ev
 the submitted values alone, no name is submitted twice, and no submitted value is superfluous (dropping it leaves
 the outputs evaluable). Anything else is rejected, so a completion never commits a partial or unmediated write. Under
 `ResultValues.activityLocals` a superfluous value is an Activity local that ends with the Activity, never written
-(CIB-EXT-0015). -/
+(CIB-EXT-0015). The mappings also read `scope` behind the submitted values (`outputScope`). -/
 def outputs (ctx : Ctx) (nowMs : Nat) (unconsumed : ResultValues) (mappings : List Mapping)
-    (values : List (String × Value)) : Except Failure (List (String × Value)) :=
-  let evaluated (variables : List (String × Value)) := ctx.evaluateMappings { variables, nowMs } mappings
+    (scope values : List (String × Value)) : Except Failure (List (String × Value)) :=
+  let evaluated (variables : List (String × Value)) := ctx.evaluateMappings { variables := variables ++ scope, nowMs } mappings
   let fills (variables : List (String × Value)) : Bool :=
     match evaluated variables with
     | .ok (some _) => true
@@ -106,10 +107,13 @@ def arriveActivity (ctx : Ctx) (header : Header) (payload : ActivityPayload) (oc
   | .service work =>
     .ok (openWork (.effect { protocol := work.protocol, operation := work.operation, arguments := inputs })
       header payload occurrence state)
-  -- Admission refuses the three (`work.send`, `work.script`, `work.rule`).
+  -- Admission refuses the two (`work.send`, `work.script`).
   | .send _ => .error (.unsupported "work-send")
   | .script _ => .error (.unsupported "work-script")
-  | .rule _ => .error (.unsupported "work-rule")
+  | .rule work => do
+    -- The decision's result is written before the task leaves, so its outgoing conditions read it (PC-AUTO-07).
+    let writes ← Decision.run ctx.program work (state.evalContext occurrence.scope).variables
+    .ok (complete (if writes.isEmpty then state else state.signal (.write occurrence.scope writes .outward)))
   | .call work =>
     if !begunByToken then .error (.unsupported "scope-implicit-start")
     else Call.invoke ctx header payload work occurrence state
@@ -124,6 +128,14 @@ def instanceOutput (loop : MultiInstance) (values : List (String × Value)) : Ex
 /-- The local-variable scope occurrence an Activity's occurrence owns, when its inputs gave it one (`enterLocal`). -/
 def localScope (state : State) (occurrence : Nat) : Option ScopeOccurrenceId :=
   (state.scopes.find? fun scope => scope.occurrence == some occurrence && scope.calledInstance.isNone).map (·.id)
+
+/-- What an Activity's outputs read behind the submitted values: nothing under the standards reading; under
+`OutputContext.activityScope` (CIB-EXT-0031) the variables visible from the Activity's own scope, its captured inputs
+first, since CIB evaluates an output parameter in the Activity's execution (`OutputParameter.java:47`). -/
+def outputScope (ctx : Ctx) (state : State) (item : OpenItem) : List (String × Value) :=
+  match ctx.program.options.outputContext with
+  | .submission => []
+  | .activityScope => state.visible ((localScope state item.occurrence).getD item.scope)
 
 /-- Under a profile whose submission installs variables (CIB-EXT-0005) the completion first writes every submitted
 value from the task's own local scope occurrence, as `TaskService.complete` sets it through the task's execution
@@ -144,11 +156,11 @@ def completeUserTask (ctx : Ctx) (_ : Header) (payload : ActivityPayload) (item 
   | none =>
     match ctx.program.options.submission with
     | .installsVariables =>
-      let written ← outputs ctx state.logicalTimeMs .activityLocals payload.envelope.outputs values
+      let written ← outputs ctx state.logicalTimeMs .activityLocals payload.envelope.outputs (outputScope ctx state item) values
       let installed := state.signal (.write ((localScope state item.occurrence).getD item.scope) values .outward)
       .ok (installed.signal (.complete item.occurrence .outgoing written .outward))
     | .outputSet =>
-      let written ← outputs ctx state.logicalTimeMs .outputSet payload.envelope.outputs values
+      let written ← outputs ctx state.logicalTimeMs .outputSet payload.envelope.outputs (outputScope ctx state item) values
       .ok (state.signal (.complete item.occurrence .outgoing written .outward))
 
 /-- Replace the kind of the open item `id`, keeping its identity and attachments. -/
@@ -177,11 +189,11 @@ def effectResult (ctx : Ctx) (item : OpenItem) (outcome : EffectOutcome) (state 
   let mappings := (envelope.map (·.outputs)).getD []
   match outcome with
   | .success patch => do
-    let written ← outputs ctx state.logicalTimeMs (unconsumed ctx envelope) mappings patch
+    let written ← outputs ctx state.logicalTimeMs (unconsumed ctx envelope) mappings (outputScope ctx state item) patch
     .ok (state.signal (.complete item.occurrence .outgoing written .outward))
   | .businessFailure code message patch => do
     let written ← match ctx.program.options.errorPathOutputs with
-      | .mapped => outputs ctx state.logicalTimeMs (unconsumed ctx envelope) mappings patch
+      | .mapped => outputs ctx state.logicalTimeMs (unconsumed ctx envelope) mappings (outputScope ctx state item) patch
       | .none => if patch.isEmpty then .ok [] else .error (.rejected "error-path-outputs-not-accepted")
     let activation := ((state.occurrence? item.occurrence).map (·.activation)).getD 0
     .ok ((state.signal (.complete item.occurrence .raised written .outward)).signal (.raise (.error code message)

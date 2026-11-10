@@ -45,12 +45,12 @@ const decoded = decodeProgram({
       event: {
         header: header("Timer", "intermediateCatchEvent"),
         payload: {
-          role: { catch: { subscription: { trigger: { timer: { payload: { schedule: { duration: { value: { literal: { value: "PT2S" } } } } } } }, outputs: [] } } },
-          placement: "intermediate", incoming: ["To_Timer"], outgoing: ["To_End"],
+          role: { catch: { subscription: { trigger: { timer: { payload: { schedule: { duration: { value: { literal: { value: "PT2S" } } } } } } }, outputs: [], alternatives: [], parallelMultiple: false } } },
+          placement: "intermediate", incoming: ["To_Timer"], outgoing: ["To_End"], alternativeThrows: [],
         },
       },
     },
-    { event: { header: header("End", "endEvent"), payload: { role: { throw: { record: "none" } }, placement: "finish", incoming: ["To_End"], outgoing: [] } } },
+    { event: { header: header("End", "endEvent"), payload: { role: { throw: { record: "none" } }, placement: "finish", incoming: ["To_End"], outgoing: [], alternativeThrows: [] } } },
   ],
   flows: [
     { id: "To_Task", source: "Start", target: "Task", condition: null },

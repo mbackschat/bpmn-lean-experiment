@@ -1,0 +1,37 @@
+{
+  "kind": "scenario",
+  "id": "interchange-reference-forms-instantiating-receive-task-message-start",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "interchange-reference-forms-instantiating-receive-task",
+    "relativePath": "scenarios/open-rows/interchange-reference-forms/instantiating-receive-task.bpmn",
+    "sha256": "0a3fd3faef4ab40639d02207cdd9843e9382e96cf0aa3ca66d01d84afd9aee18",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [],
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "directMessage",
+          "messageId": "Message_Reply"
+        }
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 \u00a710.3.3",
+      "BPMN 2.0.2 \u00a713.2"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ReceiveTaskActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java"
+    ]
+  }
+}

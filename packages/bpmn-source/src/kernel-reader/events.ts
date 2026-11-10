@@ -36,13 +36,27 @@ function kindOf(definition: ElementRecord): EventDefinitionKind {
   return type as EventDefinitionKind;
 }
 
-/** The single event definition of an Event, `null` for a None Event; a Multiple Event has no IL shape. */
-export function singleDefinition(element: ElementRecord): ElementRecord | null {
-  const definitions = list(element, "eventDefinitions");
-  if (definitions.length > 1) {
-    throw new ReadRefusal(ReadRefusalCode.MultipleEventDefinitions, optionalId(element), `${definitions.length} definitions`);
+/** The first event definition of an Event, `null` for a None Event. */
+export function firstDefinition(element: ElementRecord): ElementRecord | null {
+  return list(element, "eventDefinitions")[0] ?? null;
+}
+
+/**
+ * A Multiple Event's definitions after the first, in document order (BPMN 2.0.2 §10.5.1), each read as it would be
+ * alone; admission refuses them (`event.multipleDefinitions`). A Link never joins one: §10.5.1 lists no Multiple Link.
+ */
+function laterDefinitions(event: ElementRecord, first: ElementRecord): ReadonlyArray<ElementRecord> {
+  const later = list(event, "eventDefinitions").slice(1);
+  if (later.length > 0 && [first, ...later].some((definition) => definition.$type === EventDefinitionKind.Link)) {
+    throw new ReadRefusal(ReadRefusalCode.EventDefinitionOnElement, optionalId(event), "a Link in a Multiple Event");
   }
-  return definitions[0] ?? null;
+  return later;
+}
+
+/** The subscription of a catching Event whose first definition is `first`, with its Multiple and Parallel Multiple marks. */
+function catchSubscription(ctx: ReadContext, event: ElementRecord, first: ElementRecord): KernelJson {
+  return subscription(readTrigger(ctx, event, first), eventOutputs(ctx, event),
+    laterDefinitions(event, first).map((definition) => readTrigger(ctx, event, definition)), event.parallelMultiple === true);
 }
 
 export const isCompensationDefinition = (definition: ElementRecord | null): boolean =>
@@ -250,18 +264,19 @@ function readThrow(ctx: ReadContext, event: ElementRecord, definition: ElementRe
   return assertNever(kind);
 }
 
-function eventElement(ctx: ReadContext, node: ModelNode, sourceType: string, role: KernelJson, placement: string): Built {
+function eventElement(ctx: ReadContext, node: ModelNode, sourceType: string, role: KernelJson, placement: string,
+  alternativeThrows: KernelJson[] = []): Built {
   const id = requireId(node.element);
   return fixed(id, ctor("event", {
     header: headerOf(node, sourceType),
-    payload: { role, placement, incoming: ctx.incoming(id), outgoing: ctx.outgoing(id) },
+    payload: { role, placement, incoming: ctx.incoming(id), outgoing: ctx.outgoing(id), alternativeThrows },
   }));
 }
 
 /** The subscription of a triggered start, shared by its Start element and an Event Sub-Process's kind. */
 export function startSubscription(ctx: ReadContext, event: ElementRecord): KernelJson | null {
-  const definition = singleDefinition(event);
-  return definition === null ? null : subscription(readTrigger(ctx, event, definition), eventOutputs(ctx, event));
+  const definition = firstDefinition(event);
+  return definition === null ? null : catchSubscription(ctx, event, definition);
 }
 
 function readStart(ctx: ReadContext, node: ModelNode): Built {
@@ -272,36 +287,42 @@ function readStart(ctx: ReadContext, node: ModelNode): Built {
   }));
 }
 
+/** A throw record and, for a Multiple throw Event, the records of its later definitions. */
+function throwRecords(ctx: ReadContext, event: ElementRecord, definition: ElementRecord | null): [KernelJson, KernelJson[]] {
+  if (definition === null) return ["none", []];
+  return [readThrow(ctx, event, definition), laterDefinitions(event, definition).map((other) => readThrow(ctx, event, other))];
+}
+
 function readEnd(ctx: ReadContext, node: ModelNode): Built {
-  const definition = singleDefinition(node.element);
-  const record = definition === null ? "none" : readThrow(ctx, node.element, definition);
-  return eventElement(ctx, node, FlowElementKind.EndEvent, ctor("throw", { record }), "finish");
+  const [record, alternatives] = throwRecords(ctx, node.element, firstDefinition(node.element));
+  return eventElement(ctx, node, FlowElementKind.EndEvent, ctor("throw", { record }), "finish", alternatives);
 }
 
 const linkName = (definition: ElementRecord): string => text(definition, "name") ?? "";
 
 function readCatch(ctx: ReadContext, node: ModelNode): Built {
-  const definition = singleDefinition(node.element);
+  const definition = firstDefinition(node.element);
   if (definition === null) {
     throw new ReadRefusal(ReadRefusalCode.EventDefinitionOnElement, optionalId(node.element), "catch Event without a definition");
   }
-  const role = definition.$type === EventDefinitionKind.Link
+  const role = definition.$type === EventDefinitionKind.Link && laterDefinitions(node.element, definition).length === 0
     ? ctor("linkCatch", { name: linkName(definition) })
-    : ctor("catch", { subscription: subscription(readTrigger(ctx, node.element, definition), eventOutputs(ctx, node.element)) });
+    : ctor("catch", { subscription: catchSubscription(ctx, node.element, definition) });
   return eventElement(ctx, node, FlowElementKind.IntermediateCatchEvent, role, "intermediate");
 }
 
 function readIntermediateThrow(ctx: ReadContext, node: ModelNode): Built {
-  const definition = singleDefinition(node.element);
-  const role = definition?.$type === EventDefinitionKind.Link
-    ? ctor("linkThrow", { name: linkName(definition) })
-    : ctor("throw", { record: definition === null ? "none" : readThrow(ctx, node.element, definition) });
-  return eventElement(ctx, node, FlowElementKind.IntermediateThrowEvent, role, "intermediate");
+  const definition = firstDefinition(node.element);
+  if (definition?.$type === EventDefinitionKind.Link && laterDefinitions(node.element, definition).length === 0) {
+    return eventElement(ctx, node, FlowElementKind.IntermediateThrowEvent, ctor("linkThrow", { name: linkName(definition) }), "intermediate");
+  }
+  const [record, alternatives] = throwRecords(ctx, node.element, definition);
+  return eventElement(ctx, node, FlowElementKind.IntermediateThrowEvent, ctor("throw", { record }), "intermediate", alternatives);
 }
 
 function readBoundary(ctx: ReadContext, node: ModelNode): Built {
   const id = requireId(node.element);
-  const definition = singleDefinition(node.element);
+  const definition = firstDefinition(node.element);
   const host = asElement(node.element.attachedToRef);
   if (definition === null || host === undefined) {
     throw new ReadRefusal(ReadRefusalCode.EventDefinitionOnElement, id, "boundary Event without a definition or host");
@@ -313,7 +334,7 @@ function readBoundary(ctx: ReadContext, node: ModelNode): Built {
     attachedTo: requireId(host),
     boundary: {
       id,
-      subscription: subscription(readTrigger(ctx, node.element, definition), eventOutputs(ctx, node.element)),
+      subscription: catchSubscription(ctx, node.element, definition),
       interrupting,
       outgoing: ctx.outgoing(id),
     },

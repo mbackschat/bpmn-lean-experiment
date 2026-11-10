@@ -3,7 +3,7 @@
  * scenario profile closed to them (`PBV-INGRESS-01`, `PBV-IDENTITY-01`).
  *
  * The schema is a necessary filter only: it cannot express Map key order, signed 64-bit range, container depth, node
- * count or canonical bytes. The kernel's value codec (`packages/kernel/src/il/codec.ts`) stays the single owner of those
+ * count or canonical bytes. The kernel's value codec (`packages/kernel/src/il/codec/value.ts`) stays the single owner of those
  * rules.
  */
 import assert from "node:assert/strict";
@@ -67,8 +67,8 @@ function kernelWireValueKinds(codecSource: string): ReadonlyArray<string> {
 test("every kernel value kind has a reachable schema branch", async () => {
   const [{ $defs }, codec, types] = await Promise.all([
     schemaDocument(),
-    readFile(new URL("packages/kernel/src/il/codec.ts", projectRoot), "utf8"),
-    readFile(new URL("packages/kernel/src/il/types.ts", projectRoot), "utf8"),
+    readFile(new URL("packages/kernel/src/il/codec/value.ts", projectRoot), "utf8"),
+    readFile(new URL("packages/kernel/src/il/types/expression.ts", projectRoot), "utf8"),
   ]);
   assert.ok(isRecord($defs));
   const kinds = kernelWireValueKinds(codec);

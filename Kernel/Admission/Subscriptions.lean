@@ -66,6 +66,13 @@ def correlatedCatch (subscription : Subscription) (trigger : MessageTrigger) : O
       | .foreign _ _ => some "expression.outsideSimpleBoolean"
   | _ :: _ :: _ => some "message.correlation.keys"
 
+/-- A Multiple or Parallel Multiple Event (BPMN 2.0.2 §10.5.1): pinned CIB keeps one of several definitions by a
+precedence that depends on the position and never reads `parallelMultiple` (CIB-LIM-0008) (PC-BASIC-04). -/
+def definitions (subscription : Subscription) : Option String :=
+  if subscription.parallelMultiple then some "event.parallelMultiple"
+  else if !subscription.alternatives.isEmpty then some "event.multipleDefinitions"
+  else none
+
 /-- Only a Message subscription writes what its delivery carries; any other trigger's outputs would be dropped. -/
 def outputs (subscription : Subscription) : Option String :=
   if subscription.trigger.message?.isSome || subscription.outputs.isEmpty then none else some "event.outputs"
@@ -85,6 +92,7 @@ def escalationTrigger (trigger : EscalationTrigger) : Option String :=
 /-- An interrupting Event Sub-Process started by a Message has no selected meaning for the Scope it interrupts; an Error
 Event Sub-Process always interrupts (BPMN 2.0.2 Table 10.86, Table 10.87 `isInterrupting`, §13.5.4) (PC-ERROR-02). -/
 def eventSubProcess (start : Subscription) (interrupting : Bool) : Option String :=
+  definitions start <|>
   match start.trigger with
   | .message _ => if interrupting then some "scope.eventSubProcess.interruptingMessage" else none
   | .timer trigger => if interrupting then interruptingCycle trigger else none
@@ -96,7 +104,7 @@ def eventSubProcess (start : Subscription) (interrupting : Bool) : Option String
   | .cancel => none
 
 def catchEvent (subscription : Subscription) : Option String :=
-  outputs subscription <|>
+  definitions subscription <|> outputs subscription <|>
   match subscription.trigger with
   | .timer trigger => timer false trigger
   | .message trigger => correlatedCatch subscription trigger
@@ -120,7 +128,7 @@ def boundary (variables : ErrorCatchVariables) (transactionHost : Bool) (seen : 
     match refusal with
     | some code => .error code
     | none => .ok seen
-  match outputs boundary.subscription with
+  match definitions boundary.subscription <|> outputs boundary.subscription with
   | some code => .error code
   | none =>
     match boundary.subscription.trigger with
@@ -150,7 +158,7 @@ def boundaries (variables : ErrorCatchVariables) (transactionHost : Bool) (list 
 Sub-Process start, which may also repeat a cycle and catch what `Kernel.Feature.Propagation` raises. -/
 def start (variables : ErrorCatchVariables) (nested : Bool) (subscription : Subscription) : Option String :=
   let raised (code : String) : Option String := if nested then none else some code
-  outputs subscription <|>
+  definitions subscription <|> outputs subscription <|>
   match subscription.trigger with
   | .timer trigger => timer nested trigger
   | .message trigger =>

@@ -5,7 +5,7 @@
  * Link needs exactly one catching Link of its name.
  */
 import {
-  activity, append, base, catchEvent, conditionOn, duration, end, flow, gateway, link, message, receiveWork, refusalOf, refusalTests, replace,
+  activity, append, base, catchEvent, conditionOn, duration, end, eventBased, flow, gateway, link, message, receiveWork, refusalOf, refusalTests, replace,
   scope, simpleBoolean, start, task, text, userWork, withFlows,
 } from "./admission-refusal-support.ts";
 import type { Json, Row } from "./admission-refusal-support.ts";
@@ -21,9 +21,9 @@ const taskWithDefault = (flowId: string) => (program: Json): Json =>
   conditionOn(withFlows(replace(program, "T", activity("T", "manual", { outgoing: ["f2", "fd"], defaultFlow: "fd" })),
     flow("fd", "T", "E")), flowId, simpleBoolean());
 
-/** `T` becomes an Event-Based Gateway and `E` the one arm `arm` its outgoing flow `f2` reaches. */
-const armedBy = (arm: Json) => (program: Json): Json =>
-  replace(replace(program, "T", gateway("T", "eventBased")), "E", arm);
+/** `T` becomes an Event-Based Gateway of `instantiation` and `E` the one arm `arm` its outgoing flow `f2` reaches. */
+const armedBy = (arm: Json, instantiation = "none") => (program: Json): Json =>
+  replace(replace(program, "T", gateway("T", eventBased(instantiation))), "E", arm);
 
 const exclusive = (candidates: string[]): Json => gateway("T", { exclusive: { candidates, default: "fd" } });
 
@@ -112,6 +112,19 @@ export const rows: readonly Row[] = [
     description: "a throwing Link with two catching Links of its name",
     mutate: (program) => append(linkThrow(program), link("C1", "linkCatch", "L"), link("C2", "linkCatch", "L")),
     control: (program) => append(linkThrow(program), link("C1", "linkCatch", "L"), link("C2", "linkCatch", "Other")),
+  },
+  {
+    // BPMN 2.0.2 §10.6.6: an instantiating gateway starts the Process; pinned CIB reads neither attribute (CIB-LIM-0008).
+    code: "gateway.eventBased.instantiate",
+    description: "an instantiating Exclusive Event-Based Gateway",
+    mutate: armedBy(catchEvent("E", duration("PT1S")), "exclusive"),
+    control: armedBy(catchEvent("E", duration("PT1S"))),
+  },
+  {
+    code: "gateway.eventBased.instantiate",
+    description: "a Parallel Event-Based Gateway",
+    mutate: armedBy(catchEvent("E", duration("PT1S")), "parallel"),
+    control: armedBy(catchEvent("E", duration("PT1S"))),
   },
   {
     code: "gateway.eventBased.linkArm",

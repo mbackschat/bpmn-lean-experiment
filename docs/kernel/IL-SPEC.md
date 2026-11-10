@@ -32,7 +32,8 @@ The wire form is Lean's derived JSON encoding of the IL types ([`Kernel/IL/Codec
 | `elements` | the flat element table, every element and boundary of the root and called processes |
 | `flows` | Sequence Flows: `id`, `source`, `target`, optional `condition` expression |
 | `variables` | the item names the root process declares (Properties, Data Objects and references, its own Data Inputs and Outputs), declared at the instance root before any value is bound (BPMN 2.0.2 §10.4.1) |
-| `processes` | the called processes the program carries: bound `definition` (`DefinitionRef`), process-level `children`, declared `variables` |
+| `processes` | the called processes the program carries: bound `definition` (`DefinitionRef`), process-level `children`, declared `variables`, `executable` |
+| `executable` | the root process's `isExecutable` (Table 10.1), absent read as `false` |
 
 The table is flat and identifier-keyed: a Scope names its children and a flow its endpoints by identifier, and no IL or state type is a nested or mutual inductive. A parentless element belongs to the root process unless a called process lists it. `Header.id` is unique in the program, so two versions of one called definition coexist; `origin.sourceId` is the identifier the model's author wrote, which publication shows.
 
@@ -44,19 +45,19 @@ Every element is `{"<kind>": {"header": …, "payload": …}}`; the header is `i
 |---|---|
 | `activity` | `work` and the shared `envelope` |
 | `scope` | `kind` (`embedded`, `transaction {method}`, `eventSubProcess {start, interrupting}`), `children`, `localVariables`, `envelope` |
-| `event` | `role` (`catch {subscription}`, `throw {record}`, `linkCatch {name}`, `linkThrow {name}`), `placement` (`intermediate`, `finish`), `incoming`, `outgoing` |
-| `gateway` | `kind` (`exclusive {candidates, default}`, `parallel`, `inclusive {candidates, default}`, `eventBased`), `incoming`, `outgoing`; candidates keep document order, a flow's condition lives on the flow, and an Event-Based Gateway's arms are the targets of its outgoing flows |
+| `event` | `role` (`catch {subscription}`, `throw {record}`, `linkCatch {name}`, `linkThrow {name}`), `placement` (`intermediate`, `finish`), `incoming`, `outgoing`, `alternativeThrows` (a Multiple throw's records after the first) |
+| `gateway` | `kind` (`exclusive {candidates, default}`, `parallel`, `inclusive {candidates, default}`, `eventBased {instantiation}` with `none`, `exclusive` or `parallel`), `incoming`, `outgoing`; candidates keep document order, a flow's condition lives on the flow, and an Event-Based Gateway's arms are the targets of its outgoing flows |
 | `start` | optional `subscription`, `outgoing`; root or Event Sub-Process placement follows from the parent |
 
 The shared activity envelope, on Activity and Scope alike: `incoming` and `outgoing` (implicit merge and split), input and output `Mapping`s, `boundaries` (each `id`, `subscription`, `interrupting`, `outgoing`), optional `multiInstance`, optional `compensationHandler`, optional `defaultFlow`, and the transaction-boundary marks `asyncBefore` and `asyncAfter`, which on a Multi-Instance Activity mark its body.
 
 `MultiInstance` is `mode`, `count` (`collection` or `cardinality` expression), `elementVariable`, `completionCondition`, `inputDataItem`, `outputDataItem`, `outputCollection` and `mutableCollection`, read through the Data Associations; the loop characteristics' own transaction-boundary marks `asyncBefore` and `asyncAfter`, which mark each instance (CIB-EXT-0027); and the literal `loopDataInputRef` and `inputDataItemName`, which `multiInstanceBinding` may select instead (CIB-INT-0014).
 
-`Work` is one of `none`, `manual`, `user` (name, assignee, candidate users and groups, form key and fields, due and follow-up dates, priority), `receive` (a Message trigger), `service` (protocol, operation), `send` (binding, recipient, correlation, Message and Operation references), `script` (format, source, result variable), `rule` (decision, result variable, binding, result mapping), `call` (called element, binding, tenant, business key, input and output mappings, propagate-all flags).
+`Work` is one of `none`, `manual`, `user` (name, assignee, candidate users and groups, form key and fields, due and follow-up dates, priority), `receive` (a Message trigger, `instantiate`), `service` (protocol, operation), `send` (binding, recipient, correlation, Message and Operation references), `script` (format, source, result variable), `rule` (decision, result variable, binding, result mapping), `call` (called element, binding, tenant, business key, input and output mappings, propagate-all flags).
 
 ### Subscriptions and throws
 
-A `Subscription` is a trigger plus output mappings. Triggers: `timer` (`duration`, `date` or `cycle` with dialect `iso8601` or `cron`, each a `ValueSource`), `message` (name as `ValueSource` or `none` for an unspecified Message, correlation criteria `{key, value}`, `interfaceRef`, `operationRef`), `signal` (name), `condition` (expression, variable name, variable events), `error` (code or catch-all, code and message variables), `escalation` (code or catch-all, code variable), `compensation`, `cancel`.
+A `Subscription` is a trigger plus output mappings, the triggers of a Multiple Event's later definitions (`alternatives`) and its `parallelMultiple` mark. Triggers: `timer` (`duration`, `date` or `cycle` with dialect `iso8601` or `cron`, each a `ValueSource`), `message` (name as `ValueSource` or `none` for an unspecified Message, correlation criteria `{key, value}`, `interfaceRef`, `operationRef`), `signal` (name), `condition` (expression, variable name, variable events), `error` (code or catch-all, code and message variables), `escalation` (code or catch-all, code variable), `compensation`, `cancel`.
 
 A throw record is `none`, `message` (optional binding, payload mappings), `signal` (name, payload, `propagateAll`, `localOnly`, business key, `asynchronous`), `error` (code, optional message), `escalation` (code), `compensation` (optional `activity`, `waitForCompletion`), `cancel` or the Terminate End Event's record.
 
@@ -94,6 +95,7 @@ One enumerated field per decision point the kernel branches on, each defaulting 
 | `timerZone` | `null` or a zone name |
 | `multiInstanceBinding` | `dataAssociations`, `loopReferences` |
 | `effectResultValues` | `outputSet`, `activityLocals` |
+| `outputContext` | `submission`, `activityScope` |
 
 ## Inputs
 

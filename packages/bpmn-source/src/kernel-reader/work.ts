@@ -167,12 +167,14 @@ function decisionResultMapping(ctx: ReadContext, element: ElementRecord): Kernel
   return declared;
 }
 
-function ruleWork(ctx: ReadContext, element: ElementRecord): KernelJson {
+/** A literal `decisionRef` is the decision's id (`BpmnParse.java:2366-2399`); an expression stays one. */
+function ruleWork(ctx: ReadContext, element: ElementRecord, decisionRef: string): KernelJson {
   return ctor("rule", { payload: {
-    decision: valueSource(ctx.attribute(element, "decisionRef") ?? ""),
+    decision: valueSource(decisionRef),
     resultVariable: ctx.attribute(element, "resultVariable"),
     binding: callableBinding(ctx, element, "decisionRefBinding", "decisionRefVersion", "decisionRefVersionTag"),
     resultMapping: decisionResultMapping(ctx, element),
+    tenant: tenantSource(ctx, element, "decisionRefTenantId"),
   } });
 }
 
@@ -191,9 +193,10 @@ const configuredSendHandler = (ctx: ReadContext, element: ElementRecord): boolea
   inputOutputParameters(ctx, element).outputs.length === 0 && ctx.attribute(element, "resultVariable") === null;
 
 /**
- * The work of an Activity and the type recorded for it. CIB executes a Business Rule Task with a declared
- * implementation through the same delegate behaviour as a Service Task, so such a task is read as Service work; a Send
- * Task is read so only within `configuredSendHandler`.
+ * The work of an Activity and the type recorded for it. A Business Rule Task with `camunda:decisionRef` is a decision
+ * task whatever delegate it also names (`BpmnParse.java:2321-2324`), so that delegate attribute stays unconsumed and is
+ * refused as not carried; without one CIB executes its declared implementation through the same delegate behaviour as
+ * a Service Task, so it is read as Service work. A Send Task is read so only within `configuredSendHandler`.
  */
 function workOf(ctx: ReadContext, element: ElementRecord, kind: ActivityKind): Readonly<{ work: KernelJson; sourceType: string }> {
   switch (kind) {
@@ -212,13 +215,18 @@ function workOf(ctx: ReadContext, element: ElementRecord, kind: ActivityKind): R
         ? { work: serviceWork(ctx, element), sourceType: FlowElementKind.ServiceTask }
         : { work: sendWork(ctx, element), sourceType: kind };
     case FlowElementKind.ReceiveTask:
-      return { work: ctor("receive", { payload: { message: messageTrigger(ctx, element, element) } }), sourceType: kind };
+      // BPMN 2.0.2 §10.3.3, Table 10.10; admission refuses an instantiating one (`work.receive.instantiate`).
+      return { work: ctor("receive", { payload: { message: messageTrigger(ctx, element, element), instantiate: element.instantiate === true } }),
+        sourceType: kind };
     case FlowElementKind.ScriptTask:
       return { work: scriptWork(ctx, element), sourceType: kind };
-    case FlowElementKind.BusinessRuleTask:
+    case FlowElementKind.BusinessRuleTask: {
+      const decisionRef = ctx.attribute(element, "decisionRef");
+      if (decisionRef !== null) return { work: ruleWork(ctx, element, decisionRef), sourceType: kind };
       return declaredImplementation(ctx, element) !== null
         ? { work: serviceWork(ctx, element), sourceType: kind }
-        : { work: ruleWork(ctx, element), sourceType: kind };
+        : { work: ruleWork(ctx, element, ""), sourceType: kind };
+    }
     case FlowElementKind.CallActivity:
       return { work: callWork(ctx, element), sourceType: kind };
   }

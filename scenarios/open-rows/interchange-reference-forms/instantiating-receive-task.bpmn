@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             id="Definitions_InstantiatingReceiveTask" targetNamespace="urn:bpmn-lean:scenarios:interchange-reference-forms:instantiating-receive-task">
+  <message id="Message_Reply" name="reply" />
+  <process id="Process_InstantiatingReceiveTask" name="A None Start beside an instantiating Receive Task" isExecutable="true">
+    <startEvent id="Started" name="Started" />
+    <userTask id="Proceed" name="Proceed" />
+    <endEvent id="Done" name="Done" />
+    <receiveTask id="Await" name="Await" messageRef="Message_Reply" instantiate="true" />
+    <endEvent id="Received" name="Received" />
+    <sequenceFlow id="Flow_Started" sourceRef="Started" targetRef="Proceed" />
+    <sequenceFlow id="Flow_Done" sourceRef="Proceed" targetRef="Done" />
+    <sequenceFlow id="Flow_Received" sourceRef="Await" targetRef="Received" />
+  </process>
+</definitions>

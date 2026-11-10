@@ -23,6 +23,7 @@ import {
 } from "./il/types.js";
 import * as Data from "./admission/data.js";
 import * as FlowAdmission from "./admission/flow.js";
+import * as Decision from "./admission/work/decision.js";
 import * as Profile from "./admission/profile.js";
 import * as Work from "./admission/work.js";
 import * as MultiInstance from "./admission/multi-instance.js";
@@ -98,6 +99,8 @@ function eventRole(program: Program, header: Header, payload: EventPayload): str
     case EventRoleTag.Catch:
       return Subscriptions.catchEvent(role.subscription) ?? subscriptionData(program, role.subscription);
     case EventRoleTag.Throw:
+      // A Multiple throw Event (BPMN 2.0.2 §10.5.1); pinned CIB keeps one definition (CIB-LIM-0008) (PC-BASIC-04).
+      if (payload.alternativeThrows.length > 0) return "event.multipleDefinitions";
       return Propagation.throwRecord(inTransaction(program, header), role.record);
     case EventRoleTag.LinkCatch:
     case EventRoleTag.LinkThrow:
@@ -187,13 +190,26 @@ function calledProcess(process: CalledProcess): string | null {
   return bound ? "process.definition.binding" : null;
 }
 
-/** The first refusal: references, profile options, then called-process bindings, flows and elements in program order. */
+/**
+ * A process not marked executable (BPMN 2.0.2 Table 10.1 `isExecutable`) has no execution meaning; pinned
+ * `BpmnParse:560-574` deploys none (CIB-LIM-0008) (PC-BASIC-04).
+ */
+function executable(program: Program): string | null {
+  return !program.executable || program.processes.some((process) => !process.executable) ? "process.notExecutable" : null;
+}
+
+/**
+ * The first refusal: references, profile options, a process not marked executable, the carried DMN resources, then
+ * called-process bindings, flows and elements in program order.
+ */
 export function admit(program: Program): string | null {
   const throws = program.elements.filter(compensationThrow);
   return first(
     () => FlowAdmission.references(program),
     () => Scopes.references(program),
     () => Profile.options(abnormalScope(program), program.options),
+    () => executable(program),
+    () => Decision.resources(program),
     () => firstOf(program.processes, calledProcess),
     () => firstOf(program.flows, (entry) => flow(program, entry)),
     () => firstOf(program.elements, (entry) => element(program, throws, entry)),

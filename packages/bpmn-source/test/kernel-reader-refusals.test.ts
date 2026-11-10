@@ -229,12 +229,6 @@ export const rows: readonly Row[] = [
     control: { xml: task },
   },
   {
-    code: "reader.multipleEventDefinitions",
-    description: "a Multiple Event with a Timer and a Signal definition",
-    refused: { xml: model(`<bpmn:startEvent id="S">${timer()}<bpmn:signalEventDefinition signalRef="Sg"/></bpmn:startEvent>`, `<bpmn:signal id="Sg"/>`) },
-    control: { xml: model(`<bpmn:startEvent id="S">${timer()}</bpmn:startEvent>`) },
-  },
-  {
     code: "reader.eventDefinitionRef",
     description: "an Event naming a root-level definition, which pinned CIB never resolves",
     refused: { xml: catching(`<bpmn:eventDefinitionRef>Td</bpmn:eventDefinitionRef>`, `<bpmn:timerEventDefinition id="Td">${timerDuration}</bpmn:timerEventDefinition>`) },
@@ -328,20 +322,6 @@ export const rows: readonly Row[] = [
     description: "a Multi-Instance loop with neither a collection nor a cardinality",
     refused: { xml: model(`<bpmn:userTask id="U"><bpmn:multiInstanceLoopCharacteristics/></bpmn:userTask>`) },
     control: { xml: model(`<bpmn:userTask id="U"><bpmn:multiInstanceLoopCharacteristics camunda:collection="items"/></bpmn:userTask>`) },
-  },
-  {
-    code: "reader.eventBasedGatewayInstantiate",
-    description: "an Event-Based Gateway that instantiates its Process",
-    evidence: "instantiate true",
-    refused: { xml: model(`<bpmn:eventBasedGateway id="G" instantiate="true"/>`) },
-    control: { xml: model(`<bpmn:eventBasedGateway id="G"/>`) },
-  },
-  {
-    code: "reader.eventBasedGatewayInstantiate",
-    description: "a Parallel Event-Based Gateway",
-    evidence: "eventGatewayType Parallel",
-    refused: { xml: model(`<bpmn:eventBasedGateway id="G" instantiate="true" eventGatewayType="Parallel"/>`) },
-    control: { xml: model(`<bpmn:eventBasedGateway id="G" eventGatewayType="Exclusive"/>`) },
   },
 ];
 

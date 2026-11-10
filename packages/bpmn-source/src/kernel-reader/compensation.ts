@@ -1,6 +1,6 @@
 import { asElement } from "../moddle-graph.js";
 import type { ElementRecord } from "../moddle-graph.js";
-import { isCompensationDefinition, singleDefinition } from "./events.js";
+import { firstDefinition, isCompensationDefinition } from "./events.js";
 import { list, optionalId, requireId } from "./model.js";
 import type { CompensationSubject, ModelNode } from "./model.js";
 import { compareIds } from "./wire.js";
@@ -57,7 +57,7 @@ export function indexCompensation(
       if (artifact.$type !== "bpmn:Association") continue;
       const boundary = asElement(artifact.sourceRef);
       const handler = asElement(artifact.targetRef);
-      if (boundary?.$type !== "bpmn:BoundaryEvent" || handler === undefined || !isCompensationDefinition(singleDefinition(boundary))) continue;
+      if (boundary?.$type !== "bpmn:BoundaryEvent" || handler === undefined || !isCompensationDefinition(firstDefinition(boundary))) continue;
       const subject = asElement(boundary.attachedToRef);
       if (subject === undefined) continue;
       const subjectNode = nodes.get(requireId(subject));
@@ -71,7 +71,7 @@ export function indexCompensation(
     for (const element of list(container, "flowElements")) {
       if (!isEventSubProcess(element)) continue;
       const start = startOf(element);
-      if (start === undefined || !isCompensationDefinition(singleDefinition(start))) continue;
+      if (start === undefined || !isCompensationDefinition(firstDefinition(start))) continue;
       const subjectId = optionalId(container);
       if (subjectId === null) continue;
       subjects.push({ subject: subjectId, handler: requireId(element), boundary: null, container });

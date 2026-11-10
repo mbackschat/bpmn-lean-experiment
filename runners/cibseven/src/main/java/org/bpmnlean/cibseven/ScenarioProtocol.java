@@ -138,13 +138,31 @@ public final class ScenarioProtocol {
 
   public record Incidents(boolean cancellable) {}
 
+  /** The model resource; `decisions` names the DMN resources deployed with it, absent rather than empty. */
   public record BpmnResource(
       String id,
       String relativePath,
       String sha256,
-      SourceOverlayIdentity sourceOverlay) {
+      SourceOverlayIdentity sourceOverlay,
+      @JsonInclude(JsonInclude.Include.NON_NULL) List<DecisionResource> decisions) {
     public BpmnResource {
       Objects.requireNonNull(id, "id");
+      Objects.requireNonNull(relativePath, "relativePath");
+      Objects.requireNonNull(sha256, "sha256");
+      if (decisions != null && decisions.isEmpty()) {
+        throw new IllegalArgumentException("decisions is absent rather than empty");
+      }
+      decisions = decisions == null ? null : List.copyOf(decisions);
+    }
+
+    List<DecisionResource> declaredDecisions() {
+      return decisions == null ? List.of() : decisions;
+    }
+  }
+
+  /** One DMN resource bound by its exact bytes (`scenario.schema.json#/$defs/decisionResource`). */
+  public record DecisionResource(String relativePath, String sha256) {
+    public DecisionResource {
       Objects.requireNonNull(relativePath, "relativePath");
       Objects.requireNonNull(sha256, "sha256");
     }

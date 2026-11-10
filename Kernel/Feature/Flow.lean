@@ -213,7 +213,8 @@ def arriveGateway (ctx : Ctx) (header : Header) (payload : GatewayPayload) (occu
         let empty := payload.incoming.filter (!(filled parked payload.incoming scope).contains ·)
         !reaches ctx.program header.id empty (positions ctx.program parked header.id scope))
       (inclusiveFlows ctx candidates default payload.outgoing scope)
-  | .eventBased => .ok (state.signal (.armGateway occurrence.id header.id scope))
+  -- Admission admits only a non-instantiating gateway (`gateway.eventBased.instantiate`).
+  | .eventBased _ => .ok (state.signal (.armGateway occurrence.id header.id scope))
 
 /-- A throwing Link continues at the catching Link of the same name in the same process level or Sub-Process
 (BPMN 2.0.2 §10.5.6); a catching Link reached by a flow passes the token on. -/

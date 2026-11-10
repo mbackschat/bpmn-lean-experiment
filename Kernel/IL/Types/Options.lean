@@ -144,6 +144,14 @@ inductive ResultValues where
   | activityLocals
   deriving DecidableEq, Repr
 
+/-- What an Activity's output mappings read besides the values its completion or effect result submits. -/
+inductive OutputContext where
+  /-- BPMN 2.0.2 §10.4.2: nothing; the outputs map the submitted values alone. -/
+  | submission
+  /-- CIB-EXT-0031: the variables visible from the Activity's own scope, its captured inputs first. -/
+  | activityScope
+  deriving DecidableEq, Repr
+
 structure ProfileOptions where
   relations : List String := []
   evaluator : Evaluator := .simpleBoolean
@@ -171,6 +179,7 @@ structure ProfileOptions where
   timerZone : Option String := none
   multiInstanceBinding : MultiInstanceBinding := .dataAssociations
   effectResultValues : ResultValues := .outputSet
+  outputContext : OutputContext := .submission
   deriving Repr
 
 end Kernel

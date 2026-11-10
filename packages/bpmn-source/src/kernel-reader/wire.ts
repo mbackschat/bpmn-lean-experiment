@@ -25,7 +25,8 @@ export enum MappingSyntax {
 }
 
 export const mapping = (target: string, source: KernelJson, dialect: MappingSyntax): KernelJson => ({ target, source, dialect });
-export const subscription = (trigger: KernelJson, outputs: KernelJson[] = []): KernelJson => ({ trigger, outputs });
+export const subscription = (trigger: KernelJson, outputs: KernelJson[] = [], alternatives: KernelJson[] = [],
+  parallelMultiple = false): KernelJson => ({ trigger, outputs, alternatives, parallelMultiple });
 
 /** Lean's `String` order, by Unicode scalar value; the IL's id-keyed lists keep it, as the kernel's publication does. */
 export function compareIds(left: string, right: string): number {
@@ -66,6 +67,7 @@ export type KernelProfileOptions = Readonly<{
   timerZone: string | null;
   multiInstanceBinding: "dataAssociations" | "loopReferences";
   effectResultValues: "outputSet" | "activityLocals";
+  outputContext: "submission" | "activityScope";
 }>;
 
 /** One portable value's allowance, which bounds a scope-chain submission (`NSD-TASK-01`). */
@@ -103,6 +105,7 @@ export function kernelProfileOptions(relations: readonly string[]): KernelProfil
     timerZone: null,
     multiInstanceBinding: selects("CIB-INT-0014") ? "loopReferences" : "dataAssociations",
     effectResultValues: selects("CIB-EXT-0015") ? "activityLocals" : "outputSet",
+    outputContext: selects("CIB-EXT-0031") ? "activityScope" : "submission",
   };
 }
 

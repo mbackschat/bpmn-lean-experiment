@@ -116,7 +116,7 @@ test("under CIB's reading an uncaught Error inside a Multi-Instance instance is 
 test("under CIB's reading an uncaught Error inside a called instance is refused", () => {
   const called = append(task(activity("T", callWork()))(base()),
     start("CS", null), activity("CT", serviceWork(), { boundaries: [boundary("CB", errorTrigger({ code: "CAUGHT" }))] }), end("CE"));
-  const program = withFlows({ ...called, processes: [{ definition: definitionRef("Called"), children: ["CS", "CT", "CE"], variables: [] }] },
+  const program = withFlows({ ...called, processes: [{ definition: definitionRef("Called"), children: ["CS", "CT", "CE"], variables: [], executable: true }] },
     flow("cf1", "CS", "CT"), flow("cf2", "CT", "CE"), flow("cfb", "CB", "CE"));
   assert.deepEqual(failUnmatchedIn(withOptions(program, cib), "call:1:I:1:T:1"),
     { ok: false, failure: { tag: "unsupported", code: "unhandled-error-leaves-called-instance" } });

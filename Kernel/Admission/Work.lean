@@ -1,6 +1,7 @@
 module
 
 public import Kernel.IL.Types
+public import Kernel.Admission.Work.Decision
 
 /-! # Admission of Activities. A refusal carries a stable code.
 
@@ -63,8 +64,11 @@ def envelope (work : Work) (envelope : Envelope) : Option String :=
     some "activity.compensationHandler"
   else none
 
+/-- An instantiating Receive Task starts its Process (BPMN 2.0.2 §10.3.3, Table 10.10), which pinned CIB never reads
+(CIB-LIM-0008) (PC-BASIC-04). -/
 def receive (work : ReceiveWork) : Option String :=
-  if !work.message.correlation.isEmpty then some "work.receive.correlation"
+  if work.instantiate then some "work.receive.instantiate"
+  else if !work.message.correlation.isEmpty then some "work.receive.correlation"
   else
     match work.message.name with
     | none => none
@@ -199,7 +203,7 @@ def activity (program : Program) (payload : ActivityPayload) : Option String :=
     | .service work => service work
     | .send _ => some "work.send"
     | .script _ => some "work.script"
-    | .rule _ => some "work.rule"
+    | .rule work => Decision.task program work
     | .call work => call program work
   work <|> envelope payload.work payload.envelope
 

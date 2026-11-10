@@ -58,7 +58,7 @@ def routing (payload : GatewayPayload) : Option (List FlowId × Option FlowId) :
   | .exclusive candidates default => some (candidates, default)
   | .inclusive candidates default => some (candidates, default)
   | .parallel => none
-  | .eventBased => none
+  | .eventBased _ => none
 
 /-- A gateway's candidates and default are its own outgoing flows, the default not a candidate. -/
 def gatewayReference (payload : GatewayPayload) : Bool :=
@@ -108,14 +108,17 @@ def exclusive (program : Program) (payload : GatewayPayload) (candidates : List 
   else none
 
 /-- An Inclusive Gateway joins by `Kernel.Feature.Flow`'s reachability rule wherever it converges, and a split that
-selects nothing rolls back (CIB-INT-0012), so only the Event-Based arms and the Exclusive shapes are refused here
-(PC-CF-04). -/
+selects nothing rolls back (CIB-INT-0012), so only the Event-Based arms and instantiation and the Exclusive shapes are
+refused here (PC-CF-04). An instantiating Event-Based Gateway starts its Process (BPMN 2.0.2 §10.6.6), which pinned CIB
+never reads (CIB-LIM-0008) (PC-BASIC-04). -/
 def gateway (program : Program) (payload : GatewayPayload) : Option String :=
   match payload.kind with
   | .exclusive candidates default => exclusive program payload candidates default
   | .parallel => none
   | .inclusive _ _ => none
-  | .eventBased => eventBasedArms program payload
+  | .eventBased .none => eventBasedArms program payload
+  | .eventBased .exclusive => some "gateway.eventBased.instantiate"
+  | .eventBased .parallel => some "gateway.eventBased.instantiate"
 
 /-- A condition is read on a conditional Gateway's candidates and on an Activity's or Scope's flows other than its
 default (BPMN 2.0.2 §13.3.1; §10.3.1: a condition on the default "SHALL be ignored"); on any other flow it would be

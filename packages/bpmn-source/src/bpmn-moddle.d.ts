@@ -5,6 +5,6 @@ declare module "bpmn-moddle" {
       options?: Readonly<Record<string, unknown>>,
     );
 
-    fromXML(xml: string): Promise<unknown>;
+    fromXML(xml: string, typeName?: string): Promise<unknown>;
   }
 }

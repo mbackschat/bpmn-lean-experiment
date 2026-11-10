@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             id="Definitions_ErrorRefResolution" targetNamespace="urn:bpmn-lean:scenarios:interchange-reference-forms:error-ref-resolution">
+  <error id="Error_Other" name="Other" errorCode="OTHER" />
+  <error id="Error_Failure" name="Failure" errorCode="FAILURE" />
+  <process id="Process_ErrorRefResolution" name="An Error End Event and the boundary its Error reference resolves to" isExecutable="true">
+    <startEvent id="Started" name="Started" />
+    <subProcess id="Attempt" name="Attempt">
+      <startEvent id="AttemptStarted" name="Attempt started" />
+      <userTask id="Work" name="Work" />
+      <endEvent id="Failed" name="Failed">
+        <errorEventDefinition id="Failed_Error" errorRef="Error_Failure" />
+      </endEvent>
+      <sequenceFlow id="Flow_AttemptStarted" sourceRef="AttemptStarted" targetRef="Work" />
+      <sequenceFlow id="Flow_Failed" sourceRef="Work" targetRef="Failed" />
+    </subProcess>
+    <boundaryEvent id="CatchOther" name="Catch Other" attachedToRef="Attempt">
+      <errorEventDefinition id="CatchOther_Error" errorRef="Error_Other" />
+    </boundaryEvent>
+    <boundaryEvent id="CatchFailure" name="Catch Failure" attachedToRef="Attempt">
+      <errorEventDefinition id="CatchFailure_Error" errorRef="Error_Failure" />
+    </boundaryEvent>
+    <userTask id="HandleOther" name="Handle Other" />
+    <userTask id="HandleFailure" name="Handle Failure" />
+    <userTask id="Proceed" name="Proceed" />
+    <endEvent id="Done" name="Done" />
+    <sequenceFlow id="Flow_Started" sourceRef="Started" targetRef="Attempt" />
+    <sequenceFlow id="Flow_Attempted" sourceRef="Attempt" targetRef="Proceed" />
+    <sequenceFlow id="Flow_Other" sourceRef="CatchOther" targetRef="HandleOther" />
+    <sequenceFlow id="Flow_Failure" sourceRef="CatchFailure" targetRef="HandleFailure" />
+    <sequenceFlow id="Flow_OtherDone" sourceRef="HandleOther" targetRef="Done" />
+    <sequenceFlow id="Flow_FailureDone" sourceRef="HandleFailure" targetRef="Done" />
+    <sequenceFlow id="Flow_ProceedDone" sourceRef="Proceed" targetRef="Done" />
+  </process>
+</definitions>

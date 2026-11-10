@@ -71,7 +71,7 @@ function program(shape: Shape = {}): Json {
     task,
     { event: { header: header("End", "endEvent"), payload: { role: { throw: { record: "none" } }, placement: "finish",
       incoming: [...(shape.failingAfter === true ? [] : [outOf]), ...(shape.failingSibling === true || shape.failingAfter === true ? ["Never", "Nor"] : [])],
-      outgoing: [] } } },
+      outgoing: [], alternativeThrows: [] } } },
   ];
   const flows: Json[] = [{ id: outOf, source: "T", target: shape.failingAfter === true ? "Choice" : "End", condition: null }];
   if (shape.failingSibling === true) {

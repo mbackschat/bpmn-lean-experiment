@@ -3,10 +3,16 @@
   "id": "business-rule-hit-policies-unknown-decision",
   "profile": "cibseven-2.2.0",
   "bpmn": {
-    "id": "business-rule-hit-policies-process",
-    "relativePath": "scenarios/open-rows/business-rule-hit-policies/hit-policies.bpmn",
-    "sha256": "c5379b029ff171347bfc1317babcd4d4bc3aee5fccd345b32eb7616800623e10",
-    "sourceOverlay": null
+    "id": "business-rule-unknown-decision-process",
+    "relativePath": "scenarios/open-rows/business-rule-hit-policies/unknown-decision.bpmn",
+    "sha256": "f953405d1639bc7fd4384916c6fe6429061ec29f8bbb26b26adf2fa11916fa5d",
+    "sourceOverlay": null,
+    "decisions": [
+      {
+        "relativePath": "scenarios/open-rows/business-rule-hit-policies/decisions.dmn",
+        "sha256": "6970d9c8df6258f293cf96d6c6fabe03f3bac8a6bbcc008a205aba9d89b26a2b"
+      }
+    ]
   },
   "stimuli": [
     {
@@ -14,13 +20,6 @@
       "commandId": "start",
       "instanceId": "Applicant_1",
       "variables": [
-        {
-          "name": "policy",
-          "value": {
-            "kind": "string",
-            "value": "unknown"
-          }
-        },
         {
           "name": "score",
           "value": {

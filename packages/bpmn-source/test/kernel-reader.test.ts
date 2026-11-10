@@ -60,10 +60,10 @@ test("an exclusive gateway keeps document order of its candidates, an inclusive 
   assert.equal(flow("z").condition, null);
 });
 
-test("an Event-Based Gateway is nullary: its arms are the targets of its outgoing flows", async () => {
+test("a non-instantiating Event-Based Gateway: its arms are the targets of its outgoing flows", async () => {
   const p = await program(model(`<bpmn:eventBasedGateway id="G"/><bpmn:intermediateCatchEvent id="C"><bpmn:messageEventDefinition messageRef="M"/></bpmn:intermediateCatchEvent>
     <bpmn:sequenceFlow id="f" sourceRef="G" targetRef="C"/>`, `<bpmn:message id="M"/>`));
-  assert.equal(element(p, "G").gateway.payload.kind, "eventBased");
+  assert.deepEqual(element(p, "G").gateway.payload.kind, { eventBased: { instantiation: "none" } });
   assert.deepEqual(element(p, "G").gateway.payload.outgoing, ["f"]);
 });
 
@@ -78,6 +78,7 @@ test("every element header names its source identifier, and a called process its
     definition: { key: "Q", version: null, versionTag: null, deployment: null, tenant: null, sourceSha256: null },
     children: ["Inner"],
     variables: [],
+    executable: true,
   }]);
 });
 
@@ -202,6 +203,7 @@ test("a Business Rule Task carries its decision binding and result mapping", asy
     resultVariable: "r",
     binding: { version: { value: { literal: { value: "3" } } } },
     resultMapping: "singleEntry",
+    tenant: null,
   } } });
   assert.deepEqual(element(p, "Latest").activity.payload.work.rule.payload.binding, "latest");
   assert.deepEqual(element(p, "Latest").activity.payload.work.rule.payload.resultMapping, "resultList");
@@ -234,6 +236,7 @@ test("the profile options are the full record, each non-default selected by the 
     timerZone: null,
     multiInstanceBinding: "dataAssociations",
     effectResultValues: "outputSet",
+    outputContext: "submission",
   });
   const relations = ["CIB-EXT-0010", "CIB-EXT-0020", "CIB-EXT-0016", "CIB-CFG-0008", "CIB-OP-0009", "CIB-EXT-0026",
     "CIB-INT-0011", "CIB-EXT-0025", "CIB-INT-0009", "CIB-LIM-0001", "CIB-INT-0007", "CIB-INT-0013", "CIB-EXT-0028"];
@@ -261,7 +264,9 @@ test("the profile options are the full record, each non-default selected by the 
     timerZone: null,
     multiInstanceBinding: "dataAssociations",
     effectResultValues: "outputSet",
+    outputContext: "submission",
   });
+  assert.equal(kernelProfileOptions(["CIB-EXT-0031"]).outputContext, "activityScope");
   assert.equal(kernelProfileOptions(["CIB-INT-0014"]).multiInstanceBinding, "loopReferences");
   assert.equal(kernelProfileOptions(["CIB-EXT-0015"]).effectResultValues, "activityLocals");
   assert.equal(kernelProfileOptions(["CIB-EXT-0005"]).submission, "installsVariables");
@@ -375,10 +380,10 @@ test("a CIB attribute the IL has no field for is refused, never dropped", async 
   // No profile rule yet proves an uncarried CIB attribute safe (CLAUDE.md, non-negotiable boundaries), and CIB may act
   // on it, so admitting the model would claim behaviour the kernel does not have.
   const result = await read(model(`<bpmn:serviceTask id="T" camunda:delegateExpression="\${x}" camunda:asyncBefore="true"/>
-    <bpmn:businessRuleTask id="R" camunda:decisionRef="d" camunda:decisionRefTenantId="t"/>`));
+    <bpmn:businessRuleTask id="R" camunda:decisionRef="d" camunda:resultVariableName="r"/>`));
   assert.equal(result.kind, "refused");
   assert.deepEqual(result.kind === "refused" ? [result.code, result.element, result.evidence] : null,
-    [ReadRefusalCode.FactNotCarried, "R", "camunda:decisionRefTenantId"]);
+    [ReadRefusalCode.FactNotCarried, "R", "camunda:resultVariableName"]);
 });
 
 test("a conditional Activity outflow, an Activity default and a Transaction method are carried, not reported", async () => {

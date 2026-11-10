@@ -22,14 +22,14 @@ test("the pipeline deadline counts exactly the scenarios the differential discov
 });
 
 test("a source the kernel reader refuses yields an unsupported deployment carrying the reader's code", async () => {
-  const relativePath = "scenarios/open-rows/event-reference-forms/multiple-event-definitions-message-then-timer.scenario.json";
+  const relativePath = "scenarios/open-rows/interchange-reference-forms/event-definition-ref-catch-timer-then-proceed.scenario.json";
   const scenario = (await discoverScenarios()).find((candidate) => candidate.relativePath === relativePath);
   assert.ok(scenario?.kind === DiscoveredKind.Scenario);
   assert.deepEqual(await scenarioKernelInput(scenario.relativePath, scenario.document.bpmn, scenario.document.profile), {
     kind: "refused",
     result: {
       outcome: { kind: "semantic", outcome: "unsupported" },
-      trace: [{ kind: "deployment", outcome: "unsupported", code: "reader.multipleEventDefinitions" }],
+      trace: [{ kind: "deployment", outcome: "unsupported", code: "reader.eventDefinitionRef" }],
     },
   });
 });

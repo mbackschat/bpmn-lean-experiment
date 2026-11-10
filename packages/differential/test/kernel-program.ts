@@ -16,6 +16,7 @@ export type CaseSource = Readonly<{
   bytes: Uint8Array;
   sha256: string;
   overlay: KernelSource["overlay"];
+  decisions?: KernelSource["decisions"];
 }>;
 
 /** Reads one BPMN source with the relations its profile selects; a refusal is returned, not thrown. */
@@ -27,6 +28,7 @@ export async function readCaseSource(source: CaseSource, profileId: string): Pro
     overlay: source.overlay,
     profile: profileId,
     limits: readLimits,
+    decisions: source.decisions,
   }, kernelProfileOptions(profile.bpmn?.relationships ?? []));
 }
 

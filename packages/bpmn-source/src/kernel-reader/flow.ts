@@ -1,7 +1,7 @@
 import { asElement } from "../moddle-graph.js";
 import type { ElementRecord } from "../moddle-graph.js";
 import { defaultFlowOf, fixed, headerOf } from "./build.js";
-import { FlowElementKind, ReadRefusal, ReadRefusalCode, requireId } from "./model.js";
+import { FlowElementKind, requireId } from "./model.js";
 import type { Built, ModelNode, ReadContext } from "./model.js";
 import { assertNever, ctor } from "./wire.js";
 import type { KernelJson } from "./wire.js";
@@ -53,25 +53,23 @@ function gatewayKind(ctx: ReadContext, id: string, node: ModelNode, kind: Gatewa
     case FlowElementKind.ParallelGateway:
       return "parallel";
     case FlowElementKind.EventBasedGateway:
-      return "eventBased";
+      return ctor("eventBased", { instantiation: instantiation(node.element) });
   }
   return assertNever(kind);
 }
 
 /**
- * An instantiating Event-Based Gateway, Exclusive or Parallel (BPMN 2.0.2 §10.6.6, Table 10.127), starts the Process it
- * begins, which `GatewayKind.eventBased` has no field for; the reader refuses it rather than read a gateway that waits
- * (PC-CF-05).
+ * How an Event-Based Gateway begins (BPMN 2.0.2 §10.6.6, Table 10.127): `instantiate="true"` starts the Process,
+ * Exclusive or, with `eventGatewayType="Parallel"`, Parallel; a Parallel type is read as instantiating without
+ * `instantiate` too, since only an instantiating gateway has a Parallel meaning. Admission refuses both
+ * (`gateway.eventBased.instantiate`).
  */
-function refuseInstantiation(node: ModelNode, kind: GatewayKind): void {
-  if (kind === FlowElementKind.EventBasedGateway && (node.element.instantiate === true || node.element.eventGatewayType === "Parallel")) {
-    throw new ReadRefusal(ReadRefusalCode.EventBasedGatewayInstantiate, requireId(node.element),
-      `instantiate ${String(node.element.instantiate)}, eventGatewayType ${String(node.element.eventGatewayType)}`);
-  }
+function instantiation(element: ElementRecord): string {
+  if (element.eventGatewayType === "Parallel") return "parallel";
+  return element.instantiate === true ? "exclusive" : "none";
 }
 
 export function readGateway(ctx: ReadContext, node: ModelNode, kind: GatewayKind): Built {
-  refuseInstantiation(node, kind);
   const id = requireId(node.element);
   return fixed(id, ctor("gateway", {
     header: headerOf(node, kind),

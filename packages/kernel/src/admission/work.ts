@@ -28,6 +28,7 @@ import {
   type ValueSource,
   type Work,
 } from "../il/types.js";
+import * as Decision from "./work/decision.js";
 
 function mapsData(work: Work): boolean {
   switch (work.tag) {
@@ -98,7 +99,12 @@ function envelope(work: Work, fields: Envelope): string | null {
   return null;
 }
 
+/**
+ * An instantiating Receive Task starts its Process (BPMN 2.0.2 §10.3.3, Table 10.10), which pinned CIB never reads
+ * (CIB-LIM-0008) (PC-BASIC-04).
+ */
 function receive(work: ReceiveWork): string | null {
+  if (work.instantiate) return "work.receive.instantiate";
   if (work.message.correlation.length > 0) return "work.receive.correlation";
   const name = work.message.name;
   if (name === null) return null;
@@ -277,7 +283,7 @@ function work(program: Program, payload: ActivityPayload): string | null {
     case WorkTag.Script:
       return "work.script";
     case WorkTag.Rule:
-      return "work.rule";
+      return Decision.task(program, assigned.payload);
     case WorkTag.Call:
       return call(program, assigned.payload);
   }

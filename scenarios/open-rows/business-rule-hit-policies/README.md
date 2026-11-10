@@ -1,14 +1,43 @@
-# Business Rule Tasks over DMN decision tables: hit policies
+# Business Rule Tasks over DMN decision tables
 
-Answer-free schedules for [PC-AUTO-07](../../../docs/PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list), the finite decision contract of the Business Rule Task under the [owner decision](../../../docs/kernel/ARCHITECTURE-SPEC.md#owner-decisions-on-the-path) (DMN decision tables evaluated in the kernel, the hit policies UNIQUE, FIRST, ANY, COLLECT and RULE ORDER, and the FEEL unary-test subset of literals, comparisons, ranges, lists and negation). The [decision semantics](../../../docs/kernel/semantics/DECISION-SEMANTICS-SPEC.md) own the meaning, and their witness plan lists the schedules still to be authored; the retained CIB Seven `2.2.0` answer is the target. DMN is the decision language here and never a replacement for JUEL: the Exclusive Gateway that selects a decision uses JUEL conditions. The profile is `cibseven-2.2.0` with no source overlay.
+Answer-free schedules for [PC-AUTO-07](../../../docs/PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list), the finite decision contract of the Business Rule Task under the [owner decision](../../../docs/kernel/ARCHITECTURE-SPEC.md#owner-decisions-on-the-path) (DMN decision tables evaluated in the kernel, the hit policies UNIQUE, FIRST, ANY, COLLECT and RULE ORDER, and the FEEL unary-test subset of literals, comparisons, ranges, lists and negation). The [decision semantics](../../../docs/kernel/semantics/DECISION-SEMANTICS-SPEC.md) own the meaning, and their witness plan names every schedule here; the retained CIB Seven `2.2.0` answer is the target. DMN is the decision language here and never a replacement for JUEL: the Exclusive Gateway that selects a decision uses JUEL conditions. The profile is `cibseven-2.2.0` with no source overlay.
 
-The model [hit-policies.bpmn](hit-policies.bpmn) references decisions by `camunda:decisionRef` with the default binding, and the DMN resource [decisions.dmn](decisions.dmn) sits beside it. **The CIB runner must deploy every `*.dmn` file of the model's directory in the same deployment as the `.bpmn` file.** The [scenario value contract](../../../scripts/scenario-variable-value-contract.ts) admits Integer start values only for registered process ids, so every number below is a numeric String that the decision's `integer` type reference converts. One Exclusive Gateway selects a Business Rule Task by the start variable `policy`; all branches merge into the User Task *Inspect result*, and every schedule has the start as its only stimulus.
+## Models and the DMN binding
 
-The decision tables `gradeUnique`, `gradeFirst`, `gradeAnyAgree`, `gradeAnyConflict`, `gradeCollect` and `gradeRuleOrder` read the Integer-typed input `score`, supplied as a numeric String, and share three rules on it, in this order: `< 50`, `[40..70]` and `> 60`, so the tests overlap on part of the range. Their outputs are the Strings `low`, `mid` and `high`; in `gradeAnyAgree` they are `fail`, `ok` and `ok`. The single-result tables map with `singleEntry` to `grade`, the two list-producing tables with `collectEntries` to `grades`. `gradeBadOutput` declares an Integer output and gives one rule a String entry. `fee` reads the String `channel` with the tests `"branch"`, `"web","app"` and `not("branch","web","app")`.
+Every scenario binds the DMN resource [decisions.dmn](decisions.dmn) by its exact bytes in `bpmn.decisions` ([scenario schema](../../../contracts/schemas/scenario.schema.json)); a target runner deploys each bound resource in the model's deployment and never discovers DMN files by directory. Every Business Rule Task references its decision by `camunda:decisionRef` with the default binding.
 
-| Schedule | Decision and input | Case it separates |
+- [hit-policies.bpmn](hit-policies.bpmn): one Exclusive Gateway selects a Business Rule Task by the start variable `policy`; all branches merge into the User Task *Inspect result*.
+- [decision-contexts.bpmn](decision-contexts.bpmn): `gradeUnique` (mapped `singleEntry` to `grade`) reached in three contexts the gateway selects: inside a Sub-Process whose input parameter binds a local `grade`, after an `asyncBefore` Service Task's effect result, and after a `PT10S` Timer.
+- [unknown-decision.bpmn](unknown-decision.bpmn): one Business Rule Task whose `decisionRef` `noSuchDecision` no bound resource declares.
+
+The [scenario value contract](../../../scripts/scenario-variable-value-contract.ts) admits Integer start values only for registered process ids, so every number below is a numeric String that the decision's `integer` type reference converts.
+
+## Decision tables
+
+The tables `gradeUnique`, `gradeFirst`, `gradeAnyAgree`, `gradeAnyConflict`, `gradeCollect`, `gradeRuleOrder` and `gradeDefault` (no declared hit policy) read the Integer-typed input `score` and share three rules on it, in this order: `< 50`, `[40..70]` and `> 60`, so the tests overlap on part of the range. Their outputs are the Strings `low`, `mid` and `high`; in `gradeAnyAgree` they are `fail`, `ok` and `ok`. `gradeBadOutput` declares an Integer output and gives one rule a String entry. `fee` reads the String `channel` with the tests `"branch"`, `"web","app"` and `not("branch","web","app")`.
+
+| Table | Hit policy | Input | Rules (test → output) |
+|---|---|---|---|
+| `rating` | UNIQUE | `score` | `< 50` → `grade "low"`, `points 1`; `>= 50` → `"high"`, `2` |
+| `ratingRuleOrder` | RULE ORDER | `score` | `< 50` → `"low"`, `1`; `[40..70]` → `"mid"`, `2`; `> 60` → `"high"`, `3` |
+| `gradeFirstBadLater` | FIRST | `score` | `< 70` → Integer `1`; `> 50` → `"many"` under `integer` |
+| `bands` | COLLECT | `score` | `[40..70]`, `]40..70[`, `(40..70]`, `[40..70)` → `closed`, `open`, `leftOpen`, `rightOpen` |
+| `vipLabel` | UNIQUE | Boolean `vip` | `true` → `"vip"`; `false` → `"regular"` |
+| `channelNull` | UNIQUE | `channel` | `null` → `"none"`; `"branch"` → `"branch"` |
+| `notBranch` | UNIQUE | `channel` | `not("branch")` → `"other"`; `"branch"` → `"branch"` |
+| `notSmall` | UNIQUE | `score` | `not(< 5)` → `"big"` |
+| `fiveish` | COLLECT | `score` | `5.0` → `"exact"`; `[4.5..5.5]` → `"near"` |
+| `signs` | UNIQUE | `score` | `7` → `"seven"`; `0` → `"zero"` |
+| `numberText` | UNIQUE | `score` | `-` → `5` under `string` |
+| `dashes` | UNIQUE | `score`, `channel` | `-` and an empty `<text/>` → `"both"` |
+
+## Schedules
+
+Every schedule starts the process; the two on `decision-contexts.bpmn` that reach the decision through an effect result or a Timer add that one stimulus.
+
+| Schedule | Decision, mapping and input | Case it separates |
 |---|---|---|
-| [unique-single-match](unique-single-match.scenario.json) | `gradeUnique`, `score = "55"` | UNIQUE with the inputs of one rule. |
+| [unique-single-match](unique-single-match.scenario.json) | `gradeUnique` `singleEntry`, `score = "55"` | UNIQUE with the inputs of one rule. |
 | [unique-overlap](unique-overlap.scenario.json) | `gradeUnique`, `score = "65"` | UNIQUE with the inputs of two rules. |
 | [unique-no-match](unique-no-match.scenario.json) | `gradeUnique`, `score` a present Null | UNIQUE when no rule can test true. |
 | [unique-wrong-type-input](unique-wrong-type-input.scenario.json) | `gradeUnique`, `score = "n/a"` | An input value that is not numeric text, for the declared Integer type. |
@@ -16,17 +45,37 @@ The decision tables `gradeUnique`, `gradeFirst`, `gradeAnyAgree`, `gradeAnyConfl
 | [first-overlap](first-overlap.scenario.json) | `gradeFirst`, `score = "65"` | FIRST with two matching rules. |
 | [any-agreeing-overlap](any-agreeing-overlap.scenario.json) | `gradeAnyAgree`, `score = "65"` | ANY with two matching rules that give the same output. |
 | [any-conflicting-overlap](any-conflicting-overlap.scenario.json) | `gradeAnyConflict`, `score = "65"` | ANY with two matching rules that give different outputs. |
-| [collect-overlap](collect-overlap.scenario.json) | `gradeCollect`, `score = "65"` | COLLECT with two matching rules, mapped to a list. |
+| [collect-overlap](collect-overlap.scenario.json) | `gradeCollect` `collectEntries`, `score = "65"` | COLLECT with two matching rules, mapped to a list. |
 | [collect-no-match](collect-no-match.scenario.json) | `gradeCollect`, `score` a present Null | COLLECT when no rule can test true, mapped to a list. |
-| [rule-order-overlap](rule-order-overlap.scenario.json) | `gradeRuleOrder`, `score = "65"` | RULE ORDER with two matching rules, mapped to a list. |
+| [rule-order-overlap](rule-order-overlap.scenario.json) | `gradeRuleOrder` `collectEntries`, `score = "65"` | RULE ORDER with two matching rules, mapped to a list. |
+| [default-hit-policy](default-hit-policy.scenario.json) | `gradeDefault`, `score = "65"` | An absent hit policy with two matches fails as UNIQUE. |
 | [bad-output-type](bad-output-type.scenario.json) | `gradeBadOutput`, `score = "55"` | A matching rule whose output entry does not fit the declared output type. |
-| [unknown-decision](unknown-decision.scenario.json) | `decisionRef` `noSuchDecision` | A Business Rule Task that names a decision no deployment contains. |
+| [first-later-output-fails](first-later-output-fails.scenario.json) | `gradeFirstBadLater`, `score = "60"` | FIRST converts every matching rule's outputs before selecting, so a later rule's bad output fails. |
+| [single-result-map](single-result-map.scenario.json) | `rating` `singleResult`, `score = "55"` | `singleResult` with two outputs writes a map. |
+| [single-result-overlap](single-result-overlap.scenario.json) | `ratingRuleOrder` `singleResult`, `score = "65"` | `singleResult` over two matches fails. |
+| [result-list-default](result-list-default.scenario.json) | `ratingRuleOrder`, no `mapDecisionResult`, `score = "65"` | The default `resultList` writes a list of maps. |
+| [single-entry-two-outputs](single-entry-two-outputs.scenario.json) | `rating` `singleEntry`, `score = "55"` | `singleEntry` with two outputs fails. |
+| [collect-entries-two-outputs](collect-entries-two-outputs.scenario.json) | `ratingRuleOrder` `collectEntries`, `score = "65"` | `collectEntries` across two outputs fails. |
+| [no-result-variable](no-result-variable.scenario.json) | `gradeUnique` without `resultVariable`, `score = "55"` | Nothing is written. |
+| [interval-endpoints-40](interval-endpoints-40.scenario.json), [interval-endpoints-70](interval-endpoints-70.scenario.json) | `bands`, `score = "40"` and `"70"` | Which interval end points are closed. |
+| [boolean-tests-true](boolean-tests-true.scenario.json), [boolean-tests-false](boolean-tests-false.scenario.json) | `vipLabel`, Boolean `vip` | Boolean literal tests. |
+| [boolean-from-string](boolean-from-string.scenario.json) | `vipLabel`, `vip = "TRUE"` | Conversion of text to `boolean`. |
+| [null-test](null-test.scenario.json) | `channelNull`, `channel` a present Null | `null` matches a null input and a String literal does not. |
+| [not-null-input](not-null-input.scenario.json) | `notBranch`, `channel` a present Null | A negated literal matches a null input. |
+| [not-compare-null-input](not-compare-null-input.scenario.json) | `notSmall`, `score` a present Null | A negated comparison does not match a null input. |
+| [decimal-literal](decimal-literal.scenario.json) | `fiveish`, `score = "5"` | Decimal literals against an Integer input. |
+| [integer-from-string-plus](integer-from-string-plus.scenario.json), [integer-from-string-minus-zero](integer-from-string-minus-zero.scenario.json) | `signs`, `score = "+7"` and `"-0"` | Signed numeric text under `integer`. |
+| [string-from-number](string-from-number.scenario.json) | `numberText`, `score = "1"` | A number output literal under `string`. |
+| [dash-and-empty-entries](dash-and-empty-entries.scenario.json) | `dashes`, `score = "1"`, `channel = "web"` | `-` and an empty entry both match. |
 | [fee-literal](fee-literal.scenario.json) | `fee`, `channel = "branch"` | A String literal test. |
 | [fee-list](fee-list.scenario.json) | `fee`, `channel = "app"` | A list of String literals. |
 | [fee-negation](fee-negation.scenario.json) | `fee`, `channel = "phone"` | A negated list. |
+| [result-shadowed-in-subprocess](result-shadowed-in-subprocess.scenario.json) | `decision-contexts.bpmn`, root `grade = "root"`, `score = "55"` | The nearest-owner write when a Sub-Process binds the result name. |
+| [after-effect-failure](after-effect-failure.scenario.json) | `decision-contexts.bpmn`, `score = "65"`, then the effect result | A UNIQUE overlap reached by an effect result. |
+| [after-timer-failure](after-timer-failure.scenario.json) | `decision-contexts.bpmn`, `score = "65"`, then the Timer | A UNIQUE overlap reached by a Timer firing. |
+| [unknown-decision](unknown-decision.scenario.json) | `noSuchDecision`, `score = "55"` | A Business Rule Task that names a decision no deployment contains. |
 
-Notes for the target runners:
+## Observation boundary
 
-- The retained CIB runner deploys the `.bpmn` file only and has no Business Rule Task realization; no schedule here supplies a decision result.
-- `unique-overlap`, `unique-wrong-type-input`, `unique-absent-input`, `any-conflicting-overlap`, `bad-output-type` and `unknown-decision` have an engine step that can fail inside the starting command; the runner must record it as the command outcome rather than as a harness failure.
-- Every result variable is a String, an Integer, a present Null or a list of Strings, so the retained runner's variable projection can carry it.
+- A failure inside a command (an overlap under UNIQUE, ANY or `singleResult`, a conversion failure, a mapper over two outputs) is the command's outcome, never a harness failure.
+- CIB stores a decision's `HashMap` and `List` results through Java serialization. The runner projects a map with its entries sorted by name, as the kernel writes them. It projects a root list of Strings, the empty list included, as a String List, where the kernel writes a list of Strings; until the comparator equates the two, `collect-overlap`, `collect-no-match`, `rule-order-overlap`, `interval-endpoints-*` and `decimal-literal` differ in that kind alone.

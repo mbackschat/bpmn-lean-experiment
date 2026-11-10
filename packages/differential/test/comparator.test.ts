@@ -162,6 +162,29 @@ test("compares an effect wait's arguments only when neither side is retained CIB
     DisagreementKind.ObservationValue);
 });
 
+test("compares a root list of Strings as the runner's stringList only against retained CIB evidence (CIB-OP-0015)", () => {
+  const strings = (...values: string[]) => ({ kind: "list", value: values.map((value) => ({ kind: "string", value })) });
+  const withRoot = (value: unknown, inputs: ReadonlyArray<unknown> = []) => ({
+    outcome: { kind: "semantic", outcome: "completed" },
+    trace: [
+      { kind: "deployment", outcome: "committed" },
+      { kind: "state", instanceId: "Instance_1", status: "running", logicalTimeMs: 0, variables: [{ name: "fees", value }],
+        openWaits: [{ ...wait("Task_A", "userTask"), detail: { kind: "userTask", candidateUsers: [], candidateGroups: [], inputs } }] },
+    ],
+  });
+  const legacy = (...values: string[]) => ({ kind: "stringList", value: values });
+  assert.equal(compareTargetResults(evidence(withRoot(legacy("a", "b"))), [kernel(withRoot(strings("a", "b")))]).kind, ComparisonKind.Agreement);
+  assert.equal(compareTargetResults(evidence(withRoot(legacy())), [kernel(withRoot(strings()))]).kind, ComparisonKind.Agreement);
+  assert.equal(compareTargetResults(evidence(withRoot(legacy(), [{ name: "tags", value: legacy("x") }])),
+    [kernel(withRoot(strings(), [{ name: "tags", value: strings("x") }]))]).kind, ComparisonKind.Agreement);
+  // The order and the members still count, a nested List of Strings is not the legacy kind, and two kernels compare kinds exactly.
+  assert.equal(compareTargetResults(evidence(withRoot(legacy("b", "a"))), [kernel(withRoot(strings("a", "b")))]).kind, ComparisonKind.Disagreement);
+  const nested = { kind: "list", value: [strings("a")] };
+  assert.equal(compareTargetResults(evidence(withRoot({ kind: "list", value: [legacy("a")] })), [kernel(withRoot(nested))]).kind, ComparisonKind.Disagreement);
+  assert.equal(compareTargetResults(kernel(withRoot(legacy("a"))), [{ target: DifferentialTarget.KernelTs, result: withRoot(strings("a")) }]).kind,
+    ComparisonKind.Disagreement);
+});
+
 const deployed = { kind: "deployment", outcome: "committed" };
 const state = (status: string, variables: ReadonlyArray<unknown>, openWaits: ReadonlyArray<unknown>) =>
   ({ kind: "state", instanceId: "Instance_1", status, logicalTimeMs: 0, variables, openWaits });

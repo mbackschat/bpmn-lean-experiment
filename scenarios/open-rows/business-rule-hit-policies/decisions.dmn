@@ -160,4 +160,227 @@
       </rule>
     </decisionTable>
   </decision>
+  <decision id="rating" name="Rating with two outputs">
+    <decisionTable id="DecisionTable_rating" hitPolicy="UNIQUE">
+      <input id="Input_rating_1" label="Score">
+        <inputExpression id="InputExpression_rating_1" typeRef="integer"><text>score</text></inputExpression>
+      </input>
+      <output id="Output_rating_grade" name="grade" typeRef="string" />
+      <output id="Output_rating_points" name="points" typeRef="integer" />
+      <rule id="Rule_rating_1">
+        <inputEntry id="InputEntry_rating_1_1"><text>&lt; 50</text></inputEntry>
+        <outputEntry id="OutputEntry_rating_1_1"><text>"low"</text></outputEntry>
+        <outputEntry id="OutputEntry_rating_1_2"><text>1</text></outputEntry>
+      </rule>
+      <rule id="Rule_rating_2">
+        <inputEntry id="InputEntry_rating_2_1"><text>&gt;= 50</text></inputEntry>
+        <outputEntry id="OutputEntry_rating_2_1"><text>"high"</text></outputEntry>
+        <outputEntry id="OutputEntry_rating_2_2"><text>2</text></outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <decision id="ratingRuleOrder" name="Rating with two outputs, rule order">
+    <decisionTable id="DecisionTable_ratingRuleOrder" hitPolicy="RULE ORDER">
+      <input id="Input_ratingRuleOrder_1" label="Score">
+        <inputExpression id="InputExpression_ratingRuleOrder_1" typeRef="integer"><text>score</text></inputExpression>
+      </input>
+      <output id="Output_ratingRuleOrder_grade" name="grade" typeRef="string" />
+      <output id="Output_ratingRuleOrder_points" name="points" typeRef="integer" />
+      <rule id="Rule_ratingRuleOrder_1">
+        <inputEntry id="InputEntry_ratingRuleOrder_1_1"><text>&lt; 50</text></inputEntry>
+        <outputEntry id="OutputEntry_ratingRuleOrder_1_1"><text>"low"</text></outputEntry>
+        <outputEntry id="OutputEntry_ratingRuleOrder_1_2"><text>1</text></outputEntry>
+      </rule>
+      <rule id="Rule_ratingRuleOrder_2">
+        <inputEntry id="InputEntry_ratingRuleOrder_2_1"><text>[40..70]</text></inputEntry>
+        <outputEntry id="OutputEntry_ratingRuleOrder_2_1"><text>"mid"</text></outputEntry>
+        <outputEntry id="OutputEntry_ratingRuleOrder_2_2"><text>2</text></outputEntry>
+      </rule>
+      <rule id="Rule_ratingRuleOrder_3">
+        <inputEntry id="InputEntry_ratingRuleOrder_3_1"><text>&gt; 60</text></inputEntry>
+        <outputEntry id="OutputEntry_ratingRuleOrder_3_1"><text>"high"</text></outputEntry>
+        <outputEntry id="OutputEntry_ratingRuleOrder_3_2"><text>3</text></outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <decision id="gradeFirstBadLater" name="Grade, first, with a later output of the wrong type">
+    <decisionTable id="DecisionTable_gradeFirstBadLater" hitPolicy="FIRST">
+      <input id="Input_gradeFirstBadLater_1" label="Score">
+        <inputExpression id="InputExpression_gradeFirstBadLater_1" typeRef="integer"><text>score</text></inputExpression>
+      </input>
+      <output id="Output_gradeFirstBadLater_grade" name="grade" typeRef="integer" />
+      <rule id="Rule_gradeFirstBadLater_1">
+        <inputEntry id="InputEntry_gradeFirstBadLater_1_1"><text>&lt; 70</text></inputEntry>
+        <outputEntry id="OutputEntry_gradeFirstBadLater_1_1"><text>1</text></outputEntry>
+      </rule>
+      <rule id="Rule_gradeFirstBadLater_2">
+        <inputEntry id="InputEntry_gradeFirstBadLater_2_1"><text>&gt; 50</text></inputEntry>
+        <outputEntry id="OutputEntry_gradeFirstBadLater_2_1"><text>"many"</text></outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <decision id="gradeDefault" name="Grade without a declared hit policy">
+    <decisionTable id="DecisionTable_gradeDefault">
+      <input id="Input_gradeDefault_1" label="Score">
+        <inputExpression id="InputExpression_gradeDefault_1" typeRef="integer"><text>score</text></inputExpression>
+      </input>
+      <output id="Output_gradeDefault_grade" name="grade" typeRef="string" />
+      <rule id="Rule_gradeDefault_1">
+        <inputEntry id="InputEntry_gradeDefault_1_1"><text>&lt; 50</text></inputEntry>
+        <outputEntry id="OutputEntry_gradeDefault_1_1"><text>"low"</text></outputEntry>
+      </rule>
+      <rule id="Rule_gradeDefault_2">
+        <inputEntry id="InputEntry_gradeDefault_2_1"><text>[40..70]</text></inputEntry>
+        <outputEntry id="OutputEntry_gradeDefault_2_1"><text>"mid"</text></outputEntry>
+      </rule>
+      <rule id="Rule_gradeDefault_3">
+        <inputEntry id="InputEntry_gradeDefault_3_1"><text>&gt; 60</text></inputEntry>
+        <outputEntry id="OutputEntry_gradeDefault_3_1"><text>"high"</text></outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <decision id="bands" name="Interval end points">
+    <decisionTable id="DecisionTable_bands" hitPolicy="COLLECT">
+      <input id="Input_bands_1" label="Score">
+        <inputExpression id="InputExpression_bands_1" typeRef="integer"><text>score</text></inputExpression>
+      </input>
+      <output id="Output_bands_band" name="band" typeRef="string" />
+      <rule id="Rule_bands_1">
+        <inputEntry id="InputEntry_bands_1_1"><text>[40..70]</text></inputEntry>
+        <outputEntry id="OutputEntry_bands_1_1"><text>"closed"</text></outputEntry>
+      </rule>
+      <rule id="Rule_bands_2">
+        <inputEntry id="InputEntry_bands_2_1"><text>]40..70[</text></inputEntry>
+        <outputEntry id="OutputEntry_bands_2_1"><text>"open"</text></outputEntry>
+      </rule>
+      <rule id="Rule_bands_3">
+        <inputEntry id="InputEntry_bands_3_1"><text>(40..70]</text></inputEntry>
+        <outputEntry id="OutputEntry_bands_3_1"><text>"leftOpen"</text></outputEntry>
+      </rule>
+      <rule id="Rule_bands_4">
+        <inputEntry id="InputEntry_bands_4_1"><text>[40..70)</text></inputEntry>
+        <outputEntry id="OutputEntry_bands_4_1"><text>"rightOpen"</text></outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <decision id="vipLabel" name="Label by a Boolean">
+    <decisionTable id="DecisionTable_vipLabel" hitPolicy="UNIQUE">
+      <input id="Input_vipLabel_1" label="VIP">
+        <inputExpression id="InputExpression_vipLabel_1" typeRef="boolean"><text>vip</text></inputExpression>
+      </input>
+      <output id="Output_vipLabel_label" name="label" typeRef="string" />
+      <rule id="Rule_vipLabel_1">
+        <inputEntry id="InputEntry_vipLabel_1_1"><text>true</text></inputEntry>
+        <outputEntry id="OutputEntry_vipLabel_1_1"><text>"vip"</text></outputEntry>
+      </rule>
+      <rule id="Rule_vipLabel_2">
+        <inputEntry id="InputEntry_vipLabel_2_1"><text>false</text></inputEntry>
+        <outputEntry id="OutputEntry_vipLabel_2_1"><text>"regular"</text></outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <decision id="channelNull" name="Null test">
+    <decisionTable id="DecisionTable_channelNull" hitPolicy="UNIQUE">
+      <input id="Input_channelNull_1" label="Channel">
+        <inputExpression id="InputExpression_channelNull_1" typeRef="string"><text>channel</text></inputExpression>
+      </input>
+      <output id="Output_channelNull_label" name="label" typeRef="string" />
+      <rule id="Rule_channelNull_1">
+        <inputEntry id="InputEntry_channelNull_1_1"><text>null</text></inputEntry>
+        <outputEntry id="OutputEntry_channelNull_1_1"><text>"none"</text></outputEntry>
+      </rule>
+      <rule id="Rule_channelNull_2">
+        <inputEntry id="InputEntry_channelNull_2_1"><text>"branch"</text></inputEntry>
+        <outputEntry id="OutputEntry_channelNull_2_1"><text>"branch"</text></outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <decision id="notBranch" name="Negated literal">
+    <decisionTable id="DecisionTable_notBranch" hitPolicy="UNIQUE">
+      <input id="Input_notBranch_1" label="Channel">
+        <inputExpression id="InputExpression_notBranch_1" typeRef="string"><text>channel</text></inputExpression>
+      </input>
+      <output id="Output_notBranch_label" name="label" typeRef="string" />
+      <rule id="Rule_notBranch_1">
+        <inputEntry id="InputEntry_notBranch_1_1"><text>not("branch")</text></inputEntry>
+        <outputEntry id="OutputEntry_notBranch_1_1"><text>"other"</text></outputEntry>
+      </rule>
+      <rule id="Rule_notBranch_2">
+        <inputEntry id="InputEntry_notBranch_2_1"><text>"branch"</text></inputEntry>
+        <outputEntry id="OutputEntry_notBranch_2_1"><text>"branch"</text></outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <decision id="notSmall" name="Negated comparison">
+    <decisionTable id="DecisionTable_notSmall" hitPolicy="UNIQUE">
+      <input id="Input_notSmall_1" label="Score">
+        <inputExpression id="InputExpression_notSmall_1" typeRef="integer"><text>score</text></inputExpression>
+      </input>
+      <output id="Output_notSmall_label" name="label" typeRef="string" />
+      <rule id="Rule_notSmall_1">
+        <inputEntry id="InputEntry_notSmall_1_1"><text>not(&lt; 5)</text></inputEntry>
+        <outputEntry id="OutputEntry_notSmall_1_1"><text>"big"</text></outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <decision id="fiveish" name="Decimal literals against an Integer">
+    <decisionTable id="DecisionTable_fiveish" hitPolicy="COLLECT">
+      <input id="Input_fiveish_1" label="Score">
+        <inputExpression id="InputExpression_fiveish_1" typeRef="integer"><text>score</text></inputExpression>
+      </input>
+      <output id="Output_fiveish_label" name="label" typeRef="string" />
+      <rule id="Rule_fiveish_1">
+        <inputEntry id="InputEntry_fiveish_1_1"><text>5.0</text></inputEntry>
+        <outputEntry id="OutputEntry_fiveish_1_1"><text>"exact"</text></outputEntry>
+      </rule>
+      <rule id="Rule_fiveish_2">
+        <inputEntry id="InputEntry_fiveish_2_1"><text>[4.5..5.5]</text></inputEntry>
+        <outputEntry id="OutputEntry_fiveish_2_1"><text>"near"</text></outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <decision id="signs" name="Signed numeric text">
+    <decisionTable id="DecisionTable_signs" hitPolicy="UNIQUE">
+      <input id="Input_signs_1" label="Score">
+        <inputExpression id="InputExpression_signs_1" typeRef="integer"><text>score</text></inputExpression>
+      </input>
+      <output id="Output_signs_label" name="label" typeRef="string" />
+      <rule id="Rule_signs_1">
+        <inputEntry id="InputEntry_signs_1_1"><text>7</text></inputEntry>
+        <outputEntry id="OutputEntry_signs_1_1"><text>"seven"</text></outputEntry>
+      </rule>
+      <rule id="Rule_signs_2">
+        <inputEntry id="InputEntry_signs_2_1"><text>0</text></inputEntry>
+        <outputEntry id="OutputEntry_signs_2_1"><text>"zero"</text></outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <decision id="numberText" name="A number output under string">
+    <decisionTable id="DecisionTable_numberText" hitPolicy="UNIQUE">
+      <input id="Input_numberText_1" label="Score">
+        <inputExpression id="InputExpression_numberText_1" typeRef="integer"><text>score</text></inputExpression>
+      </input>
+      <output id="Output_numberText_label" name="label" typeRef="string" />
+      <rule id="Rule_numberText_1">
+        <inputEntry id="InputEntry_numberText_1_1"><text>-</text></inputEntry>
+        <outputEntry id="OutputEntry_numberText_1_1"><text>5</text></outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <decision id="dashes" name="Dash and empty entries">
+    <decisionTable id="DecisionTable_dashes" hitPolicy="UNIQUE">
+      <input id="Input_dashes_1" label="Score">
+        <inputExpression id="InputExpression_dashes_1" typeRef="integer"><text>score</text></inputExpression>
+      </input>
+      <input id="Input_dashes_2" label="Channel">
+        <inputExpression id="InputExpression_dashes_2" typeRef="string"><text>channel</text></inputExpression>
+      </input>
+      <output id="Output_dashes_label" name="label" typeRef="string" />
+      <rule id="Rule_dashes_1">
+        <inputEntry id="InputEntry_dashes_1_1"><text>-</text></inputEntry>
+        <inputEntry id="InputEntry_dashes_1_2"><text/></inputEntry>
+        <outputEntry id="OutputEntry_dashes_1_1"><text>"both"</text></outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
 </definitions>

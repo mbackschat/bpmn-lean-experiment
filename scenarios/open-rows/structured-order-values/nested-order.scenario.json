@@ -144,8 +144,8 @@
                 "name": "total",
                 "value": {
                   "kind": "decimal",
-                  "coefficient": "1250",
-                  "scale": 2
+                  "coefficient": "125",
+                  "scale": 1
                 }
               }
             ]

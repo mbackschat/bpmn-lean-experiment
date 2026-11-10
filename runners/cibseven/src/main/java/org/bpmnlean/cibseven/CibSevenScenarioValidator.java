@@ -9,6 +9,7 @@ import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
+import java.util.List;
 import java.util.Objects;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
@@ -16,7 +17,7 @@ import javax.xml.stream.XMLStreamException;
 import org.bpmnlean.cibseven.ScenarioProtocol.ScenarioDefinition;
 import org.bpmnlean.cibseven.ScenarioProtocol.Start;
 
-/** Validates the closed scenario shape and binds its content-addressed BPMN resource. */
+/** Validates the closed scenario shape and binds its content-addressed BPMN and DMN resources. */
 final class CibSevenScenarioValidator {
 
   private static final String BPMN_MODEL = "http://www.omg.org/spec/BPMN/20100524/MODEL";
@@ -44,17 +45,25 @@ final class CibSevenScenarioValidator {
     var bpmnPath = projectRoot.resolve(scenario.bpmn().relativePath()).normalize();
     requireContainedByProject(projectRoot, bpmnPath);
     verifySha256(bpmnPath, scenario.bpmn().sha256());
-    requireRealizable(bpmnPath);
-    return new ValidatedScenario(start, bpmnPath);
+    var decisionPaths = scenario.bpmn().declaredDecisions().stream()
+        .map(decision -> projectRoot.resolve(decision.relativePath()).normalize())
+        .toList();
+    for (var index = 0; index < decisionPaths.size(); index++) {
+      requireContainedByProject(projectRoot, decisionPaths.get(index));
+      verifySha256(decisionPaths.get(index), scenario.bpmn().declaredDecisions().get(index).sha256());
+    }
+    requireRealizable(bpmnPath, !decisionPaths.isEmpty());
+    return new ValidatedScenario(start, bpmnPath, decisionPaths);
   }
 
   /**
    * Refuses a model whose behaviour this runner's environment cannot give faithfully. The engine has no JSR-223 script
-   * engine (adding one is a dependency decision), and a scenario deploys one BPMN resource, so a referenced DMN decision
-   * is never deployed. CIB would answer both with an engine exception that the runner records as a rolled-back command,
-   * an answer of this environment, not of CIB; refusing here keeps them harness failures.
+   * engine (adding one is a dependency decision), and a scenario that binds no DMN resource deploys none, so a
+   * referenced DMN decision is never deployed. CIB would answer both with an engine exception that the runner records as
+   * a rolled-back command, an answer of this environment, not of CIB; refusing here keeps them harness failures. A
+   * scenario that binds DMN resources deploys them with the model, so a decision it still lacks is CIB's answer.
    */
-  private static void requireRealizable(Path bpmnPath) throws IOException {
+  private static void requireRealizable(Path bpmnPath, boolean decisionsDeployed) throws IOException {
     // A streaming scan, not the model API: the model API validates against the XSD and refuses documents CIB's own
     // deployment parser accepts, which would turn CIB's answer for them into a harness failure.
     var factory = XMLInputFactory.newFactory();
@@ -91,7 +100,7 @@ final class CibSevenScenarioValidator {
     if (script) {
       throw new IllegalStateException("A script has no realization in this runner: " + bpmnPath.getFileName());
     }
-    if (decision) {
+    if (decision && !decisionsDeployed) {
       throw new IllegalStateException("A DMN decision has no realization in this runner: " + bpmnPath.getFileName());
     }
   }
@@ -101,7 +110,7 @@ final class CibSevenScenarioValidator {
     var realRoot = projectRoot.toRealPath();
     var realResource = resource.toRealPath();
     if (!realResource.startsWith(realRoot)) {
-      throw new IllegalArgumentException("BPMN resource escapes project root: " + resource);
+      throw new IllegalArgumentException("Scenario resource escapes project root: " + resource);
     }
   }
 
@@ -114,12 +123,12 @@ final class CibSevenScenarioValidator {
       var actual = HexFormat.of().formatHex(digest.digest());
       if (!actual.equals(expected)) {
         throw new IllegalArgumentException(
-            "BPMN SHA-256 mismatch for " + path + ": expected " + expected + ", got " + actual);
+            "Resource SHA-256 mismatch for " + path + ": expected " + expected + ", got " + actual);
       }
     } catch (NoSuchAlgorithmException impossible) {
       throw new IllegalStateException("Java runtime does not provide SHA-256", impossible);
     }
   }
 
-  record ValidatedScenario(Start start, Path bpmnPath) {}
+  record ValidatedScenario(Start start, Path bpmnPath, List<Path> decisionPaths) {}
 }

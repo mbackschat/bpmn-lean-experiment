@@ -46,7 +46,7 @@ function program(target: string, declared: readonly string[]): Json {
           },
         },
       },
-      { event: { header: header("End", "endEvent"), payload: { role: { throw: { record: "none" } }, placement: "finish", incoming: ["To_End"], outgoing: [] } } },
+      { event: { header: header("End", "endEvent"), payload: { role: { throw: { record: "none" } }, placement: "finish", incoming: ["To_End"], outgoing: [], alternativeThrows: [] } } },
     ],
     flows: [
       { id: "To_Task", source: "Start", target: "Task", condition: null },

@@ -14,15 +14,23 @@ import {
   ConditionOrder, ContinuationFailure, DeliveryVariables, ErrorPathOutputs, Evaluator, MessageCorrelation,
   MultiInstanceFinalBody, MultiInstanceOutputs, type ProfileOptions, SubmissionRule, TechnicalFailure, UndeclaredWrite,
   UnhandledError, ErrorCatchVariables,
-  MultiInstanceBinding, ResultValues,
+  MultiInstanceBinding, ResultValues, OutputContext,
 } from "./types/options.js";
-import type { JuelNode } from "./types/juel.js";
+import {
+  ExpressionTag, MappingDialect, SimpleBooleanTag, ValueSourceTag, ValueTag, type Expression, type Mapping,
+  type SimpleBoolean, type Value, type ValueSource,
+} from "./types/expression.js";
+import type { Decision, DecisionResource } from "./types/decision.js";
 export {
   AbnormalScopeEnd, CallBindingTime, type CompensationHandlerFailure, CompensationHandlerFailureTag, CompensationOrder,
   ConditionOrder, ContinuationFailure, DeliveryVariables, ErrorPathOutputs, Evaluator, MessageCorrelation,
   MultiInstanceFinalBody, MultiInstanceOutputs, type ProfileOptions, SubmissionRule, TechnicalFailure, UndeclaredWrite,
   UnhandledError, ErrorCatchVariables,
-  MultiInstanceBinding, ResultValues,
+  MultiInstanceBinding, ResultValues, OutputContext,
+};
+export {
+  ExpressionTag, MappingDialect, SimpleBooleanTag, ValueSourceTag, ValueTag, type Expression, type Mapping,
+  type SimpleBoolean, type Value, type ValueSource,
 };
 
 export type ElementId = string;
@@ -84,78 +92,6 @@ export function utf8ByteSize(text: string): number {
 /** Lean's `List.eraseDups` length: the number of distinct members. */
 export function distinctCount<T>(items: readonly T[]): number { return new Set(items).size; }
 
-/** A typed data value, as the scenario contract's `variableValue` carries it; the one nested type. */
-export enum ValueTag {
-  Null = "null",
-  Bool = "bool",
-  Int = "int",
-  Decimal = "decimal",
-  String = "string",
-  StringList = "stringList",
-  List = "list",
-  Map = "map",
-}
-
-export type Value =
-  | { readonly tag: ValueTag.Null }
-  | { readonly tag: ValueTag.Bool; readonly value: boolean }
-  | { readonly tag: ValueTag.Int; readonly value: number }
-  | { readonly tag: ValueTag.Decimal; readonly coefficient: bigint; readonly scale: number }
-  | { readonly tag: ValueTag.String; readonly value: string }
-  | { readonly tag: ValueTag.StringList; readonly items: readonly string[] }
-  | { readonly tag: ValueTag.List; readonly items: readonly Value[] }
-  | { readonly tag: ValueTag.Map; readonly entries: readonly (readonly [string, Value])[] };
-
-/** The Simple Boolean subset, evaluated inside the kernel ([decision](../../../../docs/SIMPLE-BOOLEAN-EXPRESSION-DECISION.md)). */
-export enum SimpleBooleanTag {
-  Literal = "literal",
-  IsPresent = "isPresent",
-  IsNull = "isNull",
-  StringEquals = "stringEquals",
-}
-
-export type SimpleBoolean =
-  | { readonly tag: SimpleBooleanTag.Literal; readonly value: boolean }
-  | { readonly tag: SimpleBooleanTag.IsPresent; readonly name: string }
-  | { readonly tag: SimpleBooleanTag.IsNull; readonly name: string }
-  | { readonly tag: SimpleBooleanTag.StringEquals; readonly name: string; readonly value: string };
-
-/** An expression; the kernel evaluates every arm but `foreign`, unread text, and `juel` only under `Evaluator.juel`. */
-export enum ExpressionTag {
-  Literal = "literal",
-  SimpleBoolean = "simpleBoolean",
-  Variable = "variable",
-  Juel = "juel",
-  Foreign = "foreign",
-}
-
-export type Expression =
-  | { readonly tag: ExpressionTag.Literal; readonly value: Value }
-  | { readonly tag: ExpressionTag.SimpleBoolean; readonly body: SimpleBoolean }
-  | { readonly tag: ExpressionTag.Variable; readonly name: string }
-  | { readonly tag: ExpressionTag.Juel; readonly nodes: readonly JuelNode[] }
-  | { readonly tag: ExpressionTag.Foreign; readonly language: string; readonly source: string };
-
-/** A configuration value given either literally or by an expression. */
-export enum ValueSourceTag { Literal = "literal", Expression = "expression" }
-
-export type ValueSource =
-  | { readonly tag: ValueSourceTag.Literal; readonly value: string }
-  | { readonly tag: ValueSourceTag.Expression; readonly body: Expression };
-
-/**
- * Which syntax wrote a mapping, which settles what an unset source means: an unavailable Data Input (BPMN 2.0.2
- * §10.4.2), an unresolved `camunda:inputParameter`, `outputParameter` or `camunda:in`/`out` `sourceExpression`
- * expression, or a `camunda:in`/`out` `source` copy that reads null (CIB-EXT-0021).
- */
-export enum MappingDialect {
-  DataAssociation = "dataAssociation",
-  IoParameter = "ioParameter",
-  CallVariable = "callVariable",
-}
-
-/** `target := source`, evaluated in the scope the owning element names. */
-export interface Mapping { readonly target: string; readonly source: Expression; readonly dialect: MappingDialect; }
 
 // Subscriptions
 
@@ -226,7 +162,16 @@ export type Trigger =
   | { readonly tag: TriggerTag.Compensation }
   | { readonly tag: TriggerTag.Cancel };
 
-export interface Subscription { readonly trigger: Trigger; readonly outputs: readonly Mapping[]; }
+/**
+ * `alternatives` are a Multiple Event's definitions after the first, in document order, and `parallelMultiple` its
+ * Parallel Multiple mark (BPMN 2.0.2 §10.5.1); admission refuses both (CIB-LIM-0008).
+ */
+export interface Subscription {
+  readonly trigger: Trigger;
+  readonly outputs: readonly Mapping[];
+  readonly alternatives: readonly Trigger[];
+  readonly parallelMultiple: boolean;
+}
 
 export interface Boundary {
   readonly id: ElementId;
@@ -296,7 +241,8 @@ export interface UserWork {
   readonly priority: ValueSource | null;
 }
 
-export interface ReceiveWork { readonly message: MessageTrigger; }
+/** `instantiate` marks a Receive Task that instantiates its Process (BPMN 2.0.2 §10.3.3, Table 10.10). */
+export interface ReceiveWork { readonly message: MessageTrigger; readonly instantiate: boolean; }
 
 export interface ServiceWork { readonly protocol: string; readonly operation: string; }
 
@@ -338,13 +284,11 @@ export enum DecisionResultMapping {
 }
 
 export interface RuleWork {
-  // guard-exception(19): a Business Rule Task is refused whole (`work.rule`, admission/work.ts).
   readonly decision: ValueSource;
-  // guard-exception(19): refused with its Business Rule Task, as `decision` above.
   readonly resultVariable: string | null;
   readonly binding: CallBinding;
-  // guard-exception(19): refused with its Business Rule Task, as `decision` above.
   readonly resultMapping: DecisionResultMapping;
+  readonly tenant: ValueSource | null;
 }
 
 export interface CallWork {
@@ -475,12 +419,20 @@ export type EventRole =
   | { readonly tag: EventRoleTag.LinkCatch; readonly name: string }
   | { readonly tag: EventRoleTag.LinkThrow; readonly name: string };
 
+/** `alternativeThrows` are a Multiple throw Event's definitions after the first, in document order (BPMN 2.0.2 §10.5.1). */
 export interface EventPayload {
   readonly role: EventRole;
   readonly placement: Placement;
   readonly incoming: readonly FlowId[];
   readonly outgoing: readonly FlowId[];
+  readonly alternativeThrows: readonly Throw[];
 }
+
+/**
+ * How an Event-Based Gateway begins (BPMN 2.0.2 §10.6.6): `instantiate="false"` is `none`; `instantiate="true"` is
+ * `exclusive`, or `parallel` with `eventGatewayType="Parallel"`, which also reads `parallel` without `instantiate`.
+ */
+export enum EventGatewayInstantiation { None = "none", Exclusive = "exclusive", Parallel = "parallel" }
 
 /**
  * Guarded type: `feature/flow` owns matching on it. Conditional candidates keep document order; a Sequence Flow's
@@ -497,7 +449,7 @@ export type GatewayKind =
   | { readonly tag: GatewayKindTag.Exclusive; readonly candidates: readonly FlowId[]; readonly default: FlowId | null }
   | { readonly tag: GatewayKindTag.Parallel }
   | { readonly tag: GatewayKindTag.Inclusive; readonly candidates: readonly FlowId[]; readonly default: FlowId | null }
-  | { readonly tag: GatewayKindTag.EventBased };
+  | { readonly tag: GatewayKindTag.EventBased; readonly instantiation: EventGatewayInstantiation };
 
 export interface GatewayPayload {
   readonly kind: GatewayKind;
@@ -568,6 +520,8 @@ export interface CalledProcess {
    * Outputs. They are declared at the instance root before any value is bound (BPMN 2.0.2 §10.4.1).
    */
   readonly variables: readonly string[];
+  /** Table 10.1 `isExecutable`, absent read as `false`. */
+  readonly executable: boolean;
 }
 
 /**
@@ -581,6 +535,10 @@ export interface Program {
   readonly flows: readonly Flow[];
   readonly variables: readonly string[];
   readonly processes: readonly CalledProcess[];
+  /** Table 10.1 `isExecutable` of the root process, absent read as `false`. */
+  readonly executable: boolean;
+  /** The DMN resources deployed with the source, which a Business Rule Task's `decisionRef` names. */
+  readonly decisionResources: readonly DecisionResource[];
 }
 
 // Queries: read-only projections of a `Program`, in this module so that no module beyond the three hubs has more than
@@ -866,6 +824,14 @@ export function programCalledProcess(program: Program, key: string): CalledProce
     if (chosen === null || (chosen.definition.version ?? 0) < (process.definition.version ?? 0)) chosen = process;
   }
   return chosen;
+}
+
+/**
+ * The decision a DMN resource the program carries declares under `key`; admission refuses a key two resources declare
+ * (`decision.duplicateId`).
+ */
+export function programDecision(program: Program, key: string): Decision | null {
+  return program.decisionResources.flatMap((resource) => resource.decisions).find((decision) => decision.id === key) ?? null;
 }
 
 /**

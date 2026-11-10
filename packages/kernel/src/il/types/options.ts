@@ -138,6 +138,14 @@ export enum ResultValues {
   ActivityLocals = "activityLocals",
 }
 
+/** What an Activity's output mappings read besides the values its completion or effect result submits. */
+export enum OutputContext {
+  /** BPMN 2.0.2 §10.4.2: nothing; the outputs map the submitted values alone. */
+  Submission = "submission",
+  /** CIB-EXT-0031: the variables visible from the Activity's own scope, its captured inputs first. */
+  ActivityScope = "activityScope",
+}
+
 export interface ProfileOptions {
   readonly relations: readonly string[];
   readonly evaluator: Evaluator;
@@ -167,4 +175,5 @@ export interface ProfileOptions {
   readonly timerZone: string | null;
   readonly multiInstanceBinding: MultiInstanceBinding;
   readonly effectResultValues: ResultValues;
+  readonly outputContext: OutputContext;
 }

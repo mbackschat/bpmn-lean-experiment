@@ -2,7 +2,7 @@
 
 ## Status
 
-This is the interpretation for PC-AUTO-07. Its cold interpretation review ([review rule](../ARCHITECTURE-SPEC.md#review)) returned "approved with required changes" on 2026-11-10, and this revision carries those changes. No code exists for it yet; PC-AUTO-08 executes it.
+This is the interpretation for PC-AUTO-07. Its cold interpretation review ([review rule](../ARCHITECTURE-SPEC.md#review)) returned "approved with required changes" on 2026-11-10, and this revision carries those changes. The kernel, admission and reader code implement it (track M3, 2026-11-10); the CIB evidence for its witnesses is still to be retaken.
 
 The [owner decision](../ARCHITECTURE-SPEC.md#owner-decisions-on-the-path) of 2026-11-08 binds it:
 
@@ -65,7 +65,7 @@ The admitted Business Rule Task has:
 - an absent `mapDecisionResult` (meaning `resultList`) or one of the four mapper names;
 - no input or output mappings and no Multi-Instance body. A later row admits those.
 
-A `decisionRef` takes precedence over a delegate, as in CIB, and the delegate attribute CIB ignores is refused as `reader.factNotCarried`. The legacy `resultVariableName` alias is refused as `reader.unknownAttribute`.
+A `decisionRef` takes precedence over a delegate, as in CIB, and the delegate attribute CIB ignores is refused as `reader.factNotCarried`. The legacy `resultVariableName` alias is refused as `reader.factNotCarried`, like every Camunda attribute the reader declares but does not carry.
 
 ### 2. Admitted DMN resource
 
@@ -150,7 +150,7 @@ So `not("a")` matches a null input, and `not(< 5)` does not. The witnesses fix b
   - `singleResult` gives a `map`;
   - `collectEntries` gives a `list` of values;
   - `resultList` gives a `list` of `map`s.
-- Entry order is not part of the comparison, because CIB's maps are unordered.
+- Entry order is not part of the comparison, because CIB's maps are unordered; the kernel writes a `map` in the Data domain's key order.
 - With a result variable, the value is written by the nearest-owner rule. Since no mapping is admitted, no task-local binding of that name exists. Without a result variable nothing is written, because `decisionResult` is transient.
 - How the differential projects CIB's Java collections onto these kinds is the [witness README](../../../scenarios/open-rows/business-rule-hit-policies/README.md)'s observation boundary.
 
@@ -286,7 +286,8 @@ structure DecisionResource where
 | `work.rule.decisionMissing` | a `decisionRef` that no carried resource declares |
 | `work.rule.resultVariable` | `resultVariable="decisionResult"`, which CIB writes onto the transient task-local |
 | `reader.unknownAttributeValue` (existing) | an unknown `mapDecisionResult`, which is a deployment error in CIB |
-| `reader.unknownAttribute` (existing) | `resultVariableName` and every other undeclared attribute |
+| `reader.factNotCarried` (existing) | `resultVariableName` |
+| `reader.unknownAttribute` (existing) | an attribute in a foreign namespace on a DMN element; an undeclared unprefixed one is a parser warning |
 | `decision.namespace`, `decision.expressionLanguage` | a DMN namespace other than 1.3; any `expressionLanguage` other than FEEL 1.3 on `definitions` |
 | `decision.duplicateId` | one decision id in two carried resources |
 | `decision.logic`, `decision.requirements` | a decision that is not a table; information requirements |

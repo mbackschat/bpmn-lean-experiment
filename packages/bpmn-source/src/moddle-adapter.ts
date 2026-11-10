@@ -169,7 +169,7 @@ export function parserFailureDiagnostics(
   ];
 }
 
-function withDeadline<T>(
+export function withDeadline<T>(
   operation: () => Promise<T>,
   timeoutMs: number,
   operationName: string,

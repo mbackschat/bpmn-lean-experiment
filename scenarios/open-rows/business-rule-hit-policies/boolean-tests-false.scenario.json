@@ -1,0 +1,51 @@
+{
+  "kind": "scenario",
+  "id": "business-rule-hit-policies-boolean-tests-false",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "business-rule-hit-policies-process",
+    "relativePath": "scenarios/open-rows/business-rule-hit-policies/hit-policies.bpmn",
+    "sha256": "5fb3a34d10faba7540cdcc132a0c0227b96f70a41307f4f88305fa21b870d16d",
+    "sourceOverlay": null,
+    "decisions": [
+      {
+        "relativePath": "scenarios/open-rows/business-rule-hit-policies/decisions.dmn",
+        "sha256": "6970d9c8df6258f293cf96d6c6fabe03f3bac8a6bbcc008a205aba9d89b26a2b"
+      }
+    ]
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start",
+      "instanceId": "Applicant_1",
+      "variables": [
+        {
+          "name": "policy",
+          "value": {
+            "kind": "string",
+            "value": "boolean"
+          }
+        },
+        {
+          "name": "vip",
+          "value": {
+            "kind": "boolean",
+            "value": false
+          }
+        }
+      ]
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.3"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/DmnBusinessRuleTaskActivityBehavior.java",
+      "engine-dmn/engine/src/main/java/org/cibseven/bpm/dmn/engine/impl/evaluation/DecisionTableEvaluationHandler.java",
+      "engine-dmn/engine/src/main/java/org/cibseven/bpm/dmn/engine/impl/type/BooleanDataTypeTransformer.java"
+    ]
+  }
+}

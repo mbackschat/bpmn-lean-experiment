@@ -2,6 +2,8 @@ module
 
 public import Kernel.IL.Types.Options
 public import Kernel.IL.Types.Juel
+public import Kernel.IL.Types.Expression
+public import Kernel.IL.Types.Decision
 
 /-! # Kernel IL
 
@@ -25,59 +27,6 @@ structure ElementId where
 structure FlowId where
   value : String
   deriving DecidableEq, Hashable, Repr, Inhabited
-
-/-- A typed data value, as the scenario contract's `variableValue` carries it. -/
-inductive Value where
-  | null
-  | bool (value : Bool)
-  | int (value : Int)
-  | decimal (coefficient : Int) (scale : Nat)
-  | string (value : String)
-  | stringList (items : List String)
-  | list (items : List Value)
-  | map (entries : List (String × Value))
-  deriving Repr, Inhabited
-
-/-- The Simple Boolean subset, evaluated inside the kernel
-([decision](../../docs/SIMPLE-BOOLEAN-EXPRESSION-DECISION.md)). -/
-inductive SimpleBoolean where
-  | literal (value : Bool)
-  | isPresent (name : String)
-  | isNull (name : String)
-  | stringEquals (name value : String)
-  deriving DecidableEq, Repr
-
-/-- An expression. `literal`, `simpleBoolean`, `variable` and `juel` are evaluated by the kernel, `juel` only under
-`Evaluator.juel`; admission refuses `foreign`, a text the reader could not read. -/
-inductive Expression where
-  | literal (value : Value)
-  | simpleBoolean (body : SimpleBoolean)
-  | variable (name : String)
-  | juel (nodes : List JuelNode)
-  | foreign (language source : String)
-  deriving Repr
-
-/-- A configuration value given either literally or by an expression. -/
-inductive ValueSource where
-  | literal (value : String)
-  | expression (body : Expression)
-  deriving Repr
-
-/-- Which syntax wrote a mapping, which settles what an unset source means: an unavailable Data Input
-(BPMN 2.0.2 §10.4.2), an unresolved `camunda:inputParameter`, `outputParameter` or `camunda:in`/`out`
-`sourceExpression` expression, or a `camunda:in`/`out` `source` copy that reads null (CIB-EXT-0021). -/
-inductive MappingDialect where
-  | dataAssociation
-  | ioParameter
-  | callVariable
-  deriving DecidableEq, Repr
-
-/-- `target := source`, evaluated in the scope the owning element names. -/
-structure Mapping where
-  target : String
-  source : Expression
-  dialect : MappingDialect := .dataAssociation
-  deriving Repr
 
 /-! ## Subscriptions -/
 
@@ -146,9 +95,13 @@ inductive Trigger where
   | cancel
   deriving Repr
 
+/-- `alternatives` are a Multiple Event's definitions after the first, in document order, and `parallelMultiple` its
+Parallel Multiple mark (BPMN 2.0.2 §10.5.1); admission refuses both (CIB-LIM-0008). -/
 structure Subscription where
   trigger : Trigger
   outputs : List Mapping := []
+  alternatives : List Trigger := []
+  parallelMultiple : Bool := false
   deriving Repr
 
 structure Boundary where
@@ -220,8 +173,10 @@ structure UserWork where
   priority : Option ValueSource := none
   deriving Repr
 
+/-- `instantiate` marks a Receive Task that instantiates its Process (BPMN 2.0.2 §10.3.3, Table 10.10). -/
 structure ReceiveWork where
   message : MessageTrigger
+  instantiate : Bool := false
   deriving Repr
 
 structure ServiceWork where
@@ -262,6 +217,7 @@ structure RuleWork where
   resultVariable : Option String := none
   binding : CallBinding := .latest
   resultMapping : DecisionResultMapping := .resultList
+  tenant : Option ValueSource := none
   deriving Repr
 
 structure CallWork where
@@ -385,11 +341,22 @@ inductive EventRole where
   | linkThrow (name : String)
   deriving Repr
 
+/-- `alternativeThrows` are a Multiple throw Event's definitions after the first, in document order (BPMN 2.0.2
+§10.5.1). -/
 structure EventPayload where
   role : EventRole
   placement : Placement
   incoming : List FlowId := []
   outgoing : List FlowId := []
+  alternativeThrows : List Throw := []
+  deriving Repr
+
+/-- How an Event-Based Gateway begins (BPMN 2.0.2 §10.6.6): `instantiate="false"` is `none`; `instantiate="true"` is
+`exclusive`, or `parallel` with `eventGatewayType="Parallel"`, which also reads `parallel` without `instantiate`. -/
+inductive EventGatewayInstantiation where
+  | none
+  | exclusive
+  | parallel
   deriving Repr
 
 /-- Guarded type: `Kernel.Feature.Flow` owns matching on it. Conditional candidates keep document order; a Sequence
@@ -398,7 +365,7 @@ inductive GatewayKind where
   | exclusive (candidates : List FlowId) (default : Option FlowId)
   | parallel
   | inclusive (candidates : List FlowId) (default : Option FlowId)
-  | eventBased
+  | eventBased (instantiation : EventGatewayInstantiation)
   deriving Repr
 
 structure GatewayPayload where
@@ -467,6 +434,8 @@ structure CalledProcess where
   /-- The item names the process declares: its Properties, Data Objects and their references, and its own Data Inputs
   and Outputs. They are declared at the instance root before any value is bound (BPMN 2.0.2 §10.4.1). -/
   variables : List String := []
+  /-- Table 10.1 `isExecutable`, absent read as `false`. -/
+  executable : Bool := true
   deriving Repr
 
 /-- `processes` lists the called processes; every other parentless element belongs to the root process, whose
@@ -478,6 +447,10 @@ structure Program where
   flows : List Flow
   variables : List String := []
   processes : List CalledProcess := []
+  /-- Table 10.1 `isExecutable` of the root process, absent read as `false`. -/
+  executable : Bool := true
+  /-- The DMN resources deployed with the source, which a Business Rule Task's `decisionRef` names. -/
+  decisionResources : List DecisionResource := []
 
 /-! ## Queries
 
@@ -699,6 +672,11 @@ def calledProcess? (program : Program) (key : String) : Option CalledProcess :=
     | none => some process
     | some current =>
       if (current.definition.version.getD 0) < (process.definition.version.getD 0) then some process else chosen) none
+
+/-- The decision a DMN resource the program carries declares under `key`; admission refuses a key two resources
+declare (`decision.duplicateId`). -/
+def decision? (program : Program) (key : String) : Option Decision :=
+  (program.decisionResources.flatMap (·.decisions)).find? (·.id == key)
 
 /-- The identifier publication and addressing show for an element: the one its author wrote. A boundary has no header
 and keeps its identifier. -/

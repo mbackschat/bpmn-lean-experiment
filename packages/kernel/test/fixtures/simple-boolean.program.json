@@ -30,7 +30,7 @@
     "callBindingTime": "programAssembly",
     "timerZone": null,
     "multiInstanceBinding": "dataAssociations",
-    "effectResultValues": "outputSet"
+    "effectResultValues": "outputSet", "outputContext": "submission"
   },
   "elements": [
     {
@@ -86,7 +86,8 @@
           "incoming": [
             "Flow_Default_End"
           ],
-          "outgoing": []
+          "outgoing": [],
+          "alternativeThrows": []
         }
       }
     },
@@ -111,7 +112,8 @@
           "incoming": [
             "Flow_First_End"
           ],
-          "outgoing": []
+          "outgoing": [],
+          "alternativeThrows": []
         }
       }
     },
@@ -136,7 +138,8 @@
           "incoming": [
             "Flow_Second_End"
           ],
-          "outgoing": []
+          "outgoing": [],
+          "alternativeThrows": []
         }
       }
     },
@@ -359,5 +362,7 @@
     }
   ],
   "variables": [],
-  "processes": []
+  "processes": [],
+  "executable": true,
+  "decisionResources": []
 }

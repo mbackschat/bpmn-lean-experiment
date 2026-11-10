@@ -47,9 +47,67 @@ const eventScopeVariables = { errorCatchVariables: "eventScope" };
 const onTransaction = (over: Json = {}) =>
   task(scope("T", { transaction: { payload: { method: "compensate" } } }, {}, { boundaries: [boundary("B", cancelTrigger, over)] }));
 const correlated = (...criteria: Json[]) => message(channel({ correlation: criteria }));
+
+/** `value` with every subscription it carries given `alternatives` and `parallelMultiple`. */
+function marked(value: unknown, alternatives: Array<Json | string>, parallelMultiple: boolean): unknown {
+  if (Array.isArray(value)) return value.map((item) => marked(item, alternatives, parallelMultiple));
+  if (value === null || typeof value !== "object") return value;
+  const object = Object.fromEntries(Object.entries(value).map(([name, item]) => [name, marked(item, alternatives, parallelMultiple)]));
+  return "trigger" in object && "alternatives" in object ? { ...object, alternatives, parallelMultiple } : object;
+}
+
+/**
+ * `placed`, its subscription a Multiple Event when it has `alternatives`, a Parallel Multiple one when `parallelMultiple`
+ * (BPMN 2.0.2 §10.5.1); pinned CIB keeps one definition and never reads `parallelMultiple` (CIB-LIM-0008).
+ */
+const multiple = (placed: (program: Json) => Json, alternatives: Array<Json | string>, parallelMultiple = false) =>
+  (program: Json): Json => marked(placed(program), alternatives, parallelMultiple) as Json;
 const key = criterion("k", variable("x"));
 
 export const rows: readonly Row[] = [
+  // Multiple and Parallel Multiple Events.
+  {
+    code: "event.multipleDefinitions",
+    description: "a catch Event with a Message and a Timer definition",
+    mutate: multiple(catching(named), [duration("PT1S")]),
+    control: catching(named),
+  },
+  {
+    code: "event.multipleDefinitions",
+    description: "a boundary with a Message and a Timer definition",
+    mutate: multiple(bounded(named), [duration("PT1S")]),
+    control: bounded(named),
+  },
+  {
+    code: "event.multipleDefinitions",
+    description: "a process start with a Message and a Timer definition",
+    mutate: multiple(starting(named), [duration("PT1S")]),
+    control: starting(named),
+  },
+  {
+    code: "event.multipleDefinitions",
+    description: "an Event Sub-Process start with an Error and an Escalation definition",
+    mutate: multiple(nested(errorTrigger()), [escalationTrigger()]),
+    control: nested(errorTrigger()),
+  },
+  {
+    code: "event.multipleDefinitions",
+    description: "an Event Sub-Process kind started by a Message and a Timer definition",
+    mutate: multiple(eventSubProcessOn(named, false), [duration("PT1S")]),
+    control: eventSubProcessOn(named, false),
+  },
+  {
+    code: "event.parallelMultiple",
+    description: "a Parallel Multiple catch Event with one definition",
+    mutate: multiple(catching(named), [], true),
+    control: catching(named),
+  },
+  {
+    code: "event.parallelMultiple",
+    description: "a Parallel Multiple boundary with two definitions",
+    mutate: multiple(bounded(named), [duration("PT1S")], true),
+    control: bounded(named),
+  },
   // Timers.
   {
     code: "timer.duration",

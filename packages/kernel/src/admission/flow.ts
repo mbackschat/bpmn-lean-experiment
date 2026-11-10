@@ -3,6 +3,7 @@
  * carries a stable code. A start's trigger is admitted by `admission/subscriptions.ts`.
  */
 import {
+  EventGatewayInstantiation,
   GatewayKindTag,
   assertNever,
   distinctCount,
@@ -175,7 +176,9 @@ function exclusive(program: Program, payload: GatewayPayload, candidates: readon
 
 /**
  * An Inclusive Gateway joins by `feature/flow.ts`'s reachability rule wherever it converges, and a split that selects
- * nothing rolls back (CIB-INT-0012), so only the Event-Based arms and the Exclusive shapes are refused here (PC-CF-04).
+ * nothing rolls back (CIB-INT-0012), so only the Event-Based arms and instantiation and the Exclusive shapes are refused
+ * here (PC-CF-04). An instantiating Event-Based Gateway starts its Process (BPMN 2.0.2 §10.6.6), which pinned CIB never
+ * reads (CIB-LIM-0008) (PC-BASIC-04).
  */
 export function gateway(program: Program, payload: GatewayPayload): string | null {
   const kind = payload.kind;
@@ -186,7 +189,14 @@ export function gateway(program: Program, payload: GatewayPayload): string | nul
     case GatewayKindTag.Inclusive:
       return null;
     case GatewayKindTag.EventBased:
-      return eventBasedArms(program, payload);
+      switch (kind.instantiation) {
+        case EventGatewayInstantiation.None:
+          return eventBasedArms(program, payload);
+        case EventGatewayInstantiation.Exclusive:
+        case EventGatewayInstantiation.Parallel:
+          return "gateway.eventBased.instantiate";
+      }
+      return assertNever(kind.instantiation);
   }
   return assertNever(kind);
 }

@@ -15,6 +15,7 @@ import {
   ErrorPathOutputs,
   MappingDialect,
   ResultValues,
+  OutputContext,
   SubmissionRule,
   TechnicalFailure,
   ValueSourceTag,
@@ -53,6 +54,7 @@ import {
   openKindView,
   optionalChannelEquals,
   signal,
+  visible,
   type Binding,
   type CommandAction,
   type EffectOutcome,
@@ -69,6 +71,7 @@ import {
 } from "../state.js";
 import { ctxEvaluateMappings, deliveryTriggerChannel, evalContext, hold, messageTriggerChannel, type Ctx } from "../hooks.js";
 import * as Call from "./work/call.js";
+import * as Decision from "./work/decision.js";
 import * as Submission from "./work/submission.js";
 
 /** Open `kind` for the Activity and arm its boundaries on the occurrence. */
@@ -90,10 +93,11 @@ function outputs(
   nowMs: number,
   unconsumed: ResultValues,
   mappings: readonly Mapping[],
+  scope: readonly Binding[],
   values: readonly Binding[],
 ): Result<readonly Binding[]> {
   const evaluated = (variables: readonly Binding[]): Result<readonly Binding[] | null> =>
-    ctxEvaluateMappings(ctx, { variables, nowMs }, mappings);
+    ctxEvaluateMappings(ctx, { variables: [...variables, ...scope], nowMs }, mappings);
   const fills = (variables: readonly Binding[]): boolean => {
     const result = evaluated(variables);
     return result.ok && result.value !== null;
@@ -201,13 +205,19 @@ export function arriveActivity(ctx: Ctx, header: Header, payload: ActivityPayloa
         tag: OpenKindTag.Effect,
         detail: { protocol: work.payload.protocol, operation: work.payload.operation, arguments: inputs, failures: 0, send: null },
       }, header, payload, occurrence, entered));
-    // Admission refuses the three (`work.send`, `work.script`, `work.rule`).
+    // Admission refuses the two (`work.send`, `work.script`).
     case WorkTag.Send:
       return failed(FailureTag.Unsupported, "work-send");
     case WorkTag.Script:
       return failed(FailureTag.Unsupported, "work-script");
-    case WorkTag.Rule:
-      return failed(FailureTag.Unsupported, "work-rule");
+    case WorkTag.Rule: {
+      // The decision's result is written before the task leaves, so its outgoing conditions read it (PC-AUTO-07).
+      const writes = Decision.run(ctx.program, work.payload, evalContext(entered, occurrence.scope).variables);
+      if (!writes.ok) return writes;
+      return committed(complete(writes.value.length === 0
+        ? entered
+        : signal(entered, { tag: SignalTag.Write, scope: occurrence.scope, writes: writes.value, rule: WriteRule.Outward })));
+    }
     case WorkTag.Call:
       if (!begunByToken) return failed(FailureTag.Unsupported, "scope-implicit-start");
       return Call.invoke(ctx, header, payload, work.payload, occurrence, entered);
@@ -257,18 +267,33 @@ export function completeUserTask(
   const submission = ctx.program.options.submission;
   switch (submission) {
     case SubmissionRule.InstallsVariables: {
-      const written = outputs(ctx, state.logicalTimeMs, ResultValues.ActivityLocals, payload.envelope.outputs, values);
+      const written = outputs(ctx, state.logicalTimeMs, ResultValues.ActivityLocals, payload.envelope.outputs, outputScope(ctx, state, item), values);
       if (!written.ok) return failedWith(written.failure);
       const installed = signal(state, { tag: SignalTag.Write, scope: localScope(state, item.occurrence) ?? item.scope, writes: values, rule: WriteRule.Outward });
       return committed(signal(installed, completeSignal(item.occurrence, leaveOutgoing, written.value, WriteRule.Outward)));
     }
     case SubmissionRule.OutputSet: {
-      const written = outputs(ctx, state.logicalTimeMs, ResultValues.OutputSet, payload.envelope.outputs, values);
+      const written = outputs(ctx, state.logicalTimeMs, ResultValues.OutputSet, payload.envelope.outputs, outputScope(ctx, state, item), values);
       if (!written.ok) return failedWith(written.failure);
       return committed(signal(state, completeSignal(item.occurrence, leaveOutgoing, written.value, WriteRule.Outward)));
     }
   }
   return assertNever(submission);
+}
+
+/**
+ * What an Activity's outputs read behind the submitted values: nothing under the standards reading; under
+ * `OutputContext.ActivityScope` (CIB-EXT-0031) the variables visible from the Activity's own scope, its captured inputs
+ * first, since CIB evaluates an output parameter in the Activity's execution (`OutputParameter.java:47`).
+ */
+function outputScope(ctx: Ctx, state: State, item: OpenItem): readonly Binding[] {
+  switch (ctx.program.options.outputContext) {
+    case OutputContext.Submission:
+      return [];
+    case OutputContext.ActivityScope:
+      return visible(state, localScope(state, item.occurrence) ?? item.scope);
+  }
+  return assertNever(ctx.program.options.outputContext);
 }
 
 /** The local-variable scope occurrence an Activity's occurrence owns, when its inputs gave it one (`enterLocal`). */
@@ -308,12 +333,12 @@ export function effectResult(ctx: Ctx, item: OpenItem, outcome: EffectOutcome, s
   const mappings = envelope?.outputs ?? [];
   switch (outcome.tag) {
     case EffectOutcomeTag.Success: {
-      const written = outputs(ctx, state.logicalTimeMs, unconsumed(ctx, envelope), mappings, outcome.outputs);
+      const written = outputs(ctx, state.logicalTimeMs, unconsumed(ctx, envelope), mappings, outputScope(ctx, state, item), outcome.outputs);
       if (!written.ok) return failedWith(written.failure);
       return committed(signal(state, completeSignal(item.occurrence, leaveOutgoing, written.value, WriteRule.Outward)));
     }
     case EffectOutcomeTag.BusinessFailure: {
-      const written = errorPathWrites(ctx, state, unconsumed(ctx, envelope), mappings, outcome.outputs);
+      const written = errorPathWrites(ctx, state, item, unconsumed(ctx, envelope), mappings, outcome.outputs);
       if (!written.ok) return failedWith(written.failure);
       const activation = occurrenceOf(state, item.occurrence)?.activation ?? 0;
       const completed = signal(state, completeSignal(item.occurrence, leaveRaised, written.value, WriteRule.Outward));
@@ -332,13 +357,14 @@ export function effectResult(ctx: Ctx, item: OpenItem, outcome: EffectOutcome, s
 function errorPathWrites(
   ctx: Ctx,
   state: State,
+  item: OpenItem,
   rule: ResultValues,
   mappings: readonly Mapping[],
   patch: readonly Binding[],
 ): Result<readonly Binding[]> {
   switch (ctx.program.options.errorPathOutputs) {
     case ErrorPathOutputs.Mapped:
-      return outputs(ctx, state.logicalTimeMs, rule, mappings, patch);
+      return outputs(ctx, state.logicalTimeMs, rule, mappings, outputScope(ctx, state, item), patch);
     case ErrorPathOutputs.None:
       return patch.length === 0 ? committed([]) : failed(FailureTag.Rejected, "error-path-outputs-not-accepted");
   }

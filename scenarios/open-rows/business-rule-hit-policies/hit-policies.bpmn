@@ -22,8 +22,23 @@
                       camunda:mapDecisionResult="singleEntry" camunda:resultVariable="grade" />
     <businessRuleTask id="Fee" name="Fee by channel" camunda:decisionRef="fee"
                       camunda:mapDecisionResult="singleEntry" camunda:resultVariable="fee" />
-    <businessRuleTask id="UnknownDecision" name="Decision that is not deployed" camunda:decisionRef="noSuchDecision"
-                      camunda:mapDecisionResult="singleEntry" camunda:resultVariable="grade" />
+    <businessRuleTask id="RatingSingleResult" name="Rating, single result" camunda:decisionRef="rating" camunda:mapDecisionResult="singleResult" camunda:resultVariable="rating" />
+    <businessRuleTask id="RatingRuleOrderSingle" name="Rating over rule order, single result" camunda:decisionRef="ratingRuleOrder" camunda:mapDecisionResult="singleResult" camunda:resultVariable="rating" />
+    <businessRuleTask id="RatingResultList" name="Rating over rule order, default result list" camunda:decisionRef="ratingRuleOrder" camunda:resultVariable="ratings" />
+    <businessRuleTask id="RatingSingleEntry" name="Rating, single entry" camunda:decisionRef="rating" camunda:mapDecisionResult="singleEntry" camunda:resultVariable="grade" />
+    <businessRuleTask id="RatingCollectEntries" name="Rating over rule order, collected entries" camunda:decisionRef="ratingRuleOrder" camunda:mapDecisionResult="collectEntries" camunda:resultVariable="grades" />
+    <businessRuleTask id="GradeUniqueUnmapped" name="Grade, unique, without a result variable" camunda:decisionRef="gradeUnique" camunda:mapDecisionResult="singleEntry" />
+    <businessRuleTask id="GradeFirstBadLater" name="Grade, first, later output of the wrong type" camunda:decisionRef="gradeFirstBadLater" camunda:mapDecisionResult="singleEntry" camunda:resultVariable="grade" />
+    <businessRuleTask id="GradeDefault" name="Grade without a declared hit policy" camunda:decisionRef="gradeDefault" camunda:mapDecisionResult="singleEntry" camunda:resultVariable="grade" />
+    <businessRuleTask id="Bands" name="Interval end points" camunda:decisionRef="bands" camunda:mapDecisionResult="collectEntries" camunda:resultVariable="bands" />
+    <businessRuleTask id="VipLabel" name="Label by a Boolean" camunda:decisionRef="vipLabel" camunda:mapDecisionResult="singleEntry" camunda:resultVariable="label" />
+    <businessRuleTask id="ChannelNull" name="Null test" camunda:decisionRef="channelNull" camunda:mapDecisionResult="singleEntry" camunda:resultVariable="label" />
+    <businessRuleTask id="NotBranch" name="Negated literal" camunda:decisionRef="notBranch" camunda:mapDecisionResult="singleEntry" camunda:resultVariable="label" />
+    <businessRuleTask id="NotSmall" name="Negated comparison" camunda:decisionRef="notSmall" camunda:mapDecisionResult="singleEntry" camunda:resultVariable="label" />
+    <businessRuleTask id="Fiveish" name="Decimal literals" camunda:decisionRef="fiveish" camunda:mapDecisionResult="collectEntries" camunda:resultVariable="labels" />
+    <businessRuleTask id="Signs" name="Signed numeric text" camunda:decisionRef="signs" camunda:mapDecisionResult="singleEntry" camunda:resultVariable="label" />
+    <businessRuleTask id="NumberText" name="A number output under string" camunda:decisionRef="numberText" camunda:mapDecisionResult="singleEntry" camunda:resultVariable="label" />
+    <businessRuleTask id="Dashes" name="Dash and empty entries" camunda:decisionRef="dashes" camunda:mapDecisionResult="singleEntry" camunda:resultVariable="label" />
     <exclusiveGateway id="Merge" name="Merge" gatewayDirection="Converging" />
     <userTask id="Inspect" name="Inspect result" />
     <endEvent id="ApplicantClosed" name="Applicant closed" />
@@ -52,9 +67,6 @@
     <sequenceFlow id="Flow_ToFee" sourceRef="Select" targetRef="Fee">
       <conditionExpression xsi:type="tFormalExpression">${policy == 'fee'}</conditionExpression>
     </sequenceFlow>
-    <sequenceFlow id="Flow_ToUnknownDecision" sourceRef="Select" targetRef="UnknownDecision">
-      <conditionExpression xsi:type="tFormalExpression">${policy == 'unknown'}</conditionExpression>
-    </sequenceFlow>
     <sequenceFlow id="Flow_NoPolicy" sourceRef="Select" targetRef="Merge" />
     <sequenceFlow id="Flow_GradeUniqueDone" sourceRef="GradeUnique" targetRef="Merge" />
     <sequenceFlow id="Flow_GradeFirstDone" sourceRef="GradeFirst" targetRef="Merge" />
@@ -64,7 +76,74 @@
     <sequenceFlow id="Flow_GradeRuleOrderDone" sourceRef="GradeRuleOrder" targetRef="Merge" />
     <sequenceFlow id="Flow_GradeBadOutputDone" sourceRef="GradeBadOutput" targetRef="Merge" />
     <sequenceFlow id="Flow_FeeDone" sourceRef="Fee" targetRef="Merge" />
-    <sequenceFlow id="Flow_UnknownDecisionDone" sourceRef="UnknownDecision" targetRef="Merge" />
+    <sequenceFlow id="Flow_ToRatingSingleResult" sourceRef="Select" targetRef="RatingSingleResult">
+      <conditionExpression xsi:type="tFormalExpression">${policy == 'single-result'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_RatingSingleResultDone" sourceRef="RatingSingleResult" targetRef="Merge" />
+    <sequenceFlow id="Flow_ToRatingRuleOrderSingle" sourceRef="Select" targetRef="RatingRuleOrderSingle">
+      <conditionExpression xsi:type="tFormalExpression">${policy == 'single-result-overlap'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_RatingRuleOrderSingleDone" sourceRef="RatingRuleOrderSingle" targetRef="Merge" />
+    <sequenceFlow id="Flow_ToRatingResultList" sourceRef="Select" targetRef="RatingResultList">
+      <conditionExpression xsi:type="tFormalExpression">${policy == 'result-list'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_RatingResultListDone" sourceRef="RatingResultList" targetRef="Merge" />
+    <sequenceFlow id="Flow_ToRatingSingleEntry" sourceRef="Select" targetRef="RatingSingleEntry">
+      <conditionExpression xsi:type="tFormalExpression">${policy == 'single-entry-two-outputs'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_RatingSingleEntryDone" sourceRef="RatingSingleEntry" targetRef="Merge" />
+    <sequenceFlow id="Flow_ToRatingCollectEntries" sourceRef="Select" targetRef="RatingCollectEntries">
+      <conditionExpression xsi:type="tFormalExpression">${policy == 'collect-entries-two-outputs'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_RatingCollectEntriesDone" sourceRef="RatingCollectEntries" targetRef="Merge" />
+    <sequenceFlow id="Flow_ToGradeUniqueUnmapped" sourceRef="Select" targetRef="GradeUniqueUnmapped">
+      <conditionExpression xsi:type="tFormalExpression">${policy == 'no-result-variable'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_GradeUniqueUnmappedDone" sourceRef="GradeUniqueUnmapped" targetRef="Merge" />
+    <sequenceFlow id="Flow_ToGradeFirstBadLater" sourceRef="Select" targetRef="GradeFirstBadLater">
+      <conditionExpression xsi:type="tFormalExpression">${policy == 'first-later-output'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_GradeFirstBadLaterDone" sourceRef="GradeFirstBadLater" targetRef="Merge" />
+    <sequenceFlow id="Flow_ToGradeDefault" sourceRef="Select" targetRef="GradeDefault">
+      <conditionExpression xsi:type="tFormalExpression">${policy == 'default-hit-policy'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_GradeDefaultDone" sourceRef="GradeDefault" targetRef="Merge" />
+    <sequenceFlow id="Flow_ToBands" sourceRef="Select" targetRef="Bands">
+      <conditionExpression xsi:type="tFormalExpression">${policy == 'interval'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_BandsDone" sourceRef="Bands" targetRef="Merge" />
+    <sequenceFlow id="Flow_ToVipLabel" sourceRef="Select" targetRef="VipLabel">
+      <conditionExpression xsi:type="tFormalExpression">${policy == 'boolean'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_VipLabelDone" sourceRef="VipLabel" targetRef="Merge" />
+    <sequenceFlow id="Flow_ToChannelNull" sourceRef="Select" targetRef="ChannelNull">
+      <conditionExpression xsi:type="tFormalExpression">${policy == 'null-test'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ChannelNullDone" sourceRef="ChannelNull" targetRef="Merge" />
+    <sequenceFlow id="Flow_ToNotBranch" sourceRef="Select" targetRef="NotBranch">
+      <conditionExpression xsi:type="tFormalExpression">${policy == 'not-null'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_NotBranchDone" sourceRef="NotBranch" targetRef="Merge" />
+    <sequenceFlow id="Flow_ToNotSmall" sourceRef="Select" targetRef="NotSmall">
+      <conditionExpression xsi:type="tFormalExpression">${policy == 'not-compare-null'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_NotSmallDone" sourceRef="NotSmall" targetRef="Merge" />
+    <sequenceFlow id="Flow_ToFiveish" sourceRef="Select" targetRef="Fiveish">
+      <conditionExpression xsi:type="tFormalExpression">${policy == 'decimal'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_FiveishDone" sourceRef="Fiveish" targetRef="Merge" />
+    <sequenceFlow id="Flow_ToSigns" sourceRef="Select" targetRef="Signs">
+      <conditionExpression xsi:type="tFormalExpression">${policy == 'signs'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_SignsDone" sourceRef="Signs" targetRef="Merge" />
+    <sequenceFlow id="Flow_ToNumberText" sourceRef="Select" targetRef="NumberText">
+      <conditionExpression xsi:type="tFormalExpression">${policy == 'number-text'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_NumberTextDone" sourceRef="NumberText" targetRef="Merge" />
+    <sequenceFlow id="Flow_ToDashes" sourceRef="Select" targetRef="Dashes">
+      <conditionExpression xsi:type="tFormalExpression">${policy == 'dashes'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_DashesDone" sourceRef="Dashes" targetRef="Merge" />
     <sequenceFlow id="Flow_Merged" sourceRef="Merge" targetRef="Inspect" />
     <sequenceFlow id="Flow_Inspected" sourceRef="Inspect" targetRef="ApplicantClosed" />
   </process>

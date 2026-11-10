@@ -114,6 +114,15 @@ function correlatedCatch(subscription: Subscription, trigger: MessageTrigger): s
   return criterionValue(subscription, trigger, criterion);
 }
 
+/**
+ * A Multiple or Parallel Multiple Event (BPMN 2.0.2 §10.5.1): pinned CIB keeps one of several definitions by a precedence
+ * that depends on the position and never reads `parallelMultiple` (CIB-LIM-0008) (PC-BASIC-04).
+ */
+function definitions(subscription: Subscription): string | null {
+  if (subscription.parallelMultiple) return "event.parallelMultiple";
+  return subscription.alternatives.length > 0 ? "event.multipleDefinitions" : null;
+}
+
 /** Only a Message subscription writes what its delivery carries; any other trigger's outputs would be dropped. */
 function outputs(subscription: Subscription): string | null {
   return triggerMessage(subscription.trigger) !== null || subscription.outputs.length === 0 ? null : "event.outputs";
@@ -141,6 +150,8 @@ function escalationTrigger(trigger: EscalationTrigger): string | null {
  * Event Sub-Process always interrupts (BPMN 2.0.2 Table 10.86, Table 10.87 `isInterrupting`, §13.5.4) (PC-ERROR-02).
  */
 export function eventSubProcess(start: Subscription, interrupting: boolean): string | null {
+  const refused = definitions(start);
+  if (refused !== null) return refused;
   const trigger = start.trigger;
   switch (trigger.tag) {
     case TriggerTag.Message:
@@ -160,7 +171,7 @@ export function eventSubProcess(start: Subscription, interrupting: boolean): str
 }
 
 export function catchEvent(subscription: Subscription): string | null {
-  const refused = outputs(subscription);
+  const refused = definitions(subscription) ?? outputs(subscription);
   if (refused !== null) return refused;
   const trigger = subscription.trigger;
   switch (trigger.tag) {
@@ -194,7 +205,7 @@ export function catchEvent(subscription: Subscription): string | null {
  * adopted (PC-ERROR-01).
  */
 function boundary(variables: ErrorCatchVariables, transactionHost: boolean, seen: Set<string>, attached: Boundary): string | null {
-  const refused = outputs(attached.subscription);
+  const refused = definitions(attached.subscription) ?? outputs(attached.subscription);
   if (refused !== null) return refused;
   const trigger = attached.subscription.trigger;
   switch (trigger.tag) {
@@ -241,7 +252,7 @@ export function boundaries(variables: ErrorCatchVariables, transactionHost: bool
  */
 export function start(variables: ErrorCatchVariables, nested: boolean, subscription: Subscription): string | null {
   const raised = (code: string): string | null => (nested ? null : code);
-  const refused = outputs(subscription);
+  const refused = definitions(subscription) ?? outputs(subscription);
   if (refused !== null) return refused;
   const trigger = subscription.trigger;
   switch (trigger.tag) {

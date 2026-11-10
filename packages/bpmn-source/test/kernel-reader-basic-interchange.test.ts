@@ -1,6 +1,6 @@
 /**
  * The reader's interchange forms (PC-BASIC-04, [flow semantics](../../../docs/kernel/semantics/FLOW-SEMANTICS-SPEC.md#interchange-forms-and-diagnostics-pc-basic-04)):
- * QName references, referenced event definitions, the source facts the IL does not carry yet, and the `source.schema`
+ * QName references, referenced event definitions, the source facts pinned CIB erases, and the `source.schema`
  * invariant on the reader's path. The pinned CIB Seven `2.2.0` parser bounds each case; the line it cites settles it.
  */
 import assert from "node:assert/strict";
@@ -96,16 +96,61 @@ test("a referenced event definition is refused in every position, because CIB ne
   await admitted(model(`<bpmn:startEvent id="S"/>`, roots));
 });
 
-test("source facts the IL does not carry yet are refused, never dropped", async () => {
-  // Receive `instantiate` (§10.3.3, Table 10.10), `parallelMultiple` (§10.5.1) and a non-executable process
-  // (pinned `BpmnParse:560-574` deploys none) move to `Kernel.Admission` once the IL carries them.
-  await refused(model(`<bpmn:receiveTask id="R" instantiate="true"/>`), "reader.factNotCarried", "instantiate");
-  await admitted(model(`<bpmn:receiveTask id="R" instantiate="false"/>`));
-  await refused(model(catching(`<bpmn:messageEventDefinition messageRef="Msg"/>`).replace(`id="C"`, `id="C" parallelMultiple="true"`), message),
-    "reader.factNotCarried", "parallelMultiple");
-  await refused(model(`<bpmn:task id="T"/>`).replace(`isExecutable="true"`, `isExecutable="false"`), "reader.factNotCarried",
-    "isExecutable");
-  await refused(model(`<bpmn:task id="T"/>`).replace(` isExecutable="true"`, ""), "reader.factNotCarried", "isExecutable");
+type Json = Record<string, unknown>;
+
+async function programOf(xml: string): Promise<Json> {
+  const result = await read(xml);
+  assert.ok(result.kind === "read", JSON.stringify(result));
+  return result.program as Json;
+}
+
+/** The payload of the program's element `id`. */
+function payloadOf(program: Json, id: string): Json {
+  const found = (program.elements as Json[]).map((element) => Object.values(element)[0] as Json)
+    .find((body) => (body.header as Json).id === id);
+  assert.ok(found !== undefined, `no element ${id}`);
+  return found.payload as Json;
+}
+
+test("source facts pinned CIB erases are read into their IL fields, for admission to refuse", async () => {
+  // Receive `instantiate` (§10.3.3, Table 10.10), Multiple and Parallel Multiple Events (§10.5.1), an instantiating or
+  // Parallel Event-Based Gateway (§10.6.6) and `isExecutable` (Table 10.1) each carry BPMN meaning pinned CIB erases
+  // (CIB-LIM-0008; `BpmnParse:560-574` deploys no process whose `isExecutable` is absent or false).
+  const receive = async (attribute: string): Promise<unknown> =>
+    ((payloadOf(await programOf(model(`<bpmn:receiveTask id="R" ${attribute}/>`)), "R").work as Json).receive as Json).payload;
+  assert.equal(((await receive(`instantiate="true"`)) as Json).instantiate, true);
+  assert.equal(((await receive("")) as Json).instantiate, false);
+
+  const timer = `<bpmn:timerEventDefinition><bpmn:timeDuration>PT1S</bpmn:timeDuration></bpmn:timerEventDefinition>`;
+  const catchOf = async (attributes: string, definitions: string): Promise<Json> =>
+    ((payloadOf(await programOf(model(`<bpmn:intermediateCatchEvent id="C" ${attributes}>${definitions}</bpmn:intermediateCatchEvent>`,
+      message)), "C").role as Json).catch as Json).subscription as Json;
+  const several = await catchOf("", `<bpmn:messageEventDefinition messageRef="Msg"/>${timer}`);
+  assert.ok("message" in (several.trigger as Json));
+  assert.deepEqual((several.alternatives as Json[]).map((trigger) => Object.keys(trigger)), [["timer"]]);
+  assert.equal(several.parallelMultiple, false);
+  assert.equal((await catchOf(`parallelMultiple="true"`, `<bpmn:messageEventDefinition messageRef="Msg"/>`)).parallelMultiple, true);
+
+  const roots = `<bpmn:error id="Err" errorCode="E1"/><bpmn:escalation id="Esc" escalationCode="X1"/>`;
+  const end = payloadOf(await programOf(model(`<bpmn:endEvent id="E"><bpmn:errorEventDefinition errorRef="Err"/>` +
+    `<bpmn:escalationEventDefinition escalationRef="Esc"/></bpmn:endEvent>`, roots)), "E");
+  assert.ok("error" in (((end.role as Json).throw as Json).record as Json));
+  assert.deepEqual((end.alternativeThrows as Json[]).map((record) => Object.keys(record)), [["escalation"]]);
+
+  const gateway = async (attributes: string): Promise<unknown> =>
+    payloadOf(await programOf(model(`<bpmn:eventBasedGateway id="G" ${attributes}/>`)), "G").kind;
+  assert.deepEqual(await gateway(""), { eventBased: { instantiation: "none" } });
+  assert.deepEqual(await gateway(`instantiate="true"`), { eventBased: { instantiation: "exclusive" } });
+  assert.deepEqual(await gateway(`instantiate="true" eventGatewayType="Parallel"`), { eventBased: { instantiation: "parallel" } });
+  assert.deepEqual(await gateway(`eventGatewayType="Parallel"`), { eventBased: { instantiation: "parallel" } });
+  assert.deepEqual(await gateway(`eventGatewayType="Exclusive"`), { eventBased: { instantiation: "none" } });
+
+  assert.equal((await programOf(model(`<bpmn:task id="T"/>`))).executable, true);
+  assert.equal((await programOf(model(`<bpmn:task id="T"/>`).replace(`isExecutable="true"`, `isExecutable="false"`))).executable, false);
+  assert.equal((await programOf(model(`<bpmn:task id="T"/>`).replace(` isExecutable="true"`, ""))).executable, false);
+  const called = await programOf(model(`<bpmn:callActivity id="A" calledElement="Q"/>`,
+    `<bpmn:process id="Q"><bpmn:task id="QT"/></bpmn:process>`));
+  assert.deepEqual((called.processes as Json[]).map((process) => process.executable), [false]);
 });
 
 test("a source the BPMN 2.0.2 XSD rejects is refused before it is read", async () => {

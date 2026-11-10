@@ -47,7 +47,9 @@ export const errorTrigger = (over: Json = {}): Json => ({ error: { payload: { co
 export const escalationTrigger = (over: Json = {}): Json => ({ escalation: { payload: { code: null, codeVariable: null, ...over } } });
 export const compensationTrigger = "compensation";
 export const cancelTrigger = "cancel";
-export const subscription = (trigger: Json | string, outputs: Json[] = []): Json => ({ trigger, outputs });
+/** `alternatives` are a Multiple Event's definitions after the first; `parallelMultiple` its Parallel Multiple mark. */
+export const subscription = (trigger: Json | string, outputs: Json[] = [], alternatives: Array<Json | string> = [], parallelMultiple = false): Json =>
+  ({ trigger, outputs, alternatives, parallelMultiple });
 export const criterion = (key: string, value: Json): Json => ({ key, value });
 /** A message trigger an Operation carries, the channel a correlated catch needs. */
 export const channel = (over: Json = {}): Json => ({ name: text("M"), interfaceRef: "I", operationRef: "O", ...over });
@@ -74,7 +76,7 @@ export const userWork = (over: Json = {}): Json => ({
   },
 });
 export const serviceWork = (protocol = "http", operation = "get"): Json => ({ service: { payload: { protocol, operation } } });
-export const receiveWork = (over: Json = {}): Json => ({ receive: { payload: { message: messageBody(over) } } });
+export const receiveWork = (over: Json = {}, instantiate = false): Json => ({ receive: { payload: { message: messageBody(over), instantiate } } });
 export const callWork = (over: Json = {}): Json => ({
   call: {
     payload: {
@@ -86,7 +88,8 @@ export const callWork = (over: Json = {}): Json => ({
 
 export const sendWork = (): Json => ({ send: { payload: { binding: { protocol: "http", operation: "post" }, recipient: null, correlation: [], messageRef: null, operationRef: null } } });
 export const scriptWork = (): Json => ({ script: { payload: { format: "js", source: "1", resultVariable: null } } });
-export const ruleWork = (): Json => ({ rule: { payload: { decision: text("d"), resultVariable: null, binding: "latest", resultMapping: "singleEntry" } } });
+export const ruleWork = (over: Json = {}): Json =>
+  ({ rule: { payload: { decision: text("d"), resultVariable: null, binding: "latest", resultMapping: "singleEntry", tenant: null, ...over } } });
 
 /** A Multi-Instance loop the kernel runs: one User Task per item of a collection variable, read once on entry. */
 export const loop = (over: Json = {}): Json => ({
@@ -110,12 +113,13 @@ export const start = (id: string, trigger: Json | string | null = null, outputs:
   },
 });
 
-const event = (id: string, sourceType: string, role: Json, placement: string, parent: string | null, incoming: string[]): Json =>
-  ({ event: { header: header(id, sourceType, parent), payload: { role, placement, incoming, outgoing: [] } } });
+const event = (id: string, sourceType: string, role: Json, placement: string, parent: string | null, incoming: string[],
+  alternativeThrows: Array<Json | string> = []): Json =>
+  ({ event: { header: header(id, sourceType, parent), payload: { role, placement, incoming, outgoing: [], alternativeThrows } } });
 
-/** An End Event throwing `record` (a `Throw` value). */
-export const end = (id: string, record: Json | string = "none", parent: string | null = null): Json =>
-  event(id, "endEvent", { throw: { record } }, "finish", parent, ["f2"]);
+/** An End Event throwing `record` (a `Throw` value), and `alternativeThrows` besides it as a Multiple End Event. */
+export const end = (id: string, record: Json | string = "none", parent: string | null = null, alternativeThrows: Array<Json | string> = []): Json =>
+  event(id, "endEvent", { throw: { record } }, "finish", parent, ["f2"], alternativeThrows);
 
 export const catchEvent = (id: string, trigger: Json | string, outputs: Json[] = [], parent: string | null = null): Json =>
   event(id, "intermediateCatchEvent", { catch: { subscription: subscription(trigger, outputs) } }, "intermediate", parent, ["f1"]);
@@ -123,6 +127,9 @@ export const catchEvent = (id: string, trigger: Json | string, outputs: Json[] =
 export const link = (id: string, role: "linkCatch" | "linkThrow", name: string, parent: string | null = null): Json =>
   event(id, role === "linkCatch" ? "intermediateCatchEvent" : "intermediateThrowEvent", { [role]: { name } }, "intermediate", parent,
     role === "linkCatch" ? [] : ["f1"]);
+
+/** An Event-Based Gateway's kind; `instantiation` is `none`, `exclusive` or `parallel`. */
+export const eventBased = (instantiation = "none"): Json => ({ eventBased: { instantiation } });
 
 export const gateway = (id: string, kind: Json | string, over: Json = {}, parent: string | null = null): Json =>
   ({ gateway: { header: header(id, "gateway", parent), payload: { kind, incoming: ["f1"], outgoing: ["f2"], ...over } } });

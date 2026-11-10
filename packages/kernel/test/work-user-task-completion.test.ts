@@ -63,7 +63,7 @@ function program(shape: Shape): Json {
         {
           event: {
             header: header(`End_${branch}`, "endEvent"),
-            payload: { role: { throw: { record: "none" } }, placement: "finish", incoming: [`End_${branch}_In`], outgoing: [] },
+            payload: { role: { throw: { record: "none" } }, placement: "finish", incoming: [`End_${branch}_In`], outgoing: [], alternativeThrows: [] },
           },
         },
       ]),

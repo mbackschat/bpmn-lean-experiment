@@ -18,7 +18,7 @@ const slice = JSON.parse(readFileSync(new URL("./fixtures/simple-boolean.program
 const header = (id: string, sourceType: string): Json => ({ id, origin: { definition: null, sourceId: id }, sourceType, parent: null });
 const never: Json = { simpleBoolean: { body: { literal: { value: false } } } };
 const end = (id: string, incoming: string): Json => ({
-  event: { header: header(id, "endEvent"), payload: { role: { throw: { record: "none" } }, placement: "finish", incoming: [incoming], outgoing: [] } },
+  event: { header: header(id, "endEvent"), payload: { role: { throw: { record: "none" } }, placement: "finish", incoming: [incoming], outgoing: [], alternativeThrows: [] } },
 });
 
 /** `Start → Timer → Check`, a work-less Task whose two outgoing flows both carry a condition that never holds. */
@@ -30,8 +30,8 @@ const decoded = decodeProgram({
       event: {
         header: header("Timer", "intermediateCatchEvent"),
         payload: {
-          role: { catch: { subscription: { trigger: { timer: { payload: { schedule: { duration: { value: { literal: { value: "PT2S" } } } } } } }, outputs: [] } } },
-          placement: "intermediate", incoming: ["To_Timer"], outgoing: ["To_Check"],
+          role: { catch: { subscription: { trigger: { timer: { payload: { schedule: { duration: { value: { literal: { value: "PT2S" } } } } } } }, outputs: [], alternatives: [], parallelMultiple: false } } },
+          placement: "intermediate", incoming: ["To_Timer"], outgoing: ["To_Check"], alternativeThrows: [],
         },
       },
     },

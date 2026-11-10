@@ -7,7 +7,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
-  activity, append, base, conditionOn, definitionRef, foreign, loop, mapping, receiveWork, refusalOf, refusalTests, replace,
+  activity, append, base, conditionOn, definitionRef, end, foreign, loop, mapping, receiveWork, refusalOf, refusalTests, replace,
   scriptWork, sendWork, serviceWork, task, userWork, variable, withOptions,
 } from "./admission-refusal-support.ts";
 import type { Json, Row } from "./admission-refusal-support.ts";
@@ -18,8 +18,12 @@ const handledBy = (handler: Json) => (program: Json): Json =>
 
 const handler = (work: Json | string, env: Json = {}): Json => activity("H", work, { incoming: [], outgoing: [], ...env });
 
-const calledProcess = (over: Json = {}) => (program: Json): Json =>
-  ({ ...program, processes: [{ definition: definitionRef("Q", over), children: [], variables: [] }] });
+const calledProcess = (over: Json = {}, executable = true) => (program: Json): Json =>
+  ({ ...program, processes: [{ definition: definitionRef("Q", over), children: [], variables: [], executable }] });
+
+/** `E` becomes a Multiple End Event throwing an Error and an Escalation (BPMN 2.0.2 §10.5.1). */
+const multipleEnd = (alternatives: Array<Json | string>) => (program: Json): Json =>
+  replace(program, "E", end("E", { error: { payload: { code: "E1", message: null } } }, null, alternatives));
 
 export const rows: readonly Row[] = [
   {
@@ -53,6 +57,25 @@ export const rows: readonly Row[] = [
     mutate: calledProcess({ tenant: "tenant" }),
     control: calledProcess(),
   },
+  {
+    // Table 10.1 `isExecutable`; pinned `BpmnParse:560-574` deploys no process whose `isExecutable` is absent or false.
+    code: "process.notExecutable",
+    description: "a root process not marked executable",
+    mutate: (program) => ({ ...program, executable: false }),
+    control: (program) => ({ ...program, executable: true }),
+  },
+  {
+    code: "process.notExecutable",
+    description: "a called process not marked executable",
+    mutate: calledProcess({}, false),
+    control: calledProcess(),
+  },
+  {
+    code: "event.multipleDefinitions",
+    description: "a Multiple End Event throwing an Error and an Escalation",
+    mutate: multipleEnd([{ escalation: { payload: { code: "X1" } } }]),
+    control: multipleEnd([]),
+  },
 ];
 
 refusalTests("registry", rows);
@@ -65,6 +88,12 @@ function refusedEverywhere(): Json {
 
 test("registry: profile options are refused before called processes, flows and elements", () => {
   assert.equal(refusalOf(refusedEverywhere()), "profile.messageCorrelation.apiCriteria");
+});
+
+test("registry: a process not marked executable is refused after profile options and before anything else", () => {
+  const program = withOptions(refusedEverywhere(), { messageCorrelation: "modeledKey" });
+  assert.equal(refusalOf({ ...program, executable: false }), "process.notExecutable");
+  assert.equal(refusalOf({ ...refusedEverywhere(), executable: false }), "profile.messageCorrelation.apiCriteria");
 });
 
 test("registry: a called-process binding is refused before flows and elements", () => {

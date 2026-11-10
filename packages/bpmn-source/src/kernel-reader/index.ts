@@ -32,6 +32,7 @@ import type { KernelSource } from "./source.js";
 import { assertNever, compareIds, defaultKernelProfileOptions } from "./wire.js";
 import type { KernelJson, KernelProfileOptions } from "./wire.js";
 import { readActivity } from "./work.js";
+import { readDecisionResource } from "./decision.js";
 
 export { defaultKernelProfileOptions, kernelProfileOptions } from "./wire.js";
 export type { KernelJson, KernelProfileOptions } from "./wire.js";
@@ -212,6 +213,13 @@ function requireAllCarried(ctx: ReadContext & { consumedBy: (element: ElementRec
   for (const element of owners) requireCarried(element, ctx.definitions, ctx.consumedBy(element), ctx.inertAttributes);
 }
 
+/** The DMN resources deployed with the source, in the order they are bound; the first one refused refuses the source. */
+async function readDecisionResources(source: KernelSource): Promise<KernelJson[]> {
+  const resources: KernelJson[] = [];
+  for (const decisions of source.decisions ?? []) resources.push(await readDecisionResource(decisions, source.limits));
+  return resources;
+}
+
 /** Reads one BPMN source to the kernel IL; `options` are copied into the Program and select nothing here. */
 export async function readKernelProgram(source: KernelSource, options: KernelProfileOptions = defaultKernelProfileOptions): Promise<KernelRead> {
   try {
@@ -225,7 +233,7 @@ export async function readKernelProgram(source: KernelSource, options: KernelPro
     for (const process of processes) scanContainer(scan, process, null);
     const notCarried: SourceFactNotCarried[] = [];
     const ctx = createContext(parsed.definitions, parsed, scan, processes, notCarried);
-    requireReadableForms(ctx.rootProcess, [...scan.nodes.values()].sort(byId));
+    requireReadableForms([...scan.nodes.values()].sort(byId));
     const elements = buildProgramElements(ctx);
     requireAllCarried(ctx, processes);
     const program: KernelJson = {
@@ -237,7 +245,10 @@ export async function readKernelProgram(source: KernelSource, options: KernelPro
       processes: processes.filter((process) => process !== ctx.rootProcess)
         .sort((left, right) => compareIds(requireId(left), requireId(right)))
         .map((process) => ({ definition: processDefinition(requireId(process)), children: childIds(ctx, process),
-          variables: declaredItems(process) })),
+          variables: declaredItems(process), executable: process.isExecutable === true })),
+      // Table 10.1 `isExecutable`; admission refuses a process not marked executable (`process.notExecutable`).
+      executable: ctx.rootProcess.isExecutable === true,
+      decisionResources: await readDecisionResources(source),
     };
     return { kind: "read", program, notCarried };
   } catch (error: unknown) {

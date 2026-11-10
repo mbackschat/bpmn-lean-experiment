@@ -5,6 +5,7 @@ import static org.bpmnlean.cibseven.ScenarioProtocol.CommandOutcome.REJECTED;
 import static org.bpmnlean.cibseven.ScenarioProtocol.CommandOutcome.ROLLED_BACK;
 import static org.bpmnlean.cibseven.ScenarioProtocol.CommandOutcome.UNSUPPORTED;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -24,6 +25,8 @@ import org.bpmnlean.cibseven.ScenarioProtocol.CanonicalObservation;
 import org.bpmnlean.cibseven.ScenarioProtocol.Command;
 import org.bpmnlean.cibseven.ScenarioProtocol.CommandObservation;
 import org.bpmnlean.cibseven.ScenarioProtocol.CommandOutcome;
+import org.cibseven.bpm.dmn.engine.DmnEngineException;
+import org.cibseven.bpm.dmn.feel.impl.FeelException;
 import org.cibseven.bpm.engine.ProcessEngineException;
 import org.bpmnlean.cibseven.ScenarioProtocol.ConditionStart;
 import org.bpmnlean.cibseven.ScenarioProtocol.Deliver;
@@ -134,13 +137,17 @@ final class CibSevenEngineScenarioRunner implements AutoCloseable {
     try {
       var deploymentStartedAt = System.nanoTime();
       try (InputStream bpmn = Files.newInputStream(validated.bpmnPath())) {
-        deploymentId =
+        var deployment =
             processEngine.getRepositoryService().createDeployment()
                 .name(scenario.id())
-                .addInputStream(validated.bpmnPath().getFileName().toString(), bpmn)
-                .deploy()
-                .getId();
-      } catch (ProcessEngineException refused) {
+                .addInputStream(validated.bpmnPath().getFileName().toString(), bpmn);
+        // The DMN resources go into the same deployment, as CIB binds a decisionRef by its key at execution time.
+        for (var decisionPath : validated.decisionPaths()) {
+          deployment.addInputStream(
+              decisionPath.getFileName().toString(), new ByteArrayInputStream(Files.readAllBytes(decisionPath)));
+        }
+        deploymentId = deployment.deploy().getId();
+      } catch (ProcessEngineException | DmnEngineException refused) {
         requireNoIntegrityViolation(refused);
         // CIB refusing the model at deployment is the oracle's admission answer: like the kernel's refused program,
         // only an unsupported deployment is observed and no stimulus runs (canonical-result trace rule).
@@ -182,10 +189,11 @@ final class CibSevenEngineScenarioRunner implements AutoCloseable {
                 effectExecutions.add(execution.evidence());
               }
             }
-          } catch (ProcessEngineException failed) {
+          } catch (ProcessEngineException | DmnEngineException | FeelException failed) {
             requireNoIntegrityViolation(failed);
             // An engine exception inside the command rolls back its transaction; the runner's own harness exceptions are
-            // never ProcessEngineException and stay harness failures.
+            // none of these and stay harness failures. A DMN evaluation failure is a DmnEngineException or, from the
+            // FEEL engine, a FeelException (`ScalaFeelLogger`), neither a ProcessEngineException, and rolls back the same way.
             outcome = ROLLED_BACK;
           }
           var commandNanos = positiveElapsedSince(startedAt);

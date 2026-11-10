@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_UnknownDecision" targetNamespace="urn:bpmn-lean:business-rule-unknown-decision-process">
+  <process id="Process_UnknownDecision" name="A Business Rule Task naming a decision no deployed resource declares" isExecutable="true">
+    <startEvent id="ApplicantReceived" name="Applicant received" />
+    <businessRuleTask id="UnknownDecision" name="Decision that is not deployed" camunda:decisionRef="noSuchDecision"
+                      camunda:mapDecisionResult="singleEntry" camunda:resultVariable="grade" />
+    <userTask id="Inspect" name="Inspect result" />
+    <endEvent id="ApplicantClosed" name="Applicant closed" />
+    <sequenceFlow id="Flow_Received" sourceRef="ApplicantReceived" targetRef="UnknownDecision" />
+    <sequenceFlow id="Flow_Decided" sourceRef="UnknownDecision" targetRef="Inspect" />
+    <sequenceFlow id="Flow_Inspected" sourceRef="Inspect" targetRef="ApplicantClosed" />
+  </process>
+</definitions>

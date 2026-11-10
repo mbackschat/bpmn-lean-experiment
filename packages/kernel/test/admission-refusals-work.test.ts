@@ -1,7 +1,8 @@
 /**
  * Refusal tests of `admission/work.ts`: the work an Activity may carry (a User Task's unread fields, a Service Task's
  * binding, a Receive Task's message, a Call Activity's called process and data) and where the envelope's mappings,
- * Multi-Instance loop and compensation handler may sit. A Send, Script or Business Rule Task has no kernel meaning.
+ * Multi-Instance loop and compensation handler may sit. A Send or Script Task has no kernel meaning; a Business Rule
+ * Task's decisions are `admission-refusals-decision.test.ts`'s.
  */
 import {
   activity, append, callWork, computed, criterion, definitionRef, duration, eventSubProcess, loop, mapping, receiveWork, refusalTests,
@@ -17,7 +18,7 @@ const withTask = (work: Json | string, env: Json = {}) => task(activity("T", wor
 /** The process-level element `CT` of the called process `Called`, a Task unless a row names another. */
 const calledChild = activity("CT", "manual", { incoming: [], outgoing: [] });
 const withCalled = (child: Json = calledChild) => (program: Json): Json =>
-  ({ ...append(program, child), processes: [{ definition: definitionRef("Called"), children: ["CT"], variables: [] }] });
+  ({ ...append(program, child), processes: [{ definition: definitionRef("Called"), children: ["CT"], variables: [], executable: true }] });
 
 /** `T` becomes a Call Activity of the called process `Called`. */
 const calling = (over: Json = {}, child?: Json) => (program: Json): Json =>
@@ -65,6 +66,13 @@ export const rows: readonly Row[] = [
     description: "a Receive Task with a correlation key",
     mutate: withTask(receiveWork({ correlation: [criterion("k", variable("x"))] })),
     control: withTask(receiveWork()),
+  },
+  {
+    // BPMN 2.0.2 §10.3.3, Table 10.10; pinned CIB never reads the attribute (CIB-LIM-0008).
+    code: "work.receive.instantiate",
+    description: "a Receive Task that instantiates its Process",
+    mutate: withTask(receiveWork({ name: text("M") }, true)),
+    control: withTask(receiveWork({ name: text("M") })),
   },
   {
     code: "work.receive.messageExpression",
@@ -260,7 +268,7 @@ export const rows: readonly Row[] = [
   },
   { code: "work.send", description: "a Send Task", mutate: withTask(sendWork()) },
   { code: "work.script", description: "a Script Task", mutate: withTask(scriptWork()) },
-  { code: "work.rule", description: "a Business Rule Task", mutate: withTask(ruleWork()) },
+  { code: "work.rule.decisionMissing", description: "a Business Rule Task naming a decision the program does not carry", mutate: withTask(ruleWork()) },
 ];
 
 refusalTests("work", rows);

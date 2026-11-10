@@ -23,12 +23,12 @@ The counts below cover only entries recorded by this project, including the sepa
 | Lane | Recorded entries | Open candidates | Meaning |
 |---|---:|---:|---|
 | Normative agreement records | 19 | 2 | A bounded BPMN requirement and pinned CIB observation agree; candidates remain unapproved |
-| Permitted operational details | 13 | 0 | CIB or the oracle adapter chooses host mechanics without changing required BPMN observations |
+| Permitted operational details | 15 | 0 | CIB or the oracle adapter chooses host mechanics without changing required BPMN observations |
 | Confirmed normative deviations | 0 | 1 | Clear BPMN requirement and pinned CIB evidence establish incompatible behavior |
-| CIB interpretations of BPMN gaps or inconsistencies | 15 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
-| CIB extension records | 30 | 3 | Project profile deliberately includes behavior beyond bare BPMN execution; candidates remain unselected |
+| CIB interpretations of BPMN gaps or inconsistencies | 16 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
+| CIB extension records | 32 | 3 | Project profile deliberately includes behavior beyond bare BPMN execution; candidates remain unselected |
 | Configuration-specific realizations | 11 | 1 | Behavior is permitted or meaningful only under a declared CIB environment |
-| Known CIB limitations within reviewed scope | 11 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
+| Known CIB limitations within reviewed scope | 13 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
 
 The sequential User Task account has no recorded CIB deviation. That statement is bounded to its clauses, pinned environment, witnesses, and observation surface; it is not a general CIB conformance result.
 
@@ -522,6 +522,16 @@ BPMN 2.0.2 Table 13.3 activates a converging Inclusive Gateway when at least one
 
 **Boundary:** Converging Inclusive Gateways anywhere in one scope occurrence; arrivals from another scope occurrence are outside it, and the join after Sub-Processes, Calls and Multi-Instance bodies closes with `PC-SCOPE-01` and the Multi-Instance rows.
 
+### CIB-INT-0017 — a COLLECT decision result lists its values in rule order
+
+**Status:** Selected interpretation for the CIB profiles' decision tables (`CIB-EXT-0032`)
+
+DMN 1.3 leaves the order of a COLLECT hit policy's result open. CIB Seven `2.2.0` returns the matched rules' outputs in rule order, and the kernel does the same ([decision semantics](kernel/semantics/DECISION-SEMANTICS-SPEC.md), items 5 and 6).
+
+**Evidence:** The `collect-*` witnesses of [business-rule-hit-policies](../scenarios/open-rows/business-rule-hit-policies/README.md).
+
+**Boundary:** COLLECT without an aggregator, as the decision semantics admit it.
+
 ## Known limitation register
 
 ### CIB-LIM-0001: standard sequential Multi-Instance output aggregation is absent
@@ -604,6 +614,28 @@ BPMN 2.0.2 §10.5.2 admits several Start Events in a process or a Sub-Process. C
 
 **Boundary:** A second None or Timer Start of a process, and a second start of any kind in a Sub-Process. Message Starts beside one initial start stay admitted.
 
+### CIB-LIM-0008: pinned CIB erases referenced and multiple event definitions, Parallel Multiple, instantiation and non-executable processes
+
+**Status:** Profile limitation; not a deviation
+
+BPMN 2.0.2 gives a reusable EventDefinition (`eventDefinitionRef`, §10.5.1), a Multiple and a Parallel Multiple Event (§10.5.1), an instantiating Receive Task (§10.3.3, Table 10.10), an instantiating or Parallel Event-Based Gateway (§10.6.6) and a process not marked executable (Table 10.1 `isExecutable`) their own meaning. Pinned CIB Seven `2.2.0` at `834a9874` erases each:
+- it has no reader for `eventDefinitionRef`: a catch carrying one fails to parse, and any other Event runs as a None Event;
+- it keeps one of several definitions by a precedence that depends on the position: Start `BpmnParse:1021-1040`; Event Sub-Process Start, Error first, `:1114`; Boundary `:3317-3347`; End `:3140` ff.; intermediate catch `:1535-1555`;
+- it never reads `parallelMultiple`, a Receive Task's `instantiate`, or an Event-Based Gateway's `instantiate` and `eventGatewayType`, so a gateway reached by a flow runs as a non-instantiating one;
+- it deploys no process whose `isExecutable` is absent or false on a new deployment (`BpmnParse:560-574`).
+
+The kernel refuses every one of these forms rather than imitate the erasure: the reader refuses `reader.eventDefinitionRef`; admission refuses `event.multipleDefinitions`, `event.parallelMultiple`, `work.receive.instantiate`, `gateway.eventBased.instantiate` and `process.notExecutable`, whose facts the IL carries (`Subscription.alternatives`, `Subscription.parallelMultiple`, `EventPayload.alternativeThrows`, `ReceiveWork.instantiate`, `GatewayKind.eventBased`, `Program.executable`, `CalledProcess.executable`).
+
+This is not a candidate deviation. CIB and the kernel never differ on an admitted model; the [coverage target](PRACTICAL-CIB7-COVERAGE-TARGET.md) excludes these forms because they lack pinned CIB execution semantics, and the kernel claims no meaning for them.
+
+**Evidence:**
+- Retained witnesses in [event-reference-forms](../scenarios/open-rows/event-reference-forms/README.md): `multiple-event-definitions-message-then-timer` and `parallel-multiple-message-then-timer`, in which CIB arms the intermediate catch's Timer alone and rejects the Message.
+- In [event-race-compositions](../scenarios/open-rows/event-race-compositions/README.md): `instantiating-with-start-message-wins` and `parallel-with-start-both-messages`, in which CIB runs a plain race; their ledger owners are PC-BASIC-03, PC-CF-05 and PC-CF-08, and these four entries re-own to this limitation.
+- Witnesses awaiting CIB evidence in [interchange-reference-forms](../scenarios/open-rows/interchange-reference-forms/README.md): `event-definition-ref-catch-timer-then-proceed`, `event-definition-ref-start-none-start`, `event-definition-ref-start-message-start` (`eventDefinitionRef`), `instantiating-receive-task-message-start` and `instantiating-receive-task-none-start-then-deliver` (Receive `instantiate`).
+- No witness for `isExecutable`: a non-executable source deploys nothing in CIB, so the pinned source lines above are the evidence.
+
+**Boundary:** Those source forms only; a single inline definition, a non-instantiating Event-Based Gateway, an executable process and supported multiple separate starts or boundaries are unaffected.
+
 ### CIB-LIM-0009: the core JUEL level refuses at admission forms CIB evaluates
 
 **Status:** Profile limitation; not a deviation
@@ -643,6 +675,16 @@ CIB Seven `2.2.0` resolves `${task.assignee}` and its siblings inside a task lis
 **Evidence:** The retained [task-metadata-condition](../scenarios/open-rows/human-task-metadata-composition/README.md) answer, where CIB rolls back a condition reading `task` (CIB Seven `2.2.0`).
 
 **Boundary:** Expressions naming the `task` bean in User Task metadata and conditions.
+
+### CIB-LIM-0013: pinned CIB ignores an Activity's Data Input and Output Associations
+
+**Status:** Known CIB limitation within reviewed scope
+
+BPMN 2.0.2 §10.4.1 and §13.3.2 make an Activity's InputSet available only through its Data Input Associations and copy its OutputSet through its Data Output Associations. CIB Seven `2.2.0`'s `BpmnParse` never reads `ioSpecification`, `dataInputAssociation` or `dataOutputAssociation` outside a Multi-Instance loop's `loopDataInputRef` (`BpmnParse.java:1841-1858`, `CIB-INT-0014`): the task opens with no input whatever the source's availability, and a completion's submitted values are installed by name (`CIB-EXT-0005`) instead of being associated to their targets. The standards profile follows BPMN; no CIB profile imitates the omission.
+
+**Evidence:** The retained answers of `activity-data-input-user-task/{absent,null,present}`, `activity-data-output-user-task/{null,omitted,supplied}` and `activity-data-input-output-user-task/{absent,null,omitted,present}` (standards profile `bpmn-2.0.2`, CIB Seven `2.2.0`): CIB opens the task with no inputs, publishes the submitted `DataOutput_*` name instead of the associated Property, and commits an omitted required output.
+
+**Boundary:** Standard Data Associations on Activities; Multi-Instance loop references stay `CIB-INT-0014`.
 
 ## Extension register
 
@@ -991,6 +1033,26 @@ BPMN 2.0.2 makes XPath the default expression language (Table 8.1 `expressionLan
 
 **Boundary:** Sequence Flow conditions and the other JUEL sites the expression semantics list; it claims nothing about XPath.
 
+### CIB-EXT-0031 — an output parameter reads the Activity's own scope
+
+**Status:** Selected extension through the [cibseven-2.2.0 cumulative profile](../profiles/cibseven-2.2.0/profile.json) (`OutputContext.activityScope`)
+
+BPMN 2.0.2 §10.4.2 and §13.3.2 copy an Activity's outputs from its OutputSet, the values its completion produces; the standards reading therefore evaluates an output mapping against the submitted values alone, and a source only a captured input holds is unavailable. CIB Seven `2.2.0` evaluates a `camunda:outputParameter` in the Activity's own execution (`core/variable/mapping/OutputParameter.java:47`), after `TaskService.complete` or the delegate has set the submitted values there, so the mapping reads the submitted values first and then the Activity's input locals and every variable visible from it. The CIB profile selects that context; the kernel reads it in [`Work.outputScope`](kernel/semantics/DATA-SEMANTICS-SPEC.md#activity-data).
+
+**Evidence:** Pinned `OutputParameter.java:47`; the retained witnesses `captured-input-fallback` (Service Task) and `completion-captured-fallback` (User Task) of [output-mapping-fanout](../scenarios/open-rows/output-mapping-fanout/README.md), which commit in CIB and agree with the kernel under the option (CIB Seven `2.2.0`).
+
+**Boundary:** Output mappings of User and Service Tasks at normal completion and on the mapped Error path. Scope (Sub-Process) outputs already read their own frame, and Call outputs the called root; neither changes. A write's target is unchanged (nearest owner, `CIB-EXT-0020`).
+
+### CIB-EXT-0032 — a Business Rule Task evaluates a DMN 1.3 decision table
+
+**Status:** Selected extension through the [cibseven-2.2.0 cumulative profile](../profiles/cibseven-2.2.0/profile.json)
+
+BPMN 2.0.2 leaves a Business Rule Task's rule engine open (§10.3.3). CIB Seven `2.2.0` makes a Business Rule Task with `camunda:decisionRef` a decision task (`BpmnParse.java:2321-2324,2357-2360`) that evaluates a deployed DMN decision and maps its result (`mapDecisionResult`) into `resultVariable`. The kernel evaluates a DMN 1.3 decision table that the program carries, within the admitted subset of [the decision semantics](kernel/semantics/DECISION-SEMANTICS-SPEC.md) (hit policies, FEEL unary tests, result mappers, conversions and failures, items 1 to 8), and writes the mapped result by the nearest-owner rule; every form outside the subset is refused with a stable code.
+
+**Evidence:** Pinned `BpmnParse.java` and the DMN engine sources the decision semantics cite; the witnesses of [business-rule-hit-policies](../scenarios/open-rows/business-rule-hit-policies/README.md), whose CIB evidence the next retake records.
+
+**Boundary:** Decision tables within the decision semantics' subset, with no Error catcher coded with a Java class (`CIB-EXT-0029`). The binding time of a `latest` decision is recorded with `PC-AUTO-08`.
+
 ## Permitted operational-detail register
 
 ### CIB-OP-0001 — CIB host task identity mapped to project semantic task identity
@@ -1138,6 +1200,26 @@ The differential comparator therefore leaves out `detail.arguments` of an `effec
 **Evidence:** The pinned source cited above; the runner's projector comment; the [automation business error routing](../scenarios/open-rows/automation-business-error-routing/README.md), [handler reuse](../scenarios/open-rows/automation-handler-reuse/README.md), [parallel region composition](../scenarios/open-rows/parallel-region-compositions/README.md) and [configured send](../scenarios/open-rows/send-task-configured-send/README.md) witnesses, whose only difference from the kernel was this list (CIB Seven `2.2.0` evidence, 2026-11-10); the comparator test of `packages/differential/test/comparator.test.ts`.
 
 **Boundary:** The `arguments` of an `effect` open wait against retained CIB evidence only. It covers the effect an incident wait carries; it does not cover the arguments the delegate receives when its job runs, or synchronous effects, which the comparator folds under `CIB-OP-0002`, `CIB-OP-0003` and `CIB-OP-0007`. Argument agreement remains a claim of the kernels and the Temporal host, not of CIB evidence.
+
+### CIB-OP-0014 — a decision result's entry map is compared by name
+
+**Status:** Recorded observation detail; applied by the runner's projection, not a profile selection
+
+CIB Seven `2.2.0` returns a decision's output entries in a `HashMap`, whose iteration order is no semantic claim. The CIB runner projects a Map with its entries ordered by name (`ScenarioVariableValueProjection#projectMap`), and the kernel writes a Map in key order, so the two compare entry by entry.
+
+**Evidence:** `ScenarioVariableValueProjection.java` `projectMap`; the `collect-entries-two-outputs` witness of [business-rule-hit-policies](../scenarios/open-rows/business-rule-hit-policies/README.md).
+
+**Boundary:** The order of Map entries only; names, kinds and values still compare exactly.
+
+### CIB-OP-0015 — a root List of Strings is observed in the legacy `stringList` kind
+
+**Status:** Recorded observation boundary of the CIB evidence; applied by the differential comparator, not a profile selection
+
+Java stores the legacy `stringList` kind and a structured `list` of Strings as the same `ArrayList`, so the CIB runner cannot tell them apart and projects every root-level List of Strings, the empty one included, as `stringList` (`ScenarioVariableValueProjection#projectHost`). Against retained CIB evidence the comparator therefore reads a kernel root `list` whose members are all Strings, in a state's variables and a User Task's inputs, as that `stringList`; a nested List keeps its kind, and two kernels or the Temporal host compare kinds exactly.
+
+**Evidence:** The runner's projection comment; the decision witnesses `collect-overlap`, `collect-no-match`, `rule-order-overlap`, `interval-endpoints-*` and `decimal-literal` of [business-rule-hit-policies](../scenarios/open-rows/business-rule-hit-policies/README.md); the comparator test in `packages/differential/test/comparator.test.ts`.
+
+**Boundary:** Root bindings against retained CIB evidence only; order and members still compare.
 
 ## Configuration-specific register
 

@@ -79,7 +79,10 @@ def element (program : Program) (throws : List Element) : Element → Option Str
     Admission.Data.origin header <|>
       match payload.role with
       | .catch subscription => Admission.Subscriptions.catchEvent subscription <|> subscriptionData program subscription
-      | .throw record => Admission.Propagation.throwRecord (inTransaction program header) record
+      -- A Multiple throw Event (BPMN 2.0.2 §10.5.1); pinned CIB keeps one definition (CIB-LIM-0008) (PC-BASIC-04).
+      | .throw record =>
+        (if payload.alternativeThrows.isEmpty then none else some "event.multipleDefinitions") <|>
+          Admission.Propagation.throwRecord (inTransaction program header) record
       | .linkCatch _ => Admission.Flow.link program header payload
       | .linkThrow _ => Admission.Flow.link program header payload
   | .gateway header payload =>
@@ -109,11 +112,18 @@ def calledProcess (process : CalledProcess) : Option String :=
       definition.tenant.isSome then some "process.definition.binding"
   else none
 
-/-- The first refusal: references, profile options, then called-process bindings, flows and elements in program
-order. -/
+/-- A process not marked executable (BPMN 2.0.2 Table 10.1 `isExecutable`) has no execution meaning; pinned
+`BpmnParse:560-574` deploys none (CIB-LIM-0008) (PC-BASIC-04). -/
+def executable (program : Program) : Option String :=
+  if !program.executable || program.processes.any (!·.executable) then some "process.notExecutable" else none
+
+/-- The first refusal: references, profile options, a process not marked executable, the carried DMN resources, then
+called-process bindings, flows and elements in program order. -/
 def admit (program : Program) : Option String :=
   Admission.Flow.references program <|> Admission.Scopes.references program <|>
     Admission.Profile.options (abnormalScope program) program.options <|>
+    executable program <|>
+    Admission.Work.Decision.resources program <|>
     program.processes.findSome? calledProcess <|>
     program.flows.findSome? (flow program) <|>
     program.elements.findSome? (element program (program.elements.filter compensationThrow))

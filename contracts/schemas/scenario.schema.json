@@ -105,6 +105,32 @@
               "$ref": "#/$defs/sourceOverlayIdentity"
             }
           ]
+        },
+        "decisions": {
+          "description": "The DMN resources deployed with the BPMN source, each bound by its exact bytes; absent binds none.",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "items": {
+            "$ref": "#/$defs/decisionResource"
+          }
+        }
+      }
+    },
+    "decisionResource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "relativePath",
+        "sha256"
+      ],
+      "properties": {
+        "relativePath": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
         }
       }
     },

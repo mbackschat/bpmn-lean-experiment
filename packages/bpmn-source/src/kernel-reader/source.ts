@@ -17,6 +17,8 @@ export type KernelSource = Readonly<{
   overlay: Readonly<{ id: string; sha256: string; bytes: Uint8Array }> | null;
   profile: string;
   limits: Readonly<{ maxBytes: number; parserDeadlineMs: number }>;
+  /** The DMN resources deployed with the source, which a Business Rule Task's `camunda:decisionRef` names. */
+  decisions?: ReadonlyArray<Readonly<{ bytes: Uint8Array; sha256: string }>>;
 }>;
 
 export type ParsedSource = Readonly<{
@@ -30,7 +32,7 @@ const refuse = (code: ReadRefusalCode, evidence: string): never => {
   throw new ReadRefusal(code, null, evidence);
 };
 
-async function sha256Of(bytes: Uint8Array): Promise<string> {
+export async function sha256Of(bytes: Uint8Array): Promise<string> {
   const copy = new Uint8Array(bytes.byteLength);
   copy.set(bytes);
   const digest = await globalThis.crypto.subtle.digest("SHA-256", copy);
@@ -44,7 +46,7 @@ export function declaredSourceEncoding(bytes: Uint8Array): string | null {
   return /^\s*<\?xml\s+[^>]*encoding\s*=\s*["']([^"']+)["'][^>]*\?>/iu.exec(prefix)?.[1] ?? null;
 }
 
-function decodeUtf8(bytes: Uint8Array): string {
+export function decodeUtf8(bytes: Uint8Array): string {
   try {
     return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
   } catch {

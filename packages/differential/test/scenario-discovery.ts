@@ -33,6 +33,8 @@ export type SourceDefinition = Readonly<{
   relativePath: string;
   sha256: string;
   sourceOverlay: Readonly<{ id: string; sha256: string }> | null;
+  /** The DMN resources deployed with the source, each bound by its exact bytes (`scenario.schema.json`). */
+  decisions?: ReadonlyArray<Readonly<{ relativePath: string; sha256: string }>>;
 }>;
 
 /** The members of a scenario document the differential reads; the kernels read the whole document. */
@@ -166,13 +168,19 @@ async function boundOverlay(relativePath: string, source: SourceDefinition) {
   throw new Error(`${relativePath} binds an overlay that no neighbouring file has`);
 }
 
+/** The DMN resources a source binds, read from their paths; the reader checks each one's digest. */
+async function boundDecisions(source: SourceDefinition) {
+  return Promise.all((source.decisions ?? []).map(async (decision) =>
+    ({ bytes: await readFile(path.join(projectRoot, decision.relativePath)), sha256: decision.sha256 })));
+}
+
 /** One source a discovered scenario binds, read under the scenario's profile; a reader refusal is returned. */
 export async function readSourceFor(scenarioPath: string, source: SourceDefinition, profile: string): Promise<KernelRead> {
   const bytes = await readFile(path.join(projectRoot, source.relativePath));
-  return readCaseSource(
-    { relativePath: source.relativePath, bytes, sha256: source.sha256, overlay: await boundOverlay(scenarioPath, source) },
-    profile,
-  );
+  return readCaseSource({
+    relativePath: source.relativePath, bytes, sha256: source.sha256, overlay: await boundOverlay(scenarioPath, source),
+    decisions: await boundDecisions(source),
+  }, profile);
 }
 
 export type ScenarioKernelInput = Readonly<
@@ -203,8 +211,8 @@ export async function kernelProgramFor(
   profile: string,
 ): Promise<KernelJson> {
   const bytes = await readFile(path.join(projectRoot, source.relativePath));
-  return readCaseKernelProgram(
-    { relativePath: source.relativePath, bytes, sha256: source.sha256, overlay: await boundOverlay(scenarioPath, source) },
-    profile,
-  );
+  return readCaseKernelProgram({
+    relativePath: source.relativePath, bytes, sha256: source.sha256, overlay: await boundOverlay(scenarioPath, source),
+    decisions: await boundDecisions(source),
+  }, profile);
 }

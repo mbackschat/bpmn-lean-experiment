@@ -14,6 +14,7 @@ The [profile artifact](profile.json) is the CIB Seven 2.2.0 compatibility profil
 | `errorCatchVariables` | `eventScope` | `CIB-EXT-0028` |
 | `multiInstanceBinding` | `loopReferences` | `CIB-INT-0014` |
 | `effectResultValues` | `activityLocals` | `CIB-EXT-0015` |
+| `outputContext` | `activityScope` | `CIB-EXT-0031` |
 | `evaluator` | `juel` | `CIB-CFG-0011`, `CIB-EXT-0030` |
 
 Every other option keeps the standards reading, including `scopeChainSubmissionBytes`, and the relationships the profile lists without an option row are provenance. A relationship whose option is mutually exclusive with one above is a decision point for a second cumulative profile, not a switch inside this one: the [scope-chain profile](../cibseven-2.2.0-scope-chain/README.md) is the first, because `CIB-EXT-0020` restricts User Task submissions that `CIB-EXT-0005` installs at the root.

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             id="Definitions_EventDefinitionRefCatch" targetNamespace="urn:bpmn-lean:scenarios:interchange-reference-forms:event-definition-ref-catch">
+  <timerEventDefinition id="Timer_Shared">
+    <timeDuration xsi:type="tFormalExpression">PT10S</timeDuration>
+  </timerEventDefinition>
+  <process id="Process_EventDefinitionRefCatch" name="A catch Event naming a root-level Timer definition" isExecutable="true">
+    <startEvent id="Started" name="Started" />
+    <intermediateCatchEvent id="Await" name="Await">
+      <eventDefinitionRef>Timer_Shared</eventDefinitionRef>
+    </intermediateCatchEvent>
+    <userTask id="Proceed" name="Proceed" />
+    <endEvent id="Done" name="Done" />
+    <sequenceFlow id="Flow_Started" sourceRef="Started" targetRef="Await" />
+    <sequenceFlow id="Flow_Awaited" sourceRef="Await" targetRef="Proceed" />
+    <sequenceFlow id="Flow_Done" sourceRef="Proceed" targetRef="Done" />
+  </process>
+</definitions>

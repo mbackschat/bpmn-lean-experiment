@@ -5,8 +5,14 @@
   "bpmn": {
     "id": "business-rule-hit-policies-process",
     "relativePath": "scenarios/open-rows/business-rule-hit-policies/hit-policies.bpmn",
-    "sha256": "c5379b029ff171347bfc1317babcd4d4bc3aee5fccd345b32eb7616800623e10",
-    "sourceOverlay": null
+    "sha256": "5fb3a34d10faba7540cdcc132a0c0227b96f70a41307f4f88305fa21b870d16d",
+    "sourceOverlay": null,
+    "decisions": [
+      {
+        "relativePath": "scenarios/open-rows/business-rule-hit-policies/decisions.dmn",
+        "sha256": "6970d9c8df6258f293cf96d6c6fabe03f3bac8a6bbcc008a205aba9d89b26a2b"
+      }
+    ]
   },
   "stimuli": [
     {

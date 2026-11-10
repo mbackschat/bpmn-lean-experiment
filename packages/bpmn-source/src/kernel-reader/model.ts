@@ -23,7 +23,6 @@ export enum ReadRefusalCode {
   UnknownAttributeValue = "reader.unknownAttributeValue",
   UnknownExtension = "reader.unknownExtension",
   FactNotCarried = "reader.factNotCarried",
-  MultipleEventDefinitions = "reader.multipleEventDefinitions",
   EventDefinitionRef = "reader.eventDefinitionRef",
   EventDefinitionOnElement = "reader.eventDefinitionOnElement",
   StandardLoop = "reader.standardLoop",
@@ -32,7 +31,7 @@ export enum ReadRefusalCode {
   SignalWithoutReference = "reader.signalWithoutReference",
   ThrowWithoutCode = "reader.throwWithoutCode",
   MultiInstanceWithoutCount = "reader.multiInstanceWithoutCount",
-  EventBasedGatewayInstantiate = "reader.eventBasedGatewayInstantiate",
+  DecisionSchema = "decision.schema",
 }
 
 export class ReadRefusal extends Error {

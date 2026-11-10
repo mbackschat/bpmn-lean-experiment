@@ -75,10 +75,11 @@ export type Comparison = Agreement | Disagreement;
 const kernelTargets: ReadonlySet<DifferentialTarget> = new Set([DifferentialTarget.Kernel, DifferentialTarget.KernelTs]);
 
 /**
- * What two targets both observe beyond the shared canonical result: the kernel-only fields when both are kernels, and an
- * effect wait's arguments unless one is retained CIB evidence (CIB-OP-0013).
+ * What two targets both observe beyond the shared canonical result: the kernel-only fields when both are kernels; and,
+ * when one is retained CIB evidence, the CIB observation boundary: no effect wait arguments (CIB-OP-0013) and a root
+ * List of Strings in the legacy `stringList` kind (CIB-OP-0015).
  */
-type Observed = Readonly<{ kernelFields: boolean; effectArguments: boolean }>;
+type Observed = Readonly<{ kernelFields: boolean; cibEvidence: boolean }>;
 
 type OpenWaitKey = readonly [string, string, number, string];
 
@@ -107,10 +108,28 @@ function comparable(observation: unknown, observed: Observed): unknown {
   const kept: Readonly<Record<string, unknown>> = observed.kernelFields
     ? { ...rest, ...(code === undefined ? {} : { code }), ...(scopes === undefined ? {} : { scopes }) }
     : rest;
-  const waits = kept["openWaits"];
+  const variables = kept["variables"];
+  const rooted = observed.cibEvidence && Array.isArray(variables) ? { ...kept, variables: cibBindings(variables) } : kept;
+  const waits = rooted["openWaits"];
   return Array.isArray(waits)
-    ? { ...kept, openWaits: waits.map((wait) => comparableWait(wait, observed)).sort(compareOpenWaits) }
-    : kept;
+    ? { ...rooted, openWaits: waits.map((wait) => comparableWait(wait, observed)).sort(compareOpenWaits) }
+    : rooted;
+}
+
+/**
+ * Root bindings as the CIB runner projects them: Java stores the legacy `stringList` kind and a structured `list` of
+ * Strings as the same ArrayList, so the runner spells every root List of Strings, the empty one included, as
+ * `stringList` (CIB-OP-0015). A nested List keeps its kind.
+ */
+function cibBindings(bindings: ReadonlyArray<unknown>): ReadonlyArray<unknown> {
+  return bindings.map((binding) => {
+    if (!isJsonRecord(binding) || !isJsonRecord(binding["value"])) return binding;
+    const value = binding["value"];
+    const items = value["value"];
+    const strings = value["kind"] === "list" && Array.isArray(items) &&
+      items.every((item) => isJsonRecord(item) && item["kind"] === "string");
+    return strings ? { ...binding, value: { kind: "stringList", value: items.map((item) => (item as Readonly<Record<string, unknown>>)["value"]) } } : binding;
+  });
 }
 
 /**
@@ -122,19 +141,23 @@ function comparable(observation: unknown, observed: Observed): unknown {
 function comparableWait(wait: unknown, observed: Observed): unknown {
   if (!isJsonRecord(wait) || !isJsonRecord(wait["detail"])) return wait;
   const detail = wait["detail"];
-  if (detail["kind"] === "effect" && !observed.effectArguments) {
+  if (detail["kind"] === "effect" && observed.cibEvidence) {
     const { arguments: _unobserved, ...observable } = detail;
     return { ...wait, detail: observable };
   }
-  if (detail["kind"] === "incident" && isJsonRecord(detail["effect"]) && !observed.effectArguments) {
+  if (detail["kind"] === "incident" && isJsonRecord(detail["effect"]) && observed.cibEvidence) {
     const { arguments: _unobserved, ...observable } = detail["effect"];
     return { ...wait, detail: { ...detail, effect: observable } };
   }
   if (detail["kind"] !== "userTask") return wait;
   const sorted = (list: unknown) => Array.isArray(list) ? [...list].map(String).sort(compareCanonicalStrings) : list;
+  const inputs = detail["inputs"];
   return {
     ...wait,
-    detail: { ...detail, candidateUsers: sorted(detail["candidateUsers"]), candidateGroups: sorted(detail["candidateGroups"]) },
+    detail: {
+      ...detail, candidateUsers: sorted(detail["candidateUsers"]), candidateGroups: sorted(detail["candidateGroups"]),
+      ...(observed.cibEvidence && Array.isArray(inputs) ? { inputs: cibBindings(inputs) } : {}),
+    },
   };
 }
 
@@ -203,8 +226,8 @@ export function compareTargetResults(
       candidate.result,
       {
         kernelFields: kernelTargets.has(reference.target) && kernelTargets.has(candidate.target),
-        effectArguments: reference.target !== DifferentialTarget.RetainedCibEvidence &&
-          candidate.target !== DifferentialTarget.RetainedCibEvidence,
+        cibEvidence: reference.target === DifferentialTarget.RetainedCibEvidence ||
+          candidate.target === DifferentialTarget.RetainedCibEvidence,
       },
     );
     if (disagreement !== null) {

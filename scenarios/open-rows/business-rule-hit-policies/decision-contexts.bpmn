@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_DecisionContexts" targetNamespace="urn:bpmn-lean:business-rule-decision-contexts-process">
+  <process id="Process_DecisionContexts" name="A Business Rule Task in a Sub-Process, after an effect and after a timer" isExecutable="true">
+    <startEvent id="ApplicantReceived" name="Applicant received" />
+    <exclusiveGateway id="Select" name="Select context" gatewayDirection="Diverging" default="Flow_NoContext" />
+    <subProcess id="Shadow" name="Sub-Process binding the result name">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="grade">local</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+      <startEvent id="ShadowStarted" name="Shadow started" />
+      <businessRuleTask id="ShadowGrade" name="Grade inside the Sub-Process" camunda:decisionRef="gradeUnique"
+                        camunda:mapDecisionResult="singleEntry" camunda:resultVariable="grade" />
+      <userTask id="InspectShadow" name="Inspect the shadowed result" />
+      <endEvent id="ShadowEnded" name="Shadow ended" />
+      <sequenceFlow id="Flow_ShadowStarted" sourceRef="ShadowStarted" targetRef="ShadowGrade" />
+      <sequenceFlow id="Flow_ShadowGraded" sourceRef="ShadowGrade" targetRef="InspectShadow" />
+      <sequenceFlow id="Flow_ShadowInspected" sourceRef="InspectShadow" targetRef="ShadowEnded" />
+    </subProcess>
+    <serviceTask id="Assess" name="Assess applicant" implementation="urn:bpmn-lean:effect:probe-v1"
+                 camunda:delegateExpression="${bpmnLeanEffectHandler}" camunda:asyncBefore="true" />
+    <businessRuleTask id="GradeAfterEffect" name="Grade after the effect" camunda:decisionRef="gradeUnique"
+                      camunda:mapDecisionResult="singleEntry" camunda:resultVariable="grade" />
+    <intermediateCatchEvent id="CoolingOff" name="Cooling-off wait">
+      <timerEventDefinition>
+        <timeDuration xsi:type="tFormalExpression">PT10S</timeDuration>
+      </timerEventDefinition>
+    </intermediateCatchEvent>
+    <businessRuleTask id="GradeAfterTimer" name="Grade after the timer" camunda:decisionRef="gradeUnique"
+                      camunda:mapDecisionResult="singleEntry" camunda:resultVariable="grade" />
+    <exclusiveGateway id="Merge" name="Merge" gatewayDirection="Converging" />
+    <userTask id="Inspect" name="Inspect result" />
+    <endEvent id="ApplicantClosed" name="Applicant closed" />
+    <sequenceFlow id="Flow_Received" sourceRef="ApplicantReceived" targetRef="Select" />
+    <sequenceFlow id="Flow_ToShadow" sourceRef="Select" targetRef="Shadow">
+      <conditionExpression xsi:type="tFormalExpression">${policy == 'shadow'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToAssess" sourceRef="Select" targetRef="Assess">
+      <conditionExpression xsi:type="tFormalExpression">${policy == 'effect'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToCoolingOff" sourceRef="Select" targetRef="CoolingOff">
+      <conditionExpression xsi:type="tFormalExpression">${policy == 'timer'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_NoContext" sourceRef="Select" targetRef="Merge" />
+    <sequenceFlow id="Flow_ShadowDone" sourceRef="Shadow" targetRef="Merge" />
+    <sequenceFlow id="Flow_Assessed" sourceRef="Assess" targetRef="GradeAfterEffect" />
+    <sequenceFlow id="Flow_GradeAfterEffectDone" sourceRef="GradeAfterEffect" targetRef="Merge" />
+    <sequenceFlow id="Flow_CooledOff" sourceRef="CoolingOff" targetRef="GradeAfterTimer" />
+    <sequenceFlow id="Flow_GradeAfterTimerDone" sourceRef="GradeAfterTimer" targetRef="Merge" />
+    <sequenceFlow id="Flow_Merged" sourceRef="Merge" targetRef="Inspect" />
+    <sequenceFlow id="Flow_Inspected" sourceRef="Inspect" targetRef="ApplicantClosed" />
+  </process>
+</definitions>

@@ -1,0 +1,121 @@
+{
+  "name": "DMN",
+  "uri": "https://www.omg.org/spec/DMN/20191111/MODEL/",
+  "prefix": "dmn",
+  "xml": {
+    "tagAlias": "lowerCase"
+  },
+  "types": [
+    {
+      "name": "DMNElement",
+      "isAbstract": true,
+      "properties": [
+        { "name": "id", "type": "String", "isAttr": true, "isId": true },
+        { "name": "label", "type": "String", "isAttr": true },
+        { "name": "description", "type": "String" }
+      ]
+    },
+    {
+      "name": "NamedElement",
+      "isAbstract": true,
+      "superClass": ["DMNElement"],
+      "properties": [
+        { "name": "name", "type": "String", "isAttr": true }
+      ]
+    },
+    {
+      "name": "Definitions",
+      "superClass": ["NamedElement"],
+      "properties": [
+        { "name": "namespace", "type": "String", "isAttr": true },
+        { "name": "expressionLanguage", "type": "String", "isAttr": true },
+        { "name": "drgElement", "type": "DRGElement", "isMany": true }
+      ]
+    },
+    {
+      "name": "DRGElement",
+      "isAbstract": true,
+      "superClass": ["NamedElement"]
+    },
+    {
+      "name": "Decision",
+      "superClass": ["DRGElement"],
+      "properties": [
+        { "name": "informationRequirement", "type": "InformationRequirement", "isMany": true },
+        { "name": "decisionLogic", "type": "Expression" }
+      ]
+    },
+    {
+      "name": "InformationRequirement",
+      "superClass": ["DMNElement"],
+      "properties": [
+        { "name": "requiredDecision", "type": "DMNElementReference" },
+        { "name": "requiredInput", "type": "DMNElementReference" }
+      ]
+    },
+    {
+      "name": "DMNElementReference",
+      "properties": [
+        { "name": "href", "type": "String", "isAttr": true }
+      ]
+    },
+    {
+      "name": "Expression",
+      "isAbstract": true,
+      "superClass": ["DMNElement"],
+      "properties": [
+        { "name": "typeRef", "type": "String", "isAttr": true }
+      ]
+    },
+    {
+      "name": "LiteralExpression",
+      "superClass": ["Expression"],
+      "properties": [
+        { "name": "expressionLanguage", "type": "String", "isAttr": true },
+        { "name": "text", "type": "String" }
+      ]
+    },
+    {
+      "name": "UnaryTests",
+      "superClass": ["DMNElement"],
+      "properties": [
+        { "name": "expressionLanguage", "type": "String", "isAttr": true },
+        { "name": "text", "type": "String" }
+      ]
+    },
+    {
+      "name": "DecisionTable",
+      "superClass": ["Expression"],
+      "properties": [
+        { "name": "input", "type": "InputClause", "isMany": true },
+        { "name": "output", "type": "OutputClause", "isMany": true },
+        { "name": "rule", "type": "DecisionRule", "isMany": true },
+        { "name": "hitPolicy", "type": "String", "isAttr": true },
+        { "name": "aggregation", "type": "String", "isAttr": true }
+      ]
+    },
+    {
+      "name": "InputClause",
+      "superClass": ["DMNElement"],
+      "properties": [
+        { "name": "inputExpression", "type": "LiteralExpression" }
+      ]
+    },
+    {
+      "name": "OutputClause",
+      "superClass": ["DMNElement"],
+      "properties": [
+        { "name": "name", "type": "String", "isAttr": true },
+        { "name": "typeRef", "type": "String", "isAttr": true }
+      ]
+    },
+    {
+      "name": "DecisionRule",
+      "superClass": ["DMNElement"],
+      "properties": [
+        { "name": "inputEntry", "type": "UnaryTests", "isMany": true },
+        { "name": "outputEntry", "type": "LiteralExpression", "isMany": true }
+      ]
+    }
+  ]
+}

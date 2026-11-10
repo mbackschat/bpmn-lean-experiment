@@ -29,8 +29,7 @@ Admission decides whether a program lies inside the admitted surface before any 
 | `parser.failure`, `parser.warning` | a parse failure or any parser warning other than an unresolved reference, a duplicate identifier included |
 | `reader.unknownElement`, `reader.unknownAttribute`, `reader.unknownAttributeValue`, `reader.unknownExtension`, `reader.factNotCarried` | content the reader has no faithful IL field for |
 | `reader.eventDefinitionRef` | an Event naming a root-level EventDefinition, which pinned CIB never resolves (PC-BASIC-04) |
-| `reader.eventBasedGatewayInstantiate` | an instantiating or Parallel Event-Based Gateway (`instantiate`, `eventGatewayType`, §10.6.6, Table 10.127): the IL has no field for either (PC-CF-05) |
-| `reader.multipleEventDefinitions`, `reader.eventDefinitionOnElement`, `reader.standardLoop`, `reader.eventSubProcessStart`, `reader.dataAssociationShape`, `reader.signalWithoutReference`, `reader.throwWithoutCode`, `reader.multiInstanceWithoutCount` | source shapes the IL cannot carry as written |
+| `reader.eventDefinitionOnElement`, `reader.standardLoop`, `reader.eventSubProcessStart`, `reader.dataAssociationShape`, `reader.signalWithoutReference`, `reader.throwWithoutCode`, `reader.multiInstanceWithoutCount` | source shapes the IL cannot carry as written |
 
 Boolean coercion: `bpmn-moddle` reduces every `xsd:boolean` attribute to `value === "true"` without a warning, so `1`, which means true, reads as false. Any `Boolean`-typed attribute whose lexeme the coercion does not preserve is refused; `0` is admitted and `1` is not, which refuses exactly the disagreement, and an entity-encoded spelling is refused as well. The attribute set is the metamodel's `Boolean` properties, not a list. Enumerated defaults stay outside the rule, because BPMN 2.0.2's own machine-readable artifacts disagree on the only such literal (owner-confirmed 2026-08-07; [coercion rule][csm-boolean]).
 

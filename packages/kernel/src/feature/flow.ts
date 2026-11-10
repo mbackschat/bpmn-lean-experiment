@@ -347,6 +347,7 @@ export function arriveGateway(ctx: Ctx, header: Header, payload: GatewayPayload,
         },
         (current) => inclusiveFlows(ctx, kind.candidates, kind.default, payload.outgoing, scope, current));
     case GatewayKindTag.EventBased:
+      // Admission admits only a non-instantiating gateway (`gateway.eventBased.instantiate`).
       return committed(signal(state, { tag: SignalTag.ArmGateway, occurrence: occurrence.id, gateway: header.id, scope }));
   }
   return assertNever(kind);

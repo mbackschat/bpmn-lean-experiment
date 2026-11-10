@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             id="Definitions_EventDefinitionRefStart" targetNamespace="urn:bpmn-lean:scenarios:interchange-reference-forms:event-definition-ref-start">
+  <message id="Message_Reply" name="reply" />
+  <messageEventDefinition id="Message_Shared" messageRef="Message_Reply" />
+  <process id="Process_EventDefinitionRefStart" name="A Start Event naming a root-level Message definition" isExecutable="true">
+    <startEvent id="Started" name="Started">
+      <eventDefinitionRef>Message_Shared</eventDefinitionRef>
+    </startEvent>
+    <userTask id="Proceed" name="Proceed" />
+    <endEvent id="Done" name="Done" />
+    <sequenceFlow id="Flow_Started" sourceRef="Started" targetRef="Proceed" />
+    <sequenceFlow id="Flow_Done" sourceRef="Proceed" targetRef="Done" />
+  </process>
+</definitions>

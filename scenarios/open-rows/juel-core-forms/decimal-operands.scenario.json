@@ -18,7 +18,7 @@
           "name": "price",
           "value": {
             "kind": "decimal",
-            "coefficient": "150",
+            "coefficient": "125",
             "scale": 2
           }
         },
@@ -26,7 +26,7 @@
           "name": "quantity",
           "value": {
             "kind": "integer",
-            "value": 4
+            "value": 3
           }
         },
         {
