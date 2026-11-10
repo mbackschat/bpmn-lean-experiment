@@ -161,23 +161,27 @@ final class CibSevenOccurrences {
       byElement.computeIfAbsent(historic.getActivityId(), ignored -> new ArrayList<>()).add(historic.getId());
     }
     var counters = loopCounters(instance.tree());
-    for (var element : byElement.entrySet()) {
-      var ids = generationOrder(element.getValue(), counters);
-      if (subscriptionElement(instance.model(), element.getKey())) {
-        for (var id : ids) {
-          begun.put(id, beginActivation(instance, element.getKey()));
-        }
-      } else {
-        ordinals.computeIfAbsent(instance.engineId() + "\u0000" + element.getKey(), ignored -> new ArrayList<>())
-            .addAll(ids);
-      }
+    var ordered = new LinkedHashMap<String, List<String>>();
+    byElement.forEach((element, ids) -> ordered.put(element, generationOrder(ids, counters)));
+    // A boundary that fires at its host's entry can sort before its host, yet the host arms it first (CIB-OP-0018): the
+    // subscription keeps the host's reservation and the firing begins after it, so every new host reserves first.
+    ordered.forEach((element, ids) -> {
       for (var id : ids) {
-        for (var hosted : hosted(instance.model(), element.getKey())) {
+        for (var hosted : hosted(instance.model(), element)) {
           hostReservations.put(key(instance.engineId(), id, hosted), reserve(instance.engineId(), hosted));
         }
       }
+    });
+    ordered.forEach((element, ids) -> {
+      if (subscriptionElement(instance.model(), element)) {
+        for (var id : ids) {
+          begun.put(id, beginActivation(instance, element));
+        }
+      } else {
+        ordinals.computeIfAbsent(instance.engineId() + "\u0000" + element, ignored -> new ArrayList<>()).addAll(ids);
+      }
       numbered.addAll(ids);
-    }
+    });
   }
 
   private static String key(String... parts) {
