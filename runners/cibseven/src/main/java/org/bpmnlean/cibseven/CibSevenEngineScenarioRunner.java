@@ -197,6 +197,14 @@ final class CibSevenEngineScenarioRunner implements AutoCloseable {
             // none of these and stay harness failures. A DMN evaluation failure is a DmnEngineException or, from the
             // FEEL engine, a FeelException (`ScalaFeelLogger`), neither a ProcessEngineException, and rolls back the same way.
             outcome = ROLLED_BACK;
+          } catch (RuntimeException failed) {
+            if (!thrownByCib(failed)) {
+              throw failed;
+            }
+            requireNoIntegrityViolation(failed);
+            // CIB also lets unchecked JDK exceptions escape its own code unwrapped, such as the NumberFormatException of
+            // a text cardinality (`MultiInstanceActivityBehavior:148-151`); the command's transaction rolls back alike.
+            outcome = ROLLED_BACK;
           }
           var commandNanos = positiveElapsedSince(startedAt);
           trace.add(new CommandObservation(stimulus.commandId(), outcome));
@@ -441,6 +449,21 @@ final class CibSevenEngineScenarioRunner implements AutoCloseable {
         throw new IllegalStateException("An engine write violated database integrity", failure);
       }
     }
+  }
+
+  /**
+   * Whether an exception was raised by CIB engine code: its first frame outside the JDK belongs to CIB. A failure the
+   * runner's own code raises, its effect delegate included, has a runner frame there and stays a harness failure.
+   */
+  static boolean thrownByCib(Throwable failure) {
+    for (var frame : failure.getStackTrace()) {
+      var owner = frame.getClassName();
+      if (owner.startsWith("java.") || owner.startsWith("jdk.") || owner.startsWith("sun.")) {
+        continue;
+      }
+      return owner.startsWith("org.cibseven.bpm.");
+    }
+    return false;
   }
 
   private static long positiveElapsedSince(long startedAt) {

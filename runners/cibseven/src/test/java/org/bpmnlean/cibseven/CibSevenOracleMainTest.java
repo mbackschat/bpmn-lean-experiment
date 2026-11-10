@@ -76,6 +76,21 @@ public class CibSevenOracleMainTest {
   }
 
   @Test
+  public void recordsAnUncheckedExceptionCibThrowsInsideACommandAsThatCommandsRollback() throws Exception {
+    // CIB parses a text cardinality with Integer.parseInt (MultiInstanceActivityBehavior:148-151), so " 2" throws a raw
+    // NumberFormatException out of the start command: CIB's behaviour, not a harness failure.
+    var scenario = ScenarioJson.writeScenario(ScenarioJson.read(
+        PROJECT_ROOT.resolve("scenarios/open-rows/multi-instance-expression-results/count-text-padded.scenario.json")));
+    var output = new StringWriter();
+
+    CibSevenOracleMain.serve(new StringReader(scenario + System.lineSeparator()), output, PROJECT_ROOT);
+
+    var result = ScenarioJson.readResult(output.toString().lines().findFirst().orElseThrow());
+    assertTrue(result.trace().contains(
+        new ScenarioProtocol.CommandObservation("s01-start", ScenarioProtocol.CommandOutcome.ROLLED_BACK)));
+  }
+
+  @Test
   public void servesTheInteractionCapsuleInRequestOrderThroughOneEngine()
       throws Exception {
     var capsuleRoot =
