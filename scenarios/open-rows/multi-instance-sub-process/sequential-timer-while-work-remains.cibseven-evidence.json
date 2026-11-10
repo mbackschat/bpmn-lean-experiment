@@ -6,7 +6,7 @@
   },
   "profile": {
     "id": "cibseven-2.2.0",
-    "sha256": "4cfc533e2831fe656c1595971f9a1308d8cc9f41f6725798a949d2c6a5a49214"
+    "sha256": "186794b9b170bcdbc8353972e4902d2cedcd9c120f9bf3dc53b7e6256964547c"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -14,7 +14,8 @@
     "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
     "runner": "cibseven-oracle",
     "java": "21",
-    "database": "H2 2.3.232"
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
   },
   "producerObservations": {
     "stateQueries": [
@@ -64,7 +65,7 @@
       {
         "afterCommandId": "s03-fire-timer-BoundaryTimer_Item-1",
         "processInstanceCount": 1,
-        "engineClockTimeMs": 0,
+        "engineClockTimeMs": 5000,
         "variables": [
           {
             "name": "items",
@@ -89,7 +90,7 @@
       {
         "afterCommandId": "s04-complete-UserTask_Inspect-2",
         "processInstanceCount": 1,
-        "engineClockTimeMs": 0,
+        "engineClockTimeMs": 5000,
         "variables": [
           {
             "name": "items",
@@ -106,15 +107,15 @@
             "name": "verdict",
             "value": {
               "kind": "string",
-              "value": "late"
+              "value": "v1"
             }
           }
         ]
       },
       {
         "afterCommandId": "s05-complete-UserTask_Escalation-1",
-        "processInstanceCount": 1,
-        "engineClockTimeMs": 0,
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 5000,
         "variables": [
           {
             "name": "items",
@@ -131,7 +132,7 @@
             "name": "verdict",
             "value": {
               "kind": "string",
-              "value": "late"
+              "value": "v1"
             }
           }
         ]
@@ -160,8 +161,8 @@
         "afterCommandId": "s03-fire-timer-BoundaryTimer_Item-1",
         "tasks": [
           {
-            "elementId": "UserTask_Inspect",
-            "name": "Inspect one item"
+            "elementId": "UserTask_Escalation",
+            "name": "Handle interrupted run"
           }
         ]
       },
@@ -169,19 +170,14 @@
         "afterCommandId": "s04-complete-UserTask_Inspect-2",
         "tasks": [
           {
-            "elementId": "UserTask_Inspect",
-            "name": "Inspect one item"
+            "elementId": "UserTask_Escalation",
+            "name": "Handle interrupted run"
           }
         ]
       },
       {
         "afterCommandId": "s05-complete-UserTask_Escalation-1",
-        "tasks": [
-          {
-            "elementId": "UserTask_Inspect",
-            "name": "Inspect one item"
-          }
-        ]
+        "tasks": []
       }
     ],
     "timerJobs": [
@@ -207,33 +203,15 @@
       },
       {
         "afterCommandId": "s03-fire-timer-BoundaryTimer_Item-1",
-        "jobs": [
-          {
-            "elementId": "BoundaryTimer_Item",
-            "dueDateDeltaMs": 5000,
-            "executable": false
-          }
-        ]
+        "jobs": []
       },
       {
         "afterCommandId": "s04-complete-UserTask_Inspect-2",
-        "jobs": [
-          {
-            "elementId": "BoundaryTimer_Item",
-            "dueDateDeltaMs": 5000,
-            "executable": false
-          }
-        ]
+        "jobs": []
       },
       {
         "afterCommandId": "s05-complete-UserTask_Escalation-1",
-        "jobs": [
-          {
-            "elementId": "BoundaryTimer_Item",
-            "dueDateDeltaMs": 5000,
-            "executable": false
-          }
-        ]
+        "jobs": []
       }
     ],
     "historicProcessStates": [
@@ -255,7 +233,7 @@
       },
       {
         "afterCommandId": "s05-complete-UserTask_Escalation-1",
-        "state": "ACTIVE"
+        "state": "COMPLETED"
       }
     ]
   },
@@ -265,7 +243,7 @@
   "result": {
     "outcome": {
       "kind": "semantic",
-      "outcome": "rejected"
+      "outcome": "committed"
     },
     "trace": [
       {
@@ -384,7 +362,7 @@
             "id": {
               "processInstanceId": "Instance_1",
               "elementId": "BoundaryTimer_Item",
-              "activation": 2
+              "activation": 1
             },
             "definition": null,
             "detail": {
@@ -436,13 +414,13 @@
       {
         "kind": "command",
         "commandId": "s03-fire-timer-BoundaryTimer_Item-1",
-        "outcome": "rejected"
+        "outcome": "committed"
       },
       {
         "kind": "state",
         "instanceId": "Instance_1",
         "status": "running",
-        "logicalTimeMs": 0,
+        "logicalTimeMs": 5000,
         "variables": [
           {
             "name": "items",
@@ -467,27 +445,13 @@
           {
             "id": {
               "processInstanceId": "Instance_1",
-              "elementId": "BoundaryTimer_Item",
-              "activation": 2
-            },
-            "definition": null,
-            "detail": {
-              "kind": "timer",
-              "deadlineMs": 5000,
-              "recurrence": null
-            },
-            "input": "timerFire"
-          },
-          {
-            "id": {
-              "processInstanceId": "Instance_1",
-              "elementId": "UserTask_Inspect",
-              "activation": 2
+              "elementId": "UserTask_Escalation",
+              "activation": 1
             },
             "definition": null,
             "detail": {
               "kind": "userTask",
-              "name": "Inspect one item",
+              "name": "Handle interrupted run",
               "assignee": null,
               "candidateUsers": [],
               "candidateGroups": [],
@@ -496,22 +460,7 @@
               "dueDate": null,
               "followUpDate": null,
               "priority": null,
-              "inputs": [
-                {
-                  "name": "position",
-                  "value": {
-                    "kind": "integer",
-                    "value": 1
-                  }
-                },
-                {
-                  "name": "subject",
-                  "value": {
-                    "kind": "string",
-                    "value": "b"
-                  }
-                }
-              ]
+              "inputs": []
             },
             "input": "command"
           }
@@ -520,13 +469,13 @@
       {
         "kind": "command",
         "commandId": "s04-complete-UserTask_Inspect-2",
-        "outcome": "committed"
+        "outcome": "rejected"
       },
       {
         "kind": "state",
         "instanceId": "Instance_1",
         "status": "running",
-        "logicalTimeMs": 0,
+        "logicalTimeMs": 5000,
         "variables": [
           {
             "name": "items",
@@ -543,7 +492,7 @@
             "name": "verdict",
             "value": {
               "kind": "string",
-              "value": "late"
+              "value": "v1"
             }
           }
         ],
@@ -551,27 +500,13 @@
           {
             "id": {
               "processInstanceId": "Instance_1",
-              "elementId": "BoundaryTimer_Item",
-              "activation": 3
-            },
-            "definition": null,
-            "detail": {
-              "kind": "timer",
-              "deadlineMs": 5000,
-              "recurrence": null
-            },
-            "input": "timerFire"
-          },
-          {
-            "id": {
-              "processInstanceId": "Instance_1",
-              "elementId": "UserTask_Inspect",
-              "activation": 3
+              "elementId": "UserTask_Escalation",
+              "activation": 1
             },
             "definition": null,
             "detail": {
               "kind": "userTask",
-              "name": "Inspect one item",
+              "name": "Handle interrupted run",
               "assignee": null,
               "candidateUsers": [],
               "candidateGroups": [],
@@ -580,22 +515,7 @@
               "dueDate": null,
               "followUpDate": null,
               "priority": null,
-              "inputs": [
-                {
-                  "name": "position",
-                  "value": {
-                    "kind": "integer",
-                    "value": 2
-                  }
-                },
-                {
-                  "name": "subject",
-                  "value": {
-                    "kind": "string",
-                    "value": "c"
-                  }
-                }
-              ]
+              "inputs": []
             },
             "input": "command"
           }
@@ -604,13 +524,13 @@
       {
         "kind": "command",
         "commandId": "s05-complete-UserTask_Escalation-1",
-        "outcome": "rejected"
+        "outcome": "committed"
       },
       {
         "kind": "state",
         "instanceId": "Instance_1",
-        "status": "running",
-        "logicalTimeMs": 0,
+        "status": "completed",
+        "logicalTimeMs": 5000,
         "variables": [
           {
             "name": "items",
@@ -627,63 +547,11 @@
             "name": "verdict",
             "value": {
               "kind": "string",
-              "value": "late"
+              "value": "v1"
             }
           }
         ],
-        "openWaits": [
-          {
-            "id": {
-              "processInstanceId": "Instance_1",
-              "elementId": "BoundaryTimer_Item",
-              "activation": 3
-            },
-            "definition": null,
-            "detail": {
-              "kind": "timer",
-              "deadlineMs": 5000,
-              "recurrence": null
-            },
-            "input": "timerFire"
-          },
-          {
-            "id": {
-              "processInstanceId": "Instance_1",
-              "elementId": "UserTask_Inspect",
-              "activation": 3
-            },
-            "definition": null,
-            "detail": {
-              "kind": "userTask",
-              "name": "Inspect one item",
-              "assignee": null,
-              "candidateUsers": [],
-              "candidateGroups": [],
-              "formKey": null,
-              "formFields": [],
-              "dueDate": null,
-              "followUpDate": null,
-              "priority": null,
-              "inputs": [
-                {
-                  "name": "position",
-                  "value": {
-                    "kind": "integer",
-                    "value": 2
-                  }
-                },
-                {
-                  "name": "subject",
-                  "value": {
-                    "kind": "string",
-                    "value": "c"
-                  }
-                }
-              ]
-            },
-            "input": "command"
-          }
-        ]
+        "openWaits": []
       }
     ]
   }

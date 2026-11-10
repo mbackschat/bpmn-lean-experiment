@@ -6,7 +6,7 @@
   },
   "profile": {
     "id": "bpmn-2.0.2",
-    "sha256": "89155106a5ec44c370470efa8a652c7d7d6320906a8df66d4f168d82d3ef1822"
+    "sha256": "40560e339f6e0fed37be6dc875883b9645f61972ff80c1d5944a32a5f08e8259"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -14,7 +14,8 @@
     "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
     "runner": "cibseven-oracle",
     "java": "21",
-    "database": "H2 2.3.232"
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
   },
   "producerObservations": {
     "stateQueries": [],

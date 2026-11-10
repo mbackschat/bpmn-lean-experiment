@@ -6,7 +6,7 @@
   },
   "profile": {
     "id": "cibseven-2.2.0",
-    "sha256": "4cfc533e2831fe656c1595971f9a1308d8cc9f41f6725798a949d2c6a5a49214"
+    "sha256": "186794b9b170bcdbc8353972e4902d2cedcd9c120f9bf3dc53b7e6256964547c"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -14,7 +14,8 @@
     "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
     "runner": "cibseven-oracle",
     "java": "21",
-    "database": "H2 2.3.232"
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
   },
   "producerObservations": {
     "stateQueries": [
@@ -33,37 +34,37 @@
       {
         "afterCommandId": "fire-timer-sha256:32eb98f0b8dabffc7d85ce72f227bf2dc12bf001f21fb3e59f8c2240c8b0a432",
         "processInstanceCount": 1,
-        "engineClockTimeMs": 1000,
+        "engineClockTimeMs": 2000,
         "variables": []
       },
       {
         "afterCommandId": "complete-UserTask_Trigger-1",
         "processInstanceCount": 1,
-        "engineClockTimeMs": 1000,
+        "engineClockTimeMs": 2000,
         "variables": []
       },
       {
         "afterCommandId": "complete-HandleReminder-1",
         "processInstanceCount": 1,
-        "engineClockTimeMs": 1000,
+        "engineClockTimeMs": 2000,
         "variables": []
       },
       {
         "afterCommandId": "complete-HandleReminder-2",
         "processInstanceCount": 1,
-        "engineClockTimeMs": 1000,
+        "engineClockTimeMs": 2000,
         "variables": []
       },
       {
         "afterCommandId": "complete-UserTask_Outer-1",
         "processInstanceCount": 1,
-        "engineClockTimeMs": 1000,
+        "engineClockTimeMs": 2000,
         "variables": []
       },
       {
         "afterCommandId": "complete-IndependentAudit-1",
         "processInstanceCount": 0,
-        "engineClockTimeMs": 1000,
+        "engineClockTimeMs": 2000,
         "variables": []
       }
     ],
@@ -124,6 +125,10 @@
           {
             "elementId": "HandleReminder",
             "name": "Respond to application reminder"
+          },
+          {
+            "elementId": "HandleReminder",
+            "name": "Respond to application reminder"
           }
         ]
       },
@@ -133,6 +138,10 @@
           {
             "elementId": "IndependentAudit",
             "name": "Complete independent audit"
+          },
+          {
+            "elementId": "HandleReminder",
+            "name": "Respond to application reminder"
           },
           {
             "elementId": "HandleReminder",
@@ -150,6 +159,10 @@
           {
             "elementId": "IndependentAudit",
             "name": "Complete independent audit"
+          },
+          {
+            "elementId": "HandleReminder",
+            "name": "Respond to application reminder"
           },
           {
             "elementId": "UserTask_Outer",
@@ -210,7 +223,7 @@
         "jobs": [
           {
             "elementId": "Reminder",
-            "dueDateDeltaMs": 2000,
+            "dueDateDeltaMs": 3000,
             "executable": false
           }
         ]
@@ -442,7 +455,7 @@
             "id": {
               "processInstanceId": "Instance_subprocess-boundary-timer_repeat",
               "elementId": "Reminder",
-              "activation": 1
+              "activation": 2
             },
             "definition": null,
             "detail": {
@@ -505,13 +518,13 @@
       {
         "kind": "command",
         "commandId": "fire-timer-sha256:32eb98f0b8dabffc7d85ce72f227bf2dc12bf001f21fb3e59f8c2240c8b0a432",
-        "outcome": "rejected"
+        "outcome": "committed"
       },
       {
         "kind": "state",
         "instanceId": "Instance_subprocess-boundary-timer_repeat",
         "status": "running",
-        "logicalTimeMs": 1000,
+        "logicalTimeMs": 2000,
         "variables": [],
         "openWaits": [
           {
@@ -519,6 +532,28 @@
               "processInstanceId": "Instance_subprocess-boundary-timer_repeat",
               "elementId": "HandleReminder",
               "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Respond to application reminder",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_subprocess-boundary-timer_repeat",
+              "elementId": "HandleReminder",
+              "activation": 2
             },
             "definition": null,
             "detail": {
@@ -562,12 +597,12 @@
             "id": {
               "processInstanceId": "Instance_subprocess-boundary-timer_repeat",
               "elementId": "Reminder",
-              "activation": 1
+              "activation": 3
             },
             "definition": null,
             "detail": {
               "kind": "timer",
-              "deadlineMs": 2000,
+              "deadlineMs": 3000,
               "recurrence": {
                 "periodMs": 1000,
                 "cron": null,
@@ -631,7 +666,7 @@
         "kind": "state",
         "instanceId": "Instance_subprocess-boundary-timer_repeat",
         "status": "running",
-        "logicalTimeMs": 1000,
+        "logicalTimeMs": 2000,
         "variables": [],
         "openWaits": [
           {
@@ -639,6 +674,28 @@
               "processInstanceId": "Instance_subprocess-boundary-timer_repeat",
               "elementId": "HandleReminder",
               "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Respond to application reminder",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_subprocess-boundary-timer_repeat",
+              "elementId": "HandleReminder",
+              "activation": 2
             },
             "definition": null,
             "detail": {
@@ -711,9 +768,31 @@
         "kind": "state",
         "instanceId": "Instance_subprocess-boundary-timer_repeat",
         "status": "running",
-        "logicalTimeMs": 1000,
+        "logicalTimeMs": 2000,
         "variables": [],
         "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_subprocess-boundary-timer_repeat",
+              "elementId": "HandleReminder",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Respond to application reminder",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
           {
             "id": {
               "processInstanceId": "Instance_subprocess-boundary-timer_repeat",
@@ -763,13 +842,13 @@
       {
         "kind": "command",
         "commandId": "complete-HandleReminder-2",
-        "outcome": "rejected"
+        "outcome": "committed"
       },
       {
         "kind": "state",
         "instanceId": "Instance_subprocess-boundary-timer_repeat",
         "status": "running",
-        "logicalTimeMs": 1000,
+        "logicalTimeMs": 2000,
         "variables": [],
         "openWaits": [
           {
@@ -827,7 +906,7 @@
         "kind": "state",
         "instanceId": "Instance_subprocess-boundary-timer_repeat",
         "status": "running",
-        "logicalTimeMs": 1000,
+        "logicalTimeMs": 2000,
         "variables": [],
         "openWaits": [
           {
@@ -863,7 +942,7 @@
         "kind": "state",
         "instanceId": "Instance_subprocess-boundary-timer_repeat",
         "status": "completed",
-        "logicalTimeMs": 1000,
+        "logicalTimeMs": 2000,
         "variables": [],
         "openWaits": []
       }
