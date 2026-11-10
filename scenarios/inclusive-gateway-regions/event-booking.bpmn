@@ -2,8 +2,7 @@
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
              xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
-             id="Definitions_EventBooking" targetNamespace="urn:bpmn-lean:event-booking"
-             expressionLanguage="urn:bpmn-lean:expression:simple-boolean:v1">
+             id="Definitions_EventBooking" targetNamespace="urn:bpmn-lean:event-booking">
   <process id="Process_EventBooking" name="Book a corporate event" isExecutable="true">
     <startEvent id="EventRequested" name="Event requested" />
     <serviceTask id="QuoteEvent" name="Quote event"
@@ -34,10 +33,10 @@
     <sequenceFlow id="Flow_ToVenue" sourceRef="PrepareEvent" targetRef="BookVenue" />
     <sequenceFlow id="Flow_ToExtras" sourceRef="PrepareEvent" targetRef="OrderExtras" />
     <sequenceFlow id="Flow_Catering" sourceRef="OrderExtras" targetRef="OrderCatering">
-      <conditionExpression xsi:type="tFormalExpression">stringEquals(catering,"yes")</conditionExpression>
+      <conditionExpression xsi:type="tFormalExpression">${catering == 'yes'}</conditionExpression>
     </sequenceFlow>
     <sequenceFlow id="Flow_Technology" sourceRef="OrderExtras" targetRef="ArrangeTechnology">
-      <conditionExpression xsi:type="tFormalExpression">stringEquals(technology,"yes")</conditionExpression>
+      <conditionExpression xsi:type="tFormalExpression">${technology == 'yes'}</conditionExpression>
     </sequenceFlow>
     <sequenceFlow id="Flow_AttendeeList" sourceRef="OrderExtras" targetRef="ConfirmAttendeeList" />
     <sequenceFlow id="Flow_ToProjector" sourceRef="ArrangeTechnology" targetRef="RentProjector" />

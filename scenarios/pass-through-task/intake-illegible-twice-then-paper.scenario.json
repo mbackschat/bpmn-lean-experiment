@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "document-intake",
     "relativePath": "scenarios/pass-through-task/document-intake.bpmn",
-    "sha256": "09900df1dae11f1f2b9ba1ec3518460a21f42cce3cbd0411b79399c421d57c8e",
+    "sha256": "fddb540069e85ad832fabd4a34d89d2cbc25fb6beed5b295fb00017110604699",
     "sourceOverlay": {
       "id": "document-intake-handlers",
       "sha256": "3a13de4f78fa19ee0cc9fa8085692c8c5790efca1a545bef4e7954ca05d407fb"

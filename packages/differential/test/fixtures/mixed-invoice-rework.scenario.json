@@ -4,7 +4,7 @@
   "profile": "cibseven-2.2.0",
   "bpmn": {
     "id": "reviewed-invoice",
-    "sha256": "e70fd9df07f1febc20a0600d822194b5fe5a1100279882866d769ff4274abae0",
+    "sha256": "9f3aa0845c7faf28267c3f82bd5d4b9d413895e3e87fb3475505b98593d3b0a4",
     "sourceOverlay": {
       "id": "invoice-handlers",
       "sha256": "466302458623119c5d1cd2d17a78ab2f7bce692e3ad4467f8a2870277b64ec3c"

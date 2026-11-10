@@ -2,8 +2,7 @@
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
              xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
-             id="Definitions_ClaimArchiving" targetNamespace="urn:bpmn-lean:claim-archiving"
-             expressionLanguage="urn:bpmn-lean:expression:simple-boolean:v1">
+             id="Definitions_ClaimArchiving" targetNamespace="urn:bpmn-lean:claim-archiving">
   <process id="Process_ClaimArchiving" name="Decide and archive an insurance claim" isExecutable="true">
     <startEvent id="ClaimReceived" name="Claim received" />
     <serviceTask id="AssessClaim" name="Assess claim"
@@ -24,7 +23,7 @@
     <sequenceFlow id="Flow_Received" sourceRef="ClaimReceived" targetRef="AssessClaim" />
     <sequenceFlow id="Flow_Assessed" sourceRef="AssessClaim" targetRef="ClaimApproved" />
     <sequenceFlow id="Flow_Approved" sourceRef="ClaimApproved" targetRef="ApprovePayout">
-      <conditionExpression xsi:type="tFormalExpression">stringEquals(decision,"approve")</conditionExpression>
+      <conditionExpression xsi:type="tFormalExpression">${decision == 'approve'}</conditionExpression>
     </sequenceFlow>
     <sequenceFlow id="Flow_Rejected" sourceRef="ClaimApproved" targetRef="WriteRejectionLetter" />
     <sequenceFlow id="Flow_PayoutApproved" sourceRef="ApprovePayout" targetRef="ArchiveClaimFile" />

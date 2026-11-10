@@ -1,4 +1,4 @@
-<definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" targetNamespace="urn:invoice-business-error" expressionLanguage="urn:bpmn-lean:expression:simple-boolean:v1">
+<definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" targetNamespace="urn:invoice-business-error">
   <process id="Invoice" isExecutable="true">
     <startEvent id="Start"/>
     <exclusiveGateway id="Reentry" gatewayDirection="Converging"/>

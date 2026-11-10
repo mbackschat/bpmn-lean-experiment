@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "contract-revision",
     "relativePath": "scenarios/scope-reentry/contract-revision.bpmn",
-    "sha256": "772941c232e3392cfe914c72d6a708b0aae04623b61d10161c1fdd04051547e2",
+    "sha256": "8d3f48b73d993c29251a10d57e74cc8aee547b1f4e350b56f92150a963b02ab1",
     "sourceOverlay": {
       "id": "contract-revision-handlers",
       "sha256": "072f5cb54dda570a973b9ece27f5e62a6b9021d352fc4a454f8fa2e65bc917f1"

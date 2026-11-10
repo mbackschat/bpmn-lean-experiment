@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "ticket-triage",
     "relativePath": "scenarios/exclusive-choice-without-default/ticket-triage.bpmn",
-    "sha256": "875311920a4f8be261e4e244c07bf006f6b6ca9b7d3667e62a1b81eff810ebd5",
+    "sha256": "f793e6990804323ea5b655e4301d49b00eec22a0f119f164225e68647e47a291",
     "sourceOverlay": {
       "id": "ticket-triage-handlers",
       "sha256": "ff12480979bec21e6eae2cedb563aece8816b660ac0cf9d943029926c72115d6"

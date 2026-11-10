@@ -2,8 +2,7 @@
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
              xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
-             id="Definitions_DocumentIntake" targetNamespace="urn:bpmn-lean:document-intake"
-             expressionLanguage="urn:bpmn-lean:expression:simple-boolean:v1">
+             id="Definitions_DocumentIntake" targetNamespace="urn:bpmn-lean:document-intake">
   <process id="Process_DocumentIntake" name="Take in a received document" isExecutable="true">
     <startEvent id="DocumentReceived" name="Document received" />
     <exclusiveGateway id="IntakeRequested" name="Intake requested" gatewayDirection="Converging" />
@@ -40,10 +39,10 @@
     <sequenceFlow id="Flow_Intake" sourceRef="IntakeRequested" targetRef="ClassifyDocument" />
     <sequenceFlow id="Flow_Classified" sourceRef="ClassifyDocument" targetRef="DocumentFormat" />
     <sequenceFlow id="Flow_Paper" sourceRef="DocumentFormat" targetRef="ArchivePaperOriginal">
-      <conditionExpression xsi:type="tFormalExpression">stringEquals(documentFormat,"paper")</conditionExpression>
+      <conditionExpression xsi:type="tFormalExpression">${documentFormat == 'paper'}</conditionExpression>
     </sequenceFlow>
     <sequenceFlow id="Flow_Illegible" sourceRef="DocumentFormat" targetRef="PhoneSender">
-      <conditionExpression xsi:type="tFormalExpression">stringEquals(documentFormat,"illegible")</conditionExpression>
+      <conditionExpression xsi:type="tFormalExpression">${documentFormat == 'illegible'}</conditionExpression>
     </sequenceFlow>
     <sequenceFlow id="Flow_Digital" sourceRef="DocumentFormat" targetRef="RegisterDigitalCopy" />
     <sequenceFlow id="Flow_PaperFiled" sourceRef="ArchivePaperOriginal" targetRef="Filed" />

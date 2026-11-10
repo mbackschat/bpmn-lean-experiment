@@ -2,8 +2,7 @@
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
              xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
-             id="Definitions_ExpenseRouting" targetNamespace="urn:bpmn-lean:expense-routing"
-             expressionLanguage="urn:bpmn-lean:expression:simple-boolean:v1">
+             id="Definitions_ExpenseRouting" targetNamespace="urn:bpmn-lean:expense-routing">
   <process id="Process_ExpenseRouting" name="Route an expense claim to its reviewer and pay it out" isExecutable="true">
     <startEvent id="ExpenseSubmitted" name="Expense submitted" />
     <exclusiveGateway id="RouteExpense" name="Route expense" gatewayDirection="Diverging">
@@ -35,23 +34,23 @@
     <endEvent id="ExpenseSettled" name="Expense settled" />
     <sequenceFlow id="Flow_Submitted" sourceRef="ExpenseSubmitted" targetRef="RouteExpense" />
     <sequenceFlow id="Flow_Urgent" sourceRef="RouteExpense" targetRef="ReviewUrgently">
-      <conditionExpression xsi:type="tFormalExpression">stringEquals(priority,"urgent")</conditionExpression>
+      <conditionExpression xsi:type="tFormalExpression">${priority == 'urgent'}</conditionExpression>
     </sequenceFlow>
     <sequenceFlow id="Flow_Travel" sourceRef="RouteExpense" targetRef="ReviewTravel">
-      <conditionExpression xsi:type="tFormalExpression">stringEquals(category,"travel")</conditionExpression>
+      <conditionExpression xsi:type="tFormalExpression">${category == 'travel'}</conditionExpression>
     </sequenceFlow>
     <sequenceFlow id="Flow_Equipment" sourceRef="RouteExpense" targetRef="ReviewEquipment">
-      <conditionExpression xsi:type="tFormalExpression">stringEquals(category,"equipment")</conditionExpression>
+      <conditionExpression xsi:type="tFormalExpression">${category == 'equipment'}</conditionExpression>
     </sequenceFlow>
     <sequenceFlow id="Flow_UrgentReviewed" sourceRef="ReviewUrgently" targetRef="ExpenseReviewed" />
     <sequenceFlow id="Flow_TravelReviewed" sourceRef="ReviewTravel" targetRef="ExpenseReviewed" />
     <sequenceFlow id="Flow_EquipmentReviewed" sourceRef="ReviewEquipment" targetRef="ExpenseReviewed" />
     <sequenceFlow id="Flow_Reviewed" sourceRef="ExpenseReviewed" targetRef="PayOut" />
     <sequenceFlow id="Flow_Bank" sourceRef="PayOut" targetRef="ReimburseClaimant">
-      <conditionExpression xsi:type="tFormalExpression">stringEquals(payout,"bank")</conditionExpression>
+      <conditionExpression xsi:type="tFormalExpression">${payout == 'bank'}</conditionExpression>
     </sequenceFlow>
     <sequenceFlow id="Flow_Payroll" sourceRef="PayOut" targetRef="AddToPayroll">
-      <conditionExpression xsi:type="tFormalExpression">stringEquals(payout,"payroll")</conditionExpression>
+      <conditionExpression xsi:type="tFormalExpression">${payout == 'payroll'}</conditionExpression>
     </sequenceFlow>
     <sequenceFlow id="Flow_Reimbursed" sourceRef="ReimburseClaimant" targetRef="ExpensePaid" />
     <sequenceFlow id="Flow_Payrolled" sourceRef="AddToPayroll" targetRef="ExpensePaid" />

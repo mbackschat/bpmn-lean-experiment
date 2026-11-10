@@ -2,8 +2,7 @@
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
              xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
-             id="Definitions_WarrantyRepair" targetNamespace="urn:bpmn-lean:warranty-repair"
-             expressionLanguage="urn:bpmn-lean:expression:simple-boolean:v1">
+             id="Definitions_WarrantyRepair" targetNamespace="urn:bpmn-lean:warranty-repair">
   <process id="Process_WarrantyRepair" name="Repair a device under warranty" isExecutable="true">
     <startEvent id="RepairRequested" name="Repair requested" />
     <userTask id="DiagnoseFault" name="Diagnose fault" />
@@ -40,7 +39,7 @@
     <sequenceFlow id="Flow_Repair" sourceRef="RepairRound" targetRef="RepairDevice" />
     <sequenceFlow id="Flow_Repaired" sourceRef="RepairDevice" targetRef="DevicePasses" />
     <sequenceFlow id="Flow_Passed" sourceRef="DevicePasses" targetRef="DeviceReleased">
-      <conditionExpression xsi:type="tFormalExpression">stringEquals(testResult,"passed")</conditionExpression>
+      <conditionExpression xsi:type="tFormalExpression">${testResult == 'passed'}</conditionExpression>
     </sequenceFlow>
     <sequenceFlow id="Flow_Failed" sourceRef="DevicePasses" targetRef="ReworkRequested" />
     <sequenceFlow id="Flow_Rework" sourceRef="ReworkRequested" targetRef="RepairRound" />

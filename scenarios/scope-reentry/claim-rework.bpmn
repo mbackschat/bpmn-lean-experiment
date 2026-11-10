@@ -2,8 +2,7 @@
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
              xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
-             id="Definitions_ClaimRework" targetNamespace="urn:bpmn-lean:claim-rework"
-             expressionLanguage="urn:bpmn-lean:expression:simple-boolean:v1">
+             id="Definitions_ClaimRework" targetNamespace="urn:bpmn-lean:claim-rework">
   <process id="Process_ClaimRework" name="Assess an insurance claim with rework" isExecutable="true">
     <startEvent id="ClaimReceived" name="Claim received" />
     <exclusiveGateway id="AssessmentRequested" name="Assessment requested" gatewayDirection="Converging" />
@@ -41,10 +40,10 @@
     <sequenceFlow id="Flow_Assess" sourceRef="AssessmentRequested" targetRef="AssessClaim" />
     <sequenceFlow id="Flow_Assessed" sourceRef="AssessClaim" targetRef="AssessmentOutcome" />
     <sequenceFlow id="Flow_Rework" sourceRef="AssessmentOutcome" targetRef="AssessmentRequested">
-      <conditionExpression xsi:type="tFormalExpression">stringEquals(assessment,"rework")</conditionExpression>
+      <conditionExpression xsi:type="tFormalExpression">${assessment == 'rework'}</conditionExpression>
     </sequenceFlow>
     <sequenceFlow id="Flow_Reject" sourceRef="AssessmentOutcome" targetRef="NotifyClaimant">
-      <conditionExpression xsi:type="tFormalExpression">stringEquals(assessment,"reject")</conditionExpression>
+      <conditionExpression xsi:type="tFormalExpression">${assessment == 'reject'}</conditionExpression>
     </sequenceFlow>
     <sequenceFlow id="Flow_Approve" sourceRef="AssessmentOutcome" targetRef="ApproveSettlement" />
     <sequenceFlow id="Flow_Notified" sourceRef="NotifyClaimant" targetRef="ClaimClosing" />

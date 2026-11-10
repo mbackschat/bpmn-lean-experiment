@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "claim-archiving",
     "relativePath": "scenarios/pass-through-implicit-split-merge/claim-archiving.bpmn",
-    "sha256": "76ad8309a3af93d4355a4f7f0bdd53042f9ed088053bd7d1a64e95ff3147e35d",
+    "sha256": "8f9c828801b7248efdb8c257b70e84278494e6fb2b2c5a1c13859d6382159e89",
     "sourceOverlay": {
       "id": "claim-archiving-handlers",
       "sha256": "bebd164633943815cb219ea2e2c93bf174108990a85a900cb88982df4c45bf51"

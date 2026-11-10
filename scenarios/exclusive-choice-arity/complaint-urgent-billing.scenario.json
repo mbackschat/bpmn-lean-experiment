@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "complaint-handling",
     "relativePath": "scenarios/exclusive-choice-arity/complaint-handling.bpmn",
-    "sha256": "50ed1d56e15df84b807324cebba195192f42405bdd2a3e581c85bbdbbb89bc74",
+    "sha256": "d0768ddd18e6b50ab2ea6ddf92a12afcb1d739a6f82711e4e77afc1b841024d5",
     "sourceOverlay": {
       "id": "complaint-handling-handlers",
       "sha256": "22a248c4df64e07b97271a272fd61c8cc16239dd25ecb84c007a3c6f5fd7eb6c"

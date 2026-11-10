@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "account-opening",
     "relativePath": "scenarios/inclusive-gateway-regions/account-opening.bpmn",
-    "sha256": "978c15bedb190c5961cfc4897a6d65b00496d3df7ebb7177cba0c301e8c81e8e",
+    "sha256": "d8b65bf011e7b3798a7013b3ce92285ecac45353db5fa5af620a70316f8fbc78",
     "sourceOverlay": {
       "id": "account-opening-handlers",
       "sha256": "97e760a0df690ba7a33af214471b14dd2c20e0a3fd592bfb4bd584aad533938a"

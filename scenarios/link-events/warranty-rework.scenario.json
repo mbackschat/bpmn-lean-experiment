@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "warranty-repair-links",
     "relativePath": "scenarios/link-events/warranty-repair-links.bpmn",
-    "sha256": "63f19b64921fcf1a59deab5eba6d8d09b1f6f60b62a9cddba9f2f1ab42ff0c98",
+    "sha256": "0cf281519ba38ad991f6de77fa837b4ee8468fb04bb84e5d22ec4755da5289d8",
     "sourceOverlay": {
       "id": "warranty-repair-handlers",
       "sha256": "bb61062b3bd9603d5aaf605add47a9899b669100426d475dc114d91b5f518bd3"

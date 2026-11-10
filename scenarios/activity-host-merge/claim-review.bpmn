@@ -2,8 +2,7 @@
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
              xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
-             id="Definitions_ClaimReview" targetNamespace="urn:bpmn-lean:claim-review"
-             expressionLanguage="urn:bpmn-lean:expression:simple-boolean:v1">
+             id="Definitions_ClaimReview" targetNamespace="urn:bpmn-lean:claim-review">
   <process id="Process_ClaimReview" name="Review an insurance claim with an optional expert opinion" isExecutable="true">
     <startEvent id="ClaimSubmitted" name="Claim submitted" />
     <serviceTask id="TriageClaim" name="Triage claim"
@@ -43,14 +42,14 @@
     <sequenceFlow id="Flow_Submitted" sourceRef="ClaimSubmitted" targetRef="TriageClaim" />
     <sequenceFlow id="Flow_Triaged" sourceRef="TriageClaim" targetRef="ExpertNeeded" />
     <sequenceFlow id="Flow_ToExpert" sourceRef="ExpertNeeded" targetRef="ObtainExpertOpinion">
-      <conditionExpression xsi:type="tFormalExpression">stringEquals(triage,"expert")</conditionExpression>
+      <conditionExpression xsi:type="tFormalExpression">${triage == 'expert'}</conditionExpression>
     </sequenceFlow>
     <sequenceFlow id="Flow_Direct" sourceRef="ExpertNeeded" targetRef="ReviewClaim" />
     <sequenceFlow id="Flow_OpinionReceived" sourceRef="ObtainExpertOpinion" targetRef="ReviewClaim" />
     <sequenceFlow id="Flow_Reviewed" sourceRef="ReviewClaim" targetRef="FetchReviewOutcome" />
     <sequenceFlow id="Flow_OutcomeFetched" sourceRef="FetchReviewOutcome" targetRef="Reopen" />
     <sequenceFlow id="Flow_Reopen" sourceRef="Reopen" targetRef="ObtainExpertOpinion">
-      <conditionExpression xsi:type="tFormalExpression">stringEquals(review,"reopen")</conditionExpression>
+      <conditionExpression xsi:type="tFormalExpression">${review == 'reopen'}</conditionExpression>
     </sequenceFlow>
     <sequenceFlow id="Flow_Close" sourceRef="Reopen" targetRef="ClaimDecided" />
   </process>

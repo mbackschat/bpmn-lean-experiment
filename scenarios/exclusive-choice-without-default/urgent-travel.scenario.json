@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "expense-routing",
     "relativePath": "scenarios/exclusive-choice-without-default/expense-routing.bpmn",
-    "sha256": "fde03a51258d78099967227a79be4dcb2894285e7f4dd1687e5c0bf87d03161f",
+    "sha256": "5c0a32772d783fca3c8c245df530e249a8f163d32aa59b9ebba6328f3f863d3a",
     "sourceOverlay": {
       "id": "expense-routing-handlers",
       "sha256": "a4675ba1f0345bb8d7e63352c64d2127c67ed2ad11b4d1789948ec78e0ee2b99"

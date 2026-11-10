@@ -2,8 +2,7 @@
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
              xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
-             id="Definitions_TravelRequest" targetNamespace="urn:bpmn-lean:travel-request"
-             expressionLanguage="urn:bpmn-lean:expression:simple-boolean:v1">
+             id="Definitions_TravelRequest" targetNamespace="urn:bpmn-lean:travel-request">
   <process id="Process_TravelRequest" name="Handle a travel request" isExecutable="true">
     <startEvent id="RequestReceived" name="Request received" />
     <subProcess id="AssessRequest" name="Assess request">
@@ -42,10 +41,10 @@
     <sequenceFlow id="Flow_Received" sourceRef="RequestReceived" targetRef="AssessRequest" />
     <sequenceFlow id="Flow_Assessed" sourceRef="AssessRequest" targetRef="RouteRequest" />
     <sequenceFlow id="Flow_Reject" sourceRef="RouteRequest" targetRef="RequestClosed">
-      <conditionExpression xsi:type="tFormalExpression">stringEquals(decision,"reject")</conditionExpression>
+      <conditionExpression xsi:type="tFormalExpression">${decision == 'reject'}</conditionExpression>
     </sequenceFlow>
     <sequenceFlow id="Flow_Call" sourceRef="RouteRequest" targetRef="CallTraveller">
-      <conditionExpression xsi:type="tFormalExpression">stringEquals(channel,"phone")</conditionExpression>
+      <conditionExpression xsi:type="tFormalExpression">${channel == 'phone'}</conditionExpression>
     </sequenceFlow>
     <sequenceFlow id="Flow_Book" sourceRef="RouteRequest" targetRef="BookTravel" />
     <sequenceFlow id="Flow_Called" sourceRef="CallTraveller" targetRef="RequestClosed" />

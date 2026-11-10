@@ -2,8 +2,7 @@
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
              xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
-             id="Definitions_ContractRevision" targetNamespace="urn:bpmn-lean:contract-revision"
-             expressionLanguage="urn:bpmn-lean:expression:simple-boolean:v1">
+             id="Definitions_ContractRevision" targetNamespace="urn:bpmn-lean:contract-revision">
   <process id="Process_ContractRevision" name="Revise a supplier contract until legal clears it" isExecutable="true">
     <startEvent id="DraftRequested" name="Draft requested" />
     <exclusiveGateway id="RevisionRequested" name="Revision requested" gatewayDirection="Converging" />
@@ -45,10 +44,10 @@
     <sequenceFlow id="Flow_Prepared" sourceRef="PrepareDraft" targetRef="LegalReview" />
     <sequenceFlow id="Flow_Reviewed" sourceRef="LegalReview" targetRef="ReviewOutcome" />
     <sequenceFlow id="Flow_Revise" sourceRef="ReviewOutcome" targetRef="RevisionRequested">
-      <conditionExpression xsi:type="tFormalExpression">stringEquals(legalVerdict,"revise")</conditionExpression>
+      <conditionExpression xsi:type="tFormalExpression">${legalVerdict == 'revise'}</conditionExpression>
     </sequenceFlow>
     <sequenceFlow id="Flow_Withdraw" sourceRef="ReviewOutcome" targetRef="CloseNegotiation">
-      <conditionExpression xsi:type="tFormalExpression">stringEquals(legalVerdict,"withdraw")</conditionExpression>
+      <conditionExpression xsi:type="tFormalExpression">${legalVerdict == 'withdraw'}</conditionExpression>
     </sequenceFlow>
     <sequenceFlow id="Flow_Sign" sourceRef="ReviewOutcome" targetRef="SignContract" />
     <sequenceFlow id="Flow_Closed" sourceRef="CloseNegotiation" targetRef="ContractSettled" />

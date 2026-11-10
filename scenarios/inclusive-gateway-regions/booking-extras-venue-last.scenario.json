@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "event-booking",
     "relativePath": "scenarios/inclusive-gateway-regions/event-booking.bpmn",
-    "sha256": "3473e077fffba315202161234dd9a09d1a462a38e6b5ce13896ab4511ed5bc2d",
+    "sha256": "00ecb20622358a77dc0669d2f80ad95291a8dae3710348a096ad3d047b2a2b24",
     "sourceOverlay": {
       "id": "event-booking-handlers",
       "sha256": "e292adcbdd60d4add161c6f9682d8394b49dfe466979996adacc6e584007351d"

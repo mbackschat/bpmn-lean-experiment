@@ -4,7 +4,7 @@
   "profile": "cibseven-2.2.0",
   "bpmn": {
     "id": "invoice-business-error",
-    "sha256": "20856aa706e96837c224b887180307d2615e7e2a258c22d1a4eb595587882a42",
+    "sha256": "a4d3ea3e5fd588ef5abaf85560ab7a5fa28d8155767e549c21df0b0e5fbe8068",
     "sourceOverlay": {
       "id": "invoice-handlers",
       "sha256": "a4cdddb70514053358a10ae15fd439a0c3ed115b3d2b7bba2eac6f7c732c695a"

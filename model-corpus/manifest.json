@@ -1179,7 +1179,7 @@
       "source": {
         "kind": "retainedScenario",
         "bpmnRelativePath": "scenarios/scope-reentry/claim-rework.bpmn",
-        "sha256": "7c5a4b8173f6781da38549d27ebe05ccce152a9526fcad4f154e87bcb98e5c31",
+        "sha256": "4cf510f3c71d6bea3aecfe7af0866931849542edac7919f27642d09924764833",
         "scenarioRelativePath": "scenarios/scope-reentry/claim-rework-then-approve.scenario.json",
         "license": "MIT"
       },
@@ -1223,7 +1223,7 @@
       "source": {
         "kind": "retainedScenario",
         "bpmnRelativePath": "scenarios/scope-reentry/contract-revision.bpmn",
-        "sha256": "772941c232e3392cfe914c72d6a708b0aae04623b61d10161c1fdd04051547e2",
+        "sha256": "8d3f48b73d993c29251a10d57e74cc8aee547b1f4e350b56f92150a963b02ab1",
         "scenarioRelativePath": "scenarios/scope-reentry/contract-revise-then-sign.scenario.json",
         "license": "MIT"
       },
@@ -1308,7 +1308,7 @@
       "source": {
         "kind": "retainedScenario",
         "bpmnRelativePath": "scenarios/pass-through-task/document-intake.bpmn",
-        "sha256": "09900df1dae11f1f2b9ba1ec3518460a21f42cce3cbd0411b79399c421d57c8e",
+        "sha256": "fddb540069e85ad832fabd4a34d89d2cbc25fb6beed5b295fb00017110604699",
         "scenarioRelativePath": "scenarios/pass-through-task/intake-illegible-twice-then-paper.scenario.json",
         "license": "MIT"
       },
@@ -1520,7 +1520,7 @@
       "source": {
         "kind": "retainedScenario",
         "bpmnRelativePath": "scenarios/inclusive-gateway-regions/account-opening.bpmn",
-        "sha256": "978c15bedb190c5961cfc4897a6d65b00496d3df7ebb7177cba0c301e8c81e8e",
+        "sha256": "d8b65bf011e7b3798a7013b3ce92285ecac45353db5fa5af620a70316f8fbc78",
         "scenarioRelativePath": "scenarios/inclusive-gateway-regions/account-residency-only.scenario.json",
         "license": "MIT"
       },
@@ -1562,7 +1562,7 @@
       "source": {
         "kind": "retainedScenario",
         "bpmnRelativePath": "scenarios/inclusive-gateway-regions/event-booking.bpmn",
-        "sha256": "3473e077fffba315202161234dd9a09d1a462a38e6b5ce13896ab4511ed5bc2d",
+        "sha256": "00ecb20622358a77dc0669d2f80ad95291a8dae3710348a096ad3d047b2a2b24",
         "scenarioRelativePath": "scenarios/inclusive-gateway-regions/booking-no-extras.scenario.json",
         "license": "MIT"
       },
@@ -1603,7 +1603,7 @@
       "source": {
         "kind": "retainedScenario",
         "bpmnRelativePath": "scenarios/exclusive-choice-arity/complaint-handling.bpmn",
-        "sha256": "50ed1d56e15df84b807324cebba195192f42405bdd2a3e581c85bbdbbb89bc74",
+        "sha256": "d0768ddd18e6b50ab2ea6ddf92a12afcb1d739a6f82711e4e77afc1b841024d5",
         "scenarioRelativePath": "scenarios/exclusive-choice-arity/complaint-delivery.scenario.json",
         "license": "MIT"
       },
@@ -1644,7 +1644,7 @@
       "source": {
         "kind": "retainedScenario",
         "bpmnRelativePath": "scenarios/none-end-fan-in/travel-request.bpmn",
-        "sha256": "229fbc8355bd03bfab48547d01a0ef4b2369b941a574d6f888a4115dccff39a0",
+        "sha256": "7f383e9368bb0b624d6ce866e02b0797b48997810a050c0a93b0022534b4fe64",
         "scenarioRelativePath": "scenarios/none-end-fan-in/travel-booked.scenario.json",
         "license": "MIT"
       },
@@ -1774,7 +1774,7 @@
       "source": {
         "kind": "retainedScenario",
         "bpmnRelativePath": "scenarios/none-intermediate-throw/warranty-repair.bpmn",
-        "sha256": "3217004955a13104fc95098f9f5e39a0decc7bb8f61ee8595949804aef386b97",
+        "sha256": "2758e5dcd51ca0ea2f51f4b62e5752498a24899aeba6334f2f740cc435b6b000",
         "scenarioRelativePath": "scenarios/none-intermediate-throw/warranty-passed.scenario.json",
         "license": "MIT"
       },
@@ -1857,7 +1857,7 @@
       "source": {
         "kind": "retainedScenario",
         "bpmnRelativePath": "scenarios/pass-through-implicit-split-merge/claim-archiving.bpmn",
-        "sha256": "76ad8309a3af93d4355a4f7f0bdd53042f9ed088053bd7d1a64e95ff3147e35d",
+        "sha256": "8f9c828801b7248efdb8c257b70e84278494e6fb2b2c5a1c13859d6382159e89",
         "scenarioRelativePath": "scenarios/pass-through-implicit-split-merge/claim-approved.scenario.json",
         "license": "MIT"
       },
@@ -1942,7 +1942,7 @@
       "source": {
         "kind": "retainedScenario",
         "bpmnRelativePath": "scenarios/link-events/warranty-repair-links.bpmn",
-        "sha256": "63f19b64921fcf1a59deab5eba6d8d09b1f6f60b62a9cddba9f2f1ab42ff0c98",
+        "sha256": "0cf281519ba38ad991f6de77fa837b4ee8468fb04bb84e5d22ec4755da5289d8",
         "scenarioRelativePath": "scenarios/link-events/warranty-rework.scenario.json",
         "license": "MIT"
       },
@@ -2024,7 +2024,7 @@
       "source": {
         "kind": "retainedScenario",
         "bpmnRelativePath": "scenarios/activity-host-merge/claim-review.bpmn",
-        "sha256": "39d5f35418f14edc60dce5392cb08030ded454df49cdc2ebff2b4ff05b56c680",
+        "sha256": "3e8d74b18a194c30b31d6ad8006c192979b2dab6979230fa5099c2c169b2c73c",
         "scenarioRelativePath": "scenarios/activity-host-merge/claim-expert.scenario.json",
         "license": "MIT"
       },
@@ -2193,7 +2193,7 @@
       "source": {
         "kind": "retainedScenario",
         "bpmnRelativePath": "scenarios/single-scope-models/invoice-clearing.bpmn",
-        "sha256": "108edfa52846cc38a957fe498e17ec6f4059aad53daa7a6dc7f079542b3d1744",
+        "sha256": "e1dba0ba694a788938054c4d530e79344c0a18431a8c29046d943ff8ed9954aa",
         "scenarioRelativePath": "scenarios/single-scope-models/invoice-valid.scenario.json",
         "license": "MIT"
       },
@@ -2308,7 +2308,7 @@
       "source": {
         "kind": "retainedScenario",
         "bpmnRelativePath": "scenarios/exclusive-choice-without-default/expense-routing.bpmn",
-        "sha256": "fde03a51258d78099967227a79be4dcb2894285e7f4dd1687e5c0bf87d03161f",
+        "sha256": "5c0a32772d783fca3c8c245df530e249a8f163d32aa59b9ebba6328f3f863d3a",
         "scenarioRelativePath": "scenarios/exclusive-choice-without-default/urgent-travel.scenario.json",
         "license": "MIT"
       },
@@ -2349,7 +2349,7 @@
       "source": {
         "kind": "retainedScenario",
         "bpmnRelativePath": "scenarios/exclusive-choice-without-default/ticket-triage.bpmn",
-        "sha256": "875311920a4f8be261e4e244c07bf006f6b6ca9b7d3667e62a1b81eff810ebd5",
+        "sha256": "f793e6990804323ea5b655e4301d49b00eec22a0f119f164225e68647e47a291",
         "scenarioRelativePath": "scenarios/exclusive-choice-without-default/medium-triage.scenario.json",
         "license": "MIT"
       },
@@ -3986,7 +3986,7 @@
       "source": {
         "kind": "retainedScenario",
         "bpmnRelativePath": "scenarios/mixed-task-control-flow/process.bpmn",
-        "sha256": "e70fd9df07f1febc20a0600d822194b5fe5a1100279882866d769ff4274abae0",
+        "sha256": "9f3aa0845c7faf28267c3f82bd5d4b9d413895e3e87fb3475505b98593d3b0a4",
         "scenarioRelativePath": "scenarios/mixed-task-control-flow/scenario.json",
         "license": "MIT"
       },
@@ -4031,7 +4031,7 @@
       "source": {
         "kind": "retainedScenario",
         "bpmnRelativePath": "scenarios/mixed-task-business-error/process.bpmn",
-        "sha256": "20856aa706e96837c224b887180307d2615e7e2a258c22d1a4eb595587882a42",
+        "sha256": "a4d3ea3e5fd588ef5abaf85560ab7a5fa28d8155767e549c21df0b0e5fbe8068",
         "scenarioRelativePath": "scenarios/mixed-task-business-error/scenario.json",
         "license": "MIT"
       },

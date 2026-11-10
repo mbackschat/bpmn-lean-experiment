@@ -2,8 +2,7 @@
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
              xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
-             id="Definitions_AccountOpening" targetNamespace="urn:bpmn-lean:account-opening"
-             expressionLanguage="urn:bpmn-lean:expression:simple-boolean:v1">
+             id="Definitions_AccountOpening" targetNamespace="urn:bpmn-lean:account-opening">
   <process id="Process_AccountOpening" name="Open a customer account" isExecutable="true">
     <startEvent id="ApplicationReceived" name="Application received" />
     <subProcess id="AssessApplicant" name="Assess applicant">
@@ -49,13 +48,13 @@
     <sequenceFlow id="Flow_Received" sourceRef="ApplicationReceived" targetRef="AssessApplicant" />
     <sequenceFlow id="Flow_ApplicantAssessed" sourceRef="AssessApplicant" targetRef="RequiredChecks" />
     <sequenceFlow id="Flow_DueDiligence" sourceRef="RequiredChecks" targetRef="EnhancedDueDiligence">
-      <conditionExpression xsi:type="tFormalExpression">stringEquals(riskRating,"high")</conditionExpression>
+      <conditionExpression xsi:type="tFormalExpression">${riskRating == 'high'}</conditionExpression>
     </sequenceFlow>
     <sequenceFlow id="Flow_TaxResidency" sourceRef="RequiredChecks" targetRef="CollectTaxResidencyForm">
-      <conditionExpression xsi:type="tFormalExpression">stringEquals(residency,"foreign")</conditionExpression>
+      <conditionExpression xsi:type="tFormalExpression">${residency == 'foreign'}</conditionExpression>
     </sequenceFlow>
     <sequenceFlow id="Flow_IdentityDocument" sourceRef="RequiredChecks" targetRef="VerifyIdentityDocument">
-      <conditionExpression xsi:type="tFormalExpression">stringEquals(channel,"online")</conditionExpression>
+      <conditionExpression xsi:type="tFormalExpression">${channel == 'online'}</conditionExpression>
     </sequenceFlow>
     <sequenceFlow id="Flow_Standard" sourceRef="RequiredChecks" targetRef="StandardVerification" />
     <sequenceFlow id="Flow_DueDiligenceDone" sourceRef="EnhancedDueDiligence" targetRef="ChecksComplete" />

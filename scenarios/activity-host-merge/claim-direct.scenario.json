@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "claim-review",
     "relativePath": "scenarios/activity-host-merge/claim-review.bpmn",
-    "sha256": "39d5f35418f14edc60dce5392cb08030ded454df49cdc2ebff2b4ff05b56c680",
+    "sha256": "3e8d74b18a194c30b31d6ad8006c192979b2dab6979230fa5099c2c169b2c73c",
     "sourceOverlay": {
       "id": "claim-review-handlers",
       "sha256": "b16612c3075b92188473fe2a7157d08f48b1693c3f063a4eb83390ecb2737ce4"

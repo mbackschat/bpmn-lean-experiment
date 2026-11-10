@@ -2,8 +2,7 @@
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
              xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
-             id="Definitions_TicketTriage" targetNamespace="urn:bpmn-lean:ticket-triage"
-             expressionLanguage="urn:bpmn-lean:expression:simple-boolean:v1">
+             id="Definitions_TicketTriage" targetNamespace="urn:bpmn-lean:ticket-triage">
   <process id="Process_TicketTriage" name="Triage a support ticket by severity" isExecutable="true">
     <startEvent id="TicketOpened" name="Ticket opened" />
     <subProcess id="Triage" name="Triage">
@@ -39,10 +38,10 @@
     <sequenceFlow id="Flow_Opened" sourceRef="TicketOpened" targetRef="Triage" />
     <sequenceFlow id="Flow_TriageDone" sourceRef="Triage" targetRef="RouteBySeverity" />
     <sequenceFlow id="Flow_High" sourceRef="RouteBySeverity" targetRef="Escalate">
-      <conditionExpression xsi:type="tFormalExpression">stringEquals(severity,"high")</conditionExpression>
+      <conditionExpression xsi:type="tFormalExpression">${severity == 'high'}</conditionExpression>
     </sequenceFlow>
     <sequenceFlow id="Flow_Low" sourceRef="RouteBySeverity" targetRef="AutoClose">
-      <conditionExpression xsi:type="tFormalExpression">stringEquals(severity,"low")</conditionExpression>
+      <conditionExpression xsi:type="tFormalExpression">${severity == 'low'}</conditionExpression>
     </sequenceFlow>
     <sequenceFlow id="Flow_Escalated" sourceRef="Escalate" targetRef="TicketHandled" />
     <sequenceFlow id="Flow_AutoClosed" sourceRef="AutoClose" targetRef="TicketHandled" />

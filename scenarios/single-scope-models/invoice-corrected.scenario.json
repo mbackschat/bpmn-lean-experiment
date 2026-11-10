@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "invoice-clearing",
     "relativePath": "scenarios/single-scope-models/invoice-clearing.bpmn",
-    "sha256": "108edfa52846cc38a957fe498e17ec6f4059aad53daa7a6dc7f079542b3d1744",
+    "sha256": "e1dba0ba694a788938054c4d530e79344c0a18431a8c29046d943ff8ed9954aa",
     "sourceOverlay": {
       "id": "invoice-clearing-handlers",
       "sha256": "424a9ce15da8ae1329d28dfc6f86c25703e51d936e00cdd49672299996ed7967"
