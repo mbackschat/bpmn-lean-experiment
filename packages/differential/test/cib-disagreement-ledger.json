@@ -262,6 +262,12 @@
     ]
   },
   {
+    "evidence": "scenarios/open-rows/call-raised-outputs/error-caught-at-busy-root.cibseven-evidence.json",
+    "owners": [
+      "CIB-EXT-0034"
+    ]
+  },
+  {
     "evidence": "scenarios/open-rows/compensation-activity-ref-refusals/throw-names-a-start-event.cibseven-evidence.json",
     "owners": [
       "PC-COMPENSATION-02"
@@ -803,6 +809,12 @@
     ]
   },
   {
+    "evidence": "scenarios/open-rows/error-non-interrupting-declarations/boundary-failure-then-substitute.cibseven-evidence.json",
+    "owners": [
+      "CIB-LIM-0018"
+    ]
+  },
+  {
     "evidence": "scenarios/open-rows/error-non-interrupting-declarations/boundary-failure.cibseven-evidence.json",
     "owners": [
       "CIB-LIM-0018"
@@ -812,6 +824,12 @@
     "evidence": "scenarios/open-rows/error-unhandled-outcomes/root-last-path-with-outputs.cibseven-evidence.json",
     "owners": [
       "CIB-LIM-0006"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/escalation-busy-called-root/caught-at-busy-called-root.cibseven-evidence.json",
+    "owners": [
+      "CIB-EXT-0034"
     ]
   },
   {
@@ -1398,6 +1416,26 @@
     ]
   },
   {
+    "evidence": "scenarios/open-rows/multi-instance-instance-sites/nested-inner-hides-outer.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-05",
+      "PC-MI-11"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-instance-sites/nested-output-writes-counter.cibseven-evidence.json",
+    "owners": [
+      "CIB-LIM-0020"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-instance-sites/parallel-counters.cibseven-evidence.json",
+    "owners": [
+      "PC-MI-05",
+      "PC-MI-10"
+    ]
+  },
+  {
     "evidence": "scenarios/open-rows/multi-instance-nesting/parallel-parallel-equal-items.cibseven-evidence.json",
     "owners": [
       "CIB-LIM-0019"
@@ -1742,12 +1780,6 @@
     ]
   },
   {
-    "evidence": "scenarios/open-rows/same-definition-scope-lifetimes/reentry-while-other-live.cibseven-evidence.json",
-    "owners": [
-      "PC-SCOPE-02"
-    ]
-  },
-  {
     "evidence": "scenarios/open-rows/signal-start-compositions/failing-signal-start-start.cibseven-evidence.json",
     "owners": [
       "PC-SIGNAL-02",
@@ -1919,18 +1951,6 @@
     "evidence": "scenarios/open-rows/structured-value-bounds/start-over-node-bound.cibseven-evidence.json",
     "owners": [
       "CIB-LIM-0014"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/terminate-containing-region/region-terminate-with-incident.cibseven-evidence.json",
-    "owners": [
-      "PC-TERMINATE-01"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/terminate-containing-region/root-terminate.cibseven-evidence.json",
-    "owners": [
-      "PC-TERMINATE-01"
     ]
   },
   {
