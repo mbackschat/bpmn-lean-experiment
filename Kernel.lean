@@ -41,6 +41,7 @@ public import Kernel.Publish
 public import Kernel.Registry
 public import Kernel.State
 public import Kernel.State.Input
+public import Kernel.State.Raise
 public import Kernel.State.Slots
 public import Kernel.State.Wait
 public import Kernel.Step

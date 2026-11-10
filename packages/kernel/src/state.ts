@@ -45,6 +45,12 @@ import {
   leaveRaised, LeaveTag, type MultiInstanceRun, type Parked, parkedEquals, type Resume, ResumeTag,
   type ScopeOccurrenceId,
 } from "./state/slots.js";
+import {
+  type InstanceFailure, type Origin, type Raised, raisedIsCancel, RaisedTag,
+} from "./state/raise.js";
+export {
+  type InstanceFailure, type Origin, type Raised, raisedIsCancel, RaisedTag,
+};
 export {
   type Compensable, type CompensationRun, type Compensations, type FeatureSlots, featureSlotsClear,
   featureSlotsKeepsAlive, type InstanceData, type Iteration, IterationTag, type Leave, leaveFlows, leaveOutgoing,
@@ -134,41 +140,6 @@ export interface OpenItem {
 
 export enum InstanceStatus { Running = "running", Completed = "completed", Cancelled = "cancelled", Failed = "failed" }
 
-/**
- * Guarded type: `feature/propagation` owns matching on it; `feature/subscriptions`' `catches` is the cross-owner
- * query. A thrown event that propagates to a catcher.
- */
-export enum RaisedTag { Error = "error", Escalation = "escalation", Cancel = "cancel" }
-
-export type Raised =
-  | { readonly tag: RaisedTag.Error; readonly code: string; readonly message: string | null }
-  | { readonly tag: RaisedTag.Escalation; readonly code: string }
-  | { readonly tag: RaisedTag.Cancel };
-
-export function raisedIsCancel(raised: Raised): boolean {
-  switch (raised.tag) {
-    case RaisedTag.Cancel: return true;
-    case RaisedTag.Error: case RaisedTag.Escalation: return false;
-  }
-  return assertNever(raised);
-}
-
-/**
- * Where a raised event starts its search: the throwing element, the scope occurrence it ran in, and its activation.
- * `host` is the Activity occurrence that raised it, whose boundaries are searched first; `null` for a throw Event.
- */
-export interface Origin {
-  readonly element: ElementId;
-  readonly scope: ScopeOccurrenceId;
-  readonly activation: number;
-  readonly host: number | null;
-  /**
-   * The result an effect's business Error carries while `host` still runs, its mapped Error-path outputs not yet
-   * written (`Propagation.raise`).
-   */
-  readonly patch: readonly Binding[];
-}
-
 /** Where writes land (`feature/data.ts`). */
 export enum WriteRule {
   /**
@@ -194,17 +165,6 @@ export type Fired =
   | { readonly tag: FiredTag.Message; readonly delivery: DeliveryInput }
   | { readonly tag: FiredTag.Signal; readonly delivery: DeliveryInput }
   | { readonly tag: FiredTag.Condition; readonly write: WriteEvent | null };
-
-/**
- * The failure of a process instance: the Error, the occurrence it surfaced at, and the named occurrences related to it
- * (a compensation failure names its trigger and handler).
- */
-export interface InstanceFailure {
-  readonly code: string;
-  readonly message: string | null;
-  readonly occurrence: OccurrenceRef;
-  readonly related: readonly (readonly [string, OccurrenceRef])[];
-}
 
 /**
  * What `Step.begin` starts: `reserved` names a subscription's reservation to begin instead of a fresh occurrence; for an
