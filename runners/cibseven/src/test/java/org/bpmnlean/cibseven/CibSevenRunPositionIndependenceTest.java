@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 
 import java.nio.file.Path;
+import java.sql.BatchUpdateException;
 import java.sql.SQLIntegrityConstraintViolationException;
 import org.apache.ibatis.exceptions.PersistenceException;
 import org.cibseven.bpm.engine.ProcessEngineException;
@@ -45,6 +46,38 @@ public class CibSevenRunPositionIndependenceTest {
     assertThrows(
         IllegalStateException.class, () -> CibSevenEngineScenarioRunner.requireNoIntegrityViolation(collision));
     CibSevenEngineScenarioRunner.requireNoIntegrityViolation(new ProcessEngineException("Unknown property used"));
+  }
+
+  /** H2 reports a batched insert's key violation as the next exception of a BatchUpdateException, not as its cause. */
+  @Test
+  public void classifiesABatchedIntegrityViolationAsAHarnessFailure() {
+    var batch = new BatchUpdateException("batch failed", new int[0]);
+    batch.setNextException(new SQLIntegrityConstraintViolationException("PRIMARY KEY"));
+    var collision = new ProcessEngineException("flush failed", new PersistenceException(batch));
+    assertThrows(
+        IllegalStateException.class, () -> CibSevenEngineScenarioRunner.requireNoIntegrityViolation(collision));
+  }
+
+  /**
+   * A condition start's evaluation leaves its serialized start variable's runtime byte array without an owner, which no
+   * deployment cascade removes (CIB Seven `2.2.0`, observed 2026-11-10); under the restarted boot identifiers the next
+   * scenario's first serialized variable collided with it on `ACT_GE_BYTEARRAY` and its start rolled back.
+   */
+  @Test
+  public void answersAScenarioIdenticallyAfterAConditionStartThatLeftARuntimeByteArray() throws Exception {
+    var conditionStart = ScenarioJson.read(PROJECT_ROOT.resolve(
+        "scenarios/open-rows/conditional-start-compositions/large-order-decimal-true.scenario.json"));
+    var witness = ScenarioJson.read(PROJECT_ROOT.resolve(
+        "scenarios/open-rows/human-task-result-identity/items-parallel-item-named-submission.scenario.json"));
+    String alone;
+    try (var runner = CibSevenScenarioRunner.create()) {
+      alone = outcomeAndTrace(ScenarioJson.write(runner.run(witness, PROJECT_ROOT, CibEffectExecutionSchedule.PLAIN_SUCCESS)));
+    }
+    try (var runner = CibSevenScenarioRunner.create()) {
+      runner.run(conditionStart, PROJECT_ROOT, CibEffectExecutionSchedule.PLAIN_SUCCESS);
+      var after = ScenarioJson.write(runner.run(witness, PROJECT_ROOT, CibEffectExecutionSchedule.PLAIN_SUCCESS));
+      assertEquals(alone, outcomeAndTrace(after));
+    }
   }
 
   /** The canonical answer without the run's diagnostics, whose timings differ on every run. */

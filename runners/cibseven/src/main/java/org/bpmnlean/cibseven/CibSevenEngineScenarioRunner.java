@@ -12,8 +12,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Date;
+import java.sql.SQLException;
 import java.sql.SQLIntegrityConstraintViolationException;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Objects;
 import org.bpmnlean.cibseven.CibSevenCommandExecutor.Execution;
 import org.bpmnlean.cibseven.ScenarioDiagnosticsProtocol.CleanupProjection;
@@ -73,6 +75,7 @@ final class CibSevenEngineScenarioRunner implements AutoCloseable {
   private final CibSevenEngineBundleFactory.ScenarioIds ids;
   private final boolean incidentCreationEnabled;
   private final long startupNanos;
+  private final Map<String, Long> bootTables;
   private boolean closed;
 
   private CibSevenEngineScenarioRunner(CibSevenEngineBundleFactory.EngineBundle bundle) {
@@ -85,6 +88,7 @@ final class CibSevenEngineScenarioRunner implements AutoCloseable {
     this.ids = bundle.ids();
     this.incidentCreationEnabled = bundle.incidentCreationEnabled();
     this.startupNanos = bundle.startupNanos();
+    this.bootTables = Map.copyOf(processEngine.getManagementService().getTableCount());
   }
 
   static CibSevenEngineScenarioRunner create(boolean incidentCreationEnabled) {
@@ -115,6 +119,7 @@ final class CibSevenEngineScenarioRunner implements AutoCloseable {
       ScenarioDefinition scenario, Path projectRoot, CibEffectExecutionSchedule effectSchedule)
       throws IOException {
     var validated = scenarioValidator.validate(scenario, projectRoot);
+    restoreBootTables();
     ids.restart();
     var options = scenario.declaredOptions();
     var projector =
@@ -441,13 +446,34 @@ final class CibSevenEngineScenarioRunner implements AutoCloseable {
   /**
    * Fails the run as a harness failure when an engine exception stems from a database integrity violation. Every
    * scenario reuses the boot identifiers (`ScenarioIds`), so a row an earlier scenario left behind collides on its
-   * primary key, a defect of this harness and never CIB's answer to the scenario.
+   * primary key, a defect of this harness and never CIB's answer to the scenario. H2 reports a batched insert's
+   * violation as the next exception of its `BatchUpdateException`, not as a cause, so both chains are searched.
    */
   static void requireNoIntegrityViolation(RuntimeException failure) {
     for (Throwable cause = failure; cause != null; cause = cause.getCause()) {
-      if (cause instanceof SQLIntegrityConstraintViolationException) {
-        throw new IllegalStateException("An engine write violated database integrity", failure);
+      for (var link = cause; link != null; link = link instanceof SQLException sql ? sql.getNextException() : null) {
+        if (link instanceof SQLIntegrityConstraintViolationException) {
+          throw new IllegalStateException("An engine write violated database integrity", failure);
+        }
       }
+    }
+  }
+
+  /**
+   * Returns the engine to the table contents it had at boot before a scenario reuses the boot identifiers. A scenario's
+   * deployment cascade removes what CIB's services own, but not every row: CIB Seven `2.2.0`'s condition-start evaluation
+   * leaves its serialized start variable's runtime byte array without an owner (observed 2026-11-10). Only a purge
+   * reaches such a row; one that survives the purge fails the scenario as a harness failure.
+   */
+  private void restoreBootTables() {
+    var management = processEngine.getManagementService();
+    if (management.getTableCount().equals(bootTables)) {
+      return;
+    }
+    ((ManagementServiceImpl) management).purge();
+    var after = management.getTableCount();
+    if (!after.equals(bootTables)) {
+      throw new IllegalStateException("Engine tables differ from their boot state after a purge: " + after);
     }
   }
 
