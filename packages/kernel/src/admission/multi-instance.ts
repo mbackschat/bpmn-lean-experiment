@@ -25,6 +25,8 @@ function collectionItems(items: Expression): string | null {
     case ExpressionTag.Literal:
     case ExpressionTag.SimpleBoolean:
       return "multiInstance.collectionExpression";
+    case ExpressionTag.Juel:
+      return "expression.juel.site";
     case ExpressionTag.Foreign:
       return "expression.outsideSimpleBoolean";
   }
@@ -49,6 +51,8 @@ function condition(expression: Expression | null): string | null {
     case ExpressionTag.Literal:
     case ExpressionTag.Variable:
       return "multiInstance.completionConditionExpression";
+    case ExpressionTag.Juel:
+      return "expression.juel.site";
     case ExpressionTag.Foreign:
       return "expression.outsideSimpleBoolean";
   }

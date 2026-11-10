@@ -19,7 +19,6 @@ def compensationHandlerFailure : CompensationHandlerFailure → Option String
   | .selected _ => some "profile.compensationHandlerFailure.selected"
 
 def options (abnormalScope : Bool) (selected : ProfileOptions) : Option String :=
-  (if selected.evaluator == .juel then some "profile.evaluator.juel" else none) <|>
   (if selected.messageCorrelation == .apiCriteria then some "profile.messageCorrelation.apiCriteria" else none) <|>
   (if selected.deliveryVariables == .installs then some "profile.deliveryVariables.installs" else none) <|>
   (if selected.compensationOrder == .reverseCreation then some "profile.compensationOrder.reverseCreation" else none) <|>

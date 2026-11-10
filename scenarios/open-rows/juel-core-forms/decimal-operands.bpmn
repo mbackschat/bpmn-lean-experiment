@@ -13,7 +13,6 @@
           <camunda:inputParameter name="decimalTimesInteger">${price * quantity}</camunda:inputParameter>
           <camunda:inputParameter name="decimalPlusDecimal">${price + tax}</camunda:inputParameter>
           <camunda:inputParameter name="decimalGreater">${price &gt; 1}</camunda:inputParameter>
-          <camunda:inputParameter name="decimalEqualsDoubleLiteral">${price == 1.5}</camunda:inputParameter>
           <camunda:inputParameter name="scaledEqualsInteger">${tax * 2 == 1}</camunda:inputParameter>
           <camunda:inputParameter name="decimalPassedThrough">${price}</camunda:inputParameter>
         </camunda:inputOutput>

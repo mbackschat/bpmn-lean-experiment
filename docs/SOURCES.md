@@ -101,6 +101,12 @@ The normative standard source is OMG **Business Process Model and Notation, Vers
 
 The downloaded PDF, normative CMOF/XSD/XSLT files, informative examples, and optional digital-first conversion cache are described by the tracked [BPMN 2.0.2 reference pointer](reference/bpmn-2.0.2/README.md). The source material lives outside this repository at the default sibling `../oss/omg-bpmn-2.0.2`; the project fetches only official OMG inputs and verifies their tracked hashes before installation. The full Markdown is a modified copy of the copyrighted standard and remains external; the tracked [BPMN conformance target](BPMN-CONFORMANCE-TARGET.md) is an original project digest.
 
+## DMN 1.3 and FEEL
+
+The [decision semantics](kernel/semantics/DECISION-SEMANTICS-SPEC.md) take OMG **Decision Model and Notation, Version 1.3** as normative for the decision table and for FEEL simple unary tests. The official catalog is `https://www.omg.org/spec/DMN/1.3`, and the model namespace is `https://www.omg.org/spec/DMN/20191111/MODEL/`. The specification is OMG-copyrighted and is never redistributed. Its reading copy is not yet in the external corpus, so the decision semantics cite DMN constructs by name. Until it is fetched, the DMN 1.3 XSD that CIB validates against is the copy inside the pinned CIB checkout (`model-api/dmn-model/src/main/resources/org/cibseven/bpm/model/dmn/schema/DMN13.xsd`).
+
+CIB evaluates FEEL with `org.camunda.feel:feel-engine` `1.19.3`, released from [camunda/feel-scala](https://github.com/camunda/feel-scala) and licensed under Apache-2.0 according to its published POM. The pinned CIB root `pom.xml:31` (`version.feel-scala`) fixes that version. It is an oracle-side component that ships with CIB. It is never a dependency of Lean, the kernel or the TypeScript solution, which evaluate their own FEEL subset.
+
 ## Architecture handoff
 
 The [archived architecture and assurance handoff](https://github.com/mbackschat/bpmn-lean-experiment/blob/404a39d7/docs/archived/ARCHITECTURE-AND-ASSURANCE-HANDOFF.md) preserves the supplied content with trailing Markdown whitespace normalized as provenance. Its adopted durable decisions now live in [PROJECT-DESIGN.md](PROJECT-DESIGN.md), and its release-readiness criteria live in [TESTING-SPEC.md](kernel/ENGINEERING-POLICY.md#profile-release-readiness); the archive is no longer a mandatory current requirements source.

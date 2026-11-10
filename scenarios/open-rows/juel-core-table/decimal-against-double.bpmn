@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_DecimalAgainstDouble" targetNamespace="urn:bpmn-lean:scenarios:juel-core-table:decimal-against-double">
+  <process id="Process_DecimalAgainstDouble" name="Compare a Decimal with a Double literal" isExecutable="true">
+    <startEvent id="StartEvent_Start" />
+    <sequenceFlow id="Flow_Start_Observe" sourceRef="StartEvent_Start" targetRef="UserTask_Observe" />
+    <userTask id="UserTask_Observe" name="Observe the evaluated inputs">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="decimalEqualsDoubleLiteral">${price == 1.5}</camunda:inputParameter>
+          <camunda:inputParameter name="decimalBelowDoubleLiteral">${price &lt; 1.75}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <sequenceFlow id="Flow_Observe_Done" sourceRef="UserTask_Observe" targetRef="EndEvent_Done" />
+    <endEvent id="EndEvent_Done" />
+  </process>
+</definitions>

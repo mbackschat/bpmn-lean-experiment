@@ -95,6 +95,8 @@ function criterionValue(subscription: Subscription, trigger: MessageTrigger, cri
     case ExpressionTag.Literal:
     case ExpressionTag.SimpleBoolean:
       return "message.correlation.value";
+    case ExpressionTag.Juel:
+      return "expression.juel.site";
     case ExpressionTag.Foreign:
       return "expression.outsideSimpleBoolean";
   }

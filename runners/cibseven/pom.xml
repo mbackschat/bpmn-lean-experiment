@@ -80,6 +80,9 @@
                on the hosted runner on 2026-11-10. Two forks share the classes; each owns an in-memory H2 engine. -->
           <forkCount>2</forkCount>
           <reuseForks>true</reuseForks>
+          <!-- JUEL's String methods follow the JVM default locale (`toUpperCase` of `i` under a Turkish locale), so the
+               oracle environment pins it (CIB-CFG-0011). -->
+          <argLine>-Duser.language=en -Duser.country=US</argLine>
           <redirectTestOutputToFile>false</redirectTestOutputToFile>
           <trimStackTrace>false</trimStackTrace>
         </configuration>

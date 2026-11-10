@@ -33,7 +33,8 @@ function formFields(ctx: ReadContext, element: ElementRecord): KernelJson[] {
       if (asElementArray(field.$children) !== undefined) {
         ctx.noteNotCarried({ element: optionalId(element), fact: `camunda:formField ${String(field.id)} children` });
       }
-      return [String(field.id), typeof field.type === "string" ? field.type : ""];
+      // An absent id or type reads as empty, which admission refuses as CIB's deployment does (`work.user.formField`).
+      return [typeof field.id === "string" ? field.id : "", typeof field.type === "string" ? field.type : ""];
     });
 }
 

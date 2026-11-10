@@ -23,12 +23,14 @@ Admission decides whether a program lies inside the admitted surface before any 
 | Code | Refused |
 |---|---|
 | `source.tooLarge`, `source.encoding`, `source.doctype`, `source.identityMismatch`, `source.overlay` | source bytes outside the preservation contract |
-| `source.noProcess`, `source.missingId`, `source.reference`, `source.containmentCardinality` | a model with no executable process, a missing identifier, a dangling reference or malformed containment |
+| `source.noProcess`, `source.missingId`, `source.reference`, `source.containmentCardinality` | a model with no executable process, a missing identifier, a reference that does not resolve inside the document (the QName rule of the [flow semantics](FLOW-SEMANTICS-SPEC.md#references-and-qname-closure)) or malformed containment |
+| `source.schema` | a document the pinned OMG `BPMN20.xsd` rejects, checked against a table generated from the schemas ([flow semantics](FLOW-SEMANTICS-SPEC.md#xsd-validity)) |
 | `source.ambiguousBoolean` | an `xsd:boolean` attribute whose lexeme the parser's coercion does not preserve |
-| `parser.failure`, `parser.warning` | a parse failure or any parser warning, a duplicate identifier included |
-| `reader.unknownElement`, `reader.unknownAttribute`, `reader.unknownAttributeValue`, `reader.unknownExtension` | content the reader has no faithful IL field for |
+| `parser.failure`, `parser.warning` | a parse failure or any parser warning other than an unresolved reference, a duplicate identifier included |
+| `reader.unknownElement`, `reader.unknownAttribute`, `reader.unknownAttributeValue`, `reader.unknownExtension`, `reader.factNotCarried` | content the reader has no faithful IL field for |
+| `reader.eventDefinitionRef` | an Event naming a root-level EventDefinition, which pinned CIB never resolves (PC-BASIC-04) |
 | `reader.eventBasedGatewayInstantiate` | an instantiating or Parallel Event-Based Gateway (`instantiate`, `eventGatewayType`, §10.6.6, Table 10.127): the IL has no field for either (PC-CF-05) |
-| `reader.multipleEventDefinitions`, `reader.eventDefinitionOnElement`, `reader.standardLoop`, `reader.eventSubProcessStart`, `reader.dataAssociationShape`, `reader.signalWithoutReference`, `reader.throwWithoutCode`, `reader.multiInstanceWithoutCount`, `reader.conditionWithoutExpression` | source shapes the IL cannot carry as written |
+| `reader.multipleEventDefinitions`, `reader.eventDefinitionOnElement`, `reader.standardLoop`, `reader.eventSubProcessStart`, `reader.dataAssociationShape`, `reader.signalWithoutReference`, `reader.throwWithoutCode`, `reader.multiInstanceWithoutCount` | source shapes the IL cannot carry as written |
 
 Boolean coercion: `bpmn-moddle` reduces every `xsd:boolean` attribute to `value === "true"` without a warning, so `1`, which means true, reads as false. Any `Boolean`-typed attribute whose lexeme the coercion does not preserve is refused; `0` is admitted and `1` is not, which refuses exactly the disagreement, and an entity-encoded spelling is refused as well. The attribute set is the metamodel's `Boolean` properties, not a list. Enumerated defaults stay outside the rule, because BPMN 2.0.2's own machine-readable artifacts disagree on the only such literal (owner-confirmed 2026-08-07; [coercion rule][csm-boolean]).
 

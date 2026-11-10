@@ -50,44 +50,106 @@ The flow feature owns how tokens move: starts leaving, gateways, Link Events, an
 - A Sequence Flow cycle (Table 7.2) re-enters elements with fresh occurrences: each traversal of an element begins an occurrence whose activation is one greater than the previous one of that element in the instance; a command addressed to an earlier activation is rejected with the state unchanged; termination is never asserted, and a schedule that keeps choosing the back-edge keeps the instance running ([CYC rules][cyc-rules], [CYC decisions][cyc-decisions], [CYC selection][cyc-selection]).
 - **Closure bound.** The reviewed accounts admitted a cycle only when every cycle crosses an external-stimulus wait, and bounded each resumption's internal closure at admission ([CYC graph admission][cyc-graph], [MTC representation][mtc-representation], [SPC admission][spc-admission]). The kernel has no such admission check: a closure that does not settle within `Step.closureBound` micro-steps is `unsupported "closure-bound"`, a stable outcome class, and commits nothing; a static admission limit is PC-CF-06.
 
-## Interchange forms and diagnostics (PC-BASIC-04, proposed)
+## Interchange forms and diagnostics (PC-BASIC-04)
 
-**Status:** proposed interpretation awaiting its cold review ([kernel architecture review](../ARCHITECTURE-SPEC.md#review)); no code implements it yet. It decides which source forms of an executable model the `bpmn-source` reader admits, and which it refuses before a definition deploys. The pinned CIB Seven `2.2.0` parser bounds the target; BPMN 2.0.2 and its XSD decide meaning. Every refusal below is a reader refusal, so the engine rejects the definition with the reader's code before any instance starts, the same answer it gives an admission refusal.
+**Status:** interpretation approved with required changes by its cold review (2026-11-10), revised here. The reader side is implemented: the QName rule, `reader.eventDefinitionRef`, the `source.schema` invariant and the interim refusals of facts the IL does not carry. The admission side waits for the IL fields that carry those facts. The section decides which source forms of an executable model the `bpmn-source` reader admits, and which are refused before a definition deploys. The pinned CIB Seven `2.2.0` parser (`834a9874`) bounds the target; BPMN 2.0.2 and its XSD decide meaning. Following the [kernel architecture](../ARCHITECTURE-SPEC.md#kernel-design), the reader refuses only parse, preservation and unknown-element cases, and every semantic refusal lives in `Kernel.Admission`.
 
 ### Event-definition forms
 
 | Source form | BPMN 2.0.2 | Pinned CIB | Reading |
 |---|---|---|---|
-| One inline EventDefinition | §10.5.1, Tables 10.84 to 10.93 | parsed per position (`BpmnParse#parseIntermediateCatchEvent:1535-1555`, `#parseStartEvents`, `#parseBoundaryEvents`) | admitted, as today |
-| `eventDefinitionRef` to a root-level EventDefinition | a reusable definition, §10.5.1 (catch and throw `eventDefinitionRefs`) | never read: `BpmnParse` has no `eventDefinitionRef`, so a catch carrying only a reference fails to parse ("Unsupported intermediate catch event type") and a Start, throw or End carrying one runs as a None Event | refused as `reader.eventDefinitionRef` (new) in every position; the reader today reads it as an inline definition, which would execute a trigger CIB erases |
-| Several definitions, inline or referenced, `parallelMultiple` either way | a Multiple or Parallel Multiple Event, §10.5.1 | one definition by a fixed precedence (an intermediate catch tries Timer, Signal, Message, Link, Conditional in that order), `parallelMultiple` never read | refused as `reader.multipleEventDefinitions` (exists). The retained [multiple-event-definitions](../../../scenarios/open-rows/event-reference-forms/README.md) and parallel-multiple evidence show CIB arming the Timer alone and rejecting the Message; that is a CIB limitation to register, and the two ledger entries move from PC-BASIC-04 to it |
-| Receive Task `instantiate="true"` | instantiates the Process, no incoming flow (§10.3.3, Table 10.10) | not read | refused, as the [coverage target](../../PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list) requires; the code is the open decision below |
-| Event-Based Gateway `instantiate="true"` or `eventGatewayType="Parallel"` | an instantiating gateway has no incoming flow, and Parallel requires `instantiate` (§10.6.6) | neither attribute is read: reached by a flow, the gateway is an ordinary exclusive one; with no incoming flow and no start the deployment fails | refused as `reader.eventBasedGatewayInstantiate` (exists). The retained instantiating-with-start and parallel-with-start evidence, where CIB runs a plain race, is the same register limitation as the row above, and the two ledger entries move to it |
+| One inline EventDefinition | §10.5.1, Tables 10.84 to 10.93 | parsed per position | admitted, as today |
+| `eventDefinitionRef` to a root-level EventDefinition | a reusable definition (§10.5.1, the `eventDefinitionRefs` of catch and throw Events) | never read: `BpmnParse` has no `eventDefinitionRef`. A catch carrying only a reference fails to parse ("Unsupported intermediate catch event type"), and a Start, throw or End carrying one runs as a None Event | refused as `reader.eventDefinitionRef` in every position: a source form CIB never resolves. The root-level EventDefinition itself is inert |
+| Several definitions on one Event | a Multiple Event, §10.5.1 | one definition, chosen by a precedence that depends on the position: a Start (`BpmnParse:1021-1040`), an Event Sub-Process Start, which tries Error first (`:1114`), a Boundary Event (`:3317-3347`), an End Event (`:3140` ff.) and an intermediate catch (`:1535-1555`) | refused. Today the code is `reader.multipleEventDefinitions`; it becomes `event.multipleDefinitions` in admission once the IL carries the list of definitions |
+| `parallelMultiple="true"`, with one definition or several | a Parallel Multiple Event, §10.5.1 | never read | refused. Today the code is `reader.factNotCarried`, where the reader previously admitted it silently; it becomes `event.parallelMultiple` |
+| Receive Task `instantiate="true"` | instantiates the Process, with no incoming flow (§10.3.3, Table 10.10) | not read | refused. Today the code is `reader.factNotCarried`, where the reader previously admitted it silently; it becomes `work.receive.instantiate` |
+| Event-Based Gateway `instantiate="true"` or `eventGatewayType="Parallel"` | an instantiating gateway has no incoming flow, and Parallel requires `instantiate` (§10.6.6) | neither attribute is read. Reached by a flow, the gateway is a non-instantiating Event-Based Gateway; with no incoming flow and no start, the deployment fails | refused. Today the code is `reader.eventBasedGatewayInstantiate`; it becomes `gateway.eventBased.instantiate` |
+| A root process whose `isExecutable` is absent or `false` | marks a process not meant to execute (Table 10.1) | deploys no such process (`BpmnParse:560-574`) | refused. Today the code is `reader.factNotCarried`; it becomes `process.notExecutable` |
 
-**Where these refusals live (open decision).** The [row traceability map](../ROW-TRACEABILITY-MAP.md) plans `work.receive.instantiate`, `event.multipleDefinitions` and `event.parallelMultiple` as admission codes over IL fields, while the IL has no field for any of them and the reader refuses Multiple Events today. Recommended: keep all four forms reader refusals (`reader.multipleEventDefinitions`, `reader.eventBasedGatewayInstantiate`, and new `reader.eventDefinitionRef` and `reader.receiveInstantiate`) and amend the map, because the [coverage target](../../PRACTICAL-CIB7-COVERAGE-TARGET.md) excludes them for good, so no later admission widens them and an IL field that only admission reads costs a shape edit without a reader. The alternative, IL fields refused in `Kernel.Admission`, follows the architecture's rule that semantic refusals live there and costs one shape commit.
+These are register limitation [CIB-LIM-0008](../../CIB-BPMN-RELATION-REGISTER.md) and not a candidate deviation. On an admitted model, CIB and the kernel never behave differently. CIB's erasure applies to forms that the [coverage target](../../PRACTICAL-CIB7-COVERAGE-TARGET.md) excludes because they lack pinned CIB execution semantics, and the kernel refuses those forms rather than claim a meaning for them. The retained evidence for multiple definitions and Parallel Multiple ([event-reference-forms](../../../scenarios/open-rows/event-reference-forms/README.md)) is listed under that limitation. So are the evidence for an instantiating and a Parallel Event-Based Gateway ([event-race-compositions](../../../scenarios/open-rows/event-race-compositions/README.md), `instantiating-with-start` and `parallel-with-start`, whose ledger owners are PC-BASIC-03, PC-CF-05 and PC-CF-08). No witness exists yet for `eventDefinitionRef` or for Receive `instantiate`.
 
 ### References and QName closure
 
-- A reference typed `xsd:QName` in the XSD (`messageRef`, `signalRef`, `errorRef`, `escalationRef`, `operationRef`, `calledElement` excepted as an extension string) resolves inside the one Definitions document. An unprefixed `local` names the element whose `id` is `local`, which is CIB's reading (`BpmnParse#resolveName` qualifies it with `targetNamespace`). A prefixed `p:local` resolves the same way exactly when `p` is bound to the Definitions' `targetNamespace`, as XML namespace rules and CIB's `resolveName` both make it.
-- A prefix bound to any other namespace names an import. BPMN `import` is outside the target (CIB's only importer reads XML Schema item definitions), so such a reference is refused as `source.reference` with the prefix in the evidence. An unbound prefix is a namespace error, refused as `parser.failure` or `source.reference`.
-- `bpmn-moddle` resolves references by identifier only and reports `unresolved reference <p:local>` as a warning. One reviewed reader rule makes exactly that warning safe: `p` bound to `targetNamespace` and an element `local` of the property's declared type present; the reader then binds the reference itself. Every other unresolved reference stays `parser.warning`. Renaming identifiers consistently cannot repair a malformed reference, because its text names no identifier before or after the renaming.
-- Witnesses: [event-reference-forms](../../../scenarios/open-rows/event-reference-forms/README.md). CIB accepts `message-ref-qname` (committed), refuses `message-ref-foreign-prefix`, `typo-message-ref`, its renamed twin and `dangling-signal-ref` at deployment, as the reading does.
+- Pinned CIB qualifies a reference with the Definitions' `targetNamespace` only for `messageRef` (`BpmnParse:1264`) and `signalRef` (`:3542`), through `BpmnParse#resolveName`. It reads prefix bindings only from the root `definitions` (`:388-397`).
+- An `errorRef` or `escalationRef` is looked up by its raw text (`:520`, `:533`, `:1217`, `:3146`, `:3375`, `:3632`, `:3673`, `:3689`). As a result:
+  - a prefixed or dangling `errorRef` deploys, and CIB uses the literal text as the error code (`:1218`, `:3157`, `:3376`, `:3633`);
+  - a prefixed `escalationRef` is refused.
+- `bpmn-moddle` resolves a reference by identifier only and reports `unresolved reference <value>`. The reader handles every such warning by one reviewed rule, shared by every profile.
+  - **Bound:** the reference is a `messageRef` or `signalRef` written `p:local`; `p` is declared on the root Definitions, bound there to the `targetNamespace` and not declared again below; and `local` is the identifier of an element of the expected type. The reader binds such a reference as CIB does.
+  - **Refused:** every other unresolved reference is refused as `source.reference`. This one code covers a dangling identifier, a prefix not declared on the Definitions, a prefix declared again below them, a prefix that names another namespace (an import, outside the target), a prefixed `errorRef` or `escalationRef`, and a reference that resolves to the wrong type.
+- CIB's reading of a dangling or prefixed `errorRef` as a literal error code is not imitated. It is a ledger item until a witness retains it.
+- Renaming identifiers consistently cannot repair a malformed reference, because its text names no identifier before or after the renaming.
+- Witnesses: [event-reference-forms](../../../scenarios/open-rows/event-reference-forms/README.md).
+  - `message-ref-qname` is read and agrees with CIB.
+  - `message-ref-foreign-prefix`, `typo-message-ref`, its renamed twin and `dangling-signal-ref` are refused as `source.reference`, as CIB refuses them at deployment.
 
 ### Preserved inert notation
 
-Inert content is kept only in the exact source bytes, never in the IL, and never changes execution: BPMN DI, `documentation`, Text Annotations, Associations, Groups and Categories, Lanes and Lane Sets, names, `gatewayDirection`, the Definitions' `exporter` attributes, and a User Task's opaque `rendering` (as `source.ts` already treats it). A construct that has execution meaning in BPMN 2.0.2 or in pinned CIB is never inert: it is either read into the IL or refused with a stable code. An unknown element, attribute or extension stays refused (`reader.unknownElement`, `reader.unknownAttribute`, `reader.unknownExtension`).
+Inert content is kept only in the exact source bytes, never in the IL, and never changes execution. It covers:
+- BPMN DI, `documentation`, Text Annotations, Associations, Groups and Categories, Lanes and Lane Sets;
+- names, `gatewayDirection` and the Definitions' `exporter` attributes;
+- a User Task's opaque `rendering` content inside its `extensionElements`;
+- a root-level EventDefinition, which acts only through an `eventDefinitionRef` the reader refuses.
+
+A construct that has execution meaning in BPMN 2.0.2 or in pinned CIB is never inert: it is either read into the IL or refused with a stable code. An unknown element, attribute or extension stays refused (`reader.unknownElement`, `reader.unknownAttribute`, `reader.unknownExtension`).
 
 ### Parser warnings
 
-Every `bpmn-moddle` warning blocks admission (`parser.warning`), except the two reviewed rules that prove one safe: a warning raised inside a User Task's opaque `rendering`, and the targetNamespace-prefixed reference above. No profile downgrades a warning.
+Every `bpmn-moddle` warning blocks admission as `parser.warning`, with two exceptions:
+- a warning raised inside a User Task's opaque `rendering`;
+- an unresolved reference, which the QName rule above either binds or refuses as `source.reference`.
+
+Only reviewed reader rules, shared by every profile, make a warning safe.
 
 ### XSD validity
 
-The reader admits documents the BPMN 2.0.2 XSD rejects: `operationRef` written as an attribute of `messageEventDefinition`, where `tMessageEventDefinition` declares it a child element (Semantic.xsd), and an artifact placed before the flow elements of a `process`, against `tProcess`'s sequence (flow elements, then artifacts). `bpmn-moddle` reads both. Proposed place of the check: `bpmn-source`'s source admission, after the import and before the reader, as a project-owned table of each admitted container's child order and each carried property's attribute-or-element form, generated from the pinned Semantic.xsd beside the existing [semantic process metamodel](../../../packages/bpmn-source/src/bpmn-2.0.2-semantic-process-metamodel.json) and refused as `source.schema` (new). A runtime XSD validator is rejected: it adds a native or WebAssembly dependency, which needs the owner's approval, for a check a generated table covers. The hosted `xmllint` validation of registered models stays the oracle: a guard runs every model the reader admits, and a set of XSD-invalid fixtures it must refuse, against both.
+**Invariant:** a model the reader admits is valid against the pinned OMG `BPMN20.xsd`. Pinned CIB validates every deployment against its own copy of that schema (`BpmnParse:324`, `DeploymentEntity:46`, `BpmnDeployer:102`). That copy differs from OMG only at `Semantic.xsd` line 149, where it types `calledElement` as `xsd:string`.
+
+**How it is checked.** [`schema.ts`](../../../packages/bpmn-source/src/kernel-reader/schema.ts) walks the exact source bytes, since the parsed tree loses child order and the attribute-or-element form. It walks them against a table that [`scripts/bpmn-schema-table.ts`](../../../scripts/bpmn-schema-table.ts) generates from `BPMN20.xsd` and `Semantic.xsd`. A violation is refused as `source.schema`, after the parse, the references and the containment check, and before the reader reads any element.
+
+**Facets the table covers,** in the BPMN model namespace:
+- the root element;
+- each element's place in its parent's content model: order, cardinality, required children, substitution groups and wildcards;
+- undeclared and required attributes;
+- model-namespace attributes, and foreign-namespace attributes outside the attribute wildcard;
+- text in element-only content;
+- abstract types and `xsi:type`;
+- the lexical forms of `xsd:ID`, `xsd:IDREF`, `xsd:QName` (with its prefix bound in scope), `xsd:boolean`, `xsd:integer`, `xsd:int` and the enumerations.
+
+**Facets that earlier codes refuse first or cover:**
+- well-formedness: `parser.failure`;
+- unknown unqualified attributes or elements, illegal or duplicate identifiers, body text and an unknown `xsi:type`: `parser.warning`;
+- an `xsd:IDREF` or reference that names no identifier: `source.reference`;
+- a `1` boolean lexeme: `source.ambiguousBoolean`.
+
+**Not covered:** the BPMN DI content, which stays in the exact bytes, and the value range of `xsd:int`.
+
+**Guards.** The [oracle guard](../../../packages/bpmn-source/test/kernel-reader-basic-schema.test.ts) runs [`validate-bpmn-xml.sh`](../../../scripts/validate-bpmn-xml.sh) over:
+- one valid case and one invalid case per facet, written only to a temporary directory and so outside the set `verify.sh` validates;
+- every package fixture.
+
+It asserts that the reader refuses every rejected document and refuses no valid one as `source.schema`. A second guard locks the committed table to its generator.
+
+**Consequence: a `calledElement` expression is refused.** A `calledElement` written as an expression (`${calleeKey}`) is valid in CIB's schema copy and invalid in OMG's, so it is refused as `source.schema`. This touches PC-SCOPE-03's [binding-forms](../../../scenarios/open-rows/call-binding-time/README.md) model; it is listed under the open questions of the track hand-back.
 
 ### Diagnostics
 
-Each refusal names its stable code, the element identifier when one exists and the offending text as evidence; the reader stops at the first refusal in document order, so a renamed model refuses with the same code at the renamed element.
+Each refusal names:
+- its stable code;
+- the element identifier, when one exists;
+- the offending text as evidence, with the source line for `source.schema`.
+
+The reader runs in passes, in this order:
+1. the source bytes;
+2. the parse and its warnings;
+3. the references;
+4. the containment cardinality;
+5. the schema;
+6. the readable forms, in identifier order;
+7. the elements, in identifier order;
+8. the carried facts.
+
+A model with a single defect therefore refuses with one stable code, and a consistently renamed model refuses with the same code at the renamed element. A model with several defects refuses with the code of its earliest pass, which is not necessarily its first defect in document order.
 
 ## CIB relations
 
@@ -150,7 +212,7 @@ Each refusal names its stable code, the element identifier when one exists and t
 | PC-BASIC-01 | Several outgoing Start flows and concurrent None Ends are executed and start combinations refused; acceptance of root-versus-child completion |
 | PC-BASIC-02 | Link: several sources and a catching Link with an incoming flow are executed; a Link after an Event-Based Gateway and two catches of one name are refused (`gateway.eventBased.linkArm`, `link.duplicateCatch`); the publication of a Link pair ([LNK contract][lnk-contract]) |
 | PC-BASIC-03 | Renaming and permutation invariance: only Exclusive candidate order is semantic |
-| PC-BASIC-04 | Interchange forms and diagnostics of the frozen cohort, owned by `bpmn-source`: the [proposed interpretation](#interchange-forms-and-diagnostics-pc-basic-04-proposed) awaits its cold review |
+| PC-BASIC-04 | Interchange forms and diagnostics of the frozen cohort, owned by `bpmn-source`: the [interpretation](#interchange-forms-and-diagnostics-pc-basic-04) is implemented on the reader side; the admission codes `work.receive.instantiate`, `event.multipleDefinitions`, `event.parallelMultiple`, `gateway.eventBased.instantiate` and `process.notExecutable` wait for their IL fields |
 | PC-HUM-05 | Manual Task as pass-through with its source kind kept in `Header.sourceType` ([work](WORK-SEMANTICS-SPEC.md)) |
 
 ## Sources

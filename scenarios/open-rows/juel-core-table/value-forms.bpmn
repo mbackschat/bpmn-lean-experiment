@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_ValueForms" targetNamespace="urn:bpmn-lean:scenarios:juel-core-table:value-forms">
+  <process id="Process_ValueForms" name="Evaluate value forms" isExecutable="true">
+    <startEvent id="StartEvent_Start" />
+    <sequenceFlow id="Flow_Start_Observe" sourceRef="StartEvent_Start" targetRef="UserTask_Observe" />
+    <userTask id="UserTask_Observe" name="Observe the evaluated inputs">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="escapedBackslash">\\${x}</camunda:inputParameter>
+          <camunda:inputParameter name="escapedDelimiter">\${x} and ${word}</camunda:inputParameter>
+          <camunda:inputParameter name="longWrap">${9223372036854775807 + 1 &lt; 0}</camunda:inputParameter>
+          <camunda:inputParameter name="decimalDoubled">${price * 2 == 3}</camunda:inputParameter>
+          <camunda:inputParameter name="decimalSum">${price + price == 3}</camunda:inputParameter>
+          <camunda:inputParameter name="decimalGreater">${price * 2 &gt; 2}</camunda:inputParameter>
+          <camunda:inputParameter name="lengthCompared">${word.length() == 3}</camunda:inputParameter>
+          <camunda:inputParameter name="lengthPlusOne">${word.length() + 1}</camunda:inputParameter>
+          <camunda:inputParameter name="replaceMultiCharacter">${word.replace('bc', 'xyz')}</camunda:inputParameter>
+          <camunda:inputParameter name="replaceAbsent">${word.replace('zz', 'y')}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <sequenceFlow id="Flow_Observe_Done" sourceRef="UserTask_Observe" targetRef="EndEvent_Done" />
+    <endEvent id="EndEvent_Done" />
+  </process>
+</definitions>

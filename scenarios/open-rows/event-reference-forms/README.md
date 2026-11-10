@@ -28,6 +28,6 @@ Every model is one catching Event *Await* between a None Start and the User Task
 | [message-then-timer](parallel-multiple-message-then-timer.scenario.json) | parallel-multiple | The same stimuli as the schedule of that name on multiple-event-definitions. |
 | [start](dangling-signal-ref-start.scenario.json) | dangling-signal-ref | The start alone, which is where CIB meets the deployment. |
 
-The kernel reader refuses every model of this directory at source level (`parser.warning` for an unresolved reference, `reader.multipleEventDefinitions`); the schedules fix what CIB answers for the same sources.
+The kernel reader binds `message-ref-qname`'s reference, whose prefix the Definitions bind to their own target namespace, and refuses every other model of this directory at source level: `source.reference` for a reference that names no element or names another namespace, `reader.multipleEventDefinitions` for two definitions and `reader.factNotCarried` for `parallelMultiple`, which the IL does not carry yet ([flow semantics](../../../docs/kernel/semantics/FLOW-SEMANTICS-SPEC.md#interchange-forms-and-diagnostics-pc-basic-04)). The schedules fix what CIB answers for the same sources.
 
 The schedules carry no expected state; the retained CIB evidence is the answer.

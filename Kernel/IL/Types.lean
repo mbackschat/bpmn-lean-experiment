@@ -1,6 +1,7 @@
 module
 
 public import Kernel.IL.Types.Options
+public import Kernel.IL.Types.Juel
 
 /-! # Kernel IL
 
@@ -46,12 +47,13 @@ inductive SimpleBoolean where
   | stringEquals (name value : String)
   deriving DecidableEq, Repr
 
-/-- An expression. `literal`, `simpleBoolean` and `variable` are evaluated by the kernel; admission refuses `foreign`,
-which only the deferred JUEL binding (PC-DATA-07) would read. -/
+/-- An expression. `literal`, `simpleBoolean`, `variable` and `juel` are evaluated by the kernel, `juel` only under
+`Evaluator.juel`; admission refuses `foreign`, a text the reader could not read. -/
 inductive Expression where
   | literal (value : Value)
   | simpleBoolean (body : SimpleBoolean)
   | variable (name : String)
+  | juel (nodes : List JuelNode)
   | foreign (language source : String)
   deriving Repr
 
@@ -62,8 +64,8 @@ inductive ValueSource where
   deriving Repr
 
 /-- Which syntax wrote a mapping, which settles what an unset source means: an unavailable Data Input
-(BPMN 2.0.2 §10.4.2), an unresolved `camunda:inputParameter` or `outputParameter` expression, or a `camunda:in`/`out`
-copy that reads null (CIB-EXT-0021). -/
+(BPMN 2.0.2 §10.4.2), an unresolved `camunda:inputParameter`, `outputParameter` or `camunda:in`/`out`
+`sourceExpression` expression, or a `camunda:in`/`out` `source` copy that reads null (CIB-EXT-0021). -/
 inductive MappingDialect where
   | dataAssociation
   | ioParameter

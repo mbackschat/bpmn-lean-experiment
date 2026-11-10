@@ -3,9 +3,9 @@
   "id": "juel-evaluation-failures-list-mutating-method",
   "profile": "cibseven-2.2.0",
   "bpmn": {
-    "id": "juel-evaluation-failures-failure-probes",
-    "relativePath": "scenarios/open-rows/juel-evaluation-failures/failure-probes.bpmn",
-    "sha256": "151d9ca88c66ea440857060b8f9326793bc1b3c25ac661998b6969c68a9ab27f",
+    "id": "juel-evaluation-failures-refused-probes",
+    "relativePath": "scenarios/open-rows/juel-evaluation-failures/refused-probes.bpmn",
+    "sha256": "673e70ccb1fb50eefd0b196cd0e1eb4867ac8d41a24257752a760120cb3e4c7f",
     "sourceOverlay": null
   },
   "stimuli": [

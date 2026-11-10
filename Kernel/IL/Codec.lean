@@ -59,7 +59,24 @@ partial def valueFromJson (json : Json) : Except String Value := do
 instance : ToJson Value := ⟨valueToJson⟩
 instance : FromJson Value := ⟨valueFromJson⟩
 
-deriving instance FromJson, ToJson for SimpleBoolean, Expression, ValueSource, MappingDialect, Mapping, CycleDialect,
+deriving instance FromJson, ToJson for SimpleBoolean, JuelBinary, JuelUnary, JuelMethod
+
+/-- A call target travels as the Java method name the reader read. The decoder looks it up among the listed methods,
+whose wire names are the Java names, and keeps any other name as `other`; the argument count stays an admission
+check. -/
+instance : FromJson JuelCall where
+  fromJson? json :=
+    match (fromJson? json : Except String JuelMethod) with
+    | .ok method => .ok (.listed method)
+    | .error _ => JuelCall.other <$> json.getStr?
+
+instance : ToJson JuelCall where
+  toJson
+    | .listed method => toJson method
+    | .other name => toJson name
+
+deriving instance FromJson, ToJson for JuelFunctionNode, JuelCallNode, JuelComputedCallNode, JuelBinaryNode,
+  JuelChoiceNode, JuelNode, Expression, ValueSource, MappingDialect, Mapping, CycleDialect,
   TimerSchedule, TimerTrigger, CorrelationCriterion, MessageTrigger, SignalTrigger, ConditionTrigger, ErrorTrigger,
   EscalationTrigger, Trigger, Subscription, Boundary, EffectBinding, MessageThrow, SignalThrow, ErrorThrow,
   EscalationThrow, CompensationThrow, Throw, UserWork, ReceiveWork, ServiceWork, SendWork, ScriptWork, CallBinding,

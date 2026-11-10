@@ -46,13 +46,13 @@ function activityOrigin(program: Program, header: Header, payload: ActivityPaylo
   return null;
 }
 
-function subscriptionData(subscription: Subscription): string | null {
-  return Data.mappings(subscription.outputs);
+function subscriptionData(program: Program, subscription: Subscription): string | null {
+  return Data.mappings(program.options.evaluator, subscription.outputs);
 }
 
-function boundaryData(boundaries: readonly Boundary[]): string | null {
+function boundaryData(program: Program, boundaries: readonly Boundary[]): string | null {
   for (const boundary of boundaries) {
-    const refused = subscriptionData(boundary.subscription);
+    const refused = subscriptionData(program, boundary.subscription);
     if (refused !== null) return refused;
   }
   return null;
@@ -96,7 +96,7 @@ function eventRole(program: Program, header: Header, payload: EventPayload): str
   const role = payload.role;
   switch (role.tag) {
     case EventRoleTag.Catch:
-      return Subscriptions.catchEvent(role.subscription) ?? subscriptionData(role.subscription);
+      return Subscriptions.catchEvent(role.subscription) ?? subscriptionData(program, role.subscription);
     case EventRoleTag.Throw:
       return Propagation.throwRecord(inTransaction(program, header), role.record);
     case EventRoleTag.LinkCatch:
@@ -116,13 +116,15 @@ function element(program: Program, throws: readonly Element[], entry: Element): 
       const loop = payload.envelope.multiInstance;
       return first(
         () => Data.origin(header),
-        () => Data.envelope(payload.envelope),
-        () => (call === null ? null : Data.mappings(call.inputs) ?? Data.mappings(call.outputs)),
+        () => Data.envelope(program.options.evaluator, payload.envelope),
+        () => (call === null
+          ? null
+          : Data.mappings(program.options.evaluator, call.inputs) ?? Data.mappings(program.options.evaluator, call.outputs)),
         () => Work.activity(program, payload),
         () => activityOrigin(program, header, payload),
         () => (loop === null ? null : MultiInstance.activity(Work.instanceBody(payload.work), payload.envelope, loop)),
         () => Subscriptions.boundaries(program.options.errorCatchVariables, false, payload.envelope.boundaries),
-        () => boundaryData(payload.envelope.boundaries),
+        () => boundaryData(program, payload.envelope.boundaries),
         () => Scopes.nestedCompensation(program, throws, header, payload.envelope),
       );
     }
@@ -131,12 +133,12 @@ function element(program: Program, throws: readonly Element[], entry: Element): 
       const subProcess = Scopes.eventSubProcessOf(payload);
       return first(
         () => Data.origin(header),
-        () => Data.envelope(payload.envelope),
+        () => Data.envelope(program.options.evaluator, payload.envelope),
         () => Scopes.scope(program, header, payload),
         () => (subProcess === null ? null : Subscriptions.eventSubProcess(subProcess[0], subProcess[1])),
         () => Subscriptions.boundaries(
           program.options.errorCatchVariables, Scopes.isTransaction(payload), payload.envelope.boundaries),
-        () => boundaryData(payload.envelope.boundaries),
+        () => boundaryData(program, payload.envelope.boundaries),
         () => Scopes.nestedCompensation(program, throws, header, payload.envelope),
       );
     }
@@ -152,7 +154,7 @@ function element(program: Program, throws: readonly Element[], entry: Element): 
         () => (subscription === null
           ? null
           : Subscriptions.start(program.options.errorCatchVariables, header.parent !== null, subscription) ??
-            subscriptionData(subscription)),
+            subscriptionData(program, subscription)),
       );
     }
   }
@@ -171,7 +173,7 @@ function abnormalScope(program: Program): boolean {
 
 /** A flow's condition, then where it may sit. */
 function flow(program: Program, entry: Flow): string | null {
-  return Data.flowCondition(entry) ?? FlowAdmission.conditionalOutflow(program, entry);
+  return Data.flowCondition(program.options.evaluator, entry) ?? FlowAdmission.conditionalOutflow(program, entry);
 }
 
 /**

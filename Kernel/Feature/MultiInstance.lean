@@ -123,6 +123,7 @@ def arriveMultiInstance (ctx : Ctx) (header : Header) (envelope : Envelope) (loo
     -- Admission refuses it (`multiInstance.cardinality`).
     | .cardinality _ => .error (.unsupported "multi-instance-cardinality")
   match ctx.evaluate (state.evalContext occurrence.scope) source with
+  | .unsupported code => .error (.unsupported code)
   | .failure _ =>
     let some flow := occurrence.incoming | .error (.semanticFailure "multi-instance-without-flow")
     .ok (state.hold { occurrence := occurrence.id, flow, scope := occurrence.scope })
@@ -203,6 +204,7 @@ def instanceCompleted (ctx : Ctx) (body : Nat) (occurrence : Occurrence) (writes
         | .value (.bool holds) => .ok holds
         | .value _ => .error (.semanticFailure "completion-condition-not-boolean")
         | .failure code => .error (.semanticFailure code)
+        | .unsupported code => .error (.unsupported code)
     if stop || exhausted then .ok (finish ctx loop run state)
     else
       let some items := run.items | .error (.semanticFailure "multi-instance-collection")

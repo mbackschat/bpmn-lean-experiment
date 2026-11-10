@@ -105,6 +105,7 @@ def payloadBindings (ctx : Ctx) (nowMs : Nat) (outputs : List Mapping) (payload 
     | .variable name => some (name, payload)
     | .literal _ => none
     | .simpleBoolean _ => none
+    | .juel _ => none
     | .foreign _ _ => none
   ctx.requireMappings { variables := outputsRead, nowMs } outputs
 
@@ -136,6 +137,7 @@ def keyValue (ctx : Ctx) (context : EvalContext) (criterion : CorrelationCriteri
   -- dynamic-only: a key's value type is the run's data.
   | .value _ => .error (.unsupported "correlation-key-type")
   | .failure code => .error (.semanticFailure code)
+  | .unsupported code => .error (.unsupported code)
 
 /-- Whether the delivered `correlation` names exactly the criteria's keys, in order, each with the String its criterion
 binds. A modeled key matches as `.processVariable`; the other targets are `O.messageCorrelation = apiCriteria`, which

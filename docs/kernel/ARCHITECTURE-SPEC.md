@@ -172,6 +172,7 @@ Dispatch owners per guarded type:
 | scope kind | `Kernel.Feature.Scopes` |
 | throw kind | `Kernel.Feature.Propagation` |
 | Multi-Instance mode | `Kernel.Feature.MultiInstance` |
+| JUEL node, binary and unary operator, call target, listed method | `Kernel.Feature.Data` (its `Juel` evaluator) |
 | any of them, in proofs | `Kernel.Proofs.Step` |
 | any of them, at a boundary | one module per package: the host's input mapper, the CIB runner's trigger mapper, the platform's presentation module shared by the history, start and work views |
 

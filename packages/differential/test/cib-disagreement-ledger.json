@@ -2539,18 +2539,6 @@
     ]
   },
   {
-    "evidence": "scenarios/open-rows/output-mapping-fanout/completion-fanout.cibseven-evidence.json",
-    "owners": [
-      "PC-DATA-06"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/output-mapping-fanout/extra-completion-value.cibseven-evidence.json",
-    "owners": [
-      "PC-DATA-06"
-    ]
-  },
-  {
     "evidence": "scenarios/open-rows/output-mapping-fanout/late-invalid-output.cibseven-evidence.json",
     "owners": [
       "PC-DATA-06"
@@ -2605,12 +2593,6 @@
     "evidence": "scenarios/open-rows/scalar-types-in-multi-instance/strings-only.cibseven-evidence.json",
     "owners": [
       "PC-DATA-02"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/scope-data-visibility/called-owner.cibseven-evidence.json",
-    "owners": [
-      "PC-DATA-04"
     ]
   },
   {

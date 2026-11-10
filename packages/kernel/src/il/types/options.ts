@@ -111,7 +111,16 @@ export enum ConditionOrder {
 
 export enum CallBindingTime { ProgramAssembly = "programAssembly", Invocation = "invocation" }
 
-export enum Evaluator { SimpleBoolean = "simpleBoolean", Juel = "juel" }
+/** The expression language the kernel evaluates. */
+export enum Evaluator {
+  /** The standards profile's Simple Boolean ([decision](../../../../../docs/SIMPLE-BOOLEAN-EXPRESSION-DECISION.md)). */
+  SimpleBoolean = "simpleBoolean",
+  /**
+   * CIB-CFG-0011: the Core JUEL level of the pinned CIB Seven 2.2.0 environment
+   * ([expression semantics](../../../../../docs/kernel/semantics/EXPRESSION-SEMANTICS-SPEC.md)).
+   */
+  Juel = "juel",
+}
 
 /** Which variables a Multi-Instance loop reads its collection from and gives each instance its item in. */
 export enum MultiInstanceBinding {

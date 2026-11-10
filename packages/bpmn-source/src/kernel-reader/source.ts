@@ -7,6 +7,8 @@ import { firstContainmentCardinalityMismatch } from "../singleton-containment-ad
 import { parseStrictJson } from "../source-overlay-json.js";
 import { ReadRefusal, ReadRefusalCode } from "./model.js";
 import type { EffectBinding } from "./model.js";
+import { bindReference } from "./references.js";
+import { firstSchemaViolation } from "./schema.js";
 
 /** One BPMN source and its optional overlay; `profile` is identity data and selects no reader behaviour. */
 export type KernelSource = Readonly<{
@@ -147,13 +149,19 @@ export async function parseKernelSource(source: KernelSource): Promise<ParsedSou
   } catch (error: unknown) {
     throw new ReadRefusal(ReadRefusalCode.ParserFailure, null, error instanceof Error ? error.message : "bpmn-moddle import failed");
   }
-  const blocking = imported.warnings.find((warning) => !isOpaqueRenderingWarning(xml, warning.evidence));
-  if (blocking !== undefined) throw new ReadRefusal(ReadRefusalCode.ParserWarning, blocking.element?.id ?? null, blocking.evidence);
+  const definitions = asElement(imported.rootElement);
+  if (definitions === undefined) return refuse(ReadRefusalCode.ParserFailure, "no root element");
+  for (const warning of imported.warnings) {
+    if (isOpaqueRenderingWarning(xml, warning.evidence)) continue;
+    const reference = imported.references.get(warning);
+    if (reference === undefined) throw new ReadRefusal(ReadRefusalCode.ParserWarning, warning.element?.id ?? null, warning.evidence);
+    bindReference(reference, definitions, imported.located.keys());
+  }
   const cardinality = firstContainmentCardinalityMismatch(xml, imported.located);
   if (cardinality !== undefined) {
     refuse(ReadRefusalCode.SourceContainmentCardinality, `${cardinality.property}: ${cardinality.sourceOccurrences} in source, ${cardinality.projectedOccurrences} retained`);
   }
-  const definitions = asElement(imported.rootElement);
-  if (definitions === undefined) return refuse(ReadRefusalCode.ParserFailure, "no root element");
+  const schema = firstSchemaViolation(xml);
+  if (schema !== undefined) throw new ReadRefusal(ReadRefusalCode.SourceSchema, schema.element, schema.evidence);
   return { sha256, definitions, ...overlay };
 }

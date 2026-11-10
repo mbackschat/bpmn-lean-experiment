@@ -24,12 +24,12 @@ const header = (id: string, sourceType: string): Json => ({ id, origin: { defini
 const literal = (value: boolean): Json => ({ simpleBoolean: { body: { literal: { value } } } });
 const routeIs = (value: string): Json => ({ simpleBoolean: { body: { stringEquals: { name: "route", value } } } });
 
-const envelope = (incoming: string[], outgoing: string[], defaultFlow: string | null = null): Json => ({
-  incoming, outgoing, inputs: [], outputs: [], boundaries: [], multiInstance: null, compensationHandler: null, defaultFlow,
+const envelope = (incoming: string[], outgoing: string[], defaultFlow: string | null = null, outputs: Json[] = []): Json => ({
+  incoming, outgoing, inputs: [], outputs, boundaries: [], multiInstance: null, compensationHandler: null, defaultFlow,
   asyncBefore: false, asyncAfter: false,
 });
 
-const userTask = (id: string, incoming: string[], outgoing: string[], defaultFlow: string | null = null): Json => ({
+const userTask = (id: string, incoming: string[], outgoing: string[], defaultFlow: string | null = null, outputs: Json[] = []): Json => ({
   activity: {
     header: header(id, "userTask"),
     payload: {
@@ -41,7 +41,7 @@ const userTask = (id: string, incoming: string[], outgoing: string[], defaultFlo
           },
         },
       },
-      envelope: envelope(incoming, outgoing, defaultFlow),
+      envelope: envelope(incoming, outgoing, defaultFlow, outputs),
     },
   },
 });
@@ -52,6 +52,8 @@ type Shape = Readonly<{
   /** `To_D` is `Review`'s default flow. */
   defaultD?: boolean;
   conditionOrder?: "afterOutputs" | "beforeOutputs";
+  /** An output parameter of `Review` that overwrites the submitted `route` with this literal. */
+  routeOutput?: string;
 }>;
 
 /** `Start → Review`, whose flows `To_A`, `To_B` and `To_D` lead to the User Tasks `A`, `B` and `D`, each to its End. */
@@ -66,7 +68,8 @@ function program(shape: Shape): Json {
     },
     elements: [
       { start: { header: header("Start", "startEvent"), payload: { subscription: null, outgoing: ["To_Review"] } } },
-      userTask("Review", ["To_Review"], branches.map((branch) => `To_${branch}`), shape.defaultD === true ? "To_D" : null),
+      userTask("Review", ["To_Review"], branches.map((branch) => `To_${branch}`), shape.defaultD === true ? "To_D" : null,
+        shape.routeOutput === undefined ? [] : [{ target: "route", source: { literal: { value: { kind: "string", value: shape.routeOutput } } }, dialect: "ioParameter" }]),
       ...branches.flatMap((branch) => [
         userTask(branch, [`To_${branch}`], [`End_${branch}_In`]),
         {
@@ -132,9 +135,11 @@ test("an Activity that takes none of its outgoing flows rolls its command back",
 });
 
 test("the condition order decides whether an outgoing condition reads the completion's own write", () => {
-  const reading = { conditions: [routeIs("fast"), literal(false), null] } as const;
-  assert.deepEqual(afterReview(program(reading)), ["A", "D"]);
-  assert.deepEqual(afterReview(program({ ...reading, conditionOrder: "beforeOutputs" })), ["D"]);
+  // The submission installs `route` = "fast" before either order (CIB-EXT-0005); the output parameter then overwrites
+  // it with "slow", so only a condition read before the outputs sees "fast" (CIB-INT-0011).
+  const reading = { conditions: [routeIs("fast"), literal(false), null], routeOutput: "slow" } as const;
+  assert.deepEqual(afterReview(program(reading)), ["D"]);
+  assert.deepEqual(afterReview(program({ ...reading, conditionOrder: "beforeOutputs" })), ["A", "D"]);
 });
 
 test("admission reads conditions on an Activity's outgoing flows but not on its default flow", () => {

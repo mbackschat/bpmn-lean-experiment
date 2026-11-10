@@ -129,6 +129,16 @@ def deferred (program : Program) (state : State) (outcome : Outcome) : Outcome :
     if crossed program state then .error (.unsupported "async-boundary-failure") else outcome
   | .error (.rejected _) | .error (.unsupported _) | .ok _ => outcome
 
+/-- `outcome` of a timer firing, unless it rolls back: CIB fires a timer in a job, whose failure is a retry and then an
+incident, never the rollback of a command (EXPRESSION-SEMANTICS-SPEC, failure outcomes per stimulus), and no track models
+a failed timer job yet, so such a firing is `unsupported`. -/
+def timerJob (outcome : Outcome) : Outcome :=
+  match outcome with
+  | .error (.rolledBack _) =>
+    -- dynamic-only: whether a firing's closure rolls back depends on the run's data
+    .error (.unsupported "timer-job-failure")
+  | .error (.rejected _) | .error (.semanticFailure _) | .error (.unsupported _) | .ok _ => outcome
+
 /-- Begin the occurrence `request` names and hand it to its feature. -/
 def begin (hooks : Hooks) (ctx : Ctx) (request : BeginRequest) (state : State) : Outcome := do
   let some sourceType := ctx.program.sourceType? request.element | .error (.semanticFailure "begin-without-element")
@@ -388,7 +398,7 @@ def step (hooks : Hooks) (program : Program) (before : Option State) (input : In
       match item? ctx state data.occurrence (·.signal) with
       | none => .error (.rejected "unknown-signal-subscription")
       | some item => fire hooks ctx item (.signal data) state
-  | .timerFire data => onRunning hooks ctx input before fun state =>
+  | .timerFire data => timerJob <| onRunning hooks ctx input before fun state =>
     match item? ctx state data.occurrence (·.deadlineMs) with
     | none => .error (.rejected "unknown-timer")
     | some item => fire hooks ctx item (.timer data.logicalTimeMs) state

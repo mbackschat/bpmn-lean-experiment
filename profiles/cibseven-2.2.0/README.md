@@ -14,12 +14,13 @@ The [profile artifact](profile.json) is the CIB Seven 2.2.0 compatibility profil
 | `errorCatchVariables` | `eventScope` | `CIB-EXT-0028` |
 | `multiInstanceBinding` | `loopReferences` | `CIB-INT-0014` |
 | `effectResultValues` | `activityLocals` | `CIB-EXT-0015` |
+| `evaluator` | `juel` | `CIB-CFG-0011`, `CIB-EXT-0030` |
 
 Every other option keeps the standards reading, including `scopeChainSubmissionBytes`, and the relationships the profile lists without an option row are provenance. A relationship whose option is mutually exclusive with one above is a decision point for a second cumulative profile, not a switch inside this one: the [scope-chain profile](../cibseven-2.2.0-scope-chain/README.md) is the first, because `CIB-EXT-0020` restricts User Task submissions that `CIB-EXT-0005` installs at the root.
 
 Three CIB behaviours inside this profile's admitted surface are knowingly not imitated, so a run there differs from CIB's:
 
-- **Unconsumed results outside Multi-Instance** (`CIB-EXT-0015`, owner `PC-DATA-06`). `effectResultValues = activityLocals` applies to the instances of a Multi-Instance Activity only. Elsewhere an effect result value no output mapping consumes is rejected as `undeclared-output`, while CIB discards it on a task with output parameters, which makes the task a scope, and keeps it as a Process variable on a task without them (`BpmnParse.java:4797-4814`).
+- **Unconsumed results of a task CIB makes no scope** (`CIB-EXT-0015`, owner `PC-DATA-06`). `effectResultValues = activityLocals` applies to the tasks CIB makes a scope, Multi-Instance instances and tasks with output parameters, where CIB discards the value. On a task without either, an effect result value no output mapping consumes is rejected as `undeclared-output`, while CIB keeps it as a Process variable (`BpmnParse.java:4797-4814`).
 
 - **Java exception-class codes** (`CIB-EXT-0029`, unselected). CIB lets an Error code name a Java exception class that a technical failure then matches; the kernel catches only business failures by code, so such a technical failure becomes an incident instead of taking the boundary.
 - **Intermediate Sub-Processes on the error path** (`CIB-EXT-0016`). When an Error is caught by a boundary of an ancestor more than one level out, CIB runs the output parameters of every Sub-Process it destroys between the thrower and the catching host; the kernel writes only the thrower's and the interrupted host's.

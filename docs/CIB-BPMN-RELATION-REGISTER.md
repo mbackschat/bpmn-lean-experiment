@@ -26,9 +26,9 @@ The counts below cover only entries recorded by this project, including the sepa
 | Permitted operational details | 13 | 0 | CIB or the oracle adapter chooses host mechanics without changing required BPMN observations |
 | Confirmed normative deviations | 0 | 1 | Clear BPMN requirement and pinned CIB evidence establish incompatible behavior |
 | CIB interpretations of BPMN gaps or inconsistencies | 15 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
-| CIB extension records | 29 | 3 | Project profile deliberately includes behavior beyond bare BPMN execution; candidates remain unselected |
-| Configuration-specific realizations | 10 | 1 | Behavior is permitted or meaningful only under a declared CIB environment |
-| Known CIB limitations within reviewed scope | 7 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
+| CIB extension records | 30 | 3 | Project profile deliberately includes behavior beyond bare BPMN execution; candidates remain unselected |
+| Configuration-specific realizations | 11 | 1 | Behavior is permitted or meaningful only under a declared CIB environment |
+| Known CIB limitations within reviewed scope | 11 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
 
 The sequential User Task account has no recorded CIB deviation. That statement is bounded to its clauses, pinned environment, witnesses, and observation surface; it is not a general CIB conformance result.
 
@@ -604,6 +604,46 @@ BPMN 2.0.2 §10.5.2 admits several Start Events in a process or a Sub-Process. C
 
 **Boundary:** A second None or Timer Start of a process, and a second start of any kind in a Sub-Process. Message Starts beside one initial start stay admitted.
 
+### CIB-LIM-0009: the core JUEL level refuses at admission forms CIB evaluates
+
+**Status:** Profile limitation; not a deviation
+
+CIB Seven `2.2.0` evaluates more JUEL than the [core level](kernel/semantics/EXPRESSION-SEMANTICS-SPEC.md) admits: functions, unlisted or mutating methods, floating literals and division, conditions in a named language or a Definitions-declared one, non-ASCII identifiers and whitespace, the engine-context names and Multi-Instance counters, `camunda:list` and `camunda:map` parameters, `camunda:resource` conditions and `local` Call copies. The kernel refuses each with a stable admission or reader code rather than evaluate a form whose result lies outside the portable value domain or whose context is engine state; a later JUEL level widens the admitted set without reinterpreting what Core accepts.
+
+**Evidence:** The [admission table of the expression semantics](kernel/semantics/EXPRESSION-SEMANTICS-SPEC.md#admission-at-core); the retained witnesses [juel-core-forms](../scenarios/open-rows/juel-core-forms/README.md), [juel-evaluation-failures](../scenarios/open-rows/juel-evaluation-failures/README.md) and [condition-language-declarations](../scenarios/open-rows/condition-language-declarations/README.md), where CIB evaluates what the kernel refuses (CIB Seven `2.2.0`).
+
+**Boundary:** The core level's refusal codes only. It claims nothing about what a refused form would evaluate to.
+
+### CIB-LIM-0010: the core JUEL level answers `unsupported` where CIB returns a value outside the portable domain
+
+**Status:** Profile limitation; not a deviation
+
+Some admitted expressions reach, for particular data, a CIB result or Java behaviour the portable value domain cannot hold: a Double, an out-of-domain or non-canonical Decimal at a mapping, a collection rendered as text, the ordering of two Lists or two Maps, Java `equals` over Integers whose carrier the kernel cannot know, String bean properties, unlisted receiver or argument kinds, non-ASCII case mapping and numeric text, and surrogate splits. The kernel answers `unsupported` with a stable dynamic-only code for each, as [the expression semantics](kernel/semantics/EXPRESSION-SEMANTICS-SPEC.md#failure-semantics) list them, rather than invent a portable value.
+
+**Evidence:** The [core witness table](../scenarios/open-rows/juel-core-table/README.md) rows `integer-class`, `decimal-noncanonical-result`, `text-double-operand`, `string-over-limit` and `string-bean-property`, and the [juel-evaluation-failures](../scenarios/open-rows/juel-evaluation-failures/README.md) witnesses `division-by-zero`, `integer-overflow` and `negative-result` (CIB Seven `2.2.0`).
+
+**Boundary:** Admitted core expressions whose run reaches one of those values; the statically refused forms are `CIB-LIM-0009`.
+
+### CIB-LIM-0011: pinned CIB ignores the configured-task extension
+
+**Status:** Profile limitation; not a deviation
+
+A Task carrying `bpmnLean:taskDefinition` is a standards-profile extension that names its work by configuration. CIB Seven `2.2.0` ignores the foreign extension element and runs the Task as an Abstract Task that passes its token on, so CIB is no oracle for it.
+
+**Evidence:** The retained [configured-task](../scenarios/configured-task/README.md) answer, where CIB passes through what the kernel opens as configured work (CIB Seven `2.2.0`).
+
+**Boundary:** The `bpmnLean:taskDefinition` extension only.
+
+### CIB-LIM-0012: an expression reading the `task` bean is refused at admission
+
+**Status:** Profile limitation; not a deviation
+
+CIB Seven `2.2.0` resolves `${task.assignee}` and its siblings inside a task listener and rolls the command back elsewhere, because the `task` bean exists only there. The kernel has no task bean in its expression context, so admission refuses such a metadata expression (`work.user.assignee` and its siblings) until the JUEL Task-fields level defines the site.
+
+**Evidence:** The retained [task-metadata-condition](../scenarios/open-rows/human-task-metadata-composition/README.md) answer, where CIB rolls back a condition reading `task` (CIB Seven `2.2.0`).
+
+**Boundary:** Expressions naming the `task` bean in User Task metadata and conditions.
+
 ## Extension register
 
 ### CIB-EXT-0001 — exact delegate-expression Service Task binding
@@ -666,7 +706,7 @@ This is a CIB public-service extension over the BPMN User Task lifecycle, not ge
 
 **Evidence:** The Java-21 [packaged-engine phase-zero probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenUserTaskCompletionDataPhaseZeroProbeTest.java) uses the pinned CIB BPMN Model API to build the exact two-task control, records public task-service maps, runtime variables, final historic variables, active task keys, and Process liveness, and runs under `CIB-CFG-0001`. The [User Task completion-data specification](kernel/semantics/DATA-SEMANTICS-SPEC.md) owns the selected project rules and refinement boundary.
 
-**Boundary:** Only Process-scope string and explicit null values, one exact active task, create/overwrite/preserve merge, no-data preservation, continuation visibility, final-history visibility, and unknown/stale refusal are selected. Task-local and transient variables, deletion, nested or serialized values, BPMN input/output specifications and Data Associations, forms, field validation, variable authorization, people assignment, multiple active dummy tasks, and general Task Service compatibility remain excluded. Under the embedded completion profile, in data-bearing Programs, a completion patch writes each name to its nearest declaring frame on the task's occurrence chain or to the Process, and a name outside the declaring frames is refused ([concurrent scope data](kernel/semantics/DATA-SEMANTICS-SPEC.md)).
+**Boundary:** Under `installsVariables` a mapped User Task's completion installs every submitted value from the task's own scope occurrence outward, at the nearest owner or else the instance root, before its output parameters and before its outgoing conditions (`review-output-order`; the kernel's `Feature.Work.completeUserTask`). Only Process-scope string and explicit null values, one exact active task, create/overwrite/preserve merge, no-data preservation, continuation visibility, final-history visibility, and unknown/stale refusal are selected. Task-local and transient variables, deletion, nested or serialized values, BPMN input/output specifications and Data Associations, forms, field validation, variable authorization, people assignment, multiple active dummy tasks, and general Task Service compatibility remain excluded. Under the embedded completion profile, in data-bearing Programs, a completion patch writes each name to its nearest declaring frame on the task's occurrence chain or to the Process, and a name outside the declaring frames is refused ([concurrent scope data](kernel/semantics/DATA-SEMANTICS-SPEC.md)).
 
 ### CIB-EXT-0006 — public Process start installs initial Process variables
 
@@ -756,7 +796,7 @@ This is a CIB job-management extension, not general BPMN service-fault meaning. 
 
 **Evidence:** The [packaged-engine phase-zero probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenServiceTaskIncidentPhaseZeroProbeTest.java) uses the exact selected Service Task source, public job execution, public incident query, and public retry reset. Under `createIncidentOnFailedJobEnabled = true`, it proves `3 -> 2 -> 1 -> 0`, one self-rooted public `failedJob` incident configured by the same job, incident removal after reset to one retry, replacement by a new raw incident after another failure, and later success through the same job and Process. The disabled-setting control reaches retries zero with no incident. The [registered profile](../profiles/cibseven-2.2.0/profile.json), [retained evidence](../scenarios/service-task-incident/cibseven-evidence.json), incident runner test (`CibSevenIncidentRunnerTest`, removed at W0.3b), and schedule-alignment test (`CibSevenIncidentScheduleAlignmentTest`, removed at W0.3b) bind the selected first literal-generation incident and one retry; the later raw incident remains research evidence outside its canonical mapping. The [Service Task incident capsule](kernel/semantics/WORK-SEMANTICS-SPEC.md) owns that boundary.
 
-**Boundary:** One failed async-before job, one `failedJob` incident, one public retry reset, same job and Process retention, literal generation 1, and later success are selected. A second failed execution may occur only as raw CIB research evidence or a Temporal host failure and creates no second canonical incident. General incidents, further retry cycles, backoff, due dates, incident messages, job deletion, batch retry, arbitrary Management Service operations, external tasks, Process cancellation, BPMN Error, compensation, and production operator UI remain excluded.
+**Boundary:** One failed async-before job, one `failedJob` incident, one public retry reset, same job and Process retention, literal generation 1, and later success are selected. A retried incident whose job fails again opens the next incident generation (`failures + 1`) on the same occurrence ([automation-incident-composition](../scenarios/open-rows/automation-incident-composition/README.md)). General incidents, further retry cycles, backoff, due dates, incident messages, job deletion, batch retry, arbitrary Management Service operations, external tasks, Process cancellation, BPMN Error, compensation, and production operator UI remain excluded.
 
 ### CIB-EXT-0014: public external deletion of one incident-bearing root Process
 
@@ -768,7 +808,7 @@ This is a CIB public lifecycle extension beyond bare BPMN Process execution. BPM
 
 **Evidence:** The [Service Task incident phase-zero probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenServiceTaskIncidentPhaseZeroProbeTest.java) starts the exact selected Process with one string variable, drives the configured job to one `failedJob` incident, invokes the public deletion operation, and checks zero live Process/job/incident/execution/task state, historic `EXTERNALLY_TERMINATED`, and the preserved historic variable. Its successful control separately requires historic `COMPLETED`. The [registered successor profile](../profiles/cibseven-2.2.0/profile.json), [retained evidence](../scenarios/service-task-incident-cancellation/cibseven-evidence.json), cancellation runner test (`CibSevenIncidentCancellationRunnerTest`, removed at W0.3b), and [incident-scoped Process cancellation specification](kernel/semantics/WORK-SEMANTICS-SPEC.md) bind the project command, typed state, cleanup, historic-state discriminator, and evidence boundary.
 
-**Boundary:** Only the exact incident-bearing root Process, one exact public deletion call, cascade cleanup, externally terminated history, and one retained string Process variable are selected. Arbitrary Process deletion, nested-scope cancellation, deletion reason, listener or I/O-mapping policy, compensation, Transaction Cancel, modeled Terminate, batch deletion, process modification, suspension, activation, restart, job deletion, Product 2 authorization, and general Runtime Service compatibility remain excluded.
+**Boundary:** Only the exact incident-bearing root Process, one exact public deletion call, which for an incident inside a called instance deletes the root with every called instance (`called-incident-cancel`), cascade cleanup, externally terminated history, and one retained string Process variable are selected. Arbitrary Process deletion, nested-scope cancellation, deletion reason, listener or I/O-mapping policy, compensation, Transaction Cancel, modeled Terminate, batch deletion, process modification, suspension, activation, restart, job deletion, Product 2 authorization, and general Runtime Service compatibility remain excluded.
 
 ### Research queue
 
@@ -789,7 +829,7 @@ CIB Seven `2.2.0` input parameters evaluate against the enclosing scope before w
 
 **Evidence:** The [phase-zero experiment](https://github.com/mbackschat/bpmn-lean-experiment/blob/404a39d7/docs/experiments/BUSINESS-EFFECT-DATA-EXPERIMENT.md) and [public-service probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenBusinessEffectDataPhaseZeroProbeTest.java) separate both input declaration orders, present null, missing-input failure before invocation, local output precedence and Process-instance separation. [Artifact-verifier coverage](../scripts/contract-artifact-projections.test.ts) requires this registered relationship and rejects a profile reference when its registry entry is absent. Full profile equivalence and retained scenario evidence remain unestablished.
 
-**Boundary:** The discarded-local clause covers the effect results of Multi-Instance Service Task instances on the success and mapped Error arms, the only placement the retained evidence witnesses; a plain or scoped Service Task, and a User Task submission (`SubmissionRule`), keep their own rules. No general JUEL, bean/Java API compatibility, nested mapping, parent-output fallback or technical-failure equivalence is claimed; concurrent continuations are classified by [`CIB-OP-0010`](#cib-op-0010-concurrent-async-before-service-task-continuations-mapped-to-concurrent-effect-occurrences). CIB's async-before job precedes invocation; the project's committed argument snapshot and durable external-effect interval remain its own operational realization. Input/final-output comparisons do not establish equivalent transaction timing or exactly-once external effects. Under the embedded completion profile only the binding clause applies to data-free Programs, whose overlay-bound Service Tasks have no input or output mappings ([concurrent scope Service Tasks](kernel/semantics/WORK-SEMANTICS-SPEC.md)); in data-bearing Programs of that profile the input and output mapping clauses also apply, with exact `${name}` sources resolved over the occurrence chain ([concurrent scope data](kernel/semantics/DATA-SEMANTICS-SPEC.md)). The same snapshot realization covers the nested scope-data profile's concurrent data-bearing effects, which CIB evaluates only when the continuation job runs; when a sibling command commits a write before that job runs, a CIB delegate reads the newer value and the project's snapshot does not, and no argument agreement is claimed for that schedule ([concurrent structured scope data](kernel/semantics/DATA-SEMANTICS-SPEC.md)).
+**Boundary:** The discarded-local clause covers the effect results of a task CIB makes a scope, a Multi-Instance instance or a task with `ioParameter` mappings (`BpmnParse.java:4797-4814`), on the success and mapped Error arms (the [Multi-Instance Service Task witnesses](../scenarios/open-rows/multi-instance-service-task/README.md) and `send-result-with-output`); a task without either keeps the OutputSet reading, and a User Task submission keeps `SubmissionRule`. No general JUEL, bean/Java API compatibility, nested mapping, parent-output fallback or technical-failure equivalence is claimed; concurrent continuations are classified by [`CIB-OP-0010`](#cib-op-0010-concurrent-async-before-service-task-continuations-mapped-to-concurrent-effect-occurrences). CIB's async-before job precedes invocation; the project's committed argument snapshot and durable external-effect interval remain its own operational realization. Input/final-output comparisons do not establish equivalent transaction timing or exactly-once external effects. Under the embedded completion profile only the binding clause applies to data-free Programs, whose overlay-bound Service Tasks have no input or output mappings ([concurrent scope Service Tasks](kernel/semantics/WORK-SEMANTICS-SPEC.md)); in data-bearing Programs of that profile the input and output mapping clauses also apply, with exact `${name}` sources resolved over the occurrence chain ([concurrent scope data](kernel/semantics/DATA-SEMANTICS-SPEC.md)). The same snapshot realization covers the nested scope-data profile's concurrent data-bearing effects, which CIB evaluates only when the continuation job runs; when a sibling command commits a write before that job runs, a CIB delegate reads the newer value and the project's snapshot does not, and no argument agreement is claimed for that schedule ([concurrent structured scope data](kernel/semantics/DATA-SEMANTICS-SPEC.md)).
 
 ### CIB-EXT-0016 — CIB7 2.2.0 caught-business-Error output mapping
 
@@ -879,7 +919,7 @@ BPMN 2.0.2 Clause 10.3.3 defines the Send Task as a Task that sends a Message to
 
 ### CIB-EXT-0024 — an unresolved input or output parameter expression fails its evaluation
 
-**Status:** Inferred from the pinned source; not verified by a calibration probe; verify before a profile selects it
+**Status:** Verified for CIB Seven `2.2.0` by the retained `entry-missing` and `exit-missing` evidence of [mapping-failure-sites](../scenarios/open-rows/mapping-failure-sites/README.md); the kernel rolls back with the evaluation's own code (`unknown-variable`) through the core JUEL evaluator
 
 An unresolved `camunda:inputParameter` or `outputParameter` expression raises an evaluation failure that rolls the command back; it is not an unavailable Data Input, which holds the token (§13.3.2).
 
@@ -940,6 +980,16 @@ The kernel's `Propagation.writeCaught` writes the variables from that event scop
 **Evidence:** The retained witnesses [error-java-class-codes](../scenarios/open-rows/error-java-class-codes/README.md) (CIB Seven `2.2.0`, 2026-11-09): the runner's technical failure is caught by boundaries coded `java.lang.RuntimeException` and `java.lang.IllegalStateException`; both disagreements stay classified under this entry. A business failure whose code is a class name is an ordinary code and agrees.
 
 **Boundary:** The CIB profiles' claim covers Error codes that name no Java exception type; a model whose catcher code names one is outside it.
+
+### CIB-EXT-0030 — a condition without a declared language is JUEL
+
+**Status:** Selected extension through the [cibseven-2.2.0 cumulative profile](../profiles/cibseven-2.2.0/profile.json) and the scope-chain profile
+
+BPMN 2.0.2 makes XPath the default expression language (Table 8.1 `expressionLanguage`, and the XSD default) and lets vendors substitute their own languages (§8.2.1). CIB Seven `2.2.0` evaluates a `conditionExpression` with no `language` attribute as JUEL and ignores a missing `xsi:type` (`BpmnParse.java:4411-4412`), whatever the Definitions declare. The CIB profiles read the undeclared case as JUEL at [the core level](kernel/semantics/EXPRESSION-SEMANTICS-SPEC.md#which-text-is-juel) and refuse a declared language (`CIB-LIM-0009`); the standards profile keeps its Simple Boolean subset.
+
+**Evidence:** Pinned `BpmnParse.java:4411-4412`; the retained witnesses [condition-language-declarations](../scenarios/open-rows/condition-language-declarations/README.md) and [condition-expression-routing](../scenarios/open-rows/condition-expression-routing/README.md) (CIB Seven `2.2.0`).
+
+**Boundary:** Sequence Flow conditions and the other JUEL sites the expression semantics list; it claims nothing about XPath.
 
 ## Permitted operational-detail register
 
@@ -1129,7 +1179,7 @@ The mapping-free phase-zero control isolates that default: the Process has no re
 
 ### CIB-CFG-0005 — pinned read-only JUEL condition environment
 
-**Status:** Selected bounded configuration for the deferred JUEL compatibility lane; production capsule unimplemented
+**Status:** Superseded for CIB Seven `2.2.0` by `CIB-CFG-0011`; selected bounded configuration for the deferred JUEL compatibility lane; production capsule unimplemented
 
 When reopened, the first JUEL compatibility profile uses `org.cibseven.bpm.juel:cibseven-juel:2.0.0`, matching pinned CIB Seven `2.0.0`, over a complete immutable Process-scope context whose values use the project's existing tagged `VariableValue.String | VariableValue.Null` contract. The Java evaluator converts those variants to `String | null` after validation. It exposes exact root-variable lookup and no bean, property-on-Java-object, method, function, class, `execution`, Process Engine service, Spring, file, network, or mutation capability.
 
@@ -1176,6 +1226,16 @@ CIB Seven `2.2.0` defaults `enableExceptionsAfterUnhandledBpmnError` to `false` 
 **Evidence:** The pinned source lines above and the retained PC-ERROR-01 witnesses cited by `CIB-INT-0013`.
 
 **Boundary:** This setting selects only the unmatched-Error outcome of `CIB-INT-0013`. It replaces the `2.0.0` record `CIB-CFG-0004` for the `2.2.0` engine and authorizes no other configuration.
+
+### CIB-CFG-0011 — pinned CIB Seven 2.2.0 JUEL environment
+
+**Status:** Selected configuration through the [cibseven-2.2.0 cumulative profile](../profiles/cibseven-2.2.0/profile.json) and the scope-chain profile; selects `ProfileOptions.evaluator = juel`; supersedes `CIB-CFG-0005` for CIB Seven `2.2.0`
+
+The kernel's [core JUEL level](kernel/semantics/EXPRESSION-SEMANTICS-SPEC.md) is checked against the pinned engine's own JUEL environment: `JuelExpressionManager`'s resolver chain, the JEE6 parser profile, the four registered functions, the runner's handler beans (`CibSevenScriptedEffect.HANDLER_BEANS`) and the oracle JVM's default locale, which the runner pins to `en-US` because JUEL's String methods follow it (`runners/cibseven/pom.xml`). A bean the environment registers and no binding shadows resolves in CIB and is an unknown variable in the kernel, so no scenario names a bean; bean names never enter the IL.
+
+**Evidence:** Pinned `JuelExpressionManager.java:142-163`, `el/VariableScopeElResolver.java:51-90`, `cfg/ProcessEngineConfigurationImpl.java:2723-2731`; the retained [core witness table](../scenarios/open-rows/juel-core-table/README.md) and the `bean-reference` witness of [juel-evaluation-failures](../scenarios/open-rows/juel-evaluation-failures/README.md) (CIB Seven `2.2.0`).
+
+**Boundary:** That environment and locale only; other bean sets, function mappers or locales are outside it.
 
 ## Audit of previously visited findings
 

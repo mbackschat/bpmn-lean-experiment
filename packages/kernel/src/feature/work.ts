@@ -13,6 +13,7 @@
  */
 import {
   ErrorPathOutputs,
+  MappingDialect,
   ResultValues,
   SubmissionRule,
   TechnicalFailure,
@@ -28,6 +29,7 @@ import {
   type Mapping,
   type MultiInstance,
   type UserWork,
+  type ValueSource,
 } from "../il/types.js";
 import {
   CommandActionTag,
@@ -44,14 +46,12 @@ import {
   enterScope,
   failed,
   failedWith,
-  instanceRoot,
   leaveOutgoing,
   leaveRaised,
   occurrenceOf,
   openItem,
   openKindView,
   optionalChannelEquals,
-  root,
   signal,
   type Binding,
   type CommandAction,
@@ -63,6 +63,7 @@ import {
   type Outcome,
   type Result,
   type ScopeOccurrence,
+  type ScopeOccurrenceId,
   type State,
   type UserTaskDetail,
 } from "../state.js";
@@ -113,27 +114,40 @@ function outputs(
   return assertNever(unconsumed);
 }
 
-/** What an open User Task publishes, with the inputs it was given. */
+/** A field's literal value; admission refuses the expression-valued fields until the Task fields JUEL level. */
+function literalOf(source: ValueSource | null): string | null {
+  if (source === null) return null;
+  switch (source.tag) {
+    case ValueSourceTag.Literal:
+      return source.value;
+    case ValueSourceTag.Expression:
+      return null;
+  }
+  return assertNever(source);
+}
+
+/**
+ * What an open User Task publishes, with the inputs it was given: its literal metadata as the model states it, the
+ * priority as the `int` CIB parses it into (`TaskDecorator#initializeTaskPriority`), whose decimal form admission
+ * checks.
+ */
 function userTaskDetail(task: UserWork, inputs: readonly Binding[]): UserTaskDetail {
-  const groups = task.candidateGroups.flatMap((group) => {
-    switch (group.tag) {
-      case ValueSourceTag.Literal:
-        return [group.value];
-      case ValueSourceTag.Expression:
-        return [];
-    }
-    return assertNever(group);
-  });
+  const literals = (sources: readonly ValueSource[]): string[] =>
+    sources.flatMap((source) => {
+      const value = literalOf(source);
+      return value === null ? [] : [value];
+    });
+  const priority = literalOf(task.priority);
   return {
     name: task.name,
-    assignee: null,
-    candidateUsers: [],
-    candidateGroups: groups,
-    formKey: null,
+    assignee: literalOf(task.assignee),
+    candidateUsers: literals(task.candidateUsers),
+    candidateGroups: literals(task.candidateGroups),
+    formKey: task.formKey,
     formFields: task.formFields,
-    dueDate: null,
-    followUpDate: null,
-    priority: null,
+    dueDate: literalOf(task.dueDate),
+    followUpDate: literalOf(task.followUpDate),
+    priority: priority === null ? null : Number.parseInt(priority, 10),
     inputs,
   };
 }
@@ -164,7 +178,9 @@ export function arriveActivity(ctx: Ctx, header: Header, payload: ActivityPayloa
   }
   const inputs = evaluated.value;
   const entered = enterLocal(header, inputs, occurrence, state);
-  const begunByToken = occurrence.incoming !== null;
+  // An instance of a Multi-Instance body, the only occurrence of a looping Activity this hook sees, follows the token
+  // its body began on; admission refuses a looping compensation handler (`activity.compensationHandler`).
+  const begunByToken = occurrence.incoming !== null || payload.envelope.multiInstance !== null;
   const complete = (current: State): State => signal(current, completeSignal(occurrence.id, leaveOutgoing, [], WriteRule.Outward));
   const work = payload.work;
   switch (work.tag) {
@@ -210,9 +226,13 @@ function instanceOutput(loop: MultiInstance, values: readonly Binding[]): Result
 }
 
 /**
- * A User Task without output mappings, under a profile whose submission installs variables (CIB-EXT-0005), writes the
- * submitted values from its scope; otherwise the submission is the task's OutputSet (`outputs`), which for a task
- * without outputs admits only the empty submission. The scope-chain rule, when the profile selects it, applies first
+ * Under a profile whose submission installs variables (CIB-EXT-0005) the completion first writes every submitted value
+ * from the task's own local scope occurrence, as `TaskService.complete` sets it through the task's execution
+ * (`AbstractVariableScope#setVariable`): a name the task holds as a local stays there and ends with the task, any other
+ * reaches its nearest owner or the root. The write is its own signal ahead of the completion, so the outgoing conditions
+ * read it even when they precede the outputs (CIB-INT-0011). The outputs then map from the submitted values, a value no
+ * mapping reads being no error. Otherwise the submission is the task's OutputSet (`outputs`), which for a task without
+ * outputs admits only the empty submission. The scope-chain rule, when the profile selects it, applies first
  * (`submission.ts`).
  */
 export function completeUserTask(
@@ -234,12 +254,26 @@ export function completeUserTask(
     if (!submitted.ok) return failedWith(submitted.failure);
     return committed(signal(state, completeSignal(item.occurrence, leaveOutgoing, values, WriteRule.Own)));
   }
-  if (ctx.program.options.submission === SubmissionRule.InstallsVariables && payload.envelope.outputs.length === 0) {
-    return committed(signal(state, completeSignal(item.occurrence, leaveOutgoing, values, WriteRule.Outward)));
+  const submission = ctx.program.options.submission;
+  switch (submission) {
+    case SubmissionRule.InstallsVariables: {
+      const written = outputs(ctx, state.logicalTimeMs, ResultValues.ActivityLocals, payload.envelope.outputs, values);
+      if (!written.ok) return failedWith(written.failure);
+      const installed = signal(state, { tag: SignalTag.Write, scope: localScope(state, item.occurrence) ?? item.scope, writes: values, rule: WriteRule.Outward });
+      return committed(signal(installed, completeSignal(item.occurrence, leaveOutgoing, written.value, WriteRule.Outward)));
+    }
+    case SubmissionRule.OutputSet: {
+      const written = outputs(ctx, state.logicalTimeMs, ResultValues.OutputSet, payload.envelope.outputs, values);
+      if (!written.ok) return failedWith(written.failure);
+      return committed(signal(state, completeSignal(item.occurrence, leaveOutgoing, written.value, WriteRule.Outward)));
+    }
   }
-  const written = outputs(ctx, state.logicalTimeMs, ResultValues.OutputSet, payload.envelope.outputs, values);
-  if (!written.ok) return failedWith(written.failure);
-  return committed(signal(state, completeSignal(item.occurrence, leaveOutgoing, written.value, WriteRule.Outward)));
+  return assertNever(submission);
+}
+
+/** The local-variable scope occurrence an Activity's occurrence owns, when its inputs gave it one (`enterLocal`). */
+function localScope(state: State, occurrence: number): ScopeOccurrenceId | null {
+  return state.scopes.find((scope) => scope.occurrence === occurrence && scope.calledInstance === null)?.id ?? null;
 }
 
 /** Replace the kind of the open item `id`, keeping its identity and attachments. */
@@ -248,13 +282,17 @@ function reopen(state: State, id: number, kind: OpenKind): State {
 }
 
 /**
- * What an effect result value no output mapping consumes becomes: the profile's rule for an instance of a Multi-Instance
- * Activity, whose CIB execution is the instance's own and ends with it; the OutputSet otherwise, since CIB makes a task
- * without mappings no scope and its delegate's local reaches the flow execution that continues past it (CIB-EXT-0015,
- * `BpmnParse.java:4797-4814`).
+ * What an effect result value no output mapping consumes becomes: the profile's rule where CIB gives the delegate an
+ * execution of its own, which ends with the task: an instance of a Multi-Instance Activity, or a task with
+ * `camunda:inputOutput`, which CIB makes a scope (`BpmnParse.java:4797-4814`); the OutputSet otherwise, since on a task
+ * CIB makes no scope the delegate's local reaches the flow execution that continues past it (CIB-EXT-0015). A
+ * non-compensation boundary also makes a CIB task a scope (`BpmnParse.java:3297`); such a task without mappings keeps
+ * the OutputSet reading, which no witness separates.
  */
 function unconsumed(ctx: Ctx, envelope: Envelope | null): ResultValues {
-  return envelope === null || envelope.multiInstance === null ? ResultValues.OutputSet : ctx.program.options.effectResultValues;
+  if (envelope === null) return ResultValues.OutputSet;
+  const ioParameters = [...envelope.inputs, ...envelope.outputs].some((mapping) => mapping.dialect === MappingDialect.IoParameter);
+  return envelope.multiInstance !== null || ioParameters ? ctx.program.options.effectResultValues : ResultValues.OutputSet;
 }
 
 /**
@@ -315,11 +353,13 @@ function technicalFailure(ctx: Ctx, item: OpenItem, state: State): Outcome {
       return failed(FailureTag.Unsupported, "effect-technical-failure");
     case TechnicalFailure.Incident: {
       if (detail === null) return failed(FailureTag.SemanticFailure, "effect-result-without-effect");
-      // Dynamic-only: a retried effect's second failure is a run outcome; PC-AUTO retries own it.
-      if (detail.failures > 0) return failed(FailureTag.Unsupported, "repeated-effect-incident");
+      // Each failure is the next incident generation of the occurrence, so a command its issuer took from an earlier
+      // incident is stale (CIB-EXT-0013; `fulfilment-repeated-incident` publishes generation 2 after one retry).
       const effect = { ...detail, failures: detail.failures + 1 };
       const cancellable = ctx.program.options.incidentProcessCancellation;
-      return committed(reopen(state, item.id, { tag: OpenKindTag.Incident, detail: { effect, generation: 1, cancellable } }));
+      return committed(reopen(state, item.id, {
+        tag: OpenKindTag.Incident, detail: { effect, generation: effect.failures, cancellable },
+      }));
     }
   }
   return assertNever(ctx.program.options.technicalFailure);
@@ -327,9 +367,11 @@ function technicalFailure(ctx: Ctx, item: OpenItem, state: State): Outcome {
 
 /**
  * A retry reopens the failed effect with the same occurrence (CIB-EXT-0013); cancelling the incident's process ends the
- * instance as cancelled, keeping its Process variables (CIB-EXT-0014, CIB-OP-0009), and is offered only for an incident
- * of the root process instance under a profile that selects it. A command naming another generation than the open
- * incident's is stale and rejected, so it never resolves an incident its issuer did not observe.
+ * whole instance as cancelled, keeping its root's Process variables, under a profile that selects it (CIB-EXT-0014,
+ * CIB-OP-0009). An incident inside a called instance cancels the root too: the operator deletes the root Process
+ * instance, which deletes its called instances with it (`CibSevenCommandExecutor`, `deleteProcessInstance(root)`). A
+ * command naming another generation than the open incident's is stale and rejected, so it never resolves an incident its
+ * issuer did not observe.
  */
 export function resolveIncident(_ctx: Ctx, item: OpenItem, action: CommandAction, state: State): Outcome {
   const incident = openKindView(item.kind).incident;
@@ -342,8 +384,6 @@ export function resolveIncident(_ctx: Ctx, item: OpenItem, action: CommandAction
     case CommandActionTag.CancelIncidentProcess:
       if (action.generation !== incident.generation) return stale;
       if (!incident.cancellable) return failed(FailureTag.Rejected, "incident-process-cancellation-unavailable");
-      // Dynamic-only: whether the incident is in a called instance depends on the run.
-      if (instanceRoot(state, item.scope) !== root) return failed(FailureTag.Unsupported, "called-incident-cancellation");
       return committed(signal(state, { tag: SignalTag.EndInstance, status: InstanceStatus.Cancelled, failure: null }));
     case CommandActionTag.CompleteUserTask:
       return failed(FailureTag.SemanticFailure, "incident-user-task-completion");

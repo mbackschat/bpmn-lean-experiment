@@ -8,8 +8,9 @@ import { asElement, asElementArray } from "../moddle-graph.js";
 import type { ElementRecord } from "../moddle-graph.js";
 import { indexCompensation } from "./compensation.js";
 import { conditionExpression } from "./data.js";
-import { readEvent } from "./events.js";
+import { isEventDefinition, readEvent } from "./events.js";
 import { readGateway } from "./flow.js";
+import { requireReadableForms } from "./interchange.js";
 import {
   FlowElementKind,
   ReadRefusal,
@@ -217,11 +218,14 @@ export async function readKernelProgram(source: KernelSource, options: KernelPro
     const parsed = await parseKernelSource(source);
     const rootElements = asElementArray(parsed.definitions.rootElements) ?? [];
     const processes = rootElements.filter((element) => element.$type === "bpmn:Process");
-    for (const element of rootElements) if (element.$type !== "bpmn:Process") requireInertRoot(element);
+    for (const element of rootElements) {
+      if (element.$type !== "bpmn:Process" && !isEventDefinition(element)) requireInertRoot(element);
+    }
     const scan: Scan = { nodes: new Map(), flows: [], containers: [] };
     for (const process of processes) scanContainer(scan, process, null);
     const notCarried: SourceFactNotCarried[] = [];
     const ctx = createContext(parsed.definitions, parsed, scan, processes, notCarried);
+    requireReadableForms(ctx.rootProcess, [...scan.nodes.values()].sort(byId));
     const elements = buildProgramElements(ctx);
     requireAllCarried(ctx, processes);
     const program: KernelJson = {

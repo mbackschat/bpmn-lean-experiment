@@ -206,6 +206,13 @@ function deferred(program: Program, state: State, outcome: Outcome): Outcome {
   return assertNever(outcome.failure.tag);
 }
 
+/** A rolled-back timer firing is `unsupported`: CIB fails and retries its timer job, which no track models yet. */
+function timerJob(outcome: Outcome): Outcome {
+  const rolledBack = !outcome.ok && outcome.failure.tag === FailureTag.RolledBack;
+  // dynamic-only: whether a firing's closure rolls back depends on the run's data
+  return rolledBack ? failed(FailureTag.Unsupported, "timer-job-failure") : outcome;
+}
+
 /** Begin the occurrence `request` names and hand it to its feature. */
 function begin(hooks: Hooks, ctx: Ctx, request: BeginRequest, state: State): Outcome {
   const sourceType = programSourceType(ctx.program, request.element);
@@ -615,12 +622,12 @@ export function step(hooks: Hooks, program: Program, before: State | null, input
       return onRunning(hooks, ctx, input, before, (state) => deliver(hooks, ctx, input, state));
     case InputTag.TimerFire: {
       const data = input.payload;
-      return onRunning(hooks, ctx, input, before, (state) => {
+      return timerJob(onRunning(hooks, ctx, input, before, (state) => {
         const item = itemOf(ctx, state, data.occurrence, (view) => view.deadlineMs);
         return item === null
           ? failed(FailureTag.Rejected, "unknown-timer")
           : fire(hooks, ctx, item, { tag: FiredTag.Timer, logicalTimeMs: data.logicalTimeMs }, state);
-      });
+      }));
     }
     case InputTag.EffectResult:
       return effectContinuation(ctx, input.payload, (data) =>

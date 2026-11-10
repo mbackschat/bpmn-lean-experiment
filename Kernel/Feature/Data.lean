@@ -1,11 +1,13 @@
 module
 
 public import Kernel.Hooks
+public import Kernel.Feature.Data.Juel
 
 /-! # Data: expression evaluation and variable writes
 
-The kernel evaluates only the [Simple Boolean subset](../../docs/SIMPLE-BOOLEAN-EXPRESSION-DECISION.md) and plain
-variable references; admission refuses every other expression. Variables are looked up innermost scope first. This
+The kernel evaluates the [Simple Boolean subset](../../docs/SIMPLE-BOOLEAN-EXPRESSION-DECISION.md), plain variable
+references and, under `Evaluator.juel`, the Core JUEL level (`Kernel.Feature.Data.Juel`); admission refuses every other
+expression. Variables are looked up innermost scope first. This
 feature is the only writer of variables (guard 17): writes reach it through the completion pipeline and `Signal.write`.
 -/
 
@@ -36,6 +38,7 @@ def evaluate (context : EvalContext) : Expression → Evaluation
     match lookup context.variables name with
     | some value => .value value
     | none => .failure "unknown-variable"
+  | .juel nodes => Juel.evaluateJuel context.variables nodes
   -- Admission refuses it (`expression.outsideSimpleBoolean`, `mapping.expression`, `flow.condition.foreign`).
   | .foreign _ _ => .failure "expression.outsideSimpleBoolean"
 

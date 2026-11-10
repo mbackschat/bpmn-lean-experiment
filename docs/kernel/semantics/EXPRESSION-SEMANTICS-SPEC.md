@@ -1,0 +1,281 @@
+# Expression semantics
+
+## Status
+
+Interpretation for [PC-DATA-07](../../PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list), the Core JUEL level of the [evaluation decision](../ARCHITECTURE-SPEC.md#runtime-state-and-step). Written 2026-11-10, revised the same day after the cold interpretation review (approved with required changes) and the root's binding decisions; the track's combined review checks this revision with the code that implements it.
+
+It owns the meaning of a JUEL expression at the Core level: which source text is JUEL, the grammar admitted, how an expression evaluates over the portable value domain, what each failure does at each site, and what admission refuses. The [data semantics](DATA-SEMANTICS-SPEC.md) keep owning which bindings a site reads and where a result is written; the [JUEL decision](../../JUEL-EVALUATION-ARCHITECTURE-DECISION.md) keeps its read-only context rules; the [Simple Boolean decision](../../SIMPLE-BOOLEAN-EXPRESSION-DECISION.md) keeps the standards profile's language.
+
+Row-text decisions (root, 2026-11-10), which the root records in the coverage target at closure:
+
+- PC-DATA-07's "exact retained text" clause is met by the retained source bytes, which `@bpmn-lean/bpmn-source` preserves, together with the reader's meaning-preserving parse into the IL. The IL carries no copy of the text.
+- PC-DATA-06's "no captured-input fallback" is the standards profile's reading. CIB's output context (an output parameter evaluated in the Activity's own scope) is a registered extension, classified rather than imitated silently ([CIB relations](#cib-relations)).
+
+## Authority and citations
+
+Syntax and coercion follow the Expression Language specification at the grammar level of the pinned `cibseven-juel`: EL 2.2 (JSR 245 Maintenance Release 2) with method invocations, without the lambda, assignment and collection-literal syntax of EL 3.0, on the shaded Jakarta EL 4.0 API. Sections are cited as "EL §n" by their EL 2.2 numbers. The pinned evaluator is the behavioral oracle; a difference between the two is classified in the [relation register](../../CIB-BPMN-RELATION-REGISTER.md), never by majority. CIB source paths are relative to the pinned checkout `../oss/cibseven/cibseven` at `5a45b47`, whose `juel/` and `engine/.../impl/el/` trees are identical to the `v2.2.0` tag `834a9874` apart from `juel/pom.xml`. `Parser`, `Scanner`, `NumberOperations`, `BooleanOperations`, `TypeConverterImpl` and the `Ast*` classes live in `juel/src/main/java/org/cibseven/bpm/impl/juel/`; engine classes are named by their package tail.
+
+The pinned operator and coercion code implements EL §1.7 to §1.10 and §1.18 clause by clause. The points EL leaves open are settled by the pinned code and stated below as such: a backslash before a backslash in text, Java's character classes, and which Java class carries an integer.
+
+## Which text is JUEL
+
+| Site | Source form | Reading under a profile selecting `Evaluator.juel` |
+|---|---|---|
+| Sequence Flow condition | `conditionExpression` with no `language` attribute, in Definitions with no `expressionLanguage` | JUEL, as CIB reads it (`bpmn/parser/BpmnParse.java:4411-4412`); draft [CIB-EXT-0030](#cib-relations). Covers the conditions of a Gateway's and of an Activity's outgoing flows, which CIB evaluates before the Activity's output writes ([CIB-INT-0011](../../CIB-BPMN-RELATION-REGISTER.md#cib-int-0011--an-activitys-outgoing-conditions-evaluate-before-its-output-writes)) |
+| Sequence Flow condition | `language` attribute present (`juel`, `javascript`, …) | refused (`flow.condition.foreign`): CIB runs it as a script condition through a different engine (`BpmnParse.java:4413-4416`, `scripting/engine/JuelScriptEngine.java`), the Script binding of PC-AUTO-05 |
+| Sequence Flow condition | Definitions declares `expressionLanguage` | refused (`flow.condition.foreign`): CIB ignores the declaration and evaluates JUEL; the model says otherwise |
+| Sequence Flow condition | `camunda:resource` | refused by the reader as the not-carried fact `camunda:resource` (`reader.factNotCarried`), which no IL field holds; CIB reads it only with a `language` |
+| Activity or Sub-Process | `camunda:inputParameter`, `camunda:outputParameter` text containing `${` or `#{`, trimmed as CIB trims it (`BpmnParseUtil.java:206`) | JUEL |
+| Activity or Sub-Process | a `camunda:list` or `camunda:map` parameter value, its entries and map keys (`BpmnParseUtil.java:169-191`) | refused by the reader (`reader.unknownExtension`): Core builds no collection from text |
+| Call Activity | `camunda:in`/`camunda:out` `sourceExpression` | JUEL with the `ioParameter` failure rule (`BpmnParse.java:4152-4157`, `el/ElValueProvider`) |
+| Call Activity | `camunda:in`/`camunda:out` `local="true"` | refused by the reader as the not-carried fact `camunda:in/out local` (`reader.factNotCarried`) |
+| any other expression site | timer, Message and Signal names, correlation keys, business key, Multi-Instance collection, cardinality and completion condition, conditional event predicate, task fields, event output parameters, Data Association `transformation` | refused at Core (`expression.juel.site`); each later level of the [evaluation table](../ARCHITECTURE-SPEC.md#runtime-state-and-step) admits its own sites |
+
+A condition with neither `xsi:type` nor `language` is a BPMN `Expression`, which §8.4.6 calls non-executable; CIB evaluates it like a `tFormalExpression`, and the draft extension covers both. An explicit `xsi:type="tExpression"` is indistinguishable from none after parsing and reads the same way; an `xsi:type` naming no BPMN expression type is refused by the reader's schema check (`source.schema`). Under the standards profile every JUEL expression stays refused, with the codes the sites give today (`mapping.expression`, `flow.condition.foreign`, `expression.juel.site`).
+
+The reader parses every CIB value expression and every undeclared condition as JUEL whatever the profile; a profile admits or refuses the result, so the reader selects no profile. Exactly `${name}`, with `name` an identifier that is no reserved word, stays the evaluator-neutral `Expression.variable`, and text with no `${` or `#{` in a parameter stays a String `Expression.literal`; both evaluate identically under either evaluator. A condition's text is always parsed, so a plain-text condition such as `true` is a String, which fails the condition as in CIB. A `camunda:in` with a `source` attribute stays a `callVariable` copy that reads an absent name as null (CIB-EXT-0021, `core/model/CallableElementParameter.java:40-50`); a `sourceExpression` is an `ioParameter` mapping and fails on an absent name like any other expression.
+
+## Grammar at Core
+
+The reader transcribes `Scanner` and `Parser` exactly, so the admitted language is defined by them and EL §1.19; admission then refuses the productions Core leaves out. Scanning:
+
+- Outside an eval, text runs to the next unescaped `${` or `#{` (`Scanner.nextText`, `Scanner.java:233`). A backslash escapes a following `${` or `#{`; a backslash before any other character stays in the text; a backslash after a backslash appends one backslash and leaves the escape armed, so `\\${x}` is the text `\${x}`. EL §1.2.4 leaves this case open; the scanner settles it.
+- Inside an eval, whitespace is Java `Character.isWhitespace` (`Scanner.java:455`) restricted to ASCII: space, tab, line feed, vertical tab, form feed, carriage return and U+001C to U+001F. The non-ASCII whitespace Java also accepts (U+1680, U+2000 to U+2006, U+2008 to U+200A, U+2028, U+2029, U+205F, U+3000) leaves the text unparsed, so the ASCII rule below wins over Java's class; draft CIB-LIM-0009.
+- Identifiers are Java identifiers (`Scanner.java:408`); the reader admits only ASCII ones (start `[A-Za-z_$]`, part `[A-Za-z0-9_$]` and the ASCII identifier-ignorable controls U+0000 to U+0008 and U+000E to U+001B), and any non-ASCII character outside a string literal leaves the text unparsed.
+- Reserved words are scanned as keywords, never identifiers: `and or not eq ne lt gt le ge true false null empty div mod instanceof` (`Scanner.java:149-164`, EL §1.14). `instanceof` has no production, so it is a syntax error.
+- An integer literal is a digit run read by `Long.valueOf` (`Parser.java:140`), leading zeros allowed; one above 2^63−1 is a syntax error. A floating literal (a `.` or an exponent, `Scanner.nextNumber`) is a `Double` (`Parser.java:154`).
+- A string literal is quoted by `'` or `"`; inside it only `\\` and the escaped quote are escapes, anything else is a syntax error (`Scanner.nextString`).
+
+Productions (`Parser.java:269-723`), each admitted or refused at Core:
+
+| Production | Pinned source | Core |
+|---|---|---|
+| text; composite of text and evals; one eval alone | `tree`, `text`, `eval` | admitted; a composite whose first eval is `#{` takes only `#{` evals and vice versa (`Parser.java:292`, EL §1.2.3), else a syntax error |
+| `${expr}`, `#{expr}` | `eval` | admitted; both evaluate immediately in CIB (`el/JuelExpressionManager.java:84-87`) |
+| `a ? b : c` | `expr` | admitted |
+| `or`/`||`, `and`/`&&` | `or`, `and` | admitted |
+| `==`/`eq`, `!=`/`ne` | `eq` | admitted |
+| `<`/`lt`, `>`/`gt`, `<=`/`le`, `>=`/`ge` | `cmp` | admitted |
+| `+`, `-` | `add` | admitted |
+| `*`, `%`/`mod` | `mul` | admitted |
+| `/`/`div` | `mul` | refused `expression.juel.division`: over Integers the result is a Double (EL §1.7.2) |
+| unary `!`/`not`, `-`, `empty` | `unary` | admitted |
+| `( expr )` | `nonliteral` | admitted |
+| identifier | `nonliteral` | admitted, except CIB's engine-context names and Multi-Instance counters, which the reader refuses (below) |
+| `true`, `false`, `null`, string, integer literal | `literal` | admitted |
+| floating literal | `literal` | refused `expression.juel.floatLiteral`: a Double |
+| `f(args)`, `ns:f(args)` | `nonliteral`, `function` | refused `expression.juel.function` |
+| `base.name`, `base[expr]` | `value` | admitted |
+| `base.name(args)` | `value`, `AstMethod` | admitted when `name` and the argument count denote a [listed method](#methods), else refused `expression.juel.method` |
+| `base[expr](args)` | `value` | refused `expression.juel.computedMethod` |
+
+The pinned factory uses the JEE6 profile, method invocations and varargs on and null properties off (`ExpressionFactoryImpl.java:87,134`, `el/JuelExpressionManager.java:66`), so `base[null]` evaluates to null.
+
+## Evaluation
+
+### Context
+
+An expression evaluates against every binding visible from the site's scope occurrence, innermost first, a present null included ([data semantics](DATA-SEMANTICS-SPEC.md#process-data-and-start)): the JUEL decision's complete read-only context. Nothing else resolves. CIB's resolver chain also yields the engine objects, the configured beans and the registered functions (`JuelExpressionManager.java:142-163`, `el/VariableScopeElResolver.java:51-90`, `cfg/ProcessEngineConfigurationImpl.java:2723-2731`). The reader refuses the engine-context names and the Multi-Instance counters, and admission refuses every function call; a bean name stays a plain identifier, because bean names are product names that never enter the IL ([boundaries](../../../CLAUDE.md#non-negotiable-boundaries)), so a bean the environment registers and no binding shadows is an unknown variable in the kernel where CIB resolves it (draft CIB-CFG-0011). An input mapping reads the context outside the occurrence it fills (`core/variable/mapping/InputParameter.java:46`); an output mapping reads the context the data semantics give it (`OutputParameter.java:47` reads the Activity's own scope; see [PC-DATA-06](DATA-SEMANTICS-SPEC.md#open-rows)). The legacy `Value.stringList` reads as a List of Strings, as the CIB runner hands it to the engine.
+
+### Values during evaluation
+
+The evaluator computes over the portable kinds and Java's carriers for them: null; Boolean; Integer, two's-complement 64-bit, so `+`, `-`, `*` and unary `-` wrap as Java's `long` does; Decimal as `BigDecimal`, an Int coefficient and an Int scale, exact; String as a sequence of UTF-16 code units wherever Java indexes or orders it; List; Map. A Double is never constructed: every rule below that would produce one ends the evaluation as `unsupported` (`juel.double`) once each operand's conversion to Double has succeeded, and as `juel.error` when one fails.
+
+Each Integer during one evaluation carries its Java class, which only Java `equals` observes (EL's `==` converts both sides to `Long` first):
+
+- `Long`: integer literals and the results of `+`, `-`, `*`, `%` and coercions to Integer (`NumberOperations.java:63-141`).
+- `Integer`: the results of `length()`, `size()`, `indexOf` and `lastIndexOf`, and unary `-` applied to one of them (`NumberOperations.java:166`).
+- unknown: every Integer read from the context, at any depth, and every element or entry a property access or `get` returns. The CIB runner hands Integers to the engine as `Long` at every depth, but a mapping stores the Java object it evaluated (an `Integer` for `${s.length()}`), and `Value` does not record which, so a variable's class is not known.
+
+Java `equals` over evaluation values is three-valued. Two Integers of different values are unequal; of equal value they are equal when both classes are known and the same, unequal when both are known and differ, and otherwise unknown. An Integer never equals a Decimal; Decimals are equal only at the same coefficient and scale; Strings by UTF-16 content; Lists element-wise in order; Maps by key set and per-key `equals`. A List or Map comparison is unequal when its shapes differ or any member pair is unequal, equal when every pair is equal, and otherwise unknown. A rule that needs an unknown answer is `unsupported` (`juel.integerCarrier`).
+
+### Coercions
+
+Each coercion is EL §1.18 as `TypeConverterImpl` implements it; "fails" means an `ELException`, which [fails the evaluation](#failure-semantics) as `juel.error`.
+
+| To | null | `""` | Boolean | Integer | Decimal | String | List, Map |
+|---|---|---|---|---|---|---|---|
+| Boolean (`TypeConverterImpl.java:30`) | false | false | itself | fails | fails | `"true"` in any ASCII case is true, anything else false | fails |
+| Integer (`:157`) | 0 | 0 | fails | itself | `BigDecimal.longValue`: truncated toward zero, low 64 bits | `Long.valueOf` over ASCII: optional sign and digits in range, else fails | fails |
+| Decimal (`:59`) | 0, scale 0 | 0, scale 0 | fails | `new BigDecimal(double)`: exact up to 2^53 in magnitude, beyond it `unsupported` (`juel.double`), since Java first rounds it to a double | itself | `new BigDecimal(String)` over ASCII, exponent forms and negative scales included, else fails; a scale beyond ±4096 is `unsupported` (`juel.decimalRange`), exact in Java but unbounded work in the kernel | fails |
+| Double (`:139`) | 0 | 0 | fails | succeeds | succeeds | succeeds when `Double.valueOf` accepts it, else fails | fails |
+| String (`:249`) | `""` | itself | `true`, `false` | decimal digits with sign | `BigDecimal.toString`, which switches to `E` notation for a negative scale or an adjusted exponent below −6 | itself | `unsupported` (`juel.collectionText`): Java's rendering depends on the host class |
+
+`Double.valueOf` accepts, after stripping characters up to U+0020 at both ends, an optional sign followed by `NaN`, `Infinity`, a decimal floating literal with an optional exponent, or a hexadecimal one with a binary exponent, each but the first two optionally ending in one of `fFdD` (`java.lang.Double.valueOf` grammar). The evaluator checks only acceptance, never computes the Double. A String with a non-ASCII character coerced to Integer or Decimal is `unsupported` (`juel.nonAsciiText`): `Long.valueOf` and `new BigDecimal(String)` accept Unicode digits the kernel does not model.
+
+### Operators
+
+| Operator | Rule (pinned source; EL section) |
+|---|---|
+| `+` `-` `*` | both null: Long 0. A Decimal operand: both to Decimal, exact `add`, `subtract`, `multiply` (scale max, max, sum). Else a String operand containing `.`, `e` or `E`: the Double rule. Otherwise both to Integer, 64-bit wrap, a Long (`NumberOperations.java:63-118`; EL §1.7.1). So `${'hello' + 1}` fails (`'hello'` contains `e` and is no Double) and `${'1.5' + 1}` is `unsupported` |
+| `%` `mod` | both null: Long 0. A Decimal operand, or a String with `.`, `e`, `E`: the Double rule. Otherwise both to Integer, Java remainder; a zero divisor raises an `ArithmeticException` (`NumberOperations.java:130`; EL §1.7.3) |
+| unary `-` | null: Long 0. Decimal: negated. String with `.`, `e`, `E`: the Double rule; other String: to Integer, negated, a Long. Integer: negated with wrap, keeping its class. Boolean, List, Map: fails (`NumberOperations.java:143`; EL §1.7.4) |
+| `<` `>` `<=` `>=` | two List or two Map operands: `unsupported` (`juel.identity`), since Java answers by reference identity first and then fails. Both null: false for `<`, `>`, true for `<=`, `>=`; one null: false. Then the first match of: a Decimal operand, both to Decimal, `compareTo`; an Integer operand, both to Integer; a String operand, both to String, UTF-16 code-unit order; both Boolean, false before true; a Boolean against a List or Map, a `ClassCastException`; otherwise fails (`BooleanOperations.java:41`; EL §1.8.1) |
+| `==` `!=` | both null: equal; one null: unequal. Then the first match of: a Decimal operand, both to Decimal, `BigDecimal.equals`, so `${d == 1}` with `d` the Decimal `1.5 - 0.5` result `1.0` is false; an Integer operand, both to Integer; a Boolean operand, both to Boolean; a String operand, both to String; otherwise Java `equals`, three-valued (`BooleanOperations.java:136`; EL §1.8.2). The identity shortcut first agrees with `equals` for every value |
+| `and` `&&`, `or` `||` | left to Boolean; the right is evaluated only when the left does not decide, then coerced to Boolean (`AstBinary.java:36,79`; EL §1.9.1) |
+| `not` `!` | to Boolean, negated (EL §1.9.2) |
+| `empty` | true for null, `""`, an empty List or Map; false for every other value, never a failure; its operand is evaluated first, so `empty missing` fails (`BooleanOperations.java:176`; EL §1.10) |
+| `?:` | condition to Boolean; only the chosen branch is evaluated (`AstChoice.java:31`; EL §1.11) |
+| composite | each part evaluated left to right and coerced to String, then concatenated; the result is a String even for `${x}${x}` (`AstComposite.java:31`; EL §1.2.3) |
+
+### Identifiers and property access
+
+An identifier is the innermost visible binding of that name; a name no binding declares fails as `unknown-variable` (`AstIdentifier.java:75` raises a `PropertyNotFoundException`; the evidence [missing-variable](../../../scenarios/open-rows/juel-evaluation-failures/README.md)), the same code an absent `Expression.variable` gives. `base.name` and `base[expr]` follow EL §1.6 and `AstProperty.eval` (`AstProperty.java:51`): a null base, or a null bracket property, gives null; otherwise by the base's kind:
+
+| Base | Result |
+|---|---|
+| Map | a String property: that key's entry, null when absent, not a failure (`MapELResolver`); any other property kind is `unsupported` (`juel.indexType`), since the answer depends on the host Map class |
+| List | the property as an index: an Integer is narrowed to 32 bits as Java's `intValue`, a String is parsed as `Integer.parseInt` over ASCII or fails, any other kind is `unsupported` (`juel.indexType`); an index outside the List gives null per the Jakarta EL 4.0 `ListELResolver.getValue` contract, which the [index-out-of-range](../../../scenarios/open-rows/juel-evaluation-failures/README.md) witness confirms once the runner projects Lists |
+| String | the property's String form names a Java bean property: `empty`, `blank`, `bytes` and `class` exist and are `unsupported` (`juel.beanProperty`); any other name fails as `juel.propertyNotFound`. `empty` is reachable only as `word['empty']`, since a keyword after `.` is a syntax error |
+| Boolean, Integer, Decimal | `class` is `unsupported` (`juel.beanProperty`); any other name fails as `juel.propertyNotFound` |
+
+### Methods
+
+A method call evaluates its receiver, then its arguments left to right, then invokes (`AstMethod.java:78`). A null receiver fails as `juel.propertyNotFound`. A receiver whose kind does not list the method, or an argument of a kind other than the listed parameter's (null included), is `unsupported` (`juel.methodReceiver`, `juel.methodArgument`): Jakarta's `BeanELResolver` would pick a Java overload or coercion the kernel does not model. A Java exception inside the method fails as `juel.error`: Jakarta's `BeanELResolver.invoke` wraps it as an `ELException`.
+
+The reader writes a call's method name as it stands; the codecs decode it through `JuelMethod`'s own wire names, which are the Java names, into `listed m` for a method of the closed list and `other name` for any other name. Admission refuses `other`, and a listed name with an argument count the table below gives it no overload for, both as `expression.juel.method`. The closed list, every method read-only:
+
+| Method | String | List | Map | Result and edge rules |
+|---|---|---|---|---|
+| `length()` | yes | | | UTF-16 code units, an `Integer` |
+| `isEmpty()` | yes | yes | yes | Boolean |
+| `size()` | | yes | yes | an `Integer` |
+| `equals(x)` | yes | yes | yes | Java `equals`, three-valued, any argument |
+| `contains(x)` | String `x` | any `x`: true when some element is equal, false when every one is unequal | | Boolean |
+| `startsWith(s)`, `endsWith(s)` | String `s` | | | Boolean |
+| `indexOf(x)`, `lastIndexOf(x)` | String `x`, UTF-16 index | any `x`, the first (last) equal element, unknown before it `unsupported` | | an `Integer`, −1 when absent |
+| `substring(i)`, `substring(i, j)` | Integer `i`, `j` narrowed to 32 bits | | | out of range fails `juel.error`; a cut inside a surrogate pair is `unsupported` (`juel.surrogateSplit`) |
+| `toUpperCase()`, `toLowerCase()` | ASCII receivers | | | a receiver with a non-ASCII character is `unsupported` (`juel.nonAsciiText`): Java maps it by the JVM's default locale |
+| `trim()` | yes | | | strips characters up to U+0020 at both ends |
+| `concat(s)` | String `s` | | | String |
+| `replace(s, t)` | String `s`, `t` | | | every non-overlapping occurrence, left to right, Java's `CharSequence` overload; an empty `s` inserts `t` at every UTF-16 position, `unsupported` when that splits a surrogate pair |
+| `get(x)` | | Integer `x` narrowed to 32 bits; outside the List fails `juel.error` | String key; absent is null | the element, class unknown |
+| `containsKey(k)`, `containsValue(v)` | | | String `k`; any `v`, three-valued | Boolean |
+
+Every other name, `getClass`, `toString`, `hashCode` and every mutating method (`add`, `remove`, `put`, `set`, `clear`, …) included, is refused at admission. A Map's mutating `replace(k, v)` shares a listed name and arity; it reaches the evaluator only on a Map receiver, where `replace` is not listed, so it is `unsupported` and never runs.
+
+### Results at a site
+
+Every result, at every site, passes one check that it is a portable value ([data semantics](DATA-SEMANTICS-SPEC.md#values)) before the site sees it: an Integer in `0..9007199254740991`; a Decimal in canonical form, with scale `0..6`, a signed 64-bit coefficient, no trailing zero at a positive scale and zero at scale 0; a String of at most 1,024 UTF-8 bytes. A result outside that domain, such as `${b - a}` below zero or `${d * 2}` giving `3.0`, is `unsupported` (`juel.resultOutsideDomain`); CIB stores the Java value at a mapping. A condition's out-of-domain result is therefore `unsupported`, never a non-Boolean failure. A condition then takes a Boolean; any other result, null included, fails the site (`el/UelExpressionCondition.java:51-52`); a mapping stores the result. Lists and Maps reach a result only as context values or their elements, which are already portable.
+
+## Failure semantics
+
+An evaluation ends in a value, a `failure`, or `unsupported` with a `juel.*` or `expression.juel.*` code. Each Java exception class has one code, kept because a later site needs the class: CIB's `UelExpressionCondition.tryEvaluate` swallows only a `PropertyNotFoundException` (conditional events, M6).
+
+| Code | Java exception | Raised by |
+|---|---|---|
+| `unknown-variable` | `PropertyNotFoundException` | an identifier, or an `Expression.variable`, that no binding declares |
+| `juel.propertyNotFound` | `PropertyNotFoundException` | an unknown bean property; a method on a null receiver |
+| `juel.arithmetic` | `ArithmeticException` | Integer `%` by zero |
+| `juel.error` | every other: `ELException` from a coercion or comparison, `NumberFormatException` from a List index, `ClassCastException` from ordering a Boolean against a List or Map, `IndexOutOfBoundsException` from `get` or `substring`, an exception inside a method | |
+
+CIB wraps each in a `ProcessEngineException` (`el/JuelExpression.java:62-76`), which aborts the engine operation it runs in, as [CIB-OP-0004](../../CIB-BPMN-RELATION-REGISTER.md#cib-op-0004--synchronous-juel-command-rollback-mapped-to-speculative-semantic-commitment) maps. What that operation is depends on the stimulus that reached the evaluation:
+
+| Stimulus | CIB 2.2.0 | Kernel outcome under the CIB profile |
+|---|---|---|
+| a command (Start, task completion, a delivered Message or Signal, a variable update) | the command rolls back | `rolledBack` with the failure's code, state as before the command |
+| an effect result | the job that completed the effect fails | `ContinuationFailure.incident` turns it into the effect's technical failure ([CIB-EXT-0026](../../CIB-BPMN-RELATION-REGISTER.md#cib-ext-0026--a-continuation-failure-after-an-effect-result-fails-the-job)), unchanged |
+| a job continuation after an asynchronous boundary | the job fails, the boundary's commit stands | `unsupported` (`async-boundary-failure`, `Kernel.Step.deferred`, unchanged) |
+| a Timer firing | the timer job fails, retries, then raises an incident | `unsupported` (`timer-job-failure`) until a track models job failure there |
+
+`unsupported` from an evaluation stays `unsupported` at every site and every stimulus. Per site, under the CIB profile:
+
+| Site | CIB 2.2.0 | Kernel outcome (command stimulus) | Witnesses |
+|---|---|---|---|
+| Gateway or conditional Sequence Flow | a failure or a non-Boolean result fails (`UelExpressionCondition.java:51-52`) | `rolledBack`, a non-Boolean as `condition-not-boolean` | [condition-expression-routing](../../../scenarios/open-rows/condition-expression-routing/README.md): `flag-absent`, `flag-integer`, `flag-present-null`, `flag-text-true`, `flag-text-other`, `false-reaches-broken` roll back; `true-before-broken` commits, the later condition unevaluated |
+| Activity or Sub-Process input mapping | fails (`InputParameter.java:46`) | `rolledBack` | [juel-evaluation-failures](../../../scenarios/open-rows/juel-evaluation-failures/README.md); [mapping-failure-sites](../../../scenarios/open-rows/mapping-failure-sites/README.md) `entry-missing`, `entry-throws` |
+| Activity or Sub-Process output mapping | fails the completing operation (`OutputParameter.java:47`) | `rolledBack`; no output of the completion is written | `exit-missing`, `exit-throws`, `scope-exit-missing` |
+| Call `sourceExpression` in or out | fails (`ElValueProvider`) | `rolledBack` | [juel-core-table](../../../scenarios/open-rows/juel-core-table/README.md) `call-source-expression-in`, `call-source-expression-out` |
+
+A property of a null base is no failure: it is null at every site, and the site then reads null (a condition fails on it, a mapping stores it). The standards profile admits no JUEL, so it has none of these outcomes; its Simple Boolean evaluation stays total.
+
+## Admission at Core
+
+Under a profile selecting `Evaluator.juel`, `Kernel.Admission.Data` refuses at an admitting site, each with a stable code. The two name codes are semantic refusals, so they sit in admission beside the others, as `Kernel.Admission.Work` refuses its reserved names; the names are the engine's resolver vocabulary, not product bean names:
+
+| Code | Refused | Basis |
+|---|---|---|
+| `expression.juel.engineContext` | an identifier `execution`, `task`, `caseExecution`, `externalTask` or `authenticatedUserId` in any JUEL text, `${execution}` included | `VariableScopeElResolver.java:51-90` resolves them before any variable |
+| `expression.juel.multiInstanceCounter` | `loopCounter`, `nrOfInstances`, `nrOfActiveInstances`, `nrOfCompletedInstances` | CIB holds them as instance locals; the Multi-Instance level (M5) puts them in context |
+| `expression.juel.syntax` | JUEL-position text the reader could not parse at the pinned grammar (`Expression.foreign` with the JUEL language) | CIB refuses the deployment, so both answer `unsupported`; non-ASCII identifiers and whitespace, which CIB may parse, are the classified exception (draft CIB-LIM-0009) |
+| `expression.juel.floatLiteral`, `expression.juel.division` | a floating literal; `/`, `div` | a Double, outside the portable domain |
+| `expression.juel.function` | any function call; CIB registers `currentUser`, `currentUserGroups`, `now`, `dateTime` | JUEL decision; the Events level admits `now()` and `dateTime()` chains |
+| `expression.juel.method`, `expression.juel.computedMethod` | a call to an unlisted name or argument count, mutating methods included; a method on a bracket target | the closed list |
+| `expression.juel.malformed` | an empty node table; a child index not below its parent's; an integer lexeme that is not digits only or exceeds 2^63−1 | the reader's output contract; never reachable from a well-formed reader |
+| `expression.outsideJuel` | a Simple Boolean expression | one evaluator per profile |
+
+At a site Core does not admit, `Kernel.Admission.MultiInstance`, `Kernel.Admission.Subscriptions` and `Kernel.Admission.Data` (a Data Association mapping) refuse `.juel` as `expression.juel.site` under either evaluator. Under the standards profile `.juel` is refused as `mapping.expression` in a mapping and `flow.condition.foreign` in a condition, the codes `foreign` has there. `profile.evaluator.juel` is deleted: a profile may now select the evaluator.
+
+The evaluator answers every refused shape with the admission code as `unsupported` (guard 20), so no refused shape evaluates.
+
+## IL shape and placement
+
+Parsing happens once, in the reader (`packages/bpmn-source/src/kernel-reader/juel.ts`), which emits the IL; neither kernel parses text. The parse is meaning-preserving: two texts with the same node table evaluate identically, and the source bytes stay in `@bpmn-lean/bpmn-source`'s preserved source. It is checked against the pinned evaluator through the retained evidence, and by a reader test of source-to-node tables. A text that does not parse becomes `Expression.foreign` with the JUEL language URN.
+
+The parse is a flat node table in post-order, children referenced by index below their parent's, the root last: the IL's flat, identifier-referenced shape, with no nested or mutual inductive (`List Nat` children are not nested). Integer and floating literals keep their lexemes, so a Long beyond 2^53 survives the JSON wire, where TypeScript numbers would round it. `Kernel/IL/Types/Juel.lean`, imported by `Kernel/IL/Types.lean` as `Options` is, holds `JuelBinary`, `JuelUnary`, `JuelMethod` with `JuelMethod.admits (method) (count)`, `JuelCall` (`listed (method : JuelMethod) | other (name : String)`) and `JuelNode`; `Expression` gains `juel (nodes : List JuelNode)`. Each `JuelNode` constructor carries at most a header and a payload (guard 9), so a node with more than two parts carries one payload structure: `JuelFunctionNode`, `JuelCallNode`, `JuelComputedCallNode`, `JuelBinaryNode`, `JuelChoiceNode`. A quoted literal is `stringLiteral`, apart from the unquoted `text`, so that the node kinds mirror no `Value` kinds (guard 3). The TypeScript pair is `packages/kernel/src/il/types/juel.ts`. The wire form is Lean's derived JSON, except that a call target travels as the method name, which `Kernel.Codec`'s hand-written `JuelCall` instances look up; for `${a + 1}`:
+
+```json
+{"juel": {"nodes": [{"identifier": {"name": "a"}}, {"integer": {"digits": "1"}}, {"binary": {"payload": {"op": "add", "left": 0, "right": 1}}}]}}
+```
+
+`Kernel/Hooks.lean` and `hooks.ts` gain a third evaluation outcome, `Evaluation.unsupported (code)`, so that a kernel limit never poses as a semantic failure ([semantic invariants](../../../CLAUDE.md#semantic-invariants)). Every consumer maps it to `.error (.unsupported code)`. `Ctx.evaluateMappings` rolls an `ioParameter` failure back with the evaluation's own code, so one failure has one code at every site. `Feature.Flow.condition` maps a failure and a non-Boolean value to `.rolledBack`; under Simple Boolean neither can occur.
+
+Evaluation lives in `Kernel/Feature/Data/Juel.lean` and `packages/kernel/src/feature/data/juel.ts`; `Feature.Data.evaluate` sends `.juel nodes` there. The evaluator recurses on node index, each child strictly below its parent, so it is total with the index as its measure. `JuelNode`, `JuelBinary`, `JuelUnary`, `JuelCall` and `JuelMethod` are guarded types of the [guardrails](../ARCHITECTURE-SPEC.md#guardrails-against-degradation), owned by `Kernel.Feature.Data` and matched also by `Kernel.Admission.Data` and the codecs; the reader holds no copy of the method list.
+
+Lean's `String` is a sequence of Unicode scalar values and cannot hold a lone surrogate, while Java's is UTF-16. Every rule above that counts, indexes, cuts or orders a String does so in UTF-16 code units; the Lean evaluator converts explicitly and refuses a result that would split a pair. A divergence between the two kernels there is a defect the paired evaluator tests catch, a risk recorded rather than ruled out.
+
+The profile option exists: `ProfileOptions.evaluator : Evaluator` (`simpleBoolean | juel`). The reader's `kernelProfileOptions` selects `juel` exactly when the profile carries the draft CIB-CFG-0011, which the cumulative CIB 2.2.0 profile adds with CIB-EXT-0030; `Admission.Profile` drops `profile.evaluator.juel`; the vocabulary schema gains the codes above.
+
+## Oracle plan and witness table
+
+The pinned evaluator answers through ordinary scenarios run by the CIB oracle; no runner mode is added. Each expression is a `camunda:inputParameter` of a User Task the start opens, so the open task's published inputs are the observation, or a condition whose chosen User Task is; a form that can fail sits alone behind a probe gateway, as [juel-evaluation-failures](../../../scenarios/open-rows/juel-evaluation-failures/README.md) does, so one failure cannot hide another.
+
+The CIB runner's value projection carries Decimal as `BigDecimal` at the value's canonical scale, List as `ArrayList`, Map as `LinkedHashMap` and every nested Integer as `Long`, the carriers [CIB-CFG-0009](../../CIB-BPMN-RELATION-REGISTER.md#cib-cfg-0009--default-java-serialization-of-structured-business-values) names; it projects an engine `Integer` or `Long` at any depth to Integer and a `BigDecimal` only in canonical form. A Java result outside the portable domain stays unprojected; its form gets a Boolean-reduced twin (`${b - a < 0}`), which CIB answers.
+
+| Rule | Expression forms × contexts | Expected kind | Witness |
+|---|---|---|---|
+| literals, text, composite, escapes, `#{}` | every literal kind, `\${`, `\\${`, mixed text | value; a mixed-delimiter composite refused | literals-and-text; table `text-escapes` |
+| arithmetic over Integer, null, String | `+ - * % mod`, unary `-`, precedence, wrap at 2^63 | value; `%` by zero fails | arithmetic, coercion, modulo-by-zero; table `long-wrap` |
+| Strings with `.`, `e`, `E` in arithmetic | `${'hello' + 1}`, `${'1.5' + 1 > 2}` | failure; `unsupported` | table `text-exponent-failure`, `text-double-operand` |
+| Decimal arithmetic and comparison | Decimal with Integer, Decimal, numeric String; `==` across scales | value; `%` with Decimal `unsupported` | decimal-operands (its floating-literal comparisons moved to table `decimal-against-double`); table `decimal-scale-equality` |
+| non-canonical Decimal results | `${d * 2}` stored, `${d * 2 == 3}` | `unsupported`; value | table `decimal-noncanonical-result` |
+| Integer class | `${list.contains(s.length())}`, `${s.length() == 3}`, `${n.equals(3)}` | `unsupported`; value; `unsupported` | table `integer-class` |
+| relational and equality | operand matrix null, Boolean, Integer, Decimal, String, List, Map | value or failure per the operator table; Boolean against List fails | relational, coercion; table `boolean-against-list` |
+| logical, `empty`, `?:`, laziness | | value; `empty missing` fails | logical, empty-operator, ternary-operator, lazy-operands, empty-of-missing |
+| identifiers | visible, shadowed, present null, absent | value; absent fails | missing-variable; scope-data-visibility |
+| property access | Map key, absent key, null base, List index in and out of range, String bean and non-bean names | value, null, failure or `unsupported` per the access table | access-scalar-results, access-structured-results, absent-and-null-access, index-on-text, unknown-property, index-out-of-range, non-integer-index; table `string-bean-property` |
+| methods | every listed method per receiver kind, argument kinds, wrong receiver; a multi-character `replace` | value, failure or `unsupported` | string-methods, list-methods, map-methods; table `replace-multi-character` |
+| condition sites | a plain-text condition `true`; the Activity outflow condition | `rolledBack`; value | table `plain-text-condition` |
+| site rules | one probe per failure class × condition, input, output, Sub-Process output, Call `sourceExpression` in and out | `rolledBack` | condition-expression-routing, mapping-failure-sites; table `call-source-expression-in`, `call-source-expression-out` |
+| result domain | negative, above 2^53−1, scale above 6, 1,025-byte String at a mapping | `unsupported` (kernel only) | negative-result, integer-overflow; table `string-over-limit` |
+| admission | each refusal code | refused | juel-unsupported-syntax, condition-language-declarations, functions, the capability probes of juel-evaluation-failures; table `collection-parameter`, one model per code |
+
+## Witnesses and ledger the Core level settles
+
+Expected to agree with the retained answer, so their [disagreement ledger](../../../packages/differential/test/cib-disagreement-ledger.json) entries are removed when the code lands:
+
+- PC-DATA-07: juel-core-forms `arithmetic`, `coercion`, `lazy-operands`, `literals-and-text`, `logical`, `relational`, `string-methods`, `ternary-operator`; juel-evaluation-failures `missing-variable`, `empty-of-missing`, `text-in-arithmetic`, `modulo-by-zero`, `integer-as-boolean`, `unknown-property`, `index-on-text`; condition-language-declarations `formal-no-language`, `plain-no-language`; condition-expression-routing `context-written-after-start`, `context-below-limit`, given the `setVariables` command they use.
+- PC-DATA-08 and PC-DATA-09, branch half: every condition-expression-routing schedule, once `Feature.Flow.condition` rolls back.
+- PC-DATA-05 and PC-DATA-09: mapping-failure-sites `entry-missing`, `entry-null`, `entry-throws`, `call-in-absent`; the exit and scope-exit schedules also need the PC-DATA-04 and PC-DATA-06 mechanisms.
+- PC-CF-02: the expression half of exclusive-choice-compositions (`${fraud}`, `${amount > 1000}`, `${severity == 'severe'}`); the rows close with M1's flow mechanisms.
+
+Expected to stay in disagreement under a registered relation, so the root moves their owner from the row to the draft entry:
+
+- draft CIB-LIM-0009 (refused at admission where CIB evaluates): juel-core-forms `functions`, `division`, the floating-literal half of `decimal-operands` (table `decimal-against-double`); juel-evaluation-failures `unknown-method`, `execution-read`, `execution-mutation`, `authenticated-user-name`, `reflection-through-method`, `list-mutating-method`; condition-language-declarations `named-juel`, `definitions-xpath-default`.
+- draft CIB-LIM-0010 (`unsupported` at run time where CIB returns a value): juel-evaluation-failures `division-by-zero`, `integer-overflow`, `negative-result`; table `integer-class`, `decimal-noncanonical-result`, `text-double-operand`, `string-over-limit`, `string-bean-property`.
+- draft CIB-CFG-0011: juel-evaluation-failures `bean-reference`.
+
+juel-unsupported-syntax already agrees (`unsupported` on both sides) and has no entry. The Multi-Instance expression witnesses (expression-cardinality-and-collections, multi-instance-expressions) stay with M5.
+
+## CIB relations
+
+| Register entry | Role |
+|---|---|
+| [CIB-OP-0004](../../CIB-BPMN-RELATION-REGISTER.md#cib-op-0004--synchronous-juel-command-rollback-mapped-to-speculative-semantic-commitment) | an evaluation failure in a command rolls it back; its asynchronous-Activity wording is superseded by the stimulus table above |
+| [CIB-EXT-0024](../../CIB-BPMN-RELATION-REGISTER.md#cib-ext-0024--an-unresolved-input-or-output-parameter-expression-fails-its-evaluation) | an unresolved parameter expression rolls back; the retained `entry-missing` and `exit-missing` evidence verifies its inferred reading. Proposed status line for the root: "Verified for CIB Seven 2.2.0 by the retained `entry-missing` and `exit-missing` evidence; the kernel rolls back with the evaluation's own code (`unknown-variable`), implemented with the Core JUEL evaluator." |
+| [CIB-CFG-0005](../../CIB-BPMN-RELATION-REGISTER.md#cib-cfg-0005--pinned-read-only-juel-condition-environment) | superseded for CIB Seven 2.2.0 by the draft CIB-CFG-0011 |
+| CIB-CFG-0011 (draft) | the pinned 2.2.0 JUEL environment: `JuelExpressionManager`'s resolver chain, the JEE6 parser profile, the four registered functions, the runner's handler beans (`CibSevenScriptedEffect.HANDLER_BEANS`) and the oracle JVM's default locale, which the runner pins; selects `Evaluator.juel`. A bean the environment registers and no binding shadows resolves in CIB and is an unknown variable in the kernel |
+| CIB-EXT-0030 (draft) | CIB evaluates a condition without `language` as JUEL, ignoring a missing `xsi:type`; BPMN makes XPath the default (Table 8.1 `expressionLanguage`, the XSD default) and lets vendors substitute their own languages (§8.2.1, "vendors are free to substitute their own languages"). The CIB profile reads the undeclared case as JUEL and refuses the declared one |
+| CIB-EXT-0031 (draft) | CIB evaluates an output parameter in the Activity's own scope, so it reads captured inputs and ancestors (`OutputParameter.java:47`); the standards reading evaluates outputs against the submission alone. Keyed to `MappingDialect.ioParameter`, as CIB-EXT-0024 is, so it needs no profile option |
+| CIB-LIM-0009 (draft) | refused at admission where CIB evaluates: functions, unlisted or mutating methods, floating literals and division, named-language conditions, Definitions-declared languages, non-ASCII identifiers and whitespace, engine-context names and Multi-Instance counters, `camunda:list` and `camunda:map` parameters, `camunda:resource` conditions and `local` Call copies (by the reader) |
+| CIB-LIM-0010 (draft) | `unsupported` at run time where CIB returns a value or Java surface outside the portable domain: Double results, out-of-domain and non-canonical results at a mapping, collection-to-text, ordering two Lists or two Maps, Java `equals` over Integers of unknown class, String bean properties, unlisted receiver or argument kinds, non-ASCII case mapping and numeric text, surrogate splits |

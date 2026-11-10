@@ -48,6 +48,12 @@ export const tsSiteBudget: Readonly<Record<string, number>> = {
   ScopeKindTag: 6,
   ThrowTag: 3,
   MultiInstanceMode: 2,
+  // The JUEL types (M2), measured 2026-11-10; the Lean budgets add one each for a derived `Repr`.
+  JuelNodeTag: 2, // admission, evaluator
+  JuelBinary: 1, // evaluator `operate`
+  JuelUnary: 1, // evaluator `unary`
+  JuelCallTag: 2, // admission, evaluator
+  JuelMethod: 4, // the String, List and Map methods, and the argument-count table
 };
 
 export type GuardedType = Readonly<{ lean: string; enumName: string | null; owners: readonly string[]; leanOwners: readonly string[] }>;

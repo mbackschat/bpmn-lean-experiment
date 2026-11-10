@@ -16,6 +16,7 @@ import {
   UnhandledError, ErrorCatchVariables,
   MultiInstanceBinding, ResultValues,
 } from "./types/options.js";
+import type { JuelNode } from "./types/juel.js";
 export {
   AbnormalScopeEnd, CallBindingTime, type CompensationHandlerFailure, CompensationHandlerFailureTag, CompensationOrder,
   ConditionOrder, ContinuationFailure, DeliveryVariables, ErrorPathOutputs, Evaluator, MessageCorrelation,
@@ -119,14 +120,12 @@ export type SimpleBoolean =
   | { readonly tag: SimpleBooleanTag.IsNull; readonly name: string }
   | { readonly tag: SimpleBooleanTag.StringEquals; readonly name: string; readonly value: string };
 
-/**
- * An expression. `literal`, `simpleBoolean` and `variable` are evaluated by the kernel; admission refuses `foreign`,
- * which only the deferred JUEL binding (PC-DATA-07) would read.
- */
+/** An expression; the kernel evaluates every arm but `foreign`, unread text, and `juel` only under `Evaluator.juel`. */
 export enum ExpressionTag {
   Literal = "literal",
   SimpleBoolean = "simpleBoolean",
   Variable = "variable",
+  Juel = "juel",
   Foreign = "foreign",
 }
 
@@ -134,6 +133,7 @@ export type Expression =
   | { readonly tag: ExpressionTag.Literal; readonly value: Value }
   | { readonly tag: ExpressionTag.SimpleBoolean; readonly body: SimpleBoolean }
   | { readonly tag: ExpressionTag.Variable; readonly name: string }
+  | { readonly tag: ExpressionTag.Juel; readonly nodes: readonly JuelNode[] }
   | { readonly tag: ExpressionTag.Foreign; readonly language: string; readonly source: string };
 
 /** A configuration value given either literally or by an expression. */
@@ -145,8 +145,8 @@ export type ValueSource =
 
 /**
  * Which syntax wrote a mapping, which settles what an unset source means: an unavailable Data Input (BPMN 2.0.2
- * §10.4.2), an unresolved `camunda:inputParameter` or `outputParameter` expression, or a `camunda:in`/`out` copy that
- * reads null (CIB-EXT-0021).
+ * §10.4.2), an unresolved `camunda:inputParameter`, `outputParameter` or `camunda:in`/`out` `sourceExpression`
+ * expression, or a `camunda:in`/`out` `source` copy that reads null (CIB-EXT-0021).
  */
 export enum MappingDialect {
   DataAssociation = "dataAssociation",

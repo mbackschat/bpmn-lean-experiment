@@ -66,7 +66,14 @@ def budgets : List (Name × Nat) := [
   (`Kernel.Element, 13), (`Kernel.EventRole, 7), (`Kernel.Input, 3), (`Kernel.Signal, 3),
   (`Kernel.Continuation, 4), (`Kernel.Raised, 9), (`Kernel.OpenKind, 2), (`Kernel.Trigger, 11),
   (`Kernel.Work, 11), (`Kernel.GatewayKind, 4), (`Kernel.ScopeKind, 7), (`Kernel.Throw, 4),
-  (`Kernel.MultiInstanceMode, 4)]
+  (`Kernel.MultiInstanceMode, 4),
+  -- The JUEL types (M2), measured 2026-11-10; each is its TypeScript budget plus the derived `Repr` instance that
+  -- `Expression`'s derived `Repr` requires.
+  (`Kernel.JuelNode, 3), -- Admission.Data.juelNode, Feature.Data.Juel.visit, Repr
+  (`Kernel.JuelBinary, 2), -- Feature.Data.Juel.operate, Repr
+  (`Kernel.JuelUnary, 2), -- Feature.Data.Juel.unary, Repr
+  (`Kernel.JuelCall, 3), -- Admission.Data.juelCall, Feature.Data.Juel.call, Repr
+  (`Kernel.JuelMethod, 5)] -- the String, List and Map methods, JuelMethod.admits, Repr
 
 structure Uses where
   constants : NameSet := {}

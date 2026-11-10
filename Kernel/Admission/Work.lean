@@ -27,14 +27,15 @@ def mapsData : Work → Bool
 
 /-- The work one instance of a Multi-Instance Activity may do: `some submits`, where `submits` says whether its
 completion submits the loop's output data item, or `none` for work no instance may do. A User Task submits it; a
-Service Task's effect result is the empty OutputSet, since a Multi-Instance Activity has no mappings (PC-MI-02). The
-Multi-Instance shape itself is admitted by `Kernel.Admission.MultiInstance`. -/
+Service Task's effect result is the empty OutputSet, since a Multi-Instance Activity has no mappings (PC-MI-02); a
+Receive Task's delivery carries no payload (PC-HUM-06). The Multi-Instance shape itself is admitted by
+`Kernel.Admission.MultiInstance`. -/
 def instanceBody : Work → Option Bool
   | .user _ => some true
   | .service _ => some false
+  | .receive _ => some false
   | .none => none
   | .manual => none
-  | .receive _ => none
   | .send _ => none
   | .script _ => none
   | .rule _ => none
@@ -115,17 +116,74 @@ def call (program : Program) (work : CallWork) : Option String :=
      else if work.propagateAllInputs || work.propagateAllOutputs then some "work.call.propagateAll"
      else dataCorrespondence work)
 
-/-- The fields of a User Task the kernel does not yet read. -/
+/-- A model string CIB evaluates as an expression: it holds `${` or `#{`, the reader's own marker. -/
+def expressionText (value : String) : Bool :=
+  let rec go : List Char → Bool
+    | marker :: rest@('{' :: _) => marker == '$' || marker == '#' || go rest
+    | _ :: rest => go rest
+    | [] => false
+  go value.toList
+
+/-- The number the `count` decimal digits of `chars` from `start` spell, when they are all digits. -/
+def digitsAt (chars : List Char) (start count : Nat) : Option Nat :=
+  let part := (chars.drop start).take count
+  if part.length == count && part.all Char.isDigit then some (part.foldl (fun n c => n * 10 + (c.toNat - '0'.toNat)) 0)
+  else none
+
+def daysIn (year month : Nat) : Nat :=
+  if month == 2 then (if year % 4 == 0 && (year % 100 != 0 || year % 400 == 0) then 29 else 28)
+  else if month == 4 || month == 6 || month == 9 || month == 11 then 30
+  else 31
+
+/-- `YYYY-MM-DDTHH:MM:SSZ`, a calendar instant in UTC: the one date form CIB reads as the same instant on every
+engine, since it reads a form without offset in the JVM's zone and one starting with `P` as a duration from now
+(`DueDateBusinessCalendar#resolveDuedate`, `DateTimeUtil#parseDate`), and its projection prints it back unchanged. -/
+def utcInstant (value : String) : Bool :=
+  let chars := value.toList
+  let charAt (index : Nat) (char : Char) : Bool := chars[index]? == some char
+  match digitsAt chars 0 4, digitsAt chars 5 2, digitsAt chars 8 2, digitsAt chars 11 2, digitsAt chars 14 2,
+      digitsAt chars 17 2 with
+  | some year, some month, some day, some hour, some minute, some second =>
+    chars.length == 20 && charAt 4 '-' && charAt 7 '-' && charAt 10 'T' && charAt 13 ':' && charAt 16 ':' && charAt 19 'Z' &&
+      0 < year &&
+      0 < month && month ≤ 12 && 0 < day && day ≤ daysIn year month && hour < 24 && minute < 60 && second < 60
+  | _, _, _, _, _, _ => false
+
+/-- A decimal Java `int`, optionally negative: CIB parses a literal priority with `Integer.parseInt`
+(`TaskDecorator#initializeTaskPriority`); a `+` sign, which Java also reads, is refused rather than carried. -/
+def javaInt (value : String) : Bool :=
+  let digits := match value.toList with
+    | '-' :: rest => rest
+    | chars => chars
+  !digits.isEmpty && digits.all Char.isDigit &&
+    match value.toInt? with
+    | some number => decide (-2147483648 ≤ number) && decide (number ≤ 2147483647)
+    | none => false
+
+/-- A field's literal value satisfies `admitted`; an expression waits for the Task fields JUEL level. -/
+def literalField (admitted : String → Bool) : Option ValueSource → Bool
+  | none => true
+  | some (.literal value) => admitted value
+  | some (.expression _) => false
+
+/-- CIB's built-in form field types without configuration (`ProcessEngineConfigurationImpl#initFormTypes`); an `enum`
+field's values are not carried. CIB refuses a field without an id or type at deployment
+(`DefaultFormHandler#parseFormField`, `FormTypes#parseFormPropertyType`). -/
+def formFieldTypes : List String := ["string", "long", "boolean", "date"]
+
+/-- The User Task fields the kernel reads are literal (PC-HUM-02); each expression-valued field waits for the Task
+fields JUEL level, a relative or zoned date and a non-decimal priority stay refused. -/
 def userTask (task : UserWork) : Option String :=
-  if task.assignee.isSome then some "work.user.assignee"
-  else if !task.candidateUsers.isEmpty then some "work.user.candidateUsers"
-  else if task.formKey.isSome then some "work.user.formKey"
-  else if task.dueDate.isSome then some "work.user.dueDate"
-  else if task.followUpDate.isSome then some "work.user.followUpDate"
-  else if task.priority.isSome then some "work.user.priority"
-  else if task.candidateGroups.any (fun
-    | .literal _ => false
-    | .expression _ => true) then some "work.user.candidateGroupExpression"
+  let always (_ : String) : Bool := true
+  if !literalField always task.assignee then some "work.user.assignee"
+  else if !task.candidateUsers.all (literalField always ∘ some) then some "work.user.candidateUsers"
+  else if (task.formKey.map expressionText).getD false then some "work.user.formKey"
+  else if !literalField utcInstant task.dueDate then some "work.user.dueDate"
+  else if !literalField utcInstant task.followUpDate then some "work.user.followUpDate"
+  else if !literalField javaInt task.priority then some "work.user.priority"
+  else if !task.candidateGroups.all (literalField always ∘ some) then some "work.user.candidateGroupExpression"
+  else if task.formFields.any (fun (key, type) => key.isEmpty || !formFieldTypes.contains type) then
+    some "work.user.formField"
   else none
 
 def service (work : ServiceWork) : Option String :=

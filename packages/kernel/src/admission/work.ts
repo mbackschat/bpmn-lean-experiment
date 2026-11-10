@@ -25,6 +25,7 @@ import {
   type ReceiveWork,
   type ServiceWork,
   type UserWork,
+  type ValueSource,
   type Work,
 } from "../il/types.js";
 
@@ -48,18 +49,18 @@ function mapsData(work: Work): boolean {
 /**
  * The work one instance of a Multi-Instance Activity may do: whether its completion submits the loop's output data
  * item, or `null` for work no instance may do. A User Task submits it; a Service Task's effect result is the empty
- * OutputSet, since a Multi-Instance Activity has no mappings (PC-MI-02). The Multi-Instance shape itself is admitted by
- * `admission/multi-instance.ts`.
+ * OutputSet, since a Multi-Instance Activity has no mappings (PC-MI-02); a Receive Task's delivery carries no payload
+ * (PC-HUM-06). The Multi-Instance shape itself is admitted by `admission/multi-instance.ts`.
  */
 export function instanceBody(work: Work): boolean | null {
   switch (work.tag) {
     case WorkTag.User:
       return true;
     case WorkTag.Service:
+    case WorkTag.Receive:
       return false;
     case WorkTag.None:
     case WorkTag.Manual:
-    case WorkTag.Receive:
     case WorkTag.Send:
     case WorkTag.Script:
     case WorkTag.Rule:
@@ -175,15 +176,83 @@ function call(program: Program, work: CallWork): string | null {
   return dataCorrespondence(work);
 }
 
-/** The fields of a User Task the kernel does not yet read. */
+/** A model string CIB evaluates as an expression: it holds `${` or `#{`, the reader's own marker. */
+function expressionText(value: string): boolean {
+  return value.includes("${") || value.includes("#{");
+}
+
+/** The number the `count` decimal digits of `chars` from `start` spell, when they are all digits. */
+function digitsAt(chars: readonly string[], start: number, count: number): number | null {
+  const part = chars.slice(start, start + count);
+  if (part.length !== count || !part.every((char) => char >= "0" && char <= "9")) return null;
+  return part.reduce((number, char) => number * 10 + (char.charCodeAt(0) - 48), 0);
+}
+
+function daysIn(year: number, month: number): number {
+  if (month === 2) return year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0) ? 29 : 28;
+  return month === 4 || month === 6 || month === 9 || month === 11 ? 30 : 31;
+}
+
+/**
+ * `YYYY-MM-DDTHH:MM:SSZ`, a calendar instant in UTC: the one date form CIB reads as the same instant on every engine,
+ * since it reads a form without offset in the JVM's zone and one starting with `P` as a duration from now
+ * (`DueDateBusinessCalendar#resolveDuedate`, `DateTimeUtil#parseDate`), and its projection prints it back unchanged.
+ */
+function utcInstant(value: string): boolean {
+  const chars = [...value];
+  const charAt = (index: number, char: string): boolean => chars[index] === char;
+  const [year, month, day, hour, minute, second] = [[0, 4], [5, 2], [8, 2], [11, 2], [14, 2], [17, 2]]
+    .map(([start, count]) => digitsAt(chars, start!, count!));
+  if (year == null || month == null || day == null || hour == null || minute == null || second == null) return false;
+  return chars.length === 20 && charAt(4, "-") && charAt(7, "-") && charAt(10, "T") && charAt(13, ":") && charAt(16, ":") &&
+    charAt(19, "Z") && 0 < year && 0 < month && month <= 12 && 0 < day && day <= daysIn(year, month) && hour < 24 &&
+    minute < 60 && second < 60;
+}
+
+/**
+ * A decimal Java `int`, optionally negative: CIB parses a literal priority with `Integer.parseInt`
+ * (`TaskDecorator#initializeTaskPriority`); a `+` sign, which Java also reads, is refused rather than carried.
+ */
+function javaInt(value: string): boolean {
+  const digits = value.startsWith("-") ? value.slice(1) : value;
+  if (digits.length === 0 || ![...digits].every((char) => char >= "0" && char <= "9")) return false;
+  const number = BigInt(value);
+  return -2147483648n <= number && number <= 2147483647n;
+}
+
+/** A field's literal value satisfies `admitted`; an expression waits for the Task fields JUEL level. */
+function literalField(admitted: (value: string) => boolean, source: ValueSource | null): boolean {
+  if (source === null) return true;
+  switch (source.tag) {
+    case ValueSourceTag.Literal:
+      return admitted(source.value);
+    case ValueSourceTag.Expression:
+      return false;
+  }
+  return assertNever(source);
+}
+
+/**
+ * CIB's built-in form field types without configuration (`ProcessEngineConfigurationImpl#initFormTypes`); an `enum`
+ * field's values are not carried. CIB refuses a field without an id or type at deployment
+ * (`DefaultFormHandler#parseFormField`, `FormTypes#parseFormPropertyType`).
+ */
+const formFieldTypes: readonly string[] = ["string", "long", "boolean", "date"];
+
+/**
+ * The User Task fields the kernel reads are literal (PC-HUM-02); each expression-valued field waits for the Task fields
+ * JUEL level, a relative or zoned date and a non-decimal priority stay refused.
+ */
 function userTask(task: UserWork): string | null {
-  if (task.assignee !== null) return "work.user.assignee";
-  if (task.candidateUsers.length > 0) return "work.user.candidateUsers";
-  if (task.formKey !== null) return "work.user.formKey";
-  if (task.dueDate !== null) return "work.user.dueDate";
-  if (task.followUpDate !== null) return "work.user.followUpDate";
-  if (task.priority !== null) return "work.user.priority";
-  if (task.candidateGroups.some((group) => group.tag === ValueSourceTag.Expression)) return "work.user.candidateGroupExpression";
+  const always = (): boolean => true;
+  if (!literalField(always, task.assignee)) return "work.user.assignee";
+  if (!task.candidateUsers.every((user) => literalField(always, user))) return "work.user.candidateUsers";
+  if (task.formKey !== null && expressionText(task.formKey)) return "work.user.formKey";
+  if (!literalField(utcInstant, task.dueDate)) return "work.user.dueDate";
+  if (!literalField(utcInstant, task.followUpDate)) return "work.user.followUpDate";
+  if (!literalField(javaInt, task.priority)) return "work.user.priority";
+  if (!task.candidateGroups.every((group) => literalField(always, group))) return "work.user.candidateGroupExpression";
+  if (task.formFields.some(([key, type]) => key.length === 0 || !formFieldTypes.includes(type))) return "work.user.formField";
   return null;
 }
 

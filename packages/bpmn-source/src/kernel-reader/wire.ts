@@ -81,7 +81,7 @@ export function kernelProfileOptions(relations: readonly string[]): KernelProfil
   const selects = (...ids: string[]): boolean => ids.some((id) => relations.includes(id));
   return {
     relations: [...relations],
-    evaluator: "simpleBoolean",
+    evaluator: selects("CIB-CFG-0011") ? "juel" : "simpleBoolean",
     submission: selects("CIB-EXT-0005", "CIB-EXT-0010") ? "installsVariables" : "outputSet",
     scopeChainSubmissionBytes: selects("CIB-EXT-0020") ? portableValueAllowanceBytes : null,
     undeclaredWrite: selects("CIB-EXT-0005", "CIB-EXT-0007", "CIB-EXT-0009", "CIB-EXT-0020") ? "atInstanceRoot" : "refused",

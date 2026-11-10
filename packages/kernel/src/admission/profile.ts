@@ -13,7 +13,6 @@ import {
   CompensationHandlerFailureTag,
   CompensationOrder,
   DeliveryVariables,
-  Evaluator,
   MessageCorrelation,
   assertNever,
   type CompensationHandlerFailure,
@@ -31,7 +30,6 @@ function compensationHandlerFailure(selected: CompensationHandlerFailure): strin
 }
 
 export function options(abnormalScope: boolean, selected: ProfileOptions): string | null {
-  if (selected.evaluator === Evaluator.Juel) return "profile.evaluator.juel";
   if (selected.messageCorrelation === MessageCorrelation.ApiCriteria) return "profile.messageCorrelation.apiCriteria";
   if (selected.deliveryVariables === DeliveryVariables.Installs) return "profile.deliveryVariables.installs";
   if (selected.compensationOrder === CompensationOrder.ReverseCreation) return "profile.compensationOrder.reverseCreation";

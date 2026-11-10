@@ -8,7 +8,7 @@ Every model has the shape Start Event, User Task *Observe*, End Event, and every
 |---|---|---|---|
 | [arithmetic](arithmetic.scenario.json) | [arithmetic](arithmetic.bpmn) | Integer `+`, `-`, `*`, `%` and `mod`, precedence, parentheses, left associativity, unary minus, literal operands. | PC-DATA-07, PC-DATA-05 |
 | [division](division.scenario.json) | [division](division.bpmn) | `/` and `div` over Integers and over a Double literal, exact and inexact quotients. | PC-DATA-07, PC-DATA-05 |
-| [decimal-operands](decimal-operands.scenario.json) | [decimal-operands](decimal-operands.bpmn) | A Decimal Process variable with Integer and Decimal operands, comparison against Integer and Double literals, and the Decimal passed through unchanged. | PC-DATA-07, PC-DATA-05 |
+| [decimal-operands](decimal-operands.scenario.json) | [decimal-operands](decimal-operands.bpmn) | A Decimal Process variable with Integer and Decimal operands, comparison against Integer literals, and the Decimal passed through unchanged. The floating-literal comparison is in [juel-core-table](../juel-core-table/README.md). | PC-DATA-07, PC-DATA-05 |
 | [relational](relational.scenario.json) | [relational](relational.bpmn) | `==`, `!=`, `<`, `>`, `<=`, `>=` and their word forms over Integers, Strings and a Boolean, and relational against equality precedence. | PC-DATA-07, PC-DATA-05 |
 | [logical](logical.scenario.json) | [logical](logical.bpmn) | `&&`, `and`, `||`, `or`, `!`, `not`, double negation, and `and` against `or` precedence. | PC-DATA-07, PC-DATA-05 |
 | [lazy-operands](lazy-operands.scenario.json) | [lazy-operands](lazy-operands.bpmn) | An operand naming a variable no binding declares, on the branch that `and`, `or` and `?:` skip. | PC-DATA-07, PC-DATA-05 |

@@ -35,7 +35,12 @@ def owners : List (Name × List Name) := [
   (`Kernel.GatewayKind, [`Kernel.Feature.Flow, `Kernel.Admission.Flow]),
   (`Kernel.ScopeKind, [`Kernel.Feature.Scopes, `Kernel.Admission.Scopes]),
   (`Kernel.Throw, [`Kernel.Feature.Propagation, `Kernel.Admission.Propagation]),
-  (`Kernel.MultiInstanceMode, [`Kernel.Feature.MultiInstance, `Kernel.Admission.MultiInstance])]
+  (`Kernel.MultiInstanceMode, [`Kernel.Feature.MultiInstance, `Kernel.Admission.MultiInstance]),
+  (`Kernel.JuelNode, [`Kernel.Feature.Data, `Kernel.Admission.Data]),
+  (`Kernel.JuelBinary, [`Kernel.Feature.Data, `Kernel.Admission.Data]),
+  (`Kernel.JuelUnary, [`Kernel.Feature.Data, `Kernel.Admission.Data]),
+  (`Kernel.JuelCall, [`Kernel.Feature.Data, `Kernel.Admission.Data]),
+  (`Kernel.JuelMethod, [`Kernel.Feature.Data, `Kernel.Admission.Data])]
 
 def guarded (type : Name) : Bool := owners.any (·.1 == type)
 

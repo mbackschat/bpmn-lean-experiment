@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_RefusedProbes" targetNamespace="urn:bpmn-lean:scenarios:juel-evaluation-failures:refused-probes">
+  <process id="Process_RefusedProbes" name="One User Task per expression probe the kernel refuses at admission, selected by the start variable probe" isExecutable="true">
+    <startEvent id="StartEvent_Start" name="Probe selected" />
+    <sequenceFlow id="Flow_Start_Select" sourceRef="StartEvent_Start" targetRef="Gateway_Select" />
+    <exclusiveGateway id="Gateway_Select" name="Select probe" gatewayDirection="Diverging" default="Flow_NoProbe" />
+    <userTask id="UserTask_DivisionByZero" name="Probe division by zero">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${a / zero}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_UnknownMethod" name="Probe unknown method">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${word.nosuch()}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_ExecutionRead" name="Probe execution read">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${execution.activityId}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_ExecutionMutation" name="Probe execution mutation">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${execution.setVariable('leaked', 'yes')}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_ListMutatingMethod" name="Probe list mutating method">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${items.add('z')}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_ReflectionThroughMethod" name="Probe reflection through method">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${word.getClass().getName()}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_AuthenticatedUserName" name="Probe authenticated user name">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${authenticatedUserId == null}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <exclusiveGateway id="Gateway_Merge" name="Merge" gatewayDirection="Converging" />
+    <endEvent id="EndEvent_Done" />
+    <sequenceFlow id="Flow_ToDivisionByZero" sourceRef="Gateway_Select" targetRef="UserTask_DivisionByZero">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'division-by-zero'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToUnknownMethod" sourceRef="Gateway_Select" targetRef="UserTask_UnknownMethod">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'unknown-method'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToExecutionRead" sourceRef="Gateway_Select" targetRef="UserTask_ExecutionRead">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'execution-read'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToExecutionMutation" sourceRef="Gateway_Select" targetRef="UserTask_ExecutionMutation">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'execution-mutation'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToListMutatingMethod" sourceRef="Gateway_Select" targetRef="UserTask_ListMutatingMethod">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'list-mutating-method'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToReflectionThroughMethod" sourceRef="Gateway_Select" targetRef="UserTask_ReflectionThroughMethod">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'reflection-through-method'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToAuthenticatedUserName" sourceRef="Gateway_Select" targetRef="UserTask_AuthenticatedUserName">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'authenticated-user-name'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_NoProbe" sourceRef="Gateway_Select" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_DivisionByZero_Merge" sourceRef="UserTask_DivisionByZero" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_UnknownMethod_Merge" sourceRef="UserTask_UnknownMethod" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_ExecutionRead_Merge" sourceRef="UserTask_ExecutionRead" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_ExecutionMutation_Merge" sourceRef="UserTask_ExecutionMutation" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_ListMutatingMethod_Merge" sourceRef="UserTask_ListMutatingMethod" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_ReflectionThroughMethod_Merge" sourceRef="UserTask_ReflectionThroughMethod" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_AuthenticatedUserName_Merge" sourceRef="UserTask_AuthenticatedUserName" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_Merge_Done" sourceRef="Gateway_Merge" targetRef="EndEvent_Done" />
+  </process>
+</definitions>

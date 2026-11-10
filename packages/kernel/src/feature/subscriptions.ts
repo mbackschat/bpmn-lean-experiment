@@ -244,6 +244,7 @@ function payloadBindings(ctx: Ctx, nowMs: number, outputs: readonly Mapping[], p
         return [[source.name, payload]];
       case ExpressionTag.Literal:
       case ExpressionTag.SimpleBoolean:
+      case ExpressionTag.Juel:
       case ExpressionTag.Foreign:
         return [];
     }
@@ -287,6 +288,8 @@ function keyValue(ctx: Ctx, context: EvalContext, criterion: CorrelationCriterio
       return committed(evaluation.result.value);
     case EvaluationTag.Failure:
       return failed(FailureTag.SemanticFailure, evaluation.code);
+    case EvaluationTag.Unsupported:
+      return failed(FailureTag.Unsupported, evaluation.code);
   }
   return assertNever(evaluation);
 }

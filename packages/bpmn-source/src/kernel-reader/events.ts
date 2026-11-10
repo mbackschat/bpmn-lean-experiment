@@ -25,6 +25,9 @@ enum EventDefinitionKind {
 
 const eventDefinitionKinds: ReadonlySet<string> = new Set(Object.values(EventDefinitionKind));
 
+/** A root-level EventDefinition acts only through an Event's `eventDefinitionRef`, which the reader refuses. */
+export const isEventDefinition = (element: ElementRecord): boolean => eventDefinitionKinds.has(String(element.$type));
+
 function kindOf(definition: ElementRecord): EventDefinitionKind {
   const type = String(definition.$type);
   if (!eventDefinitionKinds.has(type)) {
@@ -35,7 +38,7 @@ function kindOf(definition: ElementRecord): EventDefinitionKind {
 
 /** The single event definition of an Event, `null` for a None Event; a Multiple Event has no IL shape. */
 export function singleDefinition(element: ElementRecord): ElementRecord | null {
-  const definitions = [...list(element, "eventDefinitions"), ...list(element, "eventDefinitionRef")];
+  const definitions = list(element, "eventDefinitions");
   if (definitions.length > 1) {
     throw new ReadRefusal(ReadRefusalCode.MultipleEventDefinitions, optionalId(element), `${definitions.length} definitions`);
   }
@@ -164,9 +167,8 @@ function signalName(definition: ElementRecord): KernelJson {
 
 function conditionPayload(ctx: ReadContext, definition: ElementRecord): KernelJson {
   const expression = asElement(definition.condition);
-  if (expression === undefined) {
-    throw new ReadRefusal(ReadRefusalCode.ConditionWithoutExpression, optionalId(definition), "conditional Event without a condition");
-  }
+  // `source.schema` admits no Conditional definition without the condition `tConditionalEventDefinition` requires.
+  if (expression === undefined) throw new TypeError("a schema-valid Conditional definition carries a condition");
   const events = ctx.attribute(definition, "variableEvents");
   return {
     condition: conditionExpression(ctx, expression),

@@ -82,6 +82,7 @@ def submissionNames (ctx : Ctx) (state : State) (scope : ScopeOccurrenceId) : Li
       | .variable name => some name
       | .literal _ => none
       | .simpleBoolean _ => none
+      | .juel _ => none
       | .foreign _ _ => none
 
 end Kernel.Feature.Work.Call

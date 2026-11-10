@@ -62,6 +62,7 @@ def correlatedCatch (subscription : Subscription) (trigger : MessageTrigger) : O
       | .variable _ => message { trigger with correlation := [] }
       | .literal _ => some "message.correlation.value"
       | .simpleBoolean _ => some "message.correlation.value"
+      | .juel _ => some "expression.juel.site"
       | .foreign _ _ => some "expression.outsideSimpleBoolean"
   | _ :: _ :: _ => some "message.correlation.keys"
 

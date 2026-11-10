@@ -60,19 +60,19 @@ refusalTests("registry", rows);
 /** A program refused at every level: a profile option, a called-process binding, a flow condition and an element. */
 function refusedEverywhere(): Json {
   const program = calledProcess({ version: 2 })(conditionOn(task(activity("T", sendWork()))(base()), "f2", foreign()));
-  return withOptions(program, { evaluator: "juel" });
+  return withOptions(program, { messageCorrelation: "apiCriteria" });
 }
 
 test("registry: profile options are refused before called processes, flows and elements", () => {
-  assert.equal(refusalOf(refusedEverywhere()), "profile.evaluator.juel");
+  assert.equal(refusalOf(refusedEverywhere()), "profile.messageCorrelation.apiCriteria");
 });
 
 test("registry: a called-process binding is refused before flows and elements", () => {
-  assert.equal(refusalOf(withOptions(refusedEverywhere(), { evaluator: "simpleBoolean" })), "process.definition.binding");
+  assert.equal(refusalOf(withOptions(refusedEverywhere(), { messageCorrelation: "modeledKey" })), "process.definition.binding");
 });
 
 test("registry: a flow is refused before elements", () => {
-  const program = withOptions(refusedEverywhere(), { evaluator: "simpleBoolean" });
+  const program = withOptions(refusedEverywhere(), { messageCorrelation: "modeledKey" });
   assert.equal(refusalOf({ ...program, processes: [] }), "flow.condition.foreign");
 });
 

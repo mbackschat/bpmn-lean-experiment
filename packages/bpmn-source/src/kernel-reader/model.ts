@@ -15,6 +15,7 @@ export enum ReadRefusalCode {
   SourceNoProcess = "source.noProcess",
   SourceMissingId = "source.missingId",
   SourceReference = "source.reference",
+  SourceSchema = "source.schema",
   ParserFailure = "parser.failure",
   ParserWarning = "parser.warning",
   UnknownElement = "reader.unknownElement",
@@ -23,6 +24,7 @@ export enum ReadRefusalCode {
   UnknownExtension = "reader.unknownExtension",
   FactNotCarried = "reader.factNotCarried",
   MultipleEventDefinitions = "reader.multipleEventDefinitions",
+  EventDefinitionRef = "reader.eventDefinitionRef",
   EventDefinitionOnElement = "reader.eventDefinitionOnElement",
   StandardLoop = "reader.standardLoop",
   EventSubProcessStart = "reader.eventSubProcessStart",
@@ -30,7 +32,6 @@ export enum ReadRefusalCode {
   SignalWithoutReference = "reader.signalWithoutReference",
   ThrowWithoutCode = "reader.throwWithoutCode",
   MultiInstanceWithoutCount = "reader.multiInstanceWithoutCount",
-  ConditionWithoutExpression = "reader.conditionWithoutExpression",
   EventBasedGatewayInstantiate = "reader.eventBasedGatewayInstantiate",
 }
 

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_ComputedMethod" targetNamespace="urn:bpmn-lean:scenarios:juel-core-table:computed-method">
+  <process id="Process_ComputedMethod" name="Evaluate a computed method name" isExecutable="true">
+    <startEvent id="StartEvent_Start" />
+    <sequenceFlow id="Flow_Start_Observe" sourceRef="StartEvent_Start" targetRef="UserTask_Observe" />
+    <userTask id="UserTask_Observe" name="Observe the evaluated inputs">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${list['size']()}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <sequenceFlow id="Flow_Observe_Done" sourceRef="UserTask_Observe" targetRef="EndEvent_Done" />
+    <endEvent id="EndEvent_Done" />
+  </process>
+</definitions>

@@ -119,8 +119,12 @@ inductive CallBindingTime where
   | invocation
   deriving DecidableEq, Repr
 
+/-- The expression language the kernel evaluates. -/
 inductive Evaluator where
+  /-- The standards profile's Simple Boolean ([decision](../../../docs/SIMPLE-BOOLEAN-EXPRESSION-DECISION.md)). -/
   | simpleBoolean
+  /-- CIB-CFG-0011: the Core JUEL level of the pinned CIB Seven 2.2.0 environment
+  ([expression semantics](../../../docs/kernel/semantics/EXPRESSION-SEMANTICS-SPEC.md)). -/
   | juel
   deriving DecidableEq, Repr
 

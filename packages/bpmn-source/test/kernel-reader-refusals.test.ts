@@ -57,12 +57,14 @@ const boundaryOn = (cancelActivity: string): string =>
   model(`<bpmn:task id="T"/><bpmn:boundaryEvent id="B" attachedToRef="T" cancelActivity="${cancelActivity}">${timer()}</bpmn:boundaryEvent>`);
 
 const foreignAttribute = (attribute: string): string => `<?xml version="1.0"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:x="urn:x" id="D" targetNamespace="urn:t"><bpmn:process id="P"><bpmn:task id="T" ${attribute}/></bpmn:process></bpmn:definitions>`;
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:x="urn:x" id="D" targetNamespace="urn:t"><bpmn:process id="P" isExecutable="true"><bpmn:task id="T" ${attribute}/></bpmn:process></bpmn:definitions>`;
 
+const operation = `<bpmn:message id="M"/><bpmn:interface id="If" name="If"><bpmn:operation id="O" name="O"><bpmn:inMessageRef>M</bpmn:inMessageRef></bpmn:operation></bpmn:interface>`;
+const timerDuration = `<bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT1S</bpmn:timeDuration>`;
 const catching = (definition: string, roots = ""): string => model(`<bpmn:intermediateCatchEvent id="C">${definition}</bpmn:intermediateCatchEvent>`, roots);
 const ending = (definition: string, roots = ""): string => model(`<bpmn:endEvent id="E">${definition}</bpmn:endEvent>`, roots);
 const inputAssociation = (association: string): string =>
-  model(`<bpmn:property id="Prop"/><bpmn:userTask id="U"><bpmn:ioSpecification><bpmn:dataInput id="I"/><bpmn:inputSet/></bpmn:ioSpecification>${association}</bpmn:userTask>`);
+  model(`<bpmn:property id="Prop"/><bpmn:userTask id="U"><bpmn:ioSpecification><bpmn:dataInput id="I"/><bpmn:inputSet/><bpmn:outputSet/></bpmn:ioSpecification>${association}</bpmn:userTask>`);
 
 export const rows: readonly Row[] = [
   // Preservation of the source bytes.
@@ -171,6 +173,22 @@ export const rows: readonly Row[] = [
     refused: { xml: model(`<bpmn:startEvent id="S"><bpmn:messageEventDefinition messageRef="Sg"/></bpmn:startEvent>`, `<bpmn:signal id="Sg"/>`) },
     control: { xml: model(`<bpmn:startEvent id="S"><bpmn:messageEventDefinition messageRef="Sg"/></bpmn:startEvent>`, `<bpmn:message id="Sg"/>`) },
   },
+  {
+    code: "source.schema",
+    description: "an operationRef written as an attribute, which the BPMN 2.0.2 XSD declares a child element",
+    evidence: "operationRef",
+    refused: { xml: catching(`<bpmn:messageEventDefinition messageRef="M" operationRef="O"/>`, operation) },
+    control: { xml: catching(`<bpmn:messageEventDefinition messageRef="M"><bpmn:operationRef>O</bpmn:operationRef></bpmn:messageEventDefinition>`, operation) },
+  },
+  {
+    code: "source.schema",
+    description: "a Conditional definition without the condition the BPMN 2.0.2 XSD requires",
+    evidence: "required child",
+    refused: { xml: catching(`<bpmn:conditionalEventDefinition/>`) },
+    control: {
+      xml: catching(`<bpmn:conditionalEventDefinition><bpmn:condition xsi:type="bpmn:tFormalExpression">true</bpmn:condition></bpmn:conditionalEventDefinition>`),
+    },
+  },
   // Unknown or unrepresentable source.
   {
     code: "reader.unknownElement",
@@ -215,6 +233,12 @@ export const rows: readonly Row[] = [
     description: "a Multiple Event with a Timer and a Signal definition",
     refused: { xml: model(`<bpmn:startEvent id="S">${timer()}<bpmn:signalEventDefinition signalRef="Sg"/></bpmn:startEvent>`, `<bpmn:signal id="Sg"/>`) },
     control: { xml: model(`<bpmn:startEvent id="S">${timer()}</bpmn:startEvent>`) },
+  },
+  {
+    code: "reader.eventDefinitionRef",
+    description: "an Event naming a root-level definition, which pinned CIB never resolves",
+    refused: { xml: catching(`<bpmn:eventDefinitionRef>Td</bpmn:eventDefinitionRef>`, `<bpmn:timerEventDefinition id="Td">${timerDuration}</bpmn:timerEventDefinition>`) },
+    control: { xml: catching(timer()) },
   },
   {
     code: "reader.eventDefinitionOnElement",
@@ -273,9 +297,9 @@ export const rows: readonly Row[] = [
     },
   },
   {
-    code: "reader.dataAssociationShape",
-    description: "a Data Association without a target",
-    evidence: "targetRef without id",
+    code: "source.schema",
+    description: "a Data Association without the target the BPMN 2.0.2 XSD requires",
+    evidence: "required child",
     refused: { xml: inputAssociation(`<bpmn:dataInputAssociation><bpmn:sourceRef>Prop</bpmn:sourceRef></bpmn:dataInputAssociation>`) },
     control: {
       xml: inputAssociation(`<bpmn:dataInputAssociation><bpmn:sourceRef>Prop</bpmn:sourceRef><bpmn:targetRef>I</bpmn:targetRef></bpmn:dataInputAssociation>`),
@@ -304,14 +328,6 @@ export const rows: readonly Row[] = [
     description: "a Multi-Instance loop with neither a collection nor a cardinality",
     refused: { xml: model(`<bpmn:userTask id="U"><bpmn:multiInstanceLoopCharacteristics/></bpmn:userTask>`) },
     control: { xml: model(`<bpmn:userTask id="U"><bpmn:multiInstanceLoopCharacteristics camunda:collection="items"/></bpmn:userTask>`) },
-  },
-  {
-    code: "reader.conditionWithoutExpression",
-    description: "a Conditional definition without a condition",
-    refused: { xml: catching(`<bpmn:conditionalEventDefinition/>`) },
-    control: {
-      xml: catching(`<bpmn:conditionalEventDefinition><bpmn:condition xsi:type="bpmn:tFormalExpression">true</bpmn:condition></bpmn:conditionalEventDefinition>`),
-    },
   },
   {
     code: "reader.eventBasedGatewayInstantiate",

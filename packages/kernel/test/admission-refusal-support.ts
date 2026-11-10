@@ -29,6 +29,8 @@ export const variable = (name: string): Json => ({ variable: { name } });
 export const literalValue = (value: Json): Json => ({ literal: { value } });
 export const simpleBoolean = (value = true): Json => ({ simpleBoolean: { body: { literal: { value } } } });
 export const foreign = (): Json => ({ foreign: { language: "juel", source: "${x}" } });
+/** A JUEL node table (`Kernel.IL.Types.Juel`), in its wire form. */
+export const juel = (...nodes: Array<Json | string>): Json => ({ juel: { nodes } });
 export const mapping = (target: string, source: Json, dialect = "ioParameter"): Json => ({ target, source, dialect });
 
 // Subscriptions.

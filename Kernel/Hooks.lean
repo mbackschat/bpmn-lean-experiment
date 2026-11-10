@@ -18,11 +18,14 @@ public section
 
 namespace Kernel
 
-/-- An in-kernel evaluation: admission refuses every expression outside the kernel's subset, so a failure is an
-absent reference (`.failure "unknown-variable"`), which `Mapping.dialect` reads. -/
+/-- An in-kernel evaluation. A failure is an absent reference (`unknown-variable`), which `Mapping.dialect` reads, or a
+JUEL evaluation error (`juel.*`), which rolls the command back (CIB-OP-0004); `unsupported` is a value or Java
+surface the kernel does not represent, never a semantic outcome
+([expression semantics](../docs/kernel/semantics/EXPRESSION-SEMANTICS-SPEC.md#failure-semantics)). -/
 inductive Evaluation where
   | value (result : Value)
   | failure (code : String)
+  | unsupported (code : String)
   deriving Repr
 
 /-- Whether a scope occurrence is a Multi-Instance instance, a compensation handler's context or ordinary. Filled by
@@ -87,19 +90,20 @@ structure Ctx where
   /-- `Step`: what a scope occurrence is, for a search that must not treat it as ordinary. -/
   scopeRole : State → ScopeOccurrenceId → ScopeRole := fun _ _ => .ordinary
 
-/-- Evaluate each mapping's source against `variables`, in order. An absent reference is read by the mapping's
-dialect: a Data Association's source is unavailable (`none`, BPMN 2.0.2 §10.4.2, which the caller decides on), an
-`ioParameter` expression rolls the command back, and a `callVariable` copy reads null (CIB-EXT-0021). Features share
-it here because they never import each other. -/
+/-- Evaluate each mapping's source against `variables`, in order. A failed source is read by the mapping's dialect:
+a Data Association's source is unavailable (`none`, BPMN 2.0.2 §10.4.2, which the caller decides on), an
+`ioParameter` expression rolls the command back with the evaluation's own code (CIB-EXT-0024), and a `callVariable`
+copy reads null (CIB-EXT-0021). Features share it here because they never import each other. -/
 def Ctx.evaluateMappings (ctx : Ctx) (context : EvalContext) (mappings : List Mapping) :
     Except Failure (Option (List (String × Value))) :=
   mappings.foldrM (fun mapping rest =>
     match ctx.evaluate context mapping.source with
     | .value value => .ok (rest.map ((mapping.target, value) :: ·))
-    | .failure _ =>
+    | .unsupported code => .error (.unsupported code)
+    | .failure code =>
       match mapping.dialect with
       | .dataAssociation => .ok none
-      | .ioParameter => .error (.rolledBack "mapping-source-unavailable")
+      | .ioParameter => .error (.rolledBack code)
       | .callVariable => .ok (rest.map ((mapping.target, Value.null) :: ·))) (some [])
 
 /-- The bindings of `mappings` where an unavailable source has no state to wait in, a semantic failure. -/

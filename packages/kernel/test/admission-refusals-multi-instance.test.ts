@@ -5,7 +5,7 @@
  * Simple Boolean. Every other loop shape is refused whole.
  */
 import {
-  activity, foreign, literalValue, bool, loop, mapping, refusalTests, serviceWork, simpleBoolean, task, userWork, variable,
+  activity, foreign, juel, literalValue, bool, loop, mapping, refusalTests, serviceWork, simpleBoolean, task, userWork, variable,
 } from "./admission-refusal-support.ts";
 import type { Json, Row } from "./admission-refusal-support.ts";
 
@@ -19,6 +19,12 @@ const effects = (over: Json = {}) =>
   task(activity("T", serviceWork(), { multiInstance: loop({ outputDataItem: null, ...over }) }));
 
 export const rows: readonly Row[] = [
+  {
+    code: "expression.juel.site",
+    description: "a collection that is a JUEL expression",
+    mutate: looping({ count: { collection: { items: juel({ identifier: { name: "items" } }, { dot: { base: 0, property: "all" } }) } } }),
+    control: admitted,
+  },
   {
     code: "expression.outsideSimpleBoolean",
     description: "a collection that is a foreign expression",

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_PlainTextCondition" targetNamespace="urn:bpmn-lean:scenarios:juel-core-table:plain-text-condition">
+  <process id="Process_PlainTextCondition" name="Route on a condition without a delimiter" isExecutable="true">
+    <startEvent id="StartEvent_Start" />
+    <sequenceFlow id="Flow_Start_Route" sourceRef="StartEvent_Start" targetRef="Gateway_Route" />
+    <exclusiveGateway id="Gateway_Route" name="Route" gatewayDirection="Diverging" />
+    <userTask id="UserTask_Yes" name="Yes" />
+    <userTask id="UserTask_No" name="No" />
+    <exclusiveGateway id="Gateway_Merge" name="Merge" gatewayDirection="Converging" />
+    <endEvent id="EndEvent_Done" />
+    <sequenceFlow id="Flow_ToYes" sourceRef="Gateway_Route" targetRef="UserTask_Yes">
+      <conditionExpression xsi:type="tFormalExpression">true</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToNo" sourceRef="Gateway_Route" targetRef="UserTask_No">
+      <conditionExpression xsi:type="tFormalExpression">${false}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Yes_Merge" sourceRef="UserTask_Yes" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_No_Merge" sourceRef="UserTask_No" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_Merge_Done" sourceRef="Gateway_Merge" targetRef="EndEvent_Done" />
+  </process>
+</definitions>

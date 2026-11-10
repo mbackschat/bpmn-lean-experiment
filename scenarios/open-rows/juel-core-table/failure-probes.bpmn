@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_FailureProbes" targetNamespace="urn:bpmn-lean:scenarios:juel-core-table:failure-probes">
+  <process id="Process_FailureProbes" name="One failing form per probe, selected by the start variable probe" isExecutable="true">
+    <startEvent id="StartEvent_Start" name="Probe selected" />
+    <sequenceFlow id="Flow_Start_Select" sourceRef="StartEvent_Start" targetRef="Gateway_Select" />
+    <exclusiveGateway id="Gateway_Select" name="Select probe" gatewayDirection="Diverging" default="Flow_NoProbe" />
+    <userTask id="UserTask_TextExponentFailure" name="text exponent failure">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${'hello' + 1}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_BooleanAgainstList" name="boolean against list">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${flag &lt; list}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <exclusiveGateway id="Gateway_Merge" name="Merge" gatewayDirection="Converging" />
+    <endEvent id="EndEvent_Done" />
+    <sequenceFlow id="Flow_ToTextExponentFailure" sourceRef="Gateway_Select" targetRef="UserTask_TextExponentFailure">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'text-exponent-failure'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToBooleanAgainstList" sourceRef="Gateway_Select" targetRef="UserTask_BooleanAgainstList">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'boolean-against-list'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_NoProbe" sourceRef="Gateway_Select" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_TextExponentFailure_Merge" sourceRef="UserTask_TextExponentFailure" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_BooleanAgainstList_Merge" sourceRef="UserTask_BooleanAgainstList" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_Merge_Done" sourceRef="Gateway_Merge" targetRef="EndEvent_Done" />
+  </process>
+</definitions>

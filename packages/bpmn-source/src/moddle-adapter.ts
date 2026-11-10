@@ -27,7 +27,24 @@ export type ImportedBpmnGraph = Readonly<{
    * document-wide admission rule can consume it without walking the tree a second time.
    */
   located: ReadonlyMap<ElementRecord, ElementLocus>;
+  /** The reference each `unresolved reference` warning names, keyed by that warning's diagnostic. */
+  references: ReadonlyMap<BpmnSourceDiagnostic, UnresolvedReference>;
 }>;
+
+/**
+ * A reference `bpmn-moddle` could not resolve by identifier: the referring element as it sits in the parsed tree, the
+ * qualified property (`bpmn:messageRef`) and the reference's text, which the parser left unset on the element.
+ */
+export type UnresolvedReference = Readonly<{ element: ElementRecord; property: string; value: string }>;
+
+function unresolvedReference(warning: unknown): UnresolvedReference | undefined {
+  const reported = asElement(warning);
+  const element = asElement(reported?.element);
+  return element !== undefined && typeof reported?.property === "string" && typeof reported.value === "string" &&
+    readMessage(warning, "").startsWith("unresolved reference")
+    ? { element, property: reported.property, value: reported.value }
+    : undefined;
+}
 
 export async function importBpmnGraph(
   xml: string,
@@ -55,13 +72,14 @@ export async function importBpmnGraph(
   const located = root === undefined
     ? new Map<ElementRecord, ElementLocus>()
     : locateContainedElements(root);
-  return {
-    rootElement: result.rootElement,
-    warnings: result.warnings.map((warning) =>
-      normalizeWarning(warning, located)
-    ),
-    located,
-  };
+  const references = new Map<BpmnSourceDiagnostic, UnresolvedReference>();
+  const warnings = result.warnings.map((warning) => {
+    const diagnostic = normalizeWarning(warning, located);
+    const reference = unresolvedReference(warning);
+    if (reference !== undefined) references.set(diagnostic, reference);
+    return diagnostic;
+  });
+  return { rootElement: result.rootElement, warnings, located, references };
 }
 
 /**

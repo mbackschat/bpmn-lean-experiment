@@ -224,6 +224,7 @@ export function arriveMultiInstance(
   // Admission refuses it (`multiInstance.cardinality`).
   if (count.tag === InstanceCountTag.Cardinality) return failed(FailureTag.Unsupported, "multi-instance-cardinality");
   const evaluation = ctx.evaluate(evalContext(state, occurrence.scope), collectionOf(ctx, loop, count.items));
+  if (evaluation.tag === EvaluationTag.Unsupported) return failed(FailureTag.Unsupported, evaluation.code);
   if (evaluation.tag === EvaluationTag.Failure) {
     if (occurrence.incoming === null) return failed(FailureTag.SemanticFailure, "multi-instance-without-flow");
     return committed(hold(state, { occurrence: occurrence.id, flow: occurrence.incoming, scope: occurrence.scope }));
@@ -319,6 +320,8 @@ function stops(ctx: Ctx, loop: MultiInstance, run: MultiInstanceRun, state: Stat
         : failed(FailureTag.SemanticFailure, "completion-condition-not-boolean");
     case EvaluationTag.Failure:
       return failed(FailureTag.SemanticFailure, evaluation.code);
+    case EvaluationTag.Unsupported:
+      return failed(FailureTag.Unsupported, evaluation.code);
   }
   return assertNever(evaluation);
 }

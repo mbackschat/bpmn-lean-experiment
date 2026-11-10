@@ -98,7 +98,7 @@ test("each process declares its Properties, Data Objects, their references and i
 test("each mapping names the syntax that wrote it", async () => {
   const p = await program(model(`<bpmn:property id="Prop"/>
     <bpmn:userTask id="U"><bpmn:extensionElements><camunda:inputOutput><camunda:inputParameter name="x">\${y}</camunda:inputParameter></camunda:inputOutput></bpmn:extensionElements>
-      <bpmn:ioSpecification><bpmn:dataInput id="I"/><bpmn:inputSet/></bpmn:ioSpecification>
+      <bpmn:ioSpecification><bpmn:dataInput id="I"/><bpmn:inputSet/><bpmn:outputSet/></bpmn:ioSpecification>
       <bpmn:dataInputAssociation><bpmn:sourceRef>Prop</bpmn:sourceRef><bpmn:targetRef>I</bpmn:targetRef></bpmn:dataInputAssociation></bpmn:userTask>
     <bpmn:callActivity id="Call" calledElement="Other" camunda:calledElementTenantId="\${tenant}">
       <bpmn:extensionElements><camunda:in source="a" target="b"/><camunda:out sourceExpression="\${c}" target="d"/></bpmn:extensionElements></bpmn:callActivity>`));
@@ -108,7 +108,7 @@ test("each mapping names the syntax that wrote it", async () => {
   ]);
   const call = element(p, "Call").activity.payload.work.call.payload;
   assert.deepEqual(call.inputs, [{ target: "b", source: { variable: { name: "a" } }, dialect: "callVariable" }]);
-  assert.deepEqual(call.outputs, [{ target: "d", source: { variable: { name: "c" } }, dialect: "callVariable" }]);
+  assert.deepEqual(call.outputs, [{ target: "d", source: { variable: { name: "c" } }, dialect: "ioParameter" }]);
   assert.deepEqual(call.tenant, { expression: { body: { variable: { name: "tenant" } } } });
   assert.equal(Object.hasOwn(call, "unsetSourceReadsNull"), false);
 });
@@ -315,25 +315,25 @@ test("semantic choices are emitted in full shape and left to Kernel.Admission", 
   const foreignCondition = await program(model(`<bpmn:exclusiveGateway id="X"/><bpmn:endEvent id="E"/>
     <bpmn:sequenceFlow id="f" sourceRef="X" targetRef="E"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">\${a &gt; 1}</bpmn:conditionExpression></bpmn:sequenceFlow>`));
   assert.deepEqual(element(foreignCondition, "X").gateway.payload.kind.exclusive.candidates, ["f"]);
-  assert.deepEqual(foreignCondition.flows[0].condition, {
-    foreign: { language: "http://www.w3.org/1999/XPath", source: "${a > 1}" },
-  });
+  assert.deepEqual(foreignCondition.flows[0].condition, { juel: { nodes: [
+    { identifier: { name: "a" } }, { integer: { digits: "1" } }, { binary: { payload: { op: "gt", left: 0, right: 1 } } },
+  ] } });
 
   const compensationInput = await program(model(`<bpmn:property id="Prop"/><bpmn:userTask id="U"/>
     <bpmn:boundaryEvent id="B" attachedToRef="U"><bpmn:compensateEventDefinition/></bpmn:boundaryEvent>
-    <bpmn:serviceTask id="H" isForCompensation="true"><bpmn:ioSpecification><bpmn:dataInput id="I"/><bpmn:inputSet/></bpmn:ioSpecification>
+    <bpmn:serviceTask id="H" isForCompensation="true"><bpmn:ioSpecification><bpmn:dataInput id="I"/><bpmn:inputSet/><bpmn:outputSet/></bpmn:ioSpecification>
       <bpmn:dataInputAssociation><bpmn:sourceRef>Prop</bpmn:sourceRef><bpmn:targetRef>I</bpmn:targetRef></bpmn:dataInputAssociation></bpmn:serviceTask>
     <bpmn:association id="A" sourceRef="B" targetRef="H"/>`));
   assert.equal(element(compensationInput, "U").activity.payload.envelope.compensationHandler, "H");
   assert.deepEqual(element(compensationInput, "H").activity.payload.envelope.inputs, [{ target: "I", source: { variable: { name: "Prop" } }, dialect: "dataAssociation" }]);
 });
 
-test("a condition with no named language is in XPath, the BPMN default, even when it parses as Simple Boolean", async () => {
+test("a condition with no named language is read as JUEL (CIB-EXT-0030), never as Simple Boolean", async () => {
   const flowWith = (language: string): string => model(`<bpmn:exclusiveGateway id="X" default="z"/><bpmn:endEvent id="E"/>
     <bpmn:sequenceFlow id="c" sourceRef="X" targetRef="E"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"${language}>isPresent(a)</bpmn:conditionExpression></bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="z" sourceRef="X" targetRef="E"/>`);
   const condition = async (xml: string): Promise<unknown> => (await program(xml)).flows.find((entry: Json) => entry.id === "c").condition;
-  assert.deepEqual(await condition(flowWith("")), { foreign: { language: "http://www.w3.org/1999/XPath", source: "isPresent(a)" } });
+  assert.deepEqual(await condition(flowWith("")), { juel: { nodes: [{ text: { value: "isPresent(a)" } }] } });
   assert.deepEqual(await condition(declared(flowWith(""))), { simpleBoolean: { body: { isPresent: { name: "a" } } } });
   assert.deepEqual(await condition(flowWith(` language="urn:bpmn-lean:expression:simple-boolean:v1"`)), { simpleBoolean: { body: { isPresent: { name: "a" } } } });
 });
@@ -342,7 +342,7 @@ test("a Send Task is read as an effect only as CIB-EXT-0023's configured handler
   const p = await program(model(`<bpmn:sendTask id="Class" camunda:class="x.Y"/><bpmn:sendTask id="Bpmn" implementation="urn:x" operationRef="O"/>
     <bpmn:sendTask id="Named" messageRef="M" camunda:delegateExpression="\${d}"/>
     <bpmn:sendTask id="Output" camunda:delegateExpression="\${d}"><bpmn:extensionElements><camunda:inputOutput><camunda:outputParameter name="r">x</camunda:outputParameter></camunda:inputOutput></bpmn:extensionElements></bpmn:sendTask>`,
-  `<bpmn:message id="M"/><bpmn:interface id="I" name="I"><bpmn:operation id="O" name="O"/></bpmn:interface>`));
+  `<bpmn:message id="M"/><bpmn:interface id="I" name="I"><bpmn:operation id="O" name="O"><bpmn:inMessageRef>M</bpmn:inMessageRef></bpmn:operation></bpmn:interface>`));
   for (const id of ["Class", "Bpmn", "Named", "Output"]) {
     assert.ok(Object.hasOwn(element(p, id).activity.payload.work, "send"), id);
     assert.equal(element(p, id).activity.header.sourceType, "sendTask", id);
@@ -364,7 +364,7 @@ test("a Send Task without an implementation is read as Send work, a declared one
 
 test("an unknown element, foreign attribute or unsafe source is refused with a stable code", async () => {
   assert.equal(await refusal(model(`<bpmn:complexGateway id="G"/>`)), ReadRefusalCode.UnknownElement);
-  assert.equal(await refusal(`<?xml version="1.0"?><bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:x="urn:x" id="D" targetNamespace="urn:t"><bpmn:process id="P"><bpmn:task id="T" x:a="1"/></bpmn:process></bpmn:definitions>`), ReadRefusalCode.UnknownAttribute);
+  assert.equal(await refusal(`<?xml version="1.0"?><bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:x="urn:x" id="D" targetNamespace="urn:t"><bpmn:process id="P" isExecutable="true"><bpmn:task id="T" x:a="1"/></bpmn:process></bpmn:definitions>`), ReadRefusalCode.UnknownAttribute);
   assert.equal(await refusal(model(`<bpmn:unknownThing id="T"/>`)), ReadRefusalCode.ParserWarning);
   assert.equal(await refusal(model(`<bpmn:boundaryEvent id="B" cancelActivity="1"/>`)), ReadRefusalCode.SourceAmbiguousBoolean);
   assert.equal(await refusal(`<!DOCTYPE x><a/>`), ReadRefusalCode.SourceDoctype);
@@ -389,9 +389,9 @@ test("a conditional Activity outflow, an Activity default and a Transaction meth
   assert.deepEqual((result as Extract<KernelRead, { kind: "read" }>).notCarried, []);
 });
 
-test("a Multi-Instance loop without a count and a conditional Event without a condition have no IL shape", async () => {
+test("a Multi-Instance loop without a count has no IL shape, and a conditional Event without a condition no schema", async () => {
   assert.equal(await refusal(model(`<bpmn:userTask id="U"><bpmn:multiInstanceLoopCharacteristics/></bpmn:userTask>`)), ReadRefusalCode.MultiInstanceWithoutCount);
-  assert.equal(await refusal(model(`<bpmn:intermediateCatchEvent id="C"><bpmn:conditionalEventDefinition/></bpmn:intermediateCatchEvent>`)), ReadRefusalCode.ConditionWithoutExpression);
+  assert.equal(await refusal(model(`<bpmn:intermediateCatchEvent id="C"><bpmn:conditionalEventDefinition/></bpmn:intermediateCatchEvent>`)), ReadRefusalCode.SourceSchema);
 });
 
 test("the reader does not depend on the profile: only the program's identity changes", async () => {

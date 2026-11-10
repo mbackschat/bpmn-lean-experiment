@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "juel-core-forms-decimal-operands",
     "relativePath": "scenarios/open-rows/juel-core-forms/decimal-operands.bpmn",
-    "sha256": "7da914ac930b18d2b1b791009411ee8f661a64331d348ee21488f1561962f95b",
+    "sha256": "1c934ad2c611e06b67e9cb76b213b1891c1d79c0bcb9f50173a38d7b28eca085",
     "sourceOverlay": null
   },
   "stimuli": [

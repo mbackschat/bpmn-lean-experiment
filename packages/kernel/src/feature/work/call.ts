@@ -140,6 +140,7 @@ export function submissionNames(ctx: Ctx, state: State, scope: ScopeOccurrenceId
           return [source.name];
         case ExpressionTag.Literal:
         case ExpressionTag.SimpleBoolean:
+        case ExpressionTag.Juel:
         case ExpressionTag.Foreign:
           return [];
       }

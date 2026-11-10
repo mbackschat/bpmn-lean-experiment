@@ -426,10 +426,20 @@ public final class ScenarioProtocol {
     @JsonSubTypes.Type(value = BooleanValue.class, name = "boolean"),
     @JsonSubTypes.Type(value = IntegerValue.class, name = "integer"),
     @JsonSubTypes.Type(value = StringListValue.class, name = "stringList"),
-    @JsonSubTypes.Type(value = NullValue.class, name = "null")
+    @JsonSubTypes.Type(value = NullValue.class, name = "null"),
+    @JsonSubTypes.Type(value = DecimalValue.class, name = "decimal"),
+    @JsonSubTypes.Type(value = ListValue.class, name = "list"),
+    @JsonSubTypes.Type(value = MapValue.class, name = "map")
   })
   public sealed interface VariableValue
-      permits StringValue, BooleanValue, IntegerValue, StringListValue, NullValue {}
+      permits StringValue,
+          BooleanValue,
+          IntegerValue,
+          StringListValue,
+          NullValue,
+          DecimalValue,
+          ListValue,
+          MapValue {}
 
   public record StringValue(String value) implements VariableValue {
     public StringValue {
@@ -456,6 +466,33 @@ public final class ScenarioProtocol {
   }
 
   public record NullValue() implements VariableValue {}
+
+  public record DecimalValue(String coefficient, int scale) implements VariableValue {
+    public DecimalValue {
+      ScenarioVariableValueProjection.requireDecimal(coefficient, scale);
+    }
+  }
+
+  /** A structured List; its bounds are checked over the whole root value by the binding. */
+  public record ListValue(List<VariableValue> value) implements VariableValue {
+    public ListValue {
+      value = List.copyOf(value);
+    }
+  }
+
+  /** A structured Map as entries in Unicode scalar key order, the order the wire schema requires. */
+  public record MapValue(List<MapEntry> value) implements VariableValue {
+    public MapValue {
+      value = List.copyOf(value);
+    }
+  }
+
+  public record MapEntry(String name, VariableValue value) {
+    public MapEntry {
+      Objects.requireNonNull(name, "name");
+      Objects.requireNonNull(value, "value");
+    }
+  }
 
   public record VariableBinding(String name, VariableValue value) {
     public VariableBinding {

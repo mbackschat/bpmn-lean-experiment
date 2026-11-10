@@ -70,7 +70,10 @@ function complete(state: State, id: number, leave: Leave): State {
   return signal(state, completeSignal(id, leave, [], WriteRule.Outward));
 }
 
-/** A candidate's condition, read from its Sequence Flow; an unconditioned candidate holds. */
+/**
+ * A candidate's condition, read from its Sequence Flow; an unconditioned candidate holds. A failing or non-Boolean
+ * condition rolls the command back, as CIB's `UelExpressionCondition` does (CIB-OP-0004); Simple Boolean never fails.
+ */
 function condition(ctx: Ctx, context: EvalContext, candidate: FlowId): Result<boolean> {
   const flow = programFlow(ctx.program, candidate);
   if (flow === null) return failed(FailureTag.SemanticFailure, "gateway-candidate-without-flow");
@@ -80,9 +83,11 @@ function condition(ctx: Ctx, context: EvalContext, candidate: FlowId): Result<bo
     case EvaluationTag.Value:
       return evaluation.result.tag === ValueTag.Bool
         ? committed(evaluation.result.value)
-        : failed(FailureTag.SemanticFailure, "condition-not-boolean");
+        : failed(FailureTag.RolledBack, "condition-not-boolean");
     case EvaluationTag.Failure:
-      return failed(FailureTag.SemanticFailure, evaluation.code);
+      return failed(FailureTag.RolledBack, evaluation.code);
+    case EvaluationTag.Unsupported:
+      return failed(FailureTag.Unsupported, evaluation.code);
   }
   return assertNever(evaluation);
 }

@@ -86,6 +86,10 @@ import {
   type ValueSource,
   type Work,
 } from "./types.js";
+import {
+  JuelBinary, JuelCallTag, JuelMethod, JuelNodeTag, JuelUnary, type JuelBinaryNode, type JuelCall, type JuelCallNode,
+  type JuelChoiceNode, type JuelComputedCallNode, type JuelFunctionNode, type JuelNode,
+} from "./types/juel.js";
 import type { Binding } from "../state.js";
 
 export type JsonValue =
@@ -427,10 +431,62 @@ const simpleBoolean = inductive<SimpleBoolean>("SimpleBoolean", {
   [SimpleBooleanTag.StringEquals]: { name: string, value: string },
 });
 
+const juelMethod = members("JuelMethod", JuelMethod);
+
+/**
+ * `Kernel.Codec`'s hand-written `JuelCall` instances: a call target travels as the Java method name the reader read,
+ * looked up among the listed methods, whose wire names are the Java names; any other name stays `other`.
+ */
+const juelCall: Codec<JuelCall> = {
+  decode: (json) => {
+    const listed = juelMethod.decode(json);
+    if (listed.ok) return accept({ tag: JuelCallTag.Listed, method: listed.value });
+    const name = string.decode(json);
+    return name.ok ? accept({ tag: JuelCallTag.Other, name: name.value }) : refuse(`JuelCall: ${name.refusal}`);
+  },
+  encode: (call) => {
+    switch (call.tag) {
+      case JuelCallTag.Listed:
+        return call.method;
+      case JuelCallTag.Other:
+        return call.name;
+    }
+    return assertNever(call);
+  },
+};
+
+const juelNode = inductive<JuelNode>("JuelNode", {
+  [JuelNodeTag.Text]: { value: string },
+  [JuelNodeTag.Composite]: { parts: list(nat) },
+  [JuelNodeTag.Null]: {},
+  [JuelNodeTag.Bool]: { value: bool },
+  [JuelNodeTag.Integer]: { digits: string },
+  [JuelNodeTag.Float]: { lexeme: string },
+  [JuelNodeTag.StringLiteral]: { value: string },
+  [JuelNodeTag.Identifier]: { name: string },
+  [JuelNodeTag.Function]: {
+    payload: struct<JuelFunctionNode>("JuelFunctionNode", { qualifier: option(string), name: string, args: list(nat) }),
+  },
+  [JuelNodeTag.Dot]: { base: nat, property: string },
+  [JuelNodeTag.Bracket]: { base: nat, property: nat },
+  [JuelNodeTag.Call]: { payload: struct<JuelCallNode>("JuelCallNode", { receiver: nat, target: juelCall, args: list(nat) }) },
+  [JuelNodeTag.ComputedCall]: {
+    payload: struct<JuelComputedCallNode>("JuelComputedCallNode", { receiver: nat, name: nat, args: list(nat) }),
+  },
+  [JuelNodeTag.Unary]: { op: members("JuelUnary", JuelUnary), operand: nat },
+  [JuelNodeTag.Binary]: {
+    payload: struct<JuelBinaryNode>("JuelBinaryNode", { op: members("JuelBinary", JuelBinary), left: nat, right: nat }),
+  },
+  [JuelNodeTag.Choice]: {
+    payload: struct<JuelChoiceNode>("JuelChoiceNode", { condition: nat, whenTrue: nat, whenFalse: nat }),
+  },
+});
+
 const expression = inductive<Expression>("Expression", {
   [ExpressionTag.Literal]: { value: valueCodec },
   [ExpressionTag.SimpleBoolean]: { body: simpleBoolean },
   [ExpressionTag.Variable]: { name: string },
+  [ExpressionTag.Juel]: { nodes: list(juelNode) },
   [ExpressionTag.Foreign]: { language: string, source: string },
 });
 

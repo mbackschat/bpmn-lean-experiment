@@ -35,13 +35,6 @@
         </camunda:inputOutput>
       </extensionElements>
     </userTask>
-    <userTask id="UserTask_DivisionByZero" name="Probe division by zero">
-      <extensionElements>
-        <camunda:inputOutput>
-          <camunda:inputParameter name="value">${a / zero}</camunda:inputParameter>
-        </camunda:inputOutput>
-      </extensionElements>
-    </userTask>
     <userTask id="UserTask_IntegerOverflow" name="Probe integer overflow">
       <extensionElements>
         <camunda:inputOutput>
@@ -67,13 +60,6 @@
       <extensionElements>
         <camunda:inputOutput>
           <camunda:inputParameter name="value">${word.nosuch}</camunda:inputParameter>
-        </camunda:inputOutput>
-      </extensionElements>
-    </userTask>
-    <userTask id="UserTask_UnknownMethod" name="Probe unknown method">
-      <extensionElements>
-        <camunda:inputOutput>
-          <camunda:inputParameter name="value">${word.nosuch()}</camunda:inputParameter>
         </camunda:inputOutput>
       </extensionElements>
     </userTask>
@@ -105,41 +91,6 @@
         </camunda:inputOutput>
       </extensionElements>
     </userTask>
-    <userTask id="UserTask_ExecutionRead" name="Probe execution read">
-      <extensionElements>
-        <camunda:inputOutput>
-          <camunda:inputParameter name="value">${execution.activityId}</camunda:inputParameter>
-        </camunda:inputOutput>
-      </extensionElements>
-    </userTask>
-    <userTask id="UserTask_ExecutionMutation" name="Probe execution mutation">
-      <extensionElements>
-        <camunda:inputOutput>
-          <camunda:inputParameter name="value">${execution.setVariable('leaked', 'yes')}</camunda:inputParameter>
-        </camunda:inputOutput>
-      </extensionElements>
-    </userTask>
-    <userTask id="UserTask_ListMutatingMethod" name="Probe list mutating method">
-      <extensionElements>
-        <camunda:inputOutput>
-          <camunda:inputParameter name="value">${items.add('z')}</camunda:inputParameter>
-        </camunda:inputOutput>
-      </extensionElements>
-    </userTask>
-    <userTask id="UserTask_ReflectionThroughMethod" name="Probe reflection through method">
-      <extensionElements>
-        <camunda:inputOutput>
-          <camunda:inputParameter name="value">${word.getClass().getName()}</camunda:inputParameter>
-        </camunda:inputOutput>
-      </extensionElements>
-    </userTask>
-    <userTask id="UserTask_AuthenticatedUserName" name="Probe authenticated user name">
-      <extensionElements>
-        <camunda:inputOutput>
-          <camunda:inputParameter name="value">${authenticatedUserId == null}</camunda:inputParameter>
-        </camunda:inputOutput>
-      </extensionElements>
-    </userTask>
     <exclusiveGateway id="Gateway_Merge" name="Merge" gatewayDirection="Converging" />
     <endEvent id="EndEvent_Done" />
     <sequenceFlow id="Flow_ToMissingVariable" sourceRef="Gateway_Select" targetRef="UserTask_MissingVariable">
@@ -154,9 +105,6 @@
     <sequenceFlow id="Flow_ToModuloByZero" sourceRef="Gateway_Select" targetRef="UserTask_ModuloByZero">
       <conditionExpression xsi:type="tFormalExpression">${probe == 'modulo-by-zero'}</conditionExpression>
     </sequenceFlow>
-    <sequenceFlow id="Flow_ToDivisionByZero" sourceRef="Gateway_Select" targetRef="UserTask_DivisionByZero">
-      <conditionExpression xsi:type="tFormalExpression">${probe == 'division-by-zero'}</conditionExpression>
-    </sequenceFlow>
     <sequenceFlow id="Flow_ToIntegerOverflow" sourceRef="Gateway_Select" targetRef="UserTask_IntegerOverflow">
       <conditionExpression xsi:type="tFormalExpression">${probe == 'integer-overflow'}</conditionExpression>
     </sequenceFlow>
@@ -168,9 +116,6 @@
     </sequenceFlow>
     <sequenceFlow id="Flow_ToUnknownProperty" sourceRef="Gateway_Select" targetRef="UserTask_UnknownProperty">
       <conditionExpression xsi:type="tFormalExpression">${probe == 'unknown-property'}</conditionExpression>
-    </sequenceFlow>
-    <sequenceFlow id="Flow_ToUnknownMethod" sourceRef="Gateway_Select" targetRef="UserTask_UnknownMethod">
-      <conditionExpression xsi:type="tFormalExpression">${probe == 'unknown-method'}</conditionExpression>
     </sequenceFlow>
     <sequenceFlow id="Flow_ToIndexOutOfRange" sourceRef="Gateway_Select" targetRef="UserTask_IndexOutOfRange">
       <conditionExpression xsi:type="tFormalExpression">${probe == 'index-out-of-range'}</conditionExpression>
@@ -184,41 +129,19 @@
     <sequenceFlow id="Flow_ToBeanReference" sourceRef="Gateway_Select" targetRef="UserTask_BeanReference">
       <conditionExpression xsi:type="tFormalExpression">${probe == 'bean-reference'}</conditionExpression>
     </sequenceFlow>
-    <sequenceFlow id="Flow_ToExecutionRead" sourceRef="Gateway_Select" targetRef="UserTask_ExecutionRead">
-      <conditionExpression xsi:type="tFormalExpression">${probe == 'execution-read'}</conditionExpression>
-    </sequenceFlow>
-    <sequenceFlow id="Flow_ToExecutionMutation" sourceRef="Gateway_Select" targetRef="UserTask_ExecutionMutation">
-      <conditionExpression xsi:type="tFormalExpression">${probe == 'execution-mutation'}</conditionExpression>
-    </sequenceFlow>
-    <sequenceFlow id="Flow_ToListMutatingMethod" sourceRef="Gateway_Select" targetRef="UserTask_ListMutatingMethod">
-      <conditionExpression xsi:type="tFormalExpression">${probe == 'list-mutating-method'}</conditionExpression>
-    </sequenceFlow>
-    <sequenceFlow id="Flow_ToReflectionThroughMethod" sourceRef="Gateway_Select" targetRef="UserTask_ReflectionThroughMethod">
-      <conditionExpression xsi:type="tFormalExpression">${probe == 'reflection-through-method'}</conditionExpression>
-    </sequenceFlow>
-    <sequenceFlow id="Flow_ToAuthenticatedUserName" sourceRef="Gateway_Select" targetRef="UserTask_AuthenticatedUserName">
-      <conditionExpression xsi:type="tFormalExpression">${probe == 'authenticated-user-name'}</conditionExpression>
-    </sequenceFlow>
     <sequenceFlow id="Flow_NoProbe" sourceRef="Gateway_Select" targetRef="Gateway_Merge" />
     <sequenceFlow id="Flow_MissingVariable_Merge" sourceRef="UserTask_MissingVariable" targetRef="Gateway_Merge" />
     <sequenceFlow id="Flow_EmptyOfMissing_Merge" sourceRef="UserTask_EmptyOfMissing" targetRef="Gateway_Merge" />
     <sequenceFlow id="Flow_TextInArithmetic_Merge" sourceRef="UserTask_TextInArithmetic" targetRef="Gateway_Merge" />
     <sequenceFlow id="Flow_ModuloByZero_Merge" sourceRef="UserTask_ModuloByZero" targetRef="Gateway_Merge" />
-    <sequenceFlow id="Flow_DivisionByZero_Merge" sourceRef="UserTask_DivisionByZero" targetRef="Gateway_Merge" />
     <sequenceFlow id="Flow_IntegerOverflow_Merge" sourceRef="UserTask_IntegerOverflow" targetRef="Gateway_Merge" />
     <sequenceFlow id="Flow_NegativeResult_Merge" sourceRef="UserTask_NegativeResult" targetRef="Gateway_Merge" />
     <sequenceFlow id="Flow_IntegerAsBoolean_Merge" sourceRef="UserTask_IntegerAsBoolean" targetRef="Gateway_Merge" />
     <sequenceFlow id="Flow_UnknownProperty_Merge" sourceRef="UserTask_UnknownProperty" targetRef="Gateway_Merge" />
-    <sequenceFlow id="Flow_UnknownMethod_Merge" sourceRef="UserTask_UnknownMethod" targetRef="Gateway_Merge" />
     <sequenceFlow id="Flow_IndexOutOfRange_Merge" sourceRef="UserTask_IndexOutOfRange" targetRef="Gateway_Merge" />
     <sequenceFlow id="Flow_NonIntegerIndex_Merge" sourceRef="UserTask_NonIntegerIndex" targetRef="Gateway_Merge" />
     <sequenceFlow id="Flow_IndexOnText_Merge" sourceRef="UserTask_IndexOnText" targetRef="Gateway_Merge" />
     <sequenceFlow id="Flow_BeanReference_Merge" sourceRef="UserTask_BeanReference" targetRef="Gateway_Merge" />
-    <sequenceFlow id="Flow_ExecutionRead_Merge" sourceRef="UserTask_ExecutionRead" targetRef="Gateway_Merge" />
-    <sequenceFlow id="Flow_ExecutionMutation_Merge" sourceRef="UserTask_ExecutionMutation" targetRef="Gateway_Merge" />
-    <sequenceFlow id="Flow_ListMutatingMethod_Merge" sourceRef="UserTask_ListMutatingMethod" targetRef="Gateway_Merge" />
-    <sequenceFlow id="Flow_ReflectionThroughMethod_Merge" sourceRef="UserTask_ReflectionThroughMethod" targetRef="Gateway_Merge" />
-    <sequenceFlow id="Flow_AuthenticatedUserName_Merge" sourceRef="UserTask_AuthenticatedUserName" targetRef="Gateway_Merge" />
     <sequenceFlow id="Flow_Merge_Done" sourceRef="Gateway_Merge" targetRef="EndEvent_Done" />
   </process>
 </definitions>

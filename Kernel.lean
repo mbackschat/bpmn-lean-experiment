@@ -11,6 +11,8 @@ public import Kernel.Admission.Work
 public import Kernel.AdmissionRegistry
 public import Kernel.Feature.Compensation
 public import Kernel.Feature.Data
+public import Kernel.Feature.Data.Juel
+public import Kernel.Feature.Data.Juel.Coercion
 public import Kernel.Feature.Flow
 public import Kernel.Feature.MultiInstance
 public import Kernel.Feature.Propagation
@@ -25,6 +27,7 @@ public import Kernel.IL.Codec
 public import Kernel.IL.Codec.Stimulus
 public import Kernel.IL.Timer
 public import Kernel.IL.Types
+public import Kernel.IL.Types.Juel
 public import Kernel.IL.Types.Options
 public import Kernel.Population
 public import Kernel.Publish

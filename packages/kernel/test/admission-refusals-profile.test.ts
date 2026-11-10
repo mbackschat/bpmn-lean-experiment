@@ -22,12 +22,6 @@ const completesNormally = { abnormalScopeEnd: "completesNormally" };
 
 export const rows: readonly Row[] = [
   {
-    code: "profile.evaluator.juel",
-    description: "the JUEL evaluator",
-    mutate: option({ evaluator: "juel" }),
-    control: option({ evaluator: "simpleBoolean" }),
-  },
-  {
     code: "profile.messageCorrelation.apiCriteria",
     description: "message correlation by API criteria",
     mutate: option({ messageCorrelation: "apiCriteria" }),

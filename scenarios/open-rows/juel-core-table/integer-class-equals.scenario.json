@@ -1,0 +1,90 @@
+{
+  "kind": "scenario",
+  "id": "juel-core-table-integer-class-equals",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "juel-core-table-kernel-limits",
+    "relativePath": "scenarios/open-rows/juel-core-table/kernel-limits.bpmn",
+    "sha256": "4bdc435a2fd374ebde2d27d7c858a265f124376a96e19289fdcf2bca9002e3d3",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start",
+      "instanceId": "Probe_1",
+      "variables": [
+        {
+          "name": "flag",
+          "value": {
+            "kind": "boolean",
+            "value": true
+          }
+        },
+        {
+          "name": "list",
+          "value": {
+            "kind": "list",
+            "value": [
+              {
+                "kind": "integer",
+                "value": 3
+              }
+            ]
+          }
+        },
+        {
+          "name": "long",
+          "value": {
+            "kind": "string",
+            "value": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        },
+        {
+          "name": "n",
+          "value": {
+            "kind": "integer",
+            "value": 3
+          }
+        },
+        {
+          "name": "price",
+          "value": {
+            "kind": "decimal",
+            "coefficient": "15",
+            "scale": 1
+          }
+        },
+        {
+          "name": "probe",
+          "value": {
+            "kind": "string",
+            "value": "integer-class-equals"
+          }
+        },
+        {
+          "name": "word",
+          "value": {
+            "kind": "string",
+            "value": "abc"
+          }
+        }
+      ]
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.3"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/el/JuelExpressionManager.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/el/JuelExpression.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/el/VariableScopeElResolver.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/variable/mapping/IoMapping.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/variable/mapping/InputParameter.java",
+      "juel/src/main/java/org/cibseven/bpm/impl/juel/AstMethod.java",
+      "juel/src/main/java/org/cibseven/bpm/impl/juel/TypeConverterImpl.java"
+    ]
+  }
+}

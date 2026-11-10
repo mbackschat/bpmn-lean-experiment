@@ -68,17 +68,21 @@ import {
 } from "./state.js";
 
 /**
- * An in-kernel evaluation: admission refuses every expression outside the kernel's subset, so a failure is an absent
- * reference (`failure "unknown-variable"`), which `Mapping.dialect` reads.
+ * An in-kernel evaluation. A failure is an absent reference (`unknown-variable`), which `Mapping.dialect` reads, or a
+ * JUEL evaluation error (`juel.*`), which rolls the command back (CIB-OP-0004); `unsupported` is a value or Java
+ * surface the kernel does not represent, never a semantic outcome
+ * ([expression semantics](../../../docs/kernel/semantics/EXPRESSION-SEMANTICS-SPEC.md#failure-semantics)).
  */
 export enum EvaluationTag {
   Value = "value",
   Failure = "failure",
+  Unsupported = "unsupported",
 }
 
 export type Evaluation =
   | { readonly tag: EvaluationTag.Value; readonly result: Value }
-  | { readonly tag: EvaluationTag.Failure; readonly code: string };
+  | { readonly tag: EvaluationTag.Failure; readonly code: string }
+  | { readonly tag: EvaluationTag.Unsupported; readonly code: string };
 
 /**
  * Whether a scope occurrence is a Multi-Instance instance, a compensation handler's context or ordinary. Filled by
@@ -169,11 +173,11 @@ export interface Ctx {
 }
 
 /**
- * Evaluate each mapping's source against `variables`, in order. An absent reference is read by the mapping's dialect:
- * a Data Association's source is unavailable (`null`, BPMN 2.0.2 §10.4.2, which the caller decides on), an
- * `ioParameter` expression rolls the command back, and a `callVariable` copy reads null (CIB-EXT-0021). Features share
- * it here because they never import each other. Lean folds from the right; every failure carries one code, so the
- * order only decides which of equal failures is reported.
+ * Evaluate each mapping's source against `variables`, in order. A failed source is read by the mapping's dialect: a
+ * Data Association's source is unavailable (`null`, BPMN 2.0.2 §10.4.2, which the caller decides on), an `ioParameter`
+ * expression rolls the command back with the evaluation's own code (CIB-EXT-0024), and a `callVariable` copy reads null
+ * (CIB-EXT-0021). Features share it here because they never import each other. Lean folds from the right, so the last
+ * failing mapping's outcome is reported, as here.
  */
 export function ctxEvaluateMappings(
   ctx: Ctx,
@@ -194,18 +198,20 @@ function mappingStep(mapping: Mapping, evaluation: Evaluation, rest: readonly Bi
   switch (evaluation.tag) {
     case EvaluationTag.Value:
       return committed(rest === null ? null : [[mapping.target, evaluation.result], ...rest]);
+    case EvaluationTag.Unsupported:
+      return failed(FailureTag.Unsupported, evaluation.code);
     case EvaluationTag.Failure:
-      return unavailableSource(mapping, rest);
+      return unavailableSource(mapping, evaluation.code, rest);
   }
   return assertNever(evaluation);
 }
 
-function unavailableSource(mapping: Mapping, rest: readonly Binding[] | null): Result<readonly Binding[] | null> {
+function unavailableSource(mapping: Mapping, code: string, rest: readonly Binding[] | null): Result<readonly Binding[] | null> {
   switch (mapping.dialect) {
     case MappingDialect.DataAssociation:
       return committed(null);
     case MappingDialect.IoParameter:
-      return failed(FailureTag.RolledBack, "mapping-source-unavailable");
+      return failed(FailureTag.RolledBack, code);
     case MappingDialect.CallVariable:
       return committed(rest === null ? null : [[mapping.target, { tag: ValueTag.Null }], ...rest]);
   }

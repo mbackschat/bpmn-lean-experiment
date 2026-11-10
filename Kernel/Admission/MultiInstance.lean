@@ -18,6 +18,7 @@ def collection : InstanceCount → Option String
   | .collection (.variable _) => none
   | .collection (.literal _) => some "multiInstance.collectionExpression"
   | .collection (.simpleBoolean _) => some "multiInstance.collectionExpression"
+  | .collection (.juel _) => some "expression.juel.site"
   | .collection (.foreign _ _) => some "expression.outsideSimpleBoolean"
   | .cardinality _ => some "multiInstance.cardinality"
 
@@ -26,6 +27,7 @@ def condition : Option Expression → Option String
   | some (.simpleBoolean _) => none
   | some (.literal _) => some "multiInstance.completionConditionExpression"
   | some (.variable _) => some "multiInstance.completionConditionExpression"
+  | some (.juel _) => some "expression.juel.site"
   | some (.foreign _ _) => some "expression.outsideSimpleBoolean"
 
 /-- An instance's result, given whether its work submits the output data item (`Kernel.Admission.Work.instanceBody`):

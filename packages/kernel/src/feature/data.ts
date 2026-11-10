@@ -1,8 +1,8 @@
 /**
  * Data: expression evaluation and variable writes, transcribed from `Kernel/Feature/Data.lean`.
  *
- * The kernel evaluates only the Simple Boolean subset and plain variable references; admission refuses every other
- * expression. Variables are looked up innermost scope first. This feature is the only writer of variables (guard 17):
+ * The kernel evaluates the Simple Boolean subset, plain variable references and, under `Evaluator.juel`, the Core JUEL
+ * level (`data/juel.ts`); admission refuses every other expression. Variables are looked up innermost scope first. This feature is the only writer of variables (guard 17):
  * writes reach it through the completion pipeline and `Signal.write`.
  */
 import {
@@ -16,6 +16,7 @@ import {
   type SimpleBoolean,
   type Value,
 } from "../il/types.js";
+import { evaluateJuel } from "./data/juel.js";
 import {
   FailureTag,
   WriteRule,
@@ -64,6 +65,8 @@ export function evaluate(context: EvalContext, expression: Expression): Evaluati
       const value = lookup(context.variables, expression.name);
       return value === null ? { tag: EvaluationTag.Failure, code: "unknown-variable" } : { tag: EvaluationTag.Value, result: value };
     }
+    case ExpressionTag.Juel:
+      return evaluateJuel(context.variables, expression.nodes);
     case ExpressionTag.Foreign:
       // Admission refuses it (`expression.outsideSimpleBoolean`, `mapping.expression`, `flow.condition.foreign`).
       return { tag: EvaluationTag.Failure, code: "expression.outsideSimpleBoolean" };

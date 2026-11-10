@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_CallSourceExpression" targetNamespace="urn:bpmn-lean:scenarios:juel-core-table:call-source-expression">
+  <process id="Process_CallSourceExpression" name="One Call mapping per probe, selected by the start variable probe" isExecutable="true">
+    <startEvent id="StartEvent_Start" name="Probe selected" />
+    <sequenceFlow id="Flow_Start_Select" sourceRef="StartEvent_Start" targetRef="Gateway_Select" />
+    <exclusiveGateway id="Gateway_Select" name="Select probe" gatewayDirection="Diverging" default="Flow_NoProbe" />
+    <callActivity id="CallActivity_CallSourceExpressionIn" name="call source expression in" calledElement="Process_Peek">
+      <extensionElements>
+        <camunda:in sourceExpression="${missing + 1}" target="x" />
+      </extensionElements>
+    </callActivity>
+    <callActivity id="CallActivity_CallSourceExpressionOut" name="call source expression out" calledElement="Process_Peek">
+      <extensionElements>
+        <camunda:in source="seed" target="x" />
+        <camunda:out sourceExpression="${missing + 1}" target="y" />
+      </extensionElements>
+    </callActivity>
+    <exclusiveGateway id="Gateway_Merge" name="Merge" gatewayDirection="Converging" />
+    <endEvent id="EndEvent_Done" />
+    <sequenceFlow id="Flow_ToCallSourceExpressionIn" sourceRef="Gateway_Select" targetRef="CallActivity_CallSourceExpressionIn">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'call-source-expression-in'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToCallSourceExpressionOut" sourceRef="Gateway_Select" targetRef="CallActivity_CallSourceExpressionOut">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'call-source-expression-out'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_NoProbe" sourceRef="Gateway_Select" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_CallSourceExpressionIn_Merge" sourceRef="CallActivity_CallSourceExpressionIn" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_CallSourceExpressionOut_Merge" sourceRef="CallActivity_CallSourceExpressionOut" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_Merge_Done" sourceRef="Gateway_Merge" targetRef="EndEvent_Done" />
+  </process>
+  <process id="Process_Peek" name="The called Process shows what it received" isExecutable="true">
+    <startEvent id="StartEvent_Peek" />
+    <userTask id="UserTask_Peek" name="Peek">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="seen">${x}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <endEvent id="EndEvent_Peek" />
+    <sequenceFlow id="Flow_Peek_Task" sourceRef="StartEvent_Peek" targetRef="UserTask_Peek" />
+    <sequenceFlow id="Flow_Task_Peek" sourceRef="UserTask_Peek" targetRef="EndEvent_Peek" />
+  </process>
+</definitions>

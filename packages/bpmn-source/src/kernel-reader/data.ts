@@ -1,11 +1,12 @@
 import { asElementArray } from "../moddle-graph.js";
 import type { ElementRecord } from "../moddle-graph.js";
+import { parseJuel } from "./juel.js";
 import { ReadRefusal, ReadRefusalCode, list, optionalId, text } from "./model.js";
 import type { ReadContext } from "./model.js";
 import { compareIds, ctor, expressionSource, foreign, literalSource, mapping, MappingSyntax, stringLiteral, variable } from "./wire.js";
 import type { KernelJson } from "./wire.js";
 
-/** The source language of a CIB value that is more than a variable read; the kernel reads it only as `foreign`. */
+/** The source language of a CIB text the JUEL reader could not parse, which the kernel reads only as `foreign`. */
 const juelLanguage = "urn:cibseven:expression-language:juel";
 const simpleBooleanLanguage = "urn:bpmn-lean:expression:simple-boolean:v1";
 /** BPMN 2.0.2 Table 8.17: the default `expressionLanguage` of Definitions. */
@@ -14,7 +15,6 @@ const defaultExpressionLanguage = "http://www.w3.org/1999/XPath";
 const identifierPattern = /^[A-Za-z_][A-Za-z0-9_.-]{0,63}$/u;
 const maxExpressionBytes = 256;
 const maxStringValueBytes = 128;
-const variableReadPattern = /^\$\{([A-Za-z_][A-Za-z0-9_]*)\}$/u;
 const expressionMarkerPattern = /[#$]\{/u;
 
 const utf8Length = (value: string): number => new TextEncoder().encode(value).byteLength;
@@ -52,25 +52,58 @@ function simpleBoolean(body: string): KernelJson | undefined {
 
 /**
  * The IL Expression of a condition. A body whose language, on the expression or its Definitions, is Simple Boolean v1
- * is read in that grammar; any other text stays `foreign` with its language, for `Kernel.Admission` to refuse. A body
- * with no named language is in the BPMN default, XPath (Table 8.17), even when it parses as Simple Boolean: CIB's JUEL
- * default is a profile's selection, which the reader never makes (PC-DATA-07).
+ * is read in that grammar; any other named language stays `foreign` with its language, for `Kernel.Admission` to
+ * refuse. A body with no named language is in the BPMN default, XPath (Table 8.17), which CIB reads as JUEL instead
+ * (CIB-EXT-0030): the reader parses it as JUEL, text alone included, and a profile admits or refuses the result, so
+ * the reader selects no profile ([expression semantics](../../../../docs/kernel/semantics/EXPRESSION-SEMANTICS-SPEC.md#which-text-is-juel)).
  */
 export function conditionExpression(ctx: ReadContext, expression: ElementRecord): KernelJson {
   const body = text(expression, "body") ?? "";
-  const language = text(expression, "language") ?? ctx.expressionLanguage ?? defaultExpressionLanguage;
-  if (language === simpleBooleanLanguage) {
+  // CIB reads a script resource only with a `language` (`BpmnParse.java:4413-4416`); no IL field carries it.
+  if (ctx.attribute(expression, "resource") !== null) {
+    throw new ReadRefusal(ReadRefusalCode.FactNotCarried, optionalId(expression), "camunda:resource");
+  }
+  const named = text(expression, "language") ?? ctx.expressionLanguage;
+  if (named === null) return juelExpression(body, false);
+  if (named === simpleBooleanLanguage) {
     const parsed = simpleBoolean(body);
     if (parsed !== undefined) return ctor("simpleBoolean", { body: parsed });
   }
-  return foreign(language, body);
+  return foreign(named, body);
 }
 
-/** A CIB value expression: a single variable read, or foreign JUEL. */
-export function valueExpression(source: string): KernelJson {
-  const name = variableReadPattern.exec(source)?.[1];
-  return name === undefined ? foreign(juelLanguage, source) : variable(name);
+/** The single identifier a node table is, if it is one. */
+function soleIdentifier(nodes: readonly KernelJson[]): string | null {
+  const only = nodes.length === 1 ? nodes[0] : undefined;
+  const identifier = typeof only === "object" && only !== null && !Array.isArray(only) ? only.identifier : undefined;
+  const name = typeof identifier === "object" && identifier !== null && !Array.isArray(identifier) ? identifier.name : undefined;
+  return typeof name === "string" ? name : null;
 }
+
+/** The single text a node table is, if it is one. */
+function soleText(nodes: readonly KernelJson[]): string | null {
+  const only = nodes.length === 1 ? nodes[0] : undefined;
+  const node = typeof only === "object" && only !== null && !Array.isArray(only) ? only.text : undefined;
+  const value = typeof node === "object" && node !== null && !Array.isArray(node) ? node.value : undefined;
+  return typeof value === "string" ? value : null;
+}
+
+/**
+ * A JUEL text: exactly `${name}` stays the evaluator-neutral variable read, and a value that is text alone a String
+ * literal; any other parse is a node table, and a text outside the pinned grammar stays `foreign`.
+ */
+function juelExpression(source: string, textAsLiteral: boolean): KernelJson {
+  const nodes = parseJuel(source);
+  if (nodes === null) return foreign(juelLanguage, source);
+  const name = soleIdentifier(nodes);
+  if (name !== null) return variable(name);
+  const textOnly = soleText(nodes);
+  if (textAsLiteral && textOnly !== null) return stringLiteral(textOnly);
+  return ctor("juel", { nodes });
+}
+
+/** A CIB value expression, which CIB always reads as JUEL. */
+export const valueExpression = (source: string): KernelJson => juelExpression(source, true);
 
 /** A `ValueSource`: CIB treats text without an expression marker as a literal. */
 export const valueSource = (source: string): KernelJson =>
@@ -117,13 +150,9 @@ function associationSource(association: ElementRecord): ElementRecord {
   return source;
 }
 
+/** `source.schema` requires the `targetRef` and `source.reference` resolves it, so it names an element by its id. */
 function associationTarget(association: ElementRecord): string {
-  const target = association.targetRef as ElementRecord | undefined;
-  const id = target === undefined ? null : optionalId(target);
-  if (id === null) {
-    throw new ReadRefusal(ReadRefusalCode.DataAssociationShape, optionalId(association), "targetRef without id");
-  }
-  return id;
+  return String((association.targetRef as ElementRecord).id);
 }
 
 /** How one association's source value is read: its transformation when given, otherwise the source element. */
@@ -191,8 +220,15 @@ export function variableCopies(element: ElementRecord, entries: ReadonlyArray<El
     } else if (typeof entry.businessKey === "string") {
       businessKey = businessKeyExpression(entry.businessKey);
     } else if (typeof entry.target === "string") {
-      const source = typeof entry.sourceExpression === "string" ? valueExpression(entry.sourceExpression) : variable(String(entry.source));
-      mappings.push(mapping(entry.target, source, MappingSyntax.CallVariable));
+      // A local copy reads only the source scope's own variables (`CallableElementParameter`); no IL field carries it.
+      if (entry.local === "true") {
+        throw new ReadRefusal(ReadRefusalCode.FactNotCarried, optionalId(element), "camunda:in/out local");
+      }
+      // A `sourceExpression` fails on an absent name like any CIB expression (`ElValueProvider`); a `source` copy reads
+      // null (CIB-EXT-0021).
+      mappings.push(typeof entry.sourceExpression === "string"
+        ? mapping(entry.target, valueExpression(entry.sourceExpression), MappingSyntax.IoParameter)
+        : mapping(entry.target, variable(String(entry.source)), MappingSyntax.CallVariable));
       localCopy ||= typeof entry.local === "string";
     } else {
       throw new ReadRefusal(ReadRefusalCode.UnknownAttributeValue, optionalId(element), "camunda variable copy without a target");

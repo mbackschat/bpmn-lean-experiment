@@ -31,7 +31,8 @@ namespace Kernel.Feature.Flow
 def complete (state : State) (id : Nat) (leave : Leave) : State :=
   state.signal (.complete id leave [] .outward)
 
-/-- A candidate's condition, read from its Sequence Flow; an unconditioned candidate holds. -/
+/-- A candidate's condition, read from its Sequence Flow; an unconditioned candidate holds. A failing or non-Boolean
+condition rolls the command back, as CIB's `UelExpressionCondition` does (CIB-OP-0004); Simple Boolean never fails. -/
 def condition (ctx : Ctx) (context : EvalContext) (candidate : FlowId) : Except Failure Bool :=
   match ctx.program.flow? candidate with
   | none => .error (.semanticFailure "gateway-candidate-without-flow")
@@ -41,8 +42,9 @@ def condition (ctx : Ctx) (context : EvalContext) (candidate : FlowId) : Except 
     | some condition =>
       match ctx.evaluate context condition with
       | .value (.bool value) => .ok value
-      | .value _ => .error (.semanticFailure "condition-not-boolean")
-      | .failure code => .error (.semanticFailure code)
+      | .value _ => .error (.rolledBack "condition-not-boolean")
+      | .failure code => .error (.rolledBack code)
+      | .unsupported code => .error (.unsupported code)
 
 /-- The flows an inclusive choice takes: every candidate whose condition holds, else the default; with neither the
 command rolls back with `noFlow`. A choice without candidates takes all of `outgoing`, which are unconditioned. -/
