@@ -129,4 +129,12 @@ export type Input =
   | { readonly tag: InputTag.EffectResult; readonly payload: EffectInput };
 
 /** What an expression reads: the variables in view and the logical time, never a wall clock. */
-export interface EvalContext { readonly variables: readonly Binding[]; readonly nowMs: number; }
+export interface EvalContext {
+  readonly variables: readonly Binding[];
+  readonly nowMs: number;
+  /**
+   * Whether a JUEL result passes the portable-domain check before the site sees it, `true` when absent; the
+   * Multi-Instance count and collection sites read it first (EXPRESSION-SEMANTICS-SPEC "Multi-Instance level", Results).
+   */
+  readonly domainChecked?: boolean;
+}

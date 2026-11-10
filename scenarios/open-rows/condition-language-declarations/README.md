@@ -8,6 +8,7 @@ Every schedule has one stimulus, the start with `flag = true`.
 |---|---|---|---|
 | [formal-no-language](formal-no-language.scenario.json) | [formal-no-language](formal-no-language.bpmn) | A condition typed `tFormalExpression` with no `language` attribute and no default declared on the definitions. | PC-DATA-07 |
 | [plain-no-language](plain-no-language.scenario.json) | [plain-no-language](plain-no-language.bpmn) | A condition with neither `xsi:type` nor `language`. | PC-DATA-07 |
+| [explicit-texpression](explicit-texpression.scenario.json) | [explicit-texpression](explicit-texpression.bpmn) | The same condition typed `xsi:type="tExpression"`, which CIB refuses at deployment (`BpmnParse.java:4404-4407`). | PC-DATA-07 |
 | [definitions-xpath-default](definitions-xpath-default.scenario.json) | [definitions-xpath-default](definitions-xpath-default.bpmn) | The same condition as *formal-no-language* under definitions that declare the BPMN default `expressionLanguage`, the XPath URI. | PC-DATA-07 |
 | [named-juel](named-juel.scenario.json) | [named-juel](named-juel.bpmn) | A condition that names its language `juel`. | PC-DATA-07 |
 | [named-javascript](named-javascript.scenario.json) | [named-javascript](named-javascript.bpmn) | A condition that names the language `javascript`, with a JavaScript body. | PC-DATA-07 |

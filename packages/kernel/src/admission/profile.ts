@@ -13,7 +13,10 @@ import {
   CompensationHandlerFailureTag,
   CompensationOrder,
   DeliveryVariables,
+  Evaluator,
   MessageCorrelation,
+  MultiInstanceCounters,
+  MultiInstanceInputFailure,
   assertNever,
   type CompensationHandlerFailure,
   type ProfileOptions,
@@ -29,7 +32,21 @@ function compensationHandlerFailure(selected: CompensationHandlerFailure): strin
   return assertNever(selected);
 }
 
-export function options(abnormalScope: boolean, selected: ProfileOptions): string | null {
+/**
+ * For a program with a Multi-Instance loop, the option combinations that would read a loop expression under two engines
+ * at once: JUEL without CIB's counters or its input failure, and Simple Boolean with CIB's counters.
+ */
+function multiInstance(loops: boolean, selected: ProfileOptions): string | null {
+  if (!loops) return null;
+  if (selected.evaluator === Evaluator.Juel) {
+    if (selected.multiInstanceCounters === MultiInstanceCounters.None) return "profile.multiInstanceCounters.none";
+    if (selected.multiInstanceInputFailure === MultiInstanceInputFailure.Hold) return "profile.multiInstanceInputFailure.hold";
+    return null;
+  }
+  return selected.multiInstanceCounters === MultiInstanceCounters.CibLocals ? "profile.multiInstanceCounters.cibLocals" : null;
+}
+
+export function options(abnormalScope: boolean, loops: boolean, selected: ProfileOptions): string | null {
   if (selected.messageCorrelation === MessageCorrelation.ApiCriteria) return "profile.messageCorrelation.apiCriteria";
   if (selected.deliveryVariables === DeliveryVariables.Installs) return "profile.deliveryVariables.installs";
   if (selected.compensationOrder === CompensationOrder.ReverseCreation) return "profile.compensationOrder.reverseCreation";
@@ -38,5 +55,5 @@ export function options(abnormalScope: boolean, selected: ProfileOptions): strin
   if (selected.callBindingTime === CallBindingTime.Invocation) return "profile.callBindingTime.invocation";
   if (selected.timerZone !== null) return "profile.timerZone";
   if (abnormalScope && selected.abnormalScopeEnd === AbnormalScopeEnd.WithoutOutflow) return "profile.abnormalScopeEnd.withoutOutflow";
-  return null;
+  return multiInstance(loops, selected);
 }

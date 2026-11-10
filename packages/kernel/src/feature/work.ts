@@ -63,6 +63,7 @@ import {
   type OpenItem,
   type OpenKind,
   type Outcome,
+  type Signal,
   type Result,
   type ScopeOccurrence,
   type ScopeOccurrenceId,
@@ -323,6 +324,19 @@ function unconsumed(ctx: Ctx, envelope: Envelope | null): ResultValues {
 }
 
 /**
+ * An effect's successful completion. A Multi-Instance instance under `ResultValues.activityLocals` writes its result
+ * values as locals of its own scope occurrence, which stays until its completion condition has run, so the condition
+ * reads them (CIB-EXT-0015; EXPRESSION-SEMANTICS-SPEC "Multi-Instance level", result locals); every other completion
+ * writes its outputs outward.
+ */
+function effectCompletion(envelope: Envelope | null, rule: ResultValues, occurrence: number, written: readonly Binding[],
+  patch: readonly Binding[]): Signal {
+  return envelope?.multiInstance !== undefined && envelope.multiInstance !== null && rule === ResultValues.ActivityLocals
+    ? completeSignal(occurrence, leaveOutgoing, patch, WriteRule.Own)
+    : completeSignal(occurrence, leaveOutgoing, written, WriteRule.Outward);
+}
+
+/**
  * An effect's result patch is its OutputSet. A BPMN error raises from the Activity with the occurrence as host: it
  * writes no outputs (BPMN 2.0.2 §13.3.2) unless the profile maps them on the error path (CIB-EXT-0004, -0009, -0016). A
  * technical failure has no BPMN meaning (§13.3.3 defines only a fault) and refuses unless the profile opens an incident
@@ -339,7 +353,7 @@ export function effectResult(ctx: Ctx, item: OpenItem, outcome: EffectOutcome, s
       if (!admitted.ok) return failedWith(admitted.failure);
       const written = outputs(ctx, state.logicalTimeMs, unconsumed(ctx, envelope), mappings, outputScope(ctx, state, item), outcome.outputs);
       if (!written.ok) return failedWith(written.failure);
-      return committed(signal(state, completeSignal(item.occurrence, leaveOutgoing, written.value, WriteRule.Outward)));
+      return committed(signal(state, effectCompletion(envelope, unconsumed(ctx, envelope), item.occurrence, written.value, outcome.outputs)));
     }
     case EffectOutcomeTag.BusinessFailure: {
       const admitted = admitValues(outcome.outputs.map(([, value]) => value));

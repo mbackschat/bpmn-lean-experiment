@@ -106,6 +106,32 @@ export function fromValue(value: Value): JVal {
   }
   return assertNever(value);
 }
+
+/**
+ * A result as the Multi-Instance count and collection sites read it, before the domain predicate: any Integer within
+ * ±(2^53−1), and a Decimal at any scale, a negative one rescaled to 0.
+ */
+export function siteValue(value: JVal): Value | null {
+  switch (value.tag) {
+    case JValTag.Null:
+      return { tag: ValueTag.Null };
+    case JValTag.Bool:
+      return { tag: ValueTag.Bool, value: value.value };
+    case JValTag.Int:
+      return value.value >= -maxSafe && value.value <= maxSafe ? { tag: ValueTag.Int, value: Number(value.value) } : null;
+    case JValTag.Decimal:
+      return value.scale < 0n
+        ? { tag: ValueTag.Decimal, coefficient: value.coefficient * 10n ** -value.scale, scale: 0 }
+        : { tag: ValueTag.Decimal, coefficient: value.coefficient, scale: Number(value.scale) };
+    case JValTag.String:
+      return { tag: ValueTag.String, value: value.value };
+    case JValTag.List:
+      return { tag: ValueTag.List, items: value.items };
+    case JValTag.Map:
+      return { tag: ValueTag.Map, entries: value.entries };
+  }
+  return assertNever(value);
+}
 const isBlank = (value: JVal): boolean =>
   value.tag === JValTag.Null || (value.tag === JValTag.String && value.value === "");
 

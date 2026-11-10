@@ -237,6 +237,9 @@ test("the profile options are the full record, each non-default selected by the 
     multiInstanceBinding: "dataAssociations",
     effectResultValues: "outputSet",
     outputContext: "submission",
+    multiInstanceCounters: "none",
+    multiInstanceInputFailure: "hold",
+    multiInstanceCount: "integer",
   });
   const relations = ["CIB-EXT-0010", "CIB-EXT-0020", "CIB-EXT-0016", "CIB-CFG-0008", "CIB-OP-0009", "CIB-EXT-0026",
     "CIB-INT-0011", "CIB-EXT-0025", "CIB-INT-0009", "CIB-LIM-0001", "CIB-INT-0007", "CIB-INT-0013", "CIB-EXT-0028"];
@@ -265,10 +268,16 @@ test("the profile options are the full record, each non-default selected by the 
     multiInstanceBinding: "dataAssociations",
     effectResultValues: "outputSet",
     outputContext: "submission",
+    multiInstanceCounters: "none",
+    multiInstanceInputFailure: "hold",
+    multiInstanceCount: "integer",
   });
   assert.equal(kernelProfileOptions(["CIB-EXT-0031"]).outputContext, "activityScope");
   assert.equal(kernelProfileOptions(["CIB-INT-0014"]).multiInstanceBinding, "loopReferences");
   assert.equal(kernelProfileOptions(["CIB-EXT-0015"]).effectResultValues, "activityLocals");
+  assert.equal(kernelProfileOptions(["CIB-INT-0018"]).multiInstanceCounters, "cibLocals");
+  assert.equal(kernelProfileOptions(["CIB-INT-0019"]).multiInstanceInputFailure, "rollback");
+  assert.equal(kernelProfileOptions(["CIB-EXT-0033"]).multiInstanceCount, "javaInt");
   assert.equal(kernelProfileOptions(["CIB-EXT-0005"]).submission, "installsVariables");
   for (const creates of ["CIB-EXT-0005", "CIB-EXT-0007", "CIB-EXT-0009", "CIB-EXT-0020"]) {
     assert.equal(kernelProfileOptions([creates]).undeclaredWrite, "atInstanceRoot", creates);

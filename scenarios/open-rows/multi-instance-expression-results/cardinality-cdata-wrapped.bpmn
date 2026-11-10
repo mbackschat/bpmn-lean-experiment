@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_MiResultsCardinalityCdataWrapped"
+  targetNamespace="urn:bpmn-lean:scenarios:multi-instance-expression-results:cardinality-cdata-wrapped">
+  <bpmn:itemDefinition id="ItemDefinition_String" itemKind="Information" structureRef="xsd:string" isCollection="false" />
+  <bpmn:itemDefinition id="ItemDefinition_StringList" itemKind="Information" isCollection="true" />
+  <bpmn:process id="Process_MiResultsCardinalityCdataWrapped" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Start" />
+    <bpmn:sequenceFlow id="Flow_Start_Notify" sourceRef="StartEvent_Start" targetRef="ServiceTask_Notify" />
+    <bpmn:serviceTask
+      id="ServiceTask_Notify"
+      name="Notify recipient"
+      implementation="urn:bpmn-lean:effect:probe-v1"
+      camunda:delegateExpression="${bpmnLeanEffectHandler}">
+      <bpmn:multiInstanceLoopCharacteristics camunda:asyncBefore="true" isSequential="false">
+        <bpmn:loopCardinality> <![CDATA[${count}]]> </bpmn:loopCardinality>
+      </bpmn:multiInstanceLoopCharacteristics>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_Notify_Close" sourceRef="ServiceTask_Notify" targetRef="UserTask_Close" />
+    <bpmn:userTask id="UserTask_Close" name="Close notification run" />
+    <bpmn:sequenceFlow id="Flow_Close_End" sourceRef="UserTask_Close" targetRef="EndEvent_Done" />
+    <bpmn:endEvent id="EndEvent_Done" />
+  </bpmn:process>
+</bpmn:definitions>

@@ -254,6 +254,9 @@ inductive MultiInstanceMode where
 inductive InstanceCount where
   | collection (items : Expression)
   | cardinality (count : Expression)
+  /-- Both a cardinality and a collection, which CIB reads together (`MultiInstanceActivityBehavior:84-89`, `:107-110`);
+  admission refuses it (`multiInstance.countAndCollection`). -/
+  | countAndCollection (count : Expression) (items : Expression)
   deriving Repr
 
 /-- Whether the input collection is read once on entry or re-read by a sequential Activity (PC-MI-08). -/

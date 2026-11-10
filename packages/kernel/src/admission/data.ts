@@ -7,7 +7,7 @@
  * ([expression semantics](../../../../docs/kernel/semantics/EXPRESSION-SEMANTICS-SPEC.md#admission-at-core)).
  */
 import {
-  Evaluator, ExpressionTag, MappingDialect, assertNever, type Envelope, type Flow, type Header, type Mapping,
+  Evaluator, ExpressionTag, MappingDialect, assertNever, type Envelope, type Expression, type Flow, type Header, type Mapping,
 } from "../il/types.js";
 import {
   JuelBinary, JuelCallTag, JuelNodeTag, juelMethodCounts, type JuelCall, type JuelFunctionNode, type JuelNode,
@@ -15,29 +15,57 @@ import {
 
 /**
  * A name CIB resolves before any variable, or holds only inside a Multi-Instance instance: the engine objects of
- * `VariableScopeElResolver.java:51-90` and the loop counters the Multi-Instance level (M5) puts in context.
+ * `VariableScopeElResolver.java:51-90` and the loop counters, which `counters` admits: the Multi-Instance level puts
+ * them in a completion condition's context under `MultiInstanceCounters.cibLocals`.
  */
-function juelName(name: string): string | null {
+function juelName(counters: boolean, name: string): string | null {
   if (["execution", "task", "caseExecution", "externalTask", "authenticatedUserId"].includes(name)) {
     return "expression.juel.engineContext";
   }
-  if (["loopCounter", "nrOfInstances", "nrOfActiveInstances", "nrOfCompletedInstances"].includes(name)) {
+  if (!counters && ["loopCounter", "nrOfInstances", "nrOfActiveInstances", "nrOfCompletedInstances"].includes(name)) {
     return "expression.juel.multiInstanceCounter";
   }
   return null;
 }
 
-/** The first node a Core JUEL table refuses, in node order; a child must be an earlier node. */
-export function juelNodes(nodes: readonly JuelNode[]): string | null {
+/**
+ * The first node a Core JUEL table refuses, in node order; a child must be an earlier node, and `counters` admits the
+ * Multi-Instance counter names.
+ */
+export function juelNodes(nodes: readonly JuelNode[], counters = false): string | null {
   if (nodes.length === 0) return "expression.juel.malformed";
   for (const [at, node] of nodes.entries()) {
-    const refused = juelNode(at, node);
+    const refused = juelNode(counters, at, node);
     if (refused !== null) return refused;
   }
   return null;
 }
 
-function juelNode(at: number, node: JuelNode): string | null {
+/** The language the reader gives a JUEL text outside the pinned grammar (`kernel-reader/data.ts`). */
+const juelLanguage = "urn:cibseven:expression-language:juel";
+
+/**
+ * A Multi-Instance loop expression under `Evaluator.juel`: JUEL, a variable read or text. CIB reads no declared
+ * language there (`BpmnParse.java:1824-1838`), so a declared one is refused; `counters` admits the counter names, which
+ * only the completion condition reads.
+ */
+export function loopExpression(counters: boolean, expression: Expression): string | null {
+  switch (expression.tag) {
+    case ExpressionTag.Juel:
+      return juelNodes(expression.nodes, counters);
+    case ExpressionTag.Variable:
+      return juelName(counters, expression.name);
+    case ExpressionTag.Literal:
+      return null;
+    case ExpressionTag.SimpleBoolean:
+      return "expression.outsideJuel";
+    case ExpressionTag.Foreign:
+      return expression.language === juelLanguage ? "expression.juel.syntax" : "multiInstance.expressionLanguage";
+  }
+  return assertNever(expression);
+}
+
+function juelNode(counters: boolean, at: number, node: JuelNode): string | null {
   const earlier = (...children: readonly number[]): string | null =>
     children.every((index) => Number.isInteger(index) && index >= 0 && index < at) ? null : "expression.juel.malformed";
   switch (node.tag) {
@@ -47,7 +75,7 @@ function juelNode(at: number, node: JuelNode): string | null {
     case JuelNodeTag.StringLiteral:
       return null;
     case JuelNodeTag.Identifier:
-      return juelName(node.name);
+      return juelName(counters, node.name);
     case JuelNodeTag.Integer:
       return /^[0-9]+$/u.test(node.digits) && BigInt(node.digits) <= 9223372036854775807n ? null : "expression.juel.malformed";
     case JuelNodeTag.Float:
@@ -117,7 +145,7 @@ export function mapping(evaluator: Evaluator, entry: Mapping): string | null {
     case ExpressionTag.Literal:
       return null;
     case ExpressionTag.Variable:
-      return evaluator === Evaluator.Juel ? juelName(source.name) : null;
+      return evaluator === Evaluator.Juel ? juelName(false, source.name) : null;
   }
   return assertNever(source);
 }
@@ -151,7 +179,7 @@ export function flowCondition(evaluator: Evaluator, flow: Flow): string | null {
     case ExpressionTag.Juel:
       return evaluator === Evaluator.Juel ? juelNodes(condition.nodes) : "flow.condition.foreign";
     case ExpressionTag.Variable:
-      return evaluator === Evaluator.Juel ? juelName(condition.name) : "flow.condition.foreign";
+      return evaluator === Evaluator.Juel ? juelName(false, condition.name) : "flow.condition.foreign";
     case ExpressionTag.Literal:
     case ExpressionTag.Foreign:
       return "flow.condition.foreign";

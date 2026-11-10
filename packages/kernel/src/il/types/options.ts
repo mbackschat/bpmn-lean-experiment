@@ -138,6 +138,30 @@ export enum ResultValues {
   ActivityLocals = "activityLocals",
 }
 
+/** Which names a Multi-Instance completion condition reads besides the instance's own locals. */
+export enum MultiInstanceCounters {
+  /** BPMN 2.0.2 Table 10.30 names no expression variable: no counter name resolves. */
+  None = "none",
+  /** CIB-INT-0018: the four counters with CIB's values, each a Java `Integer`. */
+  CibLocals = "cibLocals",
+}
+
+/** What a Multi-Instance count or collection that is unavailable or of the wrong kind does. */
+export enum MultiInstanceInputFailure {
+  /** BPMN 2.0.2 §10.4.2: an unavailable input holds the occurrence; a wrong kind is a semantic failure. */
+  Hold = "hold",
+  /** CIB-INT-0019: the operation fails, following the stimulus table. */
+  Rollback = "rollback",
+}
+
+/** Which values a Multi-Instance cardinality counts by. */
+export enum MultiInstanceCount {
+  /** BPMN 2.0.2 Table 10.29: the expression "MUST evaluate to an integer". */
+  Integer = "integer",
+  /** CIB-EXT-0033: CIB's `resolveLoopCardinality`, which also counts parsed text and an integral Decimal, at `int` width. */
+  JavaInt = "javaInt",
+}
+
 /** What an Activity's output mappings read besides the values its completion or effect result submits. */
 export enum OutputContext {
   /** BPMN 2.0.2 §10.4.2: nothing; the outputs map the submitted values alone. */
@@ -176,4 +200,7 @@ export interface ProfileOptions {
   readonly multiInstanceBinding: MultiInstanceBinding;
   readonly effectResultValues: ResultValues;
   readonly outputContext: OutputContext;
+  readonly multiInstanceCounters: MultiInstanceCounters;
+  readonly multiInstanceInputFailure: MultiInstanceInputFailure;
+  readonly multiInstanceCount: MultiInstanceCount;
 }

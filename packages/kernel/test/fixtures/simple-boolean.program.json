@@ -30,7 +30,8 @@
     "callBindingTime": "programAssembly",
     "timerZone": null,
     "multiInstanceBinding": "dataAssociations",
-    "effectResultValues": "outputSet", "outputContext": "submission"
+    "effectResultValues": "outputSet", "outputContext": "submission",
+    "multiInstanceCounters": "none", "multiInstanceInputFailure": "hold", "multiInstanceCount": "integer"
   },
   "elements": [
     {

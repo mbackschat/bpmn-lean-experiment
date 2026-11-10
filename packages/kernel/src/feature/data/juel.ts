@@ -11,22 +11,22 @@ import {
   JuelBinary, JuelCallTag, JuelMethod, JuelNodeTag, JuelUnary, juelMethodCounts, type JuelCallNode, type JuelNode,
 } from "../../il/types/juel.js";
 import { EvaluationTag, type Evaluation } from "../../hooks.js";
-import type { Binding } from "../../state.js";
+import type { EvalContext } from "../../state.js";
 import {
   Carrier, JValTag, bool, dotEe, double, elError, fail, fromValue, integer, isAscii, javaTrim, long, nullValue, ok,
-  portable, signedDigits, stopped, text, toBool, toDecimal, toLong, toText, unsupported, type Decimal, type Eval, type JVal,
+  portable, siteValue, signedDigits, stopped, text, toBool, toDecimal, toLong, toText, unsupported, type Decimal, type Eval, type JVal,
 } from "./juel/coercion.js";
 
-/** Evaluate a JUEL node table against `variables`, innermost binding first. */
-export function evaluateJuel(variables: readonly Binding[], nodes: readonly JuelNode[]): Evaluation {
+/** Evaluate a JUEL node table against the context's variables, innermost binding first. */
+export function evaluateJuel(context: EvalContext, nodes: readonly JuelNode[]): Evaluation {
   if (nodes.length === 0) return { tag: EvaluationTag.Unsupported, code: "expression.juel.malformed" };
-  const result = node(variables, nodes, nodes.length - 1);
+  const result = node(context, nodes, nodes.length - 1);
   if (!result.ok) {
     return result.stop.unsupported
       ? { tag: EvaluationTag.Unsupported, code: result.stop.code }
       : { tag: EvaluationTag.Failure, code: result.stop.code };
   }
-  const value = portable(result.value);
+  const value = context.domainChecked === false ? siteValue(result.value) : portable(result.value);
   return value === null
     // dynamic-only: whether a result is portable depends on the run's data.
     ? { tag: EvaluationTag.Unsupported, code: "juel.resultOutsideDomain" }
@@ -38,11 +38,11 @@ function child(nodes: readonly JuelNode[], parent: number, index: number): boole
 }
 
 /** Node `at`; every child is an earlier node, so the recursion ends. */
-function node(variables: readonly Binding[], nodes: readonly JuelNode[], at: number): Eval<JVal> {
+function node(context: EvalContext, nodes: readonly JuelNode[], at: number): Eval<JVal> {
   const current = nodes[at];
   if (current === undefined) return unsupported("expression.juel.malformed");
   const sub = (index: number): Eval<JVal> =>
-    child(nodes, at, index) ? node(variables, nodes, index) : unsupported("expression.juel.malformed");
+    child(nodes, at, index) ? node(context, nodes, index) : unsupported("expression.juel.malformed");
   switch (current.tag) {
     case JuelNodeTag.Text:
       return ok(text(current.value));
@@ -70,7 +70,7 @@ function node(variables: readonly Binding[], nodes: readonly JuelNode[], at: num
     case JuelNodeTag.StringLiteral:
       return ok(text(current.value));
     case JuelNodeTag.Identifier: {
-      const found = variables.find(([name]) => name === current.name);
+      const found = context.variables.find(([name]) => name === current.name);
       return found === undefined ? fail("unknown-variable") : ok(fromValue(found[1]));
     }
     case JuelNodeTag.Function:

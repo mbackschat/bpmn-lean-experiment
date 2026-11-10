@@ -56,6 +56,11 @@ export interface MultiInstanceRun {
   readonly occurrence: number;
   readonly collection: Value;
   readonly instances: readonly Iteration[];
+  /**
+   * The effect-result names earlier sequential instances left, which CIB keeps on the body until it ends
+   * (EXPRESSION-SEMANTICS-SPEC "Multi-Instance level", result locals); absent is none.
+   */
+  readonly results?: readonly string[];
 }
 
 /**

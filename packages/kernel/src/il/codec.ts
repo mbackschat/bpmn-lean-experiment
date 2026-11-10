@@ -37,6 +37,9 @@ import {
   MappingDialect,
   MessageCorrelation,
   MultiInstanceBinding,
+  MultiInstanceCount,
+  MultiInstanceCounters,
+  MultiInstanceInputFailure,
   MultiInstanceFinalBody,
   MultiInstanceMode,
   MultiInstanceOutputs,
@@ -307,6 +310,7 @@ const multiInstance = struct<MultiInstance>("MultiInstance", {
   count: inductive<InstanceCount>("InstanceCount", {
     [InstanceCountTag.Collection]: { items: expression },
     [InstanceCountTag.Cardinality]: { count: expression },
+    [InstanceCountTag.CountAndCollection]: { count: expression, items: expression },
   }),
   elementVariable: option(string),
   completionCondition: option(expression),
@@ -434,6 +438,9 @@ const profileOptions = struct<ProfileOptions>("ProfileOptions", {
   multiInstanceBinding: members("MultiInstanceBinding", MultiInstanceBinding),
   effectResultValues: members("ResultValues", ResultValues),
   outputContext: members("OutputContext", OutputContext),
+  multiInstanceCounters: members("MultiInstanceCounters", MultiInstanceCounters),
+  multiInstanceInputFailure: members("MultiInstanceInputFailure", MultiInstanceInputFailure),
+  multiInstanceCount: members("MultiInstanceCount", MultiInstanceCount),
 });
 
 const program = struct<Program>("Program", {

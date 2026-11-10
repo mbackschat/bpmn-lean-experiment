@@ -289,6 +289,24 @@
             "submission",
             "activityScope"
           ]
+        },
+        "multiInstanceCounters": {
+          "enum": [
+            "none",
+            "cibLocals"
+          ]
+        },
+        "multiInstanceInputFailure": {
+          "enum": [
+            "hold",
+            "rollback"
+          ]
+        },
+        "multiInstanceCount": {
+          "enum": [
+            "integer",
+            "javaInt"
+          ]
         }
       }
     },
@@ -376,9 +394,12 @@
         "multiInstance.cardinality",
         "multiInstance.collectionExpression",
         "multiInstance.completionConditionExpression",
+        "multiInstance.countAndCollection",
         "multiInstance.elementVariable",
+        "multiInstance.expressionLanguage",
         "multiInstance.inputDataItem",
         "multiInstance.instanceResult",
+        "multiInstance.itemNamedLikeCounter",
         "multiInstance.mappings",
         "multiInstance.mutableCollection",
         "multiInstance.outputDataItem",
@@ -392,8 +413,13 @@
         "profile.compensationOrder.reverseCreation",
         "profile.deliveryVariables.installs",
         "profile.messageCorrelation.apiCriteria",
+        "profile.multiInstanceCounters.cibLocals",
+        "profile.multiInstanceCounters.none",
+        "profile.multiInstanceInputFailure.hold",
         "profile.timerZone",
+        "reader.conditionExpressionType",
         "reader.dataAssociationShape",
+        "reader.emptyLoopCardinality",
         "reader.eventDefinitionOnElement",
         "reader.eventDefinitionRef",
         "reader.eventSubProcessStart",
@@ -417,6 +443,7 @@
         "source.doctype",
         "source.encoding",
         "source.identityMismatch",
+        "source.loopBodyWhitespace",
         "source.missingId",
         "source.noProcess",
         "source.overlay",

@@ -25,8 +25,8 @@ The counts below cover only entries recorded by this project, including the sepa
 | Normative agreement records | 19 | 2 | A bounded BPMN requirement and pinned CIB observation agree; candidates remain unapproved |
 | Permitted operational details | 15 | 0 | CIB or the oracle adapter chooses host mechanics without changing required BPMN observations |
 | Confirmed normative deviations | 0 | 1 | Clear BPMN requirement and pinned CIB evidence establish incompatible behavior |
-| CIB interpretations of BPMN gaps or inconsistencies | 16 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
-| CIB extension records | 32 | 3 | Project profile deliberately includes behavior beyond bare BPMN execution; candidates remain unselected |
+| CIB interpretations of BPMN gaps or inconsistencies | 18 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
+| CIB extension records | 33 | 3 | Project profile deliberately includes behavior beyond bare BPMN execution; candidates remain unselected |
 | Configuration-specific realizations | 11 | 1 | Behavior is permitted or meaningful only under a declared CIB environment |
 | Known CIB limitations within reviewed scope | 13 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
 
@@ -532,6 +532,33 @@ DMN 1.3 leaves the order of a COLLECT hit policy's result open. CIB Seven `2.2.0
 
 **Boundary:** COLLECT without an aggregator, as the decision semantics admit it.
 
+### CIB-INT-0018 — Multi-Instance counters in a completion condition carry CIB's local values
+
+**Status:** Recorded bounded interpretation from the pinned source; selected by `ProfileOptions.multiInstanceCounters = cibLocals` through the [cibseven-2.2.0 cumulative profile](../profiles/cibseven-2.2.0/profile.json) and the scope-chain profile
+
+BPMN 2.0.2 Table 10.30 defines instance attributes, and §13.3.7 lets the `completionCondition` refer to them, but the standard names no expression variables: `loopCounter`, the generated instance's sequence number ("the n-th instance"); `numberOfInstances`; `numberOfActiveInstances`, at most 1 in sequential mode; `numberOfCompletedInstances`; and `numberOfTerminatedInstances`, where terminated, completed and active always sum to `numberOfInstances`.
+
+CIB Seven `2.2.0` holds `loopCounter` as a local of each instance, zero-based, and `nrOfInstances`, `nrOfActiveInstances` and `nrOfCompletedInstances` as locals of the body, each a Java `Integer`.
+
+- **Parallel:** the count, the count minus the completed instances, and the completed instances, each updated before the completion condition reads it.
+- **Sequential:** `nrOfInstances` is the count from entry (CIB-INT-0002); `nrOfActiveInstances` is 1 throughout, including when the condition is evaluated, where Table 10.30's sum would give 0; `nrOfCompletedInstances` is incremented before the condition; `loopCounter` still names the completing instance.
+
+There is no terminated count. Under the option the kernel puts these names and values into a completion condition's context only; publication keeps the Table 10.30 accounting of the [Multi-Instance semantics](kernel/semantics/MULTI-INSTANCE-SEMANTICS-SPEC.md). Admission refuses an item named like a counter (`multiInstance.itemNamedLikeCounter`), and an effect result named like one is `unsupported` (`multiInstance.resultShadowsInstance`). No admitted rule observes the counters' Java class: `${loopCounter.equals(0)}` is `unsupported` (`juel.methodReceiver`).
+
+**Evidence:** Pinned `MultiInstanceActivityBehavior:49-54`, `:196-198`; `ParallelMultiInstanceActivityBehavior:64-68`, `:84-87`, `:96`; `SequentialMultiInstanceActivityBehavior:41`, `:48-53`. The retained [Multi-Instance Service Task](../scenarios/open-rows/multi-instance-service-task/README.md) quorum witnesses (`${nrOfCompletedInstances >= quorum}`, both modes), which agree under the option. The [multi-instance-expression-results](../scenarios/open-rows/multi-instance-expression-results/README.md) witnesses `sequential-active-count`, `parallel-active-count`, `completion-reads-counter` and `completion-counter-equals`, whose evidence run is pending.
+
+**Boundary:** The completion condition the [Multi-Instance level](kernel/semantics/EXPRESSION-SEMANTICS-SPEC.md#counter-values) admits. Not covered: whether the final completion evaluates the condition (CIB-INT-0009); the counters in the Activity's own inputs, in nested elements and in outgoing conditions, which admission refuses; runtime modification (`createInnerInstance`, `initializeScope`) and migration; publication.
+
+### CIB-INT-0019 — an unavailable, null or wrong-kind Multi-Instance input fails the operation
+
+**Status:** Recorded bounded interpretation from the pinned source; selected by `ProfileOptions.multiInstanceInputFailure = rollback` through the [cibseven-2.2.0 cumulative profile](../profiles/cibseven-2.2.0/profile.json) and the scope-chain profile
+
+BPMN 2.0.2 §10.4.2 holds an Activity whose InputSet is unavailable until it becomes available. The standards reading holds the occurrence when the input collection is unavailable, and fails semantically on a present value that is no collection. CIB Seven `2.2.0` reads the count and collection when the token arrives and throws inside the operation that reached the Activity whenever one is missing or of the wrong kind, so the operation fails and nothing waits. The kernel follows the [stimulus table](kernel/semantics/EXPRESSION-SEMANTICS-SPEC.md#failure-semantics): a command rolls back, an effect result becomes the effect's technical failure under CIB-EXT-0026, and a Timer is `unsupported`. The cases are a collection variable that is absent, null or not a `Collection`; a collection expression that fails or is not a `Collection`; and a count that fails, is not a number, or is negative (`multiInstance.notACollection`, `multiInstance.notANumber`, `multiInstance.negativeCount`, or the evaluation's own code).
+
+**Evidence:** Pinned `MultiInstanceActivityBehavior:68-69` (`invalidAmountException`), `:113-114` (`unresolvableExpressionException`), `:117-120` (`invalidVariableTypeException`), `:153` (`expressionNotANumberException`). The [multi-instance-expression-results](../scenarios/open-rows/multi-instance-expression-results/README.md) `count-*` and `collection-*` witnesses, whose evidence run is pending.
+
+**Boundary:** The count and collection sites of admitted loops. A completion-condition failure follows the stimulus table under both values. A count that is fractional or outside Java's `int` range is `unsupported` (CIB-LIM-0010). Which values count is CIB-EXT-0033.
+
 ## Known limitation register
 
 ### CIB-LIM-0001: standard sequential Multi-Instance output aggregation is absent
@@ -640,9 +667,9 @@ This is not a candidate deviation. CIB and the kernel never differ on an admitte
 
 **Status:** Profile limitation; not a deviation
 
-CIB Seven `2.2.0` evaluates more JUEL than the [core level](kernel/semantics/EXPRESSION-SEMANTICS-SPEC.md) admits: functions, unlisted or mutating methods, floating literals and division, conditions in a named language or a Definitions-declared one, non-ASCII identifiers and whitespace, the engine-context names and Multi-Instance counters, `camunda:list` and `camunda:map` parameters, `camunda:resource` conditions and `local` Call copies. The kernel refuses each with a stable admission or reader code rather than evaluate a form whose result lies outside the portable value domain or whose context is engine state; a later JUEL level widens the admitted set without reinterpreting what Core accepts.
+CIB Seven `2.2.0` evaluates more JUEL than the [core level](kernel/semantics/EXPRESSION-SEMANTICS-SPEC.md) admits: functions, unlisted or mutating methods, floating literals and division, conditions in a named language or a Definitions-declared one, non-ASCII identifiers and whitespace, the engine-context names and Multi-Instance counters, `camunda:list` and `camunda:map` parameters, `camunda:resource` conditions and `local` Call copies, and, at the [Multi-Instance level](kernel/semantics/EXPRESSION-SEMANTICS-SPEC.md#codes-this-level-adds), a loop with both a cardinality and a collection, a sequential collection expression, a loop expression in a declared language, an item named like a counter, and a loop body whose whitespace-only text node the parser drops. The kernel refuses each with a stable admission or reader code rather than evaluate a form whose result lies outside the portable value domain or whose context is engine state; a later JUEL level widens the admitted set without reinterpreting what Core accepts.
 
-**Evidence:** The [admission table of the expression semantics](kernel/semantics/EXPRESSION-SEMANTICS-SPEC.md#admission-at-core); the retained witnesses [juel-core-forms](../scenarios/open-rows/juel-core-forms/README.md), [juel-evaluation-failures](../scenarios/open-rows/juel-evaluation-failures/README.md) and [condition-language-declarations](../scenarios/open-rows/condition-language-declarations/README.md), where CIB evaluates what the kernel refuses (CIB Seven `2.2.0`).
+**Evidence:** The [admission table of the expression semantics](kernel/semantics/EXPRESSION-SEMANTICS-SPEC.md#admission-at-core); the retained witnesses [juel-core-forms](../scenarios/open-rows/juel-core-forms/README.md), [juel-evaluation-failures](../scenarios/open-rows/juel-evaluation-failures/README.md) and [condition-language-declarations](../scenarios/open-rows/condition-language-declarations/README.md), where CIB evaluates what the kernel refuses (CIB Seven `2.2.0`); the [multi-instance-expression-results](../scenarios/open-rows/multi-instance-expression-results/README.md) witnesses `count-cdata-wrapped` and `count-whitespace-only`, whose evidence run is pending.
 
 **Boundary:** The core level's refusal codes only. It claims nothing about what a refused form would evaluate to.
 
@@ -650,9 +677,9 @@ CIB Seven `2.2.0` evaluates more JUEL than the [core level](kernel/semantics/EXP
 
 **Status:** Profile limitation; not a deviation
 
-Some admitted expressions reach, for particular data, a CIB result or Java behaviour the portable value domain cannot hold: a Double, an out-of-domain or non-canonical Decimal at a mapping, a collection rendered as text, the ordering of two Lists or two Maps, Java `equals` over Integers whose carrier the kernel cannot know, String bean properties, unlisted receiver or argument kinds, non-ASCII case mapping and numeric text, and surrogate splits. The kernel answers `unsupported` with a stable dynamic-only code for each, as [the expression semantics](kernel/semantics/EXPRESSION-SEMANTICS-SPEC.md#failure-semantics) list them, rather than invent a portable value.
+Some admitted expressions reach, for particular data, a CIB result or Java behaviour the portable value domain cannot hold: a Double, an out-of-domain or non-canonical Decimal at a mapping, a collection rendered as text, the ordering of two Lists or two Maps, Java `equals` over Integers whose carrier the kernel cannot know, String bean properties, unlisted receiver or argument kinds, non-ASCII case mapping and numeric text, surrogate splits, a Multi-Instance count with a fraction or outside Java's `int` range, which CIB truncates or wraps (`multiInstance.fractionalCount`, `multiInstance.countRange`), an instance's effect result named like a counter or the item (`multiInstance.resultShadowsInstance`), and in sequential mode an earlier instance's result a completion condition would read (`multiInstance.sequentialResultLeftover`). The kernel answers `unsupported` with a stable dynamic-only code for each, as [the expression semantics](kernel/semantics/EXPRESSION-SEMANTICS-SPEC.md#failure-semantics) list them, rather than invent a portable value.
 
-**Evidence:** The [core witness table](../scenarios/open-rows/juel-core-table/README.md) rows `integer-class`, `decimal-noncanonical-result`, `text-double-operand`, `string-over-limit` and `string-bean-property`, and the [juel-evaluation-failures](../scenarios/open-rows/juel-evaluation-failures/README.md) witnesses `division-by-zero`, `integer-overflow` and `negative-result` (CIB Seven `2.2.0`).
+**Evidence:** The [core witness table](../scenarios/open-rows/juel-core-table/README.md) rows `integer-class`, `decimal-noncanonical-result`, `text-double-operand`, `string-over-limit` and `string-bean-property`, and the [juel-evaluation-failures](../scenarios/open-rows/juel-evaluation-failures/README.md) witnesses `division-by-zero`, `integer-overflow` and `negative-result` (CIB Seven `2.2.0`); the [multi-instance-expression-results](../scenarios/open-rows/multi-instance-expression-results/README.md) witnesses `count-decimal-fractional` and `count-integer-over-int`, whose evidence run is pending.
 
 **Boundary:** Admitted core expressions whose run reaches one of those values; the statically refused forms are `CIB-LIM-0009`.
 
@@ -1052,6 +1079,16 @@ BPMN 2.0.2 leaves a Business Rule Task's rule engine open (§10.3.3). CIB Seven 
 **Evidence:** Pinned `BpmnParse.java` and the DMN engine sources the decision semantics cite; the witnesses of [business-rule-hit-policies](../scenarios/open-rows/business-rule-hit-policies/README.md), whose CIB evidence the next retake records.
 
 **Boundary:** Decision tables within the decision semantics' subset, with no Error catcher coded with a Java class (`CIB-EXT-0029`). The binding time of a `latest` decision is recorded with `PC-AUTO-08`.
+
+### CIB-EXT-0033 — a Multi-Instance cardinality counts parsed text and an integral Decimal
+
+**Status:** Recorded extension; selected by `ProfileOptions.multiInstanceCount = javaInt` through the [cibseven-2.2.0 cumulative profile](../profiles/cibseven-2.2.0/profile.json) and the scope-chain profile
+
+BPMN 2.0.2 Table 10.29 says the `loopCardinality` expression "MUST evaluate to an integer"; the standards reading (`integer`) counts an Integer only and fails any other value as `multiInstance.notANumber`. CIB Seven `2.2.0`'s `resolveLoopCardinality` also accepts any `Number` through `intValue`, so an integral `BigDecimal` counts, and a `String` through `Integer.parseInt`, so the text `2` or `+2` counts while ` 2`, `two` and `2147483648` fail with a `NumberFormatException`. Under the option the kernel applies those rules at Java's `int` width. A Decimal with a fraction, which `intValue` truncates, and an Integer outside `int`, whose low 32 bits CIB keeps, are `unsupported` (CIB-LIM-0010); a String with a non-ASCII character is `unsupported` (`juel.nonAsciiText`), since `Integer.parseInt` accepts Unicode digits.
+
+**Evidence:** Pinned `MultiInstanceActivityBehavior:145-155` (`:148-151`). The [multi-instance-expression-results](../scenarios/open-rows/multi-instance-expression-results/README.md) witnesses `count-text`, `count-text-signed`, `count-text-padded`, `count-text-over-int`, `count-decimal-integral` and `count-plain-literal`, whose evidence run is pending; the retained [Multi-Instance Service Task](../scenarios/open-rows/multi-instance-service-task/README.md) `parallel-cardinality-reversed` and `sequential-cardinality`.
+
+**Boundary:** The cardinality site of admitted loops ([Multi-Instance level, Results](kernel/semantics/EXPRESSION-SEMANTICS-SPEC.md#results)).
 
 ## Permitted operational-detail register
 

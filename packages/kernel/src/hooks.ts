@@ -125,8 +125,7 @@ export function deliveryTriggerChannel(trigger: DeliveryTrigger): MessageChannel
  * The members of an input collection in order, `null` for a value that is not a collection; a String List's members
  * are Strings.
  */
-export function multiInstanceRunItems(run: MultiInstanceRun): readonly Value[] | null {
-  const collection = run.collection;
+export function collectionItems(collection: Value): readonly Value[] | null {
   switch (collection.tag) {
     case ValueTag.StringList:
       return collection.items.map((value): Value => ({ tag: ValueTag.String, value }));
@@ -142,6 +141,8 @@ export function multiInstanceRunItems(run: MultiInstanceRun): readonly Value[] |
   }
   return assertNever(collection);
 }
+
+export const multiInstanceRunItems = (run: MultiInstanceRun): readonly Value[] | null => collectionItems(run.collection);
 
 // The portable value domain (docs/kernel/semantics/DATA-SEMANTICS-SPEC.md#values). Step checks every input's values
 // against it and features measure submissions by it; they share it here because they never import each other.

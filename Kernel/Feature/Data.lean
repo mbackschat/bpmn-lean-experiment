@@ -38,7 +38,7 @@ def evaluate (context : EvalContext) : Expression → Evaluation
     match lookup context.variables name with
     | some value => .value value
     | none => .failure "unknown-variable"
-  | .juel nodes => Juel.evaluateJuel context.variables nodes
+  | .juel nodes => Juel.evaluateJuel context nodes
   -- Admission refuses it (`expression.outsideSimpleBoolean`, `mapping.expression`, `flow.condition.foreign`).
   | .foreign _ _ => .failure "expression.outsideSimpleBoolean"
 

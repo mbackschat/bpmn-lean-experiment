@@ -51,8 +51,7 @@ def DeliveryTrigger.channel? : DeliveryTrigger → Option MessageChannel
 
 /-- The members of an input collection in order, `none` for a value that is not a collection; a String List's
 members are Strings. -/
-def MultiInstanceRun.items (run : MultiInstanceRun) : Option (List Value) :=
-  match run.collection with
+def collectionItems : Value → Option (List Value)
   | .stringList items => some (items.map .string)
   | .list items => some items
   | .null => none
@@ -61,6 +60,8 @@ def MultiInstanceRun.items (run : MultiInstanceRun) : Option (List Value) :=
   | .decimal _ _ => none
   | .string _ => none
   | .map _ => none
+
+def MultiInstanceRun.items (run : MultiInstanceRun) : Option (List Value) := collectionItems run.collection
 
 /-! ## The portable value domain
 

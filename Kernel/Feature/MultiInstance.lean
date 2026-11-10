@@ -114,39 +114,95 @@ def written (ctx : Ctx) (loop : MultiInstance) (collection : Value) (outputs : L
   | .aggregates, none => []
   | .none, _ => []
 
-/-- `Hooks.arriveMultiInstance`. An unavailable input collection holds the occurrence, as an unavailable InputSet
-does ([BPMN 2.0.2 §10.4.2](../../docs/reference/bpmn-2.0.2/README.md)). -/
+/-- The instances a cardinality value counts (EXPRESSION-SEMANTICS-SPEC "Multi-Instance level", Results); a value the
+rule refuses is a `semanticFailure` with the rule's code, which `entryInput` places. Under `integer` only an Integer
+counts (BPMN 2.0.2 Table 10.29); under `javaInt` CIB's `resolveLoopCardinality` also parses text and takes an integral
+Decimal, at Java's `int` width (CIB-EXT-0033, `MultiInstanceActivityBehavior:145-155`). -/
+def countOf (rule : MultiInstanceCount) (value : Value) : Except Failure Nat :=
+  let counted (count : Int) : Except Failure Nat :=
+    -- Dynamic-only: CIB's `intValue` would keep the low 32 bits.
+    if rule == .javaInt && !withinJavaInt count then .error (.unsupported "multiInstance.countRange")
+    else if count < 0 then .error (.semanticFailure "multiInstance.negativeCount")
+    else .ok count.toNat
+  let notANumber : Except Failure Nat := .error (.semanticFailure "multiInstance.notANumber")
+  match rule, value with
+  | .integer, .int count => counted count
+  | .integer, _ => notANumber
+  | .javaInt, .int count => counted count
+  | .javaInt, .decimal coefficient scale =>
+    -- Dynamic-only: CIB's `BigDecimal.intValue` truncates a fraction.
+    if coefficient % 10 ^ scale != 0 then .error (.unsupported "multiInstance.fractionalCount")
+    else counted (coefficient / 10 ^ scale)
+  | .javaInt, .string text =>
+    -- Dynamic-only: `Integer.parseInt` reads Unicode digits the kernel does not model.
+    if !text.all (fun char : Char => decide (char.toNat < 128)) then .error (.unsupported "juel.nonAsciiText")
+    else
+      let digits := if text.startsWith "+" || text.startsWith "-" then text.drop 1 else text
+      match (if digits.isEmpty || !digits.all Char.isDigit then none else digits.toNat?) with
+      | some magnitude =>
+        let parsed : Int := if text.startsWith "-" then -magnitude else magnitude
+        if withinJavaInt parsed then counted parsed else notANumber
+      | none => notANumber
+  | .javaInt, _ => notANumber
+
+/-- One entry input, read before the domain predicate, under the profile's `MultiInstanceInputFailure`
+(CIB-INT-0019): `none` when an unavailable input holds the occurrence, as an unavailable InputSet does
+([BPMN 2.0.2 §10.4.2](../../docs/reference/bpmn-2.0.2/README.md)), and a value `rule` refuses a semantic failure;
+under `rollback` both fail the operation. -/
+def entryInput (ctx : Ctx) (state : State) (scope : ScopeOccurrenceId) (expression : Expression)
+    (rule : Value → Except Failure α) : Except Failure (Option α) :=
+  let rollback := ctx.program.options.multiInstanceInputFailure == .rollback
+  match ctx.evaluate { state.evalContext scope with domainChecked := false } expression with
+  | .unsupported code => .error (.unsupported code)
+  | .failure code => if rollback then .error (.rolledBack code) else .ok none
+  | .value value =>
+    match rule value with
+    | .ok read => .ok (some read)
+    | .error (.semanticFailure code) => .error (if rollback then .rolledBack code else .semanticFailure code)
+    | .error failure => .error failure
+
+/-- What an entry reads: the collection, its items and the number of instances; a cardinality loop's collection is
+`null` and its instances get no item (`MultiInstanceActivityBehavior:85`). -/
+def entryRead (ctx : Ctx) (loop : MultiInstance) (state : State) (scope : ScopeOccurrenceId) :
+    Except Failure (Option (Value × List Value × Nat)) :=
+  match loop.count with
+  | .collection items =>
+    let code := if ctx.program.options.multiInstanceInputFailure == .rollback then "multiInstance.notACollection"
+      else "multi-instance-collection"
+    entryInput ctx state scope (collectionOf ctx loop items) fun collection =>
+      match collectionItems collection with
+      | some members => .ok (collection, members, members.length)
+      | none => .error (.semanticFailure code)
+  | .cardinality count =>
+    entryInput ctx state scope count fun value => do .ok (.null, [], ← countOf ctx.program.options.multiInstanceCount value)
+  -- Admission refuses it (`multiInstance.countAndCollection`).
+  | .countAndCollection _ _ => .error (.unsupported "multiInstance.countAndCollection")
+
+/-- `Hooks.arriveMultiInstance`: read the count or collection on entry, then begin the instances. -/
 def arriveMultiInstance (ctx : Ctx) (header : Header) (envelope : Envelope) (loop : MultiInstance)
     (occurrence : Occurrence) (state : State) : Outcome := do
-  let source ← match loop.count with
-    | .collection items => .ok (collectionOf ctx loop items)
-    -- Admission refuses it (`multiInstance.cardinality`).
-    | .cardinality _ => .error (.unsupported "multi-instance-cardinality")
-  match ctx.evaluate (state.evalContext occurrence.scope) source with
-  | .unsupported code => .error (.unsupported code)
-  | .failure _ =>
+  match ← entryRead ctx loop state occurrence.scope with
+  | none =>
     let some flow := occurrence.incoming | .error (.semanticFailure "multi-instance-without-flow")
     .ok (state.hold { occurrence := occurrence.id, flow, scope := occurrence.scope })
-  | .value collection =>
+  | some (collection, _, 0) =>
+    .ok (state.signal (.complete occurrence.id .outgoing (written ctx loop collection []) .outward))
+  | some (collection, items, count) =>
+    let (state, scope) := state.enterScope header.id occurrence.scope [] (some occurrence.id)
+    let state := if envelope.boundaries.isEmpty then state
+      else state.signal (.arm occurrence.id header.id occurrence.scope)
     let run : MultiInstanceRun :=
-      { scope := State.root, element := header.id, occurrence := occurrence.id, collection, instances := [] }
-    match run.items with
-    | none => .error (.semanticFailure "multi-instance-collection")
-    | some [] => .ok (state.signal (.complete occurrence.id .outgoing (written ctx loop collection []) .outward))
-    | some items =>
-      let (state, scope) := state.enterScope header.id occurrence.scope [] (some occurrence.id)
-      let state := if envelope.boundaries.isEmpty then state
-        else state.signal (.arm occurrence.id header.id occurrence.scope)
-      .ok (beginInstances ctx loop items
-        { run with scope, instances := items.map fun _ => .waiting } state)
+      { scope, element := header.id, occurrence := occurrence.id, collection, instances := List.replicate count .waiting }
+    .ok (beginInstances ctx loop items run state)
 
 /-- An instance's output, kept as a String when the input collection is a String List, whose output collection holds
-Strings only; a loop without an output data item takes the empty OutputSet. `Kernel.Feature.Work` has checked a User
-Task's submission is exactly the output data item. -/
+Strings only. A loop without an output data item takes the empty OutputSet; what its completion writes are the
+instance's result locals (`Kernel.Feature.Work.effectCompletion`). `Kernel.Feature.Work` has checked a User Task's
+submission is exactly the output data item. -/
 def submitted (loop : MultiInstance) (run : MultiInstanceRun) (writes : List (String × Value)) :
     Except Failure (Option Value) :=
   match loop.outputDataItem, writes with
-  | none, [] => .ok none
+  | none, _ => .ok none
   | some _, [(_, value)] =>
     match run.collection, value with
     | .stringList _, .string _ => .ok (some value)
@@ -180,8 +236,44 @@ def evaluatesFinalCondition (ctx : Ctx) (loop : MultiInstance) : Bool :=
   | .modeSpecific, .parallel => true
   | .modeSpecific, .sequential => false
 
-/-- `Hooks.instanceCompleted`: fill the instance's slot, leave its scope occurrence, then finish, close early or
-continue. -/
+def counterNames : List String := ["loopCounter", "nrOfInstances", "nrOfActiveInstances", "nrOfCompletedInstances"]
+
+/-- What a completion condition reads: the completing instance's scope occurrence, before it is left, so the item and
+the instance's result locals are visible (BPMN 2.0.2 §13.3.7), and under `cibLocals` CIB's counters (CIB-INT-0018):
+the instance's zero-based index; the count; the active instances, which CIB never lowers below
+1 in sequential mode (`SequentialMultiInstanceActivityBehavior:41`); the completed ones, this one included. -/
+def conditionContext (ctx : Ctx) (loop : MultiInstance) (run : MultiInstanceRun) (index : Nat) (scope : ScopeOccurrenceId)
+    (state : State) : EvalContext :=
+  let context := state.evalContext scope
+  let total := run.instances.length
+  let completed := (run.instances.filter filled).length
+  let active := if loop.mode == .sequential then 1 else total - completed
+  let counters : List (String × Value) := match ctx.program.options.multiInstanceCounters with
+    | .none => []
+    | .cibLocals => [("loopCounter", .int index), ("nrOfInstances", .int total), ("nrOfActiveInstances", .int active),
+      ("nrOfCompletedInstances", .int completed)]
+  { context with variables := counters ++ context.variables }
+
+/-- Whether the completion condition holds, read in the instance's scope occurrence before it is left. A result named
+like a counter or the item, and in sequential mode an earlier instance's result this one did not overwrite, which CIB
+keeps on the body, have no kernel reading. A failure fails the operation that reached it, so it follows the stimulus
+table (`MultiInstanceActivityBehavior:157-162`). -/
+def stops (ctx : Ctx) (loop : MultiInstance) (run : MultiInstanceRun) (index : Nat) (scope : ScopeOccurrenceId)
+    (results : List String) (state : State) : Except Failure Bool :=
+  match loop.completionCondition with
+  | none => .ok false
+  | some condition =>
+    -- Dynamic-only: which names an earlier instance's result left depends on the run's effect results.
+    if run.results.any (!results.contains ·) then .error (.unsupported "multiInstance.sequentialResultLeftover")
+    else
+      match ctx.evaluate (conditionContext ctx loop run index scope state) condition with
+      | .value (.bool holds) => .ok holds
+      | .value _ => .error (.rolledBack "multiInstance.completionNotBoolean")
+      | .failure code => .error (.rolledBack code)
+      | .unsupported code => .error (.unsupported code)
+
+/-- `Hooks.instanceCompleted`: fill the instance's slot, evaluate the completion condition in the instance's scope
+occurrence, leave it, then finish, close early or continue. -/
 def instanceCompleted (ctx : Ctx) (body : Nat) (occurrence : Occurrence) (writes : List (String × Value))
     (state : State) : Outcome := do
   let some run := runOf? state body | .error (.semanticFailure "instance-without-multi-instance")
@@ -192,22 +284,17 @@ def instanceCompleted (ctx : Ctx) (body : Nat) (occurrence : Occurrence) (writes
       | .completed _ => false)
     | .error (.semanticFailure "instance-without-slot")
   let output ← submitted loop run writes
+  let results := if loop.outputDataItem.isNone then writes.map (·.1) else []
+  let shadows := results.any fun name => counterNames.contains name || some name == itemName ctx loop
+  -- Dynamic-only: an effect result's names are the run's data.
+  if shadows then .error (.unsupported "multiInstance.resultShadowsInstance")
   let run := { run with instances := run.instances.set index (.completed output) }
-  let state := setRun (state.leaveScope occurrence.scope) run
   let exhausted := run.instances.all filled
-  if exhausted && !evaluatesFinalCondition ctx loop then .ok (finish ctx loop run state)
-  else
-    let stop ← match loop.completionCondition with
-      | none => .ok false
-      | some condition =>
-        match ctx.evaluate (state.evalContext run.scope) condition with
-        | .value (.bool holds) => .ok holds
-        | .value _ => .error (.semanticFailure "completion-condition-not-boolean")
-        | .failure code => .error (.semanticFailure code)
-        | .unsupported code => .error (.unsupported code)
-    if stop || exhausted then .ok (finish ctx loop run state)
-    else
-      let some items := run.items | .error (.semanticFailure "multi-instance-collection")
-      .ok (beginInstances ctx loop items run state)
+  let stop ← if exhausted && !evaluatesFinalCondition ctx loop then .ok false
+    else stops ctx loop run index occurrence.scope results state
+  let run := { run with results := if loop.mode == .sequential then (run.results ++ results).eraseDups else [] }
+  let state := setRun (state.leaveScope occurrence.scope) run
+  if stop || exhausted then .ok (finish ctx loop run state)
+  else .ok (beginInstances ctx loop (run.items.getD []) run state)
 
 end Kernel.Feature.MultiInstance

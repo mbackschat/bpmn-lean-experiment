@@ -49,7 +49,7 @@ const xmlNamespace = "http://www.w3.org/XML/1998/namespace";
 export type SchemaViolation = Readonly<{ element: string | null; evidence: string }>;
 
 type XmlAttribute = Readonly<{ name: string; prefix: string | null; local: string; value: string }>;
-type XmlElement = {
+export type XmlElement = {
   readonly prefix: string | null;
   readonly local: string;
   readonly namespace: string | null;
@@ -58,6 +58,8 @@ type XmlElement = {
   readonly line: number;
   readonly children: XmlElement[];
   text: string;
+  /** Whether a text node of the element is only whitespace, which `moddle-xml` drops (`dist/index.js:839-847`). */
+  droppedText: boolean;
 };
 
 const entities: Readonly<Record<string, string>> = { amp: "&", lt: "<", gt: ">", quot: "\"", apos: "'" };
@@ -74,7 +76,7 @@ const split = (qualified: string): readonly [string | null, string] => {
  * The element tree of a document `bpmn-moddle` has already parsed, so it is well-formed and needs no error recovery;
  * comments, processing instructions and CDATA are skipped or read as text, and a DOCTYPE was refused before.
  */
-function scan(xml: string): XmlElement | undefined {
+export function scan(xml: string): XmlElement | undefined {
   const stack: XmlElement[] = [];
   let root: XmlElement | undefined;
   let line = 1;
@@ -87,7 +89,11 @@ function scan(xml: string): XmlElement | undefined {
     const open = xml.indexOf("<", cursor);
     const textEnd = open < 0 ? xml.length : open;
     const parent = stack.at(-1);
-    if (parent !== undefined) parent.text += decode(xml.slice(cursor, textEnd));
+    if (parent !== undefined) {
+      const segment = decode(xml.slice(cursor, textEnd));
+      parent.text += segment;
+      if (segment.length > 0 && segment.trim() === "") parent.droppedText = true;
+    }
     advance(textEnd);
     if (open < 0) break;
     if (xml.startsWith("<!--", open)) {
@@ -116,7 +122,7 @@ function scan(xml: string): XmlElement | undefined {
       }
       const [prefix, local] = split(name);
       const element: XmlElement = { prefix, local, namespace: scope.get(prefix ?? "") ?? null, attributes, scope, line,
-        children: [], text: "" };
+        children: [], text: "", droppedText: false };
       if (parent === undefined) root = element;
       else parent.children.push(element);
       if (selfClosing !== "/") stack.push(element);

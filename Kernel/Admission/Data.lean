@@ -23,11 +23,12 @@ def integerLexeme? (digits : String) : Option Nat :=
     if value ≤ 9223372036854775807 then some value else none
 
 /-- A name CIB resolves before any variable, or holds only inside a Multi-Instance instance: the engine objects of
-`VariableScopeElResolver.java:51-90` and the loop counters the Multi-Instance level (M5) puts in context. -/
-def juelName (name : String) : Option String :=
+`VariableScopeElResolver.java:51-90` and the loop counters, which `counters` admits: the Multi-Instance level puts them
+in a completion condition's context under `MultiInstanceCounters.cibLocals`. -/
+def juelName (counters : Bool) (name : String) : Option String :=
   if ["execution", "task", "caseExecution", "externalTask", "authenticatedUserId"].contains name then
     some "expression.juel.engineContext"
-  else if ["loopCounter", "nrOfInstances", "nrOfActiveInstances", "nrOfCompletedInstances"].contains name then
+  else if !counters && ["loopCounter", "nrOfInstances", "nrOfActiveInstances", "nrOfCompletedInstances"].contains name then
     some "expression.juel.multiInstanceCounter"
   else none
 
@@ -43,7 +44,7 @@ def juelFunction (earlier : List Nat → Option String) : JuelFunctionNode → O
   | { qualifier := _, name := _, args } => earlier args <|> some "expression.juel.function"
 
 /-- Node `position`'s refusal; a child must be an earlier node. -/
-def juelNode (position : Nat) (node : JuelNode) : Option String :=
+def juelNode (counters : Bool) (position : Nat) (node : JuelNode) : Option String :=
   let earlier (children : List Nat) : Option String :=
     if children.all (· < position) then none else some "expression.juel.malformed"
   match node with
@@ -51,7 +52,7 @@ def juelNode (position : Nat) (node : JuelNode) : Option String :=
   | .null => none
   | .bool _ => none
   | .stringLiteral _ => none
-  | .identifier name => juelName name
+  | .identifier name => juelName counters name
   | .integer digits => if (integerLexeme? digits).isSome then none else some "expression.juel.malformed"
   | .float _ => some "expression.juel.floatLiteral"
   | .function payload => juelFunction earlier payload
@@ -66,10 +67,24 @@ def juelNode (position : Nat) (node : JuelNode) : Option String :=
     earlier [payload.left, payload.right] <|> if payload.op == .div then some "expression.juel.division" else none
   | .choice payload => earlier [payload.condition, payload.whenTrue, payload.whenFalse]
 
-/-- The first node a Core JUEL table refuses, in node order. -/
-def juelNodes (nodes : List JuelNode) : Option String :=
+/-- The first node a Core JUEL table refuses, in node order; `counters` admits the Multi-Instance counter names. -/
+def juelNodes (nodes : List JuelNode) (counters : Bool := false) : Option String :=
   if nodes.isEmpty then some "expression.juel.malformed"
-  else (nodes.zipIdx.findSome? fun (node, position) => juelNode position node)
+  else (nodes.zipIdx.findSome? fun (node, position) => juelNode counters position node)
+
+/-- The language the reader gives a JUEL text outside the pinned grammar (`kernel-reader/data.ts`). -/
+def juelLanguage : String := "urn:cibseven:expression-language:juel"
+
+/-- A Multi-Instance loop expression under `Evaluator.juel`: JUEL, a variable read or text
+([Multi-Instance level](../../docs/kernel/semantics/EXPRESSION-SEMANTICS-SPEC.md#multi-instance-level)). CIB reads no
+declared language there (`BpmnParse.java:1824-1838`), so a declared one is refused; `counters` admits the counter
+names, which only the completion condition reads. -/
+def loopExpression (counters : Bool) : Expression → Option String
+  | .juel nodes => juelNodes nodes counters
+  | .variable name => juelName counters name
+  | .literal _ => none
+  | .simpleBoolean _ => some "expression.outsideJuel"
+  | .foreign language _ => if language == juelLanguage then some "expression.juel.syntax" else some "multiInstance.expressionLanguage"
 
 /-- A mapping's source. Under `Evaluator.juel` a CIB mapping (`ioParameter`, `callVariable`) may be JUEL, and an
 unreadable one is the reader's `foreign`; a Data Association never carries JUEL at Core. -/
@@ -82,7 +97,7 @@ def mapping (evaluator : Evaluator) (entry : Mapping) : Option String :=
     else if cib then juelNodes nodes else some "expression.juel.site"
   | .simpleBoolean _ => if evaluator == .juel then some "expression.outsideJuel" else none
   | .literal _ => none
-  | .variable name => if evaluator == .juel then juelName name else none
+  | .variable name => if evaluator == .juel then juelName false name else none
 
 def mappings (evaluator : Evaluator) (list : List Mapping) : Option String :=
   list.findSome? (mapping evaluator)
@@ -99,7 +114,7 @@ def flowCondition (evaluator : Evaluator) (flow : Flow) : Option String :=
   | none => none
   | some (.simpleBoolean _) => if evaluator == .juel then some "expression.outsideJuel" else none
   | some (.juel nodes) => if evaluator == .juel then juelNodes nodes else some "flow.condition.foreign"
-  | some (.variable name) => if evaluator == .juel then juelName name else some "flow.condition.foreign"
+  | some (.variable name) => if evaluator == .juel then juelName false name else some "flow.condition.foreign"
   | some (.literal _) => some "flow.condition.foreign"
   | some (.foreign _ _) => some "flow.condition.foreign"
 

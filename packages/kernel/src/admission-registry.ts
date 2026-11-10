@@ -125,7 +125,8 @@ function element(program: Program, throws: readonly Element[], entry: Element): 
           : Data.mappings(program.options.evaluator, call.inputs) ?? Data.mappings(program.options.evaluator, call.outputs)),
         () => Work.activity(program, payload),
         () => activityOrigin(program, header, payload),
-        () => (loop === null ? null : MultiInstance.activity(Work.instanceBody(payload.work), payload.envelope, loop)),
+        () => (loop === null ? null
+          : MultiInstance.activity(program.options, Data.loopExpression, Work.instanceBody(payload.work), payload.envelope, loop)),
         () => Subscriptions.boundaries(program.options.errorCatchVariables, false, payload.envelope.boundaries),
         () => boundaryData(program, payload.envelope.boundaries),
         () => Scopes.nestedCompensation(program, throws, header, payload.envelope),
@@ -174,6 +175,11 @@ function abnormalScope(program: Program): boolean {
   });
 }
 
+/** Whether the program has a Multi-Instance loop, which `admission/profile.ts` reads. */
+function loops(program: Program): boolean {
+  return program.elements.some((entry) => (elementEnvelope(entry)?.multiInstance ?? null) !== null);
+}
+
 /** A flow's condition, then where it may sit. */
 function flow(program: Program, entry: Flow): string | null {
   return Data.flowCondition(program.options.evaluator, entry) ?? FlowAdmission.conditionalOutflow(program, entry);
@@ -207,7 +213,7 @@ export function admit(program: Program): string | null {
   return first(
     () => FlowAdmission.references(program),
     () => Scopes.references(program),
-    () => Profile.options(abnormalScope(program), program.options),
+    () => Profile.options(abnormalScope(program), loops(program), program.options),
     () => executable(program),
     () => Decision.resources(program),
     () => firstOf(program.processes, calledProcess),

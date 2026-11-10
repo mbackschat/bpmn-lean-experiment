@@ -371,7 +371,7 @@ def integerLexeme? (digits : String) : Option Int :=
 
 /-- One node, given `sub`, the evaluation of an earlier node: the one dispatch over `JuelNode`, kept apart from the
 recursion so that it is a single match site (guard 18). -/
-def visit (variables : List (String × Value)) (sub : Nat → Eval JVal) : JuelNode → Eval JVal
+def visit (context : EvalContext) (sub : Nat → Eval JVal) : JuelNode → Eval JVal
   | .text value => .ok (.string value)
   | .composite parts => do
     let rendered ← parts.mapM fun part => do toText (← sub part)
@@ -385,7 +385,7 @@ def visit (variables : List (String × Value)) (sub : Nat → Eval JVal) : JuelN
   | .float _ => limit "expression.juel.floatLiteral"
   | .stringLiteral value => .ok (.string value)
   | .identifier name =>
-    match variables.find? (·.1 == name) with
+    match context.variables.find? (·.1 == name) with
     | some (_, value) => .ok (fromValue value)
     | none => fail "unknown-variable"
   | .function _ => limit "expression.juel.function"
@@ -408,22 +408,22 @@ def visit (variables : List (String × Value)) (sub : Nat → Eval JVal) : JuelN
     if ← toBool (← sub payload.condition) then sub payload.whenTrue else sub payload.whenFalse
 
 /-- Node `position`; every child is an earlier node, so the recursion ends. -/
-def node (variables : List (String × Value)) (nodes : Array JuelNode) (position : Nat) : Eval JVal :=
+def node (context : EvalContext) (nodes : Array JuelNode) (position : Nat) : Eval JVal :=
   match nodes[position]? with
   | none => malformed
   | some current =>
-    visit variables (fun index => if index < position then node variables nodes index else malformed) current
+    visit context (fun index => if index < position then node context nodes index else malformed) current
 termination_by position
 
-/-- Evaluate a JUEL node table against `variables`, innermost binding first. -/
-def evaluateJuel (variables : List (String × Value)) (nodes : List JuelNode) : Evaluation :=
+/-- Evaluate a JUEL node table against the context's variables, innermost binding first. -/
+def evaluateJuel (context : EvalContext) (nodes : List JuelNode) : Evaluation :=
   if nodes.isEmpty then .unsupported "expression.juel.malformed"
   else
-    match node variables nodes.toArray (nodes.length - 1) with
+    match node context nodes.toArray (nodes.length - 1) with
     | .error (.failure code) => .failure code
     | .error (.unsupported code) => .unsupported code
     | .ok result =>
-      match portable result with
+      match (if context.domainChecked then portable else siteValue) result with
       | some value => .value value
       -- dynamic-only: whether a result is portable depends on the run's data.
       | none => .unsupported "juel.resultOutsideDomain"

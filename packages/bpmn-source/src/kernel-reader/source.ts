@@ -9,6 +9,7 @@ import { ReadRefusal, ReadRefusalCode } from "./model.js";
 import type { EffectBinding } from "./model.js";
 import { bindReference } from "./references.js";
 import { firstSchemaViolation } from "./schema.js";
+import { droppedLoopWhitespace } from "./multi-instance.js";
 
 /** One BPMN source and its optional overlay; `profile` is identity data and selects no reader behaviour. */
 export type KernelSource = Readonly<{
@@ -165,5 +166,7 @@ export async function parseKernelSource(source: KernelSource): Promise<ParsedSou
   }
   const schema = firstSchemaViolation(xml);
   if (schema !== undefined) throw new ReadRefusal(ReadRefusalCode.SourceSchema, schema.element, schema.evidence);
+  const whitespace = droppedLoopWhitespace(xml);
+  if (whitespace !== undefined) throw new ReadRefusal(ReadRefusalCode.SourceLoopBodyWhitespace, whitespace.element, whitespace.evidence);
   return { sha256, definitions, ...overlay };
 }

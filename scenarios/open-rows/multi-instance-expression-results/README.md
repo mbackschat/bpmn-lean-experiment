@@ -1,6 +1,6 @@
 # Multi-Instance expression results
 
-Neutral inputs for the collection, cardinality and completion half of [PC-DATA-08](../../../docs/PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list) and the wrong-result-type cases of [PC-DATA-09](../../../docs/PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list), with the expression parts of PC-MI-07 and PC-MI-09. They separate the count, collection and counter rules of the [Multi-Instance level](../../../docs/kernel/semantics/EXPRESSION-SEMANTICS-SPEC.md#multi-instance-level-draft-awaiting-the-cold-interpretation-review). They are answer-free: the CIB Seven `2.2.0` evidence run supplies every expected result, and no schedule states one. Every scenario uses the `cibseven-2.2.0` profile with the neutral delegate-expression effect handler of the [Service Task effect scenario](../../service-task-effect/README.md).
+Neutral inputs for the collection, cardinality and completion half of [PC-DATA-08](../../../docs/PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list) and the wrong-result-type cases of [PC-DATA-09](../../../docs/PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list), with the expression parts of PC-MI-07 and PC-MI-09. They separate the count, collection and counter rules of the [Multi-Instance level](../../../docs/kernel/semantics/EXPRESSION-SEMANTICS-SPEC.md#multi-instance-level). They are answer-free: the CIB Seven `2.2.0` evidence run supplies every expected result, and no schedule states one. Every scenario uses the `cibseven-2.2.0` profile with the neutral delegate-expression effect handler of the [Service Task effect scenario](../../service-task-effect/README.md).
 
 The earlier [expression-cardinality-and-collections](../expression-cardinality-and-collections/README.md) probes read `${loopCounter}`, `${nrOfInstances}` and `${item}` in the Activity's own input mappings. CIB evaluates those mappings against the parent variable scope (`IoParameter#execute`), so it rolls the start back whatever the count. These models therefore declare no `camunda:inputOutput` mapping at all. Each is one Service Task `ServiceTask_Notify` with Multi-Instance loop characteristics and `camunda:asyncBefore="true"` on the loop, followed by the User Task `UserTask_Close`, as in the [Multi-Instance Service Task witnesses](../multi-instance-service-task/README.md). Each body's effect is a wait answered by an `effectResult` stimulus, and effect results are addressed by activation in generation order. A schedule whose start is expected to fail carries only the start, so the observation is whether the starting command commits.
 
@@ -16,6 +16,11 @@ The earlier [expression-cardinality-and-collections](../expression-cardinality-a
 | [collection-braces](collection-braces.bpmn) | parallel | `camunda:collection` `{items}`, which contains `{` but no `${`, item `item` |
 | [completion-reads-instance](completion-reads-instance.bpmn) | parallel | collection as in collection-variable; completion `${recipient == stopItem \|\| loopCounter == stopIndex}` |
 | [sequential-active-count](sequential-active-count.bpmn), [parallel-active-count](parallel-active-count.bpmn) | sequential, parallel | collection as in collection-variable; completion `${nrOfActiveInstances == active && nrOfInstances == total}` |
+| [completion-reads-result-parallel](completion-reads-result-parallel.bpmn), [completion-reads-result-sequential](completion-reads-result-sequential.bpmn) | parallel, sequential | collection as in collection-variable; completion `${delivered}`, a value of the instance's own effect result |
+| [completion-counter-equals](completion-counter-equals.bpmn) | parallel | collection as in collection-variable; completion `${loopCounter.equals(0)}`, an `Integer` counter against a `Long` literal |
+| [cardinality-plain-literal](cardinality-plain-literal.bpmn) | parallel | `loopCardinality` with the literal body `3` |
+| [cardinality-cdata-wrapped](cardinality-cdata-wrapped.bpmn) | parallel | `loopCardinality` whose CDATA `${count}` is wrapped in single spaces outside the section |
+| [cardinality-whitespace-only](cardinality-whitespace-only.bpmn) | parallel | `loopCardinality` whose body is three spaces |
 
 ## Schedules
 
@@ -51,5 +56,11 @@ The earlier [expression-cardinality-and-collections](../expression-cardinality-a
 | [completion-reads-counter](completion-reads-counter.scenario.json) | completion-reads-instance | `stopItem = none`, `stopIndex = 2`; result 3, then body 1's result is sent | PC-DATA-08, PC-MI-09 |
 | [sequential-active-count](sequential-active-count.scenario.json) | sequential-active-count | `active = 1`, `total = 3`; result 1, then body 2's result is sent | PC-DATA-08, PC-MI-09 |
 | [parallel-active-count](parallel-active-count.scenario.json) | parallel-active-count | `active = 2`, `total = 3`; result 1, then body 2's result is sent | PC-DATA-08, PC-MI-09 |
+| [completion-reads-result-parallel](completion-reads-result-parallel.scenario.json) | completion-reads-result-parallel | result 1 with `delivered = false`, result 2 with `delivered = true`, then body 3's result is sent | PC-DATA-08, PC-MI-09 |
+| [completion-reads-result-sequential](completion-reads-result-sequential.scenario.json) | completion-reads-result-sequential | the same schedule in sequential mode | PC-DATA-08, PC-MI-09 |
+| [completion-counter-equals](completion-counter-equals.scenario.json) | completion-counter-equals | two items; result 1, then result 2 | PC-DATA-08, PC-MI-09 |
+| [count-plain-literal](count-plain-literal.scenario.json) | cardinality-plain-literal | three results, then the close task | PC-DATA-08, PC-MI-07 |
+| [count-cdata-wrapped](count-cdata-wrapped.scenario.json) | cardinality-cdata-wrapped | `count = 2`; the start only | PC-DATA-08, PC-DATA-09 |
+| [count-whitespace-only](count-whitespace-only.scenario.json) | cardinality-whitespace-only | the start only | PC-DATA-08, PC-DATA-09 |
 
-After a schedule's last effect result comes the close task. A result sent to a body that no longer runs is a discriminator: CIB rejects it when the condition has closed the Activity, and accepts it otherwise.
+After a schedule's last effect result comes the close task. A result sent to a body that no longer runs is a discriminator: CIB rejects it when the condition has closed the Activity, and accepts it otherwise. The kernel reader refuses the two whitespace models (`source.loopBodyWhitespace`), because the parser it uses drops the whitespace-only text nodes CIB keeps; their CIB answer records what that text evaluates to.

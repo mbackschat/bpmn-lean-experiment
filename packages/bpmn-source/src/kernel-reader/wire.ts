@@ -68,6 +68,9 @@ export type KernelProfileOptions = Readonly<{
   multiInstanceBinding: "dataAssociations" | "loopReferences";
   effectResultValues: "outputSet" | "activityLocals";
   outputContext: "submission" | "activityScope";
+  multiInstanceCounters: "none" | "cibLocals";
+  multiInstanceInputFailure: "hold" | "rollback";
+  multiInstanceCount: "integer" | "javaInt";
 }>;
 
 /** One portable value's allowance, which bounds a scope-chain submission (`NSD-TASK-01`). */
@@ -106,6 +109,9 @@ export function kernelProfileOptions(relations: readonly string[]): KernelProfil
     multiInstanceBinding: selects("CIB-INT-0014") ? "loopReferences" : "dataAssociations",
     effectResultValues: selects("CIB-EXT-0015") ? "activityLocals" : "outputSet",
     outputContext: selects("CIB-EXT-0031") ? "activityScope" : "submission",
+    multiInstanceCounters: selects("CIB-INT-0018") ? "cibLocals" : "none",
+    multiInstanceInputFailure: selects("CIB-INT-0019") ? "rollback" : "hold",
+    multiInstanceCount: selects("CIB-EXT-0033") ? "javaInt" : "integer",
   };
 }
 

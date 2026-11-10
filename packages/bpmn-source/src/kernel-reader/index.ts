@@ -181,7 +181,7 @@ function readFlow(ctx: ReadContext, flow: ElementRecord): KernelJson {
     id: requireId(flow),
     source: endpoint(flow, "sourceRef"),
     target: endpoint(flow, "targetRef"),
-    condition: condition === undefined ? null : flowCondition(ctx, condition),
+    condition: condition === undefined ? null : flowCondition(ctx, condition, requireId(flow)),
   };
 }
 

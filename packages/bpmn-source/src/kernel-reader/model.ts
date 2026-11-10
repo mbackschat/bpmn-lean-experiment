@@ -16,6 +16,7 @@ export enum ReadRefusalCode {
   SourceMissingId = "source.missingId",
   SourceReference = "source.reference",
   SourceSchema = "source.schema",
+  SourceLoopBodyWhitespace = "source.loopBodyWhitespace",
   ParserFailure = "parser.failure",
   ParserWarning = "parser.warning",
   UnknownElement = "reader.unknownElement",
@@ -31,6 +32,8 @@ export enum ReadRefusalCode {
   SignalWithoutReference = "reader.signalWithoutReference",
   ThrowWithoutCode = "reader.throwWithoutCode",
   MultiInstanceWithoutCount = "reader.multiInstanceWithoutCount",
+  EmptyLoopCardinality = "reader.emptyLoopCardinality",
+  ConditionExpressionType = "reader.conditionExpressionType",
   DecisionSchema = "decision.schema",
 }
 

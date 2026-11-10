@@ -49,6 +49,9 @@ structure MultiInstanceRun where
   occurrence : Nat
   collection : Value
   instances : List Iteration
+  /-- The effect-result names earlier sequential instances left, which CIB keeps on the body until it ends
+  (EXPRESSION-SEMANTICS-SPEC "Multi-Instance level", result locals). -/
+  results : List String := []
   deriving Repr
 
 /-- A completed Activity or Scope whose compensation handler may still run: it completed in `scope`, and its

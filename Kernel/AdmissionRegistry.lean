@@ -62,7 +62,8 @@ def element (program : Program) (throws : List Element) : Element → Option Str
       Admission.Work.activity program payload <|>
       activityOrigin program header payload <|>
       payload.envelope.multiInstance.bind
-        (Admission.MultiInstance.activity (Admission.Work.instanceBody payload.work) payload.envelope) <|>
+        (Admission.MultiInstance.activity program.options Admission.Data.loopExpression
+          (Admission.Work.instanceBody payload.work) payload.envelope) <|>
       Admission.Subscriptions.boundaries program.options.errorCatchVariables false payload.envelope.boundaries <|>
       boundaryData program payload.envelope.boundaries <|>
       Admission.Scopes.nestedCompensation program throws header payload.envelope
@@ -100,6 +101,10 @@ def abnormalScope (program : Program) : Bool :=
     (thrown element).any (fun (header, reading) => header.parent.isSome && reading.terminates) ||
     element.scope?.any fun (_, payload) => (Admission.Scopes.interruptingStart payload).isSome
 
+/-- Whether the program has a Multi-Instance loop, which `Admission.Profile.multiInstance` reads. -/
+def loops (program : Program) : Bool :=
+  program.elements.any fun element => ((element.envelope?).bind (·.multiInstance)).isSome
+
 /-- A flow's condition, then where it may sit. -/
 def flow (program : Program) (entry : Flow) : Option String :=
   Admission.Data.flowCondition program.options.evaluator entry <|> Admission.Flow.conditionalOutflow program entry
@@ -121,7 +126,7 @@ def executable (program : Program) : Option String :=
 called-process bindings, flows and elements in program order. -/
 def admit (program : Program) : Option String :=
   Admission.Flow.references program <|> Admission.Scopes.references program <|>
-    Admission.Profile.options (abnormalScope program) program.options <|>
+    Admission.Profile.options (abnormalScope program) (loops program) program.options <|>
     executable program <|>
     Admission.Work.Decision.resources program <|>
     program.processes.findSome? calledProcess <|>

@@ -66,7 +66,7 @@ export function evaluate(context: EvalContext, expression: Expression): Evaluati
       return value === null ? { tag: EvaluationTag.Failure, code: "unknown-variable" } : { tag: EvaluationTag.Value, result: value };
     }
     case ExpressionTag.Juel:
-      return evaluateJuel(context.variables, expression.nodes);
+      return evaluateJuel(context, expression.nodes);
     case ExpressionTag.Foreign:
       // Admission refuses it (`expression.outsideSimpleBoolean`, `mapping.expression`, `flow.condition.foreign`).
       return { tag: EvaluationTag.Failure, code: "expression.outsideSimpleBoolean" };

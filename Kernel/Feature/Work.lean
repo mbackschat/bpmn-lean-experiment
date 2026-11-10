@@ -180,6 +180,15 @@ def unconsumed (ctx : Ctx) : Option Envelope → ResultValues
     let ioParameters := (envelope.inputs ++ envelope.outputs).any (·.dialect == .ioParameter)
     if envelope.multiInstance.isSome || ioParameters then ctx.program.options.effectResultValues else .outputSet
 
+/-- An effect's successful completion. A Multi-Instance instance under `ResultValues.activityLocals` writes its result
+values as locals of its own scope occurrence, which stays until its completion condition has run, so the condition
+reads them (CIB-EXT-0015; EXPRESSION-SEMANTICS-SPEC "Multi-Instance level", result locals); every other completion
+writes its outputs outward. -/
+def effectCompletion (envelope : Option Envelope) (rule : ResultValues) (occurrence : Nat)
+    (written patch : List (String × Value)) : Signal :=
+  if (envelope.bind (·.multiInstance)).isSome && rule == .activityLocals then .complete occurrence .outgoing patch .own
+  else .complete occurrence .outgoing written .outward
+
 /-- An effect's result patch is its OutputSet. A BPMN error raises from the Activity with the occurrence as host: it
 writes no outputs (BPMN 2.0.2 §13.3.2) unless the profile maps them on the error path (CIB-EXT-0004, -0009, -0016). A
 technical failure has no BPMN meaning (§13.3.3 defines only a fault) and refuses unless the profile opens an incident
@@ -192,7 +201,7 @@ def effectResult (ctx : Ctx) (item : OpenItem) (outcome : EffectOutcome) (state 
   | .success patch => do
     admitValues (patch.map (·.2))
     let written ← outputs ctx state.logicalTimeMs (unconsumed ctx envelope) mappings (outputScope ctx state item) patch
-    .ok (state.signal (.complete item.occurrence .outgoing written .outward))
+    .ok (state.signal (effectCompletion envelope (unconsumed ctx envelope) item.occurrence written patch))
   | .businessFailure code message patch => do
     admitValues (patch.map (·.2))
     let written ← match ctx.program.options.errorPathOutputs with

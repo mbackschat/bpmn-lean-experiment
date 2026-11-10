@@ -187,6 +187,18 @@ def fromValue : Value → JVal
   | .list items => .list items
   | .map entries => .map entries
 
+/-- A result as the Multi-Instance count and collection sites read it, before the domain predicate: any Integer within
+±(2^53−1), the bound the TypeScript kernel's numbers share, and a Decimal at any scale, a negative one rescaled to 0. -/
+def siteValue : JVal → Option Value
+  | .null => some .null
+  | .bool value => some (.bool value)
+  | .int value _ => if value.natAbs ≤ 9007199254740991 then some (.int value) else none
+  | .decimal coefficient scale =>
+    some (if scale < 0 then .decimal (coefficient * 10 ^ scale.natAbs) 0 else .decimal coefficient scale.toNat)
+  | .string value => some (.string value)
+  | .list items => some (.list items)
+  | .map entries => some (.map entries)
+
 /-- The portable value of a result, or `none` outside the domain (DATA-SEMANTICS-SPEC "Values"). -/
 def portable : JVal → Option Value
   | .null => some .null

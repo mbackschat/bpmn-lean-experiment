@@ -169,3 +169,56 @@ test("juel reader: a condition's camunda:resource and a Call copy's local flag a
     .replace("</bpmn:process>", `</bpmn:process><bpmn:process id="Q" isExecutable="true"><bpmn:task id="QT"/></bpmn:process>`)),
   ["reader.factNotCarried", "camunda:in/out local"]);
 });
+
+/** The Multi-Instance loop of a User Task `T` whose characteristics are `body`, or the refusal code and evidence. */
+async function loopRead(body: string, attributes = ""): Promise<unknown> {
+  const read = await readKernelProgram({
+    bytes: new TextEncoder().encode(model(`<bpmn:userTask id="T"><bpmn:multiInstanceLoopCharacteristics${attributes}>
+${body}</bpmn:multiInstanceLoopCharacteristics></bpmn:userTask>`)),
+    overlay: null, profile: "juel-reader", limits: { maxBytes: 1 << 20, parserDeadlineMs: 2_000 },
+  }, kernelProfileOptions([]));
+  if (read.kind === "refused") return [read.code, read.evidence];
+  return (elementOf((read as unknown as { program: Record<string, unknown> }).program, "T").payload as
+    Record<string, Record<string, unknown>>).envelope?.multiInstance;
+}
+
+test("juel reader: a camunda:collection containing a brace is an expression, as CIB tests it", async () => {
+  // `BpmnParse.java:1841-1848` tests `contains("{")`, so `{items}` is the JUEL text `{items}`, a String literal.
+  const loop = await loopRead("", ` camunda:collection="{items}"`) as Record<string, unknown>;
+  assert.deepEqual(loop.count, { collection: { items: { literal: { value: { kind: "string", value: "{items}" } } } } });
+});
+
+test("juel reader: a loop with both a cardinality and a collection carries both", async () => {
+  const loop = await loopRead("<bpmn:loopCardinality>${n}</bpmn:loopCardinality>", ` camunda:collection="items"`) as Record<string, unknown>;
+  assert.deepEqual(loop.count, { countAndCollection: { count: { variable: { name: "n" } }, items: { variable: { name: "items" } } } });
+});
+
+test("juel reader: a cardinality with an expression marker keeps its declared language", async () => {
+  const loop = await loopRead(`<bpmn:loopCardinality xsi:type="bpmn:tFormalExpression" language="javascript">\${n}</bpmn:loopCardinality>`) as Record<string, unknown>;
+  assert.deepEqual(loop.count, { cardinality: { count: { foreign: { language: "javascript", source: "${n}" } } } });
+});
+
+test("juel reader: a loop body with a whitespace-only text node bpmn-moddle drops is refused; an empty cardinality too", async () => {
+  // CIB keeps every text node (`util/xml/Element.java:192-196`); `moddle-xml` drops a whitespace-only one
+  // (`dist/index.js:839-847`), so the IL would hold a text CIB never evaluates.
+  assert.deepEqual(await loopRead("<bpmn:loopCardinality> <![CDATA[${n}]]> </bpmn:loopCardinality>"),
+    ["source.loopBodyWhitespace", "loopCardinality of T has a whitespace-only text node"]);
+  assert.deepEqual(await loopRead("<bpmn:loopCardinality>   </bpmn:loopCardinality>"),
+    ["source.loopBodyWhitespace", "loopCardinality of T has a whitespace-only text node"]);
+  assert.deepEqual(await loopRead(`<bpmn:loopCardinality>3</bpmn:loopCardinality><bpmn:completionCondition>
+<![CDATA[\${done}]]></bpmn:completionCondition>`), ["source.loopBodyWhitespace", "completionCondition of T has a whitespace-only text node"]);
+  const kept = await loopRead("<bpmn:loopCardinality><![CDATA[ ${n} ]]></bpmn:loopCardinality>") as Record<string, unknown>;
+  assert.deepEqual(kept.count, { cardinality: { count: nodes(text(" "), id("n"), text(" "), { composite: { parts: [0, 1, 2] } }) } });
+  assert.deepEqual(await loopRead("<bpmn:loopCardinality></bpmn:loopCardinality>"), ["reader.emptyLoopCardinality", "T"]);
+});
+
+test("juel reader: an explicit tExpression condition on a Sequence Flow is refused, as CIB refuses it", async () => {
+  // `BpmnParse.java:4404-4407` accepts only `tFormalExpression` as an explicit type.
+  const read = await readKernelProgram({
+    bytes: new TextEncoder().encode(model(`<bpmn:startEvent id="S"/><bpmn:exclusiveGateway id="G"/><bpmn:endEvent id="E"/>
+<bpmn:sequenceFlow id="F0" sourceRef="S" targetRef="G"/><bpmn:sequenceFlow id="F1" sourceRef="G" targetRef="E">
+<bpmn:conditionExpression xsi:type="bpmn:tExpression">\${a}</bpmn:conditionExpression></bpmn:sequenceFlow>`)),
+    overlay: null, profile: "juel-reader", limits: { maxBytes: 1 << 20, parserDeadlineMs: 2_000 },
+  }, kernelProfileOptions([]));
+  assert.deepEqual(read.kind === "refused" ? [read.code, read.element] : read.kind, ["reader.conditionExpressionType", "F1"]);
+});

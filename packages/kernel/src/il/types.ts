@@ -14,7 +14,7 @@ import {
   ConditionOrder, ContinuationFailure, DeliveryVariables, ErrorPathOutputs, Evaluator, MessageCorrelation,
   MultiInstanceFinalBody, MultiInstanceOutputs, type ProfileOptions, SubmissionRule, TechnicalFailure, UndeclaredWrite,
   UnhandledError, ErrorCatchVariables,
-  MultiInstanceBinding, ResultValues, OutputContext,
+  MultiInstanceBinding, ResultValues, OutputContext, MultiInstanceCounters, MultiInstanceInputFailure, MultiInstanceCount,
 } from "./types/options.js";
 import {
   ExpressionTag, MappingDialect, SimpleBooleanTag, ValueSourceTag, ValueTag, type Expression, type Mapping,
@@ -26,7 +26,7 @@ export {
   ConditionOrder, ContinuationFailure, DeliveryVariables, ErrorPathOutputs, Evaluator, MessageCorrelation,
   MultiInstanceFinalBody, MultiInstanceOutputs, type ProfileOptions, SubmissionRule, TechnicalFailure, UndeclaredWrite,
   UnhandledError, ErrorCatchVariables,
-  MultiInstanceBinding, ResultValues, OutputContext,
+  MultiInstanceBinding, ResultValues, OutputContext, MultiInstanceCounters, MultiInstanceInputFailure, MultiInstanceCount,
 };
 export {
   ExpressionTag, MappingDialect, SimpleBooleanTag, ValueSourceTag, ValueTag, type Expression, type Mapping,
@@ -331,11 +331,13 @@ export type Work =
 /** Guarded type: `feature/multi-instance` owns matching on it. */
 export enum MultiInstanceMode { Sequential = "sequential", Parallel = "parallel" }
 
-export enum InstanceCountTag { Collection = "collection", Cardinality = "cardinality" }
+export enum InstanceCountTag { Collection = "collection", Cardinality = "cardinality", CountAndCollection = "countAndCollection" }
 
 export type InstanceCount =
   | { readonly tag: InstanceCountTag.Collection; readonly items: Expression }
-  | { readonly tag: InstanceCountTag.Cardinality; readonly count: Expression };
+  | { readonly tag: InstanceCountTag.Cardinality; readonly count: Expression }
+  /** Both forms, which CIB reads together; admission refuses it (`multiInstance.countAndCollection`). */
+  | { readonly tag: InstanceCountTag.CountAndCollection; readonly count: Expression; readonly items: Expression };
 
 /** Whether the input collection is read once on entry or re-read by a sequential Activity (PC-MI-08). */
 export enum CollectionRead { EntrySnapshot = "entrySnapshot", SequentialReread = "sequentialReread" }

@@ -1,7 +1,7 @@
-import { asElementArray } from "../moddle-graph.js";
+import { asElement, asElementArray } from "../moddle-graph.js";
 import type { ElementRecord } from "../moddle-graph.js";
 import { parseJuel } from "./juel.js";
-import { ReadRefusal, ReadRefusalCode, list, optionalId, text } from "./model.js";
+import { ReadRefusal, ReadRefusalCode, list, namespaceOf, optionalId, text } from "./model.js";
 import type { ReadContext } from "./model.js";
 import { compareIds, ctor, expressionSource, foreign, literalSource, mapping, MappingSyntax, stringLiteral, variable } from "./wire.js";
 import type { KernelJson } from "./wire.js";
@@ -9,6 +9,7 @@ import type { KernelJson } from "./wire.js";
 /** The source language of a CIB text the JUEL reader could not parse, which the kernel reads only as `foreign`. */
 const juelLanguage = "urn:cibseven:expression-language:juel";
 const simpleBooleanLanguage = "urn:bpmn-lean:expression:simple-boolean:v1";
+const xsiNamespace = "http://www.w3.org/2001/XMLSchema-instance";
 /** BPMN 2.0.2 Table 8.17: the default `expressionLanguage` of Definitions. */
 const defaultExpressionLanguage = "http://www.w3.org/1999/XPath";
 
@@ -68,7 +69,14 @@ export function conditionExpression(ctx: ReadContext, expression: ElementRecord)
  * `:4400`), so the JUEL reading trims it too; a Simple Boolean body forbids surrounding whitespace and a foreign body is
  * kept as written.
  */
-export function flowCondition(ctx: ReadContext, expression: ElementRecord): KernelJson {
+export function flowCondition(ctx: ReadContext, expression: ElementRecord, flowId: string): KernelJson {
+  // CIB accepts only `tFormalExpression` as an explicit type there (`BpmnParse.java:4404-4407`).
+  const xsiType = Object.entries(asElement(expression.$attrs) ?? {}).find(([name]) =>
+    namespaceOf(expression, ctx.definitions, name.includes(":") ? name.slice(0, name.indexOf(":")) : "") === xsiNamespace &&
+    name.endsWith(":type"))?.[1];
+  if (typeof xsiType === "string" && xsiType.slice(xsiType.indexOf(":") + 1) === "tExpression") {
+    throw new ReadRefusal(ReadRefusalCode.ConditionExpressionType, flowId, xsiType);
+  }
   return readCondition(ctx, expression, javaTrim);
 }
 

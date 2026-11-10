@@ -144,6 +144,33 @@ inductive ResultValues where
   | activityLocals
   deriving DecidableEq, Repr
 
+/-- Which names a Multi-Instance completion condition reads besides the instance's own locals
+([expression semantics](../../../docs/kernel/semantics/EXPRESSION-SEMANTICS-SPEC.md#counter-values)). -/
+inductive MultiInstanceCounters where
+  /-- BPMN 2.0.2 Table 10.30 names no expression variable: no counter name resolves. -/
+  | none
+  /-- CIB-INT-0018: `loopCounter`, `nrOfInstances`, `nrOfActiveInstances` and `nrOfCompletedInstances` with CIB's
+  values, each a Java `Integer`. -/
+  | cibLocals
+  deriving DecidableEq, Repr
+
+/-- What a Multi-Instance count or collection that is unavailable or of the wrong kind does. -/
+inductive MultiInstanceInputFailure where
+  /-- BPMN 2.0.2 §10.4.2: an unavailable input holds the occurrence; a wrong kind is a semantic failure. -/
+  | hold
+  /-- CIB-INT-0019: the operation fails, following the stimulus table. -/
+  | rollback
+  deriving DecidableEq, Repr
+
+/-- Which values a Multi-Instance cardinality counts by. -/
+inductive MultiInstanceCount where
+  /-- BPMN 2.0.2 Table 10.29: the expression "MUST evaluate to an integer". -/
+  | integer
+  /-- CIB-EXT-0033: CIB's `resolveLoopCardinality`, which also counts a String through `Integer.parseInt` and an
+  integral Decimal, at Java's `int` width. -/
+  | javaInt
+  deriving DecidableEq, Repr
+
 /-- What an Activity's output mappings read besides the values its completion or effect result submits. -/
 inductive OutputContext where
   /-- BPMN 2.0.2 §10.4.2: nothing; the outputs map the submitted values alone. -/
@@ -180,6 +207,9 @@ structure ProfileOptions where
   multiInstanceBinding : MultiInstanceBinding := .dataAssociations
   effectResultValues : ResultValues := .outputSet
   outputContext : OutputContext := .submission
+  multiInstanceCounters : MultiInstanceCounters := .none
+  multiInstanceInputFailure : MultiInstanceInputFailure := .hold
+  multiInstanceCount : MultiInstanceCount := .integer
   deriving Repr
 
 end Kernel
