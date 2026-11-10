@@ -12,13 +12,13 @@
       <bpmn:endEvent id="End_Cancel"><bpmn:cancelEventDefinition id="Cancel_Request" /></bpmn:endEvent>
       <bpmn:boundaryEvent id="Boundary_Release" attachedToRef="Task_Reserve"><bpmn:compensateEventDefinition id="Compensate_Reservation" /></bpmn:boundaryEvent>
       <bpmn:serviceTask id="Task_Release" name="Release resource" isForCompensation="true" implementation="urn:bpmn-lean:effect:compensation-single-effect-v1" />
-      <bpmn:association id="Association_Release" sourceRef="Boundary_Release" targetRef="Task_Release" />
       <bpmn:sequenceFlow id="Flow_ChildStart" sourceRef="Start_Reservation" targetRef="Split_Work" />
       <bpmn:sequenceFlow id="Flow_Reserve" sourceRef="Split_Work" targetRef="Task_Reserve" />
       <bpmn:sequenceFlow id="Flow_Prepare" sourceRef="Task_Reserve" targetRef="Task_Prepare" />
       <bpmn:sequenceFlow id="Flow_Prepared" sourceRef="Task_Prepare" targetRef="End_Prepared" />
       <bpmn:sequenceFlow id="Flow_Withdraw" sourceRef="Split_Work" targetRef="Task_Withdraw" />
       <bpmn:sequenceFlow id="Flow_Cancel" sourceRef="Task_Withdraw" targetRef="End_Cancel" />
+      <bpmn:association id="Association_Release" sourceRef="Boundary_Release" targetRef="Task_Release" />
     </bpmn:transaction>
     <bpmn:boundaryEvent id="Boundary_Cancel" attachedToRef="Transaction_Reservation"><bpmn:cancelEventDefinition id="Cancel_Catch" /></bpmn:boundaryEvent>
     <bpmn:userTask id="Task_Acknowledge" name="Acknowledge withdrawal" />
