@@ -112,12 +112,11 @@ final class CibSevenOpenWaitProjector {
       List<EffectJob> effects,
       List<IncidentJob> incidents) {}
 
-  Projection project(List<Instance> instances) {
+  Projection project(List<Instance> instances, CibSevenOccurrences occurrences) {
     var projection =
         new Projection(
             new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(),
             new ArrayList<>(), new ArrayList<>());
-    var occurrences = new CibSevenOccurrences(engine);
     for (var instance : instances) {
       projectTasks(instance, occurrences, projection);
       projectSubscriptions(instance, occurrences, projection);

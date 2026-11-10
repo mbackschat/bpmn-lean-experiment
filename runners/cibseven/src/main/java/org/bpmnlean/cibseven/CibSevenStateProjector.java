@@ -31,6 +31,8 @@ final class CibSevenStateProjector {
   private final Date logicalEpoch;
   private final boolean incidentsEnabled;
   private final CibSevenOpenWaitProjector waits;
+  /** One per scenario, so that an activation keeps its number across the scenario's observations. */
+  private final CibSevenOccurrences occurrences;
 
   CibSevenStateProjector(
       ProcessEngine engine, Date logicalEpoch, boolean incidentsEnabled, boolean incidentsCancellable) {
@@ -38,11 +40,12 @@ final class CibSevenStateProjector {
     this.logicalEpoch = logicalEpoch;
     this.incidentsEnabled = incidentsEnabled;
     this.waits = new CibSevenOpenWaitProjector(engine, logicalEpoch, incidentsCancellable);
+    this.occurrences = new CibSevenOccurrences(engine);
   }
 
   /** The open waits as commands see them, with their engine handles. */
   List<ProjectedWait> openWaits(String engineRootId, String stableRootId) {
-    return waits.project(new CibSevenOccurrences(engine).running(engineRootId, stableRootId)).waits();
+    return waits.project(occurrences.running(engineRootId, stableRootId), occurrences).waits();
   }
 
   ObservedState observe(String engineRootId, String stableRootId, String afterCommandId) {
@@ -55,7 +58,7 @@ final class CibSevenStateProjector {
     }
     var historicState = history.getFirst().getState();
     var engineClockTimeMs = ClockUtil.getCurrentTime().getTime();
-    var projection = waits.project(new CibSevenOccurrences(engine).running(engineRootId, stableRootId));
+    var projection = waits.project(occurrences.running(engineRootId, stableRootId), occurrences);
     var rawVariables = rootVariables(engineRootId);
     var variables =
         rawVariables.stream()
