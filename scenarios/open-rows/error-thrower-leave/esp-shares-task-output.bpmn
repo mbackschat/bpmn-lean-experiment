@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  id="Definitions_EspSharesTaskOutput"
+  targetNamespace="urn:bpmn-lean:scenarios:error-thrower-leave:esp-shares-task-output">
+  <bpmn:error id="Error_PackFailed" name="Pack failed" errorCode="PACK_FAILED" />
+  <bpmn:process id="Process_EspSharesTaskOutput" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_ParcelReceived" />
+
+    <bpmn:subProcess id="Pack" name="Pack parcel">
+      <bpmn:startEvent id="StartEvent_Pack" />
+      <bpmn:serviceTask
+        id="Label"
+        name="Label parcel"
+        implementation="urn:bpmn-lean:effect:probe-v1"
+        camunda:delegateExpression="${bpmnLeanEffectHandler}"
+        camunda:asyncBefore="true">
+        <bpmn:extensionElements>
+          <camunda:inputOutput>
+            <camunda:outputParameter name="label">mapped</camunda:outputParameter>
+          </camunda:inputOutput>
+        </bpmn:extensionElements>
+      </bpmn:serviceTask>
+      <bpmn:endEvent id="EndEvent_Labelled" />
+      <bpmn:sequenceFlow id="Flow_Pack_Start_Label" sourceRef="StartEvent_Pack" targetRef="Label" />
+      <bpmn:sequenceFlow id="Flow_Pack_Label_End" sourceRef="Label" targetRef="EndEvent_Labelled" />
+      <bpmn:subProcess id="Handler_Pack_Failed" triggeredByEvent="true">
+        <bpmn:startEvent id="Start_Pack_Failed" isInterrupting="true">
+          <bpmn:errorEventDefinition
+            id="ErrorEventDefinition_Pack_Failed"
+            errorRef="Error_PackFailed"
+            camunda:errorCodeVariable="label" />
+        </bpmn:startEvent>
+        <bpmn:userTask id="Handle" name="Handle the failure" />
+        <bpmn:endEvent id="End_Pack_Failed" />
+        <bpmn:sequenceFlow id="Flow_Handler_Start_Handle" sourceRef="Start_Pack_Failed" targetRef="Handle" />
+        <bpmn:sequenceFlow id="Flow_Handler_Handle_End" sourceRef="Handle" targetRef="End_Pack_Failed" />
+      </bpmn:subProcess>
+    </bpmn:subProcess>
+    <bpmn:endEvent id="EndEvent_Packed" />
+
+    <bpmn:sequenceFlow id="Flow_Start_Pack" sourceRef="StartEvent_ParcelReceived" targetRef="Pack" />
+    <bpmn:sequenceFlow id="Flow_Pack_End" sourceRef="Pack" targetRef="EndEvent_Packed" />
+  </bpmn:process>
+</bpmn:definitions>

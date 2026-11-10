@@ -1,0 +1,80 @@
+{
+  "kind": "scenario",
+  "id": "error-thrower-leave-uncaught-beside-child-path",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "error-thrower-leave-uncaught-beside-child-path",
+    "relativePath": "scenarios/open-rows/error-thrower-leave/uncaught-beside-child-path.bpmn",
+    "sha256": "4d484c7adfd092864b2a04bbace31fab95b8be98c2326b2795d08f8234a30e88",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start-process",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "seed",
+          "value": {
+            "kind": "string",
+            "value": "pending"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "fail-assess",
+      "occurrence": {
+        "processInstanceId": "call:10:Instance_1:5:Check:1",
+        "elementId": "Assess",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "businessFailure",
+        "code": "OTHER",
+        "outputs": [
+          {
+            "name": "result",
+            "value": {
+              "kind": "string",
+              "value": "rejected"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-hold",
+      "occurrence": {
+        "processInstanceId": "call:10:Instance_1:5:Check:1",
+        "elementId": "Hold",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.4.2",
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 §13.5.3"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/helper/BpmnExceptionHandler.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/tree/OutputVariablesPropagator.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/tree/ActivityExecutionHierarchyWalker.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/pvm/runtime/operation/PvmAtomicOperationDeleteCascade.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/pvm/runtime/operation/PvmAtomicOperationDeleteCascadeFireActivityEnd.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/persistence/entity/ExecutionEntity.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/variable/mapping/OutputParameter.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java"
+    ]
+  }
+}

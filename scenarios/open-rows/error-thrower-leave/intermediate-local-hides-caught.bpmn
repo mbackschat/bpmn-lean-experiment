@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  id="Definitions_IntermediateLocalHidesCaught"
+  targetNamespace="urn:bpmn-lean:scenarios:error-thrower-leave:intermediate-local-hides-caught">
+  <bpmn:error id="Error_PackFailed" name="Pack failed" errorCode="PACK_FAILED" />
+  <bpmn:process id="Process_IntermediateLocalHidesCaught" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_ParcelReceived" />
+
+    <bpmn:subProcess id="Pack" name="Pack parcel">
+      <bpmn:startEvent id="StartEvent_Pack" />
+      <bpmn:subProcess id="Inner" name="Label inside the pack">
+        <bpmn:extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="label">inner</camunda:inputParameter>
+          </camunda:inputOutput>
+        </bpmn:extensionElements>
+        <bpmn:startEvent id="StartEvent_Inner" />
+        <bpmn:serviceTask
+          id="Label"
+          name="Label parcel"
+          implementation="urn:bpmn-lean:effect:probe-v1"
+          camunda:delegateExpression="${bpmnLeanEffectHandler}"
+          camunda:asyncBefore="true">
+          <bpmn:extensionElements>
+            <camunda:inputOutput>
+              <camunda:outputParameter name="seen">${label}</camunda:outputParameter>
+            </camunda:inputOutput>
+          </bpmn:extensionElements>
+        </bpmn:serviceTask>
+        <bpmn:endEvent id="EndEvent_Labelled" />
+        <bpmn:sequenceFlow id="Flow_Inner_Start_Label" sourceRef="StartEvent_Inner" targetRef="Label" />
+        <bpmn:sequenceFlow id="Flow_Inner_Label_End" sourceRef="Label" targetRef="EndEvent_Labelled" />
+      </bpmn:subProcess>
+      <bpmn:endEvent id="EndEvent_Inner" />
+      <bpmn:sequenceFlow id="Flow_Pack_Start_Inner" sourceRef="StartEvent_Pack" targetRef="Inner" />
+      <bpmn:sequenceFlow id="Flow_Pack_Inner_End" sourceRef="Inner" targetRef="EndEvent_Inner" />
+    </bpmn:subProcess>
+    <bpmn:boundaryEvent id="Boundary_Pack_PackFailed" attachedToRef="Pack" cancelActivity="true">
+      <bpmn:errorEventDefinition
+        id="ErrorEventDefinition_Pack_PackFailed"
+        errorRef="Error_PackFailed"
+        camunda:errorCodeVariable="label" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Observe" name="Observe the failure" />
+    <bpmn:endEvent id="EndEvent_Packed" />
+    <bpmn:endEvent id="EndEvent_Observed" />
+
+    <bpmn:sequenceFlow id="Flow_Start_Pack" sourceRef="StartEvent_ParcelReceived" targetRef="Pack" />
+    <bpmn:sequenceFlow id="Flow_Pack_End" sourceRef="Pack" targetRef="EndEvent_Packed" />
+    <bpmn:sequenceFlow id="Flow_PackFailed_Observe" sourceRef="Boundary_Pack_PackFailed" targetRef="Observe" />
+    <bpmn:sequenceFlow id="Flow_Observe_End" sourceRef="Observe" targetRef="EndEvent_Observed" />
+  </bpmn:process>
+</bpmn:definitions>

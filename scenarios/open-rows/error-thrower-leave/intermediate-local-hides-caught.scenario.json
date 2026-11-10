@@ -1,0 +1,57 @@
+{
+  "kind": "scenario",
+  "id": "error-thrower-leave-intermediate-local-hides-caught",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "error-thrower-leave-intermediate-local-hides-caught",
+    "relativePath": "scenarios/open-rows/error-thrower-leave/intermediate-local-hides-caught.bpmn",
+    "sha256": "2964f1f340c621de2f52b1d793f1a3b4b63b7e56ff16d4357886adbce4a2fff6",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start-process",
+      "instanceId": "Instance_1",
+      "variables": []
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "fail-label",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Label",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "businessFailure",
+        "code": "PACK_FAILED",
+        "outputs": [
+          {
+            "name": "result",
+            "value": {
+              "kind": "string",
+              "value": "rejected"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.4.2",
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 §13.5.3"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/helper/BpmnExceptionHandler.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/pvm/runtime/operation/PvmAtomicOperationDeleteCascade.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/persistence/entity/ExecutionEntity.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/variable/mapping/OutputParameter.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/variable/scope/AbstractVariableScope.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java"
+    ]
+  }
+}

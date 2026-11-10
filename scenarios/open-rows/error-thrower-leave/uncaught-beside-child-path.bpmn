@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  id="Definitions_UncaughtBesideChildPath"
+  targetNamespace="urn:bpmn-lean:scenarios:error-thrower-leave:uncaught-beside-child-path">
+  <bpmn:process id="Process_Dispatch" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_ParcelReceived" />
+    <bpmn:callActivity id="Check" name="Check the parcel" calledElement="Process_Inspect">
+      <bpmn:extensionElements>
+        <camunda:in source="seed" target="verdict" />
+        <camunda:out source="verdict" target="checkVerdict" />
+      </bpmn:extensionElements>
+    </bpmn:callActivity>
+    <bpmn:endEvent id="EndEvent_Checked" />
+
+    <bpmn:sequenceFlow id="Flow_Start_Check" sourceRef="StartEvent_ParcelReceived" targetRef="Check" />
+    <bpmn:sequenceFlow id="Flow_Check_End" sourceRef="Check" targetRef="EndEvent_Checked" />
+  </bpmn:process>
+
+  <bpmn:process id="Process_Inspect" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_InspectionRequested" />
+    <bpmn:parallelGateway id="Gateway_Fork" gatewayDirection="Diverging" />
+    <bpmn:serviceTask
+      id="Assess"
+      name="Assess parcel"
+      implementation="urn:bpmn-lean:effect:probe-v1"
+      camunda:delegateExpression="${bpmnLeanEffectHandler}"
+      camunda:asyncBefore="true">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:outputParameter name="verdict">${result}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:userTask id="Hold" name="Hold the parcel" />
+    <bpmn:endEvent id="EndEvent_Assessed" />
+    <bpmn:endEvent id="EndEvent_Held" />
+
+    <bpmn:sequenceFlow id="Flow_Inspect_Start_Fork" sourceRef="StartEvent_InspectionRequested" targetRef="Gateway_Fork" />
+    <bpmn:sequenceFlow id="Flow_Inspect_Fork_Assess" sourceRef="Gateway_Fork" targetRef="Assess" />
+    <bpmn:sequenceFlow id="Flow_Inspect_Fork_Hold" sourceRef="Gateway_Fork" targetRef="Hold" />
+    <bpmn:sequenceFlow id="Flow_Inspect_Assess_End" sourceRef="Assess" targetRef="EndEvent_Assessed" />
+    <bpmn:sequenceFlow id="Flow_Inspect_Hold_End" sourceRef="Hold" targetRef="EndEvent_Held" />
+  </bpmn:process>
+</bpmn:definitions>
