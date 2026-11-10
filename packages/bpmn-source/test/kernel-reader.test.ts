@@ -219,6 +219,7 @@ test("the profile options are the full record, each non-default selected by the 
     scopeChainSubmissionBytes: null,
     undeclaredWrite: "refused",
     errorPathOutputs: "none",
+    raisedCallOutputs: "none",
     technicalFailure: "hostFailure",
     incidentProcessCancellation: false,
     continuationFailure: "rolledBack",
@@ -253,6 +254,7 @@ test("the profile options are the full record, each non-default selected by the 
     scopeChainSubmissionBytes: 16_384,
     undeclaredWrite: "atInstanceRoot",
     errorPathOutputs: "mapped",
+    raisedCallOutputs: "none",
     technicalFailure: "incident",
     incidentProcessCancellation: true,
     continuationFailure: "incident",
@@ -287,6 +289,7 @@ test("the profile options are the full record, each non-default selected by the 
   assert.equal(kernelProfileOptions(["CIB-EXT-0032"]).businessRuleTask, "decisionTable");
   assert.equal(kernelProfileOptions(["CIB-INT-0020"]).inclusiveJoinReach, "outgoingOnly");
   assert.equal(kernelProfileOptions(["CIB-OP-0016"]).branchSchedule, "declarationDepthFirst");
+  assert.equal(kernelProfileOptions(["CIB-EXT-0034"]).raisedCallOutputs, "atCalledRoot");
   assert.equal(kernelProfileOptions(["CIB-EXT-0005"]).submission, "installsVariables");
   for (const creates of ["CIB-EXT-0005", "CIB-EXT-0007", "CIB-EXT-0009", "CIB-EXT-0020"]) {
     assert.equal(kernelProfileOptions([creates]).undeclaredWrite, "atInstanceRoot", creates);
