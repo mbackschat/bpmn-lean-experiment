@@ -91,7 +91,7 @@ const complete = (activation: number): Json => ({
 /** Per state, or the refusal: each `C` activity scope as `activation: i n c`. */
 function reads(json: Json, stimuli: Json[]): unknown[] {
   const trace = (runScenario(json, { kind: "scenario", id: "mi", profile: "p", stimuli }) as { trace: Json[] }).trace;
-  return trace.flatMap((entry) => {
+  return trace.flatMap((entry): unknown[] => {
     if (entry["kind"] === "deployment") return entry["outcome"] === "committed" ? [] : [String(entry["code"])];
     if (entry["kind"] !== "state") return [];
     return [(entry["scopes"] as Json[]).flatMap((published) => {

@@ -25,7 +25,7 @@ const user = { user: { payload: { name: null, assignee: null, candidateUsers: []
   formFields: [], dueDate: null, followUpDate: null, priority: null } } };
 
 /** `Start → S → End`; `S` loops over `items` and runs `Inner → Review → InnerEnd`. */
-function program(mode: string, kind: Json = "embedded", loop: Json = {}): Json {
+function program(mode: string, kind: Json | string = "embedded", loop: Json = {}): Json {
   return {
     ...slice,
     options: { ...(slice["options"] as Json), evaluator: "juel", multiInstanceBinding: "loopReferences",

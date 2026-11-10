@@ -101,7 +101,7 @@ test("an Error an interrupting handler raises that a sibling handler would catch
 });
 
 /** `T`'s body runs `PS -> PX -> PW -> PE`, the Intermediate throw `PX` raising the Escalation `X`. */
-const escalating = [throwing("PX", raiseEscalation("X"), "T"), activity("PW", userWork(), {}, "T"), end("PE", "none", "T")];
+const escalating: [Json, ...Json[]] = [throwing("PX", raiseEscalation("X"), "T"), activity("PW", userWork(), {}, "T"), end("PE", "none", "T")];
 const escalatingFlows = [flow("pf1", "PS", "PX"), flow("pf2", "PX", "PW"), flow("pf3", "PW", "PE")];
 
 /** `hosted` with the escalating body; `append` cannot take the three body elements as one. */
