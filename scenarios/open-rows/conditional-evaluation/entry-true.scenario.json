@@ -15,17 +15,17 @@
       "instanceId": "Instance_1",
       "variables": [
         {
-          "name": "note",
-          "value": {
-            "kind": "string",
-            "value": "n"
-          }
-        },
-        {
           "name": "amount",
           "value": {
             "kind": "integer",
             "value": 500
+          }
+        },
+        {
+          "name": "note",
+          "value": {
+            "kind": "string",
+            "value": "n"
           }
         }
       ]

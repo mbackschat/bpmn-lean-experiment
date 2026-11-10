@@ -15,17 +15,6 @@
       "instanceId": "Instance_1",
       "variables": [
         {
-          "name": "lots",
-          "value": {
-            "kind": "stringList",
-            "value": [
-              "a",
-              "b",
-              "c"
-            ]
-          }
-        },
-        {
           "name": "badLot",
           "value": {
             "kind": "string",
@@ -37,6 +26,17 @@
           "value": {
             "kind": "string",
             "value": "outside"
+          }
+        },
+        {
+          "name": "lots",
+          "value": {
+            "kind": "stringList",
+            "value": [
+              "a",
+              "b",
+              "c"
+            ]
           }
         }
       ]

@@ -15,17 +15,17 @@
       "instanceId": "Instance_1",
       "variables": [
         {
-          "name": "route",
-          "value": {
-            "kind": "string",
-            "value": "slow"
-          }
-        },
-        {
           "name": "level",
           "value": {
             "kind": "string",
             "value": "low"
+          }
+        },
+        {
+          "name": "route",
+          "value": {
+            "kind": "string",
+            "value": "slow"
           }
         }
       ]

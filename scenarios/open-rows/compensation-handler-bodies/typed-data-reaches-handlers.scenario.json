@@ -37,16 +37,6 @@
           }
         },
         {
-          "name": "tags",
-          "value": {
-            "kind": "stringList",
-            "value": [
-              "x",
-              "y"
-            ]
-          }
-        },
-        {
           "name": "snapCount",
           "value": {
             "kind": "integer",
@@ -73,6 +63,16 @@
           "value": {
             "kind": "stringList",
             "value": []
+          }
+        },
+        {
+          "name": "tags",
+          "value": {
+            "kind": "stringList",
+            "value": [
+              "x",
+              "y"
+            ]
           }
         }
       ]

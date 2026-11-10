@@ -15,17 +15,17 @@
       "instanceId": "Instance_1",
       "variables": [
         {
-          "name": "urgent",
-          "value": {
-            "kind": "boolean",
-            "value": true
-          }
-        },
-        {
           "name": "customer",
           "value": {
             "kind": "string",
             "value": "ACME"
+          }
+        },
+        {
+          "name": "urgent",
+          "value": {
+            "kind": "boolean",
+            "value": true
           }
         }
       ]

@@ -26,17 +26,17 @@
           }
         },
         {
-          "name": "stop",
-          "value": {
-            "kind": "string",
-            "value": "outside"
-          }
-        },
-        {
           "name": "rethrow",
           "value": {
             "kind": "boolean",
             "value": false
+          }
+        },
+        {
+          "name": "stop",
+          "value": {
+            "kind": "string",
+            "value": "outside"
           }
         }
       ]

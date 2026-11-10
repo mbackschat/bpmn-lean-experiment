@@ -13,6 +13,7 @@ import type {
   ArtifactCase,
   NormativeArtifactCase,
 } from "./contract-artifact-cases.ts";
+import { verifyCanonicalBindingOrder } from "./scenario-binding-order.ts";
 import { Ajv2020 } from "ajv/dist/2020.js";
 import type {
   AnySchema,
@@ -290,6 +291,7 @@ function verifyScenarioSourceBinding(
 ): void {
   validateWith(validator, scenarioSchemaId, "scenario", scenario);
   if (!isOpenRowWitness(scenarioRelativePath)) verifyScenarioVariableValueContract(scenario);
+  verifyCanonicalBindingOrder(scenario);
   if (
     !isDeepStrictEqual(
       parseWireJsonBytes<ScenarioDocument>(

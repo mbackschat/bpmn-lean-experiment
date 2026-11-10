@@ -15,17 +15,17 @@
       "instanceId": "Instance_1",
       "variables": [
         {
-          "name": "route",
-          "value": {
-            "kind": "string",
-            "value": "cycle"
-          }
-        },
-        {
           "name": "cadence",
           "value": {
             "kind": "string",
             "value": "R2/PT10S"
+          }
+        },
+        {
+          "name": "route",
+          "value": {
+            "kind": "string",
+            "value": "cycle"
           }
         }
       ]

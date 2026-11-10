@@ -15,17 +15,17 @@
       "instanceId": "Instance_1",
       "variables": [
         {
-          "name": "financeDossier",
-          "value": {
-            "kind": "string",
-            "value": "F-1"
-          }
-        },
-        {
           "name": "complianceDossier",
           "value": {
             "kind": "string",
             "value": "C-1"
+          }
+        },
+        {
+          "name": "financeDossier",
+          "value": {
+            "kind": "string",
+            "value": "F-1"
           }
         }
       ]
@@ -42,17 +42,17 @@
         "kind": "completeUserTask",
         "values": [
           {
-            "name": "verdict",
-            "value": {
-              "kind": "string",
-              "value": "pending"
-            }
-          },
-          {
             "name": "scratch",
             "value": {
               "kind": "string",
               "value": "draft"
+            }
+          },
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "pending"
             }
           }
         ]
@@ -92,17 +92,17 @@
         "kind": "completeUserTask",
         "values": [
           {
-            "name": "verdict",
-            "value": {
-              "kind": "string",
-              "value": "pending"
-            }
-          },
-          {
             "name": "scratch",
             "value": {
               "kind": "string",
               "value": "draft"
+            }
+          },
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "pending"
             }
           }
         ]

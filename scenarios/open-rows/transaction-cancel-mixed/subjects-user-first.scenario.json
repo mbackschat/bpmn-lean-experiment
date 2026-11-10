@@ -22,17 +22,17 @@
           }
         },
         {
-          "name": "picked",
-          "value": {
-            "kind": "string",
-            "value": "p0"
-          }
-        },
-        {
           "name": "crate",
           "value": {
             "kind": "string",
             "value": "root-crate"
+          }
+        },
+        {
+          "name": "picked",
+          "value": {
+            "kind": "string",
+            "value": "p0"
           }
         }
       ]

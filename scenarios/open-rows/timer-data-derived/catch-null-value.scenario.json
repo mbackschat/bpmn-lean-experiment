@@ -15,16 +15,16 @@
       "instanceId": "Instance_1",
       "variables": [
         {
+          "name": "delay",
+          "value": {
+            "kind": "null"
+          }
+        },
+        {
           "name": "route",
           "value": {
             "kind": "string",
             "value": "catch"
-          }
-        },
-        {
-          "name": "delay",
-          "value": {
-            "kind": "null"
           }
         }
       ]

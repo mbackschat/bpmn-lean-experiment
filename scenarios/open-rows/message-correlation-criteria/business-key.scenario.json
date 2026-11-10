@@ -15,6 +15,12 @@
       "instanceId": "Instance_1",
       "variables": [
         {
+          "name": "note",
+          "value": {
+            "kind": "null"
+          }
+        },
+        {
           "name": "orderId",
           "value": {
             "kind": "string",
@@ -26,12 +32,6 @@
           "value": {
             "kind": "string",
             "value": "north"
-          }
-        },
-        {
-          "name": "note",
-          "value": {
-            "kind": "null"
           }
         },
         {

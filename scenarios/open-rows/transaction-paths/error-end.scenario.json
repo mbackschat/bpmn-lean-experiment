@@ -15,17 +15,17 @@
       "instanceId": "Instance_1",
       "variables": [
         {
-          "name": "outcome",
-          "value": {
-            "kind": "string",
-            "value": "error"
-          }
-        },
-        {
           "name": "flight",
           "value": {
             "kind": "string",
             "value": "f0"
+          }
+        },
+        {
+          "name": "outcome",
+          "value": {
+            "kind": "string",
+            "value": "error"
           }
         }
       ]

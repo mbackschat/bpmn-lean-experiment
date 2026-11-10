@@ -15,22 +15,22 @@
       "instanceId": "Instance_1",
       "variables": [
         {
-          "name": "parcels",
-          "value": {
-            "kind": "stringList",
-            "value": [
-              "p1",
-              "p2"
-            ]
-          }
-        },
-        {
           "name": "batches",
           "value": {
             "kind": "stringList",
             "value": [
               "b1",
               "b2"
+            ]
+          }
+        },
+        {
+          "name": "parcels",
+          "value": {
+            "kind": "stringList",
+            "value": [
+              "p1",
+              "p2"
             ]
           }
         }

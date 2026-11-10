@@ -15,20 +15,6 @@
       "instanceId": "Instance_1",
       "variables": [
         {
-          "name": "receipt",
-          "value": {
-            "kind": "string",
-            "value": "r-start"
-          }
-        },
-        {
-          "name": "parcel",
-          "value": {
-            "kind": "string",
-            "value": "root-parcel"
-          }
-        },
-        {
           "name": "crate",
           "value": {
             "kind": "string",
@@ -40,6 +26,20 @@
           "value": {
             "kind": "string",
             "value": "root-lot"
+          }
+        },
+        {
+          "name": "parcel",
+          "value": {
+            "kind": "string",
+            "value": "root-parcel"
+          }
+        },
+        {
+          "name": "receipt",
+          "value": {
+            "kind": "string",
+            "value": "r-start"
           }
         }
       ]

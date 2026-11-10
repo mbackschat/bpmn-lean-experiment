@@ -15,17 +15,17 @@
       "instanceId": "Instance_1",
       "variables": [
         {
-          "name": "seed",
-          "value": {
-            "kind": "string",
-            "value": "s0"
-          }
-        },
-        {
           "name": "again",
           "value": {
             "kind": "boolean",
             "value": false
+          }
+        },
+        {
+          "name": "seed",
+          "value": {
+            "kind": "string",
+            "value": "s0"
           }
         }
       ]

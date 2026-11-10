@@ -15,10 +15,10 @@
       "instanceId": "Instance_1",
       "variables": [
         {
-          "name": "receipt",
+          "name": "innerLocal",
           "value": {
             "kind": "string",
-            "value": "r-start"
+            "value": "root-inner"
           }
         },
         {
@@ -29,17 +29,10 @@
           }
         },
         {
-          "name": "innerLocal",
+          "name": "receipt",
           "value": {
             "kind": "string",
-            "value": "root-inner"
-          }
-        },
-        {
-          "name": "rethrowOuter",
-          "value": {
-            "kind": "string",
-            "value": "all"
+            "value": "r-start"
           }
         },
         {
@@ -47,6 +40,13 @@
           "value": {
             "kind": "boolean",
             "value": false
+          }
+        },
+        {
+          "name": "rethrowOuter",
+          "value": {
+            "kind": "string",
+            "value": "all"
           }
         }
       ]

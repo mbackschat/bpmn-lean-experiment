@@ -15,17 +15,17 @@
       "instanceId": "Instance_1",
       "variables": [
         {
-          "name": "throwInside",
-          "value": {
-            "kind": "boolean",
-            "value": true
-          }
-        },
-        {
           "name": "targetRegion",
           "value": {
             "kind": "boolean",
             "value": false
+          }
+        },
+        {
+          "name": "throwInside",
+          "value": {
+            "kind": "boolean",
+            "value": true
           }
         }
       ]
