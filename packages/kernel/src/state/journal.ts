@@ -1,8 +1,9 @@
 /**
- * The occurrence journal, transcribed from `Kernel/State/Journal.lean`: an occurrence's public key and the facts each
- * micro-step records about the occurrences it began and ended. Part of `state.ts`, which re-exports it.
+ * The occurrence journal, transcribed from `Kernel/State/Journal.lean`: an occurrence's public key, the facts each
+ * micro-step records about the occurrences it began and ended, and the transaction-boundary marks an occurrence carries.
+ * Part of `state.ts`, which re-exports it.
  */
-import { type ElementId, type FlowId } from "../il/types.js";
+import { elementEnvelope, programElement, type ElementId, type FlowId, type Program } from "../il/types.js";
 import { type ScopeOccurrenceId } from "./slots.js";
 import { type InputTag } from "./wait.js";
 
@@ -45,4 +46,17 @@ export interface Transition {
   readonly owner: ScopeOccurrenceId;
   readonly started: readonly StartedFact[];
   readonly ended: readonly (readonly [OccurrenceKey, Terminal])[];
+}
+
+/**
+ * The `asyncBefore` and `asyncAfter` marks of the occurrence `key`: a Multi-Instance Activity's envelope marks its body,
+ * and its loop characteristics mark each instance (CIB-EXT-0027, `BpmnParse#parseMultiInstanceLoopCharacteristics`).
+ */
+export function marks(program: Program, key: OccurrenceKey): readonly [boolean, boolean] {
+  const found = programElement(program, key.element);
+  const envelope = found === null ? null : elementEnvelope(found);
+  if (envelope === null) return [false, false];
+  // CIB skips loop marks on a compensation handler (`BpmnParse.java:2416`); admission refuses a Multi-Instance handler.
+  const loop = key.role === ActivationRole.Element ? envelope.multiInstance : null;
+  return loop === null ? [envelope.asyncBefore, envelope.asyncAfter] : [loop.asyncBefore, loop.asyncAfter];
 }

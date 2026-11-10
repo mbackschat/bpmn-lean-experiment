@@ -23,11 +23,11 @@ import {
 import {
   ActivationRole, CauseTag, CommandActionTag, ContinuationTag, DeliveryTriggerTag, EffectOutcomeTag, FailureTag,
   FiredTag, InputTag, InstanceStatus, IterationTag, LeaveTag, SignalTag, Terminal, WriteRule, beginOccurrence,
-  beginRequest, busyScopes, cancelOccurrence, clearInside, closeOwnItems, committed, emptyDraft, entryCount, failed, idle,
+  beginRequest, busyScopes, cancelOccurrence, clearInside, closeOwnItems, committed, crossed, emptyDraft, entryCount, failed, idle,
   initial, instanceOf, keyOf, occurrenceOf, openKindView, recordEnd, removeOccurrence, reserve, root, signal as enqueue,
   startReserved,
   type BeginRequest, type Binding, type Cause, type CommandAction, type CommandInput, type EffectInput, type Fired,
-  type Input, type InstanceFailure, type Iteration, type Leave, type Occurrence, type OccurrenceKey, type OccurrenceRef,
+  type Input, type InstanceFailure, type Iteration, type Leave, type Occurrence, type OccurrenceRef,
   type OpenItem, type Outcome, type Result, type ScopeOccurrence, type ScopeOccurrenceId, type Signal, type StartTrigger, type State,
   type Token, type Transition, type WaitView,
 } from "./state.js";
@@ -97,31 +97,6 @@ function roleOf(program: Program, request: BeginRequest): ActivationRole {
       return loops ? ActivationRole.MultiInstanceBody : ActivationRole.Element;
   }
   return assertNever(request.continuation);
-}
-
-/**
- * The `asyncBefore` and `asyncAfter` marks of the occurrence `key`: a Multi-Instance Activity's envelope marks its body,
- * and its loop characteristics mark each instance (CIB-EXT-0027, `BpmnParse#parseMultiInstanceLoopCharacteristics`).
- */
-function marks(program: Program, key: OccurrenceKey): readonly [boolean, boolean] {
-  const found = programElement(program, key.element);
-  const envelope = found === null ? null : elementEnvelope(found);
-  if (envelope === null) return [false, false];
-  // CIB skips loop marks on a compensation handler (`BpmnParse.java:2416`); admission refuses a Multi-Instance handler.
-  const loop = key.role === ActivationRole.Element ? envelope.multiInstance : null;
-  return loop === null ? [envelope.asyncBefore, envelope.asyncAfter] : [loop.asyncBefore, loop.asyncAfter];
-}
-
-/**
- * Whether the input in progress has crossed a transaction boundary: begun an occurrence marked `asyncBefore`, or
- * completed one marked `asyncAfter`, in the journal or the micro-step's draft. The kernel's one reader of the marks.
- */
-function crossed(program: Program, state: State): boolean {
-  const facts = [...state.journal.map((transition) => [transition.started, transition.ended] as const),
-    [state.draft.started, state.draft.ended] as const];
-  return facts.some(([started, ended]) =>
-    started.some((fact) => marks(program, fact.occurrence)[0]) ||
-      ended.some(([key, terminal]) => terminal === Terminal.Completed && marks(program, key)[1]));
 }
 
 /**

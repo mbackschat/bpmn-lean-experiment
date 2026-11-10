@@ -52,7 +52,7 @@ export {
   type InstanceFailure, type Origin, type Raised, raisedIsCancel, RaisedTag,
 };
 import {
-  ActivationRole, type Cause, CauseTag, type OccurrenceKey, type StartedFact, Terminal, type Transition,
+  ActivationRole, type Cause, CauseTag, marks, type OccurrenceKey, type StartedFact, Terminal, type Transition,
 } from "./state/journal.js";
 export {
   ActivationRole, type Cause, CauseTag, type OccurrenceKey, type StartedFact, Terminal, type Transition,
@@ -327,6 +327,18 @@ export interface State {
   /** The occurrence facts of the input in progress; `step` empties it first. */
   readonly journal: readonly Transition[];
   readonly draft: Draft;
+}
+
+/**
+ * Whether the input in progress has crossed a transaction boundary: begun an occurrence marked `asyncBefore`, or
+ * completed one marked `asyncAfter`, in the journal or the micro-step's draft. The kernel's one reader of the marks.
+ */
+export function crossed(program: Program, state: State): boolean {
+  const facts = [...state.journal.map((transition) => [transition.started, transition.ended] as const),
+    [state.draft.started, state.draft.ended] as const];
+  return facts.some(([started, ended]) =>
+    started.some((fact) => marks(program, fact.occurrence)[0]) ||
+      ended.some(([key, terminal]) => terminal === Terminal.Completed && marks(program, key)[1]));
 }
 
 /**

@@ -3,8 +3,8 @@
  * an effect result reaches only the instance it names. Under `MultiInstanceBinding.loopReferences` (CIB-INT-0014 in
  * docs/CIB-BPMN-RELATION-REGISTER.md) the collection is the variable the loop's `loopDataInputRef` names and the item
  * local is the `inputDataItem`'s name; the standards reading takes both from the Data Associations. The loop's own
- * `asyncBefore`/`asyncAfter` mark each instance and the envelope's mark the body (CIB-EXT-0027), which `Step.crossed`
- * tells apart by the occurrence's role: a closure that fails after a crossing is `unsupported`.
+ * `asyncBefore`/`asyncAfter` mark each instance and the envelope's mark the body (CIB-EXT-0027), which `crossed`
+ * (`Kernel.State`) tells apart by the occurrence's role: a closure that fails after a crossing is `unsupported`.
  */
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";

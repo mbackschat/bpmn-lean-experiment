@@ -224,6 +224,15 @@ structure State where
   journal : List Transition := []
   draft : Draft := {}
 
+/-- Whether the input in progress has crossed a transaction boundary: begun an occurrence marked `asyncBefore`, or
+completed one marked `asyncAfter`, in the journal or the micro-step's draft. The kernel's one reader of the marks. -/
+def crossed (program : Program) (state : State) : Bool :=
+  let facts := state.journal.map (fun transition => (transition.started, transition.ended)) ++
+    [(state.draft.started, state.draft.ended)]
+  facts.any fun (started, ended) =>
+    started.any (fun fact => (marks program fact.occurrence).1) ||
+      ended.any fun (key, terminal) => terminal == .completed && (marks program key).2
+
 /-- Why a step does not commit. Harness failures never appear here. `rolledBack` is a command whose closure could
 not continue (no outgoing flow to take): it ends the run with the state before the command. -/
 inductive Failure where

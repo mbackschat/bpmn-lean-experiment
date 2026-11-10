@@ -39,7 +39,7 @@ export const rows: readonly Row[] = [
     control: handledBy(handler("manual")),
   },
   {
-    // CIB skips a compensation handler's loop marks (`BpmnParse.java:2416`), which `Step.marks` would read.
+    // CIB skips a compensation handler's loop marks (`BpmnParse.java:2416`), which `marks` (`Kernel.State.Journal`) would read.
     code: "compensation.handlerMultiInstance",
     description: "a compensation handler with Multi-Instance loop characteristics",
     mutate: handledBy(handler(serviceWork(), { multiInstance: loop({ outputDataItem: null }) })),

@@ -47,7 +47,7 @@ function activityOrigin(program: Program, header: Header, payload: ActivityPaylo
   const handler = isHandler(program, header.id);
   if (handler && payload.envelope.inputs.length > 0) return "activity.compensationHandler.input";
   if (handler && !Work.beginsWithoutToken(payload.work)) return "compensation.handlerWork";
-  // CIB skips a compensation handler's loop marks (`BpmnParse.java:2416`), which `step.ts` `marks` would read.
+  // CIB skips a compensation handler's loop marks (`BpmnParse.java:2416`), which `state/journal.ts` `marks` would read.
   if (handler && payload.envelope.multiInstance !== null) return "compensation.handlerMultiInstance";
   if (Scopes.implicitChild(program, header) && !Work.beginsWithoutToken(payload.work)) return "scope.implicitStart";
   return null;

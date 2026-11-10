@@ -97,28 +97,6 @@ def roleOf (program : Program) (request : BeginRequest) : ActivationRole :=
   | .flow => if loops then .multiInstanceBody else .element
   | .compensation _ => if loops then .multiInstanceBody else .element
 
-/-- The `asyncBefore` and `asyncAfter` marks of the occurrence `key`: a Multi-Instance Activity's envelope marks its
-body, and its loop characteristics mark each instance (CIB-EXT-0027, `BpmnParse#parseMultiInstanceLoopCharacteristics`). -/
-def marks (program : Program) (key : OccurrenceKey) : Bool × Bool :=
-  match (program.element? key.element).bind (·.envelope?) with
-  | none => (false, false)
-  | some envelope =>
-    match key.role, envelope.multiInstance with
-    | .multiInstanceBody, _ => (envelope.asyncBefore, envelope.asyncAfter)
-    -- CIB skips loop marks on a compensation handler (`BpmnParse.java:2416`); admission refuses a Multi-Instance
-    -- handler (`compensation.handlerMultiInstance`).
-    | .element, some loop => (loop.asyncBefore, loop.asyncAfter)
-    | .element, none => (envelope.asyncBefore, envelope.asyncAfter)
-
-/-- Whether the input in progress has crossed a transaction boundary: begun an occurrence marked `asyncBefore`, or
-completed one marked `asyncAfter`, in the journal or the micro-step's draft. The kernel's one reader of the marks. -/
-def crossed (program : Program) (state : State) : Bool :=
-  let facts := state.journal.map (fun transition => (transition.started, transition.ended)) ++
-    [(state.draft.started, state.draft.ended)]
-  facts.any fun (started, ended) =>
-    started.any (fun fact => (marks program fact.occurrence).1) ||
-      ended.any fun (key, terminal) => terminal == .completed && (marks program key).2
-
 /-- `outcome`, unless it rolls back or fails after `state` crossed a transaction boundary: CIB commits an input at the
 boundary and runs the rest in a job, which alone fails (`ExecutionEntity#performOperation`, CIB-EXT-0027). Rolling the
 whole input back would be wrong and the kernel does not split it, so the outcome is `unsupported`. -/

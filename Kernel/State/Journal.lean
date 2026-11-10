@@ -4,8 +4,8 @@ public import Kernel.State.Raise
 
 /-! # The occurrence journal
 
-An occurrence's public key and the facts each micro-step records about the occurrences it began and ended. Part of
-`Kernel.State`, which re-exports it.
+An occurrence's public key, the facts each micro-step records about the occurrences it began and ended, and the
+transaction-boundary marks an occurrence carries. Part of `Kernel.State`, which re-exports it.
 -/
 
 public section
@@ -56,5 +56,18 @@ structure Transition where
   started : List StartedFact := []
   ended : List (OccurrenceKey × Terminal) := []
   deriving Repr
+
+/-- The `asyncBefore` and `asyncAfter` marks of the occurrence `key`: a Multi-Instance Activity's envelope marks its
+body, and its loop characteristics mark each instance (CIB-EXT-0027, `BpmnParse#parseMultiInstanceLoopCharacteristics`). -/
+def marks (program : Program) (key : OccurrenceKey) : Bool × Bool :=
+  match (program.element? key.element).bind (·.envelope?) with
+  | none => (false, false)
+  | some envelope =>
+    match key.role, envelope.multiInstance with
+    | .multiInstanceBody, _ => (envelope.asyncBefore, envelope.asyncAfter)
+    -- CIB skips loop marks on a compensation handler (`BpmnParse.java:2416`); admission refuses a Multi-Instance
+    -- handler (`compensation.handlerMultiInstance`).
+    | .element, some loop => (loop.asyncBefore, loop.asyncAfter)
+    | .element, none => (envelope.asyncBefore, envelope.asyncAfter)
 
 end Kernel
