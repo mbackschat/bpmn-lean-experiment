@@ -862,7 +862,7 @@ CIB Seven `2.2.0` resolves a Business Rule Task's `latest` `camunda:decisionRef`
 
 **Status:** Profile limitation; not a deviation
 
-CIB Seven `2.2.0` runs a closure without a wait state in one transaction to its end. The kernel bounds one command's micro-steps by `Step.closureBound` (100,000) and answers a longer closure `unsupported "closure-bound"`, committing nothing, rather than truncate it ([flow semantics](kernel/semantics/FLOW-SEMANTICS-SPEC.md), Cycles).
+CIB Seven `2.2.0` runs a closure without a wait state in one transaction to its end. The kernel bounds one command's micro-steps by `Step.closureBound` (100,000) and answers a longer closure `unsupported "closure-bound"`, committing nothing, rather than truncate it ([flow semantics](kernel/semantics/FLOW-SEMANTICS-SPEC.md), Cycles). It also bounds the state a closure walks: one whose micro-steps together run over more than `Step.closureWorkBound` (10,000,000) state entries is refused with the same code, which caps a burst that stays under the step count but grows its state with every step, such as a parallel Multi-Instance body that starts further instances.
 
 **Evidence:** The [cycle-compositions](../scenarios/open-rows/cycle-compositions/README.md) witness `automatic-loop-beyond-bound`, whose evidence run is pending; the `automatic-loop-short-burst` and `automatic-loop-long-burst` witnesses stay within the bound and agree.
 

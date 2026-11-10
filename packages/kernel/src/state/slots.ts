@@ -126,11 +126,11 @@ export interface FeatureSlots {
 }
 
 /**
- * Whether a slot keeps `scope` alive. Every slot's own entry is an open occurrence or a child occurrence already, so
- * only the join and held waits count here. One of the two places that enumerate the slots.
+ * The scope occurrences a slot keeps alive. Every slot's own entry is an open occurrence or a child occurrence already,
+ * so only the join and held waits count here. One of the two places that enumerate the slots.
  */
-export function featureSlotsKeepsAlive(slots: FeatureSlots, scope: ScopeOccurrenceId): boolean {
-  return slots.parked.some((entry) => entry.scope === scope) || slots.held.some((entry) => entry.scope === scope);
+export function featureSlotsKeptAlive(slots: FeatureSlots): readonly ScopeOccurrenceId[] {
+  return [...slots.parked.map((entry) => entry.scope), ...slots.held.map((entry) => entry.scope)];
 }
 
 /** The slot entries that survive removing the scope occurrences `inside`, of which `nested` are the children. The other place that enumerates the slots. */

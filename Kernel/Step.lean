@@ -7,10 +7,10 @@ public import Kernel.Hooks
 The single step function. It owns dispatch on element kind, event role, input kind, signal and continuation, the one
 completion pipeline, and the order in which hooks run. An input's own transition comes first, then the closure: hand
 the next signal to its hook; else route the next token to the element at the end of its flow; else complete one idle
-scope occurrence; until none is left. A closure that does not settle within `closureBound` steps is `unsupported`,
-never silently truncated. Each of those is one micro-step and appends one `Transition` to the journal; a completion
-that is the only signal a micro-step enqueued runs inside that micro-step, so a pass-through element begins and
-completes in one transition.
+scope occurrence; until none is left. A closure that does not settle within `closureBound` steps, or whose steps
+together run over more than `closureWorkBound` state entries, is `unsupported`, never silently truncated. Each of
+those is one micro-step and appends one `Transition` to the journal; a completion that is the only signal a
+micro-step enqueued runs inside that micro-step, so a pass-through element begins and completes in one transition.
 
 A scope occurrence is idle when it holds no token, no blocking open item, no begun occurrence and no child
 occurrence, and no slot keeps it alive. An idle Scope element is completed by its hook, an idle called instance's root
@@ -266,9 +266,20 @@ def completeIdleScope (hooks : Hooks) (ctx : Ctx) (scope : ScopeOccurrence) (sta
 
 def closureBound : Nat := 100000
 
-/-- The next scope occurrence other than the root that is idle, which the closure completes through its owner. -/
+/-- The most state entries (`State.entryCount`) a closure's micro-steps may run over together. A micro-step scans the
+state's lists, and a closure can grow them at every micro-step (a split whose one branch loops back while the other
+waits), so `closureBound` alone lets a closure cost time quadratic in its length: 100000 such steps took 77 s to 200 s
+in the TypeScript kernel (measured 2026-11-10). The longest closure of the retained scenarios runs over 12008 entries
+(`automatic-loop-long-burst`); a closure of constant small size still meets `closureBound` first. -/
+def closureWorkBound : Nat := 10000000
+
+/-- The next scope occurrence other than the root that is idle, which the closure completes through its owner. The
+busy scope occurrences are computed once per search (`State.busyScopes`). -/
 def idleScope? (ctx : Ctx) (state : State) : Option ScopeOccurrence :=
-  state.scopes.find? fun scope => scope.id != State.root && state.idle scope.id && !activityLocal ctx state scope
+  if !state.scopes.any (·.id != State.root) then none
+  else
+    let busy := state.busyScopes
+    state.scopes.find? fun scope => scope.id != State.root && !busy.contains scope.id && !activityLocal ctx state scope
 
 /-- The token the closure moves next, and the rest: the oldest under `BranchSchedule.orderInvariant`, whose admitted
 models no order changes (`flow.concurrentWrite`); the newest under `declarationDepthFirst` (CIB-OP-0016), where `Flow`
@@ -309,28 +320,30 @@ def orderJournal (outcome : Outcome) : Outcome :=
 
 /-- Signals first, then tokens, then idle scope occurrences, then the parked joins a quiescent closure offers again
 (`reoffer?`, journalled with the `idle` cause of the join's scope occurrence), then the instance's completion. -/
-def settle (hooks : Hooks) (ctx : Ctx) : Nat → State → Outcome
-  | 0, _ => .error (.unsupported "closure-bound") -- dynamic-only: a closure's length depends on the run
-  | fuel + 1, state =>
-    if state.status != .running then .ok state
+def settle (hooks : Hooks) (ctx : Ctx) : Nat → Nat → State → Outcome
+  | 0, _, _ => .error (.unsupported "closure-bound") -- dynamic-only: a closure's length depends on the run
+  | fuel + 1, work, state =>
+    if work < state.entryCount then .error (.unsupported "closure-bound") -- dynamic-only: so does its size
+    else if state.status != .running then .ok state
     else
+      let work := work - state.entryCount
       match state.signals, nextToken ctx state with
       | next :: rest, _ => do
         let cause := Cause.signal (signalName next)
-        settle hooks ctx fuel (← microStep hooks ctx cause none State.root (dispatchSignal hooks ctx next) { state with signals := rest })
+        settle hooks ctx fuel work (← microStep hooks ctx cause none State.root (dispatchSignal hooks ctx next) { state with signals := rest })
       | [], some (token, rest) => do
         let element := ctx.program.target? token.flow
-        settle hooks ctx fuel (← microStep hooks ctx (.arrive token.flow) element token.scope (arrive hooks ctx token)
+        settle hooks ctx fuel work (← microStep hooks ctx (.arrive token.flow) element token.scope (arrive hooks ctx token)
           { state with tokens := rest })
       | [], none =>
         match idleScope? ctx state with
         | some scope => do
-          settle hooks ctx fuel (← microStep hooks ctx (.idle scope.id) scope.element scope.id
+          settle hooks ctx fuel work (← microStep hooks ctx (.idle scope.id) scope.element scope.id
             (completeIdleScope hooks ctx scope) state)
         | none => do
           match ← reoffer? hooks ctx state with
           | some (gateway, scope, offered) =>
-            settle hooks ctx fuel (← microStep hooks ctx (.idle scope) (some gateway) scope (fun _ => .ok offered) state)
+            settle hooks ctx fuel work (← microStep hooks ctx (.idle scope) (some gateway) scope (fun _ => .ok offered) state)
           | none =>
             if state.idle State.root then
               microStep hooks ctx (.idle State.root) none State.root
@@ -401,7 +414,7 @@ def onRunning (hooks : Hooks) (ctx : Ctx) (input : Input) (before : Option State
     else do
       let (tag, at?) := inputHead input
       let start ← advanceClock at? { state with journal := [] }
-      orderJournal (settle hooks ctx closureBound (← microStep hooks ctx (.input tag) none State.root transition start))
+      orderJournal (settle hooks ctx closureBound closureWorkBound (← microStep hooks ctx (.input tag) none State.root transition start))
 
 /-- `Ctx.scopeRole`: read from the slots, since the occurrences that ended there may be gone when an event arrives. -/
 def scopeRole (state : State) (scope : ScopeOccurrenceId) : ScopeRole :=
@@ -435,7 +448,7 @@ def step (hooks : Hooks) (program : Program) (before : Option State) (input : In
       admitValues (payload.variables.map (·.2))
       let initial ← advanceClock payload.atMs
         ((State.initial payload.instanceId payload.variables payload.businessKey).signal (.armScope State.root))
-      orderJournal <| settle hooks ctx closureBound (← microStep hooks ctx (.input .start) (some start) State.root
+      orderJournal <| settle hooks ctx closureBound closureWorkBound (← microStep hooks ctx (.input .start) (some start) State.root
         (begin hooks ctx { element := start, scope := State.root, trigger := payload.trigger }) initial)
   | .command data => onRunning hooks ctx input before (command hooks ctx data)
   | .deliver data => onRunning hooks ctx input before fun state =>

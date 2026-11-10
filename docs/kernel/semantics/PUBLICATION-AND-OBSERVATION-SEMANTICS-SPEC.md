@@ -81,7 +81,7 @@ None: publication and observation are project contracts, and CIB-visible facts e
 | `logical-time-backward` (rejected) | an input stating a time before the clock | logical time is monotone |
 | `unknown-occurrence`, `unknown-user-task`, `unknown-timer`, `unknown-message-subscription`, `unknown-effect`, `unknown-incident` (rejected) | an input naming what the state lacks | command admission |
 | `instance-not-started`, `instance-already-started`, `instance-not-running` (rejected) | an input against the wrong lifecycle | command admission |
-| `closure-bound` (unsupported, dynamic-only) | a closure longer than the bound | its length depends on the run |
+| `closure-bound` (unsupported, dynamic-only) | a closure longer than the bound, or one whose micro-steps together run over more state entries than the work bound | its length and size depend on the run |
 
 ## Open rows
 

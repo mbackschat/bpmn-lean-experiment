@@ -316,14 +316,21 @@ def instanceRoot (state : State) (scope : ScopeOccurrenceId) : ScopeOccurrenceId
         | none => root
   go state.scopes.length scope
 
+/-- The scope occurrences in which something remains: a token, an open item that keeps it alive, a begun occurrence, a
+child scope occurrence or a feature slot entry, in one pass over the state. -/
+def busyScopes (state : State) : List ScopeOccurrenceId :=
+  state.tokens.map (·.scope) ++ (state.openItems.filter fun item => !item.passive).map (·.scope) ++
+    (state.occurrences.filter (·.begun)).map (·.scope) ++ state.scopes.filterMap (·.parent) ++ state.slots.keptAlive
+
 /-- Whether nothing remains in `scope`: no token, no open item that keeps it alive, no begun occurrence, no child
 scope occurrence and no feature slot entry. -/
 def idle (state : State) (scope : ScopeOccurrenceId) : Bool :=
-  !state.tokens.any (·.scope == scope) &&
-    !state.openItems.any (fun item => item.scope == scope && !item.passive) &&
-    !state.occurrences.any (fun occurrence => occurrence.scope == scope && occurrence.begun) &&
-    !state.scopes.any (·.parent == some scope) &&
-    !state.slots.keepsAlive scope
+  !state.busyScopes.contains scope
+
+/-- The entries a micro-step's scans run over: tokens, occurrences, open items, scope occurrences and queued signals.
+`Step.closureWorkBound` sums it over a closure's micro-steps. -/
+def entryCount (state : State) : Nat :=
+  state.tokens.length + state.occurrences.length + state.openItems.length + state.scopes.length + state.signals.length
 
 /-- The process instance identifier of `scope`. -/
 def instanceOf (state : State) (scope : ScopeOccurrenceId) : String :=

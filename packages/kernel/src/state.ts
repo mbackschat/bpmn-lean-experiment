@@ -41,7 +41,7 @@ export {
 };
 import {
   type Compensable, type CompensationRun, type Compensations, type FeatureSlots, featureSlotsClear,
-  featureSlotsKeepsAlive, type InstanceData, type Iteration, IterationTag, type Leave, leaveFlows, leaveOutgoing,
+  featureSlotsKeptAlive, type InstanceData, type Iteration, IterationTag, type Leave, leaveFlows, leaveOutgoing,
   leaveRaised, LeaveTag, type MultiInstanceRun, type Parked, parkedEquals, type Resume, ResumeTag,
   type ScopeOccurrenceId,
 } from "./state/slots.js";
@@ -53,7 +53,7 @@ export {
 };
 export {
   type Compensable, type CompensationRun, type Compensations, type FeatureSlots, featureSlotsClear,
-  featureSlotsKeepsAlive, type InstanceData, type Iteration, IterationTag, type Leave, leaveFlows, leaveOutgoing,
+  featureSlotsKeptAlive, type InstanceData, type Iteration, IterationTag, type Leave, leaveFlows, leaveOutgoing,
   leaveRaised, LeaveTag, type MultiInstanceRun, type Parked, parkedEquals, type Resume, ResumeTag,
   type ScopeOccurrenceId,
 };
@@ -456,15 +456,31 @@ export function instanceRoot(state: State, scope: ScopeOccurrenceId): ScopeOccur
 }
 
 /**
- * Whether nothing remains in `scope`: no token, no open item that keeps it alive, no begun occurrence, no child scope
- * occurrence and no feature slot entry.
+ * The scope occurrences in which something remains: a token, an open item that keeps it alive, a begun occurrence, a
+ * child scope occurrence or a feature slot entry. One pass over the state, so that `Step`'s search for an idle scope
+ * occurrence stays linear in a state the closure can grow at every micro-step.
  */
+export function busyScopes(state: State): ReadonlySet<ScopeOccurrenceId> {
+  return new Set<ScopeOccurrenceId>([
+    ...state.tokens.map((token) => token.scope),
+    ...state.openItems.flatMap((item) => item.passive ? [] : [item.scope]),
+    ...state.occurrences.flatMap((occurrence) => occurrence.begun ? [occurrence.scope] : []),
+    ...state.scopes.flatMap((candidate) => candidate.parent === null ? [] : [candidate.parent]),
+    ...featureSlotsKeptAlive(state.slots),
+  ]);
+}
+
+/** Whether nothing remains in `scope` (`busyScopes`). */
 export function idle(state: State, scope: ScopeOccurrenceId): boolean {
-  return !state.tokens.some((token) => token.scope === scope) &&
-    !state.openItems.some((item) => item.scope === scope && !item.passive) &&
-    !state.occurrences.some((occurrence) => occurrence.scope === scope && occurrence.begun) &&
-    !state.scopes.some((candidate) => candidate.parent === scope) &&
-    !featureSlotsKeepsAlive(state.slots, scope);
+  return !busyScopes(state).has(scope);
+}
+
+/**
+ * The entries a micro-step's scans run over: tokens, occurrences, open items, scope occurrences and queued signals.
+ * `Step.closureWorkBound` sums it over a closure's micro-steps.
+ */
+export function entryCount(state: State): number {
+  return state.tokens.length + state.occurrences.length + state.openItems.length + state.scopes.length + state.signals.length;
 }
 
 /** The process instance identifier of `scope`. */

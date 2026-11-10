@@ -33,7 +33,7 @@ For every new semantic mechanism ([workflow][testing-redgreen]):
 5. see it green in the Lean kernel, the TypeScript kernel and the CIB evidence;
 6. keep a mutation that shows the comparison notices the claimed distinction.
 
-A pile of feature, profile or format switches signals an unsound boundary: revise the shared mechanism. For every newly reachable structure, the closure stays inside `Step.closureBound` (exceeding it is `unsupported`, never truncation); every state with several enabled internal steps is order-invariant, ordered by profile data (as `ProfileOptions.branchSchedule`), an explicit semantic input or refused alike by Lean and TypeScript; and every stable running state either completes or exposes a semantic resumption surface ([preservation checks][testing-redgreen]).
+A pile of feature, profile or format switches signals an unsound boundary: revise the shared mechanism. For every newly reachable structure, the closure stays inside `Step.closureBound` and `Step.closureWorkBound` (exceeding either is `unsupported`, never truncation); every state with several enabled internal steps is order-invariant, ordered by profile data (as `ProfileOptions.branchSchedule`), an explicit semantic input or refused alike by Lean and TypeScript; and every stable running state either completes or exposes a semantic resumption surface ([preservation checks][testing-redgreen]).
 
 Semantic admission and host capability are separate gates: a program the kernel admits but the host cannot schedule is refused before a Workflow starts with a host refusal code keyed by a `hostRequirements` field, never by a throw from Workflow execution.
 

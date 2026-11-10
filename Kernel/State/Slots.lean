@@ -112,10 +112,10 @@ structure FeatureSlots where
   instances : List InstanceData := []
   deriving Repr
 
-/-- Whether a slot keeps `scope` alive. Every slot's own entry is an open occurrence or a child occurrence already, so
-only the join and held waits count here. One of the two places that enumerate the slots. -/
-def FeatureSlots.keepsAlive (slots : FeatureSlots) (scope : ScopeOccurrenceId) : Bool :=
-  slots.parked.any (·.scope == scope) || slots.held.any (·.scope == scope)
+/-- The scope occurrences a slot keeps alive. Every slot's own entry is an open occurrence or a child occurrence
+already, so only the join and held waits count here. One of the two places that enumerate the slots. -/
+def FeatureSlots.keptAlive (slots : FeatureSlots) : List ScopeOccurrenceId :=
+  slots.parked.map (·.scope) ++ slots.held.map (·.scope)
 
 /-- The slot entries that survive removing the scope occurrences `inside`, of which `nested` are the children. The
 other place that enumerates the slots. -/

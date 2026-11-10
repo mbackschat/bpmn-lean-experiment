@@ -4,10 +4,10 @@
  * It owns dispatch on element kind, event role, input kind, signal and continuation, the one completion pipeline, and
  * the order in which hooks run. An input's own transition comes first, then the closure: hand the next signal to its
  * hook; else route the next token to the element at the end of its flow; else complete one idle scope occurrence;
- * until none is left. A closure that does not settle within `closureBound` steps is `unsupported`, never silently
- * truncated. Each of those is one micro-step and appends one `Transition` to the journal; a completion that is the
- * only signal a micro-step enqueued runs inside that micro-step, so a pass-through element begins and completes in one
- * transition.
+ * until none is left. A closure that does not settle within `closureBound` steps, or whose steps together run over more
+ * than `closureWorkBound` state entries, is `unsupported`, never silently truncated. Each of those is one micro-step
+ * and appends one `Transition` to the journal; a completion that is the only signal a micro-step enqueued runs inside
+ * that micro-step, so a pass-through element begins and completes in one transition.
  *
  * A scope occurrence is idle when it holds no token, no blocking open item, no begun occurrence and no child
  * occurrence, and no slot keeps it alive. An idle Scope element is completed by its hook, an idle called instance's
@@ -23,8 +23,9 @@ import {
 import {
   ActivationRole, CauseTag, CommandActionTag, ContinuationTag, DeliveryTriggerTag, EffectOutcomeTag, FailureTag,
   FiredTag, InputTag, InstanceStatus, IterationTag, LeaveTag, SignalTag, Terminal, WriteRule, beginOccurrence,
-  beginRequest, cancelOccurrence, clearInside, closeOwnItems, committed, emptyDraft, failed, idle, initial, instanceOf,
-  keyOf, occurrenceOf, openKindView, recordEnd, removeOccurrence, reserve, root, signal as enqueue, startReserved,
+  beginRequest, busyScopes, cancelOccurrence, clearInside, closeOwnItems, committed, emptyDraft, entryCount, failed, idle,
+  initial, instanceOf, keyOf, occurrenceOf, openKindView, recordEnd, removeOccurrence, reserve, root, signal as enqueue,
+  startReserved,
   type BeginRequest, type Binding, type Cause, type CommandAction, type CommandInput, type EffectInput, type Fired,
   type Input, type InstanceFailure, type Iteration, type Leave, type Occurrence, type OccurrenceKey, type OccurrenceRef,
   type OpenItem, type Outcome, type Result, type ScopeOccurrence, type ScopeOccurrenceId, type Signal, type StartTrigger, type State,
@@ -178,13 +179,7 @@ function continueAfter(hooks: Hooks, ctx: Ctx, occurrence: Occurrence, leave: Le
  * after its receivers ran (`ThrowSignalEventActivityBehavior#execute`), and one of them may have ended it.
  */
 function complete(
-  hooks: Hooks,
-  ctx: Ctx,
-  id: number,
-  requested: Leave,
-  writes: readonly Binding[],
-  rule: WriteRule,
-  before: State,
+  hooks: Hooks, ctx: Ctx, id: number, requested: Leave, writes: readonly Binding[], rule: WriteRule, before: State,
 ): Outcome {
   const found = occurrenceOf(before, id);
   if (found === null) return committed(before);
@@ -304,13 +299,8 @@ function conclude(hooks: Hooks, ctx: Ctx, cause: Cause, element: ElementId | nul
  * against the state it started from, so a boundary an earlier micro-step or stage crossed counts.
  */
 function microStep(
-  hooks: Hooks,
-  ctx: Ctx,
-  cause: Cause,
-  element: ElementId | null,
-  owner: ScopeOccurrenceId,
-  body: (state: State) => Outcome,
-  state: State,
+  hooks: Hooks, ctx: Ctx, cause: Cause, element: ElementId | null, owner: ScopeOccurrenceId,
+  body: (state: State) => Outcome, state: State,
 ): Outcome {
   const before = state.signals.length;
   const next = deferred(ctx.program, state, body(state));
@@ -364,9 +354,18 @@ function completeIdleScope(hooks: Hooks, ctx: Ctx, scope: ScopeOccurrence, state
 
 export const closureBound = 100000;
 
+/**
+ * The most state entries (`entryCount`) a closure's micro-steps may scan together: a closure that grows the state at every
+ * micro-step costs time quadratic in its length (100000 such steps took 77 s to 200 s, measured 2026-11-10), while the
+ * longest retained closure scans 12008 (`automatic-loop-long-burst`).
+ */
+export const closureWorkBound = 10000000;
+
 /** The next scope occurrence other than the root that is idle, which the closure completes through its owner. */
 function idleScope(ctx: Ctx, state: State): ScopeOccurrence | undefined {
-  return state.scopes.find((scope) => scope.id !== root && idle(state, scope.id) && !activityLocal(ctx, state, scope));
+  if (!state.scopes.some((scope) => scope.id !== root)) return undefined;
+  const busy = busyScopes(state);
+  return state.scopes.find((scope) => scope.id !== root && !busy.has(scope.id) && !activityLocal(ctx, state, scope));
 }
 
 /**
@@ -419,8 +418,11 @@ function reoffer(hooks: Hooks, ctx: Ctx, state: State): Result<Reoffered | null>
  */
 function settle(hooks: Hooks, ctx: Ctx, bound: number, start: State): Outcome {
   let state = start;
+  let work = closureWorkBound;
   for (let fuel = bound; ; fuel -= 1) {
     if (fuel === 0) return failed(FailureTag.Unsupported, "closure-bound"); // dynamic-only: a closure's length depends on the run
+    work -= entryCount(state);
+    if (work < 0) return failed(FailureTag.Unsupported, "closure-bound"); // dynamic-only: so does its size
     if (state.status !== InstanceStatus.Running) return committed(state);
     const [next, ...signals] = state.signals;
     const [token, tokens] = nextToken(ctx, state);
