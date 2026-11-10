@@ -10,8 +10,9 @@ shape is fixed; a feature keeps its own data in its slot of `FeatureSlots`, whic
 default, so the state codec never varies by program.
 
 Occurrences and activations are created and removed only here and in `Kernel.Step`; variables are written only
-through `setVariable`, whose one caller is `Kernel.Feature.Data`; tokens are added only by `emit`, whose one caller is
-`Kernel.Feature.Flow` (guard 17).
+through `setVariable`, whose one caller is `Kernel.Feature.Data`; flow tokens are added only by `emit`, whose one caller
+is `Kernel.Feature.Flow`, and deferred begins only by `deferBegins`, whose one caller is `Kernel.Feature.MultiInstance`
+(guard 17).
 -/
 
 public section
@@ -61,11 +62,6 @@ structure ScopeOccurrence where
   calledInstance : Option String := none
   deriving Repr
 
-/-- A token on a sequence flow, inside a scope occurrence. -/
-structure Token where
-  flow : FlowId
-  scope : ScopeOccurrenceId
-  deriving DecidableEq, Repr
 
 structure ScopeVariables where
   scope : ScopeOccurrenceId
@@ -138,6 +134,24 @@ structure BeginRequest where
   trigger : StartTrigger := .none
   deriving Repr
 
+/-- One entry of a closure's work stack, `State.tokens`, which `Kernel.Step` owns matching on: a token on a sequence
+flow inside a scope occurrence, or a deferred begin, the request of a `begin` signal moved onto the stack, which
+`Kernel.Step` dispatches as that signal, with its journal cause, when the closure reaches it. -/
+inductive Token where
+  | flow (flow : FlowId) (scope : ScopeOccurrenceId)
+  | begin (request : BeginRequest)
+  deriving Repr
+
+/-- The scope occurrence an entry keeps busy: a flow token's own, a deferred begin's the one its request begins in. -/
+def Token.busyScope : Token → ScopeOccurrenceId
+  | .flow _ scope => scope
+  | .begin request => request.scope
+
+/-- The flow a token arrives on; a deferred begin arrives on none. -/
+def Token.arrivalFlow? : Token → Option FlowId
+  | .flow sequenceFlow _ => some sequenceFlow
+  | .begin _ => none
+
 /-- Guarded type: `Kernel.Step` owns matching on it. The cross-feature protocol: a feature that needs another
 feature's mechanism enqueues a signal, and `Step` hands it to the owning hook before any token moves. -/
 inductive Signal where
@@ -207,6 +221,7 @@ structure State where
   status : InstanceStatus := .running
   scopes : List ScopeOccurrence := []
   occurrences : List Occurrence := []
+  /-- The closure's work stack (`Step.nextToken`), empty once a closure settles. -/
   tokens : List Token := []
   variables : List ScopeVariables := []
   openItems : List OpenItem := []
@@ -256,7 +271,12 @@ def initial (instanceId : String) (variables : List (String × Value)) (business
     slots := { instances := [{ root, businessKey }] } }
 
 def emit (state : State) (flows : List FlowId) (scope : ScopeOccurrenceId) : State :=
-  { state with tokens := state.tokens ++ flows.map fun flow => { flow, scope } }
+  { state with tokens := state.tokens ++ flows.map (Token.flow · scope) }
+
+/-- Defer the begins `requests` onto the work stack, the first on top: above every token queued before them, so under
+`declarationDepthFirst` each begins, and runs to its next wait, join or end, before the next. -/
+def deferBegins (state : State) (requests : List BeginRequest) : State :=
+  { state with tokens := state.tokens ++ (requests.map Token.begin).reverse }
 
 def issue (state : State) : State × Nat :=
   ({ state with nextIssue := state.nextIssue + 1 }, state.nextIssue)
@@ -283,7 +303,7 @@ def instanceRoot (state : State) (scope : ScopeOccurrenceId) : ScopeOccurrenceId
 /-- The scope occurrences in which something remains: a token, an open item that keeps it alive, a begun occurrence, a
 child scope occurrence or a feature slot entry, in one pass over the state. -/
 def busyScopes (state : State) : List ScopeOccurrenceId :=
-  state.tokens.map (·.scope) ++ (state.openItems.filter fun item => !item.passive).map (·.scope) ++
+  state.tokens.map (·.busyScope) ++ (state.openItems.filter fun item => !item.passive).map (·.scope) ++
     (state.occurrences.filter (·.begun)).map (·.scope) ++ state.scopes.filterMap (·.parent) ++ state.slots.keptAlive
 
 /-- Whether nothing remains in `scope`: no token, no open item that keeps it alive, no begun occurrence, no child
@@ -452,7 +472,7 @@ def clearInside (state : State) (scope : ScopeOccurrenceId) (keep : List Nat := 
     state.occurrences.filter fun occurrence => occurrence.scope == current && !keep.contains occurrence.id
   let journalled := recordCancelled state removed
   { journalled with
-      tokens := journalled.tokens.filter (!inside.contains ·.scope)
+      tokens := journalled.tokens.filter (!inside.contains ·.busyScope)
       openItems := journalled.openItems.filter fun item => !inside.contains item.scope || keep.contains item.occurrence
       occurrences := journalled.occurrences.filter fun occurrence => !inside.contains occurrence.scope || keep.contains occurrence.id
       scopes := journalled.scopes.filter (!nested.contains ·.id)

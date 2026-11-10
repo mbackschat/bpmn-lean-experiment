@@ -271,7 +271,7 @@ def busyCalledRoot (ctx : Ctx) (origin : Origin) (occurrence : ScopeOccurrence) 
   let thrower (standing : Occurrence) : Bool :=
     standing.element == origin.element && standing.activation == origin.activation
   let otherPath := state.occurrences.any (fun standing => standing.scope == occurrence.id && !thrower standing) ||
-    state.tokens.any (·.scope == occurrence.id)
+    state.tokens.any (·.busyScope == occurrence.id)
   origin.scope == occurrence.id && mapsOutputs && otherPath
 
 /-- Under `RaisedCallOutputs.atCalledRoot` (CIB-EXT-0034) a called root the search visits passes its Call's outputs.

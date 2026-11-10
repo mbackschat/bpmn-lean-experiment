@@ -1,8 +1,8 @@
 /**
  * Flow: starts, gateways and Links, transcribed from `Kernel/Feature/Flow.lean`.
  *
- * Owns matching on `GatewayKind` and `Leave`, and is the only module that adds tokens (guard 17): every occurrence
- * leaves through `outflow`. Gateway semantics follow BPMN 2.0.2 §13.4:
+ * Owns matching on `GatewayKind` and `Leave`, and is the only module that adds flow tokens (guard 17): every
+ * occurrence leaves through `outflow`. Gateway semantics follow BPMN 2.0.2 §13.4:
  *
  * - Exclusive (§13.4.2): the first true candidate in document order, else the default.
  * - Parallel (§13.4.1): a gateway with more than one incoming flow waits until every incoming flow holds a token in the
@@ -62,6 +62,7 @@ import {
   occurrenceOf,
   parkedEquals,
   signal,
+  tokenArrivalFlow,
   type EvalContext,
   type Leave,
   type Occurrence,
@@ -160,7 +161,7 @@ function queued(ctx: Ctx, flows: readonly FlowId[]): readonly FlowId[] {
 }
 
 /**
- * `Hooks.outflow`: the only place tokens are added. An element's own selection is `ownFlows`, read after the
+ * `Hooks.outflow`: the only place flow tokens are added. An element's own selection is `ownFlows`, read after the
  * completion's writes.
  */
 export function outflow(ctx: Ctx, occurrence: Occurrence, leave: Leave, state: State): Outcome {
@@ -301,7 +302,7 @@ function positions(ctx: Ctx, state: State, gateway: ElementId, scope: ScopeOccur
     const found = programElement(program, element);
     return found === null ? [] : successors(ctx, found);
   };
-  const queued = state.tokens.filter((token) => token.scope === scope).map((token) => token.flow);
+  const queued = state.tokens.filter((token) => token.scope === scope).flatMap((token) => tokenArrivalFlow(token) ?? []);
   const items = state.openItems.filter((item) => item.scope === scope && !item.passive).flatMap((item) => continuing(item.element));
   const children = state.scopes.filter((child) => child.parent === scope)
     .flatMap((child) => (child.element === null ? [] : continuing(child.element)));

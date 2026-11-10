@@ -3,11 +3,12 @@
  *
  * It owns dispatch on element kind, event role, input kind, signal and continuation, the one completion pipeline, and
  * the order in which hooks run. An input's own transition comes first, then the closure: hand the next signal to its
- * hook; else route the next token to the element at the end of its flow; else complete one idle scope occurrence;
- * until none is left. A closure that does not settle within `closureBound` steps, or whose steps together run over more
- * than `closureWorkBound` state entries, is `unsupported`, never silently truncated. Each of those is one micro-step
- * and appends one `Transition` to the journal; a completion that is the only signal a micro-step enqueued runs inside
- * that micro-step, so a pass-through element begins and completes in one transition.
+ * hook; else route the next token to the element at the end of its flow, or dispatch the deferred begin it is as its
+ * `begin` signal; else complete one idle scope occurrence; until none is left. A closure that does not settle within
+ * `closureBound` steps, or whose steps together run over more than `closureWorkBound` state entries, is `unsupported`,
+ * never silently truncated. Each of those is one micro-step and appends one `Transition` to the journal; a completion
+ * that is the only signal a micro-step enqueued runs inside that micro-step, so a pass-through element begins and
+ * completes in one transition.
  *
  * A scope occurrence is idle when it holds no token, no blocking open item, no begun occurrence and no child
  * occurrence, and no slot keeps it alive. An idle Scope element is completed by its hook, an idle called instance's
@@ -18,11 +19,11 @@
 import {
   BranchSchedule, ContinuationFailure, ElementTag, EventRoleTag, assertNever, elementActivity, elementEnvelope, elementGateway,
   elementHeader, programElement, programPublicId, programSourceType, programTarget, type Element, type ElementId,
-  type Envelope, type MultiInstance, type Program,
+  type Envelope, type FlowId, type MultiInstance, type Program,
 } from "./il/types.js";
 import {
   ActivationRole, CauseTag, CommandActionTag, ContinuationTag, DeliveryTriggerTag, EffectOutcomeTag, FailureTag,
-  FiredTag, InputTag, InstanceStatus, IterationTag, LeaveTag, SignalTag, Terminal, WriteRule, beginOccurrence,
+  FiredTag, InputTag, InstanceStatus, IterationTag, LeaveTag, SignalTag, Terminal, TokenTag, WriteRule, beginOccurrence,
   beginRequest, busyScopes, cancelOccurrence, clearInside, closeOwnItems, committed, crossed, emptyDraft, entryCount, failed, idle,
   initial, instanceOf, keyOf, occurrenceOf, openKindView, recordEnd, removeOccurrence, reserve, root, signal as enqueue,
   startReserved,
@@ -284,11 +285,28 @@ function microStep(
   return absorbed.ok ? deferred(ctx.program, absorbed.value, conclude(hooks, ctx, cause, element, owner, absorbed.value)) : absorbed;
 }
 
-/** Route one token to the element at the end of its flow. */
-function arrive(hooks: Hooks, ctx: Ctx, token: Token, state: State): Outcome {
-  const element = programTarget(ctx.program, token.flow);
+/** Route a token on `flow` to the element at the end of it. */
+function arrive(hooks: Hooks, ctx: Ctx, flow: FlowId, scope: ScopeOccurrenceId, state: State): Outcome {
+  const element = programTarget(ctx.program, flow);
   if (element === null) return failed(FailureTag.SemanticFailure, "flow-without-target");
-  return begin(hooks, ctx, beginRequest({ element, scope: token.scope, incoming: token.flow }), state);
+  return begin(hooks, ctx, beginRequest({ element, scope, incoming: flow }), state);
+}
+
+/**
+ * Move one token in its own micro-step: route a flow token to the element at the end of its flow; dispatch a deferred
+ * begin as the `begin` signal it was, with that signal's journal cause.
+ */
+function moveToken(hooks: Hooks, ctx: Ctx, token: Token, state: State): Outcome {
+  switch (token.tag) {
+    case TokenTag.Flow:
+      return microStep(hooks, ctx, { tag: CauseTag.Arrive, flow: token.flow }, programTarget(ctx.program, token.flow), token.scope,
+        (current) => arrive(hooks, ctx, token.flow, token.scope, current), state);
+    case TokenTag.Begin: {
+      const next: Signal = { tag: SignalTag.Begin, request: token.request };
+      return microStep(hooks, ctx, { tag: CauseTag.Signal, name: signalName(next) }, null, root, signalRun(hooks, ctx, next).run, state);
+    }
+  }
+  return assertNever(token);
 }
 
 /** An Activity's local-variable scope occurrence: owned by an Activity that is no Multi-Instance body and calls no instance. */
@@ -346,10 +364,10 @@ function idleScope(ctx: Ctx, state: State): ScopeOccurrence | undefined {
 /**
  * The token the closure moves next, and the rest: the oldest under `BranchSchedule.orderInvariant`, whose admitted models
  * no order changes (`flow.concurrentWrite`); the newest under `declarationDepthFirst` (CIB-OP-0016), where `Flow`
- * queues a split's flows reversed, so each branch runs to its next wait, join or end before the next one starts. Under
- * `declarationDepthFirst` an idle scope occurrence completes before any token moves, as CIB ends a Sub-Process in the
- * operation that ends its last execution, before its LIFO queue reaches a sibling branch
- * (`PvmAtomicOperationActivityEnd:105`).
+ * queues a split's flows reversed and `Feature.MultiInstance` a parallel body's instances, so each branch and each
+ * instance runs to its next wait, join or end before the next one starts. Under `declarationDepthFirst` an idle scope
+ * occurrence completes before any token moves, as CIB ends a Sub-Process in the operation that ends its last execution,
+ * before its LIFO queue reaches a sibling branch (`PvmAtomicOperationActivityEnd:105`).
  */
 function nextToken(ctx: Ctx, state: State): readonly [Token | undefined, readonly Token[]] {
   const queue = state.tokens;
@@ -407,8 +425,7 @@ function settle(hooks: Hooks, ctx: Ctx, bound: number, start: State): Outcome {
       stepped = microStep(hooks, ctx, { tag: CauseTag.Signal, name: signalName(next) }, null, root,
         signalRun(hooks, ctx, next).run, { ...state, signals });
     } else if (token !== undefined) {
-      stepped = microStep(hooks, ctx, { tag: CauseTag.Arrive, flow: token.flow }, programTarget(ctx.program, token.flow),
-        token.scope, (current) => arrive(hooks, ctx, token, current), { ...state, tokens });
+      stepped = moveToken(hooks, ctx, token, { ...state, tokens });
     } else if (ready !== undefined) {
       stepped = microStep(hooks, ctx, { tag: CauseTag.Idle, scope: ready.id }, ready.element, ready.id,
         (current) => completeIdleScope(hooks, ctx, ready, current), state);

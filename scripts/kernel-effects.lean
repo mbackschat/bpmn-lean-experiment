@@ -6,8 +6,8 @@ read from the built environment because who calls what, which state field a stru
 pattern reads are only visible after elaboration. The dispatch guards see matches and miss effects: nine completers
 passed guards 1 and 2 (hence guard 17), so this scan reads calls and writes rather than matches.
 
-- One writer per effect (17): tokens are emitted only by `Feature.Flow`; variables are written only by `Feature.Data`;
-  occurrences and activations are created and removed only by `Step` and `State`; the completion pipeline's hooks are
+- One writer per effect (17): one writer per `Token` case, flow tokens emitted only by `Feature.Flow` and deferred begins
+  stacked only by `Feature.MultiInstance`; variables are written only by `Feature.Data`; occurrences and activations are created and removed only by `Step` and `State`; the completion pipeline's hooks are
   called only by `Step`. A rule that sees no permitted caller fails, so a renamed primitive cannot read as clean.
 - Field liveness (19): every field of a structure in `Kernel.IL.Types` is read by a non-codec declaration or refused by
   `Kernel.Admission`, which reads it. A matcher over a structure counts as reading all of its fields, because the
@@ -34,10 +34,11 @@ def callRules : List CallRule :=
   let flow := [`Kernel.Feature.Flow]
   let data := [`Kernel.Feature.Data]
   let lifecycle := [`Kernel.Step, `Kernel.State]
-  let tokens := "tokens are emitted only by Flow"
+  let tokens := "flow tokens are emitted only by Flow"
   let variables := "variables are written only by Data"
   let occurrences := "occurrences are created and removed only by Step and State"
   [ ⟨`Kernel.State.emit, flow, tokens⟩,
+    ⟨`Kernel.State.deferBegins, [`Kernel.Feature.MultiInstance], "deferred begins are stacked only by MultiInstance"⟩,
     ⟨`Kernel.State.setVariable, data, variables⟩,
     ⟨`Kernel.State.beginOccurrence, lifecycle, occurrences⟩,
     ⟨`Kernel.State.startReserved, lifecycle, occurrences⟩,
@@ -268,6 +269,7 @@ structure Hooks where
   written : State → State := id
 namespace State
 def emit (state : State) : State := { state with tokens := 1 :: state.tokens }
+def deferBegins (state : State) : State := { state with tokens := 2 :: state.tokens }
 def setVariable (state : State) : State := { state with variables := 1 :: state.variables, writes := [1] }
 def beginOccurrence (state : State) : State := { state with occurrences := 1 :: state.occurrences }
 def startReserved (state : State) : State := beginOccurrence state
@@ -291,8 +293,12 @@ end Feature.Flow
 namespace Feature.Data
 def good (state : State) : State := state.setVariable
 end Feature.Data
+namespace Feature.MultiInstance
+def good (state : State) : State := state.deferBegins
+end Feature.MultiInstance
 namespace Feature.Work
 def seededEmit (state : State) : State := state.emit
+def seededDefer (state : State) : State := state.deferBegins
 def seededWrite (state : State) : State := { state with tokens := [] }
 def seededHook (hooks : Hooks) (state : State) : State := hooks.outflow state
 end Feature.Work
@@ -321,14 +327,15 @@ end Kernel
 
 /-- Which fixture namespace is a module: the longest prefix among the fixture's stand-in modules. -/
 def fixtureModuleOf (declaration : Name) : Option Name :=
-  let modules := [`Kernel.Step, `Kernel.Feature.Flow, `Kernel.Feature.Data, `Kernel.Feature.Work, `Kernel.IL.Codec,
-    `Kernel.IL.Types, `Kernel.Hooks, `Kernel.State]
+  let modules := [`Kernel.Step, `Kernel.Feature.Flow, `Kernel.Feature.Data, `Kernel.Feature.MultiInstance,
+    `Kernel.Feature.Work, `Kernel.IL.Codec, `Kernel.IL.Types, `Kernel.Hooks, `Kernel.State]
   match modules.filter (·.isPrefixOf declaration) with
   | [] => if (`Kernel).isPrefixOf declaration then some `Kernel.IL.Types else none
   | head :: tail => some (tail.foldl (fun best module => if best.isPrefixOf module then module else best) head)
 
 def expectedInFixture : List String := [
-  "calls Kernel.State.emit (tokens are emitted only by Flow)",
+  "calls Kernel.State.emit (flow tokens are emitted only by Flow)",
+  "calls Kernel.State.deferBegins (deferred begins are stacked only by MultiInstance)",
   "writes State.tokens through a structure update",
   "calls pipeline hook Kernel.Hooks.outflow outside Step",
   "Kernel.Used.unread: read by no non-codec declaration",

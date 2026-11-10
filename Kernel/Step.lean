@@ -6,11 +6,12 @@ public import Kernel.Hooks
 
 The single step function. It owns dispatch on element kind, event role, input kind, signal and continuation, the one
 completion pipeline, and the order in which hooks run. An input's own transition comes first, then the closure: hand
-the next signal to its hook; else route the next token to the element at the end of its flow; else complete one idle
-scope occurrence; until none is left. A closure that does not settle within `closureBound` steps, or whose steps
-together run over more than `closureWorkBound` state entries, is `unsupported`, never silently truncated. Each of
-those is one micro-step and appends one `Transition` to the journal; a completion that is the only signal a
-micro-step enqueued runs inside that micro-step, so a pass-through element begins and completes in one transition.
+the next signal to its hook; else route the next token to the element at the end of its flow, or dispatch the
+deferred begin it is as its `begin` signal; else complete one idle scope occurrence; until none is left. A closure
+that does not settle within `closureBound` steps, or whose steps together run over more than `closureWorkBound` state
+entries, is `unsupported`, never silently truncated. Each of those is one micro-step and appends one `Transition` to
+the journal; a completion that is the only signal a micro-step enqueued runs inside that micro-step, so a pass-through
+element begins and completes in one transition.
 
 A scope occurrence is idle when it holds no token, no blocking open item, no begun occurrence and no child
 occurrence, and no slot keeps it alive. An idle Scope element is completed by its hook, an idle called instance's root
@@ -208,11 +209,21 @@ def microStep (hooks : Hooks) (ctx : Ctx) (cause : Cause) (element : Option Elem
   let absorbed ← deferred ctx.program next (absorb hooks ctx before next)
   deferred ctx.program absorbed (conclude hooks ctx cause element owner absorbed)
 
-/-- Route one token to the element at the end of its flow. -/
-def arrive (hooks : Hooks) (ctx : Ctx) (token : Token) (state : State) : Outcome :=
-  match ctx.program.target? token.flow with
+/-- Route a token on `flow` to the element at the end of it. -/
+def arrive (hooks : Hooks) (ctx : Ctx) (flow : FlowId) (scope : ScopeOccurrenceId) (state : State) : Outcome :=
+  match ctx.program.target? flow with
   | none => .error (.semanticFailure "flow-without-target")
-  | some element => begin hooks ctx { element, scope := token.scope, incoming := some token.flow } state
+  | some element => begin hooks ctx { element, scope, incoming := some flow } state
+
+/-- Move one token in its own micro-step: route a flow token to the element at the end of its flow; dispatch a deferred
+begin as the `begin` signal it was, with that signal's journal cause. -/
+def moveToken (hooks : Hooks) (ctx : Ctx) (token : Token) (state : State) : Outcome :=
+  match token with
+  | .flow flow scope =>
+    microStep hooks ctx (.arrive flow) (ctx.program.target? flow) scope (arrive hooks ctx flow scope) state
+  | .begin request =>
+    let next := Signal.begin request
+    microStep hooks ctx (.signal (signalName next)) none State.root (dispatchSignal hooks ctx next) state
 
 /-- An Activity's local-variable scope occurrence: owned by an Activity that is no Multi-Instance body and calls no
 instance. -/
@@ -261,10 +272,10 @@ def idleScope? (ctx : Ctx) (state : State) : Option ScopeOccurrence :=
 
 /-- The token the closure moves next, and the rest: the oldest under `BranchSchedule.orderInvariant`, whose admitted
 models no order changes (`flow.concurrentWrite`); the newest under `declarationDepthFirst` (CIB-OP-0016), where `Flow`
-queues a split's flows reversed, so each branch runs to its next wait, join or end before the next one starts. Under
-`declarationDepthFirst` an idle scope occurrence completes before any token moves, as CIB ends a Sub-Process in the
-operation that ends its last execution, before its LIFO queue reaches a sibling branch
-(`PvmAtomicOperationActivityEnd:105`). -/
+queues a split's flows reversed and `Feature.MultiInstance` a parallel body's instances, so each branch and each
+instance runs to its next wait, join or end before the next one starts. Under `declarationDepthFirst` an idle scope
+occurrence completes before any token moves, as CIB ends a Sub-Process in the operation that ends its last execution,
+before its LIFO queue reaches a sibling branch (`PvmAtomicOperationActivityEnd:105`). -/
 def nextToken (ctx : Ctx) (state : State) : Option (Token × List Token) :=
   let queue := state.tokens
   match ctx.program.options.branchSchedule with
@@ -310,9 +321,7 @@ def settle (hooks : Hooks) (ctx : Ctx) : Nat → Nat → State → Outcome
         let cause := Cause.signal (signalName next)
         settle hooks ctx fuel work (← microStep hooks ctx cause none State.root (dispatchSignal hooks ctx next) { state with signals := rest })
       | [], some (token, rest) => do
-        let element := ctx.program.target? token.flow
-        settle hooks ctx fuel work (← microStep hooks ctx (.arrive token.flow) element token.scope (arrive hooks ctx token)
-          { state with tokens := rest })
+        settle hooks ctx fuel work (← moveToken hooks ctx token { state with tokens := rest })
       | [], none =>
         match idleScope? ctx state with
         | some scope => do

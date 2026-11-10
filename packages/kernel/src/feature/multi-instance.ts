@@ -5,8 +5,9 @@
  * loop characteristics begins the body's occurrence, evaluates the input collection once and, for a nonempty
  * collection, enters the body's scope occurrence, which is the host its boundaries attach to. Each instance runs in a
  * scope occurrence of its own holding its input data item, as an occurrence of the Activity that `feature/work.ts` runs
- * like any other. A parallel Activity begins every instance at once, a sequential one the next after each completion
- * (BPMN 2.0.2 §13.3.7).
+ * like any other. A parallel Activity enters every instance at once and begins them in item order, under
+ * `declarationDepthFirst` each once the one before has reached its next wait, join or end (CIB-OP-0016); a sequential
+ * one begins the next after each completion (BPMN 2.0.2 §13.3.7).
  *
  * The resolutions of the parallel and sequential Multi-Instance accounts: an instance's completion submits exactly its
  * output data item, which fills the instance's slot whatever the completion order; the output collection, in item
@@ -16,6 +17,7 @@
  * in it and writes nothing (`PMI-TIMER-01`).
  */
 import {
+  BranchSchedule,
   ExpressionTag,
   InstanceCountTag,
   MultiInstanceBinding,
@@ -48,12 +50,14 @@ import {
   beginRequest,
   committed,
   completeSignal,
+  deferBegins,
   enterScope,
   failed,
   leaveOutgoing,
   leaveScope,
   root,
   signal,
+  type BeginRequest,
   type Binding,
   type EvalContext,
   type Iteration,
@@ -220,6 +224,26 @@ function holdsCounts(ctx: Ctx, variables: readonly Binding[], counts: Counts): b
 }
 
 /**
+ * Queue the begins of instances already entered, in item order. Under `declarationDepthFirst` a parallel body defers
+ * them onto the closure's work stack, instance 0 on top: CIB creates every instance's execution, then starts them from the
+ * last index down onto its LIFO operation queue, so each runs to its next wait, join or end before the next begins, and
+ * all of them before the work queued beneath the body (CIB-OP-0016, `ParallelMultiInstanceActivityBehavior:50-61`).
+ * Otherwise each begins as a `begin` signal, before any token moves: under `orderInvariant` the order among parallel
+ * instances is no BPMN meaning (§13.3.7), and a sequential body's next instance begins from the completion of the one
+ * before, where CIB's `createNextInstance` starts it (`SequentialMultiInstanceActivityBehavior:59`).
+ */
+function queueInstances(ctx: Ctx, mode: MultiInstanceMode, requests: readonly BeginRequest[], state: State): State {
+  const signalled = requests.reduce((current, request) => signal(current, { tag: SignalTag.Begin, request }), state);
+  switch (ctx.program.options.branchSchedule) {
+    case BranchSchedule.OrderInvariant:
+      return signalled;
+    case BranchSchedule.DeclarationDepthFirst:
+      return sequential(mode) ? signalled : deferBegins(state, requests);
+  }
+  return assertNever(ctx.program.options.branchSchedule);
+}
+
+/**
  * Begin the instances `opening` names, each in a scope occurrence holding its input data item and, under `cibLocals`,
  * its `loopCounter`.
  */
@@ -227,17 +251,16 @@ function beginInstances(ctx: Ctx, loop: MultiInstance, items: readonly Value[], 
   let current = state;
   const instances = [...run.instances];
   const name = itemName(ctx, loop);
+  const requests: BeginRequest[] = [];
   for (const index of opening(loop.mode, run.instances)) {
     const value = items[index];
     const locals: readonly Binding[] = [...counterLocals(ctx, instanceCounts(index)), ...(name !== null && value !== undefined ? [[name, value] as Binding] : [])];
     const [entered, scope] = enterScope(current, run.element, run.scope, locals, null);
-    current = signal(entered, {
-      tag: SignalTag.Begin,
-      request: beginRequest({ element: run.element, scope, continuation: { tag: ContinuationTag.MultiInstance, body: run.occurrence } }),
-    });
+    current = entered;
+    requests.push(beginRequest({ element: run.element, scope, continuation: { tag: ContinuationTag.MultiInstance, body: run.occurrence } }));
     if (index < instances.length) instances[index] = { tag: IterationTag.Active, scope };
   }
-  return setRun(current, { ...run, instances });
+  return setRun(queueInstances(ctx, loop.mode, requests, current), { ...run, instances });
 }
 
 /** The output collection of `outputs` in the form of the input collection: a String List of Strings, else a List. */

@@ -4,8 +4,8 @@ public import Kernel.Hooks
 
 /-! # Flow: starts, gateways and Links
 
-Owns matching on `GatewayKind` and `Leave`, and is the only module that adds tokens (guard 17): every occurrence leaves
-through `outflow`. Gateway semantics follow [BPMN 2.0.2 §13.4](../../docs/reference/bpmn-2.0.2/README.md):
+Owns matching on `GatewayKind` and `Leave`, and is the only module that adds flow tokens (guard 17): every occurrence
+leaves through `outflow`. Gateway semantics follow [BPMN 2.0.2 §13.4](../../docs/reference/bpmn-2.0.2/README.md):
 
 - Exclusive (§13.4.2): the first true candidate in document order, else the default.
 - Parallel (§13.4.1): a gateway with more than one incoming flow waits until every incoming flow holds a token in
@@ -153,7 +153,7 @@ def positions (ctx : Ctx) (state : State) (gateway : ElementId) (scope : ScopeOc
     List FlowId :=
   let program := ctx.program
   let continuing (element : ElementId) := ((program.element? element).map (successors ctx)).getD []
-  let queued := (state.tokens.filter (·.scope == scope)).map (·.flow)
+  let queued := (state.tokens.filter (·.busyScope == scope)).filterMap (·.arrivalFlow?)
   let items := (state.openItems.filter fun item => item.scope == scope && !item.passive)
     |>.flatMap (continuing ·.element)
   let children := (state.scopes.filter (·.parent == some scope)).flatMap fun child =>
@@ -223,7 +223,7 @@ def queued (ctx : Ctx) (flows : List FlowId) : List FlowId :=
   | .orderInvariant => flows
   | .declarationDepthFirst => flows.reverse
 
-/-- `Hooks.outflow`: the only place tokens are added. An element's own selection is `ownFlows`, read after the
+/-- `Hooks.outflow`: the only place flow tokens are added. An element's own selection is `ownFlows`, read after the
 completion's writes. -/
 def outflow (ctx : Ctx) (occurrence : Occurrence) (leave : Leave) (state : State) : Outcome :=
   match leave with

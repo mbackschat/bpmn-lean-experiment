@@ -1190,12 +1190,6 @@
     ]
   },
   {
-    "evidence": "scenarios/open-rows/message-esp-repeatable/parallel-bodies-own-listeners.cibseven-evidence.json",
-    "owners": [
-      "PC-MESSAGE-07"
-    ]
-  },
-  {
     "evidence": "scenarios/open-rows/message-esp-repeatable/sequential-body-listener-before-replacement.cibseven-evidence.json",
     "owners": [
       "PC-MESSAGE-07"
@@ -1398,23 +1392,9 @@
     ]
   },
   {
-    "evidence": "scenarios/open-rows/multi-instance-instance-sites/nested-inner-hides-outer.cibseven-evidence.json",
-    "owners": [
-      "PC-MI-05",
-      "PC-MI-11"
-    ]
-  },
-  {
     "evidence": "scenarios/open-rows/multi-instance-instance-sites/nested-output-writes-counter.cibseven-evidence.json",
     "owners": [
       "CIB-LIM-0020"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/multi-instance-instance-sites/parallel-counters.cibseven-evidence.json",
-    "owners": [
-      "PC-MI-05",
-      "PC-MI-10"
     ]
   },
   {
@@ -1463,65 +1443,6 @@
     "evidence": "scenarios/open-rows/multi-instance-service-task/sequential-collection-shrunk-then-restored.cibseven-evidence.json",
     "owners": [
       "PC-MI-08"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/multi-instance-sub-process/parallel-cardinality-changed-after-entry.cibseven-evidence.json",
-    "owners": [
-      "PC-MI-06"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/multi-instance-sub-process/parallel-cardinality-two-reversed.cibseven-evidence.json",
-    "owners": [
-      "PC-MI-06"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/multi-instance-sub-process/parallel-early-cancel-keeps-sibling-write.cibseven-evidence.json",
-    "owners": [
-      "PC-MI-05",
-      "PC-MI-09",
-      "PC-MI-12"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/multi-instance-sub-process/parallel-early-cancel-of-fourteen.cibseven-evidence.json",
-    "owners": [
-      "PC-MI-05",
-      "PC-MI-09"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/multi-instance-sub-process/parallel-seventeen-bodies.cibseven-evidence.json",
-    "owners": [
-      "PC-MI-05"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/multi-instance-sub-process/parallel-sixteen-bodies-natural.cibseven-evidence.json",
-    "owners": [
-      "PC-MI-05"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/multi-instance-sub-process/parallel-sixteen-bodies-reversed.cibseven-evidence.json",
-    "owners": [
-      "PC-MI-05"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/multi-instance-sub-process/parallel-two-bodies-natural.cibseven-evidence.json",
-    "owners": [
-      "PC-MI-05",
-      "PC-MI-10"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/multi-instance-sub-process/parallel-two-bodies-reversed.cibseven-evidence.json",
-    "owners": [
-      "PC-MI-05",
-      "PC-MI-10"
     ]
   },
   {
@@ -1933,24 +1854,6 @@
     "evidence": "scenarios/open-rows/structured-value-bounds/start-over-node-bound.cibseven-evidence.json",
     "owners": [
       "CIB-LIM-0014"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/terminate-multi-instance-bodies/parallel-first-body-terminates.cibseven-evidence.json",
-    "owners": [
-      "PC-TERMINATE-02"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/terminate-multi-instance-bodies/parallel-second-body-terminates.cibseven-evidence.json",
-    "owners": [
-      "PC-TERMINATE-02"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/terminate-multi-instance-bodies/sequential-first-body-terminates.cibseven-evidence.json",
-    "owners": [
-      "PC-TERMINATE-02"
     ]
   },
   {

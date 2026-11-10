@@ -8,8 +8,9 @@ Owns matching on `MultiInstanceMode` and the Multi-Instance body. A token reachi
 loop characteristics begins the body's occurrence, evaluates the input collection once and, for a nonempty collection,
 enters the body's scope occurrence, which is the host its boundaries attach to. Each instance runs in a scope
 occurrence of its own holding its input data item, as an occurrence of the Activity that `Kernel.Feature.Work` runs
-like any other. A parallel Activity begins every instance at once, a sequential one the next after each completion
-([BPMN 2.0.2 §13.3.7](../../docs/reference/bpmn-2.0.2/README.md)).
+like any other. A parallel Activity enters every instance at once and begins them in item order, under
+`declarationDepthFirst` each once the one before has reached its next wait, join or end (CIB-OP-0016); a sequential
+one begins the next after each completion ([BPMN 2.0.2 §13.3.7](../../docs/reference/bpmn-2.0.2/README.md)).
 
 The resolutions of the [parallel](../../docs/kernel/semantics/MULTI-INSTANCE-SEMANTICS-SPEC.md)
 and [sequential](../../docs/kernel/semantics/MULTI-INSTANCE-SEMANTICS-SPEC.md) Multi-Instance accounts:
@@ -103,18 +104,33 @@ def holdsCounts (ctx : Ctx) (variables : List (String × Value)) (counts : List 
     | some (.int actual), some expected => actual == expected
     | _, _ => false
 
+/-- Queue the begins of instances already entered, in item order. Under `declarationDepthFirst` a parallel body defers
+them onto the closure's work stack, instance 0 on top: CIB creates every instance's execution, then starts them from the
+last index down onto its LIFO operation queue, so each runs to its next wait, join or end before the next begins, and
+all of them before the work queued beneath the body (CIB-OP-0016, `ParallelMultiInstanceActivityBehavior:50-61`).
+Otherwise each begins as a `begin` signal, before any token moves: under `orderInvariant` the order among parallel
+instances is no BPMN meaning (§13.3.7), and a sequential body's next instance begins from the completion of the one
+before, where CIB's `createNextInstance` starts it (`SequentialMultiInstanceActivityBehavior:59`). -/
+def queueInstances (ctx : Ctx) (mode : MultiInstanceMode) (requests : List BeginRequest) (state : State) : State :=
+  let signalled := requests.foldl (fun state request => state.signal (.begin request)) state
+  match ctx.program.options.branchSchedule with
+  | .orderInvariant => signalled
+  | .declarationDepthFirst => if mode == .parallel then state.deferBegins requests else signalled
+
 /-- Begin the instances `opening` names, each in a scope occurrence holding its input data item and, under
 `cibLocals`, its `loopCounter`. -/
 def beginInstances (ctx : Ctx) (loop : MultiInstance) (items : List Value) (run : MultiInstanceRun) (state : State) :
     State :=
-  let (state, instances) := (opening loop.mode run.instances).foldl (fun (state, instances) index =>
-    let locals := counterLocals ctx (instanceCounts index) ++ match itemName ctx loop, items[index]? with
-      | some name, some value => [(name, value)]
-      | _, _ => []
-    let (state, scope) := state.enterScope run.element run.scope locals none
-    (state.signal (.begin { element := run.element, scope, continuation := .multiInstance run.occurrence }),
-      instances.set index (.active scope))) (state, run.instances)
-  setRun state { run with instances }
+  let (state, instances, requests) := (opening loop.mode run.instances).foldl
+    (fun (state, instances, requests) index =>
+      let locals := counterLocals ctx (instanceCounts index) ++ match itemName ctx loop, items[index]? with
+        | some name, some value => [(name, value)]
+        | _, _ => []
+      let (state, scope) := state.enterScope run.element run.scope locals none
+      let request : BeginRequest := { element := run.element, scope, continuation := .multiInstance run.occurrence }
+      (state, instances.set index (.active scope), requests ++ [request]))
+    (state, run.instances, [])
+  setRun (queueInstances ctx loop.mode requests state) { run with instances }
 
 /-- The output collection of `outputs` in the form of the input collection: a String List of Strings, else a
 List. -/

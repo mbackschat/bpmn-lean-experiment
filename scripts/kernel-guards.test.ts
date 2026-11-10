@@ -377,6 +377,18 @@ export function leak(state) { return emit(state, []); }
 `,
 }, /spread update writes State\.occurrences[\s\S]*pipeline hook outflow[\s\S]*emit called outside its writer|emit called outside its writer/u);
 
+test("guard 17 gives each Token case one writer: deferred begins are stacked only by MultiInstance", () => {
+  const deferring = `${stateTs}export function deferBegins(state, requests) { return { ...state, tokens: requests }; }\n`;
+  assert.deepEqual(effectWriterFindings(fixture({
+    "packages/kernel/src/state.ts": deferring,
+    "packages/kernel/src/feature/multi-instance.ts": `import { deferBegins } from "../state.js";\nexport function begin(state) { return deferBegins(state, []); }\n`,
+  })), []);
+  seeded(effectWriterFindings, {
+    "packages/kernel/src/state.ts": deferring,
+    "packages/kernel/src/feature/flow.ts": `import { emit, deferBegins } from "../state.js";\nexport function gateway(state, flows) { return deferBegins(emit(state, flows), []); }\n`,
+  }, /deferBegins called outside its writer \(deferred begins are stacked only by MultiInstance\)/u);
+});
+
 holdsItsGround("guard 19 (field liveness)", fieldLivenessFindings, {
   "packages/kernel/src/feature/data.ts": `import { setVariable } from "../state.js";\nexport function store(state) { return setVariable(state, "x"); }\n`,
 }, /IL field assignee is read by no non-codec module/u);

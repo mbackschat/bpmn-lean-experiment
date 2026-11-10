@@ -14,7 +14,8 @@ const kernelPrefix = "packages/kernel/src/";
 type CallRule = Readonly<{ name: string; callers: readonly string[]; label: string }>;
 
 const callRules: readonly CallRule[] = [
-  { name: "emit", callers: ["feature/flow"], label: "tokens are emitted only by Flow" },
+  { name: "emit", callers: ["feature/flow"], label: "flow tokens are emitted only by Flow" },
+  { name: "deferBegins", callers: ["feature/multi-instance"], label: "deferred begins are stacked only by MultiInstance" },
   { name: "setVariable", callers: ["feature/data"], label: "variables are written only by Data" },
   { name: "beginOccurrence", callers: ["step"], label: "occurrences are created only by Step and State" },
   { name: "startReserved", callers: ["step"], label: "occurrences are created only by Step and State" },

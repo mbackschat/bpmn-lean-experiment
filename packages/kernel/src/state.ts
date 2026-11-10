@@ -8,8 +8,9 @@
  * any other `T.f` as `tF`.
  *
  * Occurrences and activations are created and removed only here and in `step.ts`; variables are written only through
- * `setVariable`, whose one caller is `feature/data.ts`; tokens are added only by `emit`, whose one caller is
- * `feature/flow.ts` (guard 17).
+ * `setVariable`, whose one caller is `feature/data.ts`; flow tokens are added only by `emit`, whose one caller is
+ * `feature/flow.ts`, and deferred begins only by `deferBegins`, whose one caller is `feature/multi-instance.ts`
+ * (guard 17).
  */
 import {
   assertNever, definitionRefEquals, programChildren, programProcessChildren, utf8ByteSize, type DefinitionRef, type Element,
@@ -117,9 +118,6 @@ export interface ScopeOccurrence {
   readonly calledInstance: string | null;
 }
 
-/** A token on a sequence flow, inside a scope occurrence. */
-export interface Token { readonly flow: FlowId; readonly scope: ScopeOccurrenceId; }
-
 export interface ScopeVariables { readonly scope: ScopeOccurrenceId; readonly entries: readonly Binding[]; }
 
 /**
@@ -180,6 +178,29 @@ export interface BeginRequest {
   readonly locals: readonly Binding[];
   readonly inner: number | null;
   readonly trigger: StartTrigger;
+}
+
+export enum TokenTag { Flow = "flow", Begin = "begin" }
+
+/**
+ * One entry of a closure's work stack, `State.tokens`, which `step.ts` owns matching on: a token on a sequence flow
+ * inside a scope occurrence, or a deferred begin, the request of a `begin` signal moved onto the stack, which `step.ts`
+ * dispatches as that signal, with its journal cause, when the closure reaches it. Both carry the scope occurrence they
+ * keep busy, Lean's `Token.busyScope`: a deferred begin's is the one its request begins in, `request.scope`.
+ */
+export type Token =
+  | { readonly tag: TokenTag.Flow; readonly flow: FlowId; readonly scope: ScopeOccurrenceId }
+  | { readonly tag: TokenTag.Begin; readonly request: BeginRequest; readonly scope: ScopeOccurrenceId };
+
+/** The flow a token arrives on; a deferred begin arrives on none. */
+export function tokenArrivalFlow(token: Token): FlowId | null {
+  switch (token.tag) {
+    case TokenTag.Flow:
+      return token.flow;
+    case TokenTag.Begin:
+      return null;
+  }
+  return assertNever(token);
 }
 
 /** A `BeginRequest` with Lean's field defaults. */
@@ -311,6 +332,7 @@ export interface State {
   readonly status: InstanceStatus;
   readonly scopes: readonly ScopeOccurrence[];
   readonly occurrences: readonly Occurrence[];
+  /** The closure's work stack (`nextToken` in `step.ts`), empty once a closure settles. */
   readonly tokens: readonly Token[];
   readonly variables: readonly ScopeVariables[];
   readonly openItems: readonly OpenItem[];
@@ -402,7 +424,16 @@ export function initial(instanceId: string, variables: readonly Binding[], busin
 }
 
 export function emit(state: State, flows: readonly FlowId[], scope: ScopeOccurrenceId): State {
-  return { ...state, tokens: [...state.tokens, ...flows.map((flow) => ({ flow, scope }))] };
+  return { ...state, tokens: [...state.tokens, ...flows.map((flow): Token => ({ tag: TokenTag.Flow, flow, scope }))] };
+}
+
+/**
+ * Defer the begins `requests` onto the work stack, the first on top: above every token queued before them, so under
+ * `declarationDepthFirst` each begins, and runs to its next wait, join or end, before the next.
+ */
+export function deferBegins(state: State, requests: readonly BeginRequest[]): State {
+  const deferred = requests.map((request): Token => ({ tag: TokenTag.Begin, request, scope: request.scope }));
+  return { ...state, tokens: [...state.tokens, ...deferred.reverse()] };
 }
 
 export function issue(state: State): readonly [State, number] {
