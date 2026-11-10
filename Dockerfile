@@ -6,7 +6,7 @@ FROM ${NODE_IMAGE} AS builder
 ENV PNPM_HOME=/pnpm
 ENV PATH=/pnpm:${PATH}
 WORKDIR /workspace
-RUN npm install --global --ignore-scripts --no-audit --no-fund pnpm@11.20.0
+RUN npm install --global --ignore-scripts --no-audit --no-fund pnpm@12.18.0
 COPY . .
 RUN --mount=type=cache,id=bpmn-lean-pnpm,target=/pnpm/store \
     pnpm install --frozen-lockfile --prefer-offline

@@ -105,7 +105,8 @@ function validateSecurityExceptions(selectors: readonly string[], table: string,
 
 test("release-age exceptions are exact, documented and unexpired", async () => {
   const configured = await runPnpm(["config", "get", "minimumReleaseAgeExclude", "--json"], pnpmEnvironment(undefined));
-  const selectors = (configured === "undefined" || configured === "") ? [] : JSON.parse(configured) as string[];
+  // pnpm 12 prints `null` for an unset key: no exception is configured.
+  const selectors = configured === "" ? [] : (JSON.parse(configured) as string[] | null) ?? [];
   const guide = await readFile(path.join(projectRoot, "docs/CONTRIBUTOR-SETUP-GUIDE.md"), "utf8");
   const section = guide.split("### Active security release-age exceptions\n")[1]?.split("\n##")[0];
   assert.ok(section !== undefined, "missing security exception register");

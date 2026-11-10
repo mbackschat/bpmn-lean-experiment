@@ -137,12 +137,12 @@ This graphic shows how the different checks build confidence together. Its sourc
 
 ## Prepare a contributor environment
 
-The full verification environment needs Node `26.10.0`, pnpm `11.20.0`, Git, `curl`, `jq`, `xmllint`, `unzip`, Lean through `elan`, and Java 21:
+The full verification environment needs Node `26.10.0`, pnpm `12.18.0`, Git, `curl`, `jq`, `xmllint`, `unzip`, Lean through `elan`, and Java 21:
 
 ```sh
 nvm install
 nvm use
-npm install --global --ignore-scripts --no-audit --no-fund pnpm@11.20.0
+npm install --global --ignore-scripts --no-audit --no-fund pnpm@12.18.0
 ./scripts/setup-external-sources.sh verify
 ./scripts/pnpm.sh install --frozen-lockfile
 ./scripts/doctor.sh verify

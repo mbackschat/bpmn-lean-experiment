@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "license": "MIT",
-  "packageManager": "pnpm@11.20.0",
+  "packageManager": "pnpm@12.18.0",
   "config": {
     "leanBuildThreads": "2",
     "leanMemoryBrakeMiB": "4768",
@@ -13,7 +13,7 @@
   },
   "engines": {
     "node": "26.10.0",
-    "pnpm": "11.20.0"
+    "pnpm": "12.18.0"
   },
   "scripts": {
     "build:contract-types": "pnpm --filter @bpmn-lean/contract-types... --if-present run build",
