@@ -12,6 +12,8 @@ import {
   ValueSourceTag,
   ValueTag,
   assertNever,
+  compareStrings,
+  utf8ByteSize,
   type ActivityPayload,
   type Boundary,
   type ElementId,
@@ -38,6 +40,7 @@ import {
   WriteRule,
   committed,
   failed,
+  failedWith,
   leaveFlows,
   signal,
   visible,
@@ -138,6 +141,167 @@ export function multiInstanceRunItems(run: MultiInstanceRun): readonly Value[] |
       return null;
   }
   return assertNever(collection);
+}
+
+// The portable value domain (docs/kernel/semantics/DATA-SEMANTICS-SPEC.md#values). Step checks every input's values
+// against it and features measure submissions by it; they share it here because they never import each other.
+
+/**
+ * Bytes `JSON.stringify` emits for `text` as a JSON string, quotes included: a quote, a backslash and the five named
+ * controls take two bytes, every other control six (`\u00XX`). Every escaped byte is ASCII, so the census runs over the
+ * UTF-8 bytes.
+ */
+export function stringBytes(text: string): number {
+  let total = 2;
+  for (const char of text) {
+    const code = char.codePointAt(0) ?? 0;
+    const named = code === 0x08 || code === 0x09 || code === 0x0a || code === 0x0c || code === 0x0d || code === 0x22 || code === 0x5c;
+    total += code >= 0x80 ? utf8ByteSize(char) : named ? 2 : code < 0x20 ? 6 : 1;
+  }
+  return total;
+}
+
+/** Bytes of a JSON array whose members take `sizes`, brackets and separators included. */
+export function arrayBytes(sizes: readonly number[]): number {
+  return 2 + sizes.reduce((sum, size) => sum + size, 0) + Math.max(0, sizes.length - 1);
+}
+
+const shellBytes = (shell: string): number => utf8ByteSize(shell);
+
+/**
+ * The canonical JSON bytes of a portable value: no whitespace, `kind` before `value` (or `coefficient` and `scale`),
+ * Map entries `name` before `value`; the field order changes no count. A String List is outside the portable value
+ * arms and has no measure.
+ */
+export function valueBytes(value: Value): number | null {
+  switch (value.tag) {
+    case ValueTag.Null:
+      return shellBytes("{\"kind\":\"null\"}");
+    case ValueTag.Bool:
+      return shellBytes("{\"kind\":\"boolean\",\"value\":}") + utf8ByteSize(String(value.value));
+    case ValueTag.Int:
+      return shellBytes("{\"kind\":\"integer\",\"value\":}") + utf8ByteSize(String(value.value));
+    case ValueTag.Decimal:
+      return shellBytes("{\"kind\":\"decimal\",\"coefficient\":,\"scale\":}") + stringBytes(value.coefficient.toString()) +
+        utf8ByteSize(String(value.scale));
+    case ValueTag.String:
+      return shellBytes("{\"kind\":\"string\",\"value\":}") + stringBytes(value.value);
+    case ValueTag.StringList:
+      return null;
+    case ValueTag.List: {
+      const items = itemsBytes(value.items);
+      return items === null ? null : shellBytes("{\"kind\":\"list\",\"value\":}") + arrayBytes(items);
+    }
+    case ValueTag.Map: {
+      const entries = entriesBytes(value.entries);
+      return entries === null ? null : shellBytes("{\"kind\":\"map\",\"value\":}") + arrayBytes(entries);
+    }
+  }
+  return assertNever(value);
+}
+
+function itemsBytes(items: readonly Value[]): readonly number[] | null {
+  const sizes: number[] = [];
+  for (const item of items) {
+    const size = valueBytes(item);
+    if (size === null) return null;
+    sizes.push(size);
+  }
+  return sizes;
+}
+
+/** Each entry as `{"name":…,"value":…}`. */
+export function entriesBytes(entries: readonly Binding[]): readonly number[] | null {
+  const sizes: number[] = [];
+  for (const [name, value] of entries) {
+    const size = valueBytes(value);
+    if (size === null) return null;
+    sizes.push(shellBytes("{\"name\":,\"value\":}") + stringBytes(name) + size);
+  }
+  return sizes;
+}
+
+/** A Decimal in canonical form: zero at scale 0; else scale `0..6`, a signed 64-bit coefficient, no trailing zero at a positive scale. */
+export function canonicalDecimal(coefficient: bigint, scale: bigint): boolean {
+  if (coefficient === 0n) return scale === 0n;
+  return scale >= 0n && scale <= 6n && BigInt.asIntN(64, coefficient) === coefficient && (scale === 0n || coefficient % 10n !== 0n);
+}
+
+/** Map keys of at most `textBytes` UTF-8 bytes, in strictly increasing Unicode-scalar order. */
+function keysInDomain(entries: readonly Binding[]): boolean {
+  return entries.every(([key], index) => utf8ByteSize(key) <= textBytes &&
+    (index === 0 || compareStrings(entries[index - 1]?.[0] ?? "", key) < 0));
+}
+
+/** The portable domain's bounds: project policy, not CIB limits (the portable-values contract's "Finite limits"). */
+const containerLevels = 4;
+const containerMembers = 32;
+const valueNodes = 256;
+const valueJsonBytes = 16384;
+const textBytes = 1024;
+const integerBound = 9007199254740991;
+
+/**
+ * The value nodes of `value`, the root included, when every node lies in the portable domain and no container is
+ * nested deeper than `containerLevels` counting from `depth` containers above it; `null` otherwise. A String List is
+ * outside the portable arms at every depth.
+ */
+function domainNodes(value: Value, depth: number): number | null {
+  switch (value.tag) {
+    case ValueTag.Null:
+    case ValueTag.Bool:
+      return 1;
+    case ValueTag.Int:
+      return Number.isSafeInteger(value.value) && value.value >= 0 && value.value <= integerBound ? 1 : null;
+    case ValueTag.Decimal:
+      return canonicalDecimal(value.coefficient, BigInt(value.scale)) ? 1 : null;
+    case ValueTag.String:
+      return utf8ByteSize(value.value) <= textBytes ? 1 : null;
+    case ValueTag.StringList:
+      return null;
+    case ValueTag.List:
+      return depth < containerLevels && value.items.length <= containerMembers ? memberNodes(value.items, depth + 1) : null;
+    case ValueTag.Map:
+      return depth < containerLevels && value.entries.length <= containerMembers && keysInDomain(value.entries)
+        ? memberNodes(value.entries.map(([, member]) => member), depth + 1)
+        : null;
+  }
+  return assertNever(value);
+}
+
+function memberNodes(members: readonly Value[], depth: number): number | null {
+  let total = 1;
+  for (const member of members) {
+    const nodes = domainNodes(member, depth);
+    if (nodes === null) return null;
+    total += nodes;
+  }
+  return total;
+}
+
+/**
+ * Whether `value` may be a variable's value: a portable value within every bound, or a `stringList` as a whole variable
+ * value with at most `containerMembers` Strings of at most `textBytes` bytes, the bounds its wire form has
+ * (DATA-SEMANTICS-SPEC "Values").
+ */
+export function inValueDomain(value: Value): boolean {
+  if (value.tag === ValueTag.StringList) {
+    return value.items.length <= containerMembers && value.items.every((item) => utf8ByteSize(item) <= textBytes);
+  }
+  const nodes = domainNodes(value, 0);
+  const bytes = valueBytes(value);
+  return nodes !== null && nodes <= valueNodes && bytes !== null && bytes <= valueJsonBytes;
+}
+
+/** Refuse an input whose values leave the domain, before its transition: rejected whole, never truncated. */
+export function admitValues(values: readonly Value[]): Result<null> {
+  return values.every(inValueDomain) ? committed(null) : failed(FailureTag.Rejected, "value-outside-domain");
+}
+
+/** Lean's `admitValues values *> next`, as `Kernel.Step` writes it: `next` runs only on values inside the domain. */
+export function admitThen<T>(values: readonly Value[], next: () => Result<T>): Result<T> {
+  const admitted = admitValues(values);
+  return admitted.ok ? next() : failedWith(admitted.failure);
 }
 
 /** Hold an occurrence whose InputSet is unavailable (`FeatureSlots.held`). */

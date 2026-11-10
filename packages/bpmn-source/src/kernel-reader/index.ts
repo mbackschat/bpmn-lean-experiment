@@ -7,7 +7,7 @@
 import { asElement, asElementArray } from "../moddle-graph.js";
 import type { ElementRecord } from "../moddle-graph.js";
 import { indexCompensation } from "./compensation.js";
-import { conditionExpression } from "./data.js";
+import { flowCondition } from "./data.js";
 import { isEventDefinition, readEvent } from "./events.js";
 import { readGateway } from "./flow.js";
 import { requireReadableForms } from "./interchange.js";
@@ -181,7 +181,7 @@ function readFlow(ctx: ReadContext, flow: ElementRecord): KernelJson {
     id: requireId(flow),
     source: endpoint(flow, "sourceRef"),
     target: endpoint(flow, "targetRef"),
-    condition: condition === undefined ? null : conditionExpression(ctx, condition),
+    condition: condition === undefined ? null : flowCondition(ctx, condition),
   };
 }
 

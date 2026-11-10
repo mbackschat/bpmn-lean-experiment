@@ -139,7 +139,7 @@ test("integer conversion: signed ASCII text, integral numbers within int, else a
   assert.deepEqual(rootValue(run(signs, { score: s("+7") }), "grade"), str("seven"));
   assert.deepEqual(rootValue(run(signs, { score: s("-0") }), "grade"), str("zero"));
   assert.deepEqual(rootValue(run(signs, { score: n(7) }), "grade"), str("seven"));
-  assert.deepEqual(rootValue(run(signs, { score: { kind: "decimal", coefficient: "70", scale: 1 } }), "grade"), str("seven"));
+  assert.deepEqual(rootValue(run(signs, { score: { kind: "decimal", coefficient: "7", scale: 0 } }), "grade"), str("seven"));
   assert.deepEqual(run(signs, { score: { kind: "decimal", coefficient: "75", scale: 1 } }), decisionFailed);
   assert.deepEqual(run(signs, { score: s("n/a") }), decisionFailed);
   assert.deepEqual(run(signs, { score: s("2147483648") }), decisionFailed);

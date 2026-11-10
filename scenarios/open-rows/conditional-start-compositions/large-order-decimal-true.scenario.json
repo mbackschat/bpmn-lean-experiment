@@ -18,8 +18,8 @@
           "name": "amount",
           "value": {
             "kind": "decimal",
-            "coefficient": "250000",
-            "scale": 2
+            "coefficient": "2500",
+            "scale": 0
           }
         }
       ],

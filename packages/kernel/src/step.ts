@@ -94,7 +94,7 @@ import {
   type Transition,
   type WaitView,
 } from "./state.js";
-import { ScopeRole, type Ctx, type Hooks, type ScopeEntry } from "./hooks.js";
+import { ScopeRole, admitThen, type Ctx, type Hooks, type ScopeEntry } from "./hooks.js";
 
 /** The name a transition records for a signal: its tag, which spells the Lean constructor. */
 export function signalName(next: Signal): string {
@@ -488,7 +488,7 @@ function command(hooks: Hooks, ctx: Ctx, input: CommandInput, state: State): Out
     case CommandActionTag.CancelIncidentProcess:
       return incident(action);
     case CommandActionTag.SetVariables:
-      return variables((occurrence) => ({ tag: SignalTag.Write, scope: occurrence.scope, writes: action.values, rule: WriteRule.Outward }));
+      return admitThen(action.values.map(([, value]) => value), () => variables((occurrence) => ({ tag: SignalTag.Write, scope: occurrence.scope, writes: action.values, rule: WriteRule.Outward })));
     case CommandActionTag.RemoveVariables:
       return variables((occurrence) => ({ tag: SignalTag.Remove, scope: occurrence.scope, names: action.names }));
   }
@@ -610,7 +610,7 @@ export function step(hooks: Hooks, program: Program, before: State | null, input
       if (before !== null) return failed(FailureTag.Rejected, "instance-already-started");
       const start = hooks.selectStart(ctx, payload.startEvent, payload.trigger);
       if (start === null) return failed(FailureTag.Rejected, "no-start-event");
-      const fresh = advanceClock(payload.atMs, enqueue(initial(payload.instanceId, payload.variables, payload.businessKey), { tag: SignalTag.ArmScope, scope: root }));
+      const fresh = admitThen(payload.variables.map(([, value]) => value), () => advanceClock(payload.atMs, enqueue(initial(payload.instanceId, payload.variables, payload.businessKey), { tag: SignalTag.ArmScope, scope: root })));
       if (!fresh.ok) return fresh;
       const started = microStep(hooks, ctx, { tag: CauseTag.Input, input: InputTag.Start }, start, root,
         (state) => begin(hooks, ctx, beginRequest({ element: start, scope: root, trigger: payload.trigger }), state), fresh.value);

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             id="Definitions_WrappedConditions" targetNamespace="urn:bpmn-lean:scenarios:condition-whitespace:wrapped-conditions">
+  <process id="Process_WrappedConditions" name="Route by whitespace-wrapped conditions" isExecutable="true">
+    <startEvent id="StartEvent_Start" />
+    <exclusiveGateway id="Gateway_Route" name="Route" gatewayDirection="Diverging" default="Flow_Default" />
+    <userTask id="UserTask_Large" name="large branch" />
+    <userTask id="UserTask_Flagged" name="flagged branch" />
+    <userTask id="UserTask_Standard" name="standard branch" />
+    <endEvent id="EndEvent_Large" />
+    <endEvent id="EndEvent_Flagged" />
+    <endEvent id="EndEvent_Standard" />
+    <sequenceFlow id="Flow_Start_Route" sourceRef="StartEvent_Start" targetRef="Gateway_Route" />
+    <sequenceFlow id="Flow_Large" sourceRef="Gateway_Route" targetRef="UserTask_Large">
+      <conditionExpression xsi:type="tFormalExpression">
+        ${amount &gt; 1000}
+      </conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Flagged" sourceRef="Gateway_Route" targetRef="UserTask_Flagged">
+      <conditionExpression xsi:type="tFormalExpression">  ${flagged}  </conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Default" sourceRef="Gateway_Route" targetRef="UserTask_Standard" />
+    <sequenceFlow id="Flow_Large_Done" sourceRef="UserTask_Large" targetRef="EndEvent_Large" />
+    <sequenceFlow id="Flow_Flagged_Done" sourceRef="UserTask_Flagged" targetRef="EndEvent_Flagged" />
+    <sequenceFlow id="Flow_Default_Done" sourceRef="UserTask_Standard" targetRef="EndEvent_Standard" />
+  </process>
+</definitions>

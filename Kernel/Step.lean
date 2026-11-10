@@ -326,7 +326,8 @@ def command (hooks : Hooks) (ctx : Ctx) (input : CommandInput) (state : State) :
       hooks.completeUserTask ctx header payload item values state
   | .retryIncident generation => incident (.retryIncident generation)
   | .cancelIncidentProcess generation => incident (.cancelIncidentProcess generation)
-  | .setVariables values => variables fun occurrence => .write occurrence.scope values .outward
+  | .setVariables values =>
+    admitValues (values.map (·.2)) *> variables fun occurrence => .write occurrence.scope values .outward
   | .removeVariables names => variables fun occurrence => .remove occurrence.scope names
 
 def effectResult (hooks : Hooks) (ctx : Ctx) (input : EffectInput) (state : State) : Outcome :=
@@ -383,6 +384,7 @@ def step (hooks : Hooks) (program : Program) (before : Option State) (input : In
     | some _, _ => .error (.rejected "instance-already-started")
     | none, none => .error (.rejected "no-start-event")
     | none, some start => do
+      admitValues (payload.variables.map (·.2))
       let initial ← advanceClock payload.atMs
         ((State.initial payload.instanceId payload.variables payload.businessKey).signal (.armScope State.root))
       settle hooks ctx closureBound (← microStep hooks ctx (.input .start) (some start) State.root

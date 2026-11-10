@@ -355,6 +355,26 @@
           "minimum": 0,
           "maximum": 6
         }
+      },
+      "if": {
+        "properties": {
+          "scale": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 6
+          }
+        },
+        "required": [
+          "scale"
+        ]
+      },
+      "then": {
+        "properties": {
+          "coefficient": {
+            "type": "string",
+            "pattern": "[1-9]$"
+          }
+        }
       }
     },
     "portableStringValue": {

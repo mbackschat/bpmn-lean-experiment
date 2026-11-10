@@ -192,7 +192,8 @@ def admitFiring (ctx : Ctx) (subscription : Subscription) (item : OpenItem) (fir
       if at_ == deadlineMs && deadlineMs ≤ state.logicalTimeMs then .ok (state, [])
       else .error (.rejected "timer-not-due")
     | none => .error (.rejected "not-a-timer")
-  | .message delivery =>
+  | .message delivery => do
+    admitValues delivery.payload.toList
     match view.channel with
     | none => .error (.rejected "not-a-message-subscription")
     | some channel =>
@@ -319,9 +320,12 @@ def arriveStart (ctx : Ctx) (_ : Header) (payload : StartPayload) (trigger : Sta
     (state : State) : Outcome := do
   let (state, values) ← match trigger, payload.subscription with
     | .timer at_, _ => .ok ({ state with logicalTimeMs := at_ }, [])
-    | .message _ (some delivered), some subscription =>
+    | .message _ (some delivered), some subscription => do
+      admitValues [delivered]
       .ok (state, ← payloadBindings ctx state.logicalTimeMs subscription.outputs delivered)
-    | .signal _ variables, _ => .ok (state, variables)
+    | .signal _ variables, _ => do
+      admitValues (variables.map (·.2))
+      .ok (state, variables)
     | .none, _ | .condition, _ | .message _ none, _ | .message _ (some _), none => .ok (state, [])
   .ok (state.signal (.complete occurrence.id .outgoing values .outward))
 

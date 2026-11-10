@@ -18,46 +18,6 @@ public section
 
 namespace Kernel.Feature.Work.Submission
 
-/-- Bytes `JSON.stringify` emits for `text` as a JSON string, quotes included: a quote, a backslash and the five
-named controls take two bytes, every other control six (`\u00XX`). Every escaped byte is ASCII, so the census runs
-over the UTF-8 bytes. -/
-def stringBytes (text : String) : Nat :=
-  text.toUTF8.foldl (fun total byte =>
-    total + match byte.toNat with
-      | 0x08 | 0x09 | 0x0a | 0x0c | 0x0d | 0x22 | 0x5c => 2
-      | code => if code < 0x20 then 6 else 1) 2
-
-/-- Bytes of a JSON array whose members take `sizes`, brackets and separators included. -/
-def arrayBytes (sizes : List Nat) : Nat :=
-  2 + sizes.foldl (· + ·) 0 + (sizes.length - 1)
-
-mutual
-/-- The canonical JSON bytes of a portable value: no whitespace, `kind` before `value` (or `coefficient` and
-`scale`), Map entries `name` before `value` ([NSD-TASK-01](../../../docs/kernel/semantics/DATA-SEMANTICS-SPEC.md)).
-A String List is outside the portable value arms and has no measure. -/
-def valueBytes : Value → Option Nat
-  | .null => some "{\"kind\":\"null\"}".utf8ByteSize
-  | .bool value => some ("{\"kind\":\"boolean\",\"value\":}".utf8ByteSize + (toString value).utf8ByteSize)
-  | .int value => some ("{\"kind\":\"integer\",\"value\":}".utf8ByteSize + (toString value).utf8ByteSize)
-  | .decimal coefficient scale =>
-    some ("{\"kind\":\"decimal\",\"coefficient\":,\"scale\":}".utf8ByteSize + stringBytes (toString coefficient) +
-      (toString scale).utf8ByteSize)
-  | .string value => some ("{\"kind\":\"string\",\"value\":}".utf8ByteSize + stringBytes value)
-  | .stringList _ => none
-  | .list items => do some ("{\"kind\":\"list\",\"value\":}".utf8ByteSize + arrayBytes (← itemsBytes items))
-  | .map entries => do some ("{\"kind\":\"map\",\"value\":}".utf8ByteSize + arrayBytes (← entriesBytes entries))
-
-def itemsBytes : List Value → Option (List Nat)
-  | [] => some []
-  | item :: items => do some ((← valueBytes item) :: (← itemsBytes items))
-
-/-- Each entry as `{"name":…,"value":…}`. -/
-def entriesBytes : List (String × Value) → Option (List Nat)
-  | [] => some []
-  | (name, value) :: entries => do
-    some (("{\"name\":,\"value\":}".utf8ByteSize + stringBytes name + (← valueBytes value)) :: (← entriesBytes entries))
-end
-
 /-- The names the scope occurrences from `scope` up to, but not including, the root of its process instance
 declare. -/
 def declared (state : State) (scope : ScopeOccurrenceId) : List String :=

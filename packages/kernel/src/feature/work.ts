@@ -69,7 +69,7 @@ import {
   type State,
   type UserTaskDetail,
 } from "../state.js";
-import { ctxEvaluateMappings, deliveryTriggerChannel, evalContext, hold, messageTriggerChannel, type Ctx } from "../hooks.js";
+import { admitValues, ctxEvaluateMappings, deliveryTriggerChannel, evalContext, hold, inValueDomain, messageTriggerChannel, type Ctx } from "../hooks.js";
 import * as Call from "./work/call.js";
 import * as Decision from "./work/decision.js";
 import * as Submission from "./work/submission.js";
@@ -253,6 +253,8 @@ export function completeUserTask(
   values: readonly Binding[],
   state: State,
 ): Outcome {
+  const admitted = admitValues(values.map(([, value]) => value));
+  if (!admitted.ok) return failedWith(admitted.failure);
   const limit = ctx.program.options.scopeChainSubmissionBytes;
   if (limit !== null) {
     const checked = Submission.check(ctx, state, item.scope, limit, values);
@@ -333,11 +335,15 @@ export function effectResult(ctx: Ctx, item: OpenItem, outcome: EffectOutcome, s
   const mappings = envelope?.outputs ?? [];
   switch (outcome.tag) {
     case EffectOutcomeTag.Success: {
+      const admitted = admitValues(outcome.outputs.map(([, value]) => value));
+      if (!admitted.ok) return failedWith(admitted.failure);
       const written = outputs(ctx, state.logicalTimeMs, unconsumed(ctx, envelope), mappings, outputScope(ctx, state, item), outcome.outputs);
       if (!written.ok) return failedWith(written.failure);
       return committed(signal(state, completeSignal(item.occurrence, leaveOutgoing, written.value, WriteRule.Outward)));
     }
     case EffectOutcomeTag.BusinessFailure: {
+      const admitted = admitValues(outcome.outputs.map(([, value]) => value));
+      if (!admitted.ok) return failedWith(admitted.failure);
       const written = errorPathWrites(ctx, state, item, unconsumed(ctx, envelope), mappings, outcome.outputs);
       if (!written.ok) return failedWith(written.failure);
       const activation = occurrenceOf(state, item.occurrence)?.activation ?? 0;
@@ -439,6 +445,7 @@ export function triggerActivity(
     case FiredTag.Message: {
       const channel = openKindView(item.kind).channel;
       if (channel === null) return failed(FailureTag.SemanticFailure, "activity-message-without-message");
+      if (fired.delivery.payload !== null && !inValueDomain(fired.delivery.payload)) return failed(FailureTag.Rejected, "value-outside-domain");
       if (!optionalChannelEquals(deliveryTriggerChannel(fired.delivery.trigger), channel)) {
         return failed(FailureTag.Rejected, "message-channel-mismatch");
       }

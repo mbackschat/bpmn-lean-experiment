@@ -147,6 +147,7 @@ outputs admits only the empty submission. The scope-chain rule, when the profile
 (`Submission`). -/
 def completeUserTask (ctx : Ctx) (_ : Header) (payload : ActivityPayload) (item : OpenItem)
     (values : List (String × Value)) (state : State) : Outcome := do
+  admitValues (values.map (·.2))
   if let some limit := ctx.program.options.scopeChainSubmissionBytes then
     Submission.check ctx state item.scope limit values
   match payload.envelope.multiInstance with
@@ -189,9 +190,11 @@ def effectResult (ctx : Ctx) (item : OpenItem) (outcome : EffectOutcome) (state 
   let mappings := (envelope.map (·.outputs)).getD []
   match outcome with
   | .success patch => do
+    admitValues (patch.map (·.2))
     let written ← outputs ctx state.logicalTimeMs (unconsumed ctx envelope) mappings (outputScope ctx state item) patch
     .ok (state.signal (.complete item.occurrence .outgoing written .outward))
   | .businessFailure code message patch => do
+    admitValues (patch.map (·.2))
     let written ← match ctx.program.options.errorPathOutputs with
       | .mapped => outputs ctx state.logicalTimeMs (unconsumed ctx envelope) mappings (outputScope ctx state item) patch
       | .none => if patch.isEmpty then .ok [] else .error (.rejected "error-path-outputs-not-accepted")
@@ -241,7 +244,8 @@ def triggerActivity (_ : Ctx) (_ : Header) (_ : ActivityPayload) (item : OpenIte
     match item.kind.view.channel with
     | none => .error (.semanticFailure "activity-message-without-message")
     | some channel =>
-      if delivery.trigger.channel? != some channel then .error (.rejected "message-channel-mismatch")
+      if delivery.payload.any (!inValueDomain ·) then .error (.rejected "value-outside-domain")
+      else if delivery.trigger.channel? != some channel then .error (.rejected "message-channel-mismatch")
       else if delivery.payload.isSome then .error (.rejected "unexpected-message-payload")
       else .ok (state.signal (.complete item.occurrence .outgoing [] .outward))
 

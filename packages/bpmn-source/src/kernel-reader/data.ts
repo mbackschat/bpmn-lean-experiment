@@ -56,15 +56,30 @@ function simpleBoolean(body: string): KernelJson | undefined {
  * refuse. A body with no named language is in the BPMN default, XPath (Table 8.17), which CIB reads as JUEL instead
  * (CIB-EXT-0030): the reader parses it as JUEL, text alone included, and a profile admits or refuses the result, so
  * the reader selects no profile ([expression semantics](../../../../docs/kernel/semantics/EXPRESSION-SEMANTICS-SPEC.md#which-text-is-juel)).
+ * The body is read as written: CIB trims neither `loopCardinality` nor `completionCondition` (`BpmnParse.java:1826`,
+ * `:1836`); a Sequence Flow's condition is `flowCondition`.
  */
 export function conditionExpression(ctx: ReadContext, expression: ElementRecord): KernelJson {
+  return readCondition(ctx, expression, (body) => body);
+}
+
+/**
+ * A Sequence Flow's condition. CIB applies Java `String.trim` to its text before reading it (`BpmnParse.java:4394`,
+ * `:4400`), so the JUEL reading trims it too; a Simple Boolean body forbids surrounding whitespace and a foreign body is
+ * kept as written.
+ */
+export function flowCondition(ctx: ReadContext, expression: ElementRecord): KernelJson {
+  return readCondition(ctx, expression, javaTrim);
+}
+
+function readCondition(ctx: ReadContext, expression: ElementRecord, juelBody: (body: string) => string): KernelJson {
   const body = text(expression, "body") ?? "";
   // CIB reads a script resource only with a `language` (`BpmnParse.java:4413-4416`); no IL field carries it.
   if (ctx.attribute(expression, "resource") !== null) {
     throw new ReadRefusal(ReadRefusalCode.FactNotCarried, optionalId(expression), "camunda:resource");
   }
   const named = text(expression, "language") ?? ctx.expressionLanguage;
-  if (named === null) return juelExpression(body, false);
+  if (named === null) return juelExpression(juelBody(body), false);
   if (named === simpleBooleanLanguage) {
     const parsed = simpleBoolean(body);
     if (parsed !== undefined) return ctor("simpleBoolean", { body: parsed });
@@ -109,15 +124,16 @@ export const valueExpression = (source: string): KernelJson => juelExpression(so
 export const valueSource = (source: string): KernelJson =>
   expressionMarkerPattern.test(source) ? expressionSource(valueExpression(source)) : literalSource(source);
 
-/** CIB `BpmnParseUtil.parseParamValueProvider` applies Java `String.trim` to a parameter's text. */
-const trimParameter = (body: string): string => body.replace(/^[\u0000- ]+|[\u0000- ]+$/gu, "");
+/** Java `String.trim`: strips every character up to U+0020 at both ends. */
+const javaTrim = (body: string): string => body.replace(/^[\u0000- ]+|[\u0000- ]+$/gu, "");
 
 function parameterValue(parameter: ElementRecord): KernelJson {
   if (asElementArray(parameter.$children) !== undefined) {
     throw new ReadRefusal(ReadRefusalCode.UnknownExtension, null,
       `structured camunda parameter ${String(parameter.name)}`);
   }
-  const body = typeof parameter.$body === "string" ? trimParameter(parameter.$body) : "";
+  // CIB `BpmnParseUtil.parseParamValueProvider` trims a parameter's text (`BpmnParseUtil.java:206`).
+  const body = typeof parameter.$body === "string" ? javaTrim(parameter.$body) : "";
   if (body.length === 0) return ctor("literal", { value: { kind: "null" } });
   return expressionMarkerPattern.test(body) ? valueExpression(body) : stringLiteral(body);
 }

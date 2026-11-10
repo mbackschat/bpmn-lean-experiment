@@ -62,6 +62,104 @@ def MultiInstanceRun.items (run : MultiInstanceRun) : Option (List Value) :=
   | .string _ => none
   | .map _ => none
 
+/-! ## The portable value domain
+
+[DATA-SEMANTICS-SPEC "Values"](../docs/kernel/semantics/DATA-SEMANTICS-SPEC.md#values). `Step` checks every input's
+values against it and features measure submissions by it; they share it here because they never import each other. -/
+
+/-- Bytes `JSON.stringify` emits for `text` as a JSON string, quotes included: a quote, a backslash and the five
+named controls take two bytes, every other control six (`\u00XX`). Every escaped byte is ASCII, so the census runs
+over the UTF-8 bytes. -/
+def stringBytes (text : String) : Nat :=
+  text.toUTF8.foldl (fun total byte =>
+    total + match byte.toNat with
+      | 0x08 | 0x09 | 0x0a | 0x0c | 0x0d | 0x22 | 0x5c => 2
+      | code => if code < 0x20 then 6 else 1) 2
+
+/-- Bytes of a JSON array whose members take `sizes`, brackets and separators included. -/
+def arrayBytes (sizes : List Nat) : Nat :=
+  2 + sizes.foldl (· + ·) 0 + (sizes.length - 1)
+
+mutual
+/-- The canonical JSON bytes of a portable value: no whitespace, `kind` before `value` (or `coefficient` and
+`scale`), Map entries `name` before `value`; the field order changes no count. A String List is outside the portable
+value arms and has no measure. -/
+def valueBytes : Value → Option Nat
+  | .null => some "{\"kind\":\"null\"}".utf8ByteSize
+  | .bool value => some ("{\"kind\":\"boolean\",\"value\":}".utf8ByteSize + (toString value).utf8ByteSize)
+  | .int value => some ("{\"kind\":\"integer\",\"value\":}".utf8ByteSize + (toString value).utf8ByteSize)
+  | .decimal coefficient scale =>
+    some ("{\"kind\":\"decimal\",\"coefficient\":,\"scale\":}".utf8ByteSize + stringBytes (toString coefficient) +
+      (toString scale).utf8ByteSize)
+  | .string value => some ("{\"kind\":\"string\",\"value\":}".utf8ByteSize + stringBytes value)
+  | .stringList _ => none
+  | .list items => do some ("{\"kind\":\"list\",\"value\":}".utf8ByteSize + arrayBytes (← itemsBytes items))
+  | .map entries => do some ("{\"kind\":\"map\",\"value\":}".utf8ByteSize + arrayBytes (← entriesBytes entries))
+
+def itemsBytes : List Value → Option (List Nat)
+  | [] => some []
+  | item :: items => do some ((← valueBytes item) :: (← itemsBytes items))
+
+/-- Each entry as `{"name":…,"value":…}`. -/
+def entriesBytes : List (String × Value) → Option (List Nat)
+  | [] => some []
+  | (name, value) :: entries => do
+    some (("{\"name\":,\"value\":}".utf8ByteSize + stringBytes name + (← valueBytes value)) :: (← entriesBytes entries))
+end
+
+/-- A Decimal in canonical form: zero at scale 0; else scale `0..6`, a signed 64-bit coefficient, no trailing zero at
+a positive scale. -/
+def canonicalDecimal (coefficient scale : Int) : Bool :=
+  if coefficient == 0 then scale == 0
+  else 0 ≤ scale && scale ≤ 6 && -9223372036854775808 ≤ coefficient && coefficient ≤ 9223372036854775807 &&
+    (scale == 0 || coefficient % 10 != 0)
+
+/-- Map keys of at most 1,024 UTF-8 bytes, in strictly increasing Unicode-scalar order. -/
+def keysInDomain (entries : List (String × Value)) : Bool :=
+  entries.all (·.1.utf8ByteSize ≤ 1024) && (entries.zip entries.tail).all fun (left, right) => decide (left.1 < right.1)
+
+/- The bounds below are project policy, not CIB limits (the portable-values contract's "Finite limits"): four
+container levels, 32 members per container, 256 value nodes, 16,384 canonical bytes, 1,024-byte Strings and keys,
+Integers up to 2^53 − 1. -/
+mutual
+/-- The value nodes of `value`, the root included, when every node lies in the portable domain and no container is
+nested deeper than four levels counting from `depth` containers above it; `none` otherwise. A String List is
+outside the portable arms at every depth. -/
+def domainNodes (depth : Nat) : Value → Option Nat
+  | .null => some 1
+  | .bool _ => some 1
+  | .int value => if 0 ≤ value && value ≤ 9007199254740991 then some 1 else none
+  | .decimal coefficient scale => if canonicalDecimal coefficient scale then some 1 else none
+  | .string value => if value.utf8ByteSize ≤ 1024 then some 1 else none
+  | .stringList _ => none
+  | .list items => if depth < 4 && items.length ≤ 32 then (memberNodes (depth + 1) items).map (· + 1) else none
+  | .map entries =>
+    if depth < 4 && entries.length ≤ 32 && keysInDomain entries then (entryNodes (depth + 1) entries).map (· + 1)
+    else none
+
+def memberNodes (depth : Nat) : List Value → Option Nat
+  | [] => some 0
+  | item :: items => do some ((← domainNodes depth item) + (← memberNodes depth items))
+
+def entryNodes (depth : Nat) : List (String × Value) → Option Nat
+  | [] => some 0
+  | (_, value) :: entries => do some ((← domainNodes depth value) + (← entryNodes depth entries))
+end
+
+/-- Whether `value` may be a variable's value: a portable value within every bound, or a `stringList` as a whole
+variable value with at most 32 Strings of at most 1,024 bytes, the bounds its wire form has (DATA-SEMANTICS-SPEC
+"Values"). -/
+def inValueDomain : Value → Bool
+  | .stringList items => items.length ≤ 32 && items.all (·.utf8ByteSize ≤ 1024)
+  | value =>
+    match domainNodes 0 value, valueBytes value with
+    | some nodes, some bytes => nodes ≤ 256 && bytes ≤ 16384
+    | _, _ => false
+
+/-- Refuse an input whose values leave the domain, before its transition: rejected whole, never truncated. -/
+def admitValues (values : List Value) : Except Failure Unit :=
+  if values.all inValueDomain then .ok () else .error (.rejected "value-outside-domain")
+
 /-- Hold an occurrence whose InputSet is unavailable (`FeatureSlots.held`). -/
 def State.hold (state : State) (held : Parked) : State :=
   { state with slots := { state.slots with held := state.slots.held ++ [held] } }

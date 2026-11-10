@@ -106,6 +106,8 @@ test("rejects every shape the schema can express", async () => {
     ["a non-ASCII digit", decimal("٣", 0)],
     ["scale seven", decimal("1", 7)],
     ["a negative scale", decimal("1", -1)],
+    ["a trailing zero at a positive scale", decimal("1250", 2)],
+    ["zero at a positive scale", decimal("0", 1)],
     ["a fractional scale", decimal("1", 1.5)],
     ["a Number coefficient", { kind: "decimal", coefficient: 12345, scale: 2 }],
     ["a missing scale", { kind: "decimal", coefficient: "1" }],

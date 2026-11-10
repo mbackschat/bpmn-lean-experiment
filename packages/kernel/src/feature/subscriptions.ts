@@ -86,6 +86,7 @@ import {
 } from "../state.js";
 import {
   EvaluationTag,
+  admitValues,
   boundaryFire,
   ctxRequireMappings,
   deliveryTriggerChannel,
@@ -378,6 +379,8 @@ function admitFiring(ctx: Ctx, subscription: Subscription, item: OpenItem, fired
         : failed(FailureTag.Rejected, "timer-not-due");
     case FiredTag.Message: {
       const delivery = fired.delivery;
+      const admitted = admitValues(delivery.payload === null ? [] : [delivery.payload]);
+      if (!admitted.ok) return failedWith(admitted.failure);
       if (view.channel === null) return failed(FailureTag.Rejected, "not-a-message-subscription");
       if (!optionalChannelEquals(deliveryTriggerChannel(delivery.trigger), view.channel)) {
         return failed(FailureTag.Rejected, "message-channel-mismatch");
@@ -546,11 +549,15 @@ function startValues(ctx: Ctx, payload: StartPayload, trigger: StartTrigger, sta
       return committed([{ ...state, logicalTimeMs: trigger.logicalTimeMs }, []]);
     case StartTriggerTag.Message: {
       if (trigger.payload === null || payload.subscription === null) return committed([state, []]);
+      const admitted = admitValues([trigger.payload]);
+      if (!admitted.ok) return failedWith(admitted.failure);
       const bound = payloadBindings(ctx, state.logicalTimeMs, payload.subscription.outputs, trigger.payload);
       return bound.ok ? committed([state, bound.value]) : failedWith(bound.failure);
     }
-    case StartTriggerTag.Signal:
-      return committed([state, trigger.variables]);
+    case StartTriggerTag.Signal: {
+      const admitted = admitValues(trigger.variables.map(([, value]) => value));
+      return admitted.ok ? committed([state, trigger.variables]) : failedWith(admitted.failure);
+    }
     case StartTriggerTag.None:
     case StartTriggerTag.Condition:
       return committed([state, []]);

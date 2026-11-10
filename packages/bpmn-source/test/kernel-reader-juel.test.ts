@@ -132,6 +132,27 @@ test("juel reader: an undeclared condition is JUEL, text alone included; a decla
   assert.deepEqual(await conditionOf(condition(` language="javascript"`, "a")), { foreign: { language: "javascript", source: "a" } });
 });
 
+test("juel reader: a Sequence Flow's undeclared condition is trimmed as CIB trims it; the Multi-Instance loop bodies are not", async () => {
+  // CIB applies Java `String.trim` to a Sequence Flow condition (`BpmnParse.java:4394`, `:4400`) but reads
+  // `loopCardinality` and `completionCondition` untrimmed (`:1826`, `:1836`). A Simple Boolean body keeps its text: that
+  // language forbids surrounding whitespace.
+  const flowCondition = (attributes: string, body: string): string => model(`<bpmn:startEvent id="S"/><bpmn:exclusiveGateway id="G"/>
+<bpmn:endEvent id="E"/><bpmn:sequenceFlow id="F0" sourceRef="S" targetRef="G"/>
+<bpmn:sequenceFlow id="F1" sourceRef="G" targetRef="E"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"${attributes}>${body}</bpmn:conditionExpression></bpmn:sequenceFlow>`);
+  const conditionOf = async (xml: string): Promise<KernelJson> =>
+    ((await program(xml)).flows as Array<Record<string, KernelJson>>).find((flow) => flow.id === "F1")?.condition ?? null;
+  assert.deepEqual(await conditionOf(flowCondition("", "\n  ${approved}\t ")), { variable: { name: "approved" } });
+  assert.deepEqual(await conditionOf(flowCondition("", " ${a &gt; 1} ")), nodes(id("a"), int("1"), bin("gt", 0, 1)));
+  const simpleBoolean = "urn:bpmn-lean:expression:simple-boolean:v1";
+  assert.deepEqual(await conditionOf(flowCondition(` language="${simpleBoolean}"`, " true ")), { foreign: { language: simpleBoolean, source: " true " } });
+  const loop = model(`<bpmn:userTask id="U"><bpmn:multiInstanceLoopCharacteristics>
+<bpmn:loopCardinality> 2 </bpmn:loopCardinality><bpmn:completionCondition> \${done} </bpmn:completionCondition>
+</bpmn:multiInstanceLoopCharacteristics></bpmn:userTask>`);
+  const multiInstance = (elementOf(await program(loop), "U").payload as Record<string, Record<string, Record<string, KernelJson>>>).envelope?.multiInstance;
+  assert.deepEqual(multiInstance?.count, { cardinality: { count: nodes(text(" 2 ")) } });
+  assert.deepEqual(multiInstance?.completionCondition, nodes(text(" "), id("done"), text(" "), { composite: { parts: [0, 1, 2] } }));
+});
+
 test("juel reader: a condition's camunda:resource and a Call copy's local flag are refused as facts no IL field carries", async () => {
   const refusal = async (xml: string): Promise<unknown> => {
     const read = await readKernelProgram({

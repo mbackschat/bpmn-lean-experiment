@@ -3,6 +3,7 @@
  * the Core JUEL evaluator; transcribed from `Kernel/Feature/Data/Juel/Coercion.lean`.
  */
 import { ValueTag, assertNever, type Value } from "../../../il/types.js";
+import { canonicalDecimal } from "../../../hooks.js";
 
 /** Which Java class carries an Integer during one evaluation; only Java `equals` observes it. */
 export enum Carrier {
@@ -81,11 +82,6 @@ function utf8Bytes(value: string): number {
     bytes += code < 0x80 ? 1 : code < 0x800 ? 2 : code < 0x10000 ? 3 : 4;
   }
   return bytes;
-}
-
-function canonicalDecimal(coefficient: bigint, scale: bigint): boolean {
-  if (coefficient === 0n) return scale === 0n;
-  return scale >= 0n && scale <= 6n && BigInt.asIntN(64, coefficient) === coefficient && (scale === 0n || coefficient % 10n !== 0n);
 }
 
 /** A context value as Java sees it: Integers of unknown class, a `stringList` as the ArrayList of Strings it is in CIB. */

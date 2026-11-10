@@ -187,10 +187,6 @@ def fromValue : Value → JVal
   | .list items => .list items
   | .map entries => .map entries
 
-def canonicalDecimal (coefficient scale : Int) : Bool :=
-  if coefficient == 0 then scale == 0
-  else 0 ≤ scale && scale ≤ 6 && wrap64 coefficient == coefficient && (scale == 0 || coefficient % 10 != 0)
-
 /-- The portable value of a result, or `none` outside the domain (DATA-SEMANTICS-SPEC "Values"). -/
 def portable : JVal → Option Value
   | .null => some .null
