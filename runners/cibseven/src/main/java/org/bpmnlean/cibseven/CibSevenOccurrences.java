@@ -3,9 +3,13 @@ package org.bpmnlean.cibseven;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.bpmnlean.cibseven.ScenarioProtocol.DefinitionRef;
 import org.cibseven.bpm.engine.ProcessEngine;
 import org.cibseven.bpm.engine.impl.bpmn.parser.BpmnParse;
@@ -26,9 +30,13 @@ import org.cibseven.bpm.model.bpmn.instance.SubProcess;
  * number of an element, both from public runtime and history services.
  *
  * <p>The kernel numbers the activations of an element per process instance from 1, a subscription when it is armed
- * ([State](../../../../../../../../Kernel/State.lean) `Occurrence`). CIB has no activation numbers, so an activity
- * instance's activation is its position among the element's historic activity instances in that process instance,
- * in occurrence order. A subscription without an activity instance of its own (a boundary Event, an Event
+ * ([State](../../../../../../../../Kernel/State.lean) `Occurrence`), in begin order. CIB has no activation numbers,
+ * so an activity instance's activation is its position among the element's activity instances in that process
+ * instance, appended as each observation first sees them and never renumbered. CIB's occurrence order
+ * (`orderPartiallyByOccurrence`) compares sequence counters, which concurrent executions do not share: read afresh, it
+ * can place a later activation before an earlier one, and it cannot order the activations one step begins in
+ * concurrent instances. Those are ordered by the `loopCounter`s of their enclosing Multi-Instance instances, outermost
+ * first: the instances' generation order (BPMN 2.0.2 Table 10.30), in which the kernel begins them. A subscription without an activity instance of its own (a boundary Event, an Event
  * Sub-Process start, an arm of an Event-Based Gateway) takes the activation of the activity instance it hangs on:
  * one arming per host activation, which a repeatedly firing non-interrupting subscription would break.
  */
@@ -38,6 +46,7 @@ final class CibSevenOccurrences {
 
   private final ProcessEngine engine;
   private final Map<String, List<String>> ordinals = new HashMap<>();
+  private final Set<String> numbered = new HashSet<>();
 
   CibSevenOccurrences(ProcessEngine engine) {
     this.engine = engine;
@@ -93,12 +102,84 @@ final class CibSevenOccurrences {
     if (process == null) {
       return null;
     }
-    return new Instance(
-        engineId,
-        stableId,
-        definition,
-        engine.getRepositoryService().getBpmnModelInstance(process.getProcessDefinitionId()),
-        runtime.getActivityInstance(engineId));
+    var found =
+        new Instance(
+            engineId,
+            stableId,
+            definition,
+            engine.getRepositoryService().getBpmnModelInstance(process.getProcessDefinitionId()),
+            runtime.getActivityInstance(engineId));
+    number(found);
+    return found;
+  }
+
+  /** Appends the activity instances begun since the last observation of `instance` to their elements' activations. */
+  private void number(Instance instance) {
+    var begun =
+        engine.getHistoryService().createHistoricActivityInstanceQuery()
+            .processInstanceId(instance.engineId()).orderPartiallyByOccurrence().asc().list().stream()
+            .filter(historic -> !numbered.contains(historic.getId()))
+            .toList();
+    var byElement = new LinkedHashMap<String, List<String>>();
+    for (var historic : begun) {
+      byElement.computeIfAbsent(historic.getActivityId(), ignored -> new ArrayList<>()).add(historic.getId());
+    }
+    var counters = loopCounters(instance.tree());
+    for (var element : byElement.entrySet()) {
+      var ids = generationOrder(element.getValue(), counters);
+      ordinals.computeIfAbsent(instance.engineId() + "\u0000" + element.getKey(), ignored -> new ArrayList<>())
+          .addAll(ids);
+      numbered.addAll(ids);
+    }
+  }
+
+  /**
+   * One observation's new activations of an element, by their enclosing instances' `loopCounter`s when every one is
+   * still running inside the same depth of Multi-Instance instances; otherwise in CIB's occurrence order.
+   */
+  private static List<String> generationOrder(List<String> ids, Map<String, List<Integer>> counters) {
+    var depths = ids.stream().map(id -> counters.getOrDefault(id, List.of()).size()).distinct().toList();
+    if (ids.size() < 2 || depths.size() != 1 || depths.getFirst() == 0) {
+      return ids;
+    }
+    var ordered = new ArrayList<>(ids);
+    ordered.sort(Comparator.comparing(counters::get, CibSevenOccurrences::compareCounters));
+    return ordered;
+  }
+
+  private static int compareCounters(List<Integer> left, List<Integer> right) {
+    for (var index = 0; index < left.size(); index++) {
+      var order = Integer.compare(left.get(index), right.get(index));
+      if (order != 0) {
+        return order;
+      }
+    }
+    return 0;
+  }
+
+  /**
+   * The `loopCounter`s of the Multi-Instance instances enclosing each running activity instance, outermost first. An
+   * inner instance is a child of its body's activity instance; its execution resolves `loopCounter` to its own.
+   */
+  private Map<String, List<Integer>> loopCounters(ActivityInstance tree) {
+    var counters = new HashMap<String, List<Integer>>();
+    enclose(tree, false, List.of(), counters);
+    return counters;
+  }
+
+  private void enclose(
+      ActivityInstance node, boolean inBody, List<Integer> path, Map<String, List<Integer>> counters) {
+    var own = path;
+    if (inBody && engine.getRuntimeService().getVariable(node.getExecutionIds()[0], LOOP_COUNTER)
+        instanceof Integer counter) {
+      own = new ArrayList<>(path);
+      own.add(counter);
+    }
+    counters.put(node.getId(), own);
+    var body = node.getActivityId() != null && node.getActivityId().endsWith(BpmnParse.MULTI_INSTANCE_BODY_ID_SUFFIX);
+    for (var child : node.getChildActivityInstances()) {
+      enclose(child, body, own, counters);
+    }
   }
 
   /**
@@ -112,16 +193,7 @@ final class CibSevenOccurrences {
 
   /** The activation of the activity instance `activityInstanceId` of `activityId`. */
   long ordinal(String engineId, String activityId, String activityInstanceId) {
-    var ids =
-        ordinals.computeIfAbsent(
-            engineId + "\u0000" + activityId,
-            ignored ->
-                engine.getHistoryService().createHistoricActivityInstanceQuery()
-                    .processInstanceId(engineId).activityId(activityId)
-                    .orderPartiallyByOccurrence().asc().list().stream()
-                    .map(instance -> instance.getId())
-                    .toList());
-    var index = ids.indexOf(activityInstanceId);
+    var index = ordinals.getOrDefault(engineId + "\u0000" + activityId, List.of()).indexOf(activityInstanceId);
     if (index < 0) {
       throw new IllegalStateException("Activity instance " + activityInstanceId + " has no history");
     }
