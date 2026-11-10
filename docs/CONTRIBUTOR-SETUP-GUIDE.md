@@ -116,7 +116,7 @@ The Node and pnpm pins have exactly one owner: [package.json](../package.json) d
 
 Node 26 does not bundle Corepack. The clean-clone path installs the existing pinned pnpm through npm with dependency scripts disabled; ordinary project commands continue through the pnpm wrapper.
 
-Targeted diagnostics may override `BPMN_XSD_PATH`, `BPMN_CMOF_PATH`, or `BPMN_MIWG_ROOT`. Those variables select another complete input for the named command; they do not allow the default gate or CI to omit an input. `BPMN_EXTERNAL_ROOT` applies uniformly to all four setup/check/doctor scopes and to the optional A12 adoption harness. A cold or contended host may set `BPMN_CIB_MAVEN_TIMEOUT_MS` to a larger positive integer of milliseconds for each release-specific CIB Maven invocation; the normal workstation deadline remains 60000 milliseconds.
+Targeted diagnostics may override `BPMN_XSD_PATH`, `BPMN_CMOF_PATH`, or `BPMN_MIWG_ROOT`. Those variables select another complete input for the named command; they do not allow the default gate or CI to omit an input. `BPMN_EXTERNAL_ROOT` applies uniformly to all four setup/check/doctor scopes and to the optional A12 adoption harness. A cold or contended host may set `BPMN_CIB_MAVEN_TIMEOUT_MS` to a larger positive integer of milliseconds for each release-specific CIB Maven invocation; the normal workstation deadline remains 120000 milliseconds.
 
 ## Why the engine repository has no submodules
 
