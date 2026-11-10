@@ -139,12 +139,12 @@
               {
                 "type": "candidate",
                 "userId": null,
-                "groupId": "leads"
+                "groupId": "triagers"
               },
               {
                 "type": "candidate",
                 "userId": null,
-                "groupId": "triagers"
+                "groupId": "leads"
               },
               {
                 "type": "candidate",
@@ -190,12 +190,12 @@
               {
                 "type": "candidate",
                 "userId": null,
-                "groupId": "leads"
+                "groupId": "triagers"
               },
               {
                 "type": "candidate",
                 "userId": null,
-                "groupId": "triagers"
+                "groupId": "leads"
               },
               {
                 "type": "assignee",
