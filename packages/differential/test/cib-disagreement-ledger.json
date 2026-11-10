@@ -767,24 +767,6 @@
     ]
   },
   {
-    "evidence": "scenarios/open-rows/error-called-child-error-data/child-failure-code-and-message.cibseven-evidence.json",
-    "owners": [
-      "PC-ERROR-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/error-called-child/finance-rejected-compliance-approved.cibseven-evidence.json",
-    "owners": [
-      "PC-ERROR-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/error-called-child/finance-rejected.cibseven-evidence.json",
-    "owners": [
-      "PC-ERROR-03"
-    ]
-  },
-  {
     "evidence": "scenarios/open-rows/error-called-child/finance-unlisted-code.cibseven-evidence.json",
     "owners": [
       "CIB-LIM-0006"

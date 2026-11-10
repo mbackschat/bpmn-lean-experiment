@@ -246,15 +246,18 @@ def effectCompletion (envelope : Option Envelope) (rule : ResultValues) (occurre
   if (envelope.bind (·.multiInstance)).isSome && rule == .activityLocals then .complete occurrence .outgoing patch .own
   else .complete occurrence .outgoing written .outward
 
-/-- How an Activity that raised a business Error leaves, once its catcher is known: `Kernel.Feature.Propagation` calls
-it through `PropagationHooks` with the values `installed` through the Activity's frame, its own boundary's catch
-variables or none. Under `ErrorPathOutputs.mapped` CIB sets those on the task's execution before `deleteCascade`
-destroys it and runs its output parameters (`BpmnExceptionHandler.java:146-154`, `PvmAtomicOperationCancelActivity.java:60`,
+/-- How an Activity that raised a business Error leaves, once the search for its catcher has decided:
+`Kernel.Feature.Propagation` calls it through `PropagationHooks` with the values `installed` through the Activity's
+frame, its own boundary's catch variables, or none when the search went on outward and any catch variables are already
+written. Under `ErrorPathOutputs.mapped` CIB sets those on the task's execution before `deleteCascade` destroys it and
+runs its output parameters (`BpmnExceptionHandler.java:146-154`, `PvmAtomicOperationCancelActivity.java:60`,
 `PvmExecutionImpl.java:613-626`, `ExecutionEntity.java:521-525`). An installed value of a name the frame holds, an input
 local or a result value the delegate set with `setVariableLocal`, is that local and ends with the Activity; any other
 is written outward from the frame first, so an output of its name is written after it. The outputs read the result
-`origin.patch` as a completion's do (`completionOutputs`); the Activity then leaves as raised. -/
-def mappedErrorOutputs (ctx : Ctx) (origin : Origin) (installed : List (String × Value)) (state : State) : Outcome := do
+`origin.patch` as a completion's do (`completionOutputs`). Both writes apply at once through `write` (`Data.writeOutputs`),
+so that the interrupted host's outputs the search evaluates next read them; the Activity's removal is queued as raised. -/
+def mappedErrorOutputs (write : Ctx → ScopeOccurrenceId → List (String × Value) → WriteRule → State → Outcome)
+    (ctx : Ctx) (origin : Origin) (installed : List (String × Value)) (state : State) : Outcome := do
   let some host := origin.host | .error (.semanticFailure "error-exit-without-host")
   let envelope := (ctx.program.element? origin.element).bind (·.envelope?)
   let frame := localScope state host
@@ -265,8 +268,9 @@ def mappedErrorOutputs (ctx : Ctx) (origin : Origin) (installed : List (String �
   let written ← match ctx.program.options.errorPathOutputs with
     | .mapped => completionOutputs ctx state.logicalTimeMs (unconsumed ctx envelope) mappings frameReads installed origin.patch
     | .none => .ok []
-  let state := if outward.isEmpty then state else state.signal (.write (frame.getD origin.scope) outward .outward)
-  .ok (state.signal (.complete host .raised written .outward))
+  let state ← if outward.isEmpty then .ok state else write ctx (frame.getD origin.scope) outward .outward state
+  let state ← write ctx origin.scope written .outward state
+  .ok (state.signal (.complete host .raised [] .outward))
 
 /-- An effect's result patch is its OutputSet. A BPMN error raises from the Activity with the occurrence as host, which
 leaves only once its catcher is known (`mappedErrorOutputs`): it writes no outputs (BPMN 2.0.2 §13.3.2) unless the

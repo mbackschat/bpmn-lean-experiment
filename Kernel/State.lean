@@ -521,6 +521,11 @@ def cancelOccurrence (state : State) (id : Nat) : State :=
     let closed := (state.closeOwnItems id).disarm id
     (recordCancelled (closed.removeOccurrence id) [occurrence])
 
+/-- Whether `scope` would be idle once the occurrence `id`, its items, what is attached to it and the scope occurrence
+it owns were gone: nothing else remains there. -/
+def idleWithout (state : State) (scope : ScopeOccurrenceId) (id : Nat) : Bool :=
+  (((state.closeOwnItems id).disarm id).removeOccurrence id).idle scope
+
 /-- Variables visible from `scope`, innermost first, up to the root of its process instance. -/
 def visible (state : State) (scope : ScopeOccurrenceId) : List (String × Value) :=
   let rec go (fuel : Nat) (current : Option ScopeOccurrenceId) : List (String × Value) :=

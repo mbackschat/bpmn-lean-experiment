@@ -15,7 +15,8 @@ import { WriteRule } from "./state.js";
 const workHooks: Work.WorkHooks = { ...Work.defaultWorkHooks, runDecision: Decision.runDecision };
 const propagationHooks: Propagation.PropagationHooks = {
   ...Propagation.defaultPropagationHooks,
-  mappedErrorOutputs: Work.mappedErrorOutputs,
+  mappedErrorOutputs: (ctx, origin, installed, state) => Work.mappedErrorOutputs(Data.writeOutputs, ctx, origin, installed, state),
+  writeCaught: (ctx, scope, writes, state) => Data.writeOutputs(ctx, scope, writes, WriteRule.Outward, state),
   callOutputs: (ctx, root, state) => {
     const passed = Call.raisedOutputs(ctx, root, state);
     return passed.ok ? Data.writeOutputs(ctx, passed.value[0], passed.value[1], WriteRule.Outward, state) : passed;

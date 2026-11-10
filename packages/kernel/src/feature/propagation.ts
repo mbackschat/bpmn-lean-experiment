@@ -21,9 +21,9 @@
  * have completed.
  *
  * An Error that finds no catcher does what the profile selects (`UnhandledError`): the standards reading fails the
- * process instance, CIB ends only the throwing path, which the thrower's own completion already did, and is refused
- * inside a Multi-Instance or called instance. An Escalation that finds no catcher lets its thrower leave and changes
- * nothing else; a Cancel that finds none has no selected meaning.
+ * process instance, CIB ends only the throwing path, which the thrower's leave ends, and is refused inside a
+ * Multi-Instance instance. An Escalation that finds no catcher lets its thrower leave and changes nothing else; a Cancel
+ * that finds none has no selected meaning.
  */
 import {
   ErrorPathOutputs,
@@ -82,6 +82,7 @@ import {
   type ScopeOccurrenceId,
   type State,
   childrenOf,
+  idleWithout,
 } from "../state.js";
 import { ScopeRole, boundaryFire, ctxOutputReads, ctxRequireMappingsWith, lastWrites, ownVariables, type Ctx } from "../hooks.js";
 
@@ -192,13 +193,55 @@ function throwerRef(state: State, origin: Origin): OccurrenceRef {
 }
 
 /**
+ * What Propagation asks of the features it may not import (ARCHITECTURE-SPEC "Modules and build shape"), which
+ * `registry.ts` fills. `mappedErrorOutputs` (`Work.mappedErrorOutputs`): how the Activity `origin.host`, still running
+ * after its business Error, leaves once the search has decided, given the values its own boundary installs through its
+ * frame; its writes apply at once and its removal is queued. `writeCaught`: a catcher's code and message variables,
+ * written at once from its event scope outward (`Data.writeOutputs`), so that the outputs that run next read them.
+ * `callOutputs`: what a raised Error or Escalation that reaches the
+ * root of a called instance writes into the caller, the Call's output mappings under CIB-EXT-0034
+ * (`Work.raisedOutputs`; docs/kernel/semantics/SCOPES-SEMANTICS-SPEC.md, PC-SCOPE-06 item 2), applied before the search
+ * goes on so that an outer Call's pass reads it.
+ */
+export interface PropagationHooks {
+  readonly mappedErrorOutputs: (ctx: Ctx, origin: Origin, installed: readonly Binding[], state: State) => Outcome;
+  readonly writeCaught: (ctx: Ctx, scope: ScopeOccurrenceId, writes: readonly Binding[], state: State) => Outcome;
+  readonly callOutputs: (ctx: Ctx, root: ScopeOccurrence, state: State) => Outcome;
+}
+
+export const defaultPropagationHooks: PropagationHooks = {
+  mappedErrorOutputs: (_ctx, _origin, _installed, state) => committed(state),
+  writeCaught: (_ctx, _scope, _writes, state) => committed(state),
+  callOutputs: (_ctx, _root, state) => committed(state),
+};
+
+/**
+ * The Activity `origin.host` that raised a business Error leaves, with its Error-path outputs, once the search has
+ * decided: after every Call output pass and the catcher's variables, before the interrupted host's outputs, the
+ * catcher's start, a compensation handler's failure or the unhandled outcome. CIB's search starts at the task's own
+ * execution, which a Service Task with output parameters is (`BpmnParse.java:4803-4814`), and destroys it only when the
+ * catcher starts or the path ends: an interrupting boundary's `deleteCascade` destroys it before its host
+ * (`PvmAtomicOperationCancelActivity.java:60`, `PvmAtomicOperationDeleteCascade.java:37-66`), an interrupting Event
+ * Sub-Process's `clearScope` with its event scope's other children (`PvmAtomicOperationInterruptScope.java:30-48`,
+ * `PvmExecutionImpl.java:345-359`), and an uncaught Error's `end(true)` after the walk
+ * (`BpmnExceptionHandler.java:129-137`); each runs the task's output parameters as it destroys the execution
+ * (`ExecutionEntity.java:521-525`, CIB-EXT-0016). A raise without a host has nothing to leave: a throw Event left
+ * before raising, or leaves through `throwerLeaves`.
+ */
+function hostLeaves(hooks: PropagationHooks, ctx: Ctx, origin: Origin, state: State): Outcome {
+  return origin.host === null ? committed(state) : hooks.mappedErrorOutputs(ctx, origin, [], state);
+}
+
+/**
  * Whether the thrower's output mappings would run as its instance ends: it ran directly in its instance's root and
- * nothing else remains there. CIB then rolls the command back (CIB-LIM-0006).
+ * nothing but the thrower, whose leave is queued (`hostLeaves`), remains there. CIB then rolls the command back
+ * (CIB-LIM-0006).
  */
 function endsInstanceWithOutputs(ctx: Ctx, origin: Origin, state: State): boolean {
   const thrower = programElement(ctx.program, origin.element);
   const outputs = (thrower === null ? null : elementEnvelope(thrower))?.outputs ?? [];
-  return outputs.length > 0 && instanceRoot(state, origin.scope) === origin.scope && idle(state, origin.scope);
+  const left = origin.host === null ? idle(state, origin.scope) : idleWithout(state, origin.scope, origin.host);
+  return outputs.length > 0 && instanceRoot(state, origin.scope) === origin.scope && left;
 }
 
 /**
@@ -223,7 +266,7 @@ function enclosingInstances(ctx: Ctx, state: State, start: ScopeOccurrenceId): O
 /**
  * An Error no catcher takes. BPMN 2.0.2 Table 10.88 leaves the outcome unspecified, "a common one being termination of
  * the Process instance": `failsInstance` ends the instance failed, naming the thrower. `endsThrowingPath` is CIB's
- * `execution.end(true)` (`BpmnExceptionHandler#propagateError`, CIB-INT-0013): the thrower's completion already ended
+ * `execution.end(true)` (`BpmnExceptionHandler#propagateError`, CIB-INT-0013): the thrower's leave, queued ahead, ends
  * its path, and the instance goes on or completes as what remains says.
  */
 function unhandledError(ctx: Ctx, code: string, message: string | null, origin: Origin, state: State): Outcome {
@@ -247,12 +290,16 @@ function unhandledError(ctx: Ctx, code: string, message: string | null, origin: 
 
 /**
  * The search found no catcher: it ended at `handler`, the scope occurrence of a compensation handler, which an Error
- * fails, or it passed its instance's root. An Escalation that passed the root changes nothing but its thrower's leave
- * (§10.5.1: "execution continues at the location of throwing"; CIB-INT-0021). What an Escalation at a compensation
- * handler or a Cancel at either means is not selected. Dynamic-only: whether a raised event finds a catcher depends on
- * where its thrower runs.
+ * fails, or it passed its instance's root. Either way a raising Activity leaves first (`hostLeaves`). An Escalation that
+ * passed the root changes nothing but its thrower's leave (§10.5.1: "execution continues at the location of throwing";
+ * CIB-INT-0021). What an Escalation at a compensation handler or a Cancel at either means is not selected.
+ * Dynamic-only: whether a raised event finds a catcher depends on where its thrower runs.
  */
-function exhausted(ctx: Ctx, raised: Raised, origin: Origin, handler: ScopeOccurrenceId | null, state: State): Outcome {
+function exhausted(hooks: PropagationHooks, ctx: Ctx, raised: Raised, origin: Origin, handler: ScopeOccurrenceId | null,
+  start: State): Outcome {
+  const left = hostLeaves(hooks, ctx, origin, start);
+  if (!left.ok) return left;
+  const state = left.value;
   switch (raised.tag) {
     case RaisedTag.Error:
       return handler === null
@@ -271,31 +318,31 @@ function exhausted(ctx: Ctx, raised: Raised, origin: Origin, handler: ScopeOccur
 }
 
 /**
- * Write a catch's code and message variables from the catcher's event scope outward: CIB sets them on the execution of
- * the boundary's host or of the Event Sub-Process's enclosing scope (`BpmnExceptionHandler#propagateError`,
- * CIB-EXT-0028). Admission refuses them unless the profile selects them.
+ * The search decided at a catcher whose event scope is `scope`: write its code and message variables from there
+ * outward, at once, then let a raising Activity leave (`hostLeaves`). CIB sets the variables on the execution of the
+ * boundary's host or of the Event Sub-Process's enclosing scope (`BpmnExceptionHandler.java:146-153`, CIB-EXT-0028)
+ * before it destroys anything, so the outputs that run next read them where `setVariable` left them: in a local of their
+ * name on the event scope's chain, else at the nearest owner or the root. A raising Activity's outputs therefore read
+ * them behind its own locals and behind the locals of every scope between it and the event scope, and never when the
+ * event scope lies in another instance, a Call's boundary or a catcher in a caller. Admission refuses the variables
+ * unless the profile selects them.
  */
-function writeCaught(scope: ScopeOccurrenceId, writes: readonly Binding[], state: State): State {
-  return writes.length === 0 ? state : signal(state, { tag: SignalTag.Write, scope, writes, rule: WriteRule.Outward });
+function catchDecided(hooks: PropagationHooks, ctx: Ctx, origin: Origin, scope: ScopeOccurrenceId, writes: readonly Binding[],
+  state: State): Outcome {
+  const written = writes.length === 0 ? committed(state) : hooks.writeCaught(ctx, scope, writes, state);
+  return written.ok ? hostLeaves(hooks, ctx, origin, written.value) : written;
 }
 
 /**
  * Under `ErrorPathOutputs.mapped` a Scope an Error or Escalation boundary interrupts writes its output mappings, after
- * the catch variables `caught`: CIB sets those on the Scope's execution and then runs the mappings as it destroys the Scope
- * (`BpmnExceptionHandler.java:146-153`, `ExecutionEntity.java:521-525`, `OutputParameter.execute`, CIB-EXT-0016). The
- * mappings are evaluated before the queued write of `caught` applies, so they read `caught` as installed: `setVariable`
- * on the Scope's execution, the boundary's event scope (`BpmnParse.java:3298,3301`), leaves a caught value in a local
- * of its name or else at its nearest owner or the root (`ctxOutputReads`). `destroy` runs the same parameter list as a
- * normal completion (`IoMapping.java:44-48`), so the outputs read as `completeScope`'s do: under
- * `OutputContext.ActivityScope` a later one reads an earlier one's write, ahead of a caught value no local holds.
+ * the catch variables and after a raising Activity inside it has left: CIB sets the variables on the Scope's execution
+ * and then destroys the executions below it, leaf first, and the Scope's own last, each running its output parameters
+ * (`BpmnExceptionHandler.java:146-153`, `PvmAtomicOperationDeleteCascade.java:37-66`, `ExecutionEntity.java:521-525`,
+ * `OutputParameter.execute`, CIB-EXT-0016). Both writes have applied (`catchDecided`), so the mappings read the state as
+ * they find it. `destroy` runs the same parameter list as a normal completion (`IoMapping.java:44-48`), so the outputs
+ * read as `completeScope`'s do: under `OutputContext.ActivityScope` a later one reads an earlier one's write.
  */
-function interruptedOutputs(
-  ctx: Ctx,
-  occurrence: ScopeOccurrence,
-  parent: ScopeOccurrenceId,
-  caught: readonly Binding[],
-  state: State,
-): Outcome {
+function interruptedOutputs(ctx: Ctx, occurrence: ScopeOccurrence, parent: ScopeOccurrenceId, state: State): Outcome {
   const element = occurrence.element === null ? null : programElement(ctx.program, occurrence.element);
   const mappings = (element === null ? null : elementScope(element))?.[1].envelope.outputs ?? [];
   const selected = ctx.program.options.errorPathOutputs;
@@ -303,7 +350,7 @@ function interruptedOutputs(
     case ErrorPathOutputs.Mapped: {
       if (mappings.length === 0) return committed(state);
       const outer = occurrence.parent === null ? [] : visible(state, occurrence.parent);
-      const reads = ctxOutputReads(ctx, state.logicalTimeMs, ownVariables(state, occurrence.id), caught, outer);
+      const reads = ctxOutputReads(ctx, state.logicalTimeMs, ownVariables(state, occurrence.id), [], outer);
       const outputs = ctxRequireMappingsWith(ctx, reads, mappings);
       if (!outputs.ok) return outputs;
       return committed(signal(state, { tag: SignalTag.Write, scope: parent, writes: outputs.value, rule: WriteRule.Outward }));
@@ -318,15 +365,17 @@ function interruptedOutputs(
  * Leave `occurrence`, held in `parent`, through its caught boundary. A Cancel boundary on a Transaction first cancels
  * the Transaction's interior and runs the compensation handlers retained in it, and only then takes the boundary's
  * flows (BPMN 2.0.2 §10.3.5 Transaction: the boundary "will direct the flow after the Transaction has been rolled back
- * and all compensation has been completed"). An interrupting Error or Escalation boundary writes its catch variables
- * from the host and the host's output mappings (`interruptedOutputs`; CIB-EXT-0016 for both, as `deleteCascade`
- * destroys the host either way, `PvmAtomicOperationCancelActivity.java:60`). A Call's host is its occurrence in the
- * caller, the called root's `parent`, not the called instance: CIB sets the variables on the execution of the boundary's
- * event scope, the Call's (`BpmnExceptionHandler.java:146-153`, CIB-EXT-0028). Only an Escalation boundary is
- * non-interrupting (`boundary.error.nonInterrupting`): it writes its code variable from the host's parent, CIB's flow
- * scope of the boundary (`EscalationHandler.java:80-97`), and its thrower then leaves.
+ * and all compensation has been completed"); a Cancel raise has no host. An interrupting Error or Escalation boundary
+ * writes its catch variables from the host, lets a raising Activity leave (`catchDecided`), and writes the host's output
+ * mappings (`interruptedOutputs`; CIB-EXT-0016 for both, as `deleteCascade` destroys the host either way,
+ * `PvmAtomicOperationCancelActivity.java:60`). A Call's host is its occurrence in the caller, the called root's
+ * `parent`, not the called instance: CIB sets the variables on the execution of the boundary's event scope, the Call's
+ * (`BpmnExceptionHandler.java:146-153`, CIB-EXT-0028). Only an Escalation boundary is non-interrupting
+ * (`boundary.error.nonInterrupting`): it writes its code variable from the host's parent, CIB's flow scope of the
+ * boundary (`EscalationHandler.java:80-97`), and its thrower then leaves.
  */
 function leaveOccurrence(
+  hooks: PropagationHooks,
   ctx: Ctx,
   raised: Raised,
   origin: Origin,
@@ -348,37 +397,27 @@ function leaveOccurrence(
   }
   if (boundary.interrupting) {
     const host = calledRoot(state, occurrence.id) ? parent : occurrence.id;
-    const written = interruptedOutputs(ctx, occurrence, parent, writes, writeCaught(host, writes, state));
+    const decided = catchDecided(hooks, ctx, origin, host, writes, state);
+    if (!decided.ok) return decided;
+    const written = interruptedOutputs(ctx, occurrence, parent, decided.value);
     if (!written.ok) return written;
     return committed(boundaryFire(boundary, occurrence.occurrence, null, parent, [], written.value));
   }
-  return committed(throwerLeaves(ctx, origin, boundaryFire(boundary, occurrence.occurrence, null, parent, [], writeCaught(parent, writes, state))));
+  const decided = catchDecided(hooks, ctx, origin, parent, writes, state);
+  if (!decided.ok) return decided;
+  return committed(throwerLeaves(ctx, origin, boundaryFire(boundary, occurrence.occurrence, null, parent, [], decided.value)));
 }
-
-/**
- * What Propagation asks of the Work feature it may not import (ARCHITECTURE-SPEC "Modules and build shape"), which
- * `registry.ts` fills from `feature/work`. `mappedErrorOutputs`: how the Activity `origin.host`, still running after its
- * business Error, leaves once the values its catcher installs through its frame are known. `callOutputs`: what a raised
- * Error or Escalation that reaches the root of a called instance writes into the caller, the Call's output mappings
- * under CIB-EXT-0034 (`Work.raisedOutputs`; docs/kernel/semantics/SCOPES-SEMANTICS-SPEC.md, PC-SCOPE-06 item 2),
- * applied before the search goes on so that an outer Call's pass reads it.
- */
-export interface PropagationHooks {
-  readonly mappedErrorOutputs: (ctx: Ctx, origin: Origin, installed: readonly Binding[], state: State) => Outcome;
-  readonly callOutputs: (ctx: Ctx, root: ScopeOccurrence, state: State) => Outcome;
-}
-
-export const defaultPropagationHooks: PropagationHooks = {
-  mappedErrorOutputs: (_ctx, _origin, _installed, state) => committed(state),
-  callOutputs: (_ctx, _root, state) => committed(state),
-};
 
 /**
  * Whether the raise runs directly at the called root `occurrence` while another path stands there and the Call maps
- * outputs. CIB's walk then starts at the thrower's concurrent execution, not the process-instance execution
- * (`tree/ActivityExecutionHierarchyWalker.java:53-55`, `:76-95`), and stops at a catch at that level before its
- * propagator sees the root, so whether the outputs pass rests on CIB's execution tree (PC-SCOPE-06 item 4). An Error's
- * thrower has left before its raise; an Escalation's still stands and is no other path.
+ * outputs. For a thrower that is no CIB scope, an Error or Escalation End Event, CIB's walk then starts at the thrower's
+ * concurrent execution, not the process-instance execution (`tree/ActivityExecutionHierarchyWalker.java:53-55`,
+ * `:76-95`), and stops at a catch at that level before its propagator sees the root, so whether the outputs pass rests
+ * on CIB's execution tree (PC-SCOPE-06 item 4). A raising Service Task that CIB makes a scope, one with output
+ * parameters or a boundary (`BpmnParse.java:3297`, `:4803-4814`), starts the walk at its own execution, which reaches
+ * the root's process-instance execution (`:55-58`), so CIB passes the outputs; the refusal is conservative there. An
+ * Error End Event has left before its raise; an Escalation throw and a raising Activity still stand and are no other
+ * path.
  */
 function busyCalledRoot(ctx: Ctx, origin: Origin, occurrence: ScopeOccurrence, state: State): boolean {
   const element = occurrence.element === null ? null : programElement(ctx.program, occurrence.element);
@@ -440,7 +479,7 @@ function searchScopes(
     const occurrence = state.scopes.find((scope) => scope.id === at);
     if (occurrence === undefined) return failed(FailureTag.SemanticFailure, "raise-from-missing-scope");
     const role = ctx.scopeRole(state, occurrence.id);
-    if (role === ScopeRole.CompensationHandler) return exhausted(ctx, raised, origin, occurrence.id, state);
+    if (role === ScopeRole.CompensationHandler) return exhausted(hooks, ctx, raised, origin, occurrence.id, state);
     const handlers = handlerCandidates(ctx, raised, origin, state, occurrence);
     if (!handlers.ok) return failedWith(handlers.failure);
     const handled = best(ctx, raised, ([, subscription]) => subscription.trigger, handlers.value);
@@ -453,35 +492,34 @@ function searchScopes(
     state = passed.value;
     if (handled !== null) {
       const [[element, , interrupting], writes] = handled;
-      const begun = signal(writeCaught(occurrence.id, writes, state),
-        { tag: SignalTag.Begin, request: beginRequest({ element, scope: occurrence.id }) });
+      const decided = catchDecided(hooks, ctx, origin, occurrence.id, writes, state);
+      if (!decided.ok) return decided;
+      const begun = signal(decided.value, { tag: SignalTag.Begin, request: beginRequest({ element, scope: occurrence.id }) });
       return committed(interrupting ? begun : throwerLeaves(ctx, origin, begun));
     }
     if (caught !== null && occurrence.parent !== null) {
-      return leaveOccurrence(ctx, raised, origin, occurrence, occurrence.parent, caught[0], caught[1], state);
+      return leaveOccurrence(hooks, ctx, raised, origin, occurrence, occurrence.parent, caught[0], caught[1], state);
     }
     current = occurrence.parent;
   }
-  return exhausted(ctx, raised, origin, null, state);
+  return exhausted(hooks, ctx, raised, origin, null, state);
 }
 
 /**
  * `Signal.raise`. An Activity that raised the event (`origin.host`) is still running: its own boundaries are searched
  * first, and a catching one installs its variables through the Activity's frame before the Activity leaves with its
  * mapped Error-path outputs, as CIB sets them on the task's execution before destroying it
- * (`BpmnExceptionHandler.java:146-154`, CIB-EXT-0028). Otherwise the Activity leaves first, installing nothing, and the
- * event is raised again without a host, so every other catcher sees it gone (CIB-EXT-0028's boundary).
+ * (`BpmnExceptionHandler.java:146-154`, CIB-EXT-0028). Otherwise the search goes on outward with the Activity still
+ * standing, and it leaves where the search decides (`hostLeaves`).
  */
 export function raise(hooks: PropagationHooks, ctx: Ctx, raised: Raised, origin: Origin, state: State): Outcome {
   const hostBoundaries = ctx.scopeRole(state, origin.scope) === ScopeRole.MultiInstanceInstance ? [] : boundariesOf(ctx, origin.element);
-  if (origin.host === null) return searchScopes(hooks, ctx, raised, origin, state, state.scopes.length + 1, origin.scope);
-  const caught = best(ctx, raised, (boundary) => boundary.subscription.trigger, hostBoundaries);
+  const caught = origin.host === null ? null : best(ctx, raised, (boundary) => boundary.subscription.trigger, hostBoundaries);
   if (caught !== null) {
     const left = hooks.mappedErrorOutputs(ctx, origin, lastWrites(caught[1]), state);
     return left.ok ? committed(boundaryFire(caught[0], null, null, origin.scope, [], left.value)) : left;
   }
-  const left = hooks.mappedErrorOutputs(ctx, origin, [], state);
-  return left.ok ? committed(signal(left.value, { tag: SignalTag.Raise, event: raised, origin: { ...origin, host: null, patch: [] } })) : left;
+  return searchScopes(hooks, ctx, raised, origin, state, state.scopes.length + 1, origin.scope);
 }
 
 /** How a throw Event leaves once it has done its work. */

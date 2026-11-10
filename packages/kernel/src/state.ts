@@ -799,6 +799,14 @@ export function cancelOccurrence(state: State, id: number): State {
   return recordCancelled(removeOccurrence(closed, id), [occurrence]);
 }
 
+/**
+ * Whether `scope` would be idle once the occurrence `id`, its items, what is attached to it and the scope occurrence it
+ * owns were gone: nothing else remains there.
+ */
+export function idleWithout(state: State, scope: ScopeOccurrenceId, id: number): boolean {
+  return idle(removeOccurrence(disarm(closeOwnItems(state, id), id), id), scope);
+}
+
 function ownEntries(state: State, scope: ScopeOccurrenceId): readonly Binding[] | null {
   return state.variables.find((entry) => entry.scope === scope)?.entries ?? null;
 }

@@ -37,7 +37,8 @@ def hooks : Hooks :=
     armScope := Feature.Subscriptions.armScope
     armGateway := Feature.Subscriptions.armGateway
     raise := Feature.Propagation.raise
-      { mappedErrorOutputs := Feature.Work.mappedErrorOutputs
+      { mappedErrorOutputs := Feature.Work.mappedErrorOutputs Feature.Data.writeOutputs
+        writeCaught := fun ctx scope writes => Feature.Data.writeOutputs ctx scope writes .outward
         callOutputs := fun ctx root state => do
           let (scope, writes) ← Feature.Work.Call.raisedOutputs ctx root state
           Feature.Data.writeOutputs ctx scope writes .outward state }

@@ -482,18 +482,23 @@ function errorExitOutputs(ctx: Ctx, state: State, host: number, origin: Origin, 
   return assertNever(ctx.program.options.errorPathOutputs);
 }
 
+/** Apply writes at once, as `Data.writeOutputs` does, which `registry.ts` passes in. */
+export type WriteOutputs = (ctx: Ctx, scope: ScopeOccurrenceId, writes: readonly Binding[], rule: WriteRule, state: State) => Outcome;
+
 /**
- * How an Activity that raised a business Error leaves, once its catcher is known: `feature/propagation.ts` calls it
- * through `PropagationHooks` with the values `installed` through the Activity's frame, its own boundary's catch
- * variables or none. Under `ErrorPathOutputs.mapped` CIB sets those on the task's execution before `deleteCascade`
- * destroys it and runs its output parameters (`BpmnExceptionHandler.java:146-154`,
- * `PvmAtomicOperationCancelActivity.java:60`, `PvmExecutionImpl.java:613-626`, `ExecutionEntity.java:521-525`). An
- * installed value of a name the frame holds, an input local or a result value the delegate set with
- * `setVariableLocal`, is that local and ends with the Activity; any other is written outward from the frame first, so
- * an output of its name is written after it. The outputs read the result `origin.patch` as a completion's do
- * (`completionOutputs`); the Activity then leaves as raised.
+ * How an Activity that raised a business Error leaves, once the search for its catcher has decided:
+ * `feature/propagation.ts` calls it through `PropagationHooks` with the values `installed` through the Activity's frame,
+ * its own boundary's catch variables, or none when the search went on outward and any catch variables are already
+ * written. Under `ErrorPathOutputs.mapped` CIB sets those on the task's execution before `deleteCascade` destroys it and
+ * runs its output parameters (`BpmnExceptionHandler.java:146-154`, `PvmAtomicOperationCancelActivity.java:60`,
+ * `PvmExecutionImpl.java:613-626`, `ExecutionEntity.java:521-525`). An installed value of a name the frame holds, an
+ * input local or a result value the delegate set with `setVariableLocal`, is that local and ends with the Activity; any
+ * other is written outward from the frame first, so an output of its name is written after it. The outputs read the
+ * result `origin.patch` as a completion's do (`completionOutputs`). Both writes apply at once through `write`
+ * (`Data.writeOutputs`), so that the interrupted host's outputs the search evaluates next read them; the Activity's
+ * removal is queued as raised.
  */
-export function mappedErrorOutputs(ctx: Ctx, origin: Origin, installed: readonly Binding[], state: State): Outcome {
+export function mappedErrorOutputs(write: WriteOutputs, ctx: Ctx, origin: Origin, installed: readonly Binding[], state: State): Outcome {
   const host = origin.host;
   if (host === null) return failed(FailureTag.SemanticFailure, "error-exit-without-host");
   const element = programElement(ctx.program, origin.element);
@@ -503,10 +508,10 @@ export function mappedErrorOutputs(ctx: Ctx, origin: Origin, installed: readonly
   const outward = installed.filter(([name]) => !held.includes(name));
   const written = errorExitOutputs(ctx, state, host, origin, envelope, installed);
   if (!written.ok) return failedWith(written.failure);
-  const installedState = outward.length === 0
-    ? state
-    : signal(state, { tag: SignalTag.Write, scope: frame ?? origin.scope, writes: outward, rule: WriteRule.Outward });
-  return committed(signal(installedState, completeSignal(host, leaveRaised, written.value, WriteRule.Outward)));
+  const installedState = outward.length === 0 ? committed(state) : write(ctx, frame ?? origin.scope, outward, WriteRule.Outward, state);
+  if (!installedState.ok) return installedState;
+  const left = write(ctx, origin.scope, written.value, WriteRule.Outward, installedState.value);
+  return left.ok ? committed(signal(left.value, completeSignal(host, leaveRaised, [], WriteRule.Outward))) : left;
 }
 
 function technicalFailure(ctx: Ctx, item: OpenItem, state: State): Outcome {
