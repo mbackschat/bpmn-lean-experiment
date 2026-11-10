@@ -769,7 +769,7 @@ The selected extension is a host realization, not an independent derivation of t
 
 ### CIB-EXT-0002 — exact A12 CreateDocument delegate and input/output mapping
 
-**Status:** Selected bounded extension
+**Status:** Retired with its per-variant profile at the profile consolidation (#42); no current profile selects it
 
 The A12 CreateDocument profile admits exactly `{http://camunda.org/schema/1.0/bpmn}delegateExpression="${createDocumentDelegate}"`, one `camunda:inputOutput` element, literal input parameter `documentModelName = "MyDocumentModel"`, and output parameter `myDocumentReference = ${newDocRef}`. The project profile supplies protocol identity `urn:bpmn-lean:a12-delegate:v1`; that URI is not read from the maintained BPMN source.
 
@@ -781,7 +781,7 @@ CIB Seven `2.0.0` resolves the exact bean token, provides the mapped literal to 
 
 ### CIB-EXT-0003 — exact deferred delegate expression and typed Java BPMN Error
 
-**Status:** Selected bounded extension
+**Status:** Retired with its per-variant profile at the profile consolidation (#42); no current profile selects it
 
 The boundary-error profile admits exactly `{http://camunda.org/schema/1.0/bpmn}delegateExpression="#{createRelationshipLinkDelegate}"` and maps that deferred-expression token to project handler identity `createRelationshipLinkDelegate`. The project rejects the `${...}` spelling for this profile and does not evaluate either form as general JUEL.
 
@@ -1166,7 +1166,7 @@ The project instead commits an effect intent, runs a Temporal Activity, and rece
 
 ### CIB-OP-0004 — synchronous JUEL command rollback mapped to speculative semantic commitment
 
-**Status:** Selected operational mapping for the deferred JUEL compatibility lane; production capsule unimplemented
+**Status:** Superseded: the kernel evaluates JUEL inside the step ([expression semantics](kernel/semantics/EXPRESSION-SEMANTICS-SPEC.md)), so no profile selects this mapping
 
 CIB Seven `2.0.0` evaluates a conditional Sequence Flow synchronously inside the command that completes the preceding User Task or starts the Process. When evaluation fails, the engine command rolls back: the preceding User Task remains available after failed completion, while a failure during Process start leaves no runtime or historic Process instance.
 

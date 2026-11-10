@@ -77,11 +77,11 @@ JUEL is treated like BPMN. The Expression Language specification at the grammar 
 |---|---|---|---|---|
 | Core | M2 | `${}` and `#{}`, composite text, literals, variables, `.` and `[]` access on plain data, arithmetic, relational and logical operators, `empty`, ternary, EL coercion over the portable value domain, read-only methods on String, List and Map values from a closed list | conditions, input and output mappings | PC-DATA-05, PC-DATA-07, PC-DATA-08, PC-DATA-09, and PC-CF-02 in M1 once it lands |
 | Task fields | M3 | none | assignee, candidate groups, due and follow-up dates, priority | the rows that admit those fields |
-| Multi-Instance | M5 | the Multi-Instance counters in context | collection, cardinality, completion condition | PC-MI-07, PC-MI-09 |
+| Multi-Instance | M2 (delivered with the data rows, `991cd4a6`) | the Multi-Instance counters in context | collection, cardinality, completion condition | PC-DATA-08, PC-MI-07, PC-MI-09 |
 | Events | M6 | `dateTime()` chains and coercion to dates and durations | timer definitions, Message names, conditional event predicates | PC-TIMER-03, PC-MESSAGE-01, PC-CONDITION-01 |
 | Throw | M7 | none | Signal names | PC-SIGNAL-01 |
 
-Refused at admission at every level: beans, `execution`, `task`, functions outside the table, and any mutating or unlisted method.
+Refused at admission at every level: `execution`, `task`, functions outside the table, and any mutating or unlisted method. A bean name is not refused: under CIB-CFG-0011 the kernel reads it as an unknown variable at run time, as CIB does without a configured bean.
 
 After every committed write, the step closure re-evaluates the Conditions whose filters match, within a declared re-trigger bound. Logical time, scheduler choices and races stay explicit inputs. Outcomes stay distinct: committed, rolled back, rejected, semantic failure, unsupported.
 
