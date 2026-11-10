@@ -194,6 +194,12 @@
             "mapped"
           ]
         },
+        "raisedCallOutputs": {
+          "enum": [
+            "none",
+            "atCalledRoot"
+          ]
+        },
         "technicalFailure": {
           "enum": [
             "hostFailure",
@@ -340,8 +346,8 @@
         "boundary.condition",
         "boundary.error.duplicateCode",
         "boundary.error.nonInterrupting",
+        "boundary.escalation.duplicate",
         "boundary.signal",
-        "call.calledEventSubProcess",
         "codec.duplicateField",
         "codec.malformed",
         "codec.missingField",
@@ -417,6 +423,7 @@
         "multiInstance.collectionExpression",
         "multiInstance.completionConditionExpression",
         "multiInstance.countAndCollection",
+        "multiInstance.counterTarget",
         "multiInstance.elementVariable",
         "multiInstance.expressionLanguage",
         "multiInstance.inputDataItem",
@@ -425,6 +432,7 @@
         "multiInstance.mappings",
         "multiInstance.mutableCollection",
         "multiInstance.outputDataItem",
+        "multiInstance.ownInputReadsInstance",
         "parser.failure",
         "parser.warning",
         "process.definition.binding",
@@ -455,6 +463,7 @@
         "reader.unknownElement",
         "reader.unknownExtension",
         "scope.eventSubProcess.boundary",
+        "scope.eventSubProcess.escalationDuplicate",
         "scope.eventSubProcess.interruptingMessage",
         "scope.implicitStart",
         "scope.localVariableWithoutInput",

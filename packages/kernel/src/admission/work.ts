@@ -15,13 +15,10 @@ import {
   WorkTag,
   assertNever,
   programCalledProcess,
-  programProcessChildren,
   elementActivity,
   elementEnvelope,
-  elementScope,
   multiInstanceCounterNames,
   parseJavaInt,
-  scopeKindStart,
   type ActivityPayload,
   type CallBinding,
   type CallWork,
@@ -185,11 +182,7 @@ function calledElement(program: Program, work: CallWork): string | null {
       if (called.value === program.identity.processId) return "work.call.rootProcess";
       const process = programCalledProcess(program, called.value);
       if (process === null) return "work.call.calledProcessMissing";
-      const eventSubProcess = programProcessChildren(program, process).some((child) => {
-        const scope = elementScope(child);
-        return scope !== null && scopeKindStart(scope[1].kind) !== null;
-      });
-      return eventSubProcess ? "call.calledEventSubProcess" : null;
+      return null;
     }
   }
   return assertNever(called);

@@ -63,10 +63,13 @@ def eventSubProcessBoundary (payload : ScopePayload) : Option String :=
   else none
 
 /-- A local variable is declared by an input mapping; a declared local without one has no initial value the
-kernel could choose. -/
+kernel could choose. An embedded Sub-Process may loop, which `Kernel.Admission.MultiInstance` admits (PC-MI-04 to
+PC-MI-06); a looping Transaction (PC-TX) or Event Sub-Process, which BPMN 2.0.2 §10.3.5 starts by its event, is
+refused. -/
 def scope (program : Program) (header : Header) (payload : ScopePayload) : Option String :=
   let declared := payload.envelope.inputs.map (·.target)
-  if payload.envelope.multiInstance.isSome then some "scope.multiInstance"
+  if payload.envelope.multiInstance.isSome && (isTransaction payload || (eventSubProcess? payload).isSome) then
+    some "scope.multiInstance"
   else if payload.localVariables.any (!declared.contains ·) then some "scope.localVariableWithoutInput"
   else eventSubProcessBoundary payload <|> transaction payload <|> implicitStart program header
 

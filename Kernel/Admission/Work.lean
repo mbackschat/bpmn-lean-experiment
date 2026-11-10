@@ -120,8 +120,7 @@ def dataCorrespondence (work : CallWork) : Option String :=
 (PC-SCOPE-04). `loopCounter` is not among them: CIB's list holds only the three instance counts. -/
 def multiInstanceCounters : List String := multiInstanceCounterNames.erase "loopCounter"
 
-/-- A Call names a called process literally that the program carries, not the root process and without an Event
-Sub-Process, binds the latest version, carries no business key or tenant and maps its data explicitly; its mappings
+/-- A Call names a called process literally that the program carries, not the root process, binds the latest version, carries no business key or tenant and maps its data explicitly; its mappings
 live in `CallWork`, never in the envelope. -/
 def call (program : Program) (work : CallWork) : Option String :=
   let element : Option String :=
@@ -129,13 +128,7 @@ def call (program : Program) (work : CallWork) : Option String :=
     | .literal id =>
       if id == program.identity.processId then some "work.call.rootProcess"
       else
-        match program.calledProcess? id with
-        | some process =>
-          if (program.processChildren process).any (fun child =>
-              (child.scope?.bind fun (_, scope) => scope.kind.start?).isSome) then
-            some "call.calledEventSubProcess"
-          else none
-        | none => some "work.call.calledProcessMissing"
+        if (program.calledProcess? id).isSome then none else some "work.call.calledProcessMissing"
     | .expression _ => some "work.call.calledElementExpression"
   let binding : Option String :=
     match work.binding with

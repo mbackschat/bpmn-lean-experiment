@@ -476,6 +476,17 @@ def enterCalled (state : State) (call : Occurrence) (variables : List (String ×
         else occurrence
       slots := { state.slots with instances := state.slots.instances ++ [{ root := id, definition := some definition }] } }, id)
 
+/-- The elements the scope occurrence `scope` declares: for a called root, the process-level elements of the process its
+Call bound (its `slots.instances` entry), not the Call Activity's, since a called Process behaves as a normal Process
+(BPMN 2.0.2 §13.3.4); otherwise the children of its element. -/
+def childrenOf (state : State) (program : Program) (scope : ScopeOccurrenceId) : List Element :=
+  let occurrence := state.scopes.find? (·.id == scope)
+  let bound := (state.slots.instances.find? (·.root == scope)).bind (·.definition)
+  match occurrence.bind (·.calledInstance), bound with
+  | some _, some definition =>
+    ((program.processes.find? (·.definition == definition)).map program.processChildren).getD []
+  | _, _ => program.children (occurrence.bind (·.element))
+
 /-- The scope occurrences inside `scope`, transitively, including `scope`, the deepest last. -/
 def subtree (state : State) (scope : ScopeOccurrenceId) : List ScopeOccurrenceId :=
   let rec go (fuel : Nat) (frontier : List ScopeOccurrenceId) (seen : List ScopeOccurrenceId) :

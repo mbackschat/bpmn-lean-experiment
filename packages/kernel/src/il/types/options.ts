@@ -27,6 +27,17 @@ export enum ErrorPathOutputs {
   Mapped = "mapped",
 }
 
+/**
+ * Whether a Call writes its output mappings when an Error or Escalation raised in its called instance reaches the
+ * called root.
+ */
+export enum RaisedCallOutputs {
+  /** BPMN 2.0.2 §10.3.6, §13.3.2: an abnormally ended Call maps no outputs. */
+  None = "none",
+  /** CIB-EXT-0034: once per crossing of a called root, innermost first, before that root's catcher runs. */
+  AtCalledRoot = "atCalledRoot",
+}
+
 export enum TechnicalFailure {
   /** No BPMN meaning (§13.3.3 defines only a fault). */
   HostFailure = "hostFailure",
@@ -222,6 +233,7 @@ export interface ProfileOptions {
   readonly scopeChainSubmissionBytes: number | null;
   readonly undeclaredWrite: UndeclaredWrite;
   readonly errorPathOutputs: ErrorPathOutputs;
+  readonly raisedCallOutputs: RaisedCallOutputs;
   readonly technicalFailure: TechnicalFailure;
   /** An effect incident offers `cancelIncidentProcess` (CIB-OP-0009). */
   readonly incidentProcessCancellation: boolean;

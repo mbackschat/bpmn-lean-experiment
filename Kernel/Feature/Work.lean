@@ -204,7 +204,11 @@ def completeUserTask (ctx : Ctx) (_ : Header) (payload : ActivityPayload) (item 
   match submittedItem ctx.program.options.submission payload.envelope with
   | some loop =>
     instanceOutput loop values
-    .ok (state.signal (.complete item.occurrence .outgoing values .own))
+    -- CIB reads no `outputDataItem` (CIB-LIM-0001) and sets the submission through the instance's task execution
+    -- (CIB-EXT-0005), so it also reaches its nearest owner or the root; the slot keeps BPMN 2.0.2 §13.3.7.
+    let installed := if ctx.program.options.submission == .installsVariables then
+        state.signal (.write item.scope values .outward) else state
+    .ok (installed.signal (.complete item.occurrence .outgoing values .own))
   | none =>
     match ctx.program.options.submission with
     | .installsVariables =>

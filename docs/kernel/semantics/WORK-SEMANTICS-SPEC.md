@@ -150,7 +150,6 @@ The deleted implementation admitted each work kind only in exact first-profile t
 | `work.call.propagateAll` | `variables="all"` in either direction | no reviewed account |
 | `work.call.multiInstanceCounterOutput` | a Call output targeting `nrOfInstances`, `nrOfActiveInstances` or `nrOfCompletedInstances` | CIB drops it (`CallableElementActivityBehavior`, [CIB-LIM-0004](../../CIB-BPMN-RELATION-REGISTER.md#cib-lim-0004-a-call-output-targeting-a-multi-instance-counter-is-refused)); PC-SCOPE-04 |
 | `work.call.dataCorrespondence` | standard Call data other than one input and one output Data Association | §10.3.6 correspondence the kernel can read |
-| `call.calledEventSubProcess` | called Process with an Event Sub-Process | the raise search and `armScope` read the Call's children for a called root |
 | `activity.inputMappings`, `activity.outputMappings` | mappings on work other than User, Service and decision tasks, and a plain Task's outputs other than `camunda:outputParameter`s under `OutputContext.activityScope` | nothing would carry or submit them |
 | `activity.multiInstanceBody` | Multi-Instance on work other than a User, Service or Receive Task | [Multi-Instance rows](MULTI-INSTANCE-SEMANTICS-SPEC.md) |
 | `activity.compensationHandler`, `activity.compensationHandler.input`, `compensation.handlerWork` | compensation on work the pipeline cannot complete | [compensation](COMPENSATION-SEMANTICS-SPEC.md) |

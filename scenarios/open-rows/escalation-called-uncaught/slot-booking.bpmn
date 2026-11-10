@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  id="Definitions_SlotBooking"
+  targetNamespace="urn:bpmn-lean:scenarios:escalation-called-uncaught">
+  <bpmn:escalation id="Escalation_Slow" name="Slow booking" escalationCode="SLOW" />
+  <bpmn:process id="Process_SlotBooking" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_BookingRequested" />
+    <bpmn:callActivity id="Book" name="Book a slot" calledElement="Process_ReserveSlot">
+      <bpmn:extensionElements>
+        <camunda:out source="slot" target="bookedSlot" />
+      </bpmn:extensionElements>
+    </bpmn:callActivity>
+    <bpmn:userTask id="Confirm" name="Confirm the booking" />
+    <bpmn:endEvent id="EndEvent_Booked" />
+    <bpmn:sequenceFlow id="Flow_Start_Book" sourceRef="StartEvent_BookingRequested" targetRef="Book" />
+    <bpmn:sequenceFlow id="Flow_Book_Confirm" sourceRef="Book" targetRef="Confirm" />
+    <bpmn:sequenceFlow id="Flow_Confirm_End" sourceRef="Confirm" targetRef="EndEvent_Booked" />
+  </bpmn:process>
+  <bpmn:process id="Process_ReserveSlot" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_ReserveRequested" />
+    <bpmn:userTask id="Reserve" name="Reserve a slot" />
+    <bpmn:intermediateThrowEvent id="RaiseSlow">
+      <bpmn:escalationEventDefinition id="EscalationEventDefinition_RaiseSlow" escalationRef="Escalation_Slow" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:userTask id="Settle" name="Settle the reservation" />
+    <bpmn:endEvent id="EndEvent_Reserved" />
+    <bpmn:sequenceFlow id="Flow_Reserve_Start" sourceRef="StartEvent_ReserveRequested" targetRef="Reserve" />
+    <bpmn:sequenceFlow id="Flow_Reserve_Raise" sourceRef="Reserve" targetRef="RaiseSlow" />
+    <bpmn:sequenceFlow id="Flow_Raise_Settle" sourceRef="RaiseSlow" targetRef="Settle" />
+    <bpmn:sequenceFlow id="Flow_Settle_End" sourceRef="Settle" targetRef="EndEvent_Reserved" />
+  </bpmn:process>
+</bpmn:definitions>

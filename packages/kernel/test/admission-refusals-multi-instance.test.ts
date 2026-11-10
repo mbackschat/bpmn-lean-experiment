@@ -7,8 +7,8 @@
  * (docs/kernel/semantics/EXPRESSION-SEMANTICS-SPEC.md, "Multi-Instance level").
  */
 import {
-  activity, foreign, juel, literalValue, bool, loop, mapping, refusalTests, serviceWork, simpleBoolean, task, userWork, variable,
-  withOptions,
+  activity, append, foreign, juel, literalValue, bool, loop, mapping, refusalTests, scope, serviceWork, simpleBoolean, task, userWork,
+  variable, withOptions,
 } from "./admission-refusal-support.ts";
 import type { Json, Row } from "./admission-refusal-support.ts";
 
@@ -27,6 +27,14 @@ const juelLooping = (over: Json = {}, options: Json = {}) => (program: Json): Js
 const items = juel({ identifier: { name: "order" } }, { dot: { base: 0, property: "lines" } });
 const cardinality = (count: Json): Json => ({ count: { cardinality: { count } }, inputDataItem: null, inputDataItemName: null });
 const counter = (name: string): Json => juel({ identifier: { name } }, { integer: { digits: "1" } }, { binary: { payload: { op: "eq", left: 0, right: 1 } } });
+
+/** `T` loops under the CIB options with the item local `item` and the own input mappings `inputs`. */
+const ownInputs = (...inputs: Json[]) => (program: Json): Json =>
+  cibLoop()(looping({ inputDataItemName: "item" }, { inputs })(program));
+/** `T` becomes a looping Sub-Process under the CIB options whose User Task `C` has the output mappings `outputs`. */
+const nestedOutputs = (...outputs: Json[]) => (program: Json): Json => cibLoop()(append(
+  task(scope("T", "embedded", { children: ["C"] }, { multiInstance: loop({ outputDataItem: null, inputDataItemName: "item" }) }))(program),
+  activity("C", userWork(), { outputs }, "T")));
 
 /** `T` becomes a Service Task running the loop `loop(over)` without an output data item (PC-MI-02). */
 const effects = (over: Json = {}) =>
@@ -88,6 +96,12 @@ export const rows: readonly Row[] = [
     control: admitted,
   },
   {
+    code: "multiInstance.elementVariable",
+    description: "under the loop references binding, an element variable beside an inputDataItem, whose name CIB sets over it",
+    mutate: juelLooping({ elementVariable: "element", inputDataItemName: "item" }),
+    control: juelLooping({ elementVariable: "element", inputDataItem: null, inputDataItemName: null }),
+  },
+  {
     code: "multiInstance.mutableCollection",
     description: "a loop that re-reads its collection",
     mutate: looping({ mutableCollection: "sequentialReread" }),
@@ -128,6 +142,36 @@ export const rows: readonly Row[] = [
     description: "a loop on an Activity with an output mapping",
     mutate: looping({}, { outputs: [mapping("x", variable("y"))] }),
     control: admitted,
+  },
+  {
+    code: "multiInstance.mappings",
+    description: "under the loop references binding, a loop on an Activity with an output mapping, a CIB deployment error",
+    mutate: (program: Json) => cibLoop()(looping({}, { outputs: [mapping("x", variable("y"))] })(program)),
+    control: ownInputs(mapping("x", variable("y"))),
+  },
+  {
+    code: "multiInstance.ownInputReadsInstance",
+    description: "under the loop references binding, an own input mapping reading the item, which CIB reads outside the instance",
+    mutate: ownInputs(mapping("x", variable("item"))),
+    control: ownInputs(mapping("x", variable("y"))),
+  },
+  {
+    code: "multiInstance.ownInputReadsInstance",
+    description: "under the loop references binding, an own input mapping reading a counter",
+    mutate: ownInputs(mapping("x", counter("loopCounter"))),
+    control: ownInputs(mapping("x", juel({ identifier: { name: "y" } }))),
+  },
+  {
+    code: "multiInstance.counterTarget",
+    description: "under the CIB counters, an own input mapping writing a counter",
+    mutate: ownInputs(mapping("nrOfInstances", variable("y"))),
+    control: ownInputs(mapping("x", variable("y"))),
+  },
+  {
+    code: "multiInstance.counterTarget",
+    description: "under the CIB counters, an output mapping inside a Sub-Process instance writing a counter",
+    mutate: nestedOutputs(mapping("loopCounter", variable("y"))),
+    control: nestedOutputs(mapping("x", counter("loopCounter"))),
   },
   {
     code: "multiInstance.countAndCollection",

@@ -5,8 +5,8 @@
  * Task's decisions are `admission-refusals-decision.test.ts`'s.
  */
 import {
-  activity, append, callWork, computed, criterion, definitionRef, duration, eventSubProcess, loop, mapping, receiveWork, refusalTests,
-  ruleWork, scope, scriptWork, sendWork, serviceWork, task, text, userWork, variable, withOptions,
+  activity, append, callWork, computed, criterion, definitionRef, loop, mapping, receiveWork, refusalTests,
+  ruleWork, scriptWork, sendWork, serviceWork, task, text, userWork, variable, withOptions,
 } from "./admission-refusal-support.ts";
 import type { Json, Row } from "./admission-refusal-support.ts";
 
@@ -97,12 +97,6 @@ export const rows: readonly Row[] = [
     description: "a Call Activity calling the root process",
     mutate: (program) => calling({ calledElement: text(((program.identity as Json).processId as string)) })(program),
     control: calling(),
-  },
-  {
-    code: "call.calledEventSubProcess",
-    description: "a Call Activity whose called process holds an Event Sub-Process",
-    mutate: calling({}, scope("CT", eventSubProcess(duration("PT1S"), false), {}, { incoming: [], outgoing: [] })),
-    control: calling({}, scope("CT", "embedded", {}, { incoming: [], outgoing: [] })),
   },
   {
     code: "work.call.calledProcessMissing",

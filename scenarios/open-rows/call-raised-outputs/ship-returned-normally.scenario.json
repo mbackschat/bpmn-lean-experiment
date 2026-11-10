@@ -1,0 +1,75 @@
+{
+  "kind": "scenario",
+  "id": "call-raised-outputs-ship-returned-normally",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "call-raised-outputs-catch-shares-out-target",
+    "relativePath": "scenarios/open-rows/call-raised-outputs/catch-shares-out-target.bpmn",
+    "sha256": "f85ccf50c03b00149cabd4d47013dad20840de829c8c009ae7fb20f40be81906",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-pack-shipped",
+      "occurrence": {
+        "processInstanceId": "call:10:Instance_1:17:CallActivity_Ship:1",
+        "elementId": "UserTask_Pack",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "note",
+            "value": {
+              "kind": "string",
+              "value": "intact"
+            }
+          },
+          {
+            "name": "outcome",
+            "value": {
+              "kind": "string",
+              "value": "shipped"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-delivered",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Delivered",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.6",
+      "BPMN 2.0.2 §10.5.1",
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 §13.5.3"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/helper/BpmnExceptionHandler.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/tree/OutputVariablesPropagator.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/CallableElementActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/ErrorEventDefinition.java"
+    ]
+  }
+}

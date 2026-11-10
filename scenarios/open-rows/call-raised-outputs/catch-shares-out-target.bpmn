@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_CatchSharesOutTarget"
+  targetNamespace="urn:bpmn-lean:scenarios:call-raised-outputs:catch-shares-out-target">
+  <bpmn:error id="Error_ShipFailed" name="Shipping failed" errorCode="SHIP_FAILED" />
+
+  <bpmn:process id="Process_Dispatch" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_DispatchOrdered" />
+    <bpmn:callActivity id="CallActivity_Ship" name="Ship the parcel" calledElement="Process_Ship">
+      <bpmn:extensionElements>
+        <camunda:out source="note" target="reason" />
+      </bpmn:extensionElements>
+    </bpmn:callActivity>
+    <bpmn:boundaryEvent id="Boundary_Ship_Failed" attachedToRef="CallActivity_Ship" cancelActivity="true">
+      <bpmn:errorEventDefinition
+        id="ErrorEventDefinition_Dispatch_ShipFailed"
+        errorRef="Error_ShipFailed"
+        camunda:errorCodeVariable="reason" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="UserTask_Delivered" name="Confirm the delivery" />
+    <bpmn:userTask id="UserTask_Inspect" name="Inspect the failed shipment" />
+    <bpmn:endEvent id="EndEvent_Delivered" />
+    <bpmn:endEvent id="EndEvent_Inspected" />
+    <bpmn:sequenceFlow id="Flow_Dispatch_Start_Ship" sourceRef="StartEvent_DispatchOrdered" targetRef="CallActivity_Ship" />
+    <bpmn:sequenceFlow id="Flow_Dispatch_Ship_Delivered" sourceRef="CallActivity_Ship" targetRef="UserTask_Delivered" />
+    <bpmn:sequenceFlow id="Flow_Dispatch_Failed_Inspect" sourceRef="Boundary_Ship_Failed" targetRef="UserTask_Inspect" />
+    <bpmn:sequenceFlow id="Flow_Dispatch_Delivered_End" sourceRef="UserTask_Delivered" targetRef="EndEvent_Delivered" />
+    <bpmn:sequenceFlow id="Flow_Dispatch_Inspect_End" sourceRef="UserTask_Inspect" targetRef="EndEvent_Inspected" />
+  </bpmn:process>
+
+  <bpmn:process id="Process_Ship" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_ShipRequested" />
+    <bpmn:userTask id="UserTask_Pack" name="Pack the parcel" />
+    <bpmn:exclusiveGateway id="Gateway_PackOutcome" name="Pack outcome" gatewayDirection="Diverging" default="Flow_Ship_Shipped" />
+    <bpmn:endEvent id="EndEvent_ShipFailed">
+      <bpmn:errorEventDefinition id="ErrorEventDefinition_Ship_ShipFailed" errorRef="Error_ShipFailed" />
+    </bpmn:endEvent>
+    <bpmn:endEvent id="EndEvent_Shipped" />
+    <bpmn:sequenceFlow id="Flow_Ship_Start_Pack" sourceRef="StartEvent_ShipRequested" targetRef="UserTask_Pack" />
+    <bpmn:sequenceFlow id="Flow_Ship_Pack_Outcome" sourceRef="UserTask_Pack" targetRef="Gateway_PackOutcome" />
+    <bpmn:sequenceFlow id="Flow_Ship_Failed" sourceRef="Gateway_PackOutcome" targetRef="EndEvent_ShipFailed">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${outcome == 'failed'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Ship_Shipped" sourceRef="Gateway_PackOutcome" targetRef="EndEvent_Shipped" />
+  </bpmn:process>
+</bpmn:definitions>

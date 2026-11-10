@@ -4,14 +4,23 @@ import * as Data from "./feature/data.js";
 import * as Decision from "./feature/decision.js";
 import * as Flow from "./feature/flow.js";
 import * as Work from "./feature/work.js";
+import * as Call from "./feature/work/call.js";
 import * as Compensation from "./feature/compensation.js";
 import * as MultiInstance from "./feature/multi-instance.js";
 import * as Propagation from "./feature/propagation.js";
 import * as Scopes from "./feature/scopes.js";
 import * as Subscriptions from "./feature/subscriptions.js";
+import { WriteRule } from "./state.js";
 
 const workHooks: Work.WorkHooks = { ...Work.defaultWorkHooks, runDecision: Decision.runDecision };
-const propagationHooks: Propagation.PropagationHooks = { ...Propagation.defaultPropagationHooks, mappedErrorOutputs: Work.mappedErrorOutputs };
+const propagationHooks: Propagation.PropagationHooks = {
+  ...Propagation.defaultPropagationHooks,
+  mappedErrorOutputs: Work.mappedErrorOutputs,
+  callOutputs: (ctx, root, state) => {
+    const passed = Call.raisedOutputs(ctx, root, state);
+    return passed.ok ? Data.writeOutputs(ctx, passed.value[0], passed.value[1], WriteRule.Outward, state) : passed;
+  },
+};
 
 export const hooks: Hooks = {
   ...defaultHooks,
