@@ -43,7 +43,7 @@ deriving instance FromJson, ToJson for JuelFunctionNode, JuelCallNode, JuelCompu
   DecisionResultMapping, RuleWork, CallWork, Work, MultiInstanceMode, InstanceCount, CollectionRead, MultiInstance,
   Envelope, ActivityPayload, TransactionMethod, TransactionScope, ScopeKind, ScopePayload, Placement, EventRole,
   EventPayload, EventGatewayInstantiation, GatewayKind, GatewayPayload, StartPayload, DefinitionRef, ElementOrigin, Header, Element,
-  Flow, ProgramIdentity, SubmissionRule, UndeclaredWrite, ErrorPathOutputs, TechnicalFailure, ContinuationFailure,
+  Flow, ProgramIdentity, SubmissionRule, UndeclaredWrite, ErrorPathOutputs, RaisedCallOutputs, TechnicalFailure, ContinuationFailure,
   MessageCorrelation, DeliveryVariables, MultiInstanceFinalBody, MultiInstanceOutputs, CompensationOrder,
   CompensationHandlerFailure, AbnormalScopeEnd, UnhandledError, ErrorCatchVariables, CallBindingTime, Evaluator, ConditionOrder,
   MultiInstanceBinding, ResultValues, OutputContext, MultiInstanceCounters, MultiInstanceInputFailure, MultiInstanceCount,

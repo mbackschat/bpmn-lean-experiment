@@ -71,8 +71,9 @@ export const rows: readonly Row[] = [
   },
   {
     code: "scope.multiInstance",
-    description: "a Sub-Process with a loop",
-    mutate: task(scope("T", "embedded", {}, { multiInstance: loop() })),
+    description: "a Transaction with a loop; an embedded Sub-Process may loop",
+    mutate: task(scope("T", { transaction: { payload: { method: "compensate" } } }, {}, { multiInstance: loop({ outputDataItem: null }) })),
+    control: task(scope("T", "embedded", {}, { multiInstance: loop({ outputDataItem: null }) })),
   },
   {
     code: "scope.localVariableWithoutInput",

@@ -59,11 +59,12 @@ def collectionOf (ctx : Ctx) (loop : MultiInstance) (items : Expression) : Expre
   | .dataAssociations, _ => items
 
 /-- The local each instance holds its item in under the profile's binding: the Data Input the item's association
-feeds, or the `inputDataItem`'s `name`, none when it has no name (CIB-INT-0014). -/
+feeds, or the `inputDataItem`'s `name`, none when it has no name, else `camunda:elementVariable`, which admission
+admits only without an `inputDataItem` (CIB-INT-0014, `BpmnParse.java:1863-1873`). -/
 def itemName (ctx : Ctx) (loop : MultiInstance) : Option String :=
   match ctx.program.options.multiInstanceBinding with
   | .dataAssociations => loop.inputDataItem
-  | .loopReferences => loop.inputDataItemName
+  | .loopReferences => loop.inputDataItemName <|> loop.elementVariable
 
 def runOf? (state : State) (body : Nat) : Option MultiInstanceRun :=
   state.slots.multiInstances.find? (·.occurrence == body)
@@ -74,11 +75,40 @@ def setRun (state : State) (run : MultiInstanceRun) : State :=
     else runs ++ [run]
   { state with slots := { state.slots with multiInstances := runs } }
 
-/-- Begin the instances `opening` names, each in a scope occurrence holding its input data item. -/
+/-- CIB's counts on the body (CIB-INT-0018): the count, from entry in sequential mode (CIB-INT-0002); the active
+instances, which CIB never lowers below 1 in sequential mode (`SequentialMultiInstanceActivityBehavior:38-45`,
+`:47-61`); the completed ones (`ParallelMultiInstanceActivityBehavior:64-68`, `:84-87`). -/
+def bodyCounts (loop : MultiInstance) (instances : List Iteration) : List (String × Nat) :=
+  let total := instances.length
+  let completed := (instances.filter slotFilled).length
+  let active := if loop.mode == .sequential then 1 else total - completed
+  (multiInstanceCounterNames.drop 1).zip [total, active, completed]
+
+/-- An instance's zero-based `loopCounter` (`MultiInstanceActivityBehavior:76-78`). -/
+def instanceCounts (index : Nat) : List (String × Nat) :=
+  (multiInstanceCounterNames.take 1).map (·, index)
+
+/-- `counts` as the execution locals CIB holds them in (`MultiInstanceActivityBehavior:196-198`) under
+`MultiInstanceCounters.cibLocals`; the standards reading holds none, Table 10.30's counts being instance attributes no
+expression names. -/
+def counterLocals (ctx : Ctx) (counts : List (String × Nat)) : List (String × Value) :=
+  match ctx.program.options.multiInstanceCounters with
+  | .none => []
+  | .cibLocals => counts.map fun (name, count) => (name, .int count)
+
+/-- Whether `variables` hold exactly the counter locals of `counts`. -/
+def holdsCounts (ctx : Ctx) (variables : List (String × Value)) (counts : List (String × Nat)) : Bool :=
+  (counterLocals ctx counts).all fun (name, _) =>
+    match variables.lookup name, counts.lookup name with
+    | some (.int actual), some expected => actual == expected
+    | _, _ => false
+
+/-- Begin the instances `opening` names, each in a scope occurrence holding its input data item and, under
+`cibLocals`, its `loopCounter`. -/
 def beginInstances (ctx : Ctx) (loop : MultiInstance) (items : List Value) (run : MultiInstanceRun) (state : State) :
     State :=
   let (state, instances) := (opening loop.mode run.instances).foldl (fun (state, instances) index =>
-    let locals := match itemName ctx loop, items[index]? with
+    let locals := counterLocals ctx (instanceCounts index) ++ match itemName ctx loop, items[index]? with
       | some name, some value => [(name, value)]
       | _, _ => []
     let (state, scope) := state.enterScope run.element run.scope locals none
@@ -184,11 +214,12 @@ def arriveMultiInstance (ctx : Ctx) (header : Header) (envelope : Envelope) (loo
   | some (collection, _, 0) =>
     .ok (state.signal (.complete occurrence.id .outgoing (written ctx loop collection []) .outward))
   | some (collection, items, count) =>
-    let (state, scope) := state.enterScope header.id occurrence.scope [] (some occurrence.id)
+    let instances := List.replicate count Iteration.waiting
+    let (state, scope) :=
+      state.enterScope header.id occurrence.scope (counterLocals ctx (bodyCounts loop instances)) (some occurrence.id)
     let state := if envelope.boundaries.isEmpty then state
       else state.signal (.arm occurrence.id header.id occurrence.scope)
-    let run : MultiInstanceRun :=
-      { scope, element := header.id, occurrence := occurrence.id, collection, instances := List.replicate count .waiting }
+    let run : MultiInstanceRun := { scope, element := header.id, occurrence := occurrence.id, collection, instances }
     .ok (beginInstances ctx loop items run state)
 
 /-- An instance's output, kept as a String when the input collection is a String List, whose output collection holds
@@ -239,12 +270,7 @@ the instance's zero-based index; the count; the active instances, which CIB neve
 def conditionContext (ctx : Ctx) (loop : MultiInstance) (run : MultiInstanceRun) (index : Nat) (scope : ScopeOccurrenceId)
     (state : State) : EvalContext :=
   let context := state.evalContext scope
-  let total := run.instances.length
-  let completed := (run.instances.filter slotFilled).length
-  let active := if loop.mode == .sequential then 1 else total - completed
-  let counters : List (String × Value) := match ctx.program.options.multiInstanceCounters with
-    | .none => []
-    | .cibLocals => multiInstanceCounterNames.zip [Value.int index, .int total, .int active, .int completed]
+  let counters := counterLocals ctx (instanceCounts index ++ bodyCounts loop run.instances)
   { context with variables := counters ++ context.variables }
 
 /-- Whether the completion condition holds, read in the instance's scope occurrence before it is left. A result named
@@ -266,7 +292,7 @@ def stops (ctx : Ctx) (loop : MultiInstance) (run : MultiInstanceRun) (index : N
       | .unsupported code => .error (.unsupported code)
 
 /-- `Hooks.instanceCompleted`: fill the instance's slot, evaluate the completion condition in the instance's scope
-occurrence, leave it, then finish, close early or continue. -/
+occurrence, leave it, then finish, close early or continue, updating the body's counter locals first. -/
 def instanceCompleted (ctx : Ctx) (body : Nat) (occurrence : Occurrence) (writes : List (String × Value))
     (state : State) : Outcome := do
   let some run := runOf? state body | .error (.semanticFailure "instance-without-multi-instance")
@@ -279,8 +305,11 @@ def instanceCompleted (ctx : Ctx) (body : Nat) (occurrence : Occurrence) (writes
   let output ← submitted loop run writes
   let results := if loop.outputDataItem.isNone then writes.map (·.1) else []
   let shadows := results.any fun name => multiInstanceCounterNames.contains name || some name == itemName ctx loop
-  -- Dynamic-only: an effect result's names are the run's data.
-  if shadows then .error (.unsupported "multiInstance.resultShadowsInstance")
+  let intact := holdsCounts ctx (state.ownVariables run.scope) (bodyCounts loop run.instances) &&
+    holdsCounts ctx (state.ownVariables occurrence.scope) (instanceCounts index)
+  -- Dynamic-only: an effect result's names, and a write that reached a counter local, are the run's data. CIB's next
+  -- read of a counter is typed (`MultiInstanceActivityBehavior:200-204`); the kernel decides no other value there.
+  if shadows || !intact then .error (.unsupported "multiInstance.resultShadowsInstance")
   let run := { run with instances := run.instances.set index (.completed output) }
   let exhausted := run.instances.all slotFilled
   let stop ← if exhausted && !evaluatesFinalCondition ctx loop then .ok false
@@ -288,6 +317,8 @@ def instanceCompleted (ctx : Ctx) (body : Nat) (occurrence : Occurrence) (writes
   let run := { run with results := if loop.mode == .sequential then (run.results ++ results).eraseDups else [] }
   let state := setRun (state.leaveScope occurrence.scope) run
   if stop || exhausted then .ok (finish ctx loop run state)
-  else .ok (beginInstances ctx loop (run.items.getD []) run state)
+  else
+    let counted := state.signal (.write run.scope (counterLocals ctx (bodyCounts loop run.instances)) .own)
+    .ok (beginInstances ctx loop (run.items.getD []) run counted)
 
 end Kernel.Feature.MultiInstance

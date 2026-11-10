@@ -172,12 +172,6 @@
     ]
   },
   {
-    "evidence": "scenarios/open-rows/activity-split-merge/mi-body-split-one-body-two-outputs.cibseven-evidence.json",
-    "owners": [
-      "PC-CF-07"
-    ]
-  },
-  {
     "evidence": "scenarios/open-rows/automation-business-error-routing/route-rejected-unmatched-code.cibseven-evidence.json",
     "owners": [
       "CIB-LIM-0006"
@@ -187,18 +181,6 @@
     "evidence": "scenarios/open-rows/automation-business-error-routing/scope-non-ancestor-after-completion.cibseven-evidence.json",
     "owners": [
       "CIB-LIM-0006"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/automation-handler-reuse/sequential-body-effects.cibseven-evidence.json",
-    "owners": [
-      "PC-AUTO-01"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/automation-incident-composition/batch-sequential-body-incidents.cibseven-evidence.json",
-    "owners": [
-      "PC-AUTO-03"
     ]
   },
   {
@@ -277,12 +259,6 @@
     "evidence": "scenarios/open-rows/call-counter-output/counter-outputs-dropped.cibseven-evidence.json",
     "owners": [
       "CIB-LIM-0004"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/call-exceptional-return/item-booked-normally.cibseven-evidence.json",
-    "owners": [
-      "PC-SCOPE-06"
     ]
   },
   {
@@ -833,12 +809,6 @@
     ]
   },
   {
-    "evidence": "scenarios/open-rows/error-event-subprocess-rethrow/same-code-rethrow.cibseven-evidence.json",
-    "owners": [
-      "PC-ERROR-02"
-    ]
-  },
-  {
     "evidence": "scenarios/open-rows/error-java-class-codes/illegal-state-technical-failure.cibseven-evidence.json",
     "owners": [
       "CIB-EXT-0029"
@@ -859,48 +829,13 @@
   {
     "evidence": "scenarios/open-rows/error-non-interrupting-declarations/boundary-failure.cibseven-evidence.json",
     "owners": [
-      "PC-ERROR-02"
+      "CIB-LIM-0018"
     ]
   },
   {
     "evidence": "scenarios/open-rows/error-unhandled-outcomes/root-last-path-with-outputs.cibseven-evidence.json",
     "owners": [
       "CIB-LIM-0006"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/escalation-boundary-conflicts/boundary-catch-all-with-exact-deployment.cibseven-evidence.json",
-    "owners": [
-      "PC-ESCALATION-02",
-      "PC-ESCALATION-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/escalation-boundary-conflicts/boundary-duplicate-code-deployment.cibseven-evidence.json",
-    "owners": [
-      "PC-ESCALATION-02",
-      "PC-ESCALATION-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/escalation-boundary-conflicts/boundary-two-catch-alls-deployment.cibseven-evidence.json",
-    "owners": [
-      "PC-ESCALATION-02",
-      "PC-ESCALATION-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/escalation-boundary-conflicts/event-subprocess-catch-all-with-exact-deployment.cibseven-evidence.json",
-    "owners": [
-      "PC-ESCALATION-02",
-      "PC-ESCALATION-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/escalation-boundary-conflicts/event-subprocess-duplicate-code-deployment.cibseven-evidence.json",
-    "owners": [
-      "PC-ESCALATION-02",
-      "PC-ESCALATION-03"
     ]
   },
   {
@@ -928,33 +863,7 @@
     ]
   },
   {
-    "evidence": "scenarios/open-rows/escalation-code-variable/catch-all-code-variable.cibseven-evidence.json",
-    "owners": [
-      "PC-ESCALATION-01"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/escalation-code-variable/exact-code-variable.cibseven-evidence.json",
-    "owners": [
-      "PC-ESCALATION-01"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/escalation-multi-instance/instances-throw-to-enclosing-handler.cibseven-evidence.json",
-    "owners": [
-      "PC-ESCALATION-02",
-      "PC-ESCALATION-03"
-    ]
-  },
-  {
     "evidence": "scenarios/open-rows/escalation-multi-instance/parallel-interrupting.cibseven-evidence.json",
-    "owners": [
-      "PC-ESCALATION-02",
-      "PC-ESCALATION-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/escalation-multi-instance/parallel-subprocess-interrupting.cibseven-evidence.json",
     "owners": [
       "PC-ESCALATION-02",
       "PC-ESCALATION-03"
@@ -965,32 +874,6 @@
     "owners": [
       "PC-ESCALATION-02",
       "PC-ESCALATION-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/escalation-multi-instance/sequential-subprocess-non-interrupting.cibseven-evidence.json",
-    "owners": [
-      "PC-ESCALATION-02",
-      "PC-ESCALATION-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/escalation-multi-instance/user-task-wrapper-declared.cibseven-evidence.json",
-    "owners": [
-      "PC-ESCALATION-02",
-      "PC-ESCALATION-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/escalation-uncaught/end-uncaught-then-ordinary-path.cibseven-evidence.json",
-    "owners": [
-      "PC-ESCALATION-01"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/escalation-uncaught/intermediate-uncaught.cibseven-evidence.json",
-    "owners": [
-      "PC-ESCALATION-01"
     ]
   },
   {
@@ -1036,78 +919,67 @@
   {
     "evidence": "scenarios/open-rows/expression-cardinality-and-collections/boolean-count.cibseven-evidence.json",
     "owners": [
-      "PC-DATA-08",
-      "PC-DATA-09"
+      "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/expression-cardinality-and-collections/fractional-computed-count.cibseven-evidence.json",
     "owners": [
-      "PC-DATA-08",
-      "PC-DATA-09"
+      "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/expression-cardinality-and-collections/map-collection.cibseven-evidence.json",
     "owners": [
-      "PC-DATA-08",
-      "PC-DATA-09"
+      "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/expression-cardinality-and-collections/negative-computed-count.cibseven-evidence.json",
     "owners": [
-      "PC-DATA-08",
-      "PC-DATA-09"
+      "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/expression-cardinality-and-collections/nested-list-collection.cibseven-evidence.json",
     "owners": [
-      "PC-DATA-08",
-      "PC-MI-07"
+      "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/expression-cardinality-and-collections/non-numeric-text-count.cibseven-evidence.json",
     "owners": [
-      "PC-DATA-08",
-      "PC-DATA-09"
+      "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/expression-cardinality-and-collections/null-collection.cibseven-evidence.json",
     "owners": [
-      "PC-DATA-08",
-      "PC-DATA-09"
+      "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/expression-cardinality-and-collections/null-count.cibseven-evidence.json",
     "owners": [
-      "PC-DATA-08",
-      "PC-DATA-09"
+      "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/expression-cardinality-and-collections/numeric-text-count.cibseven-evidence.json",
     "owners": [
-      "PC-DATA-08",
-      "PC-DATA-09"
+      "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/expression-cardinality-and-collections/size-method.cibseven-evidence.json",
     "owners": [
-      "PC-DATA-08",
-      "PC-MI-07"
+      "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/expression-cardinality-and-collections/structured-count.cibseven-evidence.json",
     "owners": [
-      "PC-DATA-08",
-      "PC-MI-07"
+      "CIB-LIM-0019"
     ]
   },
   {
@@ -1165,30 +1037,6 @@
     ]
   },
   {
-    "evidence": "scenarios/open-rows/inclusive-join-compositions/scoped-join-all-selected.cibseven-evidence.json",
-    "owners": [
-      "PC-BASIC-03",
-      "PC-CF-04",
-      "PC-CF-08"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/inclusive-join-compositions/scoped-join-call-and-batch-reversed.cibseven-evidence.json",
-    "owners": [
-      "PC-BASIC-03",
-      "PC-CF-04",
-      "PC-CF-08"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/inclusive-join-compositions/scoped-join-scope-only.cibseven-evidence.json",
-    "owners": [
-      "PC-BASIC-03",
-      "PC-CF-04",
-      "PC-CF-08"
-    ]
-  },
-  {
     "evidence": "scenarios/open-rows/inclusive-join-compositions/unselected-path-parked-then-unselected.cibseven-evidence.json",
     "owners": [
       "CIB-DEV-0002",
@@ -1200,7 +1048,7 @@
   {
     "evidence": "scenarios/open-rows/input-mapping-contexts/multi-instance-entry.cibseven-evidence.json",
     "owners": [
-      "PC-DATA-05"
+      "CIB-LIM-0019"
     ]
   },
   {
@@ -1396,18 +1244,6 @@
     ]
   },
   {
-    "evidence": "scenarios/open-rows/message-esp-repeatable/process-notices-overlap-with-nested-wait.cibseven-evidence.json",
-    "owners": [
-      "PC-MESSAGE-07"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/message-esp-repeatable/region-notice-after-ordinary-work.cibseven-evidence.json",
-    "owners": [
-      "PC-MESSAGE-07"
-    ]
-  },
-  {
     "evidence": "scenarios/open-rows/message-esp-repeatable/sequential-body-listener-before-replacement.cibseven-evidence.json",
     "owners": [
       "PC-MESSAGE-07"
@@ -1470,13 +1306,13 @@
   {
     "evidence": "scenarios/open-rows/multi-instance-activity-mapping-scope/sequential-loop-counter-async.cibseven-evidence.json",
     "owners": [
-      "PC-MI-10"
+      "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-activity-mapping-scope/sequential-loop-counter.cibseven-evidence.json",
     "owners": [
-      "PC-MI-10"
+      "CIB-LIM-0019"
     ]
   },
   {
@@ -1535,52 +1371,9 @@
     ]
   },
   {
-    "evidence": "scenarios/open-rows/multi-instance-completion-failures/service-sequential-failing-final.cibseven-evidence.json",
-    "owners": [
-      "PC-DATA-08",
-      "PC-MI-09"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/multi-instance-completion-failures/service-sequential-not-boolean-final.cibseven-evidence.json",
-    "owners": [
-      "PC-DATA-09",
-      "PC-MI-09"
-    ]
-  },
-  {
     "evidence": "scenarios/open-rows/multi-instance-completion-failures/standards-reads-item.cibseven-evidence.json",
     "owners": [
-      "PC-DATA-08",
-      "PC-MI-09"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/multi-instance-completion-failures/user-parallel-failing-final.cibseven-evidence.json",
-    "owners": [
-      "PC-DATA-08",
-      "PC-MI-09"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/multi-instance-completion-failures/user-parallel-not-boolean-final.cibseven-evidence.json",
-    "owners": [
-      "PC-DATA-09",
-      "PC-MI-09"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/multi-instance-completion-failures/user-sequential-failing-final.cibseven-evidence.json",
-    "owners": [
-      "PC-DATA-08",
-      "PC-MI-09"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/multi-instance-completion-failures/user-sequential-not-boolean-final.cibseven-evidence.json",
-    "owners": [
-      "PC-DATA-09",
-      "PC-MI-09"
+      "CIB-INT-0014"
     ]
   },
   {
@@ -1619,81 +1412,79 @@
   {
     "evidence": "scenarios/open-rows/multi-instance-expressions/parallel-forms.cibseven-evidence.json",
     "owners": [
-      "PC-MI-07"
+      "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-expressions/parallel-structured-equal-lines.cibseven-evidence.json",
     "owners": [
-      "PC-MI-07"
+      "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-expressions/parallel-structured-wrong-collection-type.cibseven-evidence.json",
     "owners": [
-      "PC-MI-07"
+      "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-expressions/sequential-forms.cibseven-evidence.json",
     "owners": [
-      "PC-MI-07"
+      "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-expressions/sequential-structured-equal-lines.cibseven-evidence.json",
     "owners": [
-      "PC-MI-07"
+      "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-expressions/sequential-structured-wrong-collection-type.cibseven-evidence.json",
     "owners": [
-      "PC-MI-07"
+      "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-nesting/parallel-parallel-equal-items.cibseven-evidence.json",
     "owners": [
-      "PC-MI-11"
+      "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-nesting/parallel-sequential-equal-items.cibseven-evidence.json",
     "owners": [
-      "PC-MI-11"
+      "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-nesting/parallel-sequential-inner-early.cibseven-evidence.json",
     "owners": [
-      "PC-MI-09",
-      "PC-MI-11"
+      "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-nesting/parallel-sequential-reentry.cibseven-evidence.json",
     "owners": [
-      "PC-MI-11"
+      "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-nesting/sequential-parallel-equal-items.cibseven-evidence.json",
     "owners": [
-      "PC-MI-11"
+      "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-nesting/sequential-parallel-inner-early.cibseven-evidence.json",
     "owners": [
-      "PC-MI-09",
-      "PC-MI-11"
+      "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-nesting/sequential-sequential-equal-items.cibseven-evidence.json",
     "owners": [
-      "PC-MI-11"
+      "CIB-LIM-0019"
     ]
   },
   {
@@ -1710,12 +1501,6 @@
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-sub-process/parallel-cardinality-two-reversed.cibseven-evidence.json",
-    "owners": [
-      "PC-MI-06"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/multi-instance-sub-process/parallel-cardinality-zero.cibseven-evidence.json",
     "owners": [
       "PC-MI-06"
     ]
@@ -1768,30 +1553,6 @@
     ]
   },
   {
-    "evidence": "scenarios/open-rows/multi-instance-sub-process/sequential-cardinality-changed-after-entry.cibseven-evidence.json",
-    "owners": [
-      "PC-MI-06"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/multi-instance-sub-process/sequential-cardinality-two.cibseven-evidence.json",
-    "owners": [
-      "PC-MI-06"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/multi-instance-sub-process/sequential-cardinality-zero.cibseven-evidence.json",
-    "owners": [
-      "PC-MI-06"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/multi-instance-sub-process/sequential-completion-then-timer.cibseven-evidence.json",
-    "owners": [
-      "PC-MI-12"
-    ]
-  },
-  {
     "evidence": "scenarios/open-rows/multi-instance-sub-process/sequential-computed-malformed.cibseven-evidence.json",
     "owners": [
       "PC-MI-06",
@@ -1825,46 +1586,7 @@
     ]
   },
   {
-    "evidence": "scenarios/open-rows/multi-instance-sub-process/sequential-early-after-quiescence.cibseven-evidence.json",
-    "owners": [
-      "PC-MI-04",
-      "PC-MI-09"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/multi-instance-sub-process/sequential-first-end-mutation.cibseven-evidence.json",
-    "owners": [
-      "PC-MI-04"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/multi-instance-sub-process/sequential-multi-output-and-stale.cibseven-evidence.json",
-    "owners": [
-      "PC-MI-04"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/multi-instance-sub-process/sequential-null-note-and-result.cibseven-evidence.json",
-    "owners": [
-      "PC-MI-04",
-      "PC-MI-10"
-    ]
-  },
-  {
     "evidence": "scenarios/open-rows/multi-instance-sub-process/sequential-timer-while-work-remains.cibseven-evidence.json",
-    "owners": [
-      "PC-MI-12"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/multi-instance-sub-process/sequential-two-bodies.cibseven-evidence.json",
-    "owners": [
-      "PC-MI-04",
-      "PC-MI-10"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/multi-instance-sub-process/sequential-zero-items-timer.cibseven-evidence.json",
     "owners": [
       "PC-MI-12"
     ]
@@ -1872,195 +1594,193 @@
   {
     "evidence": "scenarios/open-rows/multi-instance-user-task/parallel-body-locals-isolated.cibseven-evidence.json",
     "owners": [
-      "PC-MI-10"
+      "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-user-task/parallel-both-count-below-items.cibseven-evidence.json",
     "owners": [
-      "PC-MI-01"
+      "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-user-task/parallel-cardinality-zero.cibseven-evidence.json",
     "owners": [
-      "PC-MI-01"
+      "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-user-task/parallel-cardinality.cibseven-evidence.json",
     "owners": [
-      "PC-MI-01"
+      "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-user-task/parallel-collection-replaced-after-entry.cibseven-evidence.json",
     "owners": [
-      "PC-MI-08"
+      "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-user-task/parallel-completion-then-timer.cibseven-evidence.json",
     "owners": [
-      "PC-MI-12"
+      "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-user-task/parallel-equal-items.cibseven-evidence.json",
     "owners": [
-      "PC-MI-01",
-      "PC-MI-10"
+      "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-user-task/parallel-halting-data-flips.cibseven-evidence.json",
     "owners": [
-      "PC-MI-09"
+      "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-user-task/parallel-halting-final-body-non-boolean.cibseven-evidence.json",
     "owners": [
-      "PC-MI-09"
+      "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-user-task/parallel-halting-final-body-unresolvable.cibseven-evidence.json",
     "owners": [
-      "PC-MI-09"
+      "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-user-task/parallel-halting-initially-true.cibseven-evidence.json",
     "owners": [
-      "PC-MI-09"
+      "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-user-task/parallel-one-item.cibseven-evidence.json",
     "owners": [
-      "PC-MI-01"
+      "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-user-task/parallel-timer-while-work-remains.cibseven-evidence.json",
     "owners": [
-      "PC-MI-12"
+      "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-user-task/parallel-zero-items.cibseven-evidence.json",
     "owners": [
-      "PC-MI-01"
+      "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-user-task/sequential-body-locals-reset.cibseven-evidence.json",
     "owners": [
-      "PC-MI-10"
+      "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-user-task/sequential-both-count-below-items.cibseven-evidence.json",
     "owners": [
-      "PC-MI-01"
+      "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-user-task/sequential-cardinality-zero.cibseven-evidence.json",
     "owners": [
-      "PC-MI-01"
+      "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-user-task/sequential-cardinality.cibseven-evidence.json",
     "owners": [
-      "PC-MI-01"
+      "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-user-task/sequential-collection-grown.cibseven-evidence.json",
     "owners": [
-      "PC-MI-08"
+      "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-user-task/sequential-collection-removed.cibseven-evidence.json",
     "owners": [
-      "PC-MI-08"
+      "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-user-task/sequential-collection-shrunk-then-restored.cibseven-evidence.json",
     "owners": [
-      "PC-MI-08"
+      "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-user-task/sequential-completion-then-timer.cibseven-evidence.json",
     "owners": [
-      "PC-MI-12"
+      "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-user-task/sequential-equal-items.cibseven-evidence.json",
     "owners": [
-      "PC-MI-01"
+      "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-user-task/sequential-halting-data-flips.cibseven-evidence.json",
     "owners": [
-      "PC-MI-09"
+      "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-user-task/sequential-halting-final-body-non-boolean.cibseven-evidence.json",
     "owners": [
-      "PC-MI-09"
+      "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-user-task/sequential-halting-final-body-unresolvable.cibseven-evidence.json",
     "owners": [
-      "PC-MI-09"
+      "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-user-task/sequential-halting-initially-true.cibseven-evidence.json",
     "owners": [
-      "PC-MI-09"
+      "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-user-task/sequential-halting-nonfinal-non-boolean.cibseven-evidence.json",
     "owners": [
-      "PC-MI-09"
+      "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-user-task/sequential-one-item.cibseven-evidence.json",
     "owners": [
-      "PC-MI-01"
+      "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-user-task/sequential-timer-while-work-remains.cibseven-evidence.json",
     "owners": [
-      "PC-MI-12"
+      "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-user-task/sequential-zero-items-timer.cibseven-evidence.json",
     "owners": [
-      "PC-MI-12"
+      "CIB-LIM-0019"
     ]
   },
   {
     "evidence": "scenarios/open-rows/multi-instance-user-task/sequential-zero-items.cibseven-evidence.json",
     "owners": [
-      "PC-MI-01",
-      "PC-MI-12"
+      "CIB-LIM-0019"
     ]
   },
   {
@@ -2073,42 +1793,6 @@
     "evidence": "scenarios/open-rows/same-definition-scope-lifetimes/reentry-while-other-live.cibseven-evidence.json",
     "owners": [
       "PC-SCOPE-02"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/scalar-types-in-multi-instance/boolean-service-result.cibseven-evidence.json",
-    "owners": [
-      "PC-DATA-02"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/scalar-types-in-multi-instance/decimal-service-null-human.cibseven-evidence.json",
-    "owners": [
-      "PC-DATA-02"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/scalar-types-in-multi-instance/integer-human-completion.cibseven-evidence.json",
-    "owners": [
-      "PC-DATA-02"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/scalar-types-in-multi-instance/integer-service-boolean-human.cibseven-evidence.json",
-    "owners": [
-      "PC-DATA-02"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/scalar-types-in-multi-instance/null-service-decimal-human.cibseven-evidence.json",
-    "owners": [
-      "PC-DATA-02"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/scalar-types-in-multi-instance/strings-only.cibseven-evidence.json",
-    "owners": [
-      "PC-DATA-02"
     ]
   },
   {
@@ -2772,22 +2456,19 @@
   {
     "evidence": "scenarios/parallel-multi-instance/all.cibseven-evidence.json",
     "owners": [
-      "PC-MI-01",
-      "PC-MI-12"
+      "CIB-INT-0014"
     ]
   },
   {
     "evidence": "scenarios/parallel-multi-instance/first.cibseven-evidence.json",
     "owners": [
-      "PC-MI-01",
-      "PC-MI-12"
+      "CIB-INT-0014"
     ]
   },
   {
     "evidence": "scenarios/parallel-multi-instance/interrupted.cibseven-evidence.json",
     "owners": [
-      "PC-MI-01",
-      "PC-MI-12"
+      "CIB-INT-0014"
     ]
   },
   {
@@ -2807,17 +2488,13 @@
   {
     "evidence": "scenarios/sequential-multi-instance/interrupted.cibseven-evidence.json",
     "owners": [
-      "PC-MI-01",
-      "PC-MI-09",
-      "PC-MI-12"
+      "CIB-INT-0014"
     ]
   },
   {
     "evidence": "scenarios/sequential-multi-instance/natural.cibseven-evidence.json",
     "owners": [
-      "PC-MI-01",
-      "PC-MI-09",
-      "PC-MI-12"
+      "CIB-INT-0014"
     ]
   },
   {

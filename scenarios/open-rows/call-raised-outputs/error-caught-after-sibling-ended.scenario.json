@@ -1,0 +1,102 @@
+{
+  "kind": "scenario",
+  "id": "call-raised-outputs-error-caught-after-sibling-ended",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "call-raised-outputs-busy-called-root",
+    "relativePath": "scenarios/open-rows/call-raised-outputs/busy-called-root.bpmn",
+    "sha256": "79d340e97b5ef3f8cbb2ac03174802a9a6495b518987473173fde4e21b38d048",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-frame",
+      "occurrence": {
+        "processInstanceId": "call:10:Instance_1:18:CallActivity_Build:1",
+        "elementId": "UserTask_Frame",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-wiring-fails",
+      "occurrence": {
+        "processInstanceId": "call:10:Instance_1:18:CallActivity_Build:1",
+        "elementId": "UserTask_Wiring",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "progress",
+            "value": {
+              "kind": "string",
+              "value": "half"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s04-recover",
+      "occurrence": {
+        "processInstanceId": "call:10:Instance_1:18:CallActivity_Build:1",
+        "elementId": "UserTask_Recover",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "progress",
+            "value": {
+              "kind": "string",
+              "value": "recovered"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s05-accept",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_AfterBuild",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.6",
+      "BPMN 2.0.2 §10.5.1",
+      "BPMN 2.0.2 §13.3.4",
+      "BPMN 2.0.2 §13.5.3"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/tree/ActivityExecutionHierarchyWalker.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/tree/OutputVariablesPropagator.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/helper/BpmnExceptionHandler.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/pvm/runtime/PvmExecutionImpl.java"
+    ]
+  }
+}

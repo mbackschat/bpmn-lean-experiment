@@ -1,0 +1,47 @@
+{
+  "kind": "scenario",
+  "id": "escalation-catch-write-origin-interrupting-boundary-host-local",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "escalation-catch-write-origin-write-origin",
+    "relativePath": "scenarios/open-rows/escalation-catch-write-origin/write-origin.bpmn",
+    "sha256": "f2e2f5ffdb2132e6d7c235b46c70bd959cf8f8403ca07342c1024892108497a5",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start-process",
+      "instanceId": "Instance_1",
+      "variables": []
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-assessb",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "AssessB",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.5.1",
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 §13.5.3",
+      "BPMN 2.0.2 §13.5.4"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/helper/EscalationHandler.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/helper/EscalationEventDefinitionFinder.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ThrowEscalationEventActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java"
+    ]
+  }
+}

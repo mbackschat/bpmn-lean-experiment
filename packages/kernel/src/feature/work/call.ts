@@ -13,7 +13,6 @@ import {
   ValueSourceTag,
   assertNever,
   elementActivity,
-  elementScope,
   elementStart,
   programCalledProcess,
   programElement,
@@ -79,28 +78,22 @@ function calledProcess(ctx: Ctx, work: CallWork): Result<CalledProcess> {
 }
 
 /**
- * Start the called instance. The Event Sub-Processes of a called process are not admitted yet
- * (`call.calledEventSubProcess`): `armScope` and the raise search read a scope occurrence's element's children, which
- * for a called root are the Call's, so they need the called process's children instead.
+ * Start the called instance: enter its root, arm the Call's boundaries and the called process's Event Sub-Process
+ * starts (`Signal.armScope`, as `Scopes.enter` arms a Sub-Process), and begin its none start.
  */
 export function invoke(ctx: Ctx, header: Header, payload: ActivityPayload, work: CallWork, occurrence: Occurrence, state: State): Outcome {
   const process = calledProcess(ctx, work);
   if (!process.ok) return process;
   const children = programProcessChildren(ctx.program, process.value);
-  if (children.some((child) => {
-    const scope = elementScope(child);
-    return scope !== null && ctx.eventStart(scope[1]) !== null;
-  })) {
-    return failed(FailureTag.Unsupported, "call-called-event-subprocess");
-  }
   const inputs = copy(ctx, "call-input-unavailable", evalContext(state, occurrence.scope), work.inputs);
   if (!inputs.ok) return inputs;
   const start = children.map(elementStart).find((entry) => entry !== null && entry[1].subscription === null) ?? null;
   if (start === null) return failed(FailureTag.SemanticFailure, "called-process-without-none-start");
   const [entered, root] = enterCalled(state, occurrence, inputs.value, process.value.definition);
-  const armed = payload.envelope.boundaries.length === 0 || payload.envelope.multiInstance !== null
+  const hosted = payload.envelope.boundaries.length === 0 || payload.envelope.multiInstance !== null
     ? entered
     : signal(entered, { tag: SignalTag.Arm, host: occurrence.id, element: header.id, scope: occurrence.scope });
+  const armed = signal(hosted, { tag: SignalTag.ArmScope, scope: root });
   return committed(signal(armed, { tag: SignalTag.Begin, request: beginRequest({ element: start[0].id, scope: root }) }));
 }
 
@@ -117,6 +110,25 @@ export function returnFromCall(
   const outputs = copy(ctx, "call-output-unavailable", evalContext(state, root.id), work.outputs);
   if (!outputs.ok) return outputs;
   return committed(signal(state, completeSignal(owner.id, leaveOutgoing, outputs.value, WriteRule.Outward)));
+}
+
+/**
+ * What `PropagationHooks.callOutputs` writes when a raised Error or Escalation reaches the called root `root`: its
+ * Call's output mappings evaluated against the called instance, to be written outward from the Call's scope occurrence,
+ * as its normal return writes them (CIB-EXT-0034; `tree/OutputVariablesPropagator.java:34-43`,
+ * `CallableElementActivityBehavior.java:133-139`). The writes take effect before the search goes on, since an outer
+ * Call's outputs read what an inner pass wrote, so `registry.ts` hands them to `Data.writeOutputs` instead of queueing
+ * a write signal. Whether the profile selects the pass is the search's to decide.
+ */
+export function raisedOutputs(ctx: Ctx, root: ScopeOccurrence, state: State): Result<readonly [ScopeOccurrenceId, readonly Binding[]]> {
+  const element = root.element === null ? null : programElement(ctx.program, root.element);
+  const activity = element === null ? null : elementActivity(element);
+  const work = activity === null ? null : workCall(activity[1].work);
+  if (work === null) return failed(FailureTag.SemanticFailure, "called-root-without-call");
+  if (root.parent === null) return failed(FailureTag.SemanticFailure, "called-root-without-caller");
+  const outputs = copy(ctx, "call-output-unavailable", evalContext(state, root.id), work.outputs);
+  if (!outputs.ok) return outputs;
+  return committed([root.parent, outputs.value] as const);
 }
 
 /**

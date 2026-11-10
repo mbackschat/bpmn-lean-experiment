@@ -12,5 +12,6 @@ After a Parallel fork, two regions run side by side. Every handler is non-interr
 | Scenario | Case it exercises |
 |---|---|
 | [nested-handler-skips-wrong-code](nested-handler-skips-wrong-code.scenario.json) | A code the inner ESP does not name and the outer ESP does. |
+| [rethrow-reaches-wrapper-boundary](rethrow-reaches-wrapper-boundary.scenario.json) | `Work` raises `RAW`, the ESP in `Core` catches it and throws `RAW` again from directly inside itself. |
 
 The schedules carry no expected route or Process state; the retained CIB evidence is the answer.

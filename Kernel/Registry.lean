@@ -36,7 +36,11 @@ def hooks : Hooks :=
     arm := Feature.Subscriptions.arm
     armScope := Feature.Subscriptions.armScope
     armGateway := Feature.Subscriptions.armGateway
-    raise := Feature.Propagation.raise { mappedErrorOutputs := Feature.Work.mappedErrorOutputs }
+    raise := Feature.Propagation.raise
+      { mappedErrorOutputs := Feature.Work.mappedErrorOutputs
+        callOutputs := fun ctx root state => do
+          let (scope, writes) ← Feature.Work.Call.raisedOutputs ctx root state
+          Feature.Data.writeOutputs ctx scope writes .outward state }
     compensate := Feature.Compensation.compensate
     failCompensation := Feature.Compensation.failCompensation
     leave := Feature.Subscriptions.leave

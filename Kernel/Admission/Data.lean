@@ -15,14 +15,21 @@ public section
 
 namespace Kernel.Admission.Data
 
+/-- What an expression's site lets it read. `counters`: the Multi-Instance counter names are variables there, inside an
+instance under `MultiInstanceCounters.cibLocals` (CIB-INT-0018); `hidden`: instance names the site may not read, which
+`Kernel.Admission.MultiInstance.ownInputNames` lists for a Multi-Instance Activity's own input mappings. -/
+structure Site where
+  counters : Bool := false
+  hidden : List String := []
+
 /-- A name CIB resolves before any variable, or holds only inside a Multi-Instance instance or a decision task: the
-engine objects of `VariableScopeElResolver.java:51-90`, the loop counters, which `counters` admits: the Multi-Instance
-level puts them in a completion condition's context under `MultiInstanceCounters.cibLocals`, and a decision task's
-`decisionResult`. -/
-def juelName (counters : Bool) (name : String) : Option String :=
-  if ["execution", "task", "caseExecution", "externalTask", "authenticatedUserId"].contains name then
+engine objects of `VariableScopeElResolver.java:51-90`, the loop counters, which a site inside an instance admits, and
+a decision task's `decisionResult`. -/
+def juelName (site : Site) (name : String) : Option String :=
+  if site.hidden.contains name then some "multiInstance.ownInputReadsInstance"
+  else if ["execution", "task", "caseExecution", "externalTask", "authenticatedUserId"].contains name then
     some "expression.juel.engineContext"
-  else if !counters && multiInstanceCounterNames.contains name then
+  else if !site.counters && multiInstanceCounterNames.contains name then
     some "expression.juel.multiInstanceCounter"
   -- CIB binds it only as a transient local of a decision task's execution (`DecisionEvaluationUtil.java:82`), which
   -- the kernel does not carry; admission sees no expression's site owner, so the read is refused wherever it stands.
@@ -57,7 +64,7 @@ def juelFunction (earlier : List Nat → Option String) : JuelFunctionNode → O
   | { qualifier := _, name := _, args } => earlier args <|> some "expression.juel.function"
 
 /-- Node `position`'s refusal; a child must be an earlier node. -/
-def juelNode (counters : Bool) (position : Nat) (node : JuelNode) : Option String :=
+def juelNode (site : Site) (position : Nat) (node : JuelNode) : Option String :=
   let earlier (children : List Nat) : Option String :=
     if children.all (· < position) then none else some "expression.juel.malformed"
   match node with
@@ -65,7 +72,7 @@ def juelNode (counters : Bool) (position : Nat) (node : JuelNode) : Option Strin
   | .null => none
   | .bool _ => none
   | .stringLiteral _ => none
-  | .identifier name => juelName counters name
+  | .identifier name => juelName site name
   | .integer digits => if (integerLexeme? digits).isSome then none else some "expression.juel.malformed"
   | .float _ => some "expression.juel.floatLiteral"
   | .function payload => juelFunction earlier payload
@@ -80,10 +87,10 @@ def juelNode (counters : Bool) (position : Nat) (node : JuelNode) : Option Strin
     earlier [payload.left, payload.right] <|> juelOperator payload.op
   | .choice payload => earlier [payload.condition, payload.whenTrue, payload.whenFalse]
 
-/-- The first node a Core JUEL table refuses, in node order; `counters` admits the Multi-Instance counter names. -/
-def juelNodes (nodes : List JuelNode) (counters : Bool := false) : Option String :=
+/-- The first node a Core JUEL table refuses at `site`, in node order. -/
+def juelNodes (nodes : List JuelNode) (site : Site := {}) : Option String :=
   if nodes.isEmpty then some "expression.juel.malformed"
-  else (nodes.zipIdx.findSome? fun (node, position) => juelNode counters position node)
+  else (nodes.zipIdx.findSome? fun (node, position) => juelNode site position node)
 
 /-- The language the reader gives a JUEL text outside the pinned grammar (`kernel-reader/data.ts`). -/
 def juelLanguage : String := "urn:cibseven:expression-language:juel"
@@ -93,41 +100,42 @@ def juelLanguage : String := "urn:cibseven:expression-language:juel"
 declared language there (`BpmnParse.java:1824-1838`), so a declared one is refused; `counters` admits the counter
 names, which only the completion condition reads. -/
 def loopExpression (counters : Bool) : Expression → Option String
-  | .juel nodes => juelNodes nodes counters
-  | .variable name => juelName counters name
+  | .juel nodes => juelNodes nodes { counters }
+  | .variable name => juelName { counters } name
   | .literal _ => none
   | .simpleBoolean _ => some "expression.outsideJuel"
   | .foreign language _ => if language == juelLanguage then some "expression.juel.syntax" else some "multiInstance.expressionLanguage"
 
-/-- A mapping's source. Under `Evaluator.juel` a CIB mapping (`ioParameter`, `callVariable`) may be JUEL, and an
-unreadable one is the reader's `foreign`; a Data Association never carries JUEL at Core. -/
-def mapping (evaluator : Evaluator) (entry : Mapping) : Option String :=
+/-- A mapping's source at `site`. Under `Evaluator.juel` a CIB mapping (`ioParameter`, `callVariable`) may be JUEL, and
+an unreadable one is the reader's `foreign`; a Data Association never carries JUEL at Core. -/
+def mapping (evaluator : Evaluator) (site : Site) (entry : Mapping) : Option String :=
   let cib := entry.dialect != .dataAssociation
   match entry.source with
   | .foreign _ _ => if evaluator == .juel && cib then some "expression.juel.syntax" else some "mapping.expression"
   | .juel nodes =>
     if evaluator == .simpleBoolean then some "mapping.expression"
-    else if cib then juelNodes nodes else some "expression.juel.site"
+    else if cib then juelNodes nodes site else some "expression.juel.site"
   | .simpleBoolean _ => if evaluator == .juel then some "expression.outsideJuel" else none
   | .literal _ => none
-  | .variable name => if evaluator == .juel then juelName false name else none
+  | .variable name => if evaluator == .juel then juelName site name else none
 
-def mappings (evaluator : Evaluator) (list : List Mapping) : Option String :=
-  list.findSome? (mapping evaluator)
+def mappings (evaluator : Evaluator) (site : Site) (list : List Mapping) : Option String :=
+  list.findSome? (mapping evaluator site)
 
 /-- An Activity's default flow is read by `Kernel.Feature.Flow.ownFlows` (PC-CF-07). The asynchronous continuations are
-admitted: `Kernel.Step` reads them as transaction boundaries (CIB-EXT-0027). -/
-def envelope (evaluator : Evaluator) (fields : Envelope) : Option String :=
-  mappings evaluator fields.inputs <|> mappings evaluator fields.outputs
+admitted: `Kernel.Step` reads them as transaction boundaries (CIB-EXT-0027). The inputs and the outputs each have
+their site. -/
+def envelope (evaluator : Evaluator) (inputs outputs : Site) (fields : Envelope) : Option String :=
+  mappings evaluator inputs fields.inputs <|> mappings evaluator outputs fields.outputs
 
 /-- A Sequence Flow condition is read by the profile's evaluator: Simple Boolean, or under `Evaluator.juel` a JUEL
 table or a plain variable read (CIB-EXT-0030). A literal or `foreign` condition is refused under both. -/
-def flowCondition (evaluator : Evaluator) (flow : Flow) : Option String :=
+def flowCondition (evaluator : Evaluator) (site : Site) (flow : Flow) : Option String :=
   match flow.condition with
   | none => none
   | some (.simpleBoolean _) => if evaluator == .juel then some "expression.outsideJuel" else none
-  | some (.juel nodes) => if evaluator == .juel then juelNodes nodes else some "flow.condition.foreign"
-  | some (.variable name) => if evaluator == .juel then juelName false name else some "flow.condition.foreign"
+  | some (.juel nodes) => if evaluator == .juel then juelNodes nodes site else some "flow.condition.foreign"
+  | some (.variable name) => if evaluator == .juel then juelName site name else some "flow.condition.foreign"
   | some (.literal _) => some "flow.condition.foreign"
   | some (.foreign _ _) => some "flow.condition.foreign"
 

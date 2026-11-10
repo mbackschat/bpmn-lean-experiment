@@ -63,7 +63,7 @@ import {
   type Result,
   type State,
 } from "../state.js";
-import { EvaluationTag, collectionItems, evalContext, hold, multiInstanceRunItems, type Ctx } from "../hooks.js";
+import { EvaluationTag, collectionItems, evalContext, hold, multiInstanceRunItems, ownVariables, type Ctx } from "../hooks.js";
 
 function waitingIndex(slot: Iteration, index: number): readonly number[] {
   switch (slot.tag) {
@@ -151,14 +151,15 @@ function collectionOf(ctx: Ctx, loop: MultiInstance, items: Expression): Express
 
 /**
  * The local each instance holds its item in under the profile's binding: the Data Input the item's association feeds,
- * or the `inputDataItem`'s `name`, none when it has no name (CIB-INT-0014).
+ * or the `inputDataItem`'s `name`, none when it has no name, else `camunda:elementVariable`, which admission admits only
+ * without an `inputDataItem` (CIB-INT-0014, `BpmnParse.java:1863-1873`).
  */
 function itemName(ctx: Ctx, loop: MultiInstance): string | null {
   switch (ctx.program.options.multiInstanceBinding) {
     case MultiInstanceBinding.DataAssociations:
       return loop.inputDataItem;
     case MultiInstanceBinding.LoopReferences:
-      return loop.inputDataItemName;
+      return loop.inputDataItemName ?? loop.elementVariable;
   }
   return assertNever(ctx.program.options.multiInstanceBinding);
 }
@@ -175,14 +176,60 @@ function setRun(state: State, run: MultiInstanceRun): State {
   return { ...state, slots: { ...state.slots, multiInstances } };
 }
 
-/** Begin the instances `opening` names, each in a scope occurrence holding its input data item. */
+type Counts = ReadonlyArray<readonly [string, number]>;
+
+/**
+ * CIB's counts on the body (CIB-INT-0018): the count, from entry in sequential mode (CIB-INT-0002); the active
+ * instances, which CIB never lowers below 1 in sequential mode (`SequentialMultiInstanceActivityBehavior:38-45`,
+ * `:47-61`); the completed ones (`ParallelMultiInstanceActivityBehavior:64-68`, `:84-87`).
+ */
+function bodyCounts(loop: MultiInstance, instances: readonly Iteration[]): Counts {
+  const total = instances.length;
+  const completed = instances.filter(slotFilled).length;
+  const active = sequential(loop.mode) ? 1 : total - completed;
+  const [, instancesName, activeName, completedName] = multiInstanceCounterNames;
+  return [[instancesName!, total], [activeName!, active], [completedName!, completed]];
+}
+
+/** An instance's zero-based `loopCounter` (`MultiInstanceActivityBehavior:76-78`). */
+function instanceCounts(index: number): Counts {
+  return [[multiInstanceCounterNames[0]!, index]];
+}
+
+/**
+ * `counts` as the execution locals CIB holds them in (`MultiInstanceActivityBehavior:196-198`) under
+ * `MultiInstanceCounters.cibLocals`; the standards reading holds none, Table 10.30's counts being instance attributes no
+ * expression names.
+ */
+function counterLocals(ctx: Ctx, counts: Counts): readonly Binding[] {
+  switch (ctx.program.options.multiInstanceCounters) {
+    case MultiInstanceCounters.None:
+      return [];
+    case MultiInstanceCounters.CibLocals:
+      return counts.map(([name, count]): Binding => [name, { tag: ValueTag.Int, value: count }]);
+  }
+  return assertNever(ctx.program.options.multiInstanceCounters);
+}
+
+/** Whether `variables` hold exactly the counter locals of `counts`. */
+function holdsCounts(ctx: Ctx, variables: readonly Binding[], counts: Counts): boolean {
+  return counterLocals(ctx, counts).every(([name, expected]) => {
+    const actual = variables.find(([held]) => held === name)?.[1];
+    return actual !== undefined && actual.tag === ValueTag.Int && expected.tag === ValueTag.Int && actual.value === expected.value;
+  });
+}
+
+/**
+ * Begin the instances `opening` names, each in a scope occurrence holding its input data item and, under `cibLocals`,
+ * its `loopCounter`.
+ */
 function beginInstances(ctx: Ctx, loop: MultiInstance, items: readonly Value[], run: MultiInstanceRun, state: State): State {
   let current = state;
   const instances = [...run.instances];
   const name = itemName(ctx, loop);
   for (const index of opening(loop.mode, run.instances)) {
     const value = items[index];
-    const locals: readonly Binding[] = name !== null && value !== undefined ? [[name, value]] : [];
+    const locals: readonly Binding[] = [...counterLocals(ctx, instanceCounts(index)), ...(name !== null && value !== undefined ? [[name, value] as Binding] : [])];
     const [entered, scope] = enterScope(current, run.element, run.scope, locals, null);
     current = signal(entered, {
       tag: SignalTag.Begin,
@@ -336,12 +383,13 @@ export function arriveMultiInstance(
   if (count === 0) {
     return committed(signal(state, completeSignal(occurrence.id, leaveOutgoing, written(ctx, loop, collection, []), WriteRule.Outward)));
   }
-  const [entered, scope] = enterScope(state, header.id, occurrence.scope, [], occurrence.id);
+  const waiting: Iteration = { tag: IterationTag.Waiting };
+  const instances = Array.from({ length: count }, () => waiting);
+  const [entered, scope] = enterScope(state, header.id, occurrence.scope, counterLocals(ctx, bodyCounts(loop, instances)), occurrence.id);
   const armed = envelope.boundaries.length === 0
     ? entered
     : signal(entered, { tag: SignalTag.Arm, host: occurrence.id, element: header.id, scope: occurrence.scope });
-  const waiting: Iteration = { tag: IterationTag.Waiting };
-  const run: MultiInstanceRun = { scope, element: header.id, occurrence: occurrence.id, collection, instances: Array.from({ length: count }, () => waiting) };
+  const run: MultiInstanceRun = { scope, element: header.id, occurrence: occurrence.id, collection, instances };
   return committed(beginInstances(ctx, loop, items, run, armed));
 }
 
@@ -413,14 +461,7 @@ function activeIn(slot: Iteration, scope: number): boolean {
  */
 function conditionContext(ctx: Ctx, loop: MultiInstance, run: MultiInstanceRun, index: number, scope: number, state: State): EvalContext {
   const context = evalContext(state, scope);
-  const total = run.instances.length;
-  const completed = run.instances.filter(slotFilled).length;
-  const active = sequential(loop.mode) ? 1 : total - completed;
-  const int = (value: number): Value => ({ tag: ValueTag.Int, value });
-  const [loopCounter, instances, activeInstances, completedInstances] = multiInstanceCounterNames;
-  const counters: readonly Binding[] = ctx.program.options.multiInstanceCounters === MultiInstanceCounters.CibLocals
-    ? [[loopCounter, int(index)], [instances, int(total)], [activeInstances, int(active)], [completedInstances, int(completed)]]
-    : [];
+  const counters = counterLocals(ctx, [...instanceCounts(index), ...bodyCounts(loop, run.instances)]);
   return { ...context, variables: [...counters, ...context.variables] };
 }
 
@@ -463,8 +504,12 @@ export function instanceCompleted(ctx: Ctx, body: number, occurrence: Occurrence
   if (!value.ok) return value;
   const results = loop.outputDataItem === null ? writes.map(([name]) => name) : [];
   const item = itemName(ctx, loop);
-  // Dynamic-only: an effect result's names are the run's data.
-  if (results.some((name) => multiInstanceCounterNames.includes(name) || name === item)) return failed(FailureTag.Unsupported, "multiInstance.resultShadowsInstance");
+  const shadows = results.some((name) => multiInstanceCounterNames.includes(name) || name === item);
+  const intact = holdsCounts(ctx, ownVariables(state, found.scope), bodyCounts(loop, found.instances)) &&
+    holdsCounts(ctx, ownVariables(state, occurrence.scope), instanceCounts(index));
+  // Dynamic-only: an effect result's names, and a write that reached a counter local, are the run's data. CIB's next
+  // read of a counter is typed (`MultiInstanceActivityBehavior:200-204`); the kernel decides no other value there.
+  if (shadows || !intact) return failed(FailureTag.Unsupported, "multiInstance.resultShadowsInstance");
   const instances = [...found.instances];
   instances[index] = { tag: IterationTag.Completed, output: value.value };
   const completed: MultiInstanceRun = { ...found, instances };
@@ -475,5 +520,6 @@ export function instanceCompleted(ctx: Ctx, body: number, occurrence: Occurrence
   const run: MultiInstanceRun = { ...completed, results: kept };
   const left = setRun(leaveScope(state, occurrence.scope), run);
   if (stop.value || exhausted) return committed(finish(ctx, loop, run, left));
-  return committed(beginInstances(ctx, loop, multiInstanceRunItems(run) ?? [], run, left));
+  const counted = signal(left, { tag: SignalTag.Write, scope: run.scope, writes: counterLocals(ctx, bodyCounts(loop, run.instances)), rule: WriteRule.Own });
+  return committed(beginInstances(ctx, loop, multiInstanceRunItems(run) ?? [], run, counted));
 }

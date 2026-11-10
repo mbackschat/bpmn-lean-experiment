@@ -33,6 +33,15 @@ inductive ErrorPathOutputs where
   | mapped
   deriving DecidableEq, Repr
 
+/-- Whether a Call writes its output mappings when an Error or Escalation raised in its called instance reaches the
+called root. -/
+inductive RaisedCallOutputs where
+  /-- BPMN 2.0.2 §10.3.6, §13.3.2: an abnormally ended Call maps no outputs. -/
+  | none
+  /-- CIB-EXT-0034: once per crossing of a called root, innermost first, before that root's catcher runs. -/
+  | atCalledRoot
+  deriving DecidableEq, Repr
+
 inductive TechnicalFailure where
   /-- No BPMN meaning (§13.3.3 defines only a fault). -/
   | hostFailure
@@ -223,6 +232,7 @@ structure ProfileOptions where
   scopeChainSubmissionBytes : Option Nat := none
   undeclaredWrite : UndeclaredWrite := .refused
   errorPathOutputs : ErrorPathOutputs := .none
+  raisedCallOutputs : RaisedCallOutputs := .none
   technicalFailure : TechnicalFailure := .hostFailure
   /-- An effect incident offers `cancelIncidentProcess` (CIB-OP-0009). -/
   incidentProcessCancellation : Bool := false

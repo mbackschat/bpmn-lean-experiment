@@ -15,16 +15,21 @@ import {
   Evaluator,
   ExpressionTag,
   InstanceCountTag,
+  MultiInstanceBinding,
   MultiInstanceCounters,
   MultiInstanceMode,
   SubmissionRule,
   assertNever,
   multiInstanceCounterNames,
+  elementEnvelope,
+  programElement,
+  type ElementId,
   type Envelope,
   type Expression,
   type InstanceCount,
   type MultiInstance,
   type ProfileOptions,
+  type Program,
 } from "../il/types.js";
 
 /** A collection under the standards profile: a variable read. */
@@ -109,9 +114,78 @@ function instanceResult(submission: SubmissionRule, submits: boolean, loop: Mult
 }
 
 /**
+ * Whether `camunda:elementVariable` is refused: under the standards binding it is a foreign extension; under
+ * `loopReferences` it names the item local (CIB-INT-0014, `BpmnParse.java:1863-1866`) unless the loop also has an
+ * `inputDataItem`, whose `name` CIB sets over it (`:1868-1873`) even when absent, which the IL cannot tell from no item.
+ */
+function elementVariableRefused(options: ProfileOptions, loop: MultiInstance): boolean {
+  if (loop.elementVariable === null) return false;
+  switch (options.multiInstanceBinding) {
+    case MultiInstanceBinding.DataAssociations:
+      return true;
+    case MultiInstanceBinding.LoopReferences:
+      return loop.inputDataItem !== null || loop.inputDataItemName !== null;
+  }
+  return assertNever(options.multiInstanceBinding);
+}
+
+/**
+ * Whether `id` or an element enclosing it has Multi-Instance loop characteristics, so a site there runs inside an
+ * instance. A called process's elements stop at its level: the called instance holds no caller's counter.
+ */
+function inInstance(program: Program, fuel: number, id: ElementId | null): boolean {
+  if (fuel === 0 || id === null) return false;
+  const element = programElement(program, id);
+  if (element === null) return false;
+  return (elementEnvelope(element)?.multiInstance ?? null) !== null || inInstance(program, fuel - 1, element.header.parent);
+}
+
+/**
+ * Whether the counter names are variables at a site in `id`'s scope: inside an instance under
+ * `MultiInstanceCounters.cibLocals`, where CIB holds them as the instance's and the body's locals
+ * (`MultiInstanceActivityBehavior:196-198`). The innermost loop's counters hide an enclosing loop's.
+ */
+export function countersAt(program: Program, id: ElementId | null): boolean {
+  return program.options.multiInstanceCounters === MultiInstanceCounters.CibLocals &&
+    inInstance(program, program.elements.length, id);
+}
+
+/**
+ * The instance names a looping Activity's own input mappings may not read under `loopReferences`: the counters and the
+ * item. CIB evaluates them in the parent of the execution entering the Activity (`IoParameter.java:50-51`, run by
+ * `PvmExecutionImpl.java:1309-1314`), a choice that depends on whether the inner Activity is a scope and that its
+ * source marks legacy; such a read rolls the start back where BPMN 2.0.2 gives each instance its item (CIB-LIM-0019).
+ * The standards binding keeps every own input mapping refused (`multiInstance.mappings`).
+ */
+export function ownInputNames(options: ProfileOptions, loop: MultiInstance): readonly string[] {
+  switch (options.multiInstanceBinding) {
+    case MultiInstanceBinding.DataAssociations:
+      return [];
+    case MultiInstanceBinding.LoopReferences: {
+      const item = loop.inputDataItemName ?? loop.elementVariable;
+      return [...multiInstanceCounterNames, ...(item === null ? [] : [item])];
+    }
+  }
+  return assertNever(options.multiInstanceBinding);
+}
+
+/**
+ * A mapping, output or result target named like a counter inside an instance, which would overwrite CIB's counter
+ * local (`MultiInstanceActivityBehavior:196-198`) before its next typed read (`:200-204`); `counters` is `countersAt`
+ * of the scope the targets are written in (CIB-LIM-0020). A write no admission sees stays dynamic
+ * (`multiInstance.resultShadowsInstance`).
+ */
+export function counterTarget(counters: boolean, targets: readonly string[]): string | null {
+  return counters && targets.some((target) => multiInstanceCounterNames.includes(target)) ? "multiInstance.counterTarget" : null;
+}
+
+/**
  * `submits` is `null` for work no instance may do, which `admission/work.ts` refuses. Under the CIB counters an item
  * named like a counter is refused: CIB sets both on one execution, so one overwrites the other. A collection loop needs
- * its input data item; a cardinality loop sets none (`MultiInstanceActivityBehavior:85`).
+ * its input data item, or an admitted element variable; a cardinality loop sets none
+ * (`MultiInstanceActivityBehavior:85`). Own input mappings are admitted under `loopReferences`, whose reads
+ * `ownInputNames` restricts and whose targets `counterTarget` does; own output mappings are a CIB deployment error
+ * (`BpmnParse.java:4855-4857`).
  */
 export function activityLoop(options: ProfileOptions, juel: LoopExpression, submits: boolean | null, envelope: Envelope,
   loop: MultiInstance): string | null {
@@ -121,14 +195,19 @@ export function activityLoop(options: ProfileOptions, juel: LoopExpression, subm
   const refused = (underJuel ? juelCount(juel, loop.count) : standardCount(loop.count)) ??
     (condition === null ? null : underJuel ? juel(counters, condition) : standardCondition(condition));
   if (refused !== null) return refused;
-  if (loop.elementVariable !== null) return "multiInstance.elementVariable";
+  if (elementVariableRefused(options, loop)) return "multiInstance.elementVariable";
   if (loop.mutableCollection === CollectionRead.SequentialReread || (underJuel && rereads(loop))) return "multiInstance.mutableCollection";
-  if (loop.count.tag !== InstanceCountTag.Cardinality && loop.inputDataItem === null) return "multiInstance.inputDataItem";
-  if (counters && [loop.inputDataItem, loop.inputDataItemName].some((name) => name !== null && multiInstanceCounterNames.includes(name))) {
+  if (loop.count.tag !== InstanceCountTag.Cardinality && loop.inputDataItem === null && loop.elementVariable === null) {
+    return "multiInstance.inputDataItem";
+  }
+  if (counters && [loop.inputDataItem, loop.inputDataItemName, loop.elementVariable]
+    .some((name) => name !== null && multiInstanceCounterNames.includes(name))) {
     return "multiInstance.itemNamedLikeCounter";
   }
   const unfilled = submits === null ? null : instanceResult(options.submission, submits, loop);
   if (unfilled !== null) return unfilled;
-  if (envelope.inputs.length > 0 || envelope.outputs.length > 0) return "multiInstance.mappings";
-  return null;
+  if (envelope.outputs.length > 0 || (envelope.inputs.length > 0 && ownInputNames(options, loop).length === 0)) {
+    return "multiInstance.mappings";
+  }
+  return counterTarget(counters, envelope.inputs.map((entry) => entry.target));
 }

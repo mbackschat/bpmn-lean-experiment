@@ -5,6 +5,7 @@ This directory serves [PC-ERROR-02](../../../docs/PRACTICAL-CIB7-COVERAGE-TARGET
 | Scenario | Model | Case it exercises |
 |---|---|---|
 | [boundary-failure](boundary-failure.scenario.json) | [non-interrupting-boundary](non-interrupting-boundary.bpmn) | A Service Task with an exact Error boundary declared `cancelActivity="false"` whose effect reports the business failure the boundary names. |
+| [boundary-failure-then-substitute](boundary-failure-then-substitute.scenario.json) | [non-interrupting-boundary](non-interrupting-boundary.bpmn) | The same failure, then `FindSubstitute` completes, which separates a still-running instance from an interrupting reading. |
 | [event-subprocess-deployment](event-subprocess-deployment.scenario.json) | [non-interrupting-event-subprocess](non-interrupting-event-subprocess.bpmn) | An Error ESP declared with `isInterrupting="false"`, deployed and started; its thrower never runs. |
 
 The ESP model is a deployment-time case: the schedule contains only the start. The schedules carry no expected acceptance, route or Process state; the retained CIB evidence is the answer.

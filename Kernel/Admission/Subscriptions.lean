@@ -86,22 +86,64 @@ def errorTrigger (variables : ErrorCatchVariables) (trigger : ErrorTrigger) : Op
     else if trigger.messageVariable.isSome then some "event.error.messageVariable"
     else none
 
-def escalationTrigger (trigger : EscalationTrigger) : Option String :=
-  if trigger.codeVariable.isSome then some "event.escalation.codeVariable" else none
+/-- The code variable is CIB's extension (`camunda:escalationCodeVariable`), admitted with the Error catch variables
+(CIB-EXT-0028). -/
+def escalationTrigger (variables : ErrorCatchVariables) (trigger : EscalationTrigger) : Option String :=
+  match variables with
+  | .eventScope => none
+  | .refused => if trigger.codeVariable.isSome then some "event.escalation.codeVariable" else none
+
+/-- The codes of the raised-event boundaries a host declared before the one being admitted; `none` is an Escalation
+catch-all. -/
+structure Declared where
+  errorCodes : List String := []
+  escalations : List (Option String) := []
+
+/-- At most one Escalation handler of one kind in one place may match any code: among the boundaries of a host, or among
+the Event Sub-Processes of a scope, a second one of the same code, a catch-all beside any other, or two catch-alls are
+refused as `refusal`, and an admitted one joins `earlier`. CIB 2.2.0 refuses each at deployment whatever the
+interruption modes (`BpmnParse.java:3702-3735`). BPMN 2.0.2 §10.5.6 allows several non-interrupting handlers of one
+declaration, which would all run; the kernel's search takes one catcher per level, so it refuses them under every
+profile (PC-ESCALATION-02). -/
+def escalationDeclared (refusal : String) (earlier : List (Option String)) (code : Option String) :
+    Except String (List (Option String)) :=
+  let conflicts := match code with
+    | some name => earlier.contains none || earlier.contains (some name)
+    | none => !earlier.isEmpty
+  if conflicts then .error refusal else .ok (earlier ++ [code])
 
 /-- An interrupting Event Sub-Process started by a Message has no selected meaning for the Scope it interrupts; an Error
-Event Sub-Process always interrupts (BPMN 2.0.2 Table 10.86, Table 10.87 `isInterrupting`, §13.5.4) (PC-ERROR-02). -/
+Event Sub-Process always interrupts (BPMN 2.0.2 Table 10.86, Table 10.87 `isInterrupting`, §13.5.4) (PC-ERROR-02).
+`earlier` holds the Escalation codes of the Event Sub-Processes the same scope declared before this one
+(`escalationDeclared`). -/
+def eventSubProcessAfter (earlier : List (Option String)) (start : Subscription) (interrupting : Bool) :
+    Except String (List (Option String)) :=
+  let refused : Option String → Except String (List (Option String))
+    | some code => .error code
+    | none => .ok earlier
+  match definitions start with
+  | some code => .error code
+  | none =>
+    match start.trigger with
+    | .message _ => refused (if interrupting then some "scope.eventSubProcess.interruptingMessage" else none)
+    | .timer trigger => refused (if interrupting then interruptingCycle trigger else none)
+    | .error _ => refused (if interrupting then none else some "start.error.nonInterrupting")
+    | .signal _ => .ok earlier
+    | .condition _ => .ok earlier
+    | .escalation trigger => escalationDeclared "scope.eventSubProcess.escalationDuplicate" earlier trigger.code
+    | .compensation => .ok earlier
+    | .cancel => .ok earlier
+
 def eventSubProcess (start : Subscription) (interrupting : Bool) : Option String :=
-  definitions start <|>
-  match start.trigger with
-  | .message _ => if interrupting then some "scope.eventSubProcess.interruptingMessage" else none
-  | .timer trigger => if interrupting then interruptingCycle trigger else none
-  | .error _ => if interrupting then none else some "start.error.nonInterrupting"
-  | .signal _ => none
-  | .condition _ => none
-  | .escalation _ => none
-  | .compensation => none
-  | .cancel => none
+  match eventSubProcessAfter [] start interrupting with
+  | .error code => some code
+  | .ok _ => none
+
+/-- The Event Sub-Processes one scope declares, as their starts in document order, taken together. -/
+def eventSubProcessDeclarations (starts : List (Subscription × Bool)) : Option String :=
+  match starts.foldlM (fun earlier (start, interrupting) => eventSubProcessAfter earlier start interrupting) [] with
+  | .error code => some code
+  | .ok _ => none
 
 def catchEvent (subscription : Subscription) : Option String :=
   definitions subscription <|> subscriptionOutputs subscription <|>
@@ -117,14 +159,14 @@ def catchEvent (subscription : Subscription) : Option String :=
 
 /-- `transactionHost` says whether the boundary hangs on a Transaction. An Error boundary always interrupts (BPMN 2.0.2
 Table 10.90) (PC-ERROR-01); a Cancel boundary always interrupts and hangs only on a Transaction (Table 10.90, §10.3.5;
-`BpmnParse#parseBoundaryCancelEventDefinition`) (PC-TX-02). `seen` holds the codes of the host's Error boundaries
+`BpmnParse#parseBoundaryCancelEventDefinition`) (PC-TX-02). `seen.errorCodes` holds the codes of the host's Error boundaries
 before this one, and an admitted Error boundary adds its own. Two with one code are refused: BPMN 2.0.2 §10.5.6
 allows one interrupting handler per Event Declaration and states no precedence between two declarations of one code,
 so the kernel restricts a host to one boundary per code, and CIB's first in document order (`BpmnParse:3646`) is not
-adopted (PC-ERROR-01). -/
-def boundary (variables : ErrorCatchVariables) (transactionHost : Bool) (seen : List String) (boundary : Boundary) :
-    Except String (List String) :=
-  let check (refusal : Option String) : Except String (List String) :=
+adopted (PC-ERROR-01). `seen.escalations` holds the host's earlier Escalation boundary codes (`escalationDeclared`). -/
+def boundary (variables : ErrorCatchVariables) (transactionHost : Bool) (seen : Declared) (boundary : Boundary) :
+    Except String Declared :=
+  let check (refusal : Option String) : Except String Declared :=
     match refusal with
     | some code => .error code
     | none => .ok seen
@@ -140,9 +182,14 @@ def boundary (variables : ErrorCatchVariables) (transactionHost : Bool) (seen : 
       let seen ← check ((if boundary.interrupting then none else some "boundary.error.nonInterrupting") <|>
         errorTrigger variables trigger)
       match trigger.code with
-      | some code => if seen.contains code then .error "boundary.error.duplicateCode" else .ok (code :: seen)
+      | some code =>
+        if seen.errorCodes.contains code then .error "boundary.error.duplicateCode"
+        else .ok { seen with errorCodes := code :: seen.errorCodes }
       | none => .ok seen
-    | .escalation trigger => check (escalationTrigger trigger)
+    | .escalation trigger => do
+      let seen ← check (escalationTrigger variables trigger)
+      let escalations ← escalationDeclared "boundary.escalation.duplicate" seen.escalations trigger.code
+      .ok { seen with escalations }
     | .compensation => .ok seen
     | .cancel =>
       check (if !transactionHost then some "boundary.cancel.host"
@@ -150,7 +197,7 @@ def boundary (variables : ErrorCatchVariables) (transactionHost : Bool) (seen : 
         else some "boundary.cancel.nonInterrupting")
 
 def boundaries (variables : ErrorCatchVariables) (transactionHost : Bool) (list : List Boundary) : Option String :=
-  match list.foldlM (boundary variables transactionHost) [] with
+  match list.foldlM (boundary variables transactionHost) {} with
   | .error code => some code
   | .ok _ => none
 
@@ -166,7 +213,7 @@ def start (variables : ErrorCatchVariables) (nested : Bool) (subscription : Subs
   | .signal _ => some "start.signal"
   | .condition _ => some "start.condition"
   | .error trigger => raised "start.error" <|> errorTrigger variables trigger
-  | .escalation trigger => raised "start.escalation" <|> escalationTrigger trigger
+  | .escalation trigger => raised "start.escalation" <|> escalationTrigger variables trigger
   | .compensation => raised "start.compensation"
   | .cancel => some "start.cancel"
 

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  id="Definitions_NestedRethrow"
+  targetNamespace="urn:bpmn-lean:scenarios:error-event-subprocess-nested-rethrow">
+  <bpmn:error id="Error_Raw" name="Raw failure" errorCode="RAW" />
+  <bpmn:process id="Process_NestedRethrow" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Received" />
+    <bpmn:subProcess id="Wrap" name="Wrapped work">
+      <bpmn:startEvent id="StartEvent_Wrap" />
+      <bpmn:userTask id="Work" name="Do the work" />
+      <bpmn:endEvent id="ErrorEnd_Raw">
+        <bpmn:errorEventDefinition id="ErrorEventDefinition_ErrorEnd_Raw" errorRef="Error_Raw" />
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="Flow_Wrap_Start_Work" sourceRef="StartEvent_Wrap" targetRef="Work" />
+      <bpmn:sequenceFlow id="Flow_Wrap_Work_Raise" sourceRef="Work" targetRef="ErrorEnd_Raw" />
+      <bpmn:subProcess id="Handler_Raw" triggeredByEvent="true">
+        <bpmn:startEvent id="Start_Handler_Raw" isInterrupting="true">
+          <bpmn:errorEventDefinition id="ErrorEventDefinition_Handler_Raw" errorRef="Error_Raw" />
+        </bpmn:startEvent>
+        <bpmn:subProcess id="Translate" name="Translate the failure">
+          <bpmn:startEvent id="StartEvent_Translate" />
+          <bpmn:userTask id="Inspect" name="Inspect the failure" />
+          <bpmn:endEvent id="ErrorEnd_RawAgain">
+            <bpmn:errorEventDefinition id="ErrorEventDefinition_ErrorEnd_RawAgain" errorRef="Error_Raw" />
+          </bpmn:endEvent>
+          <bpmn:sequenceFlow id="Flow_Translate_Start_Inspect" sourceRef="StartEvent_Translate" targetRef="Inspect" />
+          <bpmn:sequenceFlow id="Flow_Translate_Inspect_Raise" sourceRef="Inspect" targetRef="ErrorEnd_RawAgain" />
+        </bpmn:subProcess>
+        <bpmn:endEvent id="End_Handler_Raw" />
+        <bpmn:sequenceFlow id="Flow_Handler_Start_Translate" sourceRef="Start_Handler_Raw" targetRef="Translate" />
+        <bpmn:sequenceFlow id="Flow_Handler_Translate_End" sourceRef="Translate" targetRef="End_Handler_Raw" />
+      </bpmn:subProcess>
+    </bpmn:subProcess>
+    <bpmn:boundaryEvent id="Boundary_Wrap_Raw" attachedToRef="Wrap" cancelActivity="true">
+      <bpmn:errorEventDefinition id="ErrorEventDefinition_Boundary_Wrap_Raw" errorRef="Error_Raw" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Recover" name="Recover from the failure" />
+    <bpmn:endEvent id="EndEvent_Wrapped" />
+    <bpmn:endEvent id="EndEvent_Recovered" />
+    <bpmn:sequenceFlow id="Flow_Start_Wrap" sourceRef="StartEvent_Received" targetRef="Wrap" />
+    <bpmn:sequenceFlow id="Flow_Wrap_End" sourceRef="Wrap" targetRef="EndEvent_Wrapped" />
+    <bpmn:sequenceFlow id="Flow_Raw_Recover" sourceRef="Boundary_Wrap_Raw" targetRef="Recover" />
+    <bpmn:sequenceFlow id="Flow_Recover_End" sourceRef="Recover" targetRef="EndEvent_Recovered" />
+  </bpmn:process>
+</bpmn:definitions>

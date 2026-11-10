@@ -333,7 +333,12 @@ export function completeUserTask(
   if (loop !== null) {
     const submitted = instanceOutput(loop, values);
     if (!submitted.ok) return failedWith(submitted.failure);
-    return committed(signal(state, completeSignal(item.occurrence, leaveOutgoing, values, WriteRule.Own)));
+    // CIB reads no `outputDataItem` (CIB-LIM-0001) and sets the submission through the instance's task execution
+    // (CIB-EXT-0005), so it also reaches its nearest owner or the root; the slot keeps BPMN 2.0.2 §13.3.7.
+    const installed = ctx.program.options.submission === SubmissionRule.InstallsVariables
+      ? signal(state, { tag: SignalTag.Write, scope: item.scope, writes: values, rule: WriteRule.Outward })
+      : state;
+    return committed(signal(installed, completeSignal(item.occurrence, leaveOutgoing, values, WriteRule.Own)));
   }
   const submission = ctx.program.options.submission;
   switch (submission) {

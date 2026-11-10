@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  id="Definitions_WriteOrigin"
+  targetNamespace="urn:bpmn-lean:scenarios:escalation-catch-write-origin">
+  <bpmn:escalation id="Escalation_A" name="Code A" escalationCode="CODE_A" />
+  <bpmn:escalation id="Escalation_B" name="Code B" escalationCode="CODE_B" />
+  <bpmn:escalation id="Escalation_C" name="Code C" escalationCode="CODE_C" />
+  <bpmn:escalation id="Escalation_D" name="Code D" escalationCode="CODE_D" />
+  <bpmn:process id="Process_WriteOrigin" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Requested" />
+    <bpmn:parallelGateway id="Gateway_Fork" gatewayDirection="Diverging" />
+
+    <bpmn:subProcess id="HostNonInterrupting" name="Host with a non-interrupting boundary">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="code">inner</camunda:inputParameter>
+          <camunda:outputParameter name="hostCodeA">${code}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+      <bpmn:startEvent id="StartEvent_A" />
+      <bpmn:userTask id="AssessA" name="Assess A" />
+      <bpmn:intermediateThrowEvent id="RaiseA">
+        <bpmn:escalationEventDefinition id="EscalationEventDefinition_RaiseA" escalationRef="Escalation_A" />
+      </bpmn:intermediateThrowEvent>
+      <bpmn:userTask id="FinishA" name="Finish A" />
+      <bpmn:endEvent id="EndEvent_A" />
+      <bpmn:sequenceFlow id="Flow_A_Start_Assess" sourceRef="StartEvent_A" targetRef="AssessA" />
+      <bpmn:sequenceFlow id="Flow_A_Assess_Raise" sourceRef="AssessA" targetRef="RaiseA" />
+      <bpmn:sequenceFlow id="Flow_A_Raise_Finish" sourceRef="RaiseA" targetRef="FinishA" />
+      <bpmn:sequenceFlow id="Flow_A_Finish_End" sourceRef="FinishA" targetRef="EndEvent_A" />
+    </bpmn:subProcess>
+    <bpmn:boundaryEvent id="Boundary_A" attachedToRef="HostNonInterrupting" cancelActivity="false">
+      <bpmn:escalationEventDefinition id="EscalationEventDefinition_Boundary_A" escalationRef="Escalation_A"
+        camunda:escalationCodeVariable="code" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="ObserveA" name="Observe A" />
+
+    <bpmn:subProcess id="HostInterrupting" name="Host with an interrupting boundary">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="code">inner</camunda:inputParameter>
+          <camunda:outputParameter name="seenB">${code}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+      <bpmn:startEvent id="StartEvent_B" />
+      <bpmn:userTask id="AssessB" name="Assess B" />
+      <bpmn:intermediateThrowEvent id="RaiseB">
+        <bpmn:escalationEventDefinition id="EscalationEventDefinition_RaiseB" escalationRef="Escalation_B" />
+      </bpmn:intermediateThrowEvent>
+      <bpmn:userTask id="FinishB" name="Finish B" />
+      <bpmn:endEvent id="EndEvent_B" />
+      <bpmn:sequenceFlow id="Flow_B_Start_Assess" sourceRef="StartEvent_B" targetRef="AssessB" />
+      <bpmn:sequenceFlow id="Flow_B_Assess_Raise" sourceRef="AssessB" targetRef="RaiseB" />
+      <bpmn:sequenceFlow id="Flow_B_Raise_Finish" sourceRef="RaiseB" targetRef="FinishB" />
+      <bpmn:sequenceFlow id="Flow_B_Finish_End" sourceRef="FinishB" targetRef="EndEvent_B" />
+    </bpmn:subProcess>
+    <bpmn:boundaryEvent id="Boundary_B" attachedToRef="HostInterrupting" cancelActivity="true">
+      <bpmn:escalationEventDefinition id="EscalationEventDefinition_Boundary_B" escalationRef="Escalation_B"
+        camunda:escalationCodeVariable="code" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="ObserveB" name="Observe B" />
+
+    <bpmn:subProcess id="HostWithHandler" name="Host with a non-interrupting handler">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="code">inner</camunda:inputParameter>
+          <camunda:outputParameter name="hostCodeC">${code}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+      <bpmn:startEvent id="StartEvent_C" />
+      <bpmn:userTask id="AssessC" name="Assess C" />
+      <bpmn:intermediateThrowEvent id="RaiseC">
+        <bpmn:escalationEventDefinition id="EscalationEventDefinition_RaiseC" escalationRef="Escalation_C" />
+      </bpmn:intermediateThrowEvent>
+      <bpmn:userTask id="FinishC" name="Finish C" />
+      <bpmn:endEvent id="EndEvent_C" />
+      <bpmn:sequenceFlow id="Flow_C_Start_Assess" sourceRef="StartEvent_C" targetRef="AssessC" />
+      <bpmn:sequenceFlow id="Flow_C_Assess_Raise" sourceRef="AssessC" targetRef="RaiseC" />
+      <bpmn:sequenceFlow id="Flow_C_Raise_Finish" sourceRef="RaiseC" targetRef="FinishC" />
+      <bpmn:sequenceFlow id="Flow_C_Finish_End" sourceRef="FinishC" targetRef="EndEvent_C" />
+      <bpmn:subProcess id="Handler_C" triggeredByEvent="true">
+        <bpmn:startEvent id="Start_Handler_C" isInterrupting="false">
+          <bpmn:escalationEventDefinition id="EscalationEventDefinition_Handler_C" escalationRef="Escalation_C"
+            camunda:escalationCodeVariable="code" />
+        </bpmn:startEvent>
+        <bpmn:userTask id="ObserveC" name="Observe C" />
+        <bpmn:endEvent id="End_Handler_C" />
+        <bpmn:sequenceFlow id="Flow_Handler_C_Observe" sourceRef="Start_Handler_C" targetRef="ObserveC" />
+        <bpmn:sequenceFlow id="Flow_Handler_C_End" sourceRef="ObserveC" targetRef="End_Handler_C" />
+      </bpmn:subProcess>
+    </bpmn:subProcess>
+
+    <bpmn:subProcess id="HostMapped" name="Host whose output reads the code">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:outputParameter name="seenD">${code}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+      <bpmn:startEvent id="StartEvent_D" />
+      <bpmn:userTask id="AssessD" name="Assess D" />
+      <bpmn:intermediateThrowEvent id="RaiseD">
+        <bpmn:escalationEventDefinition id="EscalationEventDefinition_RaiseD" escalationRef="Escalation_D" />
+      </bpmn:intermediateThrowEvent>
+      <bpmn:userTask id="FinishD" name="Finish D" />
+      <bpmn:endEvent id="EndEvent_D" />
+      <bpmn:sequenceFlow id="Flow_D_Start_Assess" sourceRef="StartEvent_D" targetRef="AssessD" />
+      <bpmn:sequenceFlow id="Flow_D_Assess_Raise" sourceRef="AssessD" targetRef="RaiseD" />
+      <bpmn:sequenceFlow id="Flow_D_Raise_Finish" sourceRef="RaiseD" targetRef="FinishD" />
+      <bpmn:sequenceFlow id="Flow_D_Finish_End" sourceRef="FinishD" targetRef="EndEvent_D" />
+    </bpmn:subProcess>
+    <bpmn:boundaryEvent id="Boundary_D" attachedToRef="HostMapped" cancelActivity="true">
+      <bpmn:escalationEventDefinition id="EscalationEventDefinition_Boundary_D" escalationRef="Escalation_D"
+        camunda:escalationCodeVariable="code" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="ObserveD" name="Observe D" />
+
+    <bpmn:endEvent id="EndEvent_A_Done" />
+    <bpmn:endEvent id="EndEvent_A_Observed" />
+    <bpmn:endEvent id="EndEvent_B_Done" />
+    <bpmn:endEvent id="EndEvent_B_Observed" />
+    <bpmn:endEvent id="EndEvent_C_Done" />
+    <bpmn:endEvent id="EndEvent_D_Done" />
+    <bpmn:endEvent id="EndEvent_D_Observed" />
+
+    <bpmn:sequenceFlow id="Flow_Start_Fork" sourceRef="StartEvent_Requested" targetRef="Gateway_Fork" />
+    <bpmn:sequenceFlow id="Flow_Fork_A" sourceRef="Gateway_Fork" targetRef="HostNonInterrupting" />
+    <bpmn:sequenceFlow id="Flow_Fork_B" sourceRef="Gateway_Fork" targetRef="HostInterrupting" />
+    <bpmn:sequenceFlow id="Flow_Fork_C" sourceRef="Gateway_Fork" targetRef="HostWithHandler" />
+    <bpmn:sequenceFlow id="Flow_Fork_D" sourceRef="Gateway_Fork" targetRef="HostMapped" />
+    <bpmn:sequenceFlow id="Flow_A_Done" sourceRef="HostNonInterrupting" targetRef="EndEvent_A_Done" />
+    <bpmn:sequenceFlow id="Flow_A_Observe" sourceRef="Boundary_A" targetRef="ObserveA" />
+    <bpmn:sequenceFlow id="Flow_A_Observed" sourceRef="ObserveA" targetRef="EndEvent_A_Observed" />
+    <bpmn:sequenceFlow id="Flow_B_Done" sourceRef="HostInterrupting" targetRef="EndEvent_B_Done" />
+    <bpmn:sequenceFlow id="Flow_B_Observe" sourceRef="Boundary_B" targetRef="ObserveB" />
+    <bpmn:sequenceFlow id="Flow_B_Observed" sourceRef="ObserveB" targetRef="EndEvent_B_Observed" />
+    <bpmn:sequenceFlow id="Flow_C_Done" sourceRef="HostWithHandler" targetRef="EndEvent_C_Done" />
+    <bpmn:sequenceFlow id="Flow_D_Done" sourceRef="HostMapped" targetRef="EndEvent_D_Done" />
+    <bpmn:sequenceFlow id="Flow_D_Observe" sourceRef="Boundary_D" targetRef="ObserveD" />
+    <bpmn:sequenceFlow id="Flow_D_Observed" sourceRef="ObserveD" targetRef="EndEvent_D_Observed" />
+  </bpmn:process>
+</bpmn:definitions>

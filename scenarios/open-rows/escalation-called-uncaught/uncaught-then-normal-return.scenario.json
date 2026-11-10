@@ -1,0 +1,77 @@
+{
+  "kind": "scenario",
+  "id": "escalation-called-uncaught-uncaught-then-normal-return",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "escalation-called-uncaught-slot-booking",
+    "relativePath": "scenarios/open-rows/escalation-called-uncaught/slot-booking.bpmn",
+    "sha256": "c0b34ddb0aa3e13cad186de8b5f85115ec13022f8699f71400ccc7cd1b82b01f",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start-process",
+      "instanceId": "Instance_1",
+      "variables": []
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-reserve",
+      "occurrence": {
+        "processInstanceId": "call:10:Instance_1:4:Book:1",
+        "elementId": "Reserve",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "slot",
+            "value": {
+              "kind": "string",
+              "value": "A1"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-settle",
+      "occurrence": {
+        "processInstanceId": "call:10:Instance_1:4:Book:1",
+        "elementId": "Settle",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "slot",
+            "value": {
+              "kind": "string",
+              "value": "A2"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.5.1",
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 §13.5.3",
+      "BPMN 2.0.2 §13.5.4"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/helper/EscalationHandler.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/helper/EscalationEventDefinitionFinder.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ThrowEscalationEventActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/tree/OutputVariablesPropagator.java"
+    ]
+  }
+}

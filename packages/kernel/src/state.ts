@@ -11,7 +11,10 @@
  * `setVariable`, whose one caller is `feature/data.ts`; tokens are added only by `emit`, whose one caller is
  * `feature/flow.ts` (guard 17).
  */
-import { assertNever, utf8ByteSize, type DefinitionRef, type ElementId, type FlowId, type Value } from "./il/types.js";
+import {
+  assertNever, definitionRefEquals, programChildren, programProcessChildren, utf8ByteSize, type DefinitionRef, type Element,
+  type ElementId, type FlowId, type Program, type Value,
+} from "./il/types.js";
 import {
   type Binding, type ConditionalWaitDetail, type EffectDetail, type IncidentDetail, InputTag, type MessageChannel,
   messageChannelEquals, type MessageWaitDetail, type OpenKind, OpenKindTag, openKindView, optionalChannelEquals,
@@ -715,6 +718,21 @@ export function enterCalled(
     },
     id,
   ];
+}
+
+/**
+ * The elements the scope occurrence `scope` declares: for a called root, the process-level elements of the process its
+ * Call bound (its `slots.instances` entry), not the Call Activity's, since a called Process behaves as a normal Process
+ * (BPMN 2.0.2 §13.3.4); otherwise the children of its element.
+ */
+export function childrenOf(state: State, program: Program, scope: ScopeOccurrenceId): readonly Element[] {
+  const occurrence = state.scopes.find((candidate) => candidate.id === scope);
+  const bound = state.slots.instances.find((entry) => entry.root === scope)?.definition ?? null;
+  if (occurrence !== undefined && occurrence.calledInstance !== null && bound !== null) {
+    const process = program.processes.find((candidate) => definitionRefEquals(candidate.definition, bound));
+    return process === undefined ? [] : programProcessChildren(program, process);
+  }
+  return programChildren(program, occurrence?.element ?? null);
 }
 
 /** The scope occurrences inside `scope`, transitively, including `scope`, the deepest last. */

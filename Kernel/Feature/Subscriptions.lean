@@ -81,12 +81,11 @@ def armGateway (ctx : Ctx) (occurrence : Nat) (gateway : ElementId) (scope : Sco
 def startEvent? (ctx : Ctx) (eventSubProcess : ElementId) : Option ElementId :=
   (ctx.program.children (some eventSubProcess)).findSome? fun child => child.start?.map (·.1.id)
 
-/-- `Signal.armScope`: open the start subscriptions of the Event Sub-Processes declared in the scope occurrence's
-element as passive items on their start Events. A start that opens no item needs no start Event: a Compensation Event
+/-- `Signal.armScope`: open the start subscriptions of the Event Sub-Processes declared in the scope occurrence
+(`State.childrenOf`: a called root's are its called process's) as passive items on their start Events. A start that opens no item needs no start Event: a Compensation Event
 Sub-Process's trigger is carried by its `ScopeKind`. -/
 def armScope (ctx : Ctx) (scope : ScopeOccurrenceId) (state : State) : Outcome :=
-  let element := (state.scopes.find? (·.id == scope)).bind (·.element)
-  (ctx.program.children element).foldlM (fun state child =>
+  (state.childrenOf ctx.program scope).foldlM (fun state child =>
     match child.scope?.bind fun (header, payload) => (ctx.eventStart payload).map (header.id, ·) with
     | none => .ok state
     | some (eventSubProcess, subscription, _) => do

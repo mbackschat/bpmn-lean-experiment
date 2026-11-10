@@ -15,16 +15,29 @@ import {
 } from "../il/types/juel.js";
 
 /**
- * A name CIB resolves before any variable, or holds only inside a Multi-Instance instance or a decision task: the
- * engine objects of `VariableScopeElResolver.java:51-90`, the loop counters, which `counters` admits: the
- * Multi-Instance level puts them in a completion condition's context under `MultiInstanceCounters.cibLocals`, and a
- * decision task's `decisionResult`.
+ * What an expression's site lets it read. `counters`: the Multi-Instance counter names are variables there, inside an
+ * instance under `MultiInstanceCounters.cibLocals` (CIB-INT-0018); `hidden`: instance names the site may not read,
+ * which `admission/multi-instance.ts` `ownInputNames` lists for a Multi-Instance Activity's own input mappings.
  */
-function juelName(counters: boolean, name: string): string | null {
+export interface Site {
+  readonly counters: boolean;
+  readonly hidden: readonly string[];
+}
+
+/** A site outside every instance. */
+export const outsideInstances: Site = { counters: false, hidden: [] };
+
+/**
+ * A name CIB resolves before any variable, or holds only inside a Multi-Instance instance or a decision task: the
+ * engine objects of `VariableScopeElResolver.java:51-90`, the loop counters, which a site inside an instance admits,
+ * and a decision task's `decisionResult`.
+ */
+function juelName(site: Site, name: string): string | null {
+  if (site.hidden.includes(name)) return "multiInstance.ownInputReadsInstance";
   if (["execution", "task", "caseExecution", "externalTask", "authenticatedUserId"].includes(name)) {
     return "expression.juel.engineContext";
   }
-  if (!counters && multiInstanceCounterNames.includes(name)) {
+  if (!site.counters && multiInstanceCounterNames.includes(name)) {
     return "expression.juel.multiInstanceCounter";
   }
   // CIB binds it only as a transient local of a decision task's execution (`DecisionEvaluationUtil.java:82`), which
@@ -33,14 +46,11 @@ function juelName(counters: boolean, name: string): string | null {
   return null;
 }
 
-/**
- * The first node a Core JUEL table refuses, in node order; a child must be an earlier node, and `counters` admits the
- * Multi-Instance counter names.
- */
-export function juelNodes(nodes: readonly JuelNode[], counters = false): string | null {
+/** The first node a Core JUEL table refuses at `site`, in node order; a child must be an earlier node. */
+export function juelNodes(nodes: readonly JuelNode[], site: Site = outsideInstances): string | null {
   if (nodes.length === 0) return "expression.juel.malformed";
   for (const [at, node] of nodes.entries()) {
-    const refused = juelNode(counters, at, node);
+    const refused = juelNode(site, at, node);
     if (refused !== null) return refused;
   }
   return null;
@@ -57,9 +67,9 @@ const juelLanguage = "urn:cibseven:expression-language:juel";
 export function loopExpression(counters: boolean, expression: Expression): string | null {
   switch (expression.tag) {
     case ExpressionTag.Juel:
-      return juelNodes(expression.nodes, counters);
+      return juelNodes(expression.nodes, { counters, hidden: [] });
     case ExpressionTag.Variable:
-      return juelName(counters, expression.name);
+      return juelName({ counters, hidden: [] }, expression.name);
     case ExpressionTag.Literal:
       return null;
     case ExpressionTag.SimpleBoolean:
@@ -70,7 +80,7 @@ export function loopExpression(counters: boolean, expression: Expression): strin
   return assertNever(expression);
 }
 
-function juelNode(counters: boolean, at: number, node: JuelNode): string | null {
+function juelNode(site: Site, at: number, node: JuelNode): string | null {
   const earlier = (...children: readonly number[]): string | null =>
     children.every((index) => Number.isInteger(index) && index >= 0 && index < at) ? null : "expression.juel.malformed";
   switch (node.tag) {
@@ -80,7 +90,7 @@ function juelNode(counters: boolean, at: number, node: JuelNode): string | null 
     case JuelNodeTag.StringLiteral:
       return null;
     case JuelNodeTag.Identifier:
-      return juelName(counters, node.name);
+      return juelName(site, node.name);
     case JuelNodeTag.Integer:
       return integerLexeme(node.digits) === null ? "expression.juel.malformed" : null;
     case JuelNodeTag.Float:
@@ -155,10 +165,10 @@ function juelCall(target: JuelCall, count: number): string | null {
 }
 
 /**
- * A mapping's source. Under `Evaluator.juel` a CIB mapping (`ioParameter`, `callVariable`) may be JUEL, and an
- * unreadable one is the reader's `foreign`; a Data Association never carries JUEL at Core.
+ * A mapping's source at `site`. Under `Evaluator.juel` a CIB mapping (`ioParameter`, `callVariable`) may be JUEL, and
+ * an unreadable one is the reader's `foreign`; a Data Association never carries JUEL at Core.
  */
-export function mapping(evaluator: Evaluator, entry: Mapping): string | null {
+export function mapping(evaluator: Evaluator, site: Site, entry: Mapping): string | null {
   const source = entry.source;
   const cib = entry.dialect !== MappingDialect.DataAssociation;
   switch (source.tag) {
@@ -166,20 +176,20 @@ export function mapping(evaluator: Evaluator, entry: Mapping): string | null {
       return evaluator === Evaluator.Juel && cib ? "expression.juel.syntax" : "mapping.expression";
     case ExpressionTag.Juel:
       if (evaluator === Evaluator.SimpleBoolean) return "mapping.expression";
-      return cib ? juelNodes(source.nodes) : "expression.juel.site";
+      return cib ? juelNodes(source.nodes, site) : "expression.juel.site";
     case ExpressionTag.SimpleBoolean:
       return evaluator === Evaluator.Juel ? "expression.outsideJuel" : null;
     case ExpressionTag.Literal:
       return null;
     case ExpressionTag.Variable:
-      return evaluator === Evaluator.Juel ? juelName(false, source.name) : null;
+      return evaluator === Evaluator.Juel ? juelName(site, source.name) : null;
   }
   return assertNever(source);
 }
 
-export function mappings(evaluator: Evaluator, list: readonly Mapping[]): string | null {
+export function mappings(evaluator: Evaluator, site: Site, list: readonly Mapping[]): string | null {
   for (const entry of list) {
-    const refused = mapping(evaluator, entry);
+    const refused = mapping(evaluator, site, entry);
     if (refused !== null) return refused;
   }
   return null;
@@ -187,26 +197,27 @@ export function mappings(evaluator: Evaluator, list: readonly Mapping[]): string
 
 /**
  * An Activity's default flow is read by `feature/flow.ts` `ownFlows` (PC-CF-07). The asynchronous continuations are
- * admitted: `step.ts` reads them as transaction boundaries (CIB-EXT-0027).
+ * admitted: `step.ts` reads them as transaction boundaries (CIB-EXT-0027). The inputs and the outputs each have their
+ * site.
  */
-export function envelope(evaluator: Evaluator, fields: Envelope): string | null {
-  return mappings(evaluator, fields.inputs) ?? mappings(evaluator, fields.outputs);
+export function envelope(evaluator: Evaluator, inputs: Site, outputs: Site, fields: Envelope): string | null {
+  return mappings(evaluator, inputs, fields.inputs) ?? mappings(evaluator, outputs, fields.outputs);
 }
 
 /**
  * A Sequence Flow condition is read by the profile's evaluator: Simple Boolean, or under `Evaluator.juel` a JUEL table
  * or a plain variable read (CIB-EXT-0030). A literal or `foreign` condition is refused under both.
  */
-export function flowCondition(evaluator: Evaluator, flow: Flow): string | null {
+export function flowCondition(evaluator: Evaluator, site: Site, flow: Flow): string | null {
   const condition = flow.condition;
   if (condition === null) return null;
   switch (condition.tag) {
     case ExpressionTag.SimpleBoolean:
       return evaluator === Evaluator.Juel ? "expression.outsideJuel" : null;
     case ExpressionTag.Juel:
-      return evaluator === Evaluator.Juel ? juelNodes(condition.nodes) : "flow.condition.foreign";
+      return evaluator === Evaluator.Juel ? juelNodes(condition.nodes, site) : "flow.condition.foreign";
     case ExpressionTag.Variable:
-      return evaluator === Evaluator.Juel ? juelName(false, condition.name) : "flow.condition.foreign";
+      return evaluator === Evaluator.Juel ? juelName(site, condition.name) : "flow.condition.foreign";
     case ExpressionTag.Literal:
     case ExpressionTag.Foreign:
       return "flow.condition.foreign";

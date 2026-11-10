@@ -10,6 +10,8 @@ import {
   elementEvent,
   elementScope,
   firstOf,
+  programChildren,
+  programElement,
   programInCalledProcess,
   workCall,
   type ActivityPayload,
@@ -17,9 +19,11 @@ import {
   type CalledProcess,
   type Element,
   type ElementId,
+  type Envelope,
   type EventPayload,
   type Flow,
   type Header,
+  type Mapping,
   type Program,
   type Subscription,
 } from "./il/types.js";
@@ -49,16 +53,43 @@ function activityOrigin(program: Program, header: Header, payload: ActivityPaylo
   return null;
 }
 
-function subscriptionData(program: Program, subscription: Subscription): string | null {
-  return Data.mappings(program.options.evaluator, subscription.outputs);
+/** The site of an expression in `id`'s scope. */
+function site(program: Program, id: ElementId | null): Data.Site {
+  return { counters: MultiInstance.countersAt(program, id), hidden: [] };
 }
 
-function boundaryData(program: Program, boundaries: readonly Boundary[]): string | null {
+function targets(mappings: readonly Mapping[]): string[] {
+  return mappings.map((entry) => entry.target);
+}
+
+/** A subscription's outputs read and write in the scope of `id`. */
+function subscriptionData(program: Program, id: ElementId | null, subscription: Subscription): string | null {
+  return Data.mappings(program.options.evaluator, site(program, id), subscription.outputs) ??
+    MultiInstance.counterTarget(MultiInstance.countersAt(program, id), targets(subscription.outputs));
+}
+
+/** A boundary belongs to its host's body, so its outputs are in the scope enclosing the host. */
+function boundaryData(program: Program, host: Header, boundaries: readonly Boundary[]): string | null {
   for (const boundary of boundaries) {
-    const refused = subscriptionData(program, boundary.subscription);
+    const refused = subscriptionData(program, host.parent, boundary.subscription);
     if (refused !== null) return refused;
   }
   return null;
+}
+
+/**
+ * An element's own data: its envelope's mappings, each at its site, and the outputs it writes in its scope, which
+ * `counterTarget` checks after `activityLoop` has refused a looping element's own outputs. A looping element's own
+ * inputs may not read its instance (`ownInputNames`).
+ */
+function envelopeData(program: Program, header: Header, envelope: Envelope): string | null {
+  const here = site(program, header.id);
+  const hidden = envelope.multiInstance === null ? [] : MultiInstance.ownInputNames(program.options, envelope.multiInstance);
+  return Data.envelope(program.options.evaluator, { ...here, hidden }, here, envelope);
+}
+
+function outputTargets(program: Program, header: Header, outputs: readonly Mapping[]): string | null {
+  return MultiInstance.counterTarget(MultiInstance.countersAt(program, header.id), targets(outputs));
 }
 
 /** The first refusal among `checks`, evaluated lazily in order. */
@@ -99,7 +130,7 @@ function eventRole(program: Program, header: Header, payload: EventPayload): str
   const role = payload.role;
   switch (role.tag) {
     case EventRoleTag.Catch:
-      return Subscriptions.catchEvent(role.subscription) ?? subscriptionData(program, role.subscription);
+      return Subscriptions.catchEvent(role.subscription) ?? subscriptionData(program, header.id, role.subscription);
     case EventRoleTag.Throw:
       // A Multiple throw Event (BPMN 2.0.2 §10.5.1); pinned CIB keeps one definition (CIB-LIM-0008) (PC-BASIC-04).
       if (payload.alternativeThrows.length > 0) return "event.multipleDefinitions";
@@ -109,6 +140,25 @@ function eventRole(program: Program, header: Header, payload: EventPayload): str
       return FlowAdmission.link(program, header, payload);
   }
   return assertNever(role);
+}
+
+/** The starts of the Event Sub-Processes among `elements`, in document order. */
+function eventSubProcessStarts(elements: readonly Element[]): readonly (readonly [Subscription, boolean])[] {
+  return elements.flatMap((entry) => {
+    const scope = elementScope(entry);
+    const start = scope === null ? null : Scopes.eventSubProcessOf(scope[1]);
+    return start === null ? [] : [start];
+  });
+}
+
+/**
+ * The Event Sub-Processes declared together at the root process level and at each called process's level; a Scope's
+ * are taken with the Scope (`element`).
+ */
+function processEventSubProcesses(program: Program): string | null {
+  const level = (elements: readonly Element[]) => Subscriptions.eventSubProcessDeclarations(eventSubProcessStarts(elements));
+  return level(programChildren(program, null)) ?? firstOf(program.processes, (process) =>
+    level(process.children.flatMap((id) => { const found = programElement(program, id); return found === null ? [] : [found]; })));
 }
 
 /** `throws` lists the program's Compensation throws. */
@@ -121,16 +171,18 @@ function element(program: Program, throws: readonly Element[], entry: Element): 
       const loop = payload.envelope.multiInstance;
       return first(
         () => Data.origin(header),
-        () => Data.envelope(program.options.evaluator, payload.envelope),
+        () => envelopeData(program, header, payload.envelope),
         () => (call === null
           ? null
-          : Data.mappings(program.options.evaluator, call.inputs) ?? Data.mappings(program.options.evaluator, call.outputs)),
+          : Data.mappings(program.options.evaluator, site(program, header.id), call.inputs) ??
+            Data.mappings(program.options.evaluator, site(program, header.id), call.outputs)),
         () => Work.activity(program, payload),
         () => activityOrigin(program, header, payload),
         () => (loop === null ? null
           : MultiInstance.activityLoop(program.options, Data.loopExpression, Work.instanceBody(payload.work), payload.envelope, loop)),
+        () => outputTargets(program, header, [...payload.envelope.outputs, ...(call?.outputs ?? [])]),
         () => Subscriptions.boundaries(program.options.errorCatchVariables, false, payload.envelope.boundaries),
-        () => boundaryData(program, payload.envelope.boundaries),
+        () => boundaryData(program, header, payload.envelope.boundaries),
         () => Scopes.nestedCompensation(program, throws, header, payload.envelope),
       );
     }
@@ -139,12 +191,18 @@ function element(program: Program, throws: readonly Element[], entry: Element): 
       const subProcess = Scopes.eventSubProcessOf(payload);
       return first(
         () => Data.origin(header),
-        () => Data.envelope(program.options.evaluator, payload.envelope),
+        () => envelopeData(program, header, payload.envelope),
         () => Scopes.scope(program, header, payload),
+        // A Sub-Process instance submits no output data item, so `submits` is false (PC-MI-10).
+        () => (payload.envelope.multiInstance === null
+          ? null
+          : MultiInstance.activityLoop(program.options, Data.loopExpression, false, payload.envelope, payload.envelope.multiInstance)),
+        () => outputTargets(program, header, payload.envelope.outputs),
         () => (subProcess === null ? null : Subscriptions.eventSubProcess(subProcess[0], subProcess[1])),
+        () => Subscriptions.eventSubProcessDeclarations(eventSubProcessStarts(programChildren(program, header.id))),
         () => Subscriptions.boundaries(
           program.options.errorCatchVariables, Scopes.isTransaction(payload), payload.envelope.boundaries),
-        () => boundaryData(program, payload.envelope.boundaries),
+        () => boundaryData(program, header, payload.envelope.boundaries),
         () => Scopes.nestedCompensation(program, throws, header, payload.envelope),
       );
     }
@@ -160,7 +218,7 @@ function element(program: Program, throws: readonly Element[], entry: Element): 
         () => (subscription === null
           ? null
           : Subscriptions.start(program.options.errorCatchVariables, header.parent !== null, subscription) ??
-            subscriptionData(program, subscription)),
+            subscriptionData(program, header.id, subscription)),
       );
     }
   }
@@ -186,9 +244,14 @@ function loops(program: Program): boolean {
   return program.elements.some((entry) => (elementEnvelope(entry)?.multiInstance ?? null) !== null);
 }
 
-/** A flow's condition, then where it may sit, then whether its branch races a sibling's write. */
+/**
+ * A flow's condition, evaluated in its source's enclosing scope, then where it may sit, then whether its branch races a
+ * sibling's write.
+ */
 function flow(program: Program, entry: Flow): string | null {
-  return Data.flowCondition(program.options.evaluator, entry) ?? FlowAdmission.conditionalOutflow(program, entry) ??
+  const source = programElement(program, entry.source);
+  const here = site(program, source === null ? null : source.header.parent);
+  return Data.flowCondition(program.options.evaluator, here, entry) ?? FlowAdmission.conditionalOutflow(program, entry) ??
     FlowAdmission.concurrentWrite(program, entry);
 }
 
@@ -213,7 +276,7 @@ function executable(program: Program): string | null {
 
 /**
  * The first refusal: references, profile options, a process not marked executable, the carried DMN resources, then
- * called-process bindings, flows and elements in program order.
+ * called-process bindings, the process levels' Event Sub-Processes, flows and elements in program order.
  */
 export function admit(program: Program): string | null {
   const throws = program.elements.filter(compensationThrow);
@@ -224,6 +287,7 @@ export function admit(program: Program): string | null {
     () => executable(program),
     () => Decision.resources(program),
     () => firstOf(program.processes, calledProcessBinding),
+    () => processEventSubProcesses(program),
     () => firstOf(program.flows, (entry) => flow(program, entry)),
     () => firstOf(program.elements, (entry) => element(program, throws, entry)),
   );

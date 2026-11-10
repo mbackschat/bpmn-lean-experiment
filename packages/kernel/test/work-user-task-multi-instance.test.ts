@@ -83,9 +83,9 @@ test("each body's submission reaches the root, the later completion winning", ()
   ]);
 });
 
-test("a declared output data item keeps the standards reading under the installing submission", () => {
+test("a declared output data item fills its slot and, under the installing submission, also reaches the root", () => {
   assert.deepEqual(run("result", [[1, "result", "r1"], [2, "other", "x"]]), [
-    { root: {}, open: [2] },
+    { root: { result: "r1" }, open: [2] },
     { tag: "rejected", code: "undeclared-output" },
   ]);
 });

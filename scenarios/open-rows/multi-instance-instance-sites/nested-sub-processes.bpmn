@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_MiSitesNested"
+  targetNamespace="urn:bpmn-lean:scenarios:multi-instance-instance-sites:nested-sub-processes">
+  <bpmn:process id="Process_MiSitesNested" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Start" />
+    <bpmn:sequenceFlow id="Flow_Start_Group" sourceRef="StartEvent_Start" targetRef="SubProcess_Group" />
+    <bpmn:subProcess id="SubProcess_Group" name="Check one group">
+      <bpmn:multiInstanceLoopCharacteristics isSequential="false" camunda:collection="groups" camunda:elementVariable="group" />
+      <bpmn:startEvent id="StartEvent_Group" />
+      <bpmn:sequenceFlow id="Flow_Group_Line" sourceRef="StartEvent_Group" targetRef="SubProcess_Line" />
+      <bpmn:subProcess id="SubProcess_Line" name="Check one line">
+        <bpmn:multiInstanceLoopCharacteristics isSequential="false" camunda:collection="lines" camunda:elementVariable="line" />
+        <bpmn:startEvent id="StartEvent_Line" />
+        <bpmn:sequenceFlow id="Flow_Line_Check" sourceRef="StartEvent_Line" targetRef="UserTask_Check" />
+        <bpmn:userTask id="UserTask_Check" name="Check the line">
+          <bpmn:extensionElements>
+            <camunda:inputOutput>
+              <camunda:inputParameter name="position">${loopCounter}</camunda:inputParameter>
+              <camunda:inputParameter name="instances">${nrOfInstances}</camunda:inputParameter>
+              <camunda:inputParameter name="subject">${line}</camunda:inputParameter>
+              <camunda:inputParameter name="owner">${group}</camunda:inputParameter>
+            </camunda:inputOutput>
+          </bpmn:extensionElements>
+        </bpmn:userTask>
+        <bpmn:sequenceFlow id="Flow_Check_End" sourceRef="UserTask_Check" targetRef="EndEvent_Line" />
+        <bpmn:endEvent id="EndEvent_Line" />
+      </bpmn:subProcess>
+      <bpmn:sequenceFlow id="Flow_Line_GroupEnd" sourceRef="SubProcess_Line" targetRef="EndEvent_Group" />
+      <bpmn:endEvent id="EndEvent_Group" />
+    </bpmn:subProcess>
+    <bpmn:sequenceFlow id="Flow_Group_Done" sourceRef="SubProcess_Group" targetRef="EndEvent_Done" />
+    <bpmn:endEvent id="EndEvent_Done" />
+  </bpmn:process>
+</bpmn:definitions>

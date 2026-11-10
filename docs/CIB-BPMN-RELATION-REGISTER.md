@@ -24,11 +24,11 @@ The counts below cover only entries recorded by this project, including the sepa
 |---|---:|---:|---|
 | Normative agreement records | 19 | 2 | A bounded BPMN requirement and pinned CIB observation agree; candidates remain unapproved |
 | Permitted operational details | 16 | 0 | CIB or the oracle adapter chooses host mechanics without changing required BPMN observations |
-| Confirmed normative deviations | 0 | 2 | Clear BPMN requirement and pinned CIB evidence establish incompatible behavior |
-| CIB interpretations of BPMN gaps or inconsistencies | 19 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
+| Confirmed normative deviations | 0 | 3 | Clear BPMN requirement and pinned CIB evidence establish incompatible behavior |
+| CIB interpretations of BPMN gaps or inconsistencies | 21 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
 | CIB extension records | 33 | 3 | Project profile deliberately includes behavior beyond bare BPMN execution; candidates remain unselected |
 | Configuration-specific realizations | 11 | 1 | Behavior is permitted or meaningful only under a declared CIB environment |
-| Known CIB limitations within reviewed scope | 17 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
+| Known CIB limitations within reviewed scope | 21 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
 
 The sequential User Task account has no recorded CIB deviation. That statement is bounded to its clauses, pinned environment, witnesses, and observation surface; it is not a general CIB conformance result.
 
@@ -123,6 +123,38 @@ Ready joins are independent. When they are offered, the arrivals parked at one j
 - Lean `Kernel.Step.reoffer?` and `settle`, paired with `reoffer` and `settle` in `packages/kernel/src/step.ts`. `Feature.Flow.join` and its pair do not park an offered occurrence twice. No Hooks or State change.
 
 **Owner decision:** Owner decision taken by the root under the owner's standing direction of 2026-11-10 to decide autonomously: the kernel follows Table 13.3 under every profile, as CIB-DEV-0001 does, and the candidate owns CIB's arrival-only trigger.
+
+**Last reviewed:** 2026-11-10.
+
+### CIB-DEV-0003 — CIB starts a sibling Event Sub-Process for an event an interrupting handler rethrows
+
+**Status:** Candidate deviation; the kernel refuses the run, confirmation evidence absent
+
+**Summary:** When an interrupting Event Sub-Process raises an Error or Escalation that another Event Sub-Process of the same scope catches, pinned CIB Seven `2.2.0` starts that sibling handler while the first one's interruption of the scope is under way.
+
+**BPMN requirement:** BPMN 2.0.2 §13.5.4: while an interrupting Event Sub-Process runs, its parent is Failing or Terminating, and "new Event Handlers MUST NOT be started"; a rethrow passes "control … to the boundary Event" outside the Sub-Process.
+
+**BPMN sources and issues:** §13.5.4 and §10.5.6; no open issue found that weakens the clause.
+
+**CIB release and configuration:** CIB Seven `2.2.0` at pinned `5a45b47` under CIB-CFG-0001; no setting changes the finder.
+
+**Separating model and scenario:** Owed. The kernel test `an Error an interrupting handler raises that a sibling handler would catch is refused` (`packages/kernel/test/propagation-rethrow.test.ts`) holds the shape: Sub-Process `T` with the interrupting Error handler `H` on `RAW`, which raises `SECOND`, and the interrupting handler `H2` on `SECOND`.
+
+**CIB observation:** Source only: `bpmn/helper/ErrorDeclarationForProcessInstanceFinder.java:41-58` skips only the Event Sub-Process the thrower runs in (`pvm/process/ScopeImpl.java:170-182`), and `EscalationEventDefinitionFinder.java:58-61` only the thrower's direct flow scope, so a sibling handler at the same scope remains a candidate.
+
+**Expected normative behavior:** The sibling is not started; the event goes on to the boundaries of the scope and outward.
+
+**Alternative explanations excluded:** Not yet: no answer-free scenario has been run against the pristine oracle.
+
+**Classification rationale:** §13.5.4 states the prohibition as a requirement, not a gap. The entry stays a candidate because the [evidence threshold](#evidence-threshold-for-a-confirmed-deviation) is unmet.
+
+**Profile decision:** No profile imitates either reading: the kernel refuses the run under every profile as dynamic-only `unsupported` (`rethrow-caught-by-sibling-handler`), so neither CIB's start nor the standards' pass-over is claimed.
+
+**Capsule and semantic rule IDs:** PC-ERROR-02; [propagation semantics, PC-ERROR-02](kernel/semantics/PROPAGATION-SEMANTICS-SPEC.md#pc-error-02-rethrow-from-an-event-sub-process).
+
+**Lean, TypeScript, Temporal, and compatibility impact:** Lean `Kernel.Feature.Propagation.handlerCandidates`, paired with `handlerCandidates` in `packages/kernel/src/feature/propagation.ts`. No IL, Hooks or State change.
+
+**Owner decision:** Refusal decided by the root under the owner's standing direction of 2026-11-10; the cold review of 2026-11-10 required the §13.5.4 basis.
 
 **Last reviewed:** 2026-11-10.
 
@@ -492,11 +524,11 @@ BPMN §10.5.6 does not fix the first firing of an ISO-8601 cycle `R/<duration>` 
 
 ### CIB-INT-0009 — on the final Multi-Instance completion, sequential tests exhaustion first and parallel tests the condition first
 
-**Status:** Recorded bounded interpretation from the pinned source; selected by `ProfileOptions.multiInstanceFinalBody`
+**Status:** Recorded bounded interpretation from the pinned source; selected by `ProfileOptions.multiInstanceFinalBody.modeSpecific` through the [cibseven-2.2.0 cumulative profile](../profiles/cibseven-2.2.0/profile.json) and the scope-chain profile
 
 BPMN §13.3.7 evaluates the completion condition on every completion. CIB Seven `2.2.0` skips it on the sequential mode's final completion, which `loopCounter == nrOfInstances` short-circuits, and evaluates it first in parallel mode.
 
-**Evidence:** Pinned `SequentialMultiInstanceActivityBehavior:53` and `ParallelMultiInstanceActivityBehavior:96`; the kernel's `MultiInstance.completeInstance`.
+**Evidence:** Pinned `SequentialMultiInstanceActivityBehavior:53` and `ParallelMultiInstanceActivityBehavior:95-96`; the kernel's `MultiInstance.evaluatesFinalCondition`; the retained witnesses [service-sequential-failing-final and service-sequential-not-boolean-final](../scenarios/open-rows/multi-instance-completion-failures/README.md), which commit in both engines because the sequential final completion never evaluates the failing condition, and their parallel counterparts, which roll back in both (CIB Seven `2.2.0`).
 
 **Boundary:** The observable difference is whether the final completion's condition evaluates, not any other Multi-Instance counter. `MultiInstanceFinalBody.conditionEveryCompletion` keeps the BPMN evaluation.
 
@@ -506,7 +538,7 @@ BPMN §13.3.7 evaluates the completion condition on every completion. CIB Seven 
 
 BPMN Table 10.88 lets an exact-code and a catch-all catcher both catch, and §10.5.1 names the nearest catcher only. CIB Seven `2.2.0` orders catchers at one scope by precedence: an Event Sub-Process start has precedence 10 over a boundary's 0, and a catcher with a code gets one more than a catch-all's.
 
-**Evidence:** Pinned `BpmnParse:1221` (`setPrecedence(10)`), `ErrorEventDefinition#getPrecedence` ("handlers with error code take precedence over catchall-handlers"); the kernel's `Propagation.searchScopes` and `Subscriptions.codePrecedence`.
+**Evidence:** Pinned `BpmnParse:1221` (`setPrecedence(10)`), `ErrorEventDefinition#getPrecedence` ("handlers with error code take precedence over catchall-handlers"); the kernel's `Propagation.searchScopes` and `Subscriptions.codePrecedence`. For Escalations CIB lists an Event Sub-Process's definition while it parses the enclosing scope (`BpmnParse.java:1139-1143`) and a boundary's while it parses the host's parent's boundaries (`BpmnParse.java:3335-3339`, `3652-3656`), so an Event Sub-Process precedes a boundary of the same host. Its finder takes the first match in that list with no exact-before-catch-all rank (`bpmn/helper/EscalationEventDefinitionFinder.java:44-56`), but the declarations both CIB and the kernel admit never give one level two matching Escalation handlers (CIB-LIM-0021). The retained [escalation-event-subprocess-modes](../scenarios/open-rows/escalation-event-subprocess-modes/README.md) witnesses agree (CIB Seven `2.2.0`).
 
 **Boundary:** Error and Escalation catches at one catching scope, including two catch-all Error boundaries on one host, which catch in document order ([notify-two-catch-alls](../scenarios/open-rows/error-boundary-candidates/README.md)). It does not cover searches across scopes, which §10.5.1 settles as nearest first. Two interrupting Error boundaries of one host with the same exact code, which CIB orders by document order (`BpmnParse:3646`), are refused under every profile (`boundary.error.duplicateCode`), since BPMN 2.0.2 §10.5.6 does not order them.
 
@@ -550,11 +582,11 @@ The kernel's `endsThrowingPath` changes nothing when the search ends: a Service 
 
 BPMN 2.0.2 §10.2.8 (Table 10.29) makes `loopDataInputRef` a reference to the Activity's collection Data Input and `inputDataItem` the Data Input each instance receives, and §10.4.1 and §10.4.2 fill Data Inputs through Data Input Associations; the standard says nothing about how an engine's externally named variables relate to those item-aware elements. CIB Seven `2.2.0` reads the collection from the Process variable literally named by the `loopDataInputRef` text (an expression when it contains `{`) and gives each instance the item as a local variable named by the `inputDataItem`'s `name`, ignoring the Data Input Associations and any Data Object they read. This is the literal binding [`CIB-AGR-0011`](#cib-agr-0011-bounded-collection-driven-sequential-multi-instance-user-task-lifecycle) already used as CIB's public Process-variable binding.
 
-The kernel reader carries both readings: `MultiInstance.count` and `inputDataItem` from the associations, `loopDataInputRef` and `inputDataItemName` from the loop. `MultiInstanceBinding.dataAssociations`, the standards reading, uses the first; `loopReferences` reads the collection from the variable `loopDataInputRef` names and binds the item to `inputDataItemName`, no local when the item has no name. A loop without `loopDataInputRef`, given by `camunda:collection`, keeps `count` under both.
+The kernel reader carries both readings: `MultiInstance.count` and `inputDataItem` from the associations, `loopDataInputRef` and `inputDataItemName` from the loop. `MultiInstanceBinding.dataAssociations`, the standards reading, uses the first; `loopReferences` reads the collection from the variable `loopDataInputRef` names and binds the item to `inputDataItemName`, no local when the item has no name. A loop without `loopDataInputRef`, given by `camunda:collection`, keeps `count` under both. Under `loopReferences` a loop without an `inputDataItem` binds the item to `camunda:elementVariable`, which CIB sets first and an `inputDataItem`'s `name` replaces, even an absent one (`BpmnParse.java:1863-1873`); the kernel refuses the two together (`multiInstance.elementVariable`), as it does `camunda:elementVariable` under `dataAssociations`.
 
 **Evidence:** Pinned `BpmnParse#parseMultiInstanceLoopCharacteristics` (`BpmnParse.java:1850-1873`: `loopDataInputRef` text to `setCollectionVariable` or `setCollectionExpression`, `inputDataItem@name` to `setCollectionElementVariable`); the [Multi-Instance Service Task witnesses](../scenarios/open-rows/multi-instance-service-task/README.md), whose start variable is `DataInput_Recipients`; the kernel's `MultiInstance.collectionOf` and `MultiInstance.itemName`.
 
-**Boundary:** Standard-form loops on admitted Multi-Instance bodies. It claims nothing about general Data Association execution, Data Objects, a `loopDataInputRef` expression, `loopDataOutputRef` or `outputDataItem` (`CIB-LIM-0001`), or `camunda:elementVariable` (PC-MI-04, PC-MI-10).
+**Boundary:** Standard-form loops on admitted Multi-Instance bodies. It claims nothing about general Data Association execution, Data Objects, a `loopDataInputRef` expression, `loopDataOutputRef` or `outputDataItem` (`CIB-LIM-0001`), or the item's visibility outside the instance (PC-MI-10).
 
 ### CIB-INT-0015 — a diverging Exclusive Gateway's sole unconditioned flow is a candidate whose condition always holds
 
@@ -586,22 +618,23 @@ DMN 1.3 leaves the order of a COLLECT hit policy's result open. CIB Seven `2.2.0
 
 **Boundary:** COLLECT without an aggregator, as the decision semantics admit it.
 
-### CIB-INT-0018 — Multi-Instance counters in a completion condition carry CIB's local values
+### CIB-INT-0018 — Multi-Instance counters are CIB's execution locals at every site inside an instance
 
 **Status:** Recorded bounded interpretation from the pinned source; selected by `ProfileOptions.multiInstanceCounters = cibLocals` through the [cibseven-2.2.0 cumulative profile](../profiles/cibseven-2.2.0/profile.json) and the scope-chain profile
 
-BPMN 2.0.2 Table 10.30 defines instance attributes, and §13.3.7 lets the `completionCondition` refer to them, but the standard names no expression variables: `loopCounter`, the generated instance's sequence number ("the n-th instance"); `numberOfInstances`; `numberOfActiveInstances`, at most 1 in sequential mode; `numberOfCompletedInstances`; and `numberOfTerminatedInstances`, where terminated, completed and active always sum to `numberOfInstances`.
+**What BPMN gives.** BPMN 2.0.2 gives each instance its item: Table 10.29's `inputDataItem` represents "for every Activity instance the single item of the collection" and can be the source of the Activity's Data Input Associations. Table 10.30 defines instance attributes: `loopCounter` for each inner instance, the n-th generated; `numberOfInstances`, `numberOfActiveInstances` (at most 1 in sequential mode), `numberOfCompletedInstances` and `numberOfTerminatedInstances` for the outer instance, where terminated, completed and active always sum to `numberOfInstances`. §13.3.7 lets the `completionCondition` refer to them. The standard names no expression variable for these attributes and says nothing about their visibility at any other site.
 
-CIB Seven `2.2.0` holds `loopCounter` as a local of each instance, zero-based, and `nrOfInstances`, `nrOfActiveInstances` and `nrOfCompletedInstances` as locals of the body, each a Java `Integer`.
+**What CIB selects.** CIB Seven `2.2.0` chooses the names, the values and the visibility. It holds `loopCounter`, zero-based, as a local of each instance's execution beside the item, and `nrOfInstances`, `nrOfActiveInstances` and `nrOfCompletedInstances` as locals of the body's, each a Java `Integer`; there is no terminated count.
 
 - **Parallel:** the count, the count minus the completed instances, and the completed instances, each updated before the completion condition reads it.
 - **Sequential:** `nrOfInstances` is the count from entry (CIB-INT-0002); `nrOfActiveInstances` is 1 throughout, including when the condition is evaluated, where Table 10.30's sum would give 0; `nrOfCompletedInstances` is incremented before the condition; `loopCounter` still names the completing instance.
+- **Visibility:** every expression evaluated in an execution below an instance resolves them: the completion condition and every site nested in a Sub-Process instance alike. The innermost loop's counters hide an enclosing loop's. A loop's own cardinality and collection are evaluated before its own counters exist; an enclosing loop's counters are visible there.
 
-There is no terminated count. Under the option the kernel puts these names and values into a completion condition's context only; publication keeps the Table 10.30 accounting of the [Multi-Instance semantics](kernel/semantics/MULTI-INSTANCE-SEMANTICS-SPEC.md). Admission refuses an item named like a counter (`multiInstance.itemNamedLikeCounter`), and an effect result named like one is `unsupported` (`multiInstance.resultShadowsInstance`). No admitted rule observes the counters' Java class: `${loopCounter.equals(0)}` is `unsupported` (`juel.methodReceiver`).
+Under the option the kernel holds the counters as locals of the body's and each instance's scope occurrence (`MultiInstance.counterLocals`) and admits a counter name at a site inside an instance (`Admission.MultiInstance.countersAt`); elsewhere a counter name stays `expression.juel.multiInstanceCounter`, as it does in a loop's own count expressions, a restriction that does not tell this loop's absent counters from an enclosing loop's. Publication keeps the Table 10.30 accounting of the [Multi-Instance semantics](kernel/semantics/MULTI-INSTANCE-SEMANTICS-SPEC.md#counters-and-the-item-at-every-instance-site). Admission refuses an item named like a counter (`multiInstance.itemNamedLikeCounter`), a looping Activity's own input mapping reading the instance (`CIB-LIM-0019`) and a counter-named target inside an instance (`CIB-LIM-0020`); a write admission cannot see is `unsupported` (`multiInstance.resultShadowsInstance`). No admitted rule observes the counters' Java class: `${loopCounter.equals(0)}` is `unsupported` (`juel.methodReceiver`).
 
-**Evidence:** Pinned `MultiInstanceActivityBehavior:49-54`, `:196-198`; `ParallelMultiInstanceActivityBehavior:64-68`, `:84-87`, `:96`; `SequentialMultiInstanceActivityBehavior:41`, `:48-53`. The retained [Multi-Instance Service Task](../scenarios/open-rows/multi-instance-service-task/README.md) quorum witnesses (`${nrOfCompletedInstances >= quorum}`, both modes), which agree under the option. The [multi-instance-expression-results](../scenarios/open-rows/multi-instance-expression-results/README.md) witnesses `sequential-active-count`, `parallel-active-count`, `completion-reads-counter` and `completion-counter-equals`, whose evidence run is pending.
+**Evidence:** Pinned `MultiInstanceActivityBehavior.java:49-54`, `:76-88`, `:196-204`; `ParallelMultiInstanceActivityBehavior.java:64-68`, `:84-87`, `:96`; `SequentialMultiInstanceActivityBehavior.java:38-45`, `:47-61`, `:67-70`. The retained [Multi-Instance Service Task](../scenarios/open-rows/multi-instance-service-task/README.md) quorum witnesses (`${nrOfCompletedInstances >= quorum}`, both modes), which agree under the option. The [multi-instance-expression-results](../scenarios/open-rows/multi-instance-expression-results/README.md) witnesses `sequential-active-count`, `parallel-active-count`, `completion-reads-counter` and `completion-counter-equals`, and the separating [multi-instance-instance-sites](../scenarios/open-rows/multi-instance-instance-sites/README.md) witnesses, which read the counters and the item at a nested site in both modes, `nrOfInstances` in sequential mode, and an inner loop's counters under an outer loop's; their evidence run is pending.
 
-**Boundary:** The completion condition the [Multi-Instance level](kernel/semantics/EXPRESSION-SEMANTICS-SPEC.md#counter-values) admits. Not covered: whether the final completion evaluates the condition (CIB-INT-0009); the counters in the Activity's own inputs, in nested elements and in outgoing conditions, which admission refuses; runtime modification (`createInnerInstance`, `initializeScope`) and migration; publication.
+**Boundary:** The four counter names inside an instance under `cibLocals`; under `none` no counter name resolves. Not covered: whether the final completion evaluates the condition (CIB-INT-0009); a loop's own count expressions and its conditional outgoing flows, which admission refuses; runtime modification (`createInnerInstance`, `initializeScope`) and migration; publication.
 
 ### CIB-INT-0019 — an unavailable, null or wrong-kind Multi-Instance input fails the operation
 
@@ -626,6 +659,30 @@ Table 13.3 follows "directed path[s] formed by sequence flow" from a Sequence Fl
 **Evidence:** Pinned `InclusiveGatewayActivityBehavior.java` `isReachable`. Pending [`boundary-path-parked-then-closed` and `boundary-path-parked-then-escalated`](../scenarios/open-rows/inclusive-join-activation/README.md); `parked-then-escalated` decides. Kernel tests: `packages/differential/test/flow-inclusive-join-activation.test.ts`.
 
 **Boundary:** Boundary Events of a host inside the join's scope occurrence. Event Sub-Processes, and reach across scope occurrences, are outside it.
+
+### CIB-INT-0021 — an Escalation no catcher takes lets its thrower continue
+
+**Status:** Recorded bounded interpretation from the pinned source and retained evidence; the kernel's meaning under every profile, with no option
+
+BPMN 2.0.2 §10.5.1 calls Escalations "non critical", with "execution continues at the location of throwing", and leaves an uncaught trigger unresolved; Table 10.88 calls the process's behavior unspecified when nothing catches an Escalation End. CIB Seven `2.2.0` runs the search, starts the catcher's handler if one is found, and then leaves the throw unless the catcher interrupts: an Intermediate throw takes its outgoing flows and an End Event ends its path, catcher or not.
+
+The kernel raises first and the thrower leaves afterwards if its occurrence still stands (`Propagation.throwerLeaves`): an uncaught Escalation commits with the thrower's leave as its only effect, and under an interrupting catch the thrower ends cancelled with its scope.
+
+**Evidence:** Pinned `ThrowEscalationEventActivityBehavior.java:41-58` and `EscalationHandler.java:50-75`; only `EscalationHandler#propagateEscalation:38-44`, which no BPMN throw calls, fails without a catcher. The retained witnesses [intermediate-uncaught and end-uncaught-then-ordinary-path](../scenarios/open-rows/escalation-uncaught/README.md) agree (CIB Seven `2.2.0`, 2026-11-10); the kernel's `Propagation.exhausted`.
+
+**Boundary:** Escalations raised by Intermediate and End throw Events. An Escalation that reaches a compensation handler's scope uncaught stays refused (`compensation-handler-escalation`). What an uncaught Escalation that leaves a called instance writes into the caller belongs to PC-SCOPE-06's Call pass, which is not yet in force.
+
+### CIB-INT-0022 — a rethrown event passes the Event Sub-Process it is raised in
+
+**Status:** Recorded bounded interpretation from the pinned source and retained evidence; the kernel's meaning under every profile, with no option
+
+BPMN 2.0.2 §13.5.4 lets an Event Sub-Process re-trigger its event "to cause its continuation outside the boundary of the associated Sub-Process", where "control passes to the boundary Event", and §10.5.6 says the inline handler otherwise absorbs it. BPMN does not say how the search treats the running handler itself. CIB Seven `2.2.0` skips it: its Error finder skips an Event Sub-Process that is an ancestor flow scope of the thrower at any depth, its Escalation finder only the thrower's direct flow scope.
+
+The kernel passes an Event Sub-Process the raise originates inside at the scope occurrence that holds it (`Propagation.handlerCandidates`), so a rethrow reaches the host's boundaries and goes outward.
+
+**Evidence:** Pinned `bpmn/helper/ErrorDeclarationForProcessInstanceFinder.java:41-58`, `pvm/process/ScopeImpl.java:170-182` and `bpmn/helper/EscalationEventDefinitionFinder.java:58-61`. The retained witness [same-code-rethrow](../scenarios/open-rows/error-event-subprocess-rethrow/README.md) agrees (CIB Seven `2.2.0`, 2026-11-10); the kernel tests `packages/kernel/test/propagation-rethrow.test.ts`.
+
+**Boundary:** Errors from any depth inside the handler, and Escalations from directly inside it. Refused as dynamic-only `unsupported`: an Escalation raised deeper inside a handler that matches it, which CIB catches with that handler again and so re-enters it without bound (`escalation-rethrow-reenters-handler`); and a raise from an interrupting handler that a sibling Event Sub-Process of the same scope would catch (`rethrow-caught-by-sibling-handler`, CIB-DEV-0003). An Error raised from a Sub-Process nested inside the handler is not yet witnessed against CIB.
 
 ## Known limitation register
 
@@ -820,6 +877,46 @@ CIB evaluates `camunda:delegateExpression` as JUEL when the job runs (`ServiceTa
 **Evidence:** The retained `writable-handler-key` answer, where CIB rolls back the effect's result with the job's retries at 2, and `undeclared-handler-key`, its runtime counterpart (CIB Seven `2.2.0`).
 
 **Boundary:** Names only the run supplies are outside the claim, where the kernel commits and CIB fails the job: an undeclared name a User Task submission installs (CIB-EXT-0005), a Start variable, and a `setVariables` command. A Process's Property, Data Object or Data Input or Output and a Data Association target are no declared names, since CIB installs none of them: `parseProperties` is commented out at process level (`BpmnParse.java:726`), and the pinned parser reads no Data Object, process I/O specification or Data Association.
+
+### CIB-LIM-0018: pinned CIB deploys a non-interrupting Error boundary and leaves the failed Activity behind
+
+**Status:** Profile limitation; not a deviation
+
+BPMN 2.0.2 §13.5.3 and Table 10.90 make an Error boundary interrupting. CIB Seven `2.2.0` deploys one declared `cancelActivity="false"`, and on a business Error starts the boundary concurrently in the flow scope while the failed Activity's execution stays where it was with nothing left to complete it. The kernel refuses the model under every profile (`boundary.error.nonInterrupting`) instead of imitating that state.
+
+**Evidence:** Pinned `BpmnParse.java:3305-3313` (`CONCURRENT_IN_FLOW_SCOPE`); the retained witness [boundary-failure](../scenarios/open-rows/error-non-interrupting-declarations/README.md) (CIB Seven `2.2.0`, 2026-11-10), where CIB commits and the kernel refuses.
+
+**Boundary:** Non-interrupting Error boundaries on Activities that end in a business Error. A schedule that then completes the boundary's path, separating CIB's still-running instance from an interrupting reading, is owed.
+
+### CIB-LIM-0019: a looping Activity's own input mapping that reads its counters or item is refused
+
+**Status:** Profile limitation; not a deviation
+
+CIB Seven `2.2.0` evaluates a Multi-Instance Activity's own `camunda:inputParameter` in the parent of the execution entering the Activity (`IoParameter.java:50-51`, called from `PvmExecutionImpl.java:1309-1314`, whose comment marks the choice `<LEGACY>` at `:1310-1314`). Which execution that is depends on whether the inner Activity is a scope (`BpmnParse.java:4801-4815`): a parallel non-scope Activity's input sees the body's counters but not `loopCounter` or the item, a sequential one sees neither, and a Sub-Process, Transaction, Receive Task with a `messageRef`, DMN Business Rule Task or external Service Task sees the instance. A name the execution does not hold fails the evaluation and rolls the start back. BPMN 2.0.2 Table 10.29 makes the `inputDataItem` the source of the Activity's Data Input Associations, so the item is visible there. The profile neither reproduces a rollback that depends on scope classification nor claims BPMN's reading for CIB: under `MultiInstanceBinding.loopReferences` it refuses a read of a counter name or the item name in a looping Activity's own input mappings as `multiInstance.ownInputReadsInstance`, for every inner kind and both modes, and admits own input mappings that read neither.
+
+**Evidence:** The pinned sources above; the retained start-rollback witnesses in [multi-instance-user-task](../scenarios/open-rows/multi-instance-user-task/README.md), [multi-instance-nesting](../scenarios/open-rows/multi-instance-nesting/README.md), [multi-instance-expressions](../scenarios/open-rows/multi-instance-expressions/README.md), [multi-instance-activity-mapping-scope](../scenarios/open-rows/multi-instance-activity-mapping-scope/README.md), [input-mapping-contexts](../scenarios/open-rows/input-mapping-contexts/README.md) and [expression-cardinality-and-collections](../scenarios/open-rows/expression-cardinality-and-collections/README.md), 59 retained answers measured 2026-11-10: 54 roll back in CIB Seven `2.2.0`, and the 5 zero-instance schedules commit, since no instance starts. They are this refusal's witnesses, not row acceptance; the kernel tests `packages/kernel/test/admission-refusals-multi-instance.test.ts`.
+
+**Boundary:** Own input mappings of a looping Activity under `loopReferences`. Own output mappings are a CIB deployment error (`BpmnParse.java:4855-4857`) and stay `multiInstance.mappings`; under `dataAssociations` every own mapping stays refused.
+
+### CIB-LIM-0020: a target named like a Multi-Instance counter inside an instance is refused
+
+**Status:** Profile limitation; not a deviation
+
+CIB Seven `2.2.0` holds the Multi-Instance counters as execution locals (`MultiInstanceActivityBehavior.java:196-198`), so a mapping that writes a counter name inside an instance replaces CIB's count, and CIB reads a counter back as a typed `IntegerValue` (`:200-204`), in sequential mode to compute the next index (`SequentialMultiInstanceActivityBehavior.java:48`). Table 10.30's attributes are maintained by the engine, and BPMN has no account of a model writing them. Under `MultiInstanceCounters.cibLocals` the profile refuses, as `multiInstance.counterTarget`, a looping Activity's own input mapping whose target is a counter name, and an output mapping, Call output or subscription output written in a scope inside an instance whose target is one. A write admission cannot see, an effect result or a User Task submission reaching a counter local, is `unsupported` when it occurs (`multiInstance.resultShadowsInstance`, dynamic-only).
+
+**Evidence:** The pinned sources above; the [nested-output-writes-counter](../scenarios/open-rows/multi-instance-instance-sites/README.md) witness, whose evidence run is pending; the kernel tests `packages/kernel/test/admission-refusals-multi-instance.test.ts`. `CIB-LIM-0004` covers the Call output CIB drops for three of the names under every profile.
+
+**Boundary:** Counter-named targets inside an instance under `cibLocals`; outside every instance such a target is an ordinary variable.
+
+### CIB-LIM-0021: pinned CIB refuses several Escalation handlers of one code in one place
+
+**Status:** Profile limitation; not a deviation
+
+BPMN 2.0.2 §10.5.6 allows one interrupting and any number of non-interrupting handlers for one Event Declaration, all of which run. CIB Seven `2.2.0` refuses at deployment, among the Escalation boundaries of one host and among the Escalation Event Sub-Processes of one scope, two of one code, a catch-all beside a coded one and two catch-alls, whatever their interruption modes. The kernel's search takes one catcher per level, so it refuses the same declarations under every profile (`boundary.escalation.duplicate`, `scope.eventSubProcess.escalationDuplicate`): a restriction, not an equivalence with BPMN.
+
+**Evidence:** Pinned `BpmnParse.java:3702-3735` (`addEscalationEventDefinition`); the retained witnesses [escalation-boundary-conflicts](../scenarios/open-rows/escalation-boundary-conflicts/README.md) (CIB Seven `2.2.0`, 2026-11-10); the kernel tests `packages/kernel/test/admission-refusals-escalation.test.ts`.
+
+**Boundary:** Escalation boundaries of one host and Escalation Event Sub-Processes of one scope. Within what both admit, at most one handler per level matches a code, so the missing exact-before-catch-all rank of CIB's finder never decides (CIB-INT-0010).
 
 ## Extension register
 
@@ -1022,6 +1119,8 @@ CIB Seven `2.2.0` applies the attached Service Task's output parameters on the m
 
 Two widenings from the PC-ERROR-01 witnesses (CIB Seven `2.2.0`, 2026-11-09). The Service Task's output parameters also run when no catcher takes the Error and only its path ends (`CIB-INT-0013`; [scope-unmatched-code](../scenarios/open-rows/automation-business-error-routing/README.md), [parallel-root-branch-with-outputs](../scenarios/open-rows/error-unhandled-outcomes/README.md)). A Sub-Process that an Error boundary of its own interrupts runs its output parameters as CIB destroys it, after the catch variables of `CIB-EXT-0028`, so on a shared name the output wins ([output-shadow-caught](../scenarios/open-rows/error-esp-catch-variables/README.md)); the kernel's `Propagation.interruptedOutputs` writes them from the Sub-Process outward under `ErrorPathOutputs.mapped`.
 
+A widening from PC-ESCALATION-03 (2026-11-10): a Sub-Process that an interrupting Escalation boundary of its own interrupts runs its output parameters in the same way, after the Escalation code variable, since `deleteCascade` destroys the host either way (`PvmAtomicOperationCancelActivity.java:60`, `ExecutionEntity.java:523-525`). Only `camunda:inputOutput` output parameters run there, never a Call's `camunda:out`. The kernel test `a Sub-Process an interrupting Escalation boundary interrupts maps its outputs after the code variable` covers it; the retained witness is owed.
+
 **Boundary:** String/null results and declared scalar mappings only; no arbitrary JUEL, Java binary compatibility, Process-side delegate writes, missing-local fallback, retry equivalence or exactly-once external effects. Of nested scopes only the interrupted host Sub-Process is covered: Sub-Processes the Error leaves between its thrower and the catching host, which CIB also destroys, run no output parameters in the kernel and are outside the claim. The unmatched Error's root-cleanup rollback is `CIB-LIM-0006`, not adopted semantics or a new BPMN deviation claim. Existing `2.0.0` records and profiles remain unchanged.
 
 ### CIB-EXT-0017 — repeated Sub-Process body-local mapping and enclosing writes
@@ -1148,7 +1247,9 @@ The kernel's `Propagation.writeCaught` writes the variables from that event scop
 
 **Evidence:** Pinned `BpmnExceptionHandler#propagateError` (`BpmnExceptionHandler.java:146-154`) and `AbstractVariableScope#setVariable`; the retained witnesses [error-catch-variables](../scenarios/open-rows/error-catch-variables/README.md), [error-esp-catch-variables](../scenarios/open-rows/error-esp-catch-variables/README.md) and [error-null-message](../scenarios/open-rows/error-null-message/README.md) (CIB Seven `2.2.0`, 2026-11-09). The local-shadow witness disagrees only where CIB's root-variable observation lists the Sub-Process local, which audit history attributes to the root (`DefaultHistoryEventProducer#createHistoricVariableEvent`). Pinned `PvmAtomicOperationCancelActivity.java:60` (the cancelled event-scope execution is deleted with I/O mappings) and `PvmExecutionImpl.java:613-626` (`deleteCascade(reason)` does not skip them). The [mapping-order](../scenarios/open-rows/mapping-order/README.md) `task-caught-outputs` witness covers three cases: an output named like the catch variable, an output reading it, and a task-local of its name. Its evidence run is pending.
 
-**Boundary:** Error catchers on boundaries and Event Sub-Process starts. Outside the claim: a catch variable an ancestor catcher sets (a boundary of an enclosing Scope or an Event Sub-Process) that is named like an output parameter of the throwing Service Task, or that one of the task's outputs reads. CIB sets it before `deleteCascade` runs the task's outputs; the kernel ends the task first. Also outside the claim: Escalation catch variables (`event.escalation.codeVariable` stays refused) and expression-valued messages.
+A widening from PC-ESCALATION-01 (2026-11-10): `camunda:escalationCodeVariable` on an Escalation boundary or Event Sub-Process start (`BpmnParse.java:3681-3699`) receives the caught code as a String under the same option, and the standards profile refuses it (`event.escalation.codeVariable`). CIB sets it on the execution of the handler's event scope when the catcher interrupts and of its flow scope when it does not (`EscalationHandler.java:80-97`): for an Event Sub-Process both are the enclosing scope, for a non-interrupting boundary it is the host's parent, not the host. The kernel writes it from the host for an interrupting boundary and from the host's parent for a non-interrupting one (`Propagation.leaveOccurrence`). The retained witnesses [exact-code-variable and catch-all-code-variable](../scenarios/open-rows/escalation-code-variable/README.md) agree (CIB Seven `2.2.0`, 2026-11-10); witnesses that separate the host from its parent as the write origin are owed.
+
+**Boundary:** Error and Escalation catchers on boundaries and Event Sub-Process starts. Outside the claim: a catch variable an ancestor catcher sets (a boundary of an enclosing Scope or an Event Sub-Process) that is named like an output parameter of the throwing Service Task, or that one of the task's outputs reads. CIB sets it before `deleteCascade` runs the task's outputs; the kernel ends the task first. Also outside the claim: expression-valued messages.
 
 ### CIB-EXT-0029 — a technical failure is caught by an Error code that names its Java exception class
 

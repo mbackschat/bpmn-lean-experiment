@@ -11,7 +11,7 @@
 
 import {
   AbnormalScopeEnd, CallBindingTime, type CompensationHandlerFailure, CompensationHandlerFailureTag, CompensationOrder,
-  ConditionOrder, ContinuationFailure, DeliveryVariables, ErrorPathOutputs, Evaluator, MessageCorrelation,
+  ConditionOrder, ContinuationFailure, DeliveryVariables, ErrorPathOutputs, Evaluator, MessageCorrelation, RaisedCallOutputs,
   MultiInstanceFinalBody, MultiInstanceOutputs, type ProfileOptions, SubmissionRule, TechnicalFailure, UndeclaredWrite,
   UnhandledError, ErrorCatchVariables,
   MultiInstanceBinding, ResultValues, OutputContext, MultiInstanceCounters, MultiInstanceInputFailure, MultiInstanceCount,
@@ -25,7 +25,7 @@ import type { Decision, DecisionResource } from "./types/decision.js";
 export { integerLexeme, isAscii, parseJavaInt, parseJavaLong, signedDigits, withinJavaInt } from "./types/lexical.js";
 export {
   AbnormalScopeEnd, CallBindingTime, type CompensationHandlerFailure, CompensationHandlerFailureTag, CompensationOrder,
-  ConditionOrder, ContinuationFailure, DeliveryVariables, ErrorPathOutputs, Evaluator, MessageCorrelation,
+  ConditionOrder, ContinuationFailure, DeliveryVariables, ErrorPathOutputs, Evaluator, MessageCorrelation, RaisedCallOutputs,
   MultiInstanceFinalBody, MultiInstanceOutputs, type ProfileOptions, SubmissionRule, TechnicalFailure, UndeclaredWrite,
   UnhandledError, ErrorCatchVariables,
   MultiInstanceBinding, ResultValues, OutputContext, MultiInstanceCounters, MultiInstanceInputFailure, MultiInstanceCount,
@@ -819,7 +819,7 @@ export function programChildren(program: Program, parent: ElementId | null): rea
 }
 
 /** Lean's derived `DecidableEq DefinitionRef`. */
-function definitionRefEquals(left: DefinitionRef, right: DefinitionRef): boolean {
+export function definitionRefEquals(left: DefinitionRef, right: DefinitionRef): boolean {
   return left.key === right.key && left.version === right.version && left.versionTag === right.versionTag &&
     left.deployment === right.deployment && left.tenant === right.tenant && left.sourceSha256 === right.sourceSha256;
 }

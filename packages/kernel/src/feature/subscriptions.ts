@@ -83,6 +83,7 @@ import {
   type StartTrigger,
   type State,
   type TimerDetail,
+  childrenOf,
 } from "../state.js";
 import {
   EvaluationTag,
@@ -208,14 +209,13 @@ function startEvent(ctx: Ctx, eventSubProcess: ElementId): ElementId | null {
 }
 
 /**
- * `Signal.armScope`: open the start subscriptions of the Event Sub-Processes declared in the scope occurrence's element
- * as passive items on their start Events. A start that opens no item needs no start Event: a Compensation Event
+ * `Signal.armScope`: open the start subscriptions of the Event Sub-Processes declared in the scope occurrence
+ * (`childrenOf`: a called root's are its called process's) as passive items on their start Events. A start that opens no item needs no start Event: a Compensation Event
  * Sub-Process's trigger is carried by its `ScopeKind`.
  */
 export function armScope(ctx: Ctx, scope: ScopeOccurrenceId, state: State): Outcome {
-  const element = state.scopes.find((candidate) => candidate.id === scope)?.element ?? null;
   let current = state;
-  for (const child of programChildren(ctx.program, element)) {
+  for (const child of childrenOf(state, ctx.program, scope)) {
     const declared = elementScope(child);
     const start = declared === null ? null : ctx.eventStart(declared[1]);
     if (declared === null || start === null) continue;
