@@ -75,11 +75,8 @@ def condition? (ctx : Ctx) (item : OpenItem) : Option ConditionTrigger :=
 
 /-- Whether a write passes a Conditional item's `camunda:variableName` and `camunda:variableEvents` filters. -/
 def passes (trigger : ConditionTrigger) (write : WriteEvent) : Bool :=
-  let kind := match write.kind with
-    | .create => "create"
-    | .update => "update"
-    | .delete => "delete"
-  trigger.variableName.all (· == write.name) && (trigger.variableEvents.isEmpty || trigger.variableEvents.contains kind)
+  trigger.variableName.all (· == write.name) &&
+    (trigger.variableEvents.isEmpty || trigger.variableEvents.contains write.kind.name)
 
 /-- Whether `scope` lies in `owner`'s subtree, no called instance's root between them: CIB offers a write to the
 subscriptions under the scope that owns the variable (`VariableListenerInvocationListener.java:75-80`), whatever

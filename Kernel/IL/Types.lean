@@ -67,6 +67,24 @@ structure SignalTrigger where
   name : ValueSource
   deriving Repr
 
+/-- A variable write a Conditional Event's `camunda:variableEvents` filter can name (`ConditionalEventDefinition.java:91-113`):
+the kind of every write the kernel logs. -/
+inductive VariableEvent where
+  | create
+  | update
+  | delete
+  deriving DecidableEq, Repr
+
+/-- The `camunda:variableEvents` name of an event. -/
+def VariableEvent.name : VariableEvent → String
+  | .create => "create"
+  | .update => "update"
+  | .delete => "delete"
+
+/-- Whether `name` names a variable event; the filter's names stay source text, so admission refuses any other. -/
+def VariableEvent.named (name : String) : Bool :=
+  [VariableEvent.create, .update, .delete].any (·.name == name)
+
 structure ConditionTrigger where
   condition : Expression
   variableName : Option String := none

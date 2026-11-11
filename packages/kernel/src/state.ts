@@ -13,7 +13,7 @@
  * (guard 17).
  */
 import {
-  assertNever, definitionRefEquals, programChildren, programProcessChildren, utf8ByteSize, type DefinitionRef, type Element,
+  VariableEvent, assertNever, definitionRefEquals, programChildren, programProcessChildren, utf8ByteSize, type DefinitionRef, type Element,
   type ElementId, type FlowId, type Program, type Value,
 } from "./il/types.js";
 import {
@@ -149,10 +149,8 @@ export enum WriteRule {
   Own = "own",
 }
 
-export enum WriteKind { Create = "create", Update = "update", Delete = "delete" }
-
 /** Every write logs, same-value updates and entry writes included (PC-CONDITION-01, PC-CONDITION-04). */
-export interface WriteEvent { readonly scope: ScopeOccurrenceId; readonly name: string; readonly kind: WriteKind; }
+export interface WriteEvent { readonly scope: ScopeOccurrenceId; readonly name: string; readonly kind: VariableEvent; }
 
 // guard-exception(3): what a firing carried, handed to the one owner of `Trigger`; it adds no dispatch of its own.
 export enum FiredTag { Timer = "timer", Message = "message", Signal = "signal", Condition = "condition" }
@@ -452,13 +450,19 @@ export function calledRoot(state: State, scope: ScopeOccurrenceId): boolean {
 }
 
 /**
- * The scope occurrence an occurrence `host` reads from and writes outward from: its own local or child scope, so its
- * input-mapped locals are visible (`PvmExecutionImpl.java:1304-1318`), otherwise `scope`, the enclosing one. A called
+ * The local or child scope occurrence an occurrence `host` owns, when its inputs or its Scope gave it one. A called
  * instance's root belongs to the callee and is never the host's own.
  */
+export function localScope(state: State, host: number): ScopeOccurrenceId | null {
+  return state.scopes.find((entry) => entry.occurrence === host && entry.calledInstance === null)?.id ?? null;
+}
+
+/**
+ * The scope occurrence an occurrence `host` reads from and writes outward from: its own scope (`localScope`), so its
+ * input-mapped locals are visible (`PvmExecutionImpl.java:1304-1318`), otherwise `scope`, the enclosing one.
+ */
 export function ownScope(state: State, host: number, scope: ScopeOccurrenceId): ScopeOccurrenceId {
-  const own = state.scopes.find((entry) => entry.occurrence === host && entry.calledInstance === null);
-  return own === undefined ? scope : own.id;
+  return localScope(state, host) ?? scope;
 }
 
 /** The root of the process instance `scope` belongs to: the nearest called-instance root, else the process root. */
@@ -776,7 +780,7 @@ export function setVariable(state: State, target: ScopeOccurrenceId, name: strin
     entries.some(([key]) => key === name)
       ? entries.map((entry) => (entry[0] === name ? ([name, value] as const) : entry))
       : [...entries, [name, value] as const];
-  const kind = (ownEntries(state, target) ?? []).some(([key]) => key === name) ? WriteKind.Update : WriteKind.Create;
+  const kind = (ownEntries(state, target) ?? []).some(([key]) => key === name) ? VariableEvent.Update : VariableEvent.Create;
   const written: State = { ...state, writes: [...state.writes, { scope: target, name, kind }] };
   if (written.variables.some((entry) => entry.scope === target)) {
     return {
@@ -792,7 +796,7 @@ export function setVariable(state: State, target: ScopeOccurrenceId, name: strin
 export function removeVariable(state: State, target: ScopeOccurrenceId, name: string): State {
   return {
     ...state,
-    writes: [...state.writes, { scope: target, name, kind: WriteKind.Delete }],
+    writes: [...state.writes, { scope: target, name, kind: VariableEvent.Delete }],
     variables: state.variables.map((entry) =>
       entry.scope === target ? { ...entry, entries: entry.entries.filter(([key]) => key !== name) } : entry),
   };

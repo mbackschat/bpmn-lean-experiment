@@ -98,17 +98,11 @@ inductive WriteRule where
   | own
   deriving Repr
 
-inductive WriteKind where
-  | create
-  | update
-  | delete
-  deriving DecidableEq, Repr
-
 /-- Every write logs, same-value updates and entry writes included (PC-CONDITION-01, PC-CONDITION-04). -/
 structure WriteEvent where
   scope : ScopeOccurrenceId
   name : String
-  kind : WriteKind
+  kind : VariableEvent
   deriving Repr
 
 /-- What fired a subscription. -/
@@ -288,13 +282,15 @@ def signal (state : State) (signal : Signal) : State :=
 def calledRoot (state : State) (scope : ScopeOccurrenceId) : Bool :=
   ((state.scopes.find? (·.id == scope)).bind (·.calledInstance)).isSome
 
-/-- The scope occurrence an occurrence `host` reads from and writes outward from: its own local or child scope, so its
-input-mapped locals are visible (`PvmExecutionImpl.java:1304-1318`), otherwise `scope`, the enclosing one. A called
+/-- The local or child scope occurrence an occurrence `host` owns, when its inputs or its Scope gave it one. A called
 instance's root belongs to the callee and is never the host's own. -/
+def localScope? (state : State) (host : Nat) : Option ScopeOccurrenceId :=
+  (state.scopes.find? fun own => own.occurrence == some host && own.calledInstance.isNone).map (·.id)
+
+/-- The scope occurrence an occurrence `host` reads from and writes outward from: its own scope (`localScope?`), so its
+input-mapped locals are visible (`PvmExecutionImpl.java:1304-1318`), otherwise `scope`, the enclosing one. -/
 def ownScope (state : State) (host : Nat) (scope : ScopeOccurrenceId) : ScopeOccurrenceId :=
-  match state.scopes.find? fun own => own.occurrence == some host && own.calledInstance.isNone with
-  | some own => own.id
-  | none => scope
+  (state.localScope? host).getD scope
 
 /-- The root of the process instance `scope` belongs to: the nearest called-instance root, else the process root. -/
 def instanceRoot (state : State) (scope : ScopeOccurrenceId) : ScopeOccurrenceId :=
@@ -491,7 +487,7 @@ def setVariable (state : State) (target : ScopeOccurrenceId) (name : String) (va
   let replace (entries : List (String × Value)) :=
     if entries.any (·.1 == name) then entries.map fun entry => if entry.1 == name then (name, value) else entry
     else entries ++ [(name, value)]
-  let kind : WriteKind :=
+  let kind : VariableEvent :=
     if ((state.variables.find? (·.scope == target)).map (·.entries.any (·.1 == name))).getD false then .update
     else .create
   let written := { state with writes := state.writes ++ [({ scope := target, name, kind } : WriteEvent)] }

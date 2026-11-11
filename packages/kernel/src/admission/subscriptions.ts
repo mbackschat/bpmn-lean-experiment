@@ -20,6 +20,7 @@ import {
   assertNever,
   triggerMessage,
   valueSourceLiteral,
+  variableEventNamed,
   type Boundary,
   type ConditionTrigger,
   type Expression,
@@ -90,7 +91,7 @@ function conditionRefusal(options: ProfileOptions, reading: Reading, trigger: Co
       case ConditionalRetrigger.Edge:
         return trigger.variableName !== null || trigger.variableEvents.length > 0 ? "event.condition.filter" : null;
       case ConditionalRetrigger.EachWrite:
-        return trigger.variableEvents.every((name) => ["create", "update", "delete"].includes(name))
+        return trigger.variableEvents.every(variableEventNamed)
           ? null
           : "event.condition.variableEvents";
     }

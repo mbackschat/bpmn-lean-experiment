@@ -88,10 +88,6 @@ with the Activity. -/
 def enterLocal (header : Header) (inputs : List (String × Value)) (occurrence : Occurrence) (state : State) : State :=
   if inputs.isEmpty then state else (state.enterScope header.id occurrence.scope inputs (some occurrence.id)).1
 
-/-- The local-variable scope occurrence an Activity's occurrence owns, when its inputs gave it one (`enterLocal`). -/
-def localScope (state : State) (occurrence : Nat) : Option ScopeOccurrenceId :=
-  (state.scopes.find? fun scope => scope.occurrence == some occurrence && scope.calledInstance.isNone).map (·.id)
-
 /-- The frame the outputs of the Activity occurrence `occurrence` in `scope` read besides the submitted values: nothing
 under the standards reading; under `OutputContext.activityScope` (CIB-EXT-0031) its own locals, the captured inputs,
 and the chain from `scope`, into which the outputs are written, which `Ctx.outputReads` orders. -/
@@ -99,7 +95,7 @@ def activityScope (ctx : Ctx) (state : State) (occurrence : Nat) (scope : ScopeO
     List (String × Value) × List (String × Value) :=
   match ctx.program.options.outputContext with
   | .submission => ([], [])
-  | .activityScope => (((localScope state occurrence).map state.ownVariables).getD [], state.visible scope)
+  | .activityScope => (((state.localScope? occurrence).map state.ownVariables).getD [], state.visible scope)
 
 /-- A decision task (PC-AUTO-07, PC-AUTO-08) reads its inputs, which CIB holds as locals of the task's scope
 (`BpmnParse.java:2357-2360`), and writes the mapped result outward from that scope, as `setVariable` on the task's
@@ -109,7 +105,7 @@ the result where that write left it, behind an earlier output's write of its nam
 (`Ctx.outputReads`), and a result no output reads is no error. -/
 def evaluateDecision (hooks : WorkHooks) (ctx : Ctx) (payload : ActivityPayload) (work : RuleWork) (occurrence : Occurrence)
     (state : State) : Outcome := do
-  let scope := (localScope state occurrence.id).getD occurrence.scope
+  let scope := state.ownScope occurrence.id occurrence.scope
   let writes ← hooks.runDecision ctx.program work (state.evalContext scope).variables
   let written ← completionOutputs ctx state.logicalTimeMs .activityLocals payload.envelope.outputs
     (activityScope ctx state occurrence.id occurrence.scope) writes []
@@ -198,7 +194,7 @@ def completeUserTask (ctx : Ctx) (_ : Header) (payload : ActivityPayload) (item 
     (values : List (String × Value)) (state : State) : Outcome := do
   admitValues (values.map (·.2))
   if let some limit := ctx.program.options.scopeChainSubmissionBytes then
-    Submission.check ctx state ((localScope state item.occurrence).getD item.scope) limit values
+    Submission.check ctx state (state.ownScope item.occurrence item.scope) limit values
   match submittedItem ctx.program.options.submission payload.envelope with
   | some loop =>
     instanceOutput loop values
@@ -213,7 +209,7 @@ def completeUserTask (ctx : Ctx) (_ : Header) (payload : ActivityPayload) (item 
       -- Dynamic-only: a submission's names are the run's data.
       if shadowsCounter ctx payload.envelope values then .error (.unsupported "multiInstance.resultShadowsInstance")
       let written ← completionOutputs ctx state.logicalTimeMs .activityLocals payload.envelope.outputs (outputScope ctx state item) values []
-      let installed := state.signal (.write ((localScope state item.occurrence).getD item.scope) values .outward)
+      let installed := state.signal (.write (state.ownScope item.occurrence item.scope) values .outward)
       .ok (installed.signal (.complete item.occurrence .outgoing written .outward))
     | .outputSet =>
       let written ← completionOutputs ctx state.logicalTimeMs .outputSet payload.envelope.outputs (outputScope ctx state item) [] values
@@ -258,7 +254,7 @@ def mappedErrorOutputs (write : Ctx → ScopeOccurrenceId → List (String × Va
     (ctx : Ctx) (origin : Origin) (installed : List (String × Value)) (state : State) : Outcome := do
   let some host := origin.host | .error (.semanticFailure "error-exit-without-host")
   let envelope := (ctx.program.element? origin.element).bind (·.envelope?)
-  let frame := localScope state host
+  let frame := state.localScope? host
   let held := (origin.patch ++ (frame.map state.ownVariables).getD []).map (·.1)
   let outward := installed.filter fun (name, _) => !held.contains name
   let mappings := (envelope.map (·.outputs)).getD []

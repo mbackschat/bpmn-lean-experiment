@@ -53,10 +53,12 @@ import {
   failedWith,
   leaveOutgoing,
   leaveRaised,
+  localScope,
   occurrenceOf,
   openItem,
   openKindView,
   optionalChannelEquals,
+  ownScope,
   signal,
   visible,
   type Binding,
@@ -258,7 +260,7 @@ export function arriveActivity(hooks: WorkHooks, ctx: Ctx, header: Header, paylo
  */
 function evaluateDecision(hooks: WorkHooks, ctx: Ctx, payload: ActivityPayload, work: RuleWork, occurrence: Occurrence,
   state: State): Outcome {
-  const scope = localScope(state, occurrence.id) ?? occurrence.scope;
+  const scope = ownScope(state, occurrence.id, occurrence.scope);
   const writes = hooks.runDecision(ctx.program, work, evalContext(state, scope).variables);
   if (!writes.ok) return writes;
   const written = completionOutputs(ctx, state.logicalTimeMs, ResultValues.ActivityLocals, payload.envelope.outputs, activityScope(ctx, state, occurrence.id, occurrence.scope), writes.value, []);
@@ -324,7 +326,7 @@ export function completeUserTask(
   if (!admitted.ok) return failedWith(admitted.failure);
   const limit = ctx.program.options.scopeChainSubmissionBytes;
   if (limit !== null) {
-    const checked = Submission.check(ctx, state, localScope(state, item.occurrence) ?? item.scope, limit, values);
+    const checked = Submission.check(ctx, state, ownScope(state, item.occurrence, item.scope), limit, values);
     if (!checked.ok) return failedWith(checked.failure);
   }
   const loop = submittedItem(ctx.program.options.submission, payload.envelope);
@@ -345,7 +347,7 @@ export function completeUserTask(
       if (shadowsCounter(ctx, payload.envelope, values)) return failed(FailureTag.Unsupported, "multiInstance.resultShadowsInstance");
       const written = completionOutputs(ctx, state.logicalTimeMs, ResultValues.ActivityLocals, payload.envelope.outputs, outputScope(ctx, state, item), values, []);
       if (!written.ok) return failedWith(written.failure);
-      const installed = signal(state, { tag: SignalTag.Write, scope: localScope(state, item.occurrence) ?? item.scope, writes: values, rule: WriteRule.Outward });
+      const installed = signal(state, { tag: SignalTag.Write, scope: ownScope(state, item.occurrence, item.scope), writes: values, rule: WriteRule.Outward });
       return committed(signal(installed, completeSignal(item.occurrence, leaveOutgoing, written.value, WriteRule.Outward)));
     }
     case SubmissionRule.OutputSet: {
@@ -380,11 +382,6 @@ function activityScope(ctx: Ctx, state: State, occurrence: number, scope: ScopeO
     }
   }
   return assertNever(ctx.program.options.outputContext);
-}
-
-/** The local-variable scope occurrence an Activity's occurrence owns, when its inputs gave it one (`enterLocal`). */
-function localScope(state: State, occurrence: number): ScopeOccurrenceId | null {
-  return state.scopes.find((scope) => scope.occurrence === occurrence && scope.calledInstance === null)?.id ?? null;
 }
 
 /** Replace the kind of the open item `id`, keeping its identity and attachments. */

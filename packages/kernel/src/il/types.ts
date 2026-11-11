@@ -137,6 +137,17 @@ export interface MessageTrigger {
 
 export interface SignalTrigger { readonly name: ValueSource; }
 
+/**
+ * A variable write a Conditional Event's `camunda:variableEvents` filter can name (`ConditionalEventDefinition.java:91-113`):
+ * the kind of every write the kernel logs. Each value is its source name.
+ */
+export enum VariableEvent { Create = "create", Update = "update", Delete = "delete" }
+
+/** Whether `name` names a variable event; the filter's names stay source text, so admission refuses any other. */
+export function variableEventNamed(name: string): boolean {
+  return (Object.values(VariableEvent) as string[]).includes(name);
+}
+
 export interface ConditionTrigger {
   readonly condition: Expression;
   readonly variableName: string | null;

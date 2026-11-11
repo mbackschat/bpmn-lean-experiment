@@ -124,8 +124,8 @@ function juelNode(site: Site, at: number, node: JuelNode): string | null {
 }
 
 /**
- * A function call is refused whole once its arguments are well formed; the Events level admits `now()` and
- * `dateTime()` by their qualified name.
+ * A function call is refused whole once its arguments are well formed at every JUEL level, so a date-valued Timer
+ * expression (`now()`, `dateTime()`) is refused (CIB-INT-0023's boundary).
  */
 function juelFunction(earlier: (...children: readonly number[]) => string | null, call: JuelFunctionNode): string | null {
   return earlier(...call.args) ?? "expression.juel.function";

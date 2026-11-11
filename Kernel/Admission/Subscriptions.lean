@@ -38,7 +38,7 @@ def conditionRefusal (options : ProfileOptions) (reading : Reading) (trigger : C
   let filters := match options.conditionalRetrigger with
     | .edge => if trigger.variableName.isSome || !trigger.variableEvents.isEmpty then some "event.condition.filter" else none
     | .eachWrite =>
-      if trigger.variableEvents.all (["create", "update", "delete"].contains ·) then none
+      if trigger.variableEvents.all VariableEvent.named then none
       else some "event.condition.variableEvents"
   let predicate := match trigger.condition with
     | .simpleBoolean _ => if options.evaluator == .juel then some "expression.outsideJuel" else none

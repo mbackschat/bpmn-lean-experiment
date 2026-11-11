@@ -367,8 +367,8 @@ def command (hooks : Hooks) (ctx : Ctx) (input : CommandInput) (state : State) :
     match item? ctx state input.occurrence (·.incident) with
     | none => .error (.rejected "unknown-incident")
     | some item => hooks.resolveIncident ctx item action state
-  -- A variable command acts from the occurrence's own scope outward, its input-mapped locals first, as CIB's
-  -- `setVariables` on the waiting activity's execution does (`AbstractVariableScope#setVariable`).
+  -- A variable command acts from the occurrence's own scope outward, its input-mapped locals first (DATA-SEMANTICS-SPEC,
+  -- Scope data), as CIB's `setVariables` on the waiting activity's execution does (`AbstractVariableScope#setVariable`).
   let variables (act : ScopeOccurrenceId → Signal) : Outcome :=
     match occurrenceOf? ctx state input.occurrence with
     | none => .error (.rejected "unknown-occurrence")

@@ -58,8 +58,8 @@ def juelOperator : JuelBinary → Option String
   | .mul => none
   | .mod => none
 
-/-- A function call is refused whole once its arguments are well formed; the Events level admits `now()` and
-`dateTime()` by their qualified name. -/
+/-- A function call is refused whole once its arguments are well formed at every JUEL level, so a date-valued Timer
+expression (`now()`, `dateTime()`) is refused (CIB-INT-0023's boundary). -/
 def juelFunction (earlier : List Nat → Option String) : JuelFunctionNode → Option String
   | { qualifier := _, name := _, args } => earlier args <|> some "expression.juel.function"
 
