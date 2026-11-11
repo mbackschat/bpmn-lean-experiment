@@ -1056,6 +1056,16 @@ BPMN 2.0.2 §13.3.4 lets a Sub-Process without a start Event begin, on entry, ev
 
 ## Extension register
 
+### CIB-LIM-0025 — CIB admits two interrupting Error Event Sub-Processes of one code in one scope
+
+**Status:** Profile limitation; not a deviation
+
+BPMN 2.0.2 §10.5.6 requires that "only one Event Sub-Process for the same Event Declaration MUST be modeled" for an interrupting Event. CIB Seven `2.2.0` adds each Error Event Sub-Process start to its scope's Error declarations and sorts them by precedence without a duplicate check (`BpmnParse.java:3645-3650`), so two interrupting handlers of one code deploy and the first in document order catches. The kernel refuses the model under every profile (`scope.eventSubProcess.errorDuplicateCode`), as it refuses the boundary analog (`boundary.error.duplicateCode`); two catch-all handlers stay admitted and catch in document order (`CIB-INT-0010`).
+
+**Evidence:** Pinned `BpmnParse.java:3645-3650`; the retained [duplicate-code-handlers](../scenarios/open-rows/error-event-subprocess-precedence/README.md) witness deploys and commits in CIB Seven `2.2.0`.
+
+**Boundary:** Interrupting Error Event Sub-Processes of one scope that name one code. Under the standards profile the same model is refused earlier, since the standards reading refuses an interrupting Event Sub-Process's abnormal scope end (`CIB-INT-0007`).
+
 ### CIB-EXT-0001 — exact delegate-expression Service Task binding
 
 **Status:** Selected bounded extension

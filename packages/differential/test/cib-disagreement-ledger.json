@@ -701,6 +701,18 @@
     ]
   },
   {
+    "evidence": "scenarios/open-rows/error-event-subprocess-precedence/duplicate-code-handlers-standards.cibseven-evidence.json",
+    "owners": [
+      "CIB-INT-0007"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/error-event-subprocess-precedence/duplicate-code-handlers.cibseven-evidence.json",
+    "owners": [
+      "CIB-LIM-0025"
+    ]
+  },
+  {
     "evidence": "scenarios/open-rows/error-java-class-codes/illegal-state-technical-failure.cibseven-evidence.json",
     "owners": [
       "CIB-EXT-0029"
@@ -1363,6 +1375,24 @@
     ]
   },
   {
+    "evidence": "scenarios/open-rows/multi-instance-sub-process/concurrent-condition-race.cibseven-evidence.json",
+    "owners": [
+      "CIB-INT-0014"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-sub-process/concurrent-write-race-call.cibseven-evidence.json",
+    "owners": [
+      "CIB-INT-0014"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-sub-process/concurrent-write-race.cibseven-evidence.json",
+    "owners": [
+      "CIB-INT-0014"
+    ]
+  },
+  {
     "evidence": "scenarios/open-rows/multi-instance-sub-process/sequential-computed-malformed.cibseven-evidence.json",
     "owners": [
       "PC-MI-06",
@@ -1432,6 +1462,18 @@
     ]
   },
   {
+    "evidence": "scenarios/open-rows/multi-instance-user-task/parallel-concurrent-control-closes.cibseven-evidence.json",
+    "owners": [
+      "CIB-INT-0014"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-user-task/parallel-concurrent-control-stays-running.cibseven-evidence.json",
+    "owners": [
+      "CIB-INT-0014"
+    ]
+  },
+  {
     "evidence": "scenarios/open-rows/multi-instance-user-task/parallel-equal-items.cibseven-evidence.json",
     "owners": [
       "CIB-LIM-0019"
@@ -1465,6 +1507,12 @@
     "evidence": "scenarios/open-rows/multi-instance-user-task/parallel-one-item.cibseven-evidence.json",
     "owners": [
       "CIB-LIM-0019"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/multi-instance-user-task/parallel-output-collection-standards.cibseven-evidence.json",
+    "owners": [
+      "CIB-INT-0014"
     ]
   },
   {
