@@ -676,6 +676,12 @@
     ]
   },
   {
+    "evidence": "scenarios/open-rows/conditional-start-population/start-continuation-fails.population-cibseven-evidence.json",
+    "owners": [
+      "CIB-INT-0033"
+    ]
+  },
+  {
     "evidence": "scenarios/open-rows/cycle-compositions/automatic-loop-beyond-bound.cibseven-evidence.json",
     "owners": [
       "CIB-LIM-0016"
@@ -970,7 +976,19 @@
     ]
   },
   {
+    "evidence": "scenarios/open-rows/juel-core-table/boolean-receiver-equals.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-07"
+    ]
+  },
+  {
     "evidence": "scenarios/open-rows/juel-core-table/collection-parameter.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-07"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/juel-core-table/composite-part-list.cibseven-evidence.json",
     "owners": [
       "PC-DATA-07"
     ]
@@ -1000,6 +1018,32 @@
     ]
   },
   {
+    "evidence": "scenarios/open-rows/juel-core-table/decimal-plus-large-integer.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-07"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/juel-core-table/decimal-plus-non-ascii-text.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-07",
+      "PC-DATA-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/juel-core-table/equal-text-list.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-07"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/juel-core-table/index-non-ascii-text.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-07",
+      "PC-DATA-09"
+    ]
+  },
+  {
     "evidence": "scenarios/open-rows/juel-core-table/integer-class-contains.cibseven-evidence.json",
     "owners": [
       "PC-DATA-07"
@@ -1007,6 +1051,83 @@
   },
   {
     "evidence": "scenarios/open-rows/juel-core-table/integer-class-equals.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-07"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/juel-core-table/integer-plus-non-ascii-text.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-07",
+      "PC-DATA-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/juel-core-table/integer-receiver-size.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-07",
+      "PC-DATA-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/juel-core-table/list-equals-integers.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-07"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/juel-core-table/list-get-text-argument.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-07",
+      "PC-DATA-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/juel-core-table/list-index-boolean.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-07",
+      "PC-DATA-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/juel-core-table/list-index-of-integer.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-07"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/juel-core-table/map-contains-value-integer.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-07"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/juel-core-table/map-equals-integers.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-07"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/juel-core-table/order-list-text.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-07"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/juel-core-table/order-text-list.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-07"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/juel-core-table/property-of-text-by-list.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-07",
+      "PC-DATA-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/juel-core-table/replace-integer-arguments.cibseven-evidence.json",
     "owners": [
       "PC-DATA-07"
     ]
@@ -1021,6 +1142,13 @@
     "evidence": "scenarios/open-rows/juel-core-table/string-over-limit.cibseven-evidence.json",
     "owners": [
       "PC-DATA-07"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/juel-core-table/substring-text-argument.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-07",
+      "PC-DATA-09"
     ]
   },
   {
@@ -1067,9 +1195,163 @@
     ]
   },
   {
+    "evidence": "scenarios/open-rows/juel-evaluation-failures/list-concat.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-07",
+      "PC-DATA-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/juel-evaluation-failures/list-contains-key.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-07",
+      "PC-DATA-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/juel-evaluation-failures/list-contains-value.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-07",
+      "PC-DATA-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/juel-evaluation-failures/list-ends-with.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-07",
+      "PC-DATA-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/juel-evaluation-failures/list-length.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-07",
+      "PC-DATA-09"
+    ]
+  },
+  {
     "evidence": "scenarios/open-rows/juel-evaluation-failures/list-mutating-method.cibseven-evidence.json",
     "owners": [
       "PC-DATA-07"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/juel-evaluation-failures/list-replace.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-07",
+      "PC-DATA-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/juel-evaluation-failures/list-starts-with.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-07",
+      "PC-DATA-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/juel-evaluation-failures/list-substring.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-07",
+      "PC-DATA-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/juel-evaluation-failures/list-to-lower-case.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-07",
+      "PC-DATA-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/juel-evaluation-failures/list-to-upper-case.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-07",
+      "PC-DATA-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/juel-evaluation-failures/list-trim.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-07",
+      "PC-DATA-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/juel-evaluation-failures/map-concat.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-07",
+      "PC-DATA-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/juel-evaluation-failures/map-contains.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-07",
+      "PC-DATA-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/juel-evaluation-failures/map-ends-with.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-07",
+      "PC-DATA-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/juel-evaluation-failures/map-index-of.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-07",
+      "PC-DATA-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/juel-evaluation-failures/map-last-index-of.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-07",
+      "PC-DATA-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/juel-evaluation-failures/map-length.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-07",
+      "PC-DATA-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/juel-evaluation-failures/map-starts-with.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-07",
+      "PC-DATA-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/juel-evaluation-failures/map-substring.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-07",
+      "PC-DATA-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/juel-evaluation-failures/map-to-lower-case.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-07",
+      "PC-DATA-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/juel-evaluation-failures/map-to-upper-case.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-07",
+      "PC-DATA-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/juel-evaluation-failures/map-trim.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-07",
+      "PC-DATA-09"
     ]
   },
   {
@@ -1083,6 +1365,34 @@
     "evidence": "scenarios/open-rows/juel-evaluation-failures/reflection-through-method.cibseven-evidence.json",
     "owners": [
       "PC-DATA-07"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/juel-evaluation-failures/text-contains-key.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-07",
+      "PC-DATA-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/juel-evaluation-failures/text-contains-value.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-07",
+      "PC-DATA-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/juel-evaluation-failures/text-get.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-07",
+      "PC-DATA-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/juel-evaluation-failures/text-size.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-07",
+      "PC-DATA-09"
     ]
   },
   {
@@ -1126,6 +1436,12 @@
     "evidence": "scenarios/open-rows/message-correlation-criteria/ambiguous-same-instance.cibseven-evidence.json",
     "owners": [
       "CIB-LIM-0038"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/message-correlation-criteria/engine-integer-criterion.cibseven-evidence.json",
+    "owners": [
+      "CIB-LIM-0040"
     ]
   },
   {
@@ -1264,6 +1580,24 @@
     "evidence": "scenarios/open-rows/message-start-compositions/shipment-payload-string.cibseven-evidence.json",
     "owners": [
       "CIB-LIM-0013"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/message-start-population/criterion-reaching-start.population-cibseven-evidence.json",
+    "owners": [
+      "CIB-EXT-0025"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/message-start-population/object-valued-criterion-with-start.population-cibseven-evidence.json",
+    "owners": [
+      "CIB-EXT-0025"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/message-start-population/start-only-with-criteria.population-cibseven-evidence.json",
+    "owners": [
+      "CIB-EXT-0025"
     ]
   },
   {
@@ -1752,7 +2086,14 @@
     "evidence": "scenarios/open-rows/receive-task-payload-correlation/items-parallel-local-correlation.cibseven-evidence.json",
     "owners": [
       "CIB-LIM-0039",
-      "CIB-EXT-0025"
+      "CIB-EXT-0025",
+      "CIB-LIM-0040"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/receive-task-payload-correlation/items-parallel-local-element.cibseven-evidence.json",
+    "owners": [
+      "CIB-LIM-0039"
     ]
   },
   {
@@ -1783,6 +2124,12 @@
     "evidence": "scenarios/open-rows/scope-without-start/transaction-entry-rolls-back.cibseven-evidence.json",
     "owners": [
       "CIB-LIM-0024"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/signal-broadcast-population/broadcast-catch-continuation-fails.population-cibseven-evidence.json",
+    "owners": [
+      "CIB-INT-0033"
     ]
   },
   {
@@ -1840,9 +2187,27 @@
     ]
   },
   {
+    "evidence": "scenarios/open-rows/timer-data-derived/cron-descending-range.cibseven-evidence.json",
+    "owners": [
+      "CIB-LIM-0003"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/timer-data-derived/cron-never-matches.cibseven-evidence.json",
+    "owners": [
+      "CIB-LIM-0003"
+    ]
+  },
+  {
     "evidence": "scenarios/open-rows/timer-data-derived/cycle-value-at-host-entry.cibseven-evidence.json",
     "owners": [
       "CIB-DEV-0006"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/timer-data-derived/date-unpadded-fields.cibseven-evidence.json",
+    "owners": [
+      "CIB-LIM-0003"
     ]
   },
   {
@@ -1916,6 +2281,12 @@
     "evidence": "scenarios/open-rows/timer-start-population/cycle-start-second-and-third-occurrence.population-cibseven-evidence.json",
     "owners": [
       "CIB-DEV-0008"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/timer-start-population/timer-start-continuation-fails.population-cibseven-evidence.json",
+    "owners": [
+      "CIB-INT-0033"
     ]
   },
   {
