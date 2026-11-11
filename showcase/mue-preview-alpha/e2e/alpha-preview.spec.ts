@@ -50,11 +50,11 @@ test("shows both exact Alpha branches through the production browser and replays
   const natural = await startExactDefinition(page);
   await openInitialExecution(page, natural);
   const naturalPreview = preview(page);
-  await expect(naturalPreview).toContainText("Current inputcontract");
-  await expect(naturalPreview).toContainText("Completed0");
+  await expectRunningWithoutCommittedOutcome(naturalPreview);
   await runtime.runNatural(natural);
   await expect(page.locator('[data-ui="execution-overview"]')).toContainText("completed");
   await expect(naturalPreview.getByText("Committed terminal output", { exact: true })).toBeVisible();
+  await expect(timerFirings(naturalPreview)).toHaveCount(0);
   await expect(
     naturalPreview.getByRole("list").last().getByRole("listitem"),
   ).toHaveText([...exactNaturalResults]);
@@ -64,7 +64,7 @@ test("shows both exact Alpha branches through the production browser and replays
   const interrupted = await startExactDefinition(page);
   await openInitialExecution(page, interrupted);
   const interruptedPreview = preview(page);
-  await expect(interruptedPreview).toContainText("Current inputcontract");
+  await expectRunningWithoutCommittedOutcome(interruptedPreview);
 
   const escalationReady = Promise.withResolvers<void>();
   const escalationRelease = Promise.withResolvers<void>();
@@ -74,12 +74,10 @@ test("shows both exact Alpha branches through the production browser and replays
   });
   try {
     await escalationReady.promise;
-    await expect(interruptedPreview.getByRole("list", {
-      name: "Committed Timer firings",
-    })).toContainText("timerFire");
-    await expect(interruptedPreview.getByRole("list", {
-      name: "Published completion interactions",
-    })).toContainText("UserTask_Escalation / activation 1");
+    await expect(timerFirings(interruptedPreview)).toContainText("timerFire");
+    // The actor signals readiness only once the committed state publishes the open UserTask_Escalation wait.
+    await expect(timerFirings(interruptedPreview).getByRole("listitem")).toHaveCount(1);
+    await expect(interruptedPreview.getByText("Committed terminal output", { exact: true })).toHaveCount(0);
     await presentAudienceLandmark(page, AlphaDemoLandmark.InterruptionReady);
   } finally {
     escalationRelease.resolve();
@@ -170,6 +168,22 @@ async function openInitialExecution(
 
 function preview(page: Page) {
   return page.locator('[data-ui="mue-preview-alpha"]');
+}
+
+function timerFirings(alphaPreview: ReturnType<typeof preview>) {
+  return alphaPreview.getByRole("list", { name: "Committed Timer firings" });
+}
+
+/**
+ * The preview of a just-started instance: its observed committed revision is running, no Timer has fired and no
+ * terminal output is committed. The kernel publishes no per-iteration progress (b3fd2b627); the exact terminal output
+ * pins the item order and count.
+ */
+async function expectRunningWithoutCommittedOutcome(alphaPreview: ReturnType<typeof preview>): Promise<void> {
+  await expect(alphaPreview.getByRole("list", { name: "Observed committed revisions" }).getByRole("listitem").first())
+    .toHaveText(/^Revision \d+: running$/u);
+  await expect(timerFirings(alphaPreview)).toHaveCount(0);
+  await expect(alphaPreview.getByText("Committed terminal output", { exact: true })).toHaveCount(0);
 }
 
 async function presentAudienceLandmark(
