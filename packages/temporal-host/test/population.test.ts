@@ -5,14 +5,21 @@
  * refinement test (`population-host-refinement.test.ts`) checks it against the kernel's population runner.
  */
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 
-import { FailureTag, FanOutEntryTag, ReceiverTag, SignalAddressTag, cascadeBound, fanOutBegin, PendingTag, type FanOutEntry } from "@bpmn-lean/kernel";
+import { kernelProfileOptions, readKernelProgram } from "@bpmn-lean/bpmn-source";
+import {
+  FailureTag, FanOutEntryTag, ReceiverTag, SignalAddressTag, cascadeBound, fanOutBegin, PendingTag, timerInstanceId, type FanOutEntry,
+} from "@bpmn-lean/kernel";
 
 import type { CommandView, JsonValue, PopulationPort, Wire } from "../src/port.ts";
 
 const population = await import(new URL("../dist/population.js", import.meta.url).href) as typeof import("../src/population.ts");
 const binding = await import(new URL("../dist/population-port.js", import.meta.url).href) as typeof import("../src/population-port.ts");
+const { MemoryPopulation } = await import(new URL("../dist/population-memory.js", import.meta.url).href) as
+  typeof import("../src/population-memory.ts");
+const { kernelPort } = await import(new URL("../dist/kernel-port.js", import.meta.url).href) as typeof import("../src/kernel-port.ts");
 const { advance, emptyIngress, enqueueCommand, enqueueEmit, populationCapacity, register, registerDeployment, takeAnswer } = population;
 
 /** A port that answers only the questions `answers` names, so a rule that asks anything else fails loudly. */
@@ -162,4 +169,37 @@ test("an ingress continuing as new releases every waiting Update, so no answer o
   const answered = population.answer(kernel, released, { kind: "signalScan", chains: [], starts: [] });
   assert.deepEqual(answered.answers, [], "a released command settles into the ledger only");
   assert.equal(answered.ledger.length, 1);
+});
+
+test("a population start whose instance identity a directly started chain holds is refused, never attached or waited on", async () => {
+  const read = await readKernelProgram({
+    bytes: await readFile(new URL("../../../scenarios/timer-start-event/process.bpmn", import.meta.url)),
+    overlay: null, profile: "test-profile", limits: { maxBytes: 1_048_576, parserDeadlineMs: 1_000 },
+  }, kernelProfileOptions([]));
+  if (read.kind !== "read") throw new Error(`reader refused ${read.code}`);
+  const program = kernelPort.decodeProgram(JSON.parse(JSON.stringify(read.program)) as JsonValue);
+  const startEvent = "TimerStart_PT1S";
+  const instanceId = timerInstanceId(1, startEvent, 1_000);
+  const firing = { commandId: "fire", deploymentId: 1, startEvent, dueMs: 1_000 };
+  const fresh = () => {
+    const memory = new MemoryPopulation(binding.populationPort, kernelPort.hostView);
+    memory.deploy("d", "digest", program, 0);
+    return memory;
+  };
+  const started = fresh().command("fire", "timerStart", firing, "f", 1_000) as { resolution: { entries: { kind: string }[] } };
+  assert.equal(started.resolution.entries[0]?.kind, "started", "without the direct chain the occurrence starts its instance");
+
+  const memory = fresh();
+  const direct = kernelPort.step(program, null, kernelPort.decodeStimulus({
+    kind: "start", commandId: "direct", instanceId, startEvent, trigger: { kind: "timer", logicalTimeMs: 1_000 }, variables: [],
+  }).input);
+  if (!direct.committed) throw new Error(`the direct start did not commit: ${direct.code}`);
+  memory.committed(instanceId, 1, program, direct.state, "direct");
+  const answer = memory.command("fire", "timerStart", firing, "f", 1_000) as { resolution: JsonValue };
+  assert.deepEqual(answer.resolution, {
+    kind: "fanOut",
+    entries: [{ kind: "failed", target: { kind: "start", deploymentId: 1, startEvent }, outcome: "rejected",
+      code: population.instanceIdentityInUseCode }],
+  });
+  assert.equal(memory.chains.get(instanceId)?.state, direct.state, "the direct chain is untouched");
 });

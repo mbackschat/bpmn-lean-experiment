@@ -322,8 +322,8 @@ export interface PopulationPort<P, S> {
   readonly populationReach: (program: P, state: S, delivery: Wire, atMs: number) => PopulationStep<S> | { readonly kind: "skipped" };
   /** A start request's start step at `atMs`. */
   readonly populationStart: (program: P, request: Wire, atMs: number) => PopulationStartStep<S>;
-  /** The failure of a delivery to a chain that no longer exists. */
-  readonly goneFailure: (code: string) => Wire;
+  /** A host refusal as a kernel failure: a delivery to a chain that no longer exists, a start refused by the host. */
+  readonly hostRefusal: (code: string) => Wire;
   readonly intentsOf: (program: P, state: S) => readonly Wire[];
   readonly instanceIdOf: (state: S) => string;
   readonly failureCode: (failure: Wire) => string;

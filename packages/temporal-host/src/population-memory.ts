@@ -36,6 +36,8 @@ export class MemoryPopulation<P, S> {
   ingress: IngressState = emptyIngress;
   readonly chains = new Map<string, Chain<P, S>>();
   readonly programs = new Map<number, P>();
+  /** Each population start's outcome by its chain, which a repeated start of the identity answers again. */
+  private readonly starts = new Map<string, ReachOutcome>();
   /** The intents a committed chain input left, until the ingress settles their emit. */
   private readonly unsettled = new Map<string, Readonly<{ instanceId: string; intents: readonly Wire[] }>>();
 
@@ -177,8 +179,12 @@ export class MemoryPopulation<P, S> {
       }
       case "start": {
         const program = this.deployment(action.deploymentId);
-        const outcome = port.populationStart(program, action.request, atMs);
-        return { kind: "reached", outcome: this.reached(action.instanceId, action.deploymentId, program, outcome) };
+        const recorded = this.starts.get(action.instanceId);
+        if (recorded !== undefined) return { kind: "reached", outcome: recorded };
+        if (this.chains.has(action.instanceId)) return { kind: "reached", outcome: { kind: "identityInUse" } };
+        const outcome = this.reached(action.instanceId, action.deploymentId, program, port.populationStart(program, action.request, atMs));
+        this.starts.set(action.instanceId, outcome);
+        return { kind: "reached", outcome };
       }
     }
   }

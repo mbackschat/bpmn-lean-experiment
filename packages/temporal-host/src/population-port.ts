@@ -421,7 +421,7 @@ export const populationPort: PopulationPort<Program, State> = {
     }
     return populationStep(step(hooks, program, null, { tag: InputTag.Start, payload: input }));
   },
-  goneFailure: (code) => toWire({ tag: FailureTag.Rejected, code } satisfies Failure),
+  hostRefusal: (code) => toWire({ tag: FailureTag.Rejected, code } satisfies Failure),
   intentsOf: (program, state) => hostView(program, state).broadcasts.map(toWire),
   instanceIdOf: (state) => state.instanceId,
   failureCode: (failure) => decode<Failure>(failure).code,

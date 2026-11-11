@@ -144,14 +144,12 @@ export function createPopulationActivities(): PopulationActivities {
       try {
         return await client.workflow.executeUpdateWithStart(populationStartedUpdate, { startWorkflowOperation: start });
       } catch (error) {
-        // The instance identity started once and its chain has closed: its recorded start answers again.
+        // The instance identity started once and its chain has closed: its recorded start answers again, and a closed
+        // chain no population start made holds the identity as a running one does.
         if (!(error instanceof WorkflowExecutionAlreadyStartedError)) throw error;
         const recorded: ReachOutcome | null = await client.workflow.getHandle(workflowId)
           .query(populationStartOutcomeQuery);
-        if (recorded === null) {
-          throw ApplicationFailure.nonRetryable(`chain ${workflowId} recorded no population start`);
-        }
-        return recorded;
+        return recorded ?? { kind: "identityInUse" };
       }
     },
     readPopulationIntents: async (request) => {

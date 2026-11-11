@@ -7,10 +7,11 @@
  */
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { after, before, test } from "node:test";
 
-import { runPopulation } from "@bpmn-lean/kernel";
+import { runPopulation, timerInstanceId } from "@bpmn-lean/kernel";
 import { PopulationClient, ProcessClient, Scheduling, processInstanceWorkflowId, type JsonValue } from "@bpmn-lean/temporal-host/client";
 import { createCachedLocalEnvironment } from "@bpmn-lean/temporal-host/testing";
 import { EffectResultKind, createHostWorker } from "@bpmn-lean/temporal-host/worker";
@@ -18,7 +19,7 @@ import { EffectResultKind, createHostWorker } from "@bpmn-lean/temporal-host/wor
 import { projectRoot } from "./pipeline-target-support.ts";
 import { populationStepDigests } from "./population-digest.ts";
 import { deploymentOrder, populationPrograms } from "./population-programs.ts";
-import { DiscoveredKind, discoverScenarios, type PopulationScenarioDocument } from "./scenario-discovery.ts";
+import { DiscoveredKind, discoverScenarios, scenarioKernelInput, type PopulationScenarioDocument } from "./scenario-discovery.ts";
 
 const taskQueue = "bpmn-lean-differential-population-host";
 const config = { scheduling: Scheduling.Durable, effectStartToCloseMs: 10_000, historyEventBudget: null };
@@ -169,4 +170,35 @@ test("each population mechanism answers through the hosted ingress as through th
 test("commands settle with the runner's resolutions while the ingress continues as new between their receivers", async () => {
   const fanOuts = witnesses.filter((witness) => witness.includes("broadcast-two-definitions") || witness.includes("one-start-fails"));
   assert.equal(await witnessed(12, fanOuts), fanOuts.length);
+});
+
+test("a population start onto a directly started chain of its instance identity is refused at once, never waited on", async () => {
+  const relativePath = "scenarios/timer-start-event/scenario.json";
+  const document = JSON.parse(await readFile(path.join(projectRoot, relativePath), "utf8")) as
+    Readonly<{ bpmn: Parameters<typeof scenarioKernelInput>[1]; profile: string }>;
+  const input = await scenarioKernelInput(relativePath, document.bpmn, document.profile);
+  if (input.kind === "refused") throw new Error(`${relativePath} is refused`);
+  const program = JSON.parse(JSON.stringify(input.program)) as JsonValue;
+  const name = `population-${randomUUID()}`;
+  const population = new PopulationClient(environment.client, taskQueue, name, config);
+  const deployed = await population.registerDeployment({ deploymentRequestId: name, digest: "timer-start-event", program });
+  if (!("deploymentId" in deployed)) throw new Error(`deployment refused: ${deployed.refused}`);
+  const startEvent = "TimerStart_PT1S";
+  const dueMs = deployed.deployedAtMs + 1_000;
+  const instanceId = timerInstanceId(deployed.deploymentId, startEvent, dueMs);
+  // A direct start of the occurrence's identity, on time in its own single-instance reading.
+  const direct = await processes.start({
+    workflowId: processInstanceWorkflowId(instanceId), program, config,
+    population: { population: name, deploymentId: deployed.deploymentId },
+    start: { kind: "start", commandId: "direct", instanceId, startEvent, trigger: { kind: "timer", logicalTimeMs: 1_000 }, variables: [] },
+  });
+  assert.equal(direct.outcome, "committed");
+  await new Promise((resolve) => setTimeout(resolve, Math.max(0, dueMs - Date.now()) + 250));
+  const answer = await population.command("timerStart",
+    { commandId: `fire-${name}`, deploymentId: deployed.deploymentId, startEvent, dueMs });
+  assert.deepEqual(answer.resolution, {
+    kind: "fanOut",
+    entries: [{ kind: "failed", target: { kind: "start", deploymentId: deployed.deploymentId, startEvent }, outcome: "rejected",
+      code: "host.population.instanceIdentityInUse" }],
+  });
 });

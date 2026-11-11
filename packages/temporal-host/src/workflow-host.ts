@@ -263,6 +263,8 @@ async function hostProcess<P, S, I>(port: KernelPort<P, S, I>, populationPort: P
     return outcome;
   });
   setHandler(populationStartedUpdate, async () => {
+    // A directly started chain holds the identity: it never gets a start outcome, so the start is refused, not waited on.
+    if (startOutcome === null && args.kind !== RunKind.PopulationStart) return { kind: "identityInUse" } as const;
     await condition(() => startOutcome !== null);
     await settled();
     if (startOutcome === null) throw new TypeError("population start without an outcome");

@@ -33,6 +33,11 @@ export const timerLedgerCapacityCode = "host.population.timerLedgerCapacity";
 export const deploymentRequestConflictCode = "host.population.deploymentRequestConflict";
 /** The code a delivery to a chain that no longer exists fails with. */
 export const chainGoneCode = "workflow-closed";
+/**
+ * A population start's instance identity is already hosted by a chain no population start made (a direct start of that
+ * identity): the start is refused, never attached to the other chain or waited on.
+ */
+export const instanceIdentityInUseCode = "host.population.instanceIdentityInUse";
 /** A caller's chain configuration differs from the one its population's ingress runs with. */
 export const configurationConflictCode = "host.population.configurationConflict";
 
@@ -178,6 +183,12 @@ export interface DeploymentSignals {
   readonly refusesVariables: boolean;
 }
 
+/**
+ * What reaching one receiver answered: its outcome, or that its chain no longer exists (`gone`), or, for a start, that
+ * another chain hosts its instance identity (`identityInUse`).
+ */
+export type ReachAnswer = ReachOutcome | { readonly kind: "gone" } | { readonly kind: "identityInUse" };
+
 export type Answer =
   | { readonly kind: "intents"; readonly instanceId: string | null; readonly intents: readonly Wire[] }
   | { readonly kind: "settled" }
@@ -186,7 +197,7 @@ export type Answer =
   | { readonly kind: "messageStarts"; readonly starts: readonly { readonly deploymentId: number; readonly candidates: readonly (readonly [string, Wire])[] }[] }
   /** Each deployment's root Conditional starts by public identifier, in the order the action named the deployments. */
   | { readonly kind: "conditionalStarts"; readonly starts: readonly { readonly deploymentId: number; readonly startEvents: readonly string[] }[] }
-  | { readonly kind: "reached"; readonly outcome: ReachOutcome | { readonly kind: "gone" } };
+  | { readonly kind: "reached"; readonly outcome: ReachAnswer };
 
 // Registry and registrations.
 
@@ -312,6 +323,16 @@ function settle(state: IngressState, entry: Settled, ticket: number | null, answ
 }
 
 // The driver.
+
+/** The failure a start receiver records when its start did not commit: the kernel's, or the host's refusal. */
+function startFailure<P, S>(port: PopulationPort<P, S>, outcome: Exclude<ReachAnswer, { readonly kind: "committed" | "passed" }>): Wire {
+  switch (outcome.kind) {
+    case "failed": return outcome.failure;
+    case "gone":
+    case "skipped": return port.hostRefusal(chainGoneCode);
+    case "identityInUse": return port.hostRefusal(instanceIdentityInUseCode);
+  }
+}
 
 function inFlight(state: IngressState): InFlight {
   if (state.current === null) throw new TypeError("no population item is in flight");
@@ -587,7 +608,10 @@ export function answer<P, S>(port: PopulationPort<P, S>, state: IngressState, gi
           return resolve(port, state, { kind: "failed", target: phase.target, failure: outcome.failure }, phase.workflowId);
         case "skipped":
         case "gone":
-          return resolve(port, state, { kind: "failed", target: phase.target, failure: port.goneFailure(chainGoneCode) }, phase.workflowId);
+          return resolve(port, state, { kind: "failed", target: phase.target, failure: port.hostRefusal(chainGoneCode) }, phase.workflowId);
+        case "passed":
+        case "identityInUse":
+          break;
       }
       break;
     }
@@ -619,8 +643,8 @@ export function answer<P, S>(port: PopulationPort<P, S>, state: IngressState, gi
       const receiver = port.startReceiver(phase.deploymentId, phase.startEvent);
       const outcome = given.outcome;
       if (outcome.kind !== "committed") {
-        const failure = outcome.kind === "failed" ? outcome.failure : port.goneFailure(chainGoneCode);
         if (outcome.kind === "passed") throw new TypeError("only a Conditional start passes");
+        const failure = startFailure(port, outcome);
         return resolve(port, state, { kind: "fanOut", entries: [port.failedEntry(receiver, failure)] });
       }
       const entry = port.startedEntry(summary, phase.instanceId, phase.startEvent);
@@ -648,7 +672,8 @@ export function answer<P, S>(port: PopulationPort<P, S>, state: IngressState, gi
           case "failed": return record(port.failedEntry(next.receiver, outcome.failure), [], "");
           case "skipped":
           case "gone": return record(port.skippedEntry(target), [], "");
-          case "passed": break;
+          case "passed":
+          case "identityInUse": break;
         }
         break;
       }
@@ -659,8 +684,7 @@ export function answer<P, S>(port: PopulationPort<P, S>, state: IngressState, gi
         ? port.startedInstanceId(commandIdOfFlight(current), next.view.deploymentId, next.view.startEvent)
         : port.emissionStartedId(next.emission, commandIdOfFlight(current), next.view.deploymentId, next.view.startEvent);
       if (outcome.kind === "committed") return record(port.startedEntry(summary, instanceId, next.view.startEvent), outcome.intents, outcome.instanceId);
-      const failure = outcome.kind === "failed" ? outcome.failure : port.goneFailure(chainGoneCode);
-      return record(port.failedEntry(next.receiver, failure), [], "");
+      return record(port.failedEntry(next.receiver, startFailure(port, outcome)), [], "");
     }
   }
   throw new TypeError(`answer ${given.kind} does not fit the ${phase.kind} step`);

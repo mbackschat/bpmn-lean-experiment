@@ -24,6 +24,7 @@ import type {
   PopulationCommandOutcome,
   PopulationCommandRequest,
   PopulationDelivery,
+  PopulationStartAnswer,
   SignalQuestion,
 } from "./population-contract.js";
 
@@ -106,8 +107,11 @@ export const populationMessageQuery = defineQuery<readonly (readonly [Wire, Wire
 export const pendingIntentsQuery = defineQuery<HeldIntents | null, [commandId: string]>("pendingIntents");
 export const populationDeliverUpdate = defineUpdate<ReachOutcome, [PopulationDelivery]>("populationDeliver");
 export const emitSettledUpdate = defineUpdate<void, [commandId: string]>("emitSettled");
-/** The outcome of the chain's population start; sent with the start (Update-with-Start). */
-export const populationStartedUpdate = defineUpdate<ReachOutcome>("populationStart");
+/**
+ * The outcome of the chain's population start; sent with the start (Update-with-Start). A chain no population start
+ * made answers `identityInUse` at once.
+ */
+export const populationStartedUpdate = defineUpdate<PopulationStartAnswer>("populationStart");
 export const populationStartOutcomeQuery = defineQuery<ReachOutcome | null>("populationStartOutcome");
 
 export interface HostActivities extends PopulationActivities {

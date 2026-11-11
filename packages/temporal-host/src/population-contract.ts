@@ -148,7 +148,7 @@ export interface StartDeploymentRequest {
 export interface PopulationActivities {
   readonly scanPopulation: (request: ScanRequest) => Promise<Answer>;
   readonly deliverPopulation: (request: DeliverRequest) => Promise<ReachOutcome | { readonly kind: "gone" }>;
-  readonly startPopulation: (request: PopulationStartRequest) => Promise<ReachOutcome | { readonly kind: "gone" }>;
+  readonly startPopulation: (request: PopulationStartRequest) => Promise<PopulationStartAnswer>;
   readonly readPopulationIntents: (request: IntentsRequest) => Promise<HeldIntents | null>;
   readonly settlePopulationEmit: (request: IntentsRequest) => Promise<void>;
   /** Returns the ingress's refusal code, `null` when registered. */
@@ -159,6 +159,9 @@ export interface PopulationActivities {
 
 /** The answer a chain's population start leaves for a repeated start of the same instance identity. */
 export type PopulationStartOutcome = ReachOutcome;
+
+/** A population start's answer: its outcome, or `identityInUse` when a chain no population start made holds the identity. */
+export type PopulationStartAnswer = ReachOutcome | { readonly kind: "identityInUse" };
 
 /** The Signals one committed non-population input threw, with whether the ingress accepted their emit. */
 export interface UnsettledEmit {
