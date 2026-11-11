@@ -22,10 +22,9 @@ def rootCondition (options : ProfileOptions) (reading : Reading) (trigger : Cond
   else if !trigger.variableEvents.isEmpty then some "start.condition.variableEvents"
   else conditionRefusal options reading trigger
 
-/-- What admission reads of a triggered start's trigger: its refusal, and a root Conditional start's predicate, which
-`startConditions` compares across one process level. -/
-structure Triggered where
-  refusal : Option String
+/-- What admission reads of a triggered start's trigger: its refusal and Signal (`Admitted`), and a root Conditional
+start's predicate, which `startConditions` compares across one process level. -/
+structure Triggered extends Admitted where
   predicate : Option Expression := none
 
 /-- The one dispatch on a start's trigger. At process level (`nested = false`) the start input names it; nested, it is an
@@ -33,17 +32,21 @@ Event Sub-Process start, which may also repeat a cycle and catch what `Kernel.Fe
 def triggered (options : ProfileOptions) (reading : Reading) (nested : Bool) (trigger : Trigger) : Triggered :=
   let variables := options.errorCatchVariables
   let raised (code : String) : Option String := if nested then none else some code
+  let refusing (refusal : Option String) : Triggered := { refusal }
   match trigger with
-  | .timer trigger => ⟨timerAt options reading (!nested) trigger, none⟩
-  | .message trigger => ⟨message options reading (!nested) trigger, none⟩
-  | .signal trigger => ⟨if nested then eventSubProcessSignal trigger else some "start.signal", none⟩
+  | .timer trigger => refusing (timerAt options reading (!nested) trigger)
+  | .message trigger => refusing (message options reading (!nested) trigger)
+  | .signal trigger =>
+    { refusal := if nested then eventSubProcessSignal trigger
+        else signalAddress options reading true trigger.signalRef trigger.name
+      signal := some trigger }
   | .condition trigger =>
-    if nested then ⟨conditionRefusal options reading trigger, none⟩
-    else ⟨rootCondition options reading trigger, some trigger.condition⟩
-  | .error trigger => ⟨raised "start.error" <|> errorTrigger variables trigger, none⟩
-  | .escalation trigger => ⟨raised "start.escalation" <|> escalationTrigger variables trigger, none⟩
-  | .compensation => ⟨raised "start.compensation", none⟩
-  | .cancel => ⟨some "start.cancel", none⟩
+    if nested then refusing (conditionRefusal options reading trigger)
+    else { refusal := rootCondition options reading trigger, predicate := some trigger.condition }
+  | .error trigger => refusing (raised "start.error" <|> errorTrigger variables trigger)
+  | .escalation trigger => refusing (raised "start.escalation" <|> escalationTrigger variables trigger)
+  | .compensation => refusing (raised "start.compensation")
+  | .cancel => refusing (some "start.cancel")
 
 /-- A triggered start's refusal. -/
 def start (options : ProfileOptions) (reading : Reading) (nested : Bool) (subscription : Subscription) :

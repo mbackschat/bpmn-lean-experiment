@@ -2,14 +2,15 @@
  * Refusal tests of `admission/subscriptions.ts`: what a catch Event, a boundary, a triggered start and an Event
  * Sub-Process may wait for. Timers carry a literal `Kernel.Timer.classify` admits (a cycle at every subscription site,
  * not at a root start), Messages carry a literal name and one correlation key bound to a variable, and only a Message
- * writes its payload. Signal triggers have no kernel meaning anywhere; a Conditional one is admitted except at a
- * process start, with CIB's write filters only under the each-write reading; Error, Escalation, Compensation and
+ * writes its payload. A Signal catch names its Signal, and by a non-blank name where names address Signals; a Signal
+ * boundary has no kernel meaning yet; a Conditional one is admitted except at a process start, with CIB's write filters only under the each-write reading; Error, Escalation, Compensation and
  * Cancel are caught by boundaries and nested starts only.
  */
 import {
-  activity, append, boundary, cancelTrigger, catchEvent, channel, compensationTrigger, condition, criterion, cycle, date, duration,
+  activity, append, boundary, cancelTrigger, catchEvent, channel, compensationTrigger, condition, criterion, cycle, date, duration, end,
   errorTrigger, escalationTrigger, eventBased, eventSubProcess, flow, foreign, gateway, juel, literalValue, loop, bool, mapping, message,
-  receiveWork, refusalTests, replace, scope, signal, simpleBoolean, start, task, userWork, variable, computed, text, withFlows, withOptions,
+  qName, receiveWork, refusalTests, replace, scope, signal, simpleBoolean, start, task, userWork, variable, computed, text, withFlows,
+  withOptions,
 } from "./admission-refusal-support.ts";
 import type { Json, Row } from "./admission-refusal-support.ts";
 
@@ -40,6 +41,16 @@ const eventSubProcessOn = (trigger: Json | string, interrupting: boolean) => (pr
     interrupting ? withOptions(program, { abnormalScopeEnd: "completesNormally" }) : program);
 
 const named = message({ messageRef: "M", name: text("M") });
+
+/** A Signal trigger with `over` replacing its `signalRef` or name. */
+const signalWith = (over: Json): Json => {
+  const base = signal() as { signal: { payload: Json } };
+  return { signal: { payload: { ...base.signal.payload, ...over } } };
+};
+
+/** The profile selection under which a Signal's name addresses it, read at the Events level (CIB-INT-0028, CIB-EXT-0041). */
+const signalAddresses = (placed: (program: Json) => Json) => (program: Json): Json =>
+  placed(withOptions(program, { signalNames: "addresses", evaluator: "juel" }));
 
 /** The profile selection under which a Message's name addresses its subscriptions (CIB-LIM-0022). */
 const addresses = (placed: (program: Json) => Json) => (program: Json): Json =>
@@ -101,6 +112,23 @@ const receiving = (env: Json = {}) =>
 /** The process starts `S` and `X` wait for Messages of one name. */
 const twoStarts = (program: Json): Json =>
   withFlows(append(replace(program, "S", start("S", named)), start("X", sameName)), flow("fX", "X", "E"));
+
+/** A Signal trigger on the Signal `ref` named `name`. */
+const signalOn = (ref: string, name: Json): Json => ({ signal: { payload: { signalRef: qName(ref), name } } });
+
+/** The process starts `S` and `X` wait for `first` and `second`. */
+const twoSignalStarts = (first: Json, second: Json) => (program: Json): Json =>
+  withFlows(append(replace(program, "S", start("S", first)), start("X", second)), flow("fX", "X", "E"));
+
+/** `T` and `E` become two catch Events in sequence, each its own event scope, on `first` and `second`. */
+const signalCatches = (first: Json, second: Json) => (program: Json): Json =>
+  replace(replace(program, "T", catchEvent("T", first)), "E", catchEvent("E", second));
+
+/** `T` becomes a catch Event on `caught` and `E` an End Event throwing the Signal `ref` named `name`. */
+const catchAndThrow = (caught: Json, ref: string, name: Json) => (program: Json): Json =>
+  replace(replace(program, "T", catchEvent("T", caught)), "E", end("E", { signal: { payload: {
+    signalRef: qName(ref), name, payload: [], propagateAll: null, localOnly: false, businessKey: null, asynchronous: false,
+  } } }));
 
 /**
  * Two interrupting Error Event Sub-Processes `H1` and `H2` catching `first` and `second` (`null` catches every Error),
@@ -362,7 +390,74 @@ export const rows: readonly Row[] = [
     control: eventSubProcessOn(named, false),
   },
   // Catch Events.
-  { code: "event.catch.signal", description: "a catch Signal", mutate: catching(signal()) },
+  {
+    code: "signal.unspecified",
+    description: "a catch Signal without a signalRef",
+    mutate: catching(signalWith({ signalRef: null })),
+    control: catching(signal()),
+  },
+  {
+    code: "signal.nameExpression",
+    description: "a catch Signal whose descriptive name is an expression under the identifier reading",
+    mutate: catching(signalWith({ name: computed(variable("x")) })),
+    control: signalAddresses(catching(signalWith({ name: computed(variable("x")) }))),
+  },
+  {
+    code: "signal.unnamed",
+    description: "a catch Signal without a name, where names address Signals",
+    mutate: signalAddresses(catching(signalWith({ name: null }))),
+    control: catching(signalWith({ name: null })),
+  },
+  {
+    code: "signal.unnamed",
+    description: "a catch Signal with a blank name, where names address Signals",
+    mutate: signalAddresses(catching(signalWith({ name: text(" ") }))),
+    control: signalAddresses(catching(signal())),
+  },
+  {
+    code: "signal.nameExpression",
+    description: "a catch Signal name expression outside the Events level, where names address Signals",
+    mutate: (program) => catching(signalWith({ name: computed(variable("x")) }))(withOptions(program, { signalNames: "addresses" })),
+    control: signalAddresses(catching(signalWith({ name: computed(variable("x")) }))),
+  },
+  // One Signal name per document and per CIB event scope (CIB-LIM-0026): each refused pair's control drops `addresses`,
+  // moves one subscription to another event scope or renames one Signal.
+  {
+    code: "signal.duplicateName",
+    description: "two Event-Based Gateway arms on one Signal, where names address Signals",
+    mutate: signalAddresses(arms(signal(), signal())),
+    control: arms(signal(), signal()),
+  },
+  {
+    code: "signal.duplicateName",
+    description: "two root Signal starts on one Signal beside two catches of it in sequence, where names address Signals",
+    mutate: signalAddresses(twoSignalStarts(signal(), signal())),
+    control: signalAddresses(signalCatches(signal(), signal())),
+  },
+  {
+    code: "signal.duplicateName",
+    description: "two Event-Based Gateway arms on one Signal named by an expression, where names address Signals",
+    mutate: signalAddresses(arms(signalOn("Sig", orderField("id")), signalOn("Sig", orderField("id")))),
+    control: signalAddresses(arms(signalOn("Sig", orderField("id")), signalOn("Sig2", orderField("number")))),
+  },
+  {
+    code: "signal.duplicateDefinitionName",
+    description: "two catches in sequence on two Signals of one name, where names address Signals",
+    mutate: signalAddresses(signalCatches(signal(), signalOn("Sig2", text("S")))),
+    control: signalAddresses(signalCatches(signal(), signalOn("Sig2", text("S2")))),
+  },
+  {
+    code: "signal.duplicateDefinitionName",
+    description: "two catches in sequence on two Signals named by one expression, where names address Signals",
+    mutate: signalAddresses(signalCatches(signalOn("Sig", orderField("id")), signalOn("Sig2", orderField("id")))),
+    control: signalAddresses(signalCatches(signalOn("Sig", orderField("id")), signalOn("Sig2", orderField("number")))),
+  },
+  {
+    code: "signal.duplicateDefinitionName",
+    description: "a catch and a throw on two Signals of one name, where names address Signals",
+    mutate: signalAddresses(catchAndThrow(signal(), "Sig2", text("S"))),
+    control: catchAndThrow(signal(), "Sig2", text("S")),
+  },
   { code: "event.catch.error", description: "a catch Error", mutate: catching(errorTrigger()) },
   { code: "event.catch.escalation", description: "a catch Escalation", mutate: catching(escalationTrigger()) },
   { code: "event.catch.compensation", description: "a catch Compensation", mutate: catching(compensationTrigger) },
@@ -395,7 +490,7 @@ export const rows: readonly Row[] = [
     control: catching(condition()),
   },
   // Triggered starts; a root start's own refusals are `admission-refusals-starts.test.ts`'.
-  { code: "start.signal", description: "a Signal start", mutate: starting(signal()) },
+  { code: "start.signal", description: "an Event Sub-Process Signal start", mutate: nested(signal()) },
   {
     code: "start.error",
     description: "a process Error start",

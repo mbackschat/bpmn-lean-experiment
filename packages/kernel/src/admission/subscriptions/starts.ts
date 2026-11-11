@@ -26,8 +26,12 @@ import {
   escalationTrigger,
   eventSubProcessSignal,
   message,
+  sameData,
+  signalAddress,
   subscriptionOutputs,
   timerAt,
+  unread,
+  type Admitted,
   type Reading,
 } from "../subscriptions.js";
 
@@ -44,18 +48,18 @@ function rootCondition(options: ProfileOptions, reading: Reading, trigger: Condi
 }
 
 /**
- * What admission reads of a triggered start's trigger: its refusal, and a root Conditional start's predicate, which
- * `startConditions` compares across one process level.
+ * What admission reads of a triggered start's trigger: its refusal and Signal (`Admitted`), and a root Conditional
+ * start's predicate, which `startConditions` compares across one process level.
  */
-type Triggered = Readonly<{ refusal: string | null; predicate: Expression | null }>;
+export type Triggered = Admitted & Readonly<{ predicate: Expression | null }>;
 
-const refusing = (refusal: string | null): Triggered => ({ refusal, predicate: null });
+const refusing = (refusal: string | null): Triggered => ({ refusal, signal: null, predicate: null });
 
 /**
  * The one dispatch on a start's trigger. At process level (`nested = false`) the start input names it; nested, it is an
  * Event Sub-Process start, which may also repeat a cycle and catch what `feature/propagation.ts` raises.
  */
-function triggered(options: ProfileOptions, reading: Reading, nested: boolean, trigger: Trigger): Triggered {
+export function triggered(options: ProfileOptions, reading: Reading, nested: boolean, trigger: Trigger): Triggered {
   const variables = options.errorCatchVariables;
   const raised = (code: string): string | null => (nested ? null : code);
   switch (trigger.tag) {
@@ -64,11 +68,17 @@ function triggered(options: ProfileOptions, reading: Reading, nested: boolean, t
     case TriggerTag.Message:
       return refusing(message(options, reading, !nested, trigger.payload));
     case TriggerTag.Signal:
-      return refusing(nested ? eventSubProcessSignal(trigger.payload) : "start.signal");
+      return {
+        refusal: nested
+          ? eventSubProcessSignal(trigger.payload)
+          : signalAddress(options, reading, true, trigger.payload.signalRef, trigger.payload.name),
+        signal: trigger.payload,
+        predicate: null,
+      };
     case TriggerTag.Condition:
       return nested
         ? refusing(conditionRefusal(options, reading, trigger.payload))
-        : { refusal: rootCondition(options, reading, trigger.payload), predicate: trigger.payload.condition };
+        : { refusal: rootCondition(options, reading, trigger.payload), signal: null, predicate: trigger.payload.condition };
     case TriggerTag.Error:
       return refusing(raised("start.error") ?? errorTrigger(variables, trigger.payload));
     case TriggerTag.Escalation:
@@ -84,28 +94,6 @@ function triggered(options: ProfileOptions, reading: Reading, nested: boolean, t
 /** A triggered start's refusal. */
 export function start(options: ProfileOptions, reading: Reading, nested: boolean, subscription: Subscription): string | null {
   return definitions(subscription) ?? subscriptionOutputs(subscription) ?? triggered(options, reading, nested, subscription.trigger).refusal;
-}
-
-/** The reading of a site that reads no expression, for a predicate `startConditions` only compares. */
-const unread: Reading = { juel: () => null, name: () => null };
-
-/**
- * Structural equality of two IL values, Lean's derived-`Repr` comparison in `startConditions`: list order counts, a
- * `bigint` compares by value, and an object compares by its members whatever their insertion order, an absent member
- * equal to an `undefined` one.
- */
-function sameData(left: unknown, right: unknown): boolean {
-  if (Array.isArray(left) || Array.isArray(right)) {
-    return Array.isArray(left) && Array.isArray(right) && left.length === right.length &&
-      left.every((item, index) => sameData(item, right[index]));
-  }
-  if (typeof left === "object" && left !== null && typeof right === "object" && right !== null) {
-    const leftMembers = left as Readonly<Record<string, unknown>>;
-    const rightMembers = right as Readonly<Record<string, unknown>>;
-    return [...new Set([...Object.keys(leftMembers), ...Object.keys(rightMembers)])]
-      .every((key) => sameData(leftMembers[key], rightMembers[key]));
-  }
-  return left === right;
 }
 
 /**

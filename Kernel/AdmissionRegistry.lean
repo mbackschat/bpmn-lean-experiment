@@ -65,6 +65,13 @@ def outputTargets (program : Program) (header : Header) (outputs : List Mapping)
 def inTransaction (program : Program) (header : Header) : Bool :=
   header.parent.any (Admission.Scopes.transactionElement program)
 
+/-- How a throw Event in `header`'s place reads its trigger's expressions and its mappings. -/
+def throwSite (program : Program) (header : Header) : Admission.Propagation.ThrowSite :=
+  let reading := subscriptionReading program (some header.id)
+  { signalAddress := Admission.Subscriptions.signalAddress program.options reading false
+    eventsExpression := Admission.Subscriptions.eventsExpression program.options reading
+    mappings := Admission.Data.mappings program.options.evaluator (site program (some header.id)) }
+
 /-- What an element throws, if it is a throw Event. -/
 def thrown (element : Element) : Option (Header × Admission.Propagation.Reading) :=
   element.event?.bind fun (header, payload) =>
@@ -99,37 +106,66 @@ def armOf (program : Program) (payload : EventPayload) : Option ElementId :=
     ((program.element? source).bind (·.gateway?)).bind fun (header, gateway) =>
       if (Admission.Flow.routing gateway).waits then some header.id else none
 
-/-- An element's Message subscriptions in CIB's event scopes, each also declared with its start mark:
+/-- What `sites` reads of each subscription an element declares, if it is of the compared kind: a boundary's, a Receive
+Task's own Message, an Event Sub-Process start's, a catch Event's and a root start's trigger. -/
+structure Picks (α : Type) where
+  attached : Boundary → Option α
+  received : Work → Option α := fun _ => none
+  handled : Subscription → Option α
+  caught : Subscription → Option α
+  started : Subscription → Option α
+
+/-- An element's subscriptions of one kind in CIB's event scopes, each also declared with its start mark:
 - a boundary in its host, or in the host's Multi-Instance body when the host loops (`BpmnParse.java:3290-3301`,
-  `getMultiInstanceScope` `:3388-3393`, declared at `:3455`);
+  `getMultiInstanceScope` `:3388-3393`, declared at `:3439`, `:3455`);
 - a Receive Task's own Message in the Receive Task, which its boundaries share unless it loops (`:2753-2760`);
 - an Event Sub-Process start in the scope holding the Event Sub-Process (`:1112`), unmarked
   (`parseEventDefinitionForSubprocess`, `:3499-3503`), so a boundary of that Sub-Process shares it;
 - an Event-Based Gateway arm in the gateway (`:1526-1527`, parsed from the gateway at `:2132`), any other catch in
-  itself (`:1529-1530`), declared at `:1596`;
-- a root Message start in its process, marked (`:1026-1032`), apart from that level's Event Sub-Process starts.
+  itself (`:1529-1530`), declared at `:1596`, `:3520`;
+- a root start in its process, marked (Message `:1026-1032`, Signal `:1033-1037`, `:3518`), apart from that level's
+  Event Sub-Process starts.
 A start nested in a Scope is taken with its Event Sub-Process. -/
-def messageSites (program : Program) (element : Element) : List Admission.Subscriptions.MessageSite :=
+def sites {α : Type} (program : Program) (picks : Picks α) (element : Element) : List (Admission.Subscriptions.Site α) :=
   let id := element.header.id
-  let declared (scope : Admission.Subscriptions.EventScope) (start : Bool) (trigger : MessageTrigger) :
-      Admission.Subscriptions.MessageSite := { scope, start, trigger }
-  let site (scope : Admission.Subscriptions.EventScope) (start : Bool) (subscription : Subscription) :=
-    subscription.trigger.message?.map (declared scope start)
+  let declared (scope : Admission.Subscriptions.EventScope) (start : Bool) (trigger : α) :
+      Admission.Subscriptions.Site α := { scope, start, trigger }
   let attached := ((element.envelope?).map fun envelope =>
     let scope : Admission.Subscriptions.EventScope := if envelope.multiInstance.isSome then .body id else .element id
-    envelope.boundaries.filterMap (site scope false ·.subscription)).getD []
-  let received := ((element.activity?).bind fun (_, payload) => payload.work.receive?).map (declared (.element id) false)
+    envelope.boundaries.filterMap fun boundary => (picks.attached boundary).map (declared scope false)).getD []
+  let received := ((element.activity?).bind fun (_, payload) => picks.received payload.work).map (declared (.element id) false)
   let handled := (element.scope?).bind fun (header, payload) => (Admission.Scopes.eventSubProcess? payload).bind
-    fun (start, _) => site (match header.parent with
+    fun (start, _) => (picks.handled start).map (declared (match header.parent with
       | some parent => .element parent
-      | none => processLevel program id) false start
-  let caught := (element.event?).bind fun (_, payload) => payload.catch?.bind
-    (site (match armOf program payload with
+      | none => processLevel program id) false)
+  let caught := (element.event?).bind fun (_, payload) => payload.catch?.bind fun subscription =>
+    (picks.caught subscription).map (declared (match armOf program payload with
       | some gateway => .element gateway
       | none => .element id) false)
   let started := (element.start?).bind fun (header, payload) =>
-    if header.parent.isNone then payload.subscription.bind (site (processLevel program id) true) else none
+    if header.parent.isNone then (payload.subscription.bind picks.started).map (declared (processLevel program id) true)
+    else none
   attached ++ received.toList ++ handled.toList ++ caught.toList ++ started.toList
+
+def messages : Picks MessageTrigger :=
+  { attached := (·.subscription.trigger.message?), received := (·.receive?), handled := (·.trigger.message?),
+    caught := (·.trigger.message?), started := (·.trigger.message?) }
+
+/-- The Signals admission reads where it admits them: a catch Event's (`caught`), an Event Sub-Process start's and a root
+start's (`triggered`). A Signal boundary is refused (`boundary.signal`). -/
+def signals (options : ProfileOptions) : Picks SignalTrigger :=
+  { attached := fun _ => none
+    handled := fun start => (Admission.Subscriptions.triggered options {} true start.trigger).signal
+    caught := fun subscription => (Admission.Subscriptions.caught options {} subscription).signal
+    started := fun start => (Admission.Subscriptions.triggered options {} false start.trigger).signal }
+
+/-- The Signal names of the whole program: of every Signal it references, then of the subscriptions of each event
+scope. -/
+def signalDeclarations (program : Program) : Option String :=
+  let subscribed := program.elements.flatMap (sites program (signals program.options))
+  let throws := program.elements.filterMap fun element => (thrown element).bind (·.2.signal)
+  Admission.Subscriptions.signalDefinitionNames program.options (subscribed.map (·.trigger) ++ throws) <|>
+    Admission.Subscriptions.signalNames program.options subscribed
 
 /-- `throws` lists the program's Compensation throws. -/
 def element (program : Program) (throws : List Element) : Element → Option String
@@ -171,7 +207,7 @@ def element (program : Program) (throws : List Element) : Element → Option Str
       -- A Multiple throw Event (BPMN 2.0.2 §10.5.1); pinned CIB keeps one definition (CIB-LIM-0008) (PC-BASIC-04).
       | .throw record =>
         (if payload.alternativeThrows.isEmpty then none else some "event.multipleDefinitions") <|>
-          Admission.Propagation.throwRecord (inTransaction program header) record
+          Admission.Propagation.throwRecord program.options (throwSite program header) (inTransaction program header) record
       | .linkCatch _ => Admission.Flow.link program header payload
       | .linkThrow _ => Admission.Flow.link program header payload
   | .gateway header payload =>
@@ -223,7 +259,7 @@ def executable (program : Program) : Option String :=
 
 /-- The first refusal: references, profile options, a process not marked executable, the carried DMN resources, then
 called-process bindings, the process levels' Event Sub-Processes, flows and elements in program order, the instances of
-each loop, the Conditional starts of each process level, then the Message names of the whole program. -/
+each loop, the Conditional starts of each process level, then the Message and the Signal names of the whole program. -/
 def admit (program : Program) : Option String :=
   Admission.Flow.references program <|> Admission.Scopes.membership program <|>
     Admission.Profile.options (abnormalScope program) (loops program) program.options <|>
@@ -235,6 +271,7 @@ def admit (program : Program) : Option String :=
     program.elements.findSome? (element program (program.elements.filter compensationThrow)) <|>
     program.elements.findSome? (loopInstances program) <|>
     Admission.Subscriptions.startConditions program <|>
-    Admission.Subscriptions.messageNames program.options (program.elements.flatMap (messageSites program))
+    Admission.Subscriptions.messageNames program.options (program.elements.flatMap (sites program messages)) <|>
+    signalDeclarations program
 
 end Kernel.AdmissionRegistry

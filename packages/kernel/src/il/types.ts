@@ -147,8 +147,6 @@ export interface MessageTrigger {
  * `signalRef` is the Signal the event references, `null` when the model names none; `name` is that Signal's `name`
  * (BPMN 2.0.2 Table 10.100), `null` when it has none.
  */
-// guard-exception(19): `signalRef` is read once a Signal subscription is admitted; admission refuses each whole
-// (`event.catch.signal`, `boundary.signal`, `start.signal`, admission/subscriptions.ts).
 export interface SignalTrigger { readonly signalRef: QName | null; readonly name: ValueSource | null; }
 
 /**
@@ -232,16 +230,12 @@ export interface MessageThrow { readonly binding: EffectBinding | null; readonly
  * `camunda:in variables="all"` copies every visible variable (PC-SIGNAL-01).
  */
 export interface SignalThrow {
-  // guard-exception(19): a Signal throw is refused whole (`throw.signal`, admission/propagation.ts).
   readonly signalRef: QName | null;
   readonly name: ValueSource | null;
   readonly payload: readonly Mapping[];
-  // guard-exception(19): refused with its throw, as `signalRef` above.
   readonly propagateAll: number | null;
-  // guard-exception(19): refused with its throw, as `signalRef` above.
   readonly localOnly: boolean;
   readonly businessKey: Expression | null;
-  // guard-exception(19): refused with its throw, as `signalRef` above.
   readonly asynchronous: boolean;
 }
 

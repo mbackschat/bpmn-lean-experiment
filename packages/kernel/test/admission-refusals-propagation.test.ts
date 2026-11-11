@@ -1,9 +1,12 @@
 /**
  * Refusal tests of `admission/propagation.ts`: an End Event throws only what `feature/propagation.ts` raises. An Error
- * message must be literal, a Compensation names no Activity and waits for its handlers, and a Message or Signal throw
- * has no kernel meaning.
+ * message must be literal, a Compensation names no Activity and waits for its handlers, a Message throw has no kernel
+ * meaning, and a Signal throw carries `camunda:in` copies and a business key only where a Signal carries variables.
  */
-import { append, computed, end, flow, qName, refusalTests, replace, scope, start, task, text, variable, withFlows } from "./admission-refusal-support.ts";
+import {
+  append, computed, end, flow, literalValue, mapping, qName, refusalTests, replace, scope, start, task, text, variable, withFlows,
+  withOptions,
+} from "./admission-refusal-support.ts";
 import type { Json, Row } from "./admission-refusal-support.ts";
 
 /** `E` becomes an End Event throwing `record`. */
@@ -14,6 +17,16 @@ const errorThrow = (message: Json | null): Json => ({ error: { payload: { code: 
 const cancelledTransaction = (program: Json): Json =>
   withFlows(append(task(scope("T", { transaction: { payload: { method: "compensate" } } }))(program),
     start("XS", null, [], "T"), end("X", "cancel", "T")), flow("fx", "XS", "X"));
+
+/** A Signal throw with `over` replacing its fields. */
+const signalThrow = (over: Json): Json => ({
+  signal: {
+    payload: { signalRef: qName("Sig"), name: text("S"), payload: [], propagateAll: null, localOnly: false, businessKey: null, asynchronous: false, ...over },
+  },
+});
+
+/** The profile selection under which a Signal carries variables read at the Events level (CIB-EXT-0040, CIB-EXT-0043). */
+const carrying: Json = { signalPayload: "variables", evaluator: "juel" };
 
 const compensation = (over: Json): Json => ({ compensation: { payload: { activity: null, waitForCompletion: true, ...over } } });
 
@@ -31,12 +44,58 @@ export const rows: readonly Row[] = [
     control: throwing("none"),
   },
   {
-    code: "throw.signal",
-    description: "a Signal throw",
-    mutate: throwing({
-      signal: { payload: { signalRef: qName("Sig"), name: text("S"), payload: [], propagateAll: null, localOnly: false, businessKey: null, asynchronous: false } },
-    }),
-    control: throwing("none"),
+    code: "signal.unspecified",
+    description: "a Signal throw without a signalRef",
+    mutate: throwing(signalThrow({ signalRef: null })),
+    control: throwing(signalThrow({})),
+  },
+  {
+    code: "throw.signal.asynchronous",
+    description: "an asynchronous Signal throw",
+    mutate: throwing(signalThrow({ asynchronous: true })),
+    control: throwing(signalThrow({})),
+  },
+  {
+    code: "throw.signal.localVariables",
+    description: "a Signal throw copying only local variables",
+    mutate: throwing(signalThrow({ propagateAll: 0, localOnly: true })),
+    control: (program) => throwing(signalThrow({ propagateAll: 0 }))(withOptions(program, carrying)),
+  },
+  {
+    code: "throw.signal.dataInput",
+    description: "a Signal throw with a Data Input Association",
+    mutate: (program) => throwing(signalThrow({ payload: [mapping("x", variable("y"), "dataAssociation")] }))(withOptions(program, carrying)),
+    control: (program) => throwing(signalThrow({ payload: [mapping("x", variable("y"), "callVariable")] }))(withOptions(program, carrying)),
+  },
+  {
+    code: "throw.signal.payload",
+    description: "a Signal throw copying variables where a Signal carries no data",
+    mutate: throwing(signalThrow({ payload: [mapping("x", variable("y"), "callVariable")] })),
+    control: (program) => throwing(signalThrow({ payload: [mapping("x", variable("y"), "callVariable")] }))(withOptions(program, carrying)),
+  },
+  {
+    code: "throw.signal.payload",
+    description: "a Signal throw copying every variable where a Signal carries no data",
+    mutate: throwing(signalThrow({ propagateAll: 0 })),
+    control: (program) => throwing(signalThrow({ propagateAll: 0 }))(withOptions(program, carrying)),
+  },
+  {
+    code: "throw.signal.businessKey",
+    description: "a Signal throw with a business key where a Signal carries no data",
+    mutate: throwing(signalThrow({ businessKey: literalValue({ kind: "string", value: "K" }) })),
+    control: (program) => throwing(signalThrow({ businessKey: literalValue({ kind: "string", value: "K" }) }))(withOptions(program, carrying)),
+  },
+  {
+    code: "throw.signal.businessKey",
+    description: "a Signal throw whose business key expression lies outside the Events level",
+    mutate: (program) => throwing(signalThrow({ businessKey: variable("key") }))(withOptions(program, { signalPayload: "variables" })),
+    control: (program) => throwing(signalThrow({ businessKey: variable("key") }))(withOptions(program, carrying)),
+  },
+  {
+    code: "signal.unnamed",
+    description: "a Signal throw without a name, where names address Signals",
+    mutate: (program) => throwing(signalThrow({ name: null }))(withOptions(program, { signalNames: "addresses" })),
+    control: (program) => throwing(signalThrow({}))(withOptions(program, { signalNames: "addresses" })),
   },
   {
     code: "throw.compensation.activity",

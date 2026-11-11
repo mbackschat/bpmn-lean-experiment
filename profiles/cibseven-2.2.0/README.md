@@ -29,6 +29,8 @@ The [profile artifact](profile.json) is the CIB Seven 2.2.0 compatibility profil
 | `malformedTimer` | `rollsBackArming` | `CIB-EXT-0036` |
 | `messageNames` | `addresses` | `CIB-LIM-0022` |
 | `scopeStart` | `required` | `CIB-LIM-0024` |
+| `signalNames` | `addresses` | `CIB-INT-0028` |
+| `signalPayload` | `variables` | `CIB-EXT-0040`, `CIB-EXT-0043` |
 
 Every other option keeps the standards reading, including `scopeChainSubmissionBytes`, and the relationships the profile lists without an option row are provenance. A relationship whose option is mutually exclusive with one above is a decision point for a second cumulative profile, not a switch inside this one: the [scope-chain profile](../cibseven-2.2.0-scope-chain/README.md) is the first, because `CIB-EXT-0020` restricts User Task submissions that `CIB-EXT-0005` installs at the root.
 

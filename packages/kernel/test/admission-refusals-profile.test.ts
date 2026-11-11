@@ -83,20 +83,8 @@ export const rows: readonly Row[] = [
     control: (program) => terminatingCalledProcess(withOptions(program, completesNormally)),
   },
   {
-    code: "profile.signalNames.addresses",
-    description: "Signals addressed by their names",
-    mutate: option({ signalNames: "addresses" }),
-    control: option({ signalNames: "identifier" }),
-  },
-  {
-    code: "profile.signalPayload.variables",
-    description: "a Signal that carries variables",
-    mutate: option({ signalPayload: "variables" }),
-    control: option({ signalPayload: "none" }),
-  },
-  {
     code: "profile.signalDelivery.occurrenceTargeted",
-    description: "a Signal delivered to one targeted occurrence",
+    description: "a Signal delivered to one targeted occurrence, refused until the input boundary rejects it under broadcastOnly",
     mutate: option({ signalDelivery: "occurrenceTargeted" }),
     control: option({ signalDelivery: "broadcastOnly" }),
   },

@@ -4,7 +4,7 @@
  * start Event's trigger and hands an Event Sub-Process start's Signal to `eventSubProcessSignal`.
  *
  * Admitted: Timers with a literal `il/timer.ts#classify` admits, Messages with a literal name and no
- * correlation, a correlated Message only on a catch Event, and, on boundaries, the triggers that
+ * correlation, a correlated Message only on a catch Event, a Signal catch with a resolvable address, and, on boundaries, the triggers that
  * `feature/propagation.ts` delivers (an interrupting Error, Escalation, Compensation, and Cancel on a Transaction).
  */
 import {
@@ -15,6 +15,7 @@ import {
   ExpressionTag,
   MalformedTimer,
   MessageNames,
+  SignalNames,
   TimerScheduleTag,
   TriggerTag,
   ValueSourceTag,
@@ -33,6 +34,7 @@ import {
   type ErrorTrigger,
   type EscalationTrigger,
   type MessageTrigger,
+  type QName,
   type SignalTrigger,
   type Subscription,
   type TimerTrigger,
@@ -66,11 +68,14 @@ export interface Reading {
   readonly name: (name: string) => string | null;
 }
 
+/** The reading of a site that reads no expression, Lean's `{}`, for a trigger admission only compares. */
+export const unread: Reading = { juel: () => null, name: () => null };
+
 /**
  * An Events-level expression under `Evaluator.Juel`: a JUEL table or a plain variable read; any other form, and every
  * expression under Simple Boolean, is refused as `refusal`.
  */
-function eventsExpression(options: ProfileOptions, reading: Reading, refusal: string, expression: Expression): string | null {
+export function eventsExpression(options: ProfileOptions, reading: Reading, refusal: string, expression: Expression): string | null {
   switch (expression.tag) {
     case ExpressionTag.Juel:
       return options.evaluator === Evaluator.Juel ? reading.juel(expression.nodes) : refusal;
@@ -194,6 +199,34 @@ export function message(options: ProfileOptions, reading: Reading, rootStart: bo
   if (trigger.correlation.length > 0) return "message.correlation";
   if (trigger.messageRef === null) return "message.unspecified";
   return messageName(options, reading, rootStart, trigger.name);
+}
+
+/**
+ * A Signal's address (PC-SIGNAL-01, PC-SIGNAL-02), shared by catches, starts and throws. Every event names its Signal
+ * by `signalRef` (`BpmnParse.java:3536-3545`). Under `SignalNames.Identifier` that QName is the address and the name a
+ * description, which BPMN 2.0.2 gives no expression (`tSignal.name` is `xsd:string`). Under `Addresses` CIB keys by the
+ * name (CIB-INT-0028): a missing or blank one is refused (`BpmnParse.java:487-488`), and an expression is read at the
+ * Events level (CIB-EXT-0041), except at a root start, which CIB resolves at deployment against an empty scope
+ * (`EventSubscriptionDeclaration.java:137-142`).
+ */
+export function signalAddress(
+  options: ProfileOptions, reading: Reading, rootStart: boolean, signalRef: QName | null, name: ValueSource | null,
+): string | null {
+  if (signalRef === null) return "signal.unspecified";
+  switch (options.signalNames) {
+    case SignalNames.Identifier:
+      return name !== null && name.tag === ValueSourceTag.Expression ? "signal.nameExpression" : null;
+    case SignalNames.Addresses:
+      if (name === null) return "signal.unnamed";
+      switch (name.tag) {
+        case ValueSourceTag.Literal:
+          return [...name.value].every((char) => char <= " ") ? "signal.unnamed" : null;
+        case ValueSourceTag.Expression:
+          return rootStart ? "start.signalNameExpression" : eventsExpression(options, reading, "signal.nameExpression", name.body);
+      }
+      return assertNever(name);
+  }
+  return assertNever(options.signalNames);
 }
 
 function criterionValue(
@@ -345,29 +378,43 @@ export function eventSubProcessDeclarations(starts: readonly (readonly [Subscrip
   return null;
 }
 
-export function catchEvent(options: ProfileOptions, reading: Reading, subscription: Subscription): string | null {
-  const refused = definitions(subscription) ?? subscriptionOutputs(subscription);
-  if (refused !== null) return refused;
+/**
+ * What admission reads of a subscription's trigger: its refusal, and the Signal it subscribes to, which `signalNames` and
+ * `signalDefinitionNames` compare across the program.
+ */
+export type Admitted = Readonly<{ refusal: string | null; signal: SignalTrigger | null }>;
+
+const refusing = (refusal: string | null): Admitted => ({ refusal, signal: null });
+
+/** The one dispatch on a catch Event's trigger. */
+export function caught(options: ProfileOptions, reading: Reading, subscription: Subscription): Admitted {
   const trigger = subscription.trigger;
   switch (trigger.tag) {
     case TriggerTag.Timer:
-      return timerAt(options, reading, false, trigger.payload);
+      return refusing(timerAt(options, reading, false, trigger.payload));
     case TriggerTag.Message:
-      return correlatedCatch(options, reading, subscription, trigger.payload);
+      return refusing(correlatedCatch(options, reading, subscription, trigger.payload));
     case TriggerTag.Signal:
-      return "event.catch.signal";
+      return {
+        refusal: signalAddress(options, reading, false, trigger.payload.signalRef, trigger.payload.name),
+        signal: trigger.payload,
+      };
     case TriggerTag.Condition:
-      return conditionRefusal(options, reading, trigger.payload);
+      return refusing(conditionRefusal(options, reading, trigger.payload));
     case TriggerTag.Error:
-      return "event.catch.error";
+      return refusing("event.catch.error");
     case TriggerTag.Escalation:
-      return "event.catch.escalation";
+      return refusing("event.catch.escalation");
     case TriggerTag.Compensation:
-      return "event.catch.compensation";
+      return refusing("event.catch.compensation");
     case TriggerTag.Cancel:
-      return "event.catch.cancel";
+      return refusing("event.catch.cancel");
   }
   return assertNever(trigger);
+}
+
+export function catchEvent(options: ProfileOptions, reading: Reading, subscription: Subscription): string | null {
+  return definitions(subscription) ?? subscriptionOutputs(subscription) ?? caught(options, reading, subscription).refusal;
 }
 
 /**
@@ -435,7 +482,7 @@ export enum EventScopeTag {
 }
 
 /**
- * The event scope CIB declares a Message subscription in (`BpmnParse#addEventSubscriptionDeclaration`,
+ * The event scope CIB declares a Message or Signal subscription in (`BpmnParse#addEventSubscriptionDeclaration`,
  * `BpmnParse.java:1271-1295`): a process level (the root for `null`, else the called process of that definition), an
  * element, or the Multi-Instance body of a looping host.
  */
@@ -460,13 +507,13 @@ function eventScopeEquals(left: EventScope, right: EventScope): boolean {
 }
 
 /**
- * A Message subscription as CIB declares it: its event scope, its `isStartEvent` mark, which only a root Message start
- * sets (`BpmnParse.java:1029`), and its trigger.
+ * A Message or Signal subscription as CIB declares it: its event scope, its `isStartEvent` mark, which only a root start
+ * sets (`BpmnParse.java:1029`, `:3518`), and its trigger.
  */
-export interface MessageSite {
+export interface Site<T> {
   readonly scope: EventScope;
   readonly start: boolean;
-  readonly trigger: MessageTrigger;
+  readonly trigger: T;
 }
 
 /**
@@ -479,9 +526,9 @@ export interface MessageSite {
  * rather than guessed, which also refuses pairs of different texts that CIB deploys (PC-MESSAGE-01). A literal never
  * collides with an expression: the reader reads every text holding `${` or `#{` as an expression.
  */
-export function messageNames(options: ProfileOptions, sites: readonly MessageSite[]): string | null {
+export function messageNames(options: ProfileOptions, sites: readonly Site<MessageTrigger>[]): string | null {
   if (options.messageNames !== MessageNames.Addresses) return null;
-  const clash = (earlier: MessageSite, site: MessageSite): string | null => {
+  const clash = (earlier: Site<MessageTrigger>, site: Site<MessageTrigger>): string | null => {
     if (earlier.start !== site.start || !eventScopeEquals(earlier.scope, site.scope)) return null;
     const left = earlier.trigger.name;
     const right = site.trigger.name;
@@ -502,6 +549,68 @@ export function messageNames(options: ProfileOptions, sites: readonly MessageSit
     }
   }
   return null;
+}
+
+/**
+ * Structural equality of two IL values, Lean's derived-`Repr` comparison: list order counts, a `bigint` compares by
+ * value, and an object compares by its members whatever their insertion order, an absent member equal to an `undefined`
+ * one.
+ */
+export function sameData(left: unknown, right: unknown): boolean {
+  if (Array.isArray(left) || Array.isArray(right)) {
+    return Array.isArray(left) && Array.isArray(right) && left.length === right.length &&
+      left.every((item, index) => sameData(item, right[index]));
+  }
+  if (typeof left === "object" && left !== null && typeof right === "object" && right !== null) {
+    const leftMembers = left as Readonly<Record<string, unknown>>;
+    const rightMembers = right as Readonly<Record<string, unknown>>;
+    return [...new Set([...Object.keys(leftMembers), ...Object.keys(rightMembers)])]
+      .every((key) => sameData(leftMembers[key], rightMembers[key]));
+  }
+  return left === right;
+}
+
+/**
+ * Two Signal names compare as CIB compares their texts: a literal by its text, an expression by its parsed form, which
+ * the IL keeps instead of the text. `sameData` makes that exact structural equality without a dispatch over the guarded
+ * JUEL types (as `startConditions`), and it equates only texts that differ in layout, which CIB keeps apart. The reader
+ * reads every text holding `${` or `#{` as an expression, so a literal never equals an expression.
+ */
+function sameSignalName(left: SignalTrigger, right: SignalTrigger): boolean {
+  return left.name !== null && sameData(left.name, right.name);
+}
+
+/** Whether some element of `items` and an earlier one are `related`. */
+function anyPair<T>(items: readonly T[], related: (earlier: T, item: T) => boolean): boolean {
+  return items.some((item, index) => items.slice(0, index).some((earlier) => related(earlier, item)));
+}
+
+/**
+ * Under `SignalNames.Addresses` two Signals the program references may not share a name
+ * (`signal.duplicateDefinitionName`, CIB-LIM-0026): CIB refuses a document declaring two (`BpmnParse.java:479-482`).
+ * `signals` are every Signal the program's subscriptions and throws reference; a Signal no event references never
+ * reaches the IL.
+ */
+export function signalDefinitionNames(options: ProfileOptions, signals: readonly SignalTrigger[]): string | null {
+  if (options.signalNames !== SignalNames.Addresses) return null;
+  return anyPair(signals, (earlier, signal) => !sameData(earlier.signalRef, signal.signalRef) && sameSignalName(earlier, signal))
+    ? "signal.duplicateDefinitionName"
+    : null;
+}
+
+/**
+ * Under `SignalNames.Addresses` two Signal subscriptions of one event scope and one start mark may not share a name
+ * (`signal.duplicateName`, CIB-LIM-0026): CIB refuses the second at deployment when its unresolved name text equals the
+ * first's (`hasMultipleSignalEventDefinitionsWithSameName`, `BpmnParse.java:1284-1288`, `:1301-1303`, `:1317-1328`), so
+ * two root Signal starts of one process on one Signal are refused, which BPMN 2.0.2 admits (§13.2). `sites` are every
+ * Signal subscription of the program, compared by `sameSignalName`.
+ */
+export function signalNames(options: ProfileOptions, sites: readonly Site<SignalTrigger>[]): string | null {
+  if (options.signalNames !== SignalNames.Addresses) return null;
+  return anyPair(sites, (earlier, site) =>
+    earlier.start === site.start && eventScopeEquals(earlier.scope, site.scope) && sameSignalName(earlier.trigger, site.trigger))
+    ? "signal.duplicateName"
+    : null;
 }
 
 /**

@@ -790,6 +790,16 @@ BPMN Table 10.101 lets `timeCycle` stand on any Timer Event but states nothing a
 
 **Boundary:** Normal-flow catches, Event-Based Gateway arms, interrupting boundaries and interrupting Event Sub-Process starts, ISO and Cron cycles alike. Root Timer starts stay refused (`timer.cycleNotAttached`, PC-TIMER-04).
 
+### CIB-INT-0028 — a Signal is addressed by its name
+
+**Status:** Recorded bounded interpretation from the pinned source for `SignalNames.addresses`; selected by the cibseven profiles
+
+BPMN 2.0.2 Table 10.100 lets an event reference its Signal by `signalRef`, a QName, and gives the Signal a `name` of type `xsd:string` (`Semantic.xsd:1391-1397`) that addresses nothing; the standards profile (`SignalNames.identifier`) addresses a Signal by its Definitions' `targetNamespace` and id, and a throw reaches exactly the subscriptions of that Signal. CIB Seven `2.2.0` keys every Signal subscription and every throw by the referenced Signal's `name`: a Signal without a name fails deployment, and so do two Signals of one document with one name. Under `addresses` the kernel addresses each subscription, throw and broadcast intent by the name (`SignalAddress.named`), refuses an event whose Signal has no non-blank name (`signal.unnamed`), and publishes a Signal wait with that name.
+
+**Evidence:** Pinned `BpmnParse.java:474-498`, `:3536-3545`, `EventSubscriptionDeclaration.java:137-184`; retained `signal-throw-literal/*`, `signal-throw-expression/*`, `signal-throw-payload/*`, `signal-start-compositions/race-*` and `handover-*`, which agree under the cibseven profiles.
+
+**Boundary:** Intermediate Signal catches, Event-Based Gateway arms and Signal throws (PC-SIGNAL-01, PC-SIGNAL-02); root Signal starts as PC-SIGNAL-02 admits them. Two Signals of one document with one name, and two subscriptions of one name in one CIB event scope, which CIB refuses at deployment, are CIB-LIM-0026. Signal boundaries and Event Sub-Process starts stay refused (`boundary.signal`, `start.signal`, PC-SIGNAL-03).
+
 ## Known limitation register
 
 ### CIB-LIM-0001: standard sequential Multi-Instance output aggregation is absent
@@ -1053,6 +1063,16 @@ BPMN 2.0.2 §13.3.4 lets a Sub-Process without a start Event begin, on entry, ev
 **Evidence:** Pinned `BpmnParse.java:967-968` (the deployment check, `process` and `subProcess` only), `:1083-1084` (a start Event sets `INITIAL_ACTIVITY`), `:3902-3917` (`parseTransaction`), `SubProcessActivityBehavior.java:41-45` (`ensureNotNull` on the initial activity); the kernel test `packages/differential/test/scope-start-profiles.test.ts`. The witnesses are [scope-without-start](../scenarios/open-rows/scope-without-start/README.md).
 
 **Boundary:** Embedded Sub-Processes, a looping one and a compensation handler included, and Transactions. An Event Sub-Process always holds its triggering start. A process or called process without a start Event is outside this entry: the kernel admits it and rejects the start (`no-start-event`) or fails the Call (`called-process-without-none-start`), where CIB refuses the deployment.
+
+### CIB-LIM-0026 — CIB keeps Signal names unique per document and per event scope
+
+**Status:** Profile limitation for `SignalNames.addresses` (CIB-INT-0028); selected by the cibseven profiles
+
+BPMN 2.0.2 lets two Signals share a `name`, which addresses nothing (Table 10.100), and lets any number of events catch one Signal; two root Signal starts of one process on one Signal each begin an instance (§13.2). CIB Seven `2.2.0` addresses a Signal by its name and refuses deploying a document that declares two Signals of one name, or that declares two Signal subscriptions of one unresolved name text and one start mark in one event scope. Under `addresses` the kernel refuses the same models: two Signals the program references with one name (`signal.duplicateDefinitionName`), and two Signal subscriptions of one name in one event scope with one start mark (`signal.duplicateName`), such as two arms of one Event-Based Gateway or two root Signal starts of one process. The IL keeps an expression name's parsed form, not its text, so two expression names compare structurally: texts that differ only in layout are refused by the kernel and deployed by CIB, as in CIB-LIM-0027.
+
+**Evidence:** Pinned `BpmnParse.java:479-482` (`parseSignals`), `:1284-1288`, `:1301-1303`, `:1317-1328` (`hasMultipleSignalEventDefinitionsWithSameName`); retained `signal-start-compositions/duplicate-signal-starts-start`, refused by both; the kernel tests `packages/kernel/test/admission-refusals-subscriptions.test.ts`.
+
+**Boundary:** Event scopes as CIB-LIM-0022 groups Message subscriptions: an Event-Based Gateway arm in the gateway and any other catch in itself (`:1526-1530`), an Event Sub-Process start in the scope holding its Event Sub-Process, unmarked (`:1112`, `:3499-3503`), and a root start in its process, marked (`:1033-1037`, `:3516-3520`); Signal boundaries stay refused (`boundary.signal`). A Signal that no event references never reaches the IL, so two such Signals of one name are admitted where CIB refuses the document. Under `identifier` neither rule applies.
 
 ### CIB-LIM-0027 — the kernel compares two root Conditional start predicates by their parsed form, CIB by their text
 
@@ -1511,6 +1531,46 @@ Under CIB-EXT-0001 (CIB-EXT-0023 for a Send Task) CIB's effect wait is its `asyn
 
 **Boundary:** Timer, Message and Conditional boundaries (Signal boundaries once admitted) of a CIB-EXT-0001 or CIB-EXT-0023 effect host under the cibseven profiles. Error boundaries agree. Not an operational detail, since Timer firings and Message acceptance are required observations.
 
+### CIB-EXT-0040 — a Signal throw carries `camunda:in` variables and a business key
+
+**Status:** Optional CIB extension for `SignalPayload.variables`; selected by the cibseven profiles
+
+BPMN 2.0.2 §10.5.1 makes a Signal a broadcast trigger and gives a throw's Data Input Associations no receiver to fill; under `SignalPayload.none` the kernel refuses a throw's `camunda:in` copies (`throw.signal.payload`) and business key (`throw.signal.businessKey`). CIB Seven `2.2.0` builds a throw's payload from the `camunda:in` elements of its event definition and evaluates, in order, the business key, the payload and the name before it delivers. Under `variables` the kernel does the same: `source` copies a variable (an absent one as `null`, CIB-EXT-0021), `sourceExpression` evaluates at the Events level, `variables="all"` copies every variable visible from the throw at its own position, and a later target replaces an earlier one; a failing expression, a business key that is no String, or a name that is no String rolls the input back, a `null` business key is none, and a `null` name is `unsupported` (`signal-name-null`). The payload becomes the variables of every receiver the throw fires and of its broadcast intent, the business key that of the intent.
+
+**Evidence:** Pinned `BpmnParse.java:4071-4094`, `ThrowSignalEventActivityBehavior.java:46-75`, `CallableElementParameter.java`; retained `signal-throw-payload/payload-delivered`, `throw-before-receiver-armed` and `signal-throw-expression/unbound-name`, which agree under the cibseven profiles.
+
+**Boundary:** Intermediate Signal throws and Signal Ends. Refused under every profile: `camunda:async` (`throw.signal.asynchronous`), `local="true"` (`throw.signal.localVariables`) and Data Input Associations, which CIB never executes (`throw.signal.dataInput`).
+
+### CIB-EXT-0041 — a Signal name is evaluated as an expression
+
+**Status:** Optional CIB extension under `SignalNames.addresses` (CIB-INT-0028); selected by the cibseven profiles
+
+`tSignal.name` is an `xsd:string` in BPMN 2.0.2 (`Semantic.xsd:1394`), so a standards Signal name holding an expression is refused (`signal.nameExpression`). CIB Seven `2.2.0` reads a `${…}` name as a JUEL expression: a catch resolves it when its subscription opens, a throw when it runs. The kernel reads it at the Events JUEL level: a catch whose name fails to evaluate or is no String rolls the arming back, a `null` or `""` name is `unsupported` (`signal-name-empty`), and a throw evaluates its name after its business key and payload (CIB-EXT-0040).
+
+**Evidence:** Pinned `EventSubscriptionDeclaration.java:137-184`, `ThrowSignalEventActivityBehavior.java:51`; retained `signal-throw-expression/derived-name-differs`, `derived-name-matches`, `name-changes-before-throw` and `unbound-name`, which agree under the cibseven profiles.
+
+**Boundary:** Intermediate catches, Event-Based Gateway arms and throws. A root Signal start whose name is an expression is refused (`start.signalNameExpression`), as CIB resolves it at deployment against an empty scope.
+
+### CIB-EXT-0042 — an external Signal is delivered to one targeted subscription
+
+**Status:** Optional CIB extension for `SignalDelivery.occurrenceTargeted`; selected by no profile until the cibseven profiles list it
+
+BPMN 2.0.2 Table 10.88 broadcasts a Signal to every process that can receive it and names no delivery to one waiting occurrence. CIB Seven `2.2.0`'s `signalEventReceived(name, executionId)` delivers a Signal to the subscriptions of that name on one execution and fails when there is none. Under `occurrenceTargeted` a `deliver` input with a Signal trigger fires exactly the open Signal item its occurrence names when the address matches, and is rejected otherwise (`unknown-signal-subscription`); a late losing Event-Based arm is gone and rejected the same way. CIB fires every subscription of the name on the execution; the kernel's occurrence addresses one item, which agrees whenever one execution holds one subscription of the name.
+
+**Evidence:** Pinned `SignalEventReceivedCmd.java:119-131`; retained `signal-start-compositions/race-*` and `handover-*`, which agree once the profile selects this entry.
+
+**Boundary:** Intermediate catches and Event-Based Gateway arms; an input form, never a model attribute. A boundary and an Event Sub-Process start of one name on one execution are PC-SIGNAL-03's. Admission still refuses the option (`profile.signalDelivery.occurrenceTargeted`) until the input boundary, which also carries the population's per-receiver deliveries, rejects a targeted Signal delivery under `broadcastOnly` (`signal-delivery-targeted`).
+
+### CIB-EXT-0043 — a Signal's variables install into the receiving scope
+
+**Status:** Optional CIB extension for `SignalPayload.variables`; selected by the cibseven profiles
+
+BPMN 2.0.2 §10.5.1 gives a Signal no data for its catchers; under `SignalPayload.none` a delivery that carries variables is rejected (`signal-variables-not-admitted`), never silently dropped. CIB Seven `2.2.0` sets a delivered Signal's variables on the receiving execution with `setVariables`. Under `variables` the kernel installs them as the firing catch's writes, each where the nearest-owner rule puts it (`WriteRule.outward`), after the values have passed the portable domain check. Data Output Associations on a Signal catch stay refused under both readings (`event.outputs`).
+
+**Evidence:** Pinned `EventHandlerImpl.java:44-58`; retained `signal-throw-payload/payload-delivered`, which agrees under the cibseven profiles.
+
+**Boundary:** Intermediate catches and Event-Based Gateway arms reached by a throw or a delivery; a started instance's variables are PC-SIGNAL-02's start side.
+
 ### CIB-EXT-0044 — CIB evaluates a root Conditional start over the variables a request submits
 
 **Status:** Optional CIB extension; selected by `ConditionalStart.submittedContext` through the cibseven profiles
@@ -1744,6 +1804,16 @@ CIB has no activation numbers and keeps a non-interrupting attached subscription
 **Evidence:** `CibSevenOccurrences` (class comment, `subscriptionActivation`, `timerFired`, `delivered`), `CibSevenOccurrenceNumberingTest`; `repeatable-event-subscriptions/boundary-timer-repeat`, `message-boundary-repeated/user-host-reentered-after-delivery`, `timer-recurrence/count-finite-overlap` after the retake.
 
 **Boundary:** CIB runner projection only; no kernel meaning. Non-runner-driven interrupting firings (Conditional, Signal) of an element with several live reservations take the oldest, which is unwitnessed. CIB-OP-0005 keeps its Receive Task boundary.
+
+### CIB-OP-0019 — a Signal throw's own-State receivers fire inside the throwing step, the others through its broadcast intent
+
+**Status:** Operational mapping of a Signal throw within one kernel State; cross-instance atomicity is unclaimed
+
+CIB Seven `2.2.0` lists every active subscription of a thrown Signal's name, delivers to each before the thrower leaves, skips one whose execution an earlier receiver ended, and runs them in the throwing command. The kernel splits that delivery at its State boundary. Within the thrower's own State (its instance, its called instances and its callers) the throw lists the open items of its address first, by process instance and then in arming order for CIB's unordered `HashSet`, and fires each through `Signal.fire` inside the throwing step, before its own completion: a receiver armed during the delivery is not delivered, an item gone by its turn is skipped, and the thrower leaves only if its occurrence still stands. Every other receiver is reached through the one `BroadcastIntent` the throw appends to `State.outbox`, published only with a committed input; the intent never returns to its own State. For one State the observations agree.
+
+**Evidence:** Pinned `ThrowSignalEventActivityBehavior.java:53-61`, `:86-89`, `EventSubscriptionManager.java:111-126`; retained `signal-throw-literal/*`, `signal-throw-payload/*`, which agree under the cibseven profiles.
+
+**Boundary:** Receivers inside the thrower's own State. Which other States receive an intent, in what order and with what commitment is the population's (PC-SIGNAL-04).
 
 ## Configuration-specific register
 

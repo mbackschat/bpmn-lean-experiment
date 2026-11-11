@@ -20,8 +20,6 @@ import {
   MultiInstanceCounters,
   MultiInstanceInputFailure,
   SignalDelivery,
-  SignalNames,
-  SignalPayload,
   assertNever,
   type CompensationHandlerFailure,
   type ProfileOptions,
@@ -62,8 +60,6 @@ export function options(abnormalScope: boolean, loops: boolean, selected: Profil
   if (abnormalScope && selected.abnormalScopeEnd === AbnormalScopeEnd.WithoutOutflow) return "profile.abnormalScopeEnd.withoutOutflow";
   const loop = multiInstance(loops, selected);
   if (loop !== null) return loop;
-  if (selected.signalNames === SignalNames.Addresses) return "profile.signalNames.addresses";
-  if (selected.signalPayload === SignalPayload.Variables) return "profile.signalPayload.variables";
   if (selected.signalDelivery === SignalDelivery.OccurrenceTargeted) return "profile.signalDelivery.occurrenceTargeted";
   if (selected.calledElementResolution === CalledElementResolution.CibKey) return "profile.calledElementResolution.cibKey";
   return selected.messageThrowForms === MessageThrowForms.CibForms ? "profile.messageThrowForms.cibForms" : null;

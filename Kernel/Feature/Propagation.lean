@@ -341,7 +341,80 @@ def throwCompensation (header : Header) (payload : EventPayload) (thrown : Compe
     .ok (state.signal (.compensate occurrence.scope thrown.activity triggered none
       (some (.complete occurrence.id (throwLeave payload)))))
 
-def arriveThrow (_ : Ctx) (header : Header) (payload : EventPayload) (thrown : Throw) (occurrence : Occurrence)
+/-! ## Signal throws (PC-SIGNAL-01)
+
+A Signal throw evaluates, in CIB's order, its business key, its payload and its name
+(`ThrowSignalEventActivityBehavior.java:48-51`); the first failure decides. It then fires every open item of the
+Signal's address in its own State, the root instance tree, before it leaves, and appends one `BroadcastIntent` for the
+other States (CIB-OP-0019): receivers are listed before any is delivered, so one armed during the delivery is not, an
+item gone by its turn is skipped (`Step`'s `fire`), and the thrower leaves only if its occurrence still stands. -/
+
+/-- A business key (CIB-EXT-0040): a String, `null` being none; another type is CIB's failed cast, which rolls back. -/
+def signalBusinessKey (ctx : Ctx) (context : EvalContext) : Option Expression → Except Failure (Option String)
+  | none => .ok none
+  | some expression =>
+    match ctx.evaluate context expression with
+    | .value (.string key) => .ok (some key)
+    | .value .null => .ok none
+    -- dynamic-only: a key's value type is the run's data.
+    | .value _ => .error (.rolledBack "signal-business-key-type")
+    | .failure code => .error (.rolledBack code)
+    | .unsupported code => .error (.unsupported code)
+
+/-- The payload (CIB-EXT-0040): the `camunda:in` copies in document order, `variables="all"` copying every variable
+`visible` from the throw at its position, a later target replacing an earlier (`VariableMap.put`). -/
+def signalPayload (ctx : Ctx) (context : EvalContext) (visible : List (String × Value)) (record : SignalThrow) :
+    Except Failure (List (String × Value)) := do
+  let position := record.propagateAll.getD record.payload.length
+  let before ← ctx.requireMappings context (record.payload.take position)
+  let after ← ctx.requireMappings context (record.payload.drop position)
+  pure (lastWrites (before ++ (if record.propagateAll.isSome then visible else []) ++ after))
+
+/-- The address a throw broadcasts to: its `signalRef` under `SignalNames.identifier`, else its name (CIB-INT-0028),
+an expression's evaluated at the throw (CIB-EXT-0041). A `null` name matches nothing in CIB or fails on an earlier
+subscription of the same command (`EventSubscriptionManager.java:120-121`), so it is not claimed. -/
+def thrownAddress (ctx : Ctx) (context : EvalContext) (record : SignalThrow) : Except Failure SignalAddress :=
+  match ctx.program.options.signalNames, record.signalRef, record.name with
+  | .identifier, some ref, _ => .ok (.qualified ref)
+  | .addresses, _, some (.literal text) => .ok (.named text)
+  | .addresses, _, some (.expression body) =>
+    match ctx.evaluate context body with
+    | .value (.string text) => .ok (.named text)
+    -- dynamic-only: the evaluated name is the run's data.
+    | .value .null => .error (.unsupported "signal-name-null")
+    | .value _ => .error (.rolledBack "signal-name-type")
+    | .failure code => .error (.rolledBack code)
+    | .unsupported code => .error (.unsupported code)
+  -- Admission refuses both (`signal.unspecified`, `signal.unnamed`).
+  | .identifier, none, _ => .error (.unsupported "signal-unspecified")
+  | .addresses, _, none => .error (.unsupported "signal-unnamed")
+
+/-- The open items of `address` in the thrower's own State, by process instance, then in arming order, the order the
+linearization of the population fixes for CIB's unordered `HashSet` (`EventSubscriptionManager.java:111-126`). -/
+def ownReceivers (state : State) (address : SignalAddress) : List OpenItem :=
+  (state.openItems.filter fun item => item.kind.view.signal.any (address.matches ·.address)).mergeSort fun left right =>
+    let (l, r) := (state.instanceOf left.scope, state.instanceOf right.scope)
+    decide (l < r) || (l == r && left.id ≤ right.id)
+
+/-- The delivery that fires `item` from a throw. -/
+def thrownDelivery (ctx : Ctx) (state : State) (address : SignalAddress) (variables : List (String × Value))
+    (item : OpenItem) : DeliveryInput :=
+  { occurrence := { processInstanceId := state.instanceOf item.scope, element := ctx.program.publicId item.element
+                    activation := ((state.occurrence? item.occurrence).map (·.activation)).getD 0 }
+    trigger := .signal address, variables }
+
+def throwSignal (ctx : Ctx) (payload : EventPayload) (record : SignalThrow) (origin : Origin) (occurrence : Occurrence)
+    (state : State) : Outcome := do
+  let context := state.evalContext occurrence.scope
+  let businessKey ← signalBusinessKey ctx context record.businessKey
+  let variables ← signalPayload ctx context (state.visible occurrence.scope) record
+  let address ← thrownAddress ctx context record
+  let fired := (ownReceivers state address).foldl (fun state item =>
+    state.signal (.fire item.id (.signal (thrownDelivery ctx state address variables item)))) state
+  let intent : BroadcastIntent := { address, variables, businessKey, origin := throwerRef state origin }
+  .ok ({ fired with outbox := fired.outbox ++ [intent] }.signal (.complete occurrence.id (throwLeave payload) [] .outward))
+
+def arriveThrow (ctx : Ctx) (header : Header) (payload : EventPayload) (thrown : Throw) (occurrence : Occurrence)
     (state : State) : Outcome :=
   let origin : Origin := { element := header.id, scope := occurrence.scope, activation := occurrence.activation }
   let leave (state : State) : State := state.signal (.complete occurrence.id (throwLeave payload) [] .outward)
@@ -354,9 +427,9 @@ def arriveThrow (_ : Ctx) (header : Header) (payload : EventPayload) (thrown : T
     .ok ((leave state).signal (.raise (.error record.code (record.message.bind ValueSource.literal?)) origin))
   -- An Escalation is not critical: its thrower leaves after the search, unless the catcher interrupts it (`throwerLeaves`).
   | .escalation record => .ok (state.signal (.raise (.escalation record.code) origin))
-  -- Admission refuses both (`throw.message`, `throw.signal`).
+  -- Admission refuses it (`throw.message`).
   | .message _ => .error (.unsupported "throw-message")
-  | .signal _ => .error (.unsupported "throw-signal")
+  | .signal record => throwSignal ctx payload record origin occurrence state
   | .compensation record => throwCompensation header payload record occurrence state
   | .cancel => .ok ((leave state).signal (.raise .cancel origin))
 

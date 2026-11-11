@@ -8,9 +8,40 @@ public section
 
 namespace Kernel.Admission.Propagation
 
+/-- What a throw's admission asks of its site, which the registry fills from the other admissions at that site: a
+Signal address's refusal (`Kernel.Admission.Subscriptions.signalAddress`, the one rule catches, starts and throws
+share), an Events-level expression's refused as the given code, and its mappings' refusal. -/
+structure ThrowSite where
+  signalAddress : Option QName → Option ValueSource → Option String := fun _ _ => none
+  eventsExpression : String → Expression → Option String := fun _ _ => none
+  mappings : List Mapping → Option String := fun _ => none
+
+/-- A CIB business key expression: a String literal, else read at the Events level. -/
+def businessKey (site : ThrowSite) : Expression → Option String
+  | .literal _ => none
+  | other => site.eventsExpression "throw.signal.businessKey" other
+
+/-- A Signal throw (PC-SIGNAL-01). The `camunda:in` copies and business key are CIB's (CIB-EXT-0040), admitted with
+the Signal payload CIB installs (`SignalPayload.variables`), refused where a Signal carries no data (BPMN 2.0.2
+§10.5.1). Refused under every profile: `camunda:async`, whose delivery runs in separate jobs; `local="true"`, whose
+locals depend on CIB's execution tree; and Data Input Associations, which CIB never executes. -/
+def signalThrow (options : ProfileOptions) (site : ThrowSite) (record : SignalThrow) : Option String :=
+  if record.asynchronous then some "throw.signal.asynchronous"
+  else if record.localOnly then some "throw.signal.localVariables"
+  else if record.payload.any (·.dialect == .dataAssociation) then some "throw.signal.dataInput"
+  else
+    let carried := match options.signalPayload with
+      | .none =>
+        if !record.payload.isEmpty || record.propagateAll.isSome then some "throw.signal.payload"
+        else if record.businessKey.isSome then some "throw.signal.businessKey"
+        else none
+      | .variables => none
+    carried <|> site.signalAddress record.signalRef record.name <|> site.mappings record.payload <|>
+      record.businessKey.bind (businessKey site)
+
 /-- `inTransaction` says whether the throw's parent is a Transaction: a Cancel End is used only within a Transaction
 Sub-Process (BPMN 2.0.2 §10.3.5, §10.5.5 Cancel Event; `BpmnParse#parseEndEvents` refuses it elsewhere) (PC-TX-02). -/
-def throwRecord (inTransaction : Bool) : Throw → Option String
+def throwRecord (options : ProfileOptions) (site : ThrowSite) (inTransaction : Bool) : Throw → Option String
   | .none => none
   | .error record =>
     match record.message with
@@ -20,24 +51,26 @@ def throwRecord (inTransaction : Bool) : Throw → Option String
   | .escalation _ => none
   | .terminate => none
   | .message _ => some "throw.message"
-  | .signal _ => some "throw.signal"
+  | .signal record => signalThrow options site record
   | .compensation record =>
     if record.activity.isSome then some "throw.compensation.activity"
     else if !record.waitForCompletion then some "throw.compensation.asynchronous"
     else none
   | .cancel => if inTransaction then none else some "throw.cancel.outsideTransaction"
 
-/-- What other admissions read of a throw: whether it terminates its scope or throws Compensation. -/
+/-- What other admissions read of a throw: whether it terminates its scope or throws Compensation, and the Signal it
+references, whose name `Kernel.Admission.Subscriptions.signalDefinitionNames` compares. -/
 structure Reading where
   terminates : Bool := false
   compensates : Bool := false
+  signal : Option SignalTrigger := none
 
 def reading : Throw → Reading
   | .terminate => { terminates := true }
   | .compensation _ => { compensates := true }
   | .none => {}
   | .message _ => {}
-  | .signal _ => {}
+  | .signal record => { signal := some { signalRef := record.signalRef, name := record.name } }
   | .error _ => {}
   | .escalation _ => {}
   | .cancel => {}

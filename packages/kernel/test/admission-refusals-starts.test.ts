@@ -1,6 +1,6 @@
 /**
- * Refusal tests of `admission/subscriptions/starts.ts` for root start Events: a Message start writes its payload, and a
- * Conditional start is admitted only where the profile evaluates it over
+ * Refusal tests of `admission/subscriptions/starts.ts` for root start Events: a Message start writes its payload, a
+ * Signal start is addressed by its Signal, and a Conditional start is admitted only where the profile evaluates it over
  * submitted variables (CIB-EXT-0044), never with `camunda:variableEvents` and never twice with one predicate in one
  * process (CIB-LIM-0027). Predicates compare structurally, so a different literal lexeme or JUEL node keeps two starts
  * apart.
@@ -9,8 +9,8 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
-  append, base, condition, flow, juel, mapping, message, refusalOf, refusalTests, replace, start, text, variable, withFlows,
-  withOptions,
+  append, base, computed, condition, flow, juel, mapping, message, qName, refusalOf, refusalTests, replace, signal, start, text, variable,
+  withFlows, withOptions,
 } from "./admission-refusal-support.ts";
 import type { Json } from "./admission-refusal-support.ts";
 
@@ -25,6 +25,10 @@ const secondStart = (trigger: Json | string) => (program: Json): Json =>
 /** The profile selection that evaluates a Conditional root start over submitted variables (CIB-EXT-0044). */
 const submitted = (placed: (program: Json) => Json) => (program: Json): Json =>
   placed(withOptions(program, { conditionalStart: "submittedContext" }));
+
+/** The profile selection under which a Signal's name addresses its subscriptions (CIB-INT-0028). */
+const addressed = (placed: (program: Json) => Json) => (program: Json): Json =>
+  placed(withOptions(program, { signalNames: "addresses", evaluator: "juel" }));
 
 /** A Conditional trigger with `over` replacing its predicate or filters. */
 const conditionWith = (over: Json): Json => {
@@ -62,6 +66,12 @@ refusalTests("starts", [
     control: twoConditions(atLeast("1000"), atLeast("1000", "gt")),
   },
   {
+    code: "start.signalNameExpression",
+    description: "a root Signal start whose name is an expression under name addressing",
+    mutate: addressed(starting({ signal: { payload: { signalRef: qName("Sig"), name: computed(variable("n")) } } })),
+    control: addressed(starting(signal())),
+  },
+  {
     code: "start.condition.duplicate",
     description: "two Conditional root starts with one Simple Boolean predicate",
     mutate: (program) => secondStart(condition())(submitted(starting(condition()))(program)),
@@ -72,7 +82,8 @@ test("starts: two Conditional root starts whose integer literals differ only in 
   assert.equal(refusalOf(twoConditions(atLeast("1000"), atLeast("01000"))(base())), null);
 });
 
-test("starts: a root Message start writing its payload is admitted", () => {
+test("starts: a root Message start writing its payload and a root Signal start are admitted", () => {
   const named = message({ messageRef: "M", name: text("M") });
   assert.equal(refusalOf(starting(named, [mapping("x", variable("y"))])(base())), null);
+  assert.equal(refusalOf(starting(signal())(base())), null);
 });

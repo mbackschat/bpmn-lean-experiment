@@ -1588,48 +1588,6 @@
     ]
   },
   {
-    "evidence": "scenarios/open-rows/signal-start-compositions/failing-signal-start-start.cibseven-evidence.json",
-    "owners": [
-      "PC-SIGNAL-02",
-      "PC-SIGNAL-04"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/signal-start-compositions/handover-catch-other-signal.cibseven-evidence.json",
-    "owners": [
-      "PC-SIGNAL-02",
-      "PC-SIGNAL-04"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/signal-start-compositions/handover-start-then-catch.cibseven-evidence.json",
-    "owners": [
-      "PC-SIGNAL-02",
-      "PC-SIGNAL-04"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/signal-start-compositions/race-approved-then-late-rejected.cibseven-evidence.json",
-    "owners": [
-      "PC-SIGNAL-02",
-      "PC-SIGNAL-04"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/signal-start-compositions/race-rejected-then-late-timer.cibseven-evidence.json",
-    "owners": [
-      "PC-SIGNAL-02",
-      "PC-SIGNAL-04"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/signal-start-compositions/race-timer-then-late-signal.cibseven-evidence.json",
-    "owners": [
-      "PC-SIGNAL-02",
-      "PC-SIGNAL-04"
-    ]
-  },
-  {
     "evidence": "scenarios/open-rows/signal-subscriptions/bodies-ping-isolation.cibseven-evidence.json",
     "owners": [
       "PC-SIGNAL-03"
@@ -1687,54 +1645,6 @@
     "evidence": "scenarios/open-rows/signal-subscriptions/task-wrong-signal-name.cibseven-evidence.json",
     "owners": [
       "PC-SIGNAL-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/signal-throw-expression/derived-name-differs.cibseven-evidence.json",
-    "owners": [
-      "PC-SIGNAL-01"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/signal-throw-expression/derived-name-matches.cibseven-evidence.json",
-    "owners": [
-      "PC-SIGNAL-01"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/signal-throw-expression/name-changes-before-throw.cibseven-evidence.json",
-    "owners": [
-      "PC-SIGNAL-01"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/signal-throw-expression/unbound-name.cibseven-evidence.json",
-    "owners": [
-      "PC-SIGNAL-01"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/signal-throw-literal/intermediate-throw.cibseven-evidence.json",
-    "owners": [
-      "PC-SIGNAL-01"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/signal-throw-literal/signal-end.cibseven-evidence.json",
-    "owners": [
-      "PC-SIGNAL-01"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/signal-throw-payload/payload-delivered.cibseven-evidence.json",
-    "owners": [
-      "PC-SIGNAL-01"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/signal-throw-payload/throw-before-receiver-armed.cibseven-evidence.json",
-    "owners": [
-      "PC-SIGNAL-01"
     ]
   },
   {

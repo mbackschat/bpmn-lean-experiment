@@ -33,7 +33,10 @@ import {
   type Flow,
   type Header,
   type Mapping,
+  type MessageTrigger,
+  type ProfileOptions,
   type Program,
+  type SignalTrigger,
   type Subscription,
 } from "./il/types.js";
 import * as Data from "./admission/data.js";
@@ -71,6 +74,16 @@ function site(program: Program, id: ElementId | null): Data.Site {
 /** How a subscription in the scope of `id` reads an expression of its trigger: the Core JUEL table at that site. */
 function subscriptionReading(program: Program, id: ElementId | null): Subscriptions.Reading {
   return { juel: (nodes) => Data.juelNodes(nodes, site(program, id)), name: (name) => Data.juelName(site(program, id), name) };
+}
+
+/** How a throw Event in `header`'s place reads its trigger's expressions and its mappings. */
+function throwSite(program: Program, header: Header): Propagation.ThrowSite {
+  const reading = subscriptionReading(program, header.id);
+  return {
+    signalAddress: (signalRef, name) => Subscriptions.signalAddress(program.options, reading, false, signalRef, name),
+    eventsExpression: (refusal, expression) => Subscriptions.eventsExpression(program.options, reading, refusal, expression),
+    mappings: (list) => Data.mappings(program.options.evaluator, site(program, header.id), list),
+  };
 }
 
 function targets(mappings: readonly Mapping[]): string[] {
@@ -149,7 +162,7 @@ function eventRole(program: Program, header: Header, payload: EventPayload): str
     case EventRoleTag.Throw:
       // A Multiple throw Event (BPMN 2.0.2 §10.5.1); pinned CIB keeps one definition (CIB-LIM-0008) (PC-BASIC-04).
       if (payload.alternativeThrows.length > 0) return "event.multipleDefinitions";
-      return Propagation.throwRecord(inTransaction(program, header), role.record);
+      return Propagation.throwRecord(program.options, throwSite(program, header), inTransaction(program, header), role.record);
     case EventRoleTag.LinkCatch:
     case EventRoleTag.LinkThrow:
       return FlowAdmission.link(program, header, payload);
@@ -194,44 +207,87 @@ function armOf(program: Program, payload: EventPayload): ElementId | null {
 }
 
 /**
- * An element's Message subscriptions in CIB's event scopes, each also declared with its start mark:
+ * What `sites` reads of each subscription an element declares, if it is of the compared kind: a boundary's, a Receive
+ * Task's own Message, an Event Sub-Process start's, a catch Event's and a root start's trigger.
+ */
+interface Picks<T> {
+  readonly attached: (boundary: Boundary) => T | null;
+  readonly received: (work: ActivityPayload["work"]) => T | null;
+  readonly handled: (start: Subscription) => T | null;
+  readonly caught: (subscription: Subscription) => T | null;
+  readonly started: (start: Subscription) => T | null;
+}
+
+/**
+ * An element's subscriptions of one kind in CIB's event scopes, each also declared with its start mark:
  * - a boundary in its host, or in the host's Multi-Instance body when the host loops (`BpmnParse.java:3290-3301`,
- *   `getMultiInstanceScope` `:3388-3393`, declared at `:3455`);
+ *   `getMultiInstanceScope` `:3388-3393`, declared at `:3439`, `:3455`);
  * - a Receive Task's own Message in the Receive Task, which its boundaries share unless it loops (`:2753-2760`);
  * - an Event Sub-Process start in the scope holding the Event Sub-Process (`:1112`), unmarked
  *   (`parseEventDefinitionForSubprocess`, `:3499-3503`), so a boundary of that Sub-Process shares it;
  * - an Event-Based Gateway arm in the gateway (`:1526-1527`, parsed from the gateway at `:2132`), any other catch in
- *   itself (`:1529-1530`), declared at `:1596`;
- * - a root Message start in its process, marked (`:1026-1032`), apart from that level's Event Sub-Process starts.
+ *   itself (`:1529-1530`), declared at `:1596`, `:3520`;
+ * - a root start in its process, marked (Message `:1026-1032`, Signal `:1033-1037`, `:3518`), apart from that level's
+ *   Event Sub-Process starts.
  * A start nested in a Scope is taken with its Event Sub-Process.
  */
-function messageSites(program: Program, entry: Element): Subscriptions.MessageSite[] {
+function sites<T>(program: Program, picks: Picks<T>, entry: Element): Subscriptions.Site<T>[] {
   const id = elementHeader(entry).id;
   const own: Subscriptions.EventScope = { tag: Subscriptions.EventScopeTag.Element, id };
-  const site = (scope: Subscriptions.EventScope, start: boolean, subscription: Subscription): Subscriptions.MessageSite[] => {
-    const trigger = triggerMessage(subscription.trigger);
-    return trigger === null ? [] : [{ scope, start, trigger }];
-  };
+  const declared = (scope: Subscriptions.EventScope, start: boolean, trigger: T | null): Subscriptions.Site<T>[] =>
+    trigger === null ? [] : [{ scope, start, trigger }];
   const envelope = elementEnvelope(entry);
-  const attached = envelope === null ? [] : envelope.boundaries.flatMap((attachedBoundary) => site(
-    envelope.multiInstance === null ? own : { tag: Subscriptions.EventScopeTag.Body, host: id }, false, attachedBoundary.subscription));
+  const attached = envelope === null ? [] : envelope.boundaries.flatMap((attachedBoundary) => declared(
+    envelope.multiInstance === null ? own : { tag: Subscriptions.EventScopeTag.Body, host: id }, false, picks.attached(attachedBoundary)));
   const activityEntry = elementActivity(entry);
-  const receivedTrigger = activityEntry === null ? null : workReceive(activityEntry[1].work);
-  const received = receivedTrigger === null ? [] : [{ scope: own, start: false, trigger: receivedTrigger }];
+  const received = activityEntry === null ? [] : declared(own, false, picks.received(activityEntry[1].work));
   const scopeEntry = elementScope(entry);
   const handler = scopeEntry === null ? null : Scopes.eventSubProcessOf(scopeEntry[1]);
-  const handled = scopeEntry === null || handler === null ? [] : site(scopeEntry[0].parent === null
+  const handled = scopeEntry === null || handler === null ? [] : declared(scopeEntry[0].parent === null
     ? processLevel(program, id)
-    : { tag: Subscriptions.EventScopeTag.Element, id: scopeEntry[0].parent }, false, handler[0]);
+    : { tag: Subscriptions.EventScopeTag.Element, id: scopeEntry[0].parent }, false, picks.handled(handler[0]));
   const eventEntry = elementEvent(entry);
   const caughtSubscription = eventEntry === null ? null : eventPayloadCatch(eventEntry[1]);
   const gateway = eventEntry === null ? null : armOf(program, eventEntry[1]);
-  const caught = caughtSubscription === null ? [] : site(
-    gateway === null ? own : { tag: Subscriptions.EventScopeTag.Element, id: gateway }, false, caughtSubscription);
+  const caught = caughtSubscription === null ? [] : declared(
+    gateway === null ? own : { tag: Subscriptions.EventScopeTag.Element, id: gateway }, false, picks.caught(caughtSubscription));
   const startEntry = elementStart(entry);
   const started = startEntry === null || startEntry[0].parent !== null || startEntry[1].subscription === null
-    ? [] : site(processLevel(program, id), true, startEntry[1].subscription);
+    ? [] : declared(processLevel(program, id), true, picks.started(startEntry[1].subscription));
   return [...attached, ...received, ...handled, ...caught, ...started];
+}
+
+const messages: Picks<MessageTrigger> = {
+  attached: (boundary) => triggerMessage(boundary.subscription.trigger),
+  received: workReceive,
+  handled: (start) => triggerMessage(start.trigger),
+  caught: (subscription) => triggerMessage(subscription.trigger),
+  started: (start) => triggerMessage(start.trigger),
+};
+
+/**
+ * The Signals admission reads where it admits them: a catch Event's (`caught`), an Event Sub-Process start's and a root
+ * start's (`triggered`). A Signal boundary is refused (`boundary.signal`).
+ */
+function signals(options: ProfileOptions): Picks<SignalTrigger> {
+  return {
+    attached: () => null,
+    received: () => null,
+    handled: (start) => Starts.triggered(options, Subscriptions.unread, true, start.trigger).signal,
+    caught: (subscription) => Subscriptions.caught(options, Subscriptions.unread, subscription).signal,
+    started: (start) => Starts.triggered(options, Subscriptions.unread, false, start.trigger).signal,
+  };
+}
+
+/** The Signal names of the whole program: of every Signal it references, then of the subscriptions of each event scope. */
+function signalDeclarations(program: Program): string | null {
+  const subscribed = program.elements.flatMap((entry) => sites(program, signals(program.options), entry));
+  const throws = program.elements.flatMap((entry) => {
+    const signal = thrown(entry)?.[1].signal ?? null;
+    return signal === null ? [] : [signal];
+  });
+  return Subscriptions.signalDefinitionNames(program.options, [...subscribed.map((site) => site.trigger), ...throws]) ??
+    Subscriptions.signalNames(program.options, subscribed);
 }
 
 /** `throws` lists the program's Compensation throws. */
@@ -363,7 +419,7 @@ function executable(program: Program): string | null {
 /**
  * The first refusal: references, profile options, a process not marked executable, the carried DMN resources, then
  * called-process bindings, the process levels' Event Sub-Processes, flows and elements in program order, the instances
- * of each loop, the Conditional starts of each process level, then the Message names of the whole program.
+ * of each loop, the Conditional starts of each process level, then the Message and the Signal names of the whole program.
  */
 export function admit(program: Program): string | null {
   const throws = program.elements.filter(compensationThrow);
@@ -379,6 +435,7 @@ export function admit(program: Program): string | null {
     () => firstOf(program.elements, (entry) => element(program, throws, entry)),
     () => firstOf(program.elements, (entry) => loopInstances(program, entry)),
     () => Starts.startConditions(program),
-    () => Subscriptions.messageNames(program.options, program.elements.flatMap((entry) => messageSites(program, entry))),
+    () => Subscriptions.messageNames(program.options, program.elements.flatMap((entry) => sites(program, messages, entry))),
+    () => signalDeclarations(program),
   );
 }

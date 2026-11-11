@@ -185,6 +185,9 @@
       "CIB-EXT-0035",
       "CIB-EXT-0036",
       "CIB-EXT-0038",
+      "CIB-EXT-0040",
+      "CIB-EXT-0041",
+      "CIB-EXT-0043",
       "CIB-EXT-0044",
       "CIB-INT-0001",
       "CIB-INT-0003",
@@ -207,6 +210,7 @@
       "CIB-INT-0024",
       "CIB-INT-0025",
       "CIB-INT-0026",
+      "CIB-INT-0028",
       "CIB-LIM-0001",
       "CIB-LIM-0002",
       "CIB-LIM-0003",
@@ -221,6 +225,7 @@
       "CIB-LIM-0017",
       "CIB-LIM-0022",
       "CIB-LIM-0024",
+      "CIB-LIM-0026",
       "CIB-LIM-0027",
       "CIB-OP-0001",
       "CIB-OP-0005",
@@ -230,7 +235,8 @@
       "CIB-OP-0009",
       "CIB-OP-0010",
       "CIB-OP-0011",
-      "CIB-OP-0016"
+      "CIB-OP-0016",
+      "CIB-OP-0019"
     ]
   }
 }

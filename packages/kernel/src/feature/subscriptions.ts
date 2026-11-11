@@ -2,12 +2,13 @@
  * Subscriptions: catch Events, boundaries, Event Sub-Process starts and Event-Based Gateway arms, transcribed from
  * `Kernel/Feature/Subscriptions.lean`.
  *
- * Owns matching on `Trigger`; `il/timer.ts#resolve` owns resolving a `TimerSchedule`. A Timer or Message trigger opens
- * one item; the triggers that `feature/propagation.ts` delivers (Error, Escalation, Compensation, Cancel) open nothing
+ * Owns matching on `Trigger`; `il/timer.ts#resolve` owns resolving a `TimerSchedule`. A Timer, Message or Signal trigger
+ * opens one item; the triggers that `feature/propagation.ts` delivers (Error, Escalation, Compensation, Cancel) open nothing
  * and are found through `catches`.
  *
  * Firing rules: a Timer fires only at exactly its deadline, which becomes the logical time; a Message fires only on its
- * own channel, with a payload exactly when the subscription writes one. Anything else is `rejected` and changes nothing.
+ * own channel, with a payload exactly when the subscription writes one; a Signal fires only on its own address, with
+ * variables only where the profile installs them. Anything else is `rejected` and changes nothing.
  *
  * A subscription's item holds a reservation (`openSubscription`) that its firing begins. A boundary item is attached to
  * its host occurrence; the arms of one Event-Based Gateway are attached to the gateway's occurrence. A firing that ends
@@ -20,6 +21,8 @@ import {
   ExpressionTag,
   MalformedTimer,
   MessageNames,
+  SignalNames,
+  SignalPayload,
   TimerScheduleTag,
   TriggerTag,
   ValueSourceTag,
@@ -42,6 +45,7 @@ import {
   type EventPayload,
   type Header,
   type Mapping,
+  type SignalTrigger,
   type Subscription,
   type TimerTrigger,
   type Trigger,
@@ -53,7 +57,9 @@ import {
   FailureTag,
   FiredTag,
   OpenKindTag,
+  DeliveryTriggerTag,
   RaisedTag,
+  SignalAddressTag,
   SignalTag,
   WriteRule,
   beginRequest,
@@ -74,8 +80,10 @@ import {
   optionalChannelEquals,
   raisedIsCancel,
   signal,
+  signalAddressMatches,
   type Binding,
   type CorrelationMatch,
+  type DeliveryTrigger,
   type EvalContext,
   type Fired,
   type MessageChannel,
@@ -86,6 +94,7 @@ import {
   type Raised,
   type Result,
   type ScopeOccurrenceId,
+  type SignalAddress,
   type State,
   type TimerDetail,
   calledRoot,
@@ -145,6 +154,53 @@ function resolveName(ctx: Ctx, context: EvalContext, name: ValueSource | null): 
     }
   }
   return assertNever(name);
+}
+
+/**
+ * The address a Signal subscription opens with (PC-SIGNAL-02): its `signalRef` under `SignalNames.Identifier`, else its
+ * name (CIB-INT-0028), an expression's resolved once when the subscription opens (CIB-EXT-0041). CIB casts the value to a
+ * String as it does a Message name (`EventSubscriptionDeclaration.java:172-184`): a failure or another type rolls the
+ * arming back, and `null` or `""` opens a subscription the kernel does not claim.
+ */
+function signalAddress(ctx: Ctx, context: EvalContext, trigger: SignalTrigger): Result<SignalAddress> {
+  switch (ctx.program.options.signalNames) {
+    case SignalNames.Identifier:
+      // Admission refuses it (`signal.unspecified`).
+      return trigger.signalRef === null
+        ? failed(FailureTag.Unsupported, "signal-unspecified")
+        : committed({ tag: SignalAddressTag.Qualified, ref: trigger.signalRef });
+    case SignalNames.Addresses: {
+      const name = trigger.name;
+      // Admission refuses it (`signal.unnamed`).
+      if (name === null) return failed(FailureTag.Unsupported, "signal-unnamed");
+      switch (name.tag) {
+        case ValueSourceTag.Literal:
+          return committed({ tag: SignalAddressTag.Named, name: name.value });
+        case ValueSourceTag.Expression: {
+          const evaluation = ctx.evaluate(context, name.body);
+          switch (evaluation.tag) {
+            case EvaluationTag.Value: {
+              const result = evaluation.result;
+              if (result.tag === ValueTag.Null || (result.tag === ValueTag.String && result.value === "")) {
+                // dynamic-only: the resolved name is the run's data.
+                return failed(FailureTag.Unsupported, "signal-name-empty");
+              }
+              return result.tag === ValueTag.String
+                ? committed({ tag: SignalAddressTag.Named, name: result.value })
+                : failed(FailureTag.RolledBack, "signal-name-type");
+            }
+            case EvaluationTag.Failure:
+              return failed(FailureTag.RolledBack, evaluation.code);
+            case EvaluationTag.Unsupported:
+              return failed(FailureTag.Unsupported, evaluation.code);
+          }
+          return assertNever(evaluation);
+        }
+      }
+      return assertNever(name);
+    }
+  }
+  return assertNever(ctx.program.options.signalNames);
 }
 
 /**
@@ -237,9 +293,10 @@ function waitKind(ctx: Ctx, arming: Arming, subscription: Subscription): Result<
       const name = ctx.program.options.messageNames === MessageNames.Addresses ? named.value : null;
       return committed({ tag: OpenKindTag.Message, detail: { channel, payload: subscription.outputs.length > 0, criteria, name } });
     }
-    // Admission refuses both (`event.catch.signal`, `boundary.signal`, `start.signal` and their conditional counterparts).
-    case TriggerTag.Signal:
-      return failed(FailureTag.Unsupported, "event-catch-signal");
+    case TriggerTag.Signal: {
+      const address = signalAddress(ctx, arming.names, trigger.payload);
+      return address.ok ? committed({ tag: OpenKindTag.Signal, detail: { address: address.value, payload: false } }) : failedWith(address.failure);
+    }
     case TriggerTag.Condition:
       return committed({
         tag: OpenKindTag.Conditional,
@@ -449,6 +506,34 @@ export function correlates(
   return correlationMatches(ctx, evalContext(state, item.scope), bound, correlation);
 }
 
+/** The address a delivery names, when it delivers a Signal. */
+function signalDelivered(trigger: DeliveryTrigger): SignalAddress | null {
+  switch (trigger.tag) {
+    case DeliveryTriggerTag.Signal:
+      return trigger.address;
+    case DeliveryTriggerTag.Message:
+      return null;
+  }
+  return assertNever(trigger);
+}
+
+/**
+ * What a Signal's variables install in the receiving scope: under `SignalPayload.Variables` all of them, as CIB's
+ * `setVariables` on the receiving execution does (CIB-EXT-0043, `EventHandlerImpl.java:56-58`); under `None` a Signal
+ * carries no data (BPMN 2.0.2 §10.5.1), so a delivery that brings variables is rejected rather than dropped.
+ */
+function signalVariables(ctx: Ctx, variables: readonly Binding[]): Result<readonly Binding[]> {
+  switch (ctx.program.options.signalPayload) {
+    case SignalPayload.Variables: {
+      const admitted = admitValues(variables.map(([, value]) => value));
+      return admitted.ok ? committed(variables) : failedWith(admitted.failure);
+    }
+    case SignalPayload.None:
+      return variables.length === 0 ? committed([]) : failed(FailureTag.Rejected, "signal-variables-not-admitted");
+  }
+  return assertNever(ctx.program.options.signalPayload);
+}
+
 /**
  * Check that `fired` may fire `item` and return the state at the firing's logical time with the values the subscription
  * writes. A Message delivery must carry exactly the subscription's correlation, none for an uncorrelated one; the
@@ -481,10 +566,15 @@ function admitFiring(ctx: Ctx, subscription: Subscription, item: OpenItem, fired
       if (delivery.payload !== null) return failed(FailureTag.Rejected, "message-payload-not-accepted");
       return committed([state, []]);
     }
-    // Dynamic-only: admission refuses every Signal subscription (`event.catch.signal`, `boundary.signal`,
-    // `start.signal`), so none is open to fire.
-    case FiredTag.Signal:
-      return failed(FailureTag.Unsupported, "event-catch-signal");
+    case FiredTag.Signal: {
+      const delivery = fired.delivery;
+      const address = signalDelivered(delivery.trigger);
+      if (view.signal === null || address === null) return failed(FailureTag.Rejected, "not-a-signal-subscription");
+      if (!signalAddressMatches(address, view.signal.address)) return failed(FailureTag.Rejected, "unknown-signal-subscription");
+      if (delivery.payload !== null) return failed(FailureTag.Rejected, "signal-payload-not-accepted");
+      const values = signalVariables(ctx, delivery.variables);
+      return values.ok ? committed([state, values.value]) : failedWith(values.failure);
+    }
     // Only `evaluateItem` fires a Conditional item, after its predicate held.
     case FiredTag.Condition:
       return view.conditional === null ? failed(FailureTag.Rejected, "not-a-conditional-subscription") : committed([state, []]);

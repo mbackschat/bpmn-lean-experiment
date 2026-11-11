@@ -6,12 +6,13 @@ public import Kernel.Feature.Subscriptions.Conditions
 
 /-! # Subscriptions: catch Events, boundaries, Event Sub-Process starts and Event-Based Gateway arms
 
-Owns matching on `Trigger`; `Kernel.Timer.resolve` owns resolving a `TimerSchedule`. A Timer or Message trigger
+Owns matching on `Trigger`; `Kernel.Timer.resolve` owns resolving a `TimerSchedule`. A Timer, Message or Signal trigger
 opens one item; the triggers that `Kernel.Feature.Propagation` delivers (Error, Escalation, Compensation, Cancel) open
 nothing and are found through `catches`.
 
 Firing rules: a Timer fires only at exactly its deadline, which becomes the logical time; a Message fires only on its
-own channel, with a payload exactly when the subscription writes one. Anything else is `rejected` and changes nothing.
+own channel, with a payload exactly when the subscription writes one; a Signal fires only on its own address, with
+variables only where the profile installs them. Anything else is `rejected` and changes nothing.
 
 A subscription's item holds a reservation (`State.openSubscription`) that its firing begins. A boundary item is
 attached to its host occurrence; the arms of one Event-Based Gateway are attached to the gateway's occurrence. A
@@ -50,6 +51,26 @@ def resolveName (ctx : Ctx) (context : EvalContext) : Option ValueSource → Exc
     | .value _ => .error (.rolledBack "message-name-type")
     | .failure code => .error (.rolledBack code)
     | .unsupported code => .error (.unsupported code)
+
+/-- The address a Signal subscription opens with (PC-SIGNAL-02): its `signalRef` under `SignalNames.identifier`, else
+its name (CIB-INT-0028), an expression's resolved once when the subscription opens (CIB-EXT-0041). CIB casts the value to
+a String as it does a Message name (`EventSubscriptionDeclaration.java:172-184`): a failure or another type rolls the
+arming back, and `null` or `""` opens a subscription the kernel does not claim. -/
+def signalAddress (ctx : Ctx) (context : EvalContext) (trigger : SignalTrigger) : Except Failure SignalAddress :=
+  match ctx.program.options.signalNames, trigger.signalRef, trigger.name with
+  | .identifier, some ref, _ => .ok (.qualified ref)
+  | .addresses, _, some (.literal text) => .ok (.named text)
+  | .addresses, _, some (.expression body) =>
+    match ctx.evaluate context body with
+    -- dynamic-only: the resolved name is the run's data.
+    | .value (.string "") | .value .null => .error (.unsupported "signal-name-empty")
+    | .value (.string text) => .ok (.named text)
+    | .value _ => .error (.rolledBack "signal-name-type")
+    | .failure code => .error (.rolledBack code)
+    | .unsupported code => .error (.unsupported code)
+  -- Admission refuses both (`signal.unspecified`, `signal.unnamed`).
+  | .identifier, none, _ => .error (.unsupported "signal-unspecified")
+  | .addresses, _, none => .error (.unsupported "signal-unnamed")
 
 /-- The text a Timer value holds when it is armed: a literal's, or an expression's String value, evaluated once
 (`TimerDeclarationImpl.java:109-153`, PC-TIMER-03). A failure or a value that is no String is CIB's
@@ -98,8 +119,7 @@ def waitKind (ctx : Ctx) (arming : Arming) (subscription : Subscription) : Excep
     if trigger.correlation.length > 1 then throw (.unsupported "message-correlation-keys")
     pure (some (.message { channel, payload := !subscription.outputs.isEmpty, criteria := trigger.correlation.map (·.key),
                            name := if ctx.program.options.messageNames == .addresses then name else none }))
-  -- Admission refuses both (`event.catch.signal`, `boundary.signal`, `start.signal` and their conditional counterparts).
-  | .signal _ => .error (.unsupported "event-catch-signal")
+  | .signal trigger => do pure (some (.signal { address := ← signalAddress ctx arming.names trigger }))
   | .condition trigger =>
     .ok (some (.conditional { variableName := trigger.variableName, variableEvents := trigger.variableEvents }))
   | .error _ => .ok none
@@ -231,6 +251,19 @@ def correlates (ctx : Ctx) (item : OpenItem) (channel : MessageChannel) (correla
   | some _, none => .ok false
   | none, _ => .ok false
 
+/-- The address a delivery names, when it delivers a Signal. -/
+def signalDelivered : DeliveryTrigger → Option SignalAddress
+  | .signal address => some address
+  | .message _ => none
+
+/-- What a Signal's variables install in the receiving scope: under `SignalPayload.variables` all of them, as CIB's
+`setVariables` on the receiving execution does (CIB-EXT-0043, `EventHandlerImpl.java:56-58`); under `none` a Signal
+carries no data (BPMN 2.0.2 §10.5.1), so a delivery that brings variables is rejected rather than dropped. -/
+def signalVariables (ctx : Ctx) (variables : List (String × Value)) : Except Failure (List (String × Value)) :=
+  match ctx.program.options.signalPayload with
+  | .variables => do admitValues (variables.map (·.2)); pure variables
+  | .none => if variables.isEmpty then .ok [] else .error (.rejected "signal-variables-not-admitted")
+
 /-- Check that `fired` may fire `item` and return the state at the firing's logical time with the values the
 subscription writes. A Message delivery must carry exactly the subscription's correlation, none for an uncorrelated
 one; the target rechecks it rather than trusting the population's selection (specification, global command). -/
@@ -260,9 +293,13 @@ def admitFiring (ctx : Ctx) (subscription : Subscription) (item : OpenItem) (fir
           | true, none => .error (.rejected "message-payload-required")
           | false, some _ => .error (.rejected "message-payload-not-accepted")
           | false, none => .ok (state, [])
-  -- Dynamic-only: admission refuses every Signal subscription (`event.catch.signal`, `boundary.signal`,
-  -- `start.signal`), so none is open to fire.
-  | .signal _ => .error (.unsupported "event-catch-signal")
+  | .signal delivery =>
+    match view.signal, signalDelivered delivery.trigger with
+    | some detail, some address =>
+      if !address.matches detail.address then .error (.rejected "unknown-signal-subscription")
+      else if delivery.payload.isSome then .error (.rejected "signal-payload-not-accepted")
+      else (state, ·) <$> signalVariables ctx delivery.variables
+    | some _, none | none, _ => .error (.rejected "not-a-signal-subscription")
   -- Only `evaluateItem` fires a Conditional item, after its predicate held.
   | .condition _ => if view.conditional.isSome then .ok (state, []) else .error (.rejected "not-a-conditional-subscription")
 

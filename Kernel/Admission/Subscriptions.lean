@@ -9,7 +9,7 @@ public import Kernel.IL.Timer
 to `eventSubProcessSignal`.
 
 Admitted: Timers with a literal `Kernel.Timer.classify` admits, Messages with a literal name and no
-correlation, a correlated Message only on a catch Event, and, on boundaries, the triggers that
+correlation, a correlated Message only on a catch Event, a Signal catch with a resolvable address, and, on boundaries, the triggers that
 `Kernel.Feature.Propagation` delivers (an interrupting Error, Escalation, Compensation, and Cancel on a Transaction).
 -/
 
@@ -113,6 +113,24 @@ def message (options : ProfileOptions) (reading : Reading) (rootStart : Bool) (t
   if !trigger.correlation.isEmpty then some "message.correlation"
   else if trigger.messageRef.isNone then some "message.unspecified"
   else messageName options reading rootStart trigger.name
+
+/-- A Signal's address (PC-SIGNAL-01, PC-SIGNAL-02), shared by catches, starts and throws. Every event names its Signal
+by `signalRef` (`BpmnParse.java:3536-3545`). Under `SignalNames.identifier` that QName is the address and the name a
+description, which BPMN 2.0.2 gives no expression (`tSignal.name` is `xsd:string`). Under `addresses` CIB keys by the
+name (CIB-INT-0028): a missing or blank one is refused (`BpmnParse.java:487-488`), and an expression is read at the
+Events level (CIB-EXT-0041), except at a root start, which CIB resolves at deployment against an empty scope
+(`EventSubscriptionDeclaration.java:137-142`). -/
+def signalAddress (options : ProfileOptions) (reading : Reading) (rootStart : Bool) (signalRef : Option QName)
+    (name : Option ValueSource) : Option String :=
+  if signalRef.isNone then some "signal.unspecified"
+  else
+    match options.signalNames, name with
+    | .identifier, some (.expression _) => some "signal.nameExpression"
+    | .identifier, _ => none
+    | .addresses, none => some "signal.unnamed"
+    | .addresses, some (.literal text) => if text.toList.all (· ≤ ' ') then some "signal.unnamed" else none
+    | .addresses, some (.expression body) =>
+      if rootStart then some "start.signalNameExpression" else eventsExpression options reading "signal.nameExpression" body
 
 /-- A correlated catch, as the [specification](../../docs/kernel/semantics/SUBSCRIPTIONS-SEMANTICS-SPEC.md)
 bounds it: one key bound to a variable, an Operation channel, and no output, since its payload is never written. -/
@@ -227,17 +245,28 @@ def eventSubProcessDeclarations (starts : List (Subscription × Bool)) : Option 
   | .error code => some code
   | .ok _ => none
 
-def catchEvent (options : ProfileOptions) (reading : Reading) (subscription : Subscription) : Option String :=
-  definitions subscription <|> subscriptionOutputs subscription <|>
+/-- What admission reads of a subscription's trigger: its refusal, and the Signal it subscribes to, which
+`signalNames` and `signalDefinitionNames` compare across the program. -/
+structure Admitted where
+  refusal : Option String
+  signal : Option SignalTrigger := none
+
+/-- The one dispatch on a catch Event's trigger. -/
+def caught (options : ProfileOptions) (reading : Reading) (subscription : Subscription) : Admitted :=
+  let refusing (refusal : Option String) : Admitted := { refusal }
   match subscription.trigger with
-  | .timer trigger => timerAt options reading false trigger
-  | .message trigger => correlatedCatch options reading subscription trigger
-  | .signal _ => some "event.catch.signal"
-  | .condition trigger => conditionRefusal options reading trigger
-  | .error _ => some "event.catch.error"
-  | .escalation _ => some "event.catch.escalation"
-  | .compensation => some "event.catch.compensation"
-  | .cancel => some "event.catch.cancel"
+  | .timer trigger => refusing (timerAt options reading false trigger)
+  | .message trigger => refusing (correlatedCatch options reading subscription trigger)
+  | .signal trigger =>
+    { refusal := signalAddress options reading false trigger.signalRef trigger.name, signal := some trigger }
+  | .condition trigger => refusing (conditionRefusal options reading trigger)
+  | .error _ => refusing (some "event.catch.error")
+  | .escalation _ => refusing (some "event.catch.escalation")
+  | .compensation => refusing (some "event.catch.compensation")
+  | .cancel => refusing (some "event.catch.cancel")
+
+def catchEvent (options : ProfileOptions) (reading : Reading) (subscription : Subscription) : Option String :=
+  definitions subscription <|> subscriptionOutputs subscription <|> (caught options reading subscription).refusal
 
 /-- What a boundary's admission reads of its host: whether it is a Transaction, and whether an Escalation boundary may
 hang on it. Pinned CIB admits an Escalation boundary only on a Sub-Process (a Transaction counts as one,
@@ -289,7 +318,7 @@ def boundaries (options : ProfileOptions) (reading : Reading) (host : Host) (lis
   | .error code => some code
   | .ok _ => none
 
-/-- The event scope CIB declares a Message subscription in (`BpmnParse#addEventSubscriptionDeclaration`,
+/-- The event scope CIB declares a Message or Signal subscription in (`BpmnParse#addEventSubscriptionDeclaration`,
 `BpmnParse.java:1271-1295`): a process level (the root for `none`, else the called process of that definition), an
 element, or the Multi-Instance body of a looping host. -/
 inductive EventScope where
@@ -298,12 +327,12 @@ inductive EventScope where
   | body (host : ElementId)
   deriving DecidableEq
 
-/-- A Message subscription as CIB declares it: its event scope, its `isStartEvent` mark, which only a root Message
-start sets (`BpmnParse.java:1029`), and its trigger. -/
-structure MessageSite where
+/-- A Message or Signal subscription as CIB declares it: its event scope, its `isStartEvent` mark, which only a root
+start sets (`BpmnParse.java:1029`, `:3518`), and its trigger. -/
+structure Site (α : Type) where
   scope : EventScope
   start : Bool
-  trigger : MessageTrigger
+  trigger : α
 
 /-- Under `MessageNames.addresses` two Message subscriptions of one event scope and one start mark may not share a name:
 CIB refuses the second at deployment when its unresolved name text equals the first's
@@ -313,8 +342,8 @@ keeps an expression's parsed form, a guarded JUEL table, not its text. So two ex
 has one name text, are `message.duplicateName`, and two on different Messages are refused as `message.expressionNames`
 rather than guessed, which also refuses pairs of different texts that CIB deploys (PC-MESSAGE-01). A literal never
 collides with an expression: the reader reads every text holding `${` or `#{` as an expression. -/
-def messageNames (options : ProfileOptions) (sites : List MessageSite) : Option String :=
-  let clash (earlier site : MessageSite) : Option String :=
+def messageNames (options : ProfileOptions) (sites : List (Site MessageTrigger)) : Option String :=
+  let clash (earlier site : Site MessageTrigger) : Option String :=
     if earlier.scope != site.scope || earlier.start != site.start then none
     else
       match earlier.trigger.name, site.trigger.name with
@@ -325,6 +354,34 @@ def messageNames (options : ProfileOptions) (sites : List MessageSite) : Option 
       | _, _ => none
   if options.messageNames != .addresses then none
   else sites.zipIdx.findSome? fun (site, index) => (sites.take index).findSome? (clash · site)
+
+/-- Two Signal names compare as CIB compares their texts: a literal by its text, an expression by its parsed form, which
+the IL keeps instead of the text. Derived `Repr` makes that exact structural equality without a dispatch over the
+guarded JUEL types (as `startConditions`), and it equates only texts that differ in layout, which CIB keeps apart. The
+reader reads every text holding `${` or `#{` as an expression, so a literal never equals an expression. -/
+def sameSignalName (left right : SignalTrigger) : Bool :=
+  left.name.isSome && reprStr left.name == reprStr right.name
+
+/-- Under `SignalNames.addresses` two Signals the program references may not share a name (`signal.duplicateDefinitionName`,
+CIB-LIM-0026): CIB refuses a document declaring two (`BpmnParse.java:479-482`). `signals` are every Signal the
+program's subscriptions and throws reference; a Signal no event references never reaches the IL. -/
+def signalDefinitionNames (options : ProfileOptions) (signals : List SignalTrigger) : Option String :=
+  if options.signalNames != .addresses then none
+  else if signals.zipIdx.any fun (signal, index) => (signals.take index).any fun earlier =>
+      earlier.signalRef != signal.signalRef && sameSignalName earlier signal then some "signal.duplicateDefinitionName"
+  else none
+
+/-- Under `SignalNames.addresses` two Signal subscriptions of one event scope and one start mark may not share a name
+(`signal.duplicateName`, CIB-LIM-0026): CIB refuses the second at deployment when its unresolved name text equals the
+first's (`hasMultipleSignalEventDefinitionsWithSameName`, `BpmnParse.java:1284-1288`, `:1301-1303`, `:1317-1328`), so
+two root Signal starts of one process on one Signal are refused, which BPMN 2.0.2 admits (§13.2). `sites` are every
+Signal subscription of the program, compared by `sameSignalName`. -/
+def signalNames (options : ProfileOptions) (sites : List (Site SignalTrigger)) : Option String :=
+  if options.signalNames != .addresses then none
+  else if sites.zipIdx.any fun (site, index) => (sites.take index).any fun earlier =>
+      earlier.scope == site.scope && earlier.start == site.start && sameSignalName earlier.trigger site.trigger then
+    some "signal.duplicateName"
+  else none
 
 /-- The Signal of an Event Sub-Process start, which `start` (`Kernel.Admission.Subscriptions.Starts`) hands here:
 refused, as every Signal subscription is. -/

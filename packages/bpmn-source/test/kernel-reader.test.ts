@@ -345,6 +345,10 @@ test("the profile options are the full record, each non-default selected by the 
   assert.equal(kernelProfileOptions(["CIB-OP-0016"]).branchSchedule, "declarationDepthFirst");
   assert.equal(kernelProfileOptions(["CIB-EXT-0034"]).raisedCallOutputs, "atCalledRoot");
   assert.equal(kernelProfileOptions(["CIB-EXT-0035"]).conditionalRetrigger, "eachWrite");
+  assert.equal(kernelProfileOptions(["CIB-INT-0028"]).signalNames, "addresses");
+  assert.equal(kernelProfileOptions(["CIB-EXT-0040"]).signalPayload, "variables");
+  assert.equal(kernelProfileOptions(["CIB-EXT-0043"]).signalPayload, "variables");
+  assert.equal(kernelProfileOptions(["CIB-EXT-0042"]).signalDelivery, "occurrenceTargeted");
   assert.equal(kernelProfileOptions(["CIB-EXT-0036"]).malformedTimer, "rollsBackArming");
   assert.equal(kernelProfileOptions(["CIB-LIM-0022"]).messageNames, "addresses");
   assert.equal(kernelProfileOptions(["CIB-LIM-0024"]).scopeStart, "required");
