@@ -35,6 +35,11 @@ refuses is a refused deployment, a result; a malformed population scenario is a 
 `kernelRun --decode <program.json>...` prints, per program in argument order, `{fixture, refusal}`: `null` when the strict
 codec decodes it, else the codec's refusal. It runs nothing, so guard 21 holds every row fixture to the Lean codec in one
 process; an unreadable file is a harness error.
+
+`kernelRun --fixture <fixture.json>...` prints, per kernel fixture in argument order, `{fixture, answer}`: the answer of
+one host-facing function no scenario run reaches (`fixtureAnswer`), applied to the fixture's admitted programs and input.
+A fixture never carries its expected answer; the comparing test reads that from a separate file. A malformed fixture is
+a harness error with a stable `fixture-` code.
 -/
 
 public section
@@ -364,12 +369,79 @@ def decodePrograms (paths : List String) : IO Json := do
     pure (Json.mkObj [("fixture", Json.str path), ("refusal", refusal)])
   pure (Json.arr answers.toArray)
 
+/-! ## Fixture mode -/
+
+/-- A fixture's programs, each decoded and admitted: the host applies these functions only to admitted programs. -/
+def fixturePrograms (fixture : Json) : Except String (List Program) := do
+  (← fixture.getObjValAs? (Array Json) "programs").toList.mapM fun programJson => do
+    let program ← Codec.programFromJson programJson
+    match AdmissionRegistry.admit program with
+    | some code => throw s!"fixture-program-refused: {code}"
+    | none => pure program
+
+def onlyProgram : List Program → Except String Program
+  | [program] => pure program
+  | _ => throw "fixture-program-count"
+
+/-- The instance state after `stimuli`, each of which must commit; matching is asked of a committed state only. -/
+def committedState (program : Program) (stimuli : List Json) : Except String State := do
+  let mut current : Option State := none
+  for stimulus in stimuli do
+    let (commandId, input) ← Codec.stimulusFromJson stimulus
+    match Step.step Registry.hooks program current input with
+    | .ok next => current := some next
+    | .error failure => throw s!"fixture-stimulus-not-committed: {commandId} {Codec.failureCode failure}"
+  match current with
+  | some state => pure state
+  | none => throw "fixture-without-instance"
+
+/-- Each program's summary (`deploymentSummary`) registered in order as `deploymentIds` names it, over the summaries
+registered before it, as the host's deployment ingress does: its own ordinal, then the versions or the refusal. -/
+def registrations (programs : List Program) (deploymentIds : List Nat) : Except String Json := do
+  unless programs.length == deploymentIds.length do throw "fixture-deployment-count"
+  let (_, answers) := (programs.zip deploymentIds).foldl (init := (([] : List Population.DeploymentSummary), ([] : List Json)))
+    fun (registry, answers) (program, deploymentId) =>
+      let candidate := Population.deploymentSummary program
+      let ordinal := ("ordinal", toJson candidate.deploymentId)
+      match Population.registerSummary registry deploymentId candidate with
+      | .ok (registered, versions) =>
+        (registry ++ [{ candidate with deploymentId := registered, versions }],
+          answers ++ [Json.mkObj [ordinal, ("deploymentId", toJson registered), ("versions", toJson versions)]])
+      | .error code => (registry, answers ++ [Json.mkObj [ordinal, ("refused", Json.str code)]])
+  pure (Json.arr answers.toArray)
+
+/-- The answer of the host-facing function a fixture's `entry` names: `rootStarts`, `refusesSignalVariables`,
+`matching` (over the state its stimuli commit, for a delivery's channel and correlation) or `registerSummary`. -/
+def fixtureAnswer (fixture : Json) : Except String Json := do
+  let input ← fixture.getObjVal? "input"
+  match ← fixture.getObjValAs? String "entry" with
+  | "rootStarts" =>
+    let starts := Host.rootStarts (← onlyProgram (← fixturePrograms fixture))
+    pure (Json.arr (starts.map fun (publicId, own) => Json.arr #[Json.str publicId, Json.str own.value]).toArray)
+  | "refusesSignalVariables" => pure (Json.bool (Host.refusesSignalVariables (← onlyProgram (← fixturePrograms fixture))))
+  | "matching" =>
+    let program ← onlyProgram (← fixturePrograms fixture)
+    let state ← committedState program (← input.getObjValAs? (List Json) "stimuli")
+    let channel ← Codec.channelFromJson (← input.getObjVal? "channel")
+    let correlation ← (← input.getObjValAs? (List Json) "correlation").mapM Codec.correlationFromJson
+    pure (Json.arr ((Population.matching Registry.hooks program state channel correlation).map referenceJson).toArray)
+  | "registerSummary" => registrations (← fixturePrograms fixture) (← input.getObjValAs? (List Nat) "deploymentIds")
+  | other => throw s!"fixture-entry-unknown: {other}"
+
+def runFixtures (paths : List String) : IO Json := do
+  let answers ← paths.mapM fun (path : String) => do
+    pure (Json.mkObj [("fixture", Json.str path), ("answer", ← orFail path (fixtureAnswer (← readJson path)))])
+  pure (Json.arr answers.toArray)
+
 end Kernel.Run
 
 def main (args : List String) : IO UInt32 := do
   match args with
   | "--decode" :: paths@(_ :: _) =>
     IO.println (← Kernel.Run.decodePrograms paths).compress
+    pure 0
+  | "--fixture" :: paths@(_ :: _) =>
+    IO.println (← Kernel.Run.runFixtures paths).compress
     pure 0
   | "--population" :: digestsPath :: paths@(_ :: _ :: _) =>
     IO.println (← Kernel.Run.runPopulation digestsPath paths.dropLast paths.getLast!).compress
@@ -384,5 +456,6 @@ def main (args : List String) : IO UInt32 := do
     IO.eprintln ("usage: kernelRun <program.json> <scenario.json>\n" ++
       "       kernelRun --host-view <program.json> <scenario.json>\n" ++
       "       kernelRun --population <digests.json> <source.json>... <population-scenario.json>\n" ++
-      "       kernelRun --decode <program.json>...")
+      "       kernelRun --decode <program.json>...\n" ++
+      "       kernelRun --fixture <fixture.json>...")
     pure 64

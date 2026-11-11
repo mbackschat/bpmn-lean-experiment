@@ -1,8 +1,12 @@
-/** The kernel's public entry points: the scenario, host-view and population runners, the IL codec and the host interface. */
+/**
+ * The kernel's public entry points: the scenario, host-view, population and kernel-fixture runners, the IL codec and the
+ * host interface.
+ */
 export {
   capabilitiesJson,
   hostViewJson,
   observationJson,
+  runFixture,
   runHostView,
   runPopulation,
   runScenario,

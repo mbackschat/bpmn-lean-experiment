@@ -1,0 +1,36 @@
+[
+  {
+    "ordinal": 0,
+    "deploymentId": 1,
+    "versions": [
+      [
+        "A",
+        1
+      ]
+    ]
+  },
+  {
+    "ordinal": 0,
+    "refused": "deployment.messageStartName"
+  },
+  {
+    "ordinal": 0,
+    "deploymentId": 3,
+    "versions": [
+      [
+        "A",
+        2
+      ]
+    ]
+  },
+  {
+    "ordinal": 0,
+    "deploymentId": 4,
+    "versions": [
+      [
+        "D",
+        1
+      ]
+    ]
+  }
+]

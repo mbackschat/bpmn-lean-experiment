@@ -14,9 +14,13 @@
  * every listed one that now agrees, fails the test and is listed with the scenario and the first differing path, never
  * adjusted away. The evidence is compared against the TypeScript kernel's result; the first test establishes that it is
  * also Lean's.
+ *
+ * The host-facing functions no scenario run reaches (`rootStarts`, `refusesSignalVariables`, `matching`,
+ * `registerSummary`) are held to kernel fixtures instead (`kernelRun --fixture`, `runFixture`): each kernel's answer
+ * must equal the expected answer kept beside the fixture, which no runner reads, and the other kernel's.
  */
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { copyFile, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { test } from "node:test";
@@ -31,11 +35,13 @@ import {
   populationClockMs,
 } from "@bpmn-lean/differential";
 import type { PopulationResultDocument, ScenarioDisagreement, ValueDisagreement } from "@bpmn-lean/differential";
-import { parseStrict, runHostView, runPopulation, runScenario } from "@bpmn-lean/kernel";
+import { parseStrict, runFixture, runHostView, runPopulation, runScenario } from "@bpmn-lean/kernel";
 
 import { pipelineTestTimeoutMs } from "../../../scripts/pipeline-budget.ts";
 import { ledgerViolations, readCibDisagreementLedger } from "./cib-disagreement-ledger.ts";
-import { runLeanKernelHostView, runLeanKernelPopulation, runLeanKernelScenario, writeProgram } from "./kernel-targets.ts";
+import {
+  runLeanKernelFixtures, runLeanKernelHostView, runLeanKernelPopulation, runLeanKernelScenario, writeProgram,
+} from "./kernel-targets.ts";
 import { projectRoot } from "./pipeline-target-support.ts";
 import { populationStepDigests } from "./population-digest.ts";
 import { populationPrograms } from "./population-programs.ts";
@@ -304,6 +310,94 @@ test("the Lean and TypeScript kernels agree on the population contract's deploym
       if (name.startsWith("population-")) assert.deepEqual({ name, lean, typeScript }, { name, lean: name, typeScript: name });
       else assert.equal(compared(name, lean, typeScript), null, name);
     }
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+const kernelFixtureSuffix = ".kernel-fixture.json";
+const expectedSuffix = ".kernel-fixture.expected.json";
+const kernelFixtures = path.join(projectRoot, "packages/kernel/test/fixtures/host-functions");
+
+function typeScriptFixtureAnswer(text: string): unknown {
+  const parsed = parseStrict(text);
+  if (!parsed.ok) throw new Error(parsed.refusal);
+  return wireValue(runFixture(parsed.value));
+}
+
+/**
+ * The kernel fixtures `directory` holds (guard 14: discovered, never listed), each a host-facing function no scenario
+ * run reaches: both kernels answer the fixture, which carries no expected answer, and only this comparison reads the
+ * expected file beside it. A finding is an unpaired file, or a kernel answer that differs from the expected one or from
+ * the other kernel's.
+ */
+async function kernelFixtureFindings(directory: string): Promise<Readonly<{ count: number; findings: ReadonlyArray<string> }>> {
+  const files = (await readdir(directory)).sort();
+  const fixtures = files.filter((file) => file.endsWith(kernelFixtureSuffix));
+  const findings = [
+    ...fixtures.filter((file) => !files.includes(file.replace(kernelFixtureSuffix, expectedSuffix))).map((file) => `${file}: no expected answer`),
+    ...files.filter((file) => file.endsWith(expectedSuffix) && !files.includes(file.replace(expectedSuffix, kernelFixtureSuffix)))
+      .map((file) => `${file}: no kernel fixture`),
+  ];
+  const paired = fixtures.filter((file) => files.includes(file.replace(kernelFixtureSuffix, expectedSuffix)));
+  const lean = await runLeanKernelFixtures(paired.map((file) => path.join(directory, file)));
+  for (const file of paired) {
+    const fixturePath = path.join(directory, file);
+    const expected = JSON.parse(await readFile(fixturePath.replace(kernelFixtureSuffix, expectedSuffix), "utf8")) as unknown;
+    const leanAnswer = lean.get(fixturePath);
+    const typeScript = typeScriptFixtureAnswer(await readFile(fixturePath, "utf8"));
+    const comparisons: ReadonlyArray<readonly [string, unknown, unknown]> = [
+      ["Lean differs from the expected answer", expected, leanAnswer],
+      ["TypeScript differs from the expected answer", expected, typeScript],
+      ["Lean and TypeScript differ", leanAnswer, typeScript],
+    ];
+    for (const [finding, left, right] of comparisons) {
+      const difference = compared(file, left, right);
+      if (difference !== null) findings.push(`${file}: ${finding} at ${difference.path}`);
+    }
+  }
+  return { count: fixtures.length, findings };
+}
+
+test("both kernels give every kernel fixture's expected answer", async () => {
+  const { count, findings } = await kernelFixtureFindings(kernelFixtures);
+  assert.ok(count > 0, "discovery found no kernel fixture");
+  assert.deepEqual(findings, []);
+});
+
+/** The `fixture-` code a refused fixture names, or `accepted`. */
+function fixtureCode(run: () => unknown): Promise<string> {
+  return Promise.resolve().then(run).then(
+    () => "accepted",
+    (error: unknown) => /fixture-[a-z-]+/u.exec(String(error))?.[0] ?? `uncoded: ${String(error)}`,
+  );
+}
+
+// Guard 23: a seeded wrong answer and a seeded unpaired file must fail, or a comparison that passes everything passes.
+test("the kernel fixture comparison fails a wrong expected answer and an unpaired file, and both kernels refuse an unknown entry", async () => {
+  const directory = await mkdtemp(path.join(tmpdir(), "kernel-fixtures-"));
+  try {
+    const [first] = (await readdir(kernelFixtures)).filter((file) => file.endsWith(kernelFixtureSuffix)).sort();
+    assert.ok(first !== undefined, "discovery found no kernel fixture");
+    const expected = JSON.parse(await readFile(path.join(kernelFixtures, first.replace(kernelFixtureSuffix, expectedSuffix)), "utf8")) as unknown;
+    await copyFile(path.join(kernelFixtures, first), path.join(directory, first));
+    await writeFile(path.join(directory, first.replace(kernelFixtureSuffix, expectedSuffix)), JSON.stringify({ seeded: expected }), "utf8");
+    await writeFile(path.join(directory, `orphan${expectedSuffix}`), "null", "utf8");
+    const { count, findings } = await kernelFixtureFindings(directory);
+    assert.equal(count, 1);
+    assert.deepEqual(findings.map((finding) => finding.replace(/ at .*$/u, "")), [
+      `orphan${expectedSuffix}: no kernel fixture`,
+      `${first}: Lean differs from the expected answer`,
+      `${first}: TypeScript differs from the expected answer`,
+    ]);
+
+    const unknown = path.join(directory, "unknown.json");
+    const fixture = JSON.parse(await readFile(path.join(kernelFixtures, first), "utf8")) as Record<string, unknown>;
+    const text = JSON.stringify({ ...fixture, entry: "deploymentSummary" });
+    await writeFile(unknown, text, "utf8");
+    const lean = await fixtureCode(() => runLeanKernelFixtures([unknown]));
+    const typeScript = await fixtureCode(() => typeScriptFixtureAnswer(text));
+    assert.deepEqual({ lean, typeScript }, { lean: "fixture-entry-unknown", typeScript: "fixture-entry-unknown" });
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

@@ -17,10 +17,16 @@
  * both registries; `run/population.ts` reads the scenario and renders the result. A source the reader or admission
  * refuses is a refused deployment, a result; a malformed population scenario is a harness error with a stable code,
  * thrown.
+ *
+ * `runFixture` returns the answer of one host-facing function no scenario run reaches (`kernelRun --fixture`), applied to
+ * a kernel fixture's admitted programs and input. A fixture never carries its expected answer; the comparing test reads
+ * that from a separate file. A malformed fixture is a harness error with a stable `fixture-` code, thrown.
  */
 import { assertNever, compareStrings, mergeSort, type DefinitionRef, type Program } from "./il/types.js";
 import { bindingsToJson, decodeProgram, encodeExpression, type JsonValue } from "./il/codec.js";
-import { channelToJson, failureCode, failureName, firingStimulusFromJson, signalAddressToJson } from "./il/codec/stimulus.js";
+import {
+  channelFromJson, channelToJson, decodeCorrelation, failureCode, failureName, firingStimulusFromJson, signalAddressToJson,
+} from "./il/codec/stimulus.js";
 import {
   CauseTag,
   FailureTag,
@@ -43,6 +49,8 @@ import {
   definitionCapabilities,
   hostRequirements,
   hostView,
+  refusesSignalVariables,
+  rootStarts,
   type Capabilities,
   type CorrelatedChannel,
   type OpenWait,
@@ -54,9 +62,11 @@ import {
 import { ResolvedTag, type Resolved } from "./il/timer.js";
 import { runStimuli as runInstances } from "./population.js";
 import { onTimeRefusal } from "./population/timers.js";
+import { deploymentSummary, registerSummary, type DeploymentSummary } from "./population/deploy.js";
+import { matching } from "./population/messages.js";
 import { hooks } from "./registry.js";
 import { admit } from "./admission-registry.js";
-import { arrayField, field, referenceJson, requiredString, type ScenarioStimulus } from "./run/wire.js";
+import { arrayField, field, referenceJson, requiredString, stimulusOf, type ScenarioStimulus } from "./run/wire.js";
 import {
   definitionRefFromJson, deploymentSourceFromJson, populationResultJson, stimuliOfPopulation, type Declared,
 } from "./run/population.js";
@@ -491,4 +501,87 @@ export function runPopulation(sourceJsons: readonly unknown[], scenarioJson: unk
   const population = runInstances(hooks, admit, stimuli);
   if (!population.ok) throw new Error(`${where}: ${population.error}`);
   return populationResultJson(observationJson, scenarioId, population.value);
+}
+
+// Fixture mode
+
+/** A fixture's programs, each decoded and admitted: the host applies these functions only to admitted programs. */
+function fixturePrograms(fixture: unknown): readonly Program[] {
+  return arrayField(fixture, "programs", "fixture").map((programJson) => {
+    const program = programFromJson(programJson, "fixture");
+    const code = admit(program);
+    if (code !== null) throw new Error(`fixture-program-refused: ${code}`);
+    return program;
+  });
+}
+
+function onlyProgram(programs: readonly Program[]): Program {
+  const [program, ...rest] = programs;
+  if (program === undefined || rest.length > 0) throw new Error("fixture-program-count");
+  return program;
+}
+
+/** The instance state after `stimuli`, each of which must commit; matching is asked of a committed state only. */
+function committedState(program: Program, stimuli: readonly unknown[]): State {
+  let current: State | null = null;
+  for (const stimulus of stimuli) {
+    const [commandId, input] = stimulusOf(stimulus, "fixture");
+    const outcome = step(hooks, program, current, input);
+    if (!outcome.ok) throw new Error(`fixture-stimulus-not-committed: ${commandId} ${failureCode(outcome.failure)}`);
+    current = outcome.value;
+  }
+  if (current === null) throw new Error("fixture-without-instance");
+  return current;
+}
+
+/**
+ * Each program's summary (`deploymentSummary`) registered in order as `deploymentIds` names it, over the summaries
+ * registered before it, as the host's deployment ingress does: its own ordinal, then the versions or the refusal.
+ */
+function registrations(programs: readonly Program[], deploymentIds: readonly unknown[]): JsonValue {
+  if (programs.length !== deploymentIds.length) throw new Error("fixture-deployment-count");
+  const registry: DeploymentSummary[] = [];
+  return programs.map((program, index): JsonValue => {
+    const deploymentId = deploymentIds[index];
+    if (typeof deploymentId !== "number" || !Number.isSafeInteger(deploymentId) || deploymentId < 0) {
+      throw new Error("fixture: deploymentIds: Nat expected");
+    }
+    const candidate = deploymentSummary(program);
+    const registered = registerSummary(registry, deploymentId, candidate);
+    if (!registered.ok) return { ordinal: candidate.deploymentId, refused: registered.error };
+    const { versions } = registered.value;
+    registry.push({ ...candidate, deploymentId: registered.value.deploymentId, versions });
+    return { ordinal: candidate.deploymentId, deploymentId: registered.value.deploymentId, versions: versions.map(([key, version]) => [key, version]) };
+  });
+}
+
+/** `matching` over the state the fixture's stimuli commit, for a delivery's channel and correlation. */
+function matchingAnswer(fixture: unknown, input: unknown): JsonValue {
+  const program = onlyProgram(fixturePrograms(fixture));
+  const state = committedState(program, arrayField(input, "stimuli", "fixture"));
+  const channel = channelFromJson(field(input, "channel", "fixture"));
+  if (!channel.ok) throw new Error(`fixture: ${channel.refusal}`);
+  const correlation = arrayField(input, "correlation", "fixture").map((json) => {
+    const decoded = decodeCorrelation(json);
+    if (!decoded.ok) throw new Error(`fixture: ${decoded.refusal}`);
+    return decoded.value;
+  });
+  return matching(hooks, program, state, channel.value, correlation).map(referenceJson);
+}
+
+/** The host-facing functions a fixture's `entry` names, each over the fixture and its `input`. */
+const fixtureEntries: Readonly<Record<string, (fixture: unknown, input: unknown) => JsonValue>> = {
+  rootStarts: (fixture) => rootStarts(onlyProgram(fixturePrograms(fixture))).map(([publicId, own]) => [publicId, own]),
+  refusesSignalVariables: (fixture) => refusesSignalVariables(onlyProgram(fixturePrograms(fixture))),
+  matching: matchingAnswer,
+  registerSummary: (fixture, input) => registrations(fixturePrograms(fixture), arrayField(input, "deploymentIds", "fixture")),
+};
+
+/** `kernelRun --fixture <fixture.json>`, for one fixture. */
+export function runFixture(fixtureJson: unknown): unknown {
+  const input = field(fixtureJson, "input", "fixture");
+  const entry = requiredString(fixtureJson, "entry", "fixture");
+  const answer = Object.hasOwn(fixtureEntries, entry) ? fixtureEntries[entry] : undefined;
+  if (answer === undefined) throw new Error(`fixture-entry-unknown: ${entry}`);
+  return answer(fixtureJson, input);
 }

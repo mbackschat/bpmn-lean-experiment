@@ -57,6 +57,16 @@ export async function decodeLeanPrograms(programPaths: ReadonlyArray<string>): P
   return new Map(answers.map(({ fixture, refusal }) => [fixture, refusal]));
 }
 
+/**
+ * The Lean answer for each kernel fixture file (`kernelRun --fixture`), read in one process; a malformed fixture fails
+ * the whole run with its `fixture-` code, and so does an empty list, which `kernelRun` refuses as a usage error.
+ */
+export async function runLeanKernelFixtures(fixturePaths: ReadonlyArray<string>): Promise<ReadonlyMap<string, unknown>> {
+  const answers = parseWireJson<ReadonlyArray<Readonly<{ fixture: string; answer: unknown }>>>(
+    await runKernelDriver(["--fixture", ...fixturePaths], fixturePaths.length), "kernelRun --fixture");
+  return new Map(answers.map(({ fixture, answer }) => [fixture, answer]));
+}
+
 export function writeProgram(programPath: string, program: KernelJson): Promise<void> {
   return writeFile(programPath, JSON.stringify(program), "utf8");
 }
