@@ -24,18 +24,16 @@ structure StartsHooks where
 
 /-- `Hooks.startsFired`: the root starts `input`'s trigger fires, in document order. A named input considers only the
 start it names, so no other start's predicate is evaluated for it: each start is its own unit of commitment
-(docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md#conditional-start-evaluations). An unnamed none trigger fires the
-sole none start, and nothing when there is none or several. -/
+(docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md#conditional-start-evaluations). An unnamed none trigger fires
+every none start, so `chooseStart` answers `start-ambiguous` for several, which only an unadmitted program has
+(`start.rootCombination`, CIB-LIM-0007). -/
 def startsFired (hooks : StartsHooks) (ctx : Ctx) (input : StartInput) : Except Failure (List ElementId) :=
   let starts : List (Header × StartPayload) := (ctx.program.children none).filterMap Element.start?
   match input.startEvent, input.trigger with
   | some named, _ =>
     (starts.filter (·.1.id == named)).filterMapM fun (header, start) => do
       pure (if ← hooks.fires ctx input start.subscription then some header.id else none)
-  | none, .none =>
-    match starts.filter (·.2.subscription.isNone) with
-    | [only] => .ok [only.1.id]
-    | _ => .ok []
+  | none, .none => .ok ((starts.filter (·.2.subscription.isNone)).map (·.1.id))
   | none, _ =>
     starts.filterMapM fun (header, start) => do
       pure (if ← hooks.fires ctx input start.subscription then some header.id else none)

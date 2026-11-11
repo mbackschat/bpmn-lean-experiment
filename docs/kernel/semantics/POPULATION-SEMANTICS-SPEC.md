@@ -31,7 +31,7 @@ Interpretation M8 (2026-11-11; cold interpretation review approved with required
 
 ### Start selection
 
-- A root start input selects the start Event it names if its trigger fires it, else the one start its trigger fires, and for a none trigger the sole none start; several unnamed are `start-ambiguous`, none `no-start-event` ([`Starts.startsFired`](../../../Kernel/Feature/Starts.lean)). How a start trigger is admitted and fires is stated in [subscriptions](SUBSCRIPTIONS-SEMANTICS-SPEC.md#starts).
+- A root start input selects the start Event it names if its trigger fires it, else the one start its trigger fires, a none trigger firing every none start; several unnamed are `start-ambiguous`, none `no-start-event` ([`Starts.startsFired`](../../../Kernel/Feature/Starts.lean)). Admission refuses a second root None or Timer start (`start.rootCombination`, [CIB-LIM-0007](../../CIB-BPMN-RELATION-REGISTER.md#cib-lim-0007-pinned-cib-parses-one-initial-start-per-process-and-one-start-per-sub-process)), so no admitted program has several none starts. How a start trigger is admitted and fires is stated in [subscriptions](SUBSCRIPTIONS-SEMANTICS-SPEC.md#starts).
 
 ### Timer starts
 

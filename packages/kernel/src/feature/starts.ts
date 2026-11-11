@@ -65,8 +65,9 @@ function firedAmong(hooks: StartsHooks, ctx: Ctx, input: StartInput, starts: rea
 /**
  * `Hooks.startsFired`: the root starts `input`'s trigger fires, in document order. A named input considers only the
  * start it names, so no other start's predicate is evaluated for it: each start is its own unit of commitment
- * (docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md#conditional-start-evaluations). An unnamed none trigger fires the
- * sole none start, and nothing when there is none or several.
+ * (docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md#conditional-start-evaluations). An unnamed none trigger fires
+ * every none start, so `chooseStart` answers `start-ambiguous` for several, which only an unadmitted program has
+ * (`start.rootCombination`, CIB-LIM-0007).
  */
 export function startsFired(hooks: StartsHooks, ctx: Ctx, input: StartInput): Result<readonly ElementId[]> {
   const starts = programChildren(ctx.program, null).flatMap((element) => {
@@ -76,8 +77,7 @@ export function startsFired(hooks: StartsHooks, ctx: Ctx, input: StartInput): Re
   const named = input.startEvent;
   if (named !== null) return firedAmong(hooks, ctx, input, starts.filter(([header]) => header.id === named));
   if (input.trigger.tag !== StartTriggerTag.None) return firedAmong(hooks, ctx, input, starts);
-  const [only, ...others] = starts.filter(([, start]) => start.subscription === null);
-  return committed(only !== undefined && others.length === 0 ? [only[0].id] : []);
+  return committed(starts.filter(([, start]) => start.subscription === null).map(([header]) => header.id));
 }
 
 /**

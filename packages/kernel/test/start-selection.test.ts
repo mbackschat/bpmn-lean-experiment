@@ -37,6 +37,11 @@ const twoTimerStarts = decoded(withFlows(
   append(replace(replace(base(), "S", start("S1", duration("PT1S"))), "T", activity("T", userWork())), start("S2", duration("PT2S"))),
   flow("f1", "S1", "T"), flow("f3", "S2", "T")));
 
+/** Two None starts `S1` and `S2`, each leading to the User Task `T`; admission refuses them as it does two Timer starts. */
+const twoNoneStarts = decoded(withFlows(
+  append(replace(replace(base(), "S", start("S1")), "T", activity("T", userWork())), start("S2")),
+  flow("f1", "S1", "T"), flow("f3", "S2", "T")));
+
 /** `S -> T -> E` with `T` a User Task. */
 const waiting = admitted(replace(base(), "T", activity("T", userWork())));
 
@@ -59,6 +64,13 @@ const timerStart = (startEvent?: string): Json => ({
 test("an unnamed Timer trigger that fires two root starts is ambiguous", () => {
   const outcome = run(twoTimerStarts, null, timerStart());
   assert.deepEqual(outcome.ok ? null : outcome.failure, { tag: "rejected", code: "start-ambiguous" });
+});
+
+test("an unnamed None input with two None starts is ambiguous, and a named one starts the start it names", () => {
+  const outcome = run(twoNoneStarts, null, { kind: "start", commandId: "start", instanceId: "I", variables: [] });
+  assert.deepEqual(outcome.ok ? null : outcome.failure, { tag: "rejected", code: "start-ambiguous" });
+  const started = committed(run(twoNoneStarts, null, { kind: "start", commandId: "start", instanceId: "I", variables: [], startEvent: "S2" }));
+  assert.deepEqual(started.openItems.map((item) => item.element), ["T"]);
 });
 
 test("a Timer trigger naming one of the starts it fires starts that one", () => {
