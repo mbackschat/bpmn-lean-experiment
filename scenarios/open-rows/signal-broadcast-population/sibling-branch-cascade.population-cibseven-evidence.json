@@ -1,0 +1,110 @@
+{
+  "kind": "cibSevenPopulationEvidence",
+  "scenario": {
+    "id": "signal-broadcast-population-sibling-branch-cascade",
+    "sha256": "070ab65df946d4380d62947eb02ddc66a9fb014b6a9c0618da5af8607d0f7783"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "13a1bfc9834c109b22ff684204ea92e32d432bc1bfb62debe4907de0bec7cc27"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "projection": {
+    "id": "cib-population-result"
+  },
+  "result": {
+    "deployments": [
+      {
+        "deploymentId": 1,
+        "definitionRef": "cascade-fork-emitter",
+        "versions": [
+          {
+            "key": "Process_CascadeForkEmitter",
+            "version": 1
+          }
+        ],
+        "outcome": {
+          "kind": "deployed"
+        }
+      },
+      {
+        "deploymentId": 2,
+        "definitionRef": "cascade-relay",
+        "versions": [
+          {
+            "key": "Process_CascadeRelay",
+            "version": 1
+          }
+        ],
+        "outcome": {
+          "kind": "deployed"
+        }
+      }
+    ],
+    "steps": [],
+    "processStates": [
+      {
+        "kind": "state",
+        "instanceId": "Emitter_1",
+        "status": "running",
+        "logicalTimeMs": 10,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Emitter_1",
+              "elementId": "CatchSignalTwo",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "signal",
+              "name": "signal-two",
+              "payload": false
+            },
+            "input": "deliver"
+          }
+        ]
+      },
+      {
+        "kind": "state",
+        "instanceId": "Relay_1",
+        "status": "running",
+        "logicalTimeMs": 10,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Relay_1",
+              "elementId": "Acknowledge",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Acknowledge the relay",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      }
+    ]
+  }
+}

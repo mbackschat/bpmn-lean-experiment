@@ -1,0 +1,283 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "message-correlation-criteria-object-valued-criterion",
+    "sha256": "1c164c8a9da35b9f583d59e91c678184c18a215d5fe1ddda559b79718f3141a5"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "13a1bfc9834c109b22ff684204ea92e32d432bc1bfb62debe4907de0bec7cc27"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "note",
+            "value": {
+              "kind": "null"
+            }
+          },
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "A-1"
+            }
+          },
+          {
+            "name": "region",
+            "value": {
+              "kind": "string",
+              "value": "north"
+            }
+          },
+          {
+            "name": "ticket",
+            "value": {
+              "kind": "integer",
+              "value": 41
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-deliver-order-as-list",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "note",
+            "value": {
+              "kind": "null"
+            }
+          },
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "A-1"
+            }
+          },
+          {
+            "name": "region",
+            "value": {
+              "kind": "string",
+              "value": "north"
+            }
+          },
+          {
+            "name": "ticket",
+            "value": {
+              "kind": "integer",
+              "value": 41
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "s02-deliver-order-as-list",
+        "tasks": []
+      }
+    ],
+    "messageSubscriptions": [
+      {
+        "afterCommandId": "s01-start",
+        "subscriptions": [
+          {
+            "elementId": "AwaitConfirmation",
+            "eventName": "order-confirmed",
+            "messageId": "Message_OrderConfirmed",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-deliver-order-as-list",
+        "subscriptions": [
+          {
+            "elementId": "AwaitConfirmation",
+            "eventName": "order-confirmed",
+            "messageId": "Message_OrderConfirmed",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s02-deliver-order-as-list",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "s01-start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s02-deliver-order-as-list",
+        "state": "ACTIVE"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "rolledBack"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "note",
+            "value": {
+              "kind": "null"
+            }
+          },
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "A-1"
+            }
+          },
+          {
+            "name": "region",
+            "value": {
+              "kind": "string",
+              "value": "north"
+            }
+          },
+          {
+            "name": "ticket",
+            "value": {
+              "kind": "integer",
+              "value": 41
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "AwaitConfirmation",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_OrderConfirmed"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s02-deliver-order-as-list",
+        "outcome": "rolledBack"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "note",
+            "value": {
+              "kind": "null"
+            }
+          },
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "A-1"
+            }
+          },
+          {
+            "name": "region",
+            "value": {
+              "kind": "string",
+              "value": "north"
+            }
+          },
+          {
+            "name": "ticket",
+            "value": {
+              "kind": "integer",
+              "value": 41
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "AwaitConfirmation",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_OrderConfirmed"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          }
+        ]
+      }
+    ]
+  }
+}

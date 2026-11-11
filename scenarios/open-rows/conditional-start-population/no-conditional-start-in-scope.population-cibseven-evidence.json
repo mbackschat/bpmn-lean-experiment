@@ -41,7 +41,7 @@
         "commandId": "s01-evaluate",
         "ordinal": 1,
         "at": 0,
-        "outcome": "rolledBack"
+        "outcome": "rejected"
       }
     ],
     "processStates": []
