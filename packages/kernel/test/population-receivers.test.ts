@@ -36,6 +36,7 @@ import {
   signalStartReceivers,
   step,
   stimulusFromJson,
+  timerOccurrences,
   timerStartCheck,
 } from "@bpmn-lean/kernel";
 import type {
@@ -275,4 +276,14 @@ test("timerStartCheck refuses an unknown deployment, start or occurrence, a supe
   assert.equal(timerStartCheck([first], 1, "S", hour, hour, true), "timer-start-occurrence-consumed");
   assert.equal(timerStartCheck([first], 1, "S", hour, hour, false), null);
   assert.equal(timerStartCheck([first, second], 2, "S", hour + 10_000, hour + 10_000, false), null);
+});
+
+test("timerOccurrences offers only the occurrences a firing accepts, from the deploy time on", () => {
+  const hour = 3_600_000;
+  const first = registered(starter("Batch", duration("PT1H")), 1, [["Batch", 1]], 10_000);
+  assert.deepEqual(timerOccurrences(first, "S", 0, 3), [hour + 10_000]);
+  for (const due of timerOccurrences(first, "S", 0, 3) ?? []) assert.equal(timerStartCheck([first], 1, "S", due, due, false), null);
+  assert.deepEqual(timerOccurrences(first, "S", hour + 10_001, 3), []);
+  assert.deepEqual(timerOccurrences(first, "S", 0, 0), []);
+  assert.equal(timerOccurrences(first, "T", 0, 3), null);
 });

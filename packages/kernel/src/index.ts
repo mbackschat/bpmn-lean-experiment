@@ -70,7 +70,7 @@ export {
 } from "./population/signals.js";
 export { conditionalStartVerdict, type ConditionalStartVerdict } from "./population/conditions.js";
 export { currentSummary, deploy, deploymentSummary, registerSummary, type DeploymentSummary } from "./population/deploy.js";
-export { timerInstanceId, timerStartCheck } from "./population/timers.js";
+export { timerInstanceId, timerOccurrences, timerStartCheck } from "./population/timers.js";
 export {
   definitionRefFromJson, deploymentSourceFromJson, fanOutEntryJson, populationCommandFromJson, resolutionJson, stimuliOfPopulation, type Declared,
 } from "./run/population.js";

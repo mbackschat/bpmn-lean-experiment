@@ -19,6 +19,7 @@ import {
   type Resolved,
   currentSummary,
   deploymentSummaryOf,
+  occurrences,
   occurs,
   startInstance,
   timerStarts,
@@ -43,6 +44,15 @@ export function timerFiring(originMs: number, dueMs: number, atMs: number, resol
   if (!occurs(originMs, dueMs, resolved)) return "timer-occurrence-unknown";
   if (atMs < dueMs) return "timer-not-due";
   return null;
+}
+
+/**
+ * The first `limit` occurrences due at or after `fromMs` of the root Timer start `startEvent` of a registered deployment
+ * summarized as `summary`, counted from its deploy time (`occurrences`); `null` when it has no such Timer start.
+ */
+export function timerOccurrences(summary: DeploymentSummary, startEvent: string, fromMs: number, limit: number): readonly number[] | null {
+  const reached = summary.timerStarts.find(([publicStart]) => publicStart === startEvent);
+  return reached === undefined ? null : occurrences(summary.deployedAtMs, fromMs, limit, reached[1]);
 }
 
 /**

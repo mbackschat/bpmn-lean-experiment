@@ -62,7 +62,7 @@ import {
 } from "./host.js";
 import { ResolvedTag, type Resolved } from "./il/timer.js";
 import { runStimuli as runInstances } from "./population.js";
-import { onTimeRefusal } from "./population/timers.js";
+import { onTimeRefusal, timerOccurrences } from "./population/timers.js";
 import { deploymentSummary, registerSummary, type DeploymentSummary } from "./population/deploy.js";
 import { matching } from "./population/messages.js";
 import { hooks } from "./registry.js";
@@ -575,6 +575,30 @@ function matchingAnswer(fixture: unknown, input: unknown): JsonValue {
   return matching(hooks, program, state, channel.value, correlation).map(referenceJson);
 }
 
+function natField(json: unknown, key: string): number {
+  const value = field(json, key, "fixture");
+  if (typeof value !== "number" || !Number.isSafeInteger(value) || value < 0) throw new Error(`fixture: ${key}: Nat expected`);
+  return value;
+}
+
+/** Each program's `timerOccurrences` for every start Event `startEvents` names, its summary deployed at `deployedAtMs`. */
+function occurrenceAnswers(programs: readonly Program[], input: unknown): JsonValue {
+  const deployedAtMs = natField(input, "deployedAtMs");
+  const fromMs = natField(input, "fromMs");
+  const limit = natField(input, "limit");
+  const startEvents = arrayField(input, "startEvents", "fixture").map((startEvent) => {
+    if (typeof startEvent !== "string") throw new Error("fixture: startEvents: String expected");
+    return startEvent;
+  });
+  return programs.map((program) => {
+    const summary = { ...deploymentSummary(program), deployedAtMs };
+    return startEvents.map((startEvent) => {
+      const due = timerOccurrences(summary, startEvent, fromMs, limit);
+      return due === null ? null : [...due];
+    });
+  });
+}
+
 /** The host-facing functions a fixture's `entry` names, each over the fixture and its `input`. */
 const fixtureEntries: Readonly<Record<string, (fixture: unknown, input: unknown) => JsonValue>> = {
   rootStarts: (fixture) => rootStarts(onlyProgram(fixturePrograms(fixture))).map(([publicId, own]) => [publicId, own]),
@@ -582,6 +606,7 @@ const fixtureEntries: Readonly<Record<string, (fixture: unknown, input: unknown)
   matching: matchingAnswer,
   registerSummary: (fixture, input) => registrations(fixturePrograms(fixture), arrayField(input, "deploymentIds", "fixture")),
   definitionCapabilities: (fixture) => capabilitiesJson(definitionCapabilities(onlyProgram(fixturePrograms(fixture)))),
+  timerOccurrences: (fixture, input) => occurrenceAnswers(fixturePrograms(fixture), input),
 };
 
 /** `kernelRun --fixture <fixture.json>`, for one fixture. */

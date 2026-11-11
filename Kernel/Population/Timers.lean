@@ -27,6 +27,12 @@ def timerFiring (originMs dueMs atMs : Nat) (resolved : Timer.Resolved) : Option
   else if atMs < dueMs then some "timer-not-due"
   else none
 
+/-- The first `limit` occurrences due at or after `fromMs` of the root Timer start `startEvent` of a registered deployment
+summarized as `summary`, counted from its deploy time (`Timer.occurrences`); `none` when it has no such Timer start. -/
+def timerOccurrences (summary : DeploymentSummary) (startEvent : String) (fromMs limit : Nat) : Option (List Nat) :=
+  (summary.timerStarts.find? (·.1 == startEvent)).map fun (_, resolved) =>
+    Timer.occurrences summary.deployedAtMs fromMs limit resolved
+
 /-- A single-instance Timer start is the degenerate population: one deployment at 0, its occurrence named by the
 trigger's time and fired on time (docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md#timer-starts, PC-TIMER-04). The
 start `named`, else the sole Timer start, is checked; any other start is left to the step. -/

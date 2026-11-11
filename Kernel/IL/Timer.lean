@@ -540,4 +540,29 @@ def occurs (originMs dueMs : Nat) : Resolved → Bool
     | .admitted (.cron _ fields) => dueMs > originMs && cronOccurs fields dueMs ((dueMs - originMs) / 1000 + 2) originMs
     | .admitted _ | .outside _ | .malformed _ => false
 
+/-- The `limit` Cron matches strictly after `afterMs`, each the next match after the one before. -/
+def cronMatches (fields : CronFields) : Nat → Nat → List Nat
+  | 0, _ => []
+  | limit + 1, afterMs =>
+    match cronNext fields afterMs with
+    | some next => next :: cronMatches fields limit next
+    | none => []
+
+/-- The first `limit` occurrences, ascending, of a root Timer start resolved as `resolved` whose schedule counts from
+`originMs`, among those due at or after `fromMs`: exactly the instants `occurs originMs` accepts, so a host offers no
+occurrence a firing would refuse as `timer-occurrence-unknown`. A Cron schedule starts its matches after `fromMs - 1`,
+since every match strictly after the origin is one `successor` reaches. -/
+def occurrences (originMs fromMs limit : Nat) : Resolved → List Nat
+  | .duration ms => if limit > 0 && originMs + ms ≥ fromMs then [originMs + ms] else []
+  | .date instantMs => if limit > 0 && instantMs ≥ fromMs then [instantMs] else []
+  | .cycle periodMs repetitions =>
+    if periodMs == 0 then [] else
+    let first := max 1 ((fromMs - originMs + periodMs - 1) / periodMs)
+    ((List.range limit).map (first + ·)).filterMap fun k =>
+      if repetitions.all (k ≤ ·) then some (originMs + k * periodMs) else none
+  | .cron text =>
+    match classifyCron text with
+    | .admitted (.cron _ fields) => cronMatches fields limit (if fromMs > originMs then fromMs - 1 else originMs)
+    | .admitted _ | .outside _ | .malformed _ => []
+
 end Kernel.Timer

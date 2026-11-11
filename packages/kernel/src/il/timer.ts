@@ -611,3 +611,47 @@ export function occurs(originMs: number, dueMs: number, resolved: Resolved): boo
   }
   return assertNever(resolved);
 }
+
+/** The `limit` Cron matches strictly after `afterMs`, each the next match after the one before. */
+function cronMatches(fields: CronFields, limit: number, afterMs: number): readonly number[] {
+  const matches: number[] = [];
+  let after = afterMs;
+  for (let left = limit; left > 0; left -= 1) {
+    const next = cronNext(fields, after);
+    if (next === null) break;
+    matches.push(next);
+    after = next;
+  }
+  return matches;
+}
+
+/**
+ * The first `limit` occurrences, ascending, of a root Timer start resolved as `resolved` whose schedule counts from
+ * `originMs`, among those due at or after `fromMs`: exactly the instants `occurs(originMs, …)` accepts, so a host offers
+ * no occurrence a firing would refuse as `timer-occurrence-unknown`. A Cron schedule starts its matches after
+ * `fromMs - 1`, since every match strictly after the origin is one `successor` reaches.
+ */
+export function occurrences(originMs: number, fromMs: number, limit: number, resolved: Resolved): readonly number[] {
+  switch (resolved.tag) {
+    case ResolvedTag.Duration:
+      return limit > 0 && originMs + resolved.ms >= fromMs ? [originMs + resolved.ms] : [];
+    case ResolvedTag.Date:
+      return limit > 0 && resolved.instantMs >= fromMs ? [resolved.instantMs] : [];
+    case ResolvedTag.Cycle: {
+      const { periodMs, repetitions } = resolved;
+      if (periodMs === 0) return [];
+      const first = Math.max(1, Math.floor((Math.max(fromMs - originMs, 0) + periodMs - 1) / periodMs));
+      const due: number[] = [];
+      for (let k = first; k < first + limit; k += 1) {
+        if (repetitions === null || k <= repetitions) due.push(originMs + k * periodMs);
+      }
+      return due;
+    }
+    case ResolvedTag.Cron: {
+      const classified = classifyCron(resolved.text);
+      if (classified.tag !== ClassifiedTag.Admitted || classified.parsed.tag !== ParsedTag.Cron) return [];
+      return cronMatches(classified.parsed.fields, limit, fromMs > originMs ? fromMs - 1 : originMs);
+    }
+  }
+  return assertNever(resolved);
+}

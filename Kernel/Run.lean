@@ -416,9 +416,20 @@ def registrations (programs : List Program) (deploymentIds : List Nat) : Except 
       | .error code => (registry, answers ++ [Json.mkObj [ordinal, ("refused", Json.str code)]])
   pure (Json.arr answers.toArray)
 
+/-- Each program's `timerOccurrences` for every start Event `startEvents` names, its summary deployed at `deployedAtMs`. -/
+def occurrenceAnswers (programs : List Program) (input : Json) : Except String Json := do
+  let deployedAtMs ← input.getObjValAs? Nat "deployedAtMs"
+  let fromMs ← input.getObjValAs? Nat "fromMs"
+  let limit ← input.getObjValAs? Nat "limit"
+  let startEvents ← input.getObjValAs? (List String) "startEvents"
+  pure (Json.arr (programs.map fun program =>
+    let summary := { Population.deploymentSummary program with deployedAtMs }
+    Json.arr (startEvents.map fun startEvent =>
+      toJson (Population.timerOccurrences summary startEvent fromMs limit)).toArray).toArray)
+
 /-- The answer of the host-facing function a fixture's `entry` names: `rootStarts`, `refusesSignalVariables`,
 `matching` (over the state its stimuli commit, for a delivery's channel and correlation), `registerSummary` or
-`definitionCapabilities` (as the host view renders it). -/
+`definitionCapabilities` (as the host view renders it) or `timerOccurrences`. -/
 def fixtureAnswer (fixture : Json) : Except String Json := do
   let input ← fixture.getObjVal? "input"
   match ← fixture.getObjValAs? String "entry" with
@@ -435,6 +446,7 @@ def fixtureAnswer (fixture : Json) : Except String Json := do
   | "registerSummary" => registrations (← fixturePrograms fixture) (← input.getObjValAs? (List Nat) "deploymentIds")
   | "definitionCapabilities" =>
     pure (capabilitiesJson (Host.definitionCapabilities (← onlyProgram (← fixturePrograms fixture))))
+  | "timerOccurrences" => occurrenceAnswers (← fixturePrograms fixture) input
   | other => throw s!"fixture-entry-unknown: {other}"
 
 def runFixtures (paths : List String) : IO Json := do
