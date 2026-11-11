@@ -1,0 +1,1170 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "mi-nesting-parallel-sequential-sites-interleaved",
+    "sha256": "f736391baff4cb3a7d5f2ad3e4a7048583d89da2399ad58ca59ed0bd360d7102"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "02e78815bc7f172a42efd402423bb2a1054b85c6db3ce1f88647923a0a879640"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "groups",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "g1",
+                "g2"
+              ]
+            }
+          },
+          {
+            "name": "members",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "m",
+                "m"
+              ]
+            }
+          },
+          {
+            "name": "outerMark",
+            "value": {
+              "kind": "string",
+              "value": "g2"
+            }
+          },
+          {
+            "name": "outerPosition",
+            "value": {
+              "kind": "integer",
+              "value": 1
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-complete-UserTask_Check-2",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "groups",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "g1",
+                "g2"
+              ]
+            }
+          },
+          {
+            "name": "members",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "m",
+                "m"
+              ]
+            }
+          },
+          {
+            "name": "outerMark",
+            "value": {
+              "kind": "string",
+              "value": "g2"
+            }
+          },
+          {
+            "name": "outerPosition",
+            "value": {
+              "kind": "integer",
+              "value": 1
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-complete-UserTask_Check-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "groups",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "g1",
+                "g2"
+              ]
+            }
+          },
+          {
+            "name": "members",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "m",
+                "m"
+              ]
+            }
+          },
+          {
+            "name": "outerMark",
+            "value": {
+              "kind": "string",
+              "value": "g2"
+            }
+          },
+          {
+            "name": "outerPosition",
+            "value": {
+              "kind": "integer",
+              "value": 1
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_Check-4",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "groups",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "g1",
+                "g2"
+              ]
+            }
+          },
+          {
+            "name": "members",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "m",
+                "m"
+              ]
+            }
+          },
+          {
+            "name": "outerMark",
+            "value": {
+              "kind": "string",
+              "value": "g2"
+            }
+          },
+          {
+            "name": "outerPosition",
+            "value": {
+              "kind": "integer",
+              "value": 1
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-complete-UserTask_Check-3",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "groups",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "g1",
+                "g2"
+              ]
+            }
+          },
+          {
+            "name": "members",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "m",
+                "m"
+              ]
+            }
+          },
+          {
+            "name": "outerMark",
+            "value": {
+              "kind": "string",
+              "value": "g2"
+            }
+          },
+          {
+            "name": "outerPosition",
+            "value": {
+              "kind": "integer",
+              "value": 1
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s06-complete-UserTask_Publish",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "groups",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "g1",
+                "g2"
+              ]
+            }
+          },
+          {
+            "name": "members",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "m",
+                "m"
+              ]
+            }
+          },
+          {
+            "name": "outerMark",
+            "value": {
+              "kind": "string",
+              "value": "g2"
+            }
+          },
+          {
+            "name": "outerPosition",
+            "value": {
+              "kind": "integer",
+              "value": 1
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "tasks": [
+          {
+            "elementId": "UserTask_Check",
+            "name": "Check the member"
+          },
+          {
+            "elementId": "UserTask_Check",
+            "name": "Check the member"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-complete-UserTask_Check-2",
+        "tasks": [
+          {
+            "elementId": "UserTask_Check",
+            "name": "Check the member"
+          },
+          {
+            "elementId": "UserTask_Check",
+            "name": "Check the member"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-complete-UserTask_Check-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_Check",
+            "name": "Check the member"
+          },
+          {
+            "elementId": "UserTask_Check",
+            "name": "Check the member"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_Check-4",
+        "tasks": [
+          {
+            "elementId": "UserTask_Check",
+            "name": "Check the member"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-complete-UserTask_Check-3",
+        "tasks": [
+          {
+            "elementId": "UserTask_Publish",
+            "name": "Publish outcome"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s06-complete-UserTask_Publish",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s02-complete-UserTask_Check-2",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s03-complete-UserTask_Check-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_Check-4",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s05-complete-UserTask_Check-3",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s06-complete-UserTask_Publish",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "s01-start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s02-complete-UserTask_Check-2",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s03-complete-UserTask_Check-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_Check-4",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s05-complete-UserTask_Check-3",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s06-complete-UserTask_Publish",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "groups",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "g1",
+                "g2"
+              ]
+            }
+          },
+          {
+            "name": "members",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "m",
+                "m"
+              ]
+            }
+          },
+          {
+            "name": "outerMark",
+            "value": {
+              "kind": "string",
+              "value": "g2"
+            }
+          },
+          {
+            "name": "outerPosition",
+            "value": {
+              "kind": "integer",
+              "value": 1
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Check",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Check the member",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "groupPosition",
+                  "value": {
+                    "kind": "integer",
+                    "value": 0
+                  }
+                },
+                {
+                  "name": "instances",
+                  "value": {
+                    "kind": "integer",
+                    "value": 2
+                  }
+                },
+                {
+                  "name": "mark",
+                  "value": {
+                    "kind": "string",
+                    "value": "g1"
+                  }
+                },
+                {
+                  "name": "owner",
+                  "value": {
+                    "kind": "string",
+                    "value": "g1"
+                  }
+                },
+                {
+                  "name": "position",
+                  "value": {
+                    "kind": "integer",
+                    "value": 0
+                  }
+                },
+                {
+                  "name": "subject",
+                  "value": {
+                    "kind": "string",
+                    "value": "m"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Check",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Check the member",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "groupPosition",
+                  "value": {
+                    "kind": "integer",
+                    "value": 1
+                  }
+                },
+                {
+                  "name": "instances",
+                  "value": {
+                    "kind": "integer",
+                    "value": 2
+                  }
+                },
+                {
+                  "name": "mark",
+                  "value": {
+                    "kind": "string",
+                    "value": "g2"
+                  }
+                },
+                {
+                  "name": "owner",
+                  "value": {
+                    "kind": "string",
+                    "value": "g2"
+                  }
+                },
+                {
+                  "name": "position",
+                  "value": {
+                    "kind": "integer",
+                    "value": 0
+                  }
+                },
+                {
+                  "name": "subject",
+                  "value": {
+                    "kind": "string",
+                    "value": "m"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s02-complete-UserTask_Check-2",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "groups",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "g1",
+                "g2"
+              ]
+            }
+          },
+          {
+            "name": "members",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "m",
+                "m"
+              ]
+            }
+          },
+          {
+            "name": "outerMark",
+            "value": {
+              "kind": "string",
+              "value": "g2"
+            }
+          },
+          {
+            "name": "outerPosition",
+            "value": {
+              "kind": "integer",
+              "value": 1
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Check",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Check the member",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "groupPosition",
+                  "value": {
+                    "kind": "integer",
+                    "value": 0
+                  }
+                },
+                {
+                  "name": "instances",
+                  "value": {
+                    "kind": "integer",
+                    "value": 2
+                  }
+                },
+                {
+                  "name": "mark",
+                  "value": {
+                    "kind": "string",
+                    "value": "g1"
+                  }
+                },
+                {
+                  "name": "owner",
+                  "value": {
+                    "kind": "string",
+                    "value": "g1"
+                  }
+                },
+                {
+                  "name": "position",
+                  "value": {
+                    "kind": "integer",
+                    "value": 0
+                  }
+                },
+                {
+                  "name": "subject",
+                  "value": {
+                    "kind": "string",
+                    "value": "m"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Check",
+              "activation": 3
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Check the member",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "groupPosition",
+                  "value": {
+                    "kind": "integer",
+                    "value": 1
+                  }
+                },
+                {
+                  "name": "instances",
+                  "value": {
+                    "kind": "integer",
+                    "value": 2
+                  }
+                },
+                {
+                  "name": "mark",
+                  "value": {
+                    "kind": "string",
+                    "value": "g2"
+                  }
+                },
+                {
+                  "name": "owner",
+                  "value": {
+                    "kind": "string",
+                    "value": "g2"
+                  }
+                },
+                {
+                  "name": "position",
+                  "value": {
+                    "kind": "integer",
+                    "value": 1
+                  }
+                },
+                {
+                  "name": "subject",
+                  "value": {
+                    "kind": "string",
+                    "value": "m"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s03-complete-UserTask_Check-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "groups",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "g1",
+                "g2"
+              ]
+            }
+          },
+          {
+            "name": "members",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "m",
+                "m"
+              ]
+            }
+          },
+          {
+            "name": "outerMark",
+            "value": {
+              "kind": "string",
+              "value": "g2"
+            }
+          },
+          {
+            "name": "outerPosition",
+            "value": {
+              "kind": "integer",
+              "value": 1
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Check",
+              "activation": 3
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Check the member",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "groupPosition",
+                  "value": {
+                    "kind": "integer",
+                    "value": 1
+                  }
+                },
+                {
+                  "name": "instances",
+                  "value": {
+                    "kind": "integer",
+                    "value": 2
+                  }
+                },
+                {
+                  "name": "mark",
+                  "value": {
+                    "kind": "string",
+                    "value": "g2"
+                  }
+                },
+                {
+                  "name": "owner",
+                  "value": {
+                    "kind": "string",
+                    "value": "g2"
+                  }
+                },
+                {
+                  "name": "position",
+                  "value": {
+                    "kind": "integer",
+                    "value": 1
+                  }
+                },
+                {
+                  "name": "subject",
+                  "value": {
+                    "kind": "string",
+                    "value": "m"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Check",
+              "activation": 4
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Check the member",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "groupPosition",
+                  "value": {
+                    "kind": "integer",
+                    "value": 1
+                  }
+                },
+                {
+                  "name": "instances",
+                  "value": {
+                    "kind": "integer",
+                    "value": 2
+                  }
+                },
+                {
+                  "name": "mark",
+                  "value": {
+                    "kind": "string",
+                    "value": "g2"
+                  }
+                },
+                {
+                  "name": "owner",
+                  "value": {
+                    "kind": "string",
+                    "value": "g1"
+                  }
+                },
+                {
+                  "name": "position",
+                  "value": {
+                    "kind": "integer",
+                    "value": 1
+                  }
+                },
+                {
+                  "name": "subject",
+                  "value": {
+                    "kind": "string",
+                    "value": "m"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s04-complete-UserTask_Check-4",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "groups",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "g1",
+                "g2"
+              ]
+            }
+          },
+          {
+            "name": "members",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "m",
+                "m"
+              ]
+            }
+          },
+          {
+            "name": "outerMark",
+            "value": {
+              "kind": "string",
+              "value": "g2"
+            }
+          },
+          {
+            "name": "outerPosition",
+            "value": {
+              "kind": "integer",
+              "value": 1
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Check",
+              "activation": 3
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Check the member",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "groupPosition",
+                  "value": {
+                    "kind": "integer",
+                    "value": 1
+                  }
+                },
+                {
+                  "name": "instances",
+                  "value": {
+                    "kind": "integer",
+                    "value": 2
+                  }
+                },
+                {
+                  "name": "mark",
+                  "value": {
+                    "kind": "string",
+                    "value": "g2"
+                  }
+                },
+                {
+                  "name": "owner",
+                  "value": {
+                    "kind": "string",
+                    "value": "g2"
+                  }
+                },
+                {
+                  "name": "position",
+                  "value": {
+                    "kind": "integer",
+                    "value": 1
+                  }
+                },
+                {
+                  "name": "subject",
+                  "value": {
+                    "kind": "string",
+                    "value": "m"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s05-complete-UserTask_Check-3",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "groups",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "g1",
+                "g2"
+              ]
+            }
+          },
+          {
+            "name": "members",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "m",
+                "m"
+              ]
+            }
+          },
+          {
+            "name": "outerMark",
+            "value": {
+              "kind": "string",
+              "value": "g2"
+            }
+          },
+          {
+            "name": "outerPosition",
+            "value": {
+              "kind": "integer",
+              "value": 1
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Publish",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Publish outcome",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s06-complete-UserTask_Publish",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "groups",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "g1",
+                "g2"
+              ]
+            }
+          },
+          {
+            "name": "members",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "m",
+                "m"
+              ]
+            }
+          },
+          {
+            "name": "outerMark",
+            "value": {
+              "kind": "string",
+              "value": "g2"
+            }
+          },
+          {
+            "name": "outerPosition",
+            "value": {
+              "kind": "integer",
+              "value": 1
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}

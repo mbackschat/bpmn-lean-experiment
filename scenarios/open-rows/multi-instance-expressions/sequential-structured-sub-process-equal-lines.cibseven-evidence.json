@@ -1,0 +1,1234 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "mi-expr-sequential-structured-sub-process-equal-lines",
+    "sha256": "48e692dfa42b1d87cf2825c73a7b6280799cb0e4de26bb4e1a15ff6a33e3910c"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "02e78815bc7f172a42efd402423bb2a1054b85c6db3ce1f88647923a0a879640"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "line",
+            "value": {
+              "kind": "string",
+              "value": "outer-line"
+            }
+          },
+          {
+            "name": "lines",
+            "value": {
+              "kind": "list",
+              "value": [
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "quantity",
+                      "value": {
+                        "kind": "integer",
+                        "value": 1
+                      }
+                    },
+                    {
+                      "name": "sku",
+                      "value": {
+                        "kind": "string",
+                        "value": "A"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "quantity",
+                      "value": {
+                        "kind": "integer",
+                        "value": 1
+                      }
+                    },
+                    {
+                      "name": "sku",
+                      "value": {
+                        "kind": "string",
+                        "value": "A"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "quantity",
+                      "value": {
+                        "kind": "integer",
+                        "value": 2
+                      }
+                    },
+                    {
+                      "name": "sku",
+                      "value": {
+                        "kind": "string",
+                        "value": "B"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "sku",
+            "value": {
+              "kind": "string",
+              "value": "process-sku"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-complete-UserTask_Line-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "line",
+            "value": {
+              "kind": "string",
+              "value": "outer-line"
+            }
+          },
+          {
+            "name": "lines",
+            "value": {
+              "kind": "list",
+              "value": [
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "quantity",
+                      "value": {
+                        "kind": "integer",
+                        "value": 1
+                      }
+                    },
+                    {
+                      "name": "sku",
+                      "value": {
+                        "kind": "string",
+                        "value": "A"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "quantity",
+                      "value": {
+                        "kind": "integer",
+                        "value": 1
+                      }
+                    },
+                    {
+                      "name": "sku",
+                      "value": {
+                        "kind": "string",
+                        "value": "A"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "quantity",
+                      "value": {
+                        "kind": "integer",
+                        "value": 2
+                      }
+                    },
+                    {
+                      "name": "sku",
+                      "value": {
+                        "kind": "string",
+                        "value": "B"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "sku",
+            "value": {
+              "kind": "string",
+              "value": "process-sku"
+            }
+          },
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "v1"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-complete-UserTask_Line-2",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "line",
+            "value": {
+              "kind": "string",
+              "value": "outer-line"
+            }
+          },
+          {
+            "name": "lines",
+            "value": {
+              "kind": "list",
+              "value": [
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "quantity",
+                      "value": {
+                        "kind": "integer",
+                        "value": 1
+                      }
+                    },
+                    {
+                      "name": "sku",
+                      "value": {
+                        "kind": "string",
+                        "value": "A"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "quantity",
+                      "value": {
+                        "kind": "integer",
+                        "value": 1
+                      }
+                    },
+                    {
+                      "name": "sku",
+                      "value": {
+                        "kind": "string",
+                        "value": "A"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "quantity",
+                      "value": {
+                        "kind": "integer",
+                        "value": 2
+                      }
+                    },
+                    {
+                      "name": "sku",
+                      "value": {
+                        "kind": "string",
+                        "value": "B"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "sku",
+            "value": {
+              "kind": "string",
+              "value": "process-sku"
+            }
+          },
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "v2"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_Line-3",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "line",
+            "value": {
+              "kind": "string",
+              "value": "outer-line"
+            }
+          },
+          {
+            "name": "lines",
+            "value": {
+              "kind": "list",
+              "value": [
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "quantity",
+                      "value": {
+                        "kind": "integer",
+                        "value": 1
+                      }
+                    },
+                    {
+                      "name": "sku",
+                      "value": {
+                        "kind": "string",
+                        "value": "A"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "quantity",
+                      "value": {
+                        "kind": "integer",
+                        "value": 1
+                      }
+                    },
+                    {
+                      "name": "sku",
+                      "value": {
+                        "kind": "string",
+                        "value": "A"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "quantity",
+                      "value": {
+                        "kind": "integer",
+                        "value": 2
+                      }
+                    },
+                    {
+                      "name": "sku",
+                      "value": {
+                        "kind": "string",
+                        "value": "B"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "sku",
+            "value": {
+              "kind": "string",
+              "value": "process-sku"
+            }
+          },
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "v3"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-complete-UserTask_Publish",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "line",
+            "value": {
+              "kind": "string",
+              "value": "outer-line"
+            }
+          },
+          {
+            "name": "lines",
+            "value": {
+              "kind": "list",
+              "value": [
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "quantity",
+                      "value": {
+                        "kind": "integer",
+                        "value": 1
+                      }
+                    },
+                    {
+                      "name": "sku",
+                      "value": {
+                        "kind": "string",
+                        "value": "A"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "quantity",
+                      "value": {
+                        "kind": "integer",
+                        "value": 1
+                      }
+                    },
+                    {
+                      "name": "sku",
+                      "value": {
+                        "kind": "string",
+                        "value": "A"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "quantity",
+                      "value": {
+                        "kind": "integer",
+                        "value": 2
+                      }
+                    },
+                    {
+                      "name": "sku",
+                      "value": {
+                        "kind": "string",
+                        "value": "B"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "sku",
+            "value": {
+              "kind": "string",
+              "value": "process-sku"
+            }
+          },
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "v3"
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "tasks": [
+          {
+            "elementId": "UserTask_Line",
+            "name": "Review order line"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-complete-UserTask_Line-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_Line",
+            "name": "Review order line"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-complete-UserTask_Line-2",
+        "tasks": [
+          {
+            "elementId": "UserTask_Line",
+            "name": "Review order line"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_Line-3",
+        "tasks": [
+          {
+            "elementId": "UserTask_Publish",
+            "name": "Publish outcome"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-complete-UserTask_Publish",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s02-complete-UserTask_Line-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s03-complete-UserTask_Line-2",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_Line-3",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s05-complete-UserTask_Publish",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "s01-start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s02-complete-UserTask_Line-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s03-complete-UserTask_Line-2",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_Line-3",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s05-complete-UserTask_Publish",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "line",
+            "value": {
+              "kind": "string",
+              "value": "outer-line"
+            }
+          },
+          {
+            "name": "lines",
+            "value": {
+              "kind": "list",
+              "value": [
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "quantity",
+                      "value": {
+                        "kind": "integer",
+                        "value": 1
+                      }
+                    },
+                    {
+                      "name": "sku",
+                      "value": {
+                        "kind": "string",
+                        "value": "A"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "quantity",
+                      "value": {
+                        "kind": "integer",
+                        "value": 1
+                      }
+                    },
+                    {
+                      "name": "sku",
+                      "value": {
+                        "kind": "string",
+                        "value": "A"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "quantity",
+                      "value": {
+                        "kind": "integer",
+                        "value": 2
+                      }
+                    },
+                    {
+                      "name": "sku",
+                      "value": {
+                        "kind": "string",
+                        "value": "B"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "sku",
+            "value": {
+              "kind": "string",
+              "value": "process-sku"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Line",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review order line",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "position",
+                  "value": {
+                    "kind": "integer",
+                    "value": 0
+                  }
+                },
+                {
+                  "name": "quantity",
+                  "value": {
+                    "kind": "integer",
+                    "value": 1
+                  }
+                },
+                {
+                  "name": "sku",
+                  "value": {
+                    "kind": "string",
+                    "value": "A"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s02-complete-UserTask_Line-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "line",
+            "value": {
+              "kind": "string",
+              "value": "outer-line"
+            }
+          },
+          {
+            "name": "lines",
+            "value": {
+              "kind": "list",
+              "value": [
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "quantity",
+                      "value": {
+                        "kind": "integer",
+                        "value": 1
+                      }
+                    },
+                    {
+                      "name": "sku",
+                      "value": {
+                        "kind": "string",
+                        "value": "A"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "quantity",
+                      "value": {
+                        "kind": "integer",
+                        "value": 1
+                      }
+                    },
+                    {
+                      "name": "sku",
+                      "value": {
+                        "kind": "string",
+                        "value": "A"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "quantity",
+                      "value": {
+                        "kind": "integer",
+                        "value": 2
+                      }
+                    },
+                    {
+                      "name": "sku",
+                      "value": {
+                        "kind": "string",
+                        "value": "B"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "sku",
+            "value": {
+              "kind": "string",
+              "value": "process-sku"
+            }
+          },
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "v1"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Line",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review order line",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "position",
+                  "value": {
+                    "kind": "integer",
+                    "value": 1
+                  }
+                },
+                {
+                  "name": "quantity",
+                  "value": {
+                    "kind": "integer",
+                    "value": 1
+                  }
+                },
+                {
+                  "name": "sku",
+                  "value": {
+                    "kind": "string",
+                    "value": "A"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s03-complete-UserTask_Line-2",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "line",
+            "value": {
+              "kind": "string",
+              "value": "outer-line"
+            }
+          },
+          {
+            "name": "lines",
+            "value": {
+              "kind": "list",
+              "value": [
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "quantity",
+                      "value": {
+                        "kind": "integer",
+                        "value": 1
+                      }
+                    },
+                    {
+                      "name": "sku",
+                      "value": {
+                        "kind": "string",
+                        "value": "A"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "quantity",
+                      "value": {
+                        "kind": "integer",
+                        "value": 1
+                      }
+                    },
+                    {
+                      "name": "sku",
+                      "value": {
+                        "kind": "string",
+                        "value": "A"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "quantity",
+                      "value": {
+                        "kind": "integer",
+                        "value": 2
+                      }
+                    },
+                    {
+                      "name": "sku",
+                      "value": {
+                        "kind": "string",
+                        "value": "B"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "sku",
+            "value": {
+              "kind": "string",
+              "value": "process-sku"
+            }
+          },
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "v2"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Line",
+              "activation": 3
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review order line",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "position",
+                  "value": {
+                    "kind": "integer",
+                    "value": 2
+                  }
+                },
+                {
+                  "name": "quantity",
+                  "value": {
+                    "kind": "integer",
+                    "value": 2
+                  }
+                },
+                {
+                  "name": "sku",
+                  "value": {
+                    "kind": "string",
+                    "value": "B"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s04-complete-UserTask_Line-3",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "line",
+            "value": {
+              "kind": "string",
+              "value": "outer-line"
+            }
+          },
+          {
+            "name": "lines",
+            "value": {
+              "kind": "list",
+              "value": [
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "quantity",
+                      "value": {
+                        "kind": "integer",
+                        "value": 1
+                      }
+                    },
+                    {
+                      "name": "sku",
+                      "value": {
+                        "kind": "string",
+                        "value": "A"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "quantity",
+                      "value": {
+                        "kind": "integer",
+                        "value": 1
+                      }
+                    },
+                    {
+                      "name": "sku",
+                      "value": {
+                        "kind": "string",
+                        "value": "A"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "quantity",
+                      "value": {
+                        "kind": "integer",
+                        "value": 2
+                      }
+                    },
+                    {
+                      "name": "sku",
+                      "value": {
+                        "kind": "string",
+                        "value": "B"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "sku",
+            "value": {
+              "kind": "string",
+              "value": "process-sku"
+            }
+          },
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "v3"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Publish",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Publish outcome",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s05-complete-UserTask_Publish",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "line",
+            "value": {
+              "kind": "string",
+              "value": "outer-line"
+            }
+          },
+          {
+            "name": "lines",
+            "value": {
+              "kind": "list",
+              "value": [
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "quantity",
+                      "value": {
+                        "kind": "integer",
+                        "value": 1
+                      }
+                    },
+                    {
+                      "name": "sku",
+                      "value": {
+                        "kind": "string",
+                        "value": "A"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "quantity",
+                      "value": {
+                        "kind": "integer",
+                        "value": 1
+                      }
+                    },
+                    {
+                      "name": "sku",
+                      "value": {
+                        "kind": "string",
+                        "value": "A"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "map",
+                  "value": [
+                    {
+                      "name": "quantity",
+                      "value": {
+                        "kind": "integer",
+                        "value": 2
+                      }
+                    },
+                    {
+                      "name": "sku",
+                      "value": {
+                        "kind": "string",
+                        "value": "B"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "sku",
+            "value": {
+              "kind": "string",
+              "value": "process-sku"
+            }
+          },
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "v3"
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}
