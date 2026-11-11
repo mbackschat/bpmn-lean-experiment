@@ -17,23 +17,22 @@
  * its own: the completion pipeline disposes of it with its Activity.
  */
 import {
-  BranchSchedule, ContinuationFailure, ElementTag, EventRoleTag, SignalDelivery, assertNever, elementActivity, elementEnvelope, elementGateway,
+  BranchSchedule, ContinuationFailure, ElementTag, EventRoleTag, assertNever, elementActivity, elementEnvelope, elementGateway,
   elementHeader, programElement, programPublicId, programSourceType, programTarget, type Element, type ElementId,
   type Envelope, type FlowId, type MultiInstance, type Program,
 } from "./il/types.js";
 import {
-  ActivationRole, CauseTag, CommandActionTag, ContinuationTag, DeliveryTriggerTag, EffectOutcomeTag, FailureTag,
-  FiredTag, InputTag, InstanceStatus, IterationTag, LeaveTag, SignalReach, SignalTag, Terminal, TokenTag, WriteRule, beginOccurrence,
-  beginRequest, busyScopes, closeOwnItems, committed, crossed, deliveryTriggerFromBroadcast, emptyDraft, entryCount, failed, failedWith, idle,
-  initial, instanceOf, keyOf, occurrenceOf, openKindView, ownScope, recordEnd, reserve, root, signal as enqueue,
-  startReserved,
-  type BeginRequest, type Binding, type Cause, type CommandAction, type CommandInput, type EffectInput, type Fired,
-  type Input, type InstanceFailure, type Iteration, type Leave, type Occurrence, type OccurrenceRef,
-  type OpenItem, type Outcome, type Result, type ScopeOccurrence, type ScopeOccurrenceId, type Signal, type StartTrigger, type State,
-  type Token, type Transition, type WaitView,
+  ActivationRole, CauseTag, CommandActionTag, ContinuationTag, EffectOutcomeTag, FailureTag, FiredTag, InputTag,
+  InstanceStatus, IterationTag, LeaveTag, SignalTag, Terminal, TokenTag, WriteRule, beginOccurrence, beginRequest,
+  busyScopes, closeOwnItems, committed, crossed, emptyDraft, entryCount, failed, failedWith, idle, initial, instanceOf,
+  keyOf, occurrenceOf, ownScope, recordEnd, reserve, root, signal as enqueue, startReserved, type BeginRequest,
+  type Binding, type Cause, type CommandAction, type CommandInput, type EffectInput, type Fired, type Input,
+  type InstanceFailure, type Iteration, type Leave, type Occurrence, type OccurrenceRef, type OpenItem, type Outcome,
+  type Result, type ScopeOccurrence, type ScopeOccurrenceId, type Signal, type StartTrigger, type State, type Token,
+  type Transition,
 } from "./state.js";
 import {
-  ScopeRole, admitThen, cancelOccurrence, chooseStart, clearInside, removeOccurrence, type Ctx, type Hooks, type ScopeEntry,
+  ScopeRole, admitThen, cancelOccurrence, chooseStart, clearInside, itemOf, removeOccurrence, type Ctx, type Hooks, type ScopeEntry,
 } from "./hooks.js";
 
 /** The name a transition records for a signal: its tag, which spells the Lean constructor. */
@@ -448,15 +447,6 @@ function settle(hooks: Hooks, ctx: Ctx, bound: number, start: State): Outcome {
   }
 }
 
-/** The open item with the public identity `occurrence` whose view has the detail `detail` reads. */
-function itemOf(ctx: Ctx, state: State, occurrence: OccurrenceRef, detail: (view: WaitView) => unknown): OpenItem | null {
-  return state.openItems.find((item) =>
-    programPublicId(ctx.program, item.element) === occurrence.element &&
-    occurrenceOf(state, item.occurrence)?.activation === occurrence.activation &&
-    detail(openKindView(item.kind)) !== null &&
-    instanceOf(state, item.scope) === occurrence.processInstanceId) ?? null;
-}
-
 /** The begun occurrence with the public identity `ref`, the instance rather than the body of a Multi-Instance element. */
 function occurrenceOfRef(ctx: Ctx, state: State, ref: OccurrenceRef): Occurrence | null {
   return state.occurrences.find((occurrence) =>
@@ -580,27 +570,6 @@ export function context(hooks: Hooks, program: Program): Ctx {
   return { program, evaluate: hooks.evaluate, catches: hooks.catches, eventStart: hooks.eventStart, scopeRole };
 }
 
-function deliver(hooks: Hooks, ctx: Ctx, input: Extract<Input, { tag: InputTag.Deliver }>, state: State): Outcome {
-  const data = input.payload;
-  if (data.variables.length > 0 && !deliveryTriggerFromBroadcast(data.trigger)) return failed(FailureTag.Rejected, "delivery-variables-not-admitted");
-  switch (data.trigger.tag) {
-    case DeliveryTriggerTag.Message: {
-      const item = itemOf(ctx, state, data.occurrence, (view) => view.channel);
-      return item === null
-        ? failed(FailureTag.Rejected, "unknown-message-subscription")
-        : fireItem(hooks, ctx, item, { tag: FiredTag.Message, delivery: data }, state);
-    }
-    case DeliveryTriggerTag.Signal: {
-      if (data.trigger.reach === SignalReach.Targeted && ctx.program.options.signalDelivery === SignalDelivery.BroadcastOnly) return failed(FailureTag.Rejected, "signal-delivery-targeted");
-      const item = itemOf(ctx, state, data.occurrence, (view) => view.signal);
-      return item === null
-        ? failed(FailureTag.Rejected, "unknown-signal-subscription")
-        : fireItem(hooks, ctx, item, { tag: FiredTag.Signal, delivery: data }, state);
-    }
-  }
-  return assertNever(data.trigger);
-}
-
 /**
  * One input. `null` is the state before the instance starts; only a start applies to it. The root's Event Sub-Process
  * starts are armed before the start Event's tokens move.
@@ -623,7 +592,10 @@ export function step(hooks: Hooks, program: Program, before: State | null, input
     case InputTag.Command:
       return onRunning(hooks, ctx, input.tag, input.payload.atMs, before, (state) => command(hooks, ctx, input.payload, state));
     case InputTag.Deliver:
-      return onRunning(hooks, ctx, input.tag, input.payload.atMs, before, (state) => deliver(hooks, ctx, input, state));
+      return onRunning(hooks, ctx, input.tag, input.payload.atMs, before, (state) => {
+        const target = hooks.delivered(ctx, input.payload, state);
+        return target.ok ? fireItem(hooks, ctx, target.value[0], target.value[1], state) : target;
+      });
     case InputTag.TimerFire: {
       const data = input.payload;
       return timerJob(ctx.program.options.continuationFailure, onRunning(hooks, ctx, input.tag, data.atMs ?? data.logicalTimeMs, before, (state) => {

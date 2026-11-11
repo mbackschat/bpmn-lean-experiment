@@ -14,6 +14,7 @@ import {
   assertNever,
   compareStrings,
   mergeSort,
+  programPublicId,
   utf8ByteSize,
   type ActivityPayload,
   type Boundary,
@@ -42,12 +43,16 @@ import {
   committed,
   failed,
   failedWith,
+  instanceOf,
   leaveFlows,
+  occurrenceOf,
+  openKindView,
   signal,
   visible,
   type Binding,
   type CommandAction,
   type CorrelationMatch,
+  type DeliveryInput,
   type DeliveryTrigger,
   type EffectOutcome,
   type EvalContext,
@@ -69,6 +74,7 @@ import {
   type StartInput,
   type StartTrigger,
   type State,
+  type WaitView,
   type WriteEvent,
 } from "./state.js";
 // Lean's `Kernel.Hooks` re-exports `Kernel.State.Removal` to the features and `Kernel.Step`; so does this module, which
@@ -464,6 +470,15 @@ export function ctxRequireMappings(ctx: Ctx, context: EvalContext, mappings: rea
   return ctxRequireMappingsWith(ctx, () => context, mappings);
 }
 
+/** The open item with the public identity `occurrence` whose view has the detail `detail` reads. */
+export function itemOf(ctx: Ctx, state: State, occurrence: OccurrenceRef, detail: (view: WaitView) => unknown): OpenItem | null {
+  return state.openItems.find((item) =>
+    programPublicId(ctx.program, item.element) === occurrence.element &&
+    occurrenceOf(state, item.occurrence)?.activation === occurrence.activation &&
+    detail(openKindView(item.kind)) !== null &&
+    instanceOf(state, item.scope) === occurrence.processInstanceId) ?? null;
+}
+
 /**
  * The one way a boundary fires: an interrupting boundary first cancels the occurrence `host` it hangs on, if any; then
  * the boundary's occurrence, the reservation `reserved` or a fresh one, begins and leaves on its flows in `scope`
@@ -606,6 +621,8 @@ export interface Hooks {
    */
   readonly correlates: (
     ctx: Ctx, item: OpenItem, channel: MessageChannel, correlation: readonly CorrelationMatch[], state: State) => Result<boolean>;
+  /** Subscriptions: the open item a `deliver` input fires, with its firing, or the delivery's refusal; `step.ts` fires it. */
+  readonly delivered: (ctx: Ctx, data: DeliveryInput, state: State) => Result<readonly [OpenItem, Fired]>;
 }
 
 export const defaultHooks: Hooks = {
@@ -646,4 +663,5 @@ export const defaultHooks: Hooks = {
   eventStart: () => null,
   startsFired: () => committed([]),
   correlates: () => failed(FailureTag.Unsupported, "correlates"), // dynamic-only: a registry without the hook
+  delivered: () => failed(FailureTag.Unsupported, "delivered"), // dynamic-only: a registry without the hook
 };

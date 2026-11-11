@@ -22,6 +22,7 @@ public import Kernel.Feature.Propagation
 public import Kernel.Feature.Scopes
 public import Kernel.Feature.Subscriptions
 public import Kernel.Feature.Subscriptions.Conditions
+public import Kernel.Feature.Subscriptions.Delivery
 public import Kernel.Feature.Subscriptions.Starts
 public import Kernel.Feature.Work
 public import Kernel.Feature.Work.Call

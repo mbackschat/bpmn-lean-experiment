@@ -11,6 +11,7 @@ import * as Propagation from "./feature/propagation.js";
 import * as Scopes from "./feature/scopes.js";
 import * as Subscriptions from "./feature/subscriptions.js";
 import * as Starts from "./feature/subscriptions/starts.js";
+import * as Delivery from "./feature/subscriptions/delivery.js";
 import { WriteRule } from "./state.js";
 
 const workHooks: Work.WorkHooks = { ...Work.defaultWorkHooks, runDecision: Decision.runDecision };
@@ -61,5 +62,6 @@ export const hooks: Hooks = {
   catches: Subscriptions.catches,
   correlates: Subscriptions.correlates,
   startsFired: Starts.startsFired,
+  delivered: Delivery.delivered,
   eventStart: Scopes.eventStart,
 };

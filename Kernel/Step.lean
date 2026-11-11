@@ -340,14 +340,6 @@ def settle (hooks : Hooks) (ctx : Ctx) : Nat → Nat → State → Outcome
                 (fun state => .ok (endInstance .completed none state)) state
             else .ok state
 
-/-- The open item with the public identity `occurrence` whose view has the detail `detail` reads. -/
-def item? {α : Type} (ctx : Ctx) (state : State) (occurrence : OccurrenceRef) (detail : WaitView → Option α) :
-    Option OpenItem :=
-  state.openItems.find? fun item =>
-    ctx.program.publicId item.element == occurrence.element &&
-      ((state.occurrence? item.occurrence).map (·.activation)) == some occurrence.activation &&
-      (detail item.kind.view).isSome && state.instanceOf item.scope == occurrence.processInstanceId
-
 /-- The occurrence with the public identity `ref`, the instance rather than the body of a Multi-Instance element: a begun
 one, or a reservation an open item holds, as a Conditional arm of an Event-Based Gateway is addressed before it fires
 (`conditional-catch/condition-wins`). -/
@@ -445,20 +437,9 @@ def step (hooks : Hooks) (program : Program) (before : Option State) (input : In
       orderJournal <| settle hooks ctx closureBound closureWorkBound (← microStep hooks ctx (.input .start) (some start) State.root
         (begin hooks ctx { element := start, scope := State.root, trigger := payload.trigger }) initial)
   | .command data => onRunning hooks ctx input before (command hooks ctx data)
-  | .deliver data => onRunning hooks ctx input before fun state =>
-    if !data.variables.isEmpty && !data.trigger.fromBroadcast then .error (.rejected "delivery-variables-not-admitted") else
-    match data.trigger with
-    | .message _ =>
-      match item? ctx state data.occurrence (·.channel) with
-      | none => .error (.rejected "unknown-message-subscription")
-      | some item => fireItem hooks ctx item (.message data) state
-    -- Table 10.88 only broadcasts a Signal: one its caller targets needs `occurrenceTargeted` (CIB-EXT-0042).
-    | .signal _ reach =>
-      if reach == .targeted && ctx.program.options.signalDelivery == .broadcastOnly then
-        .error (.rejected "signal-delivery-targeted") else
-      match item? ctx state data.occurrence (·.signal) with
-      | none => .error (.rejected "unknown-signal-subscription")
-      | some item => fireItem hooks ctx item (.signal data) state
+  | .deliver data => onRunning hooks ctx input before fun state => do
+    let (item, fired) ← hooks.delivered ctx data state
+    fireItem hooks ctx item fired state
   | .timerFire data => timerJob ctx.program.options.continuationFailure <| onRunning hooks ctx input before fun state =>
     match item? ctx state data.occurrence (·.deadlineMs) with
     | none => .error (.rejected "unknown-timer")

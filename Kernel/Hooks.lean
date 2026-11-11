@@ -260,6 +260,14 @@ def Ctx.requireMappings (ctx : Ctx) (context : EvalContext) (mappings : List Map
     Except Failure (List (String × Value)) :=
   ctx.requireMappingsWith (fun _ => context) mappings
 
+/-- The open item with the public identity `occurrence` whose view has the detail `detail` reads. -/
+def item? {α : Type} (ctx : Ctx) (state : State) (occurrence : OccurrenceRef) (detail : WaitView → Option α) :
+    Option OpenItem :=
+  state.openItems.find? fun item =>
+    ctx.program.publicId item.element == occurrence.element &&
+      ((state.occurrence? item.occurrence).map (·.activation)) == some occurrence.activation &&
+      (detail item.kind.view).isSome && state.instanceOf item.scope == occurrence.processInstanceId
+
 /-- The one way a boundary fires: an interrupting boundary first cancels the occurrence `host` it hangs on, if any; then
 the boundary's occurrence, the reservation `reserved` or a fresh one, begins and leaves on its flows in `scope`
 (BPMN 2.0.2 §13.5.3, §10.5.6). -/
@@ -385,5 +393,9 @@ structure Hooks where
   find the candidates of a correlated publication. -/
   correlates : Ctx → OpenItem → MessageChannel → List CorrelationMatch → State → Except Failure Bool :=
     fun _ _ _ _ _ => .error (.unsupported "correlates") -- dynamic-only: a registry without the hook
+  /-- Subscriptions: the open item a `deliver` input fires, with its firing, or the delivery's refusal; `Kernel.Step`
+  fires it. -/
+  delivered : Ctx → DeliveryInput → State → Except Failure (OpenItem × Fired) :=
+    fun _ _ _ => .error (.unsupported "delivered") -- dynamic-only: a registry without the hook
 
 end Kernel
