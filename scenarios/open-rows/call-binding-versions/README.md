@@ -4,7 +4,7 @@ Answer-free population schedules for [PC-SCOPE-03](../../../docs/PRACTICAL-CIB7-
 
 Every document shares the `targetNamespace` `urn:bpmn-lean:scenarios:call-binding-versions`, so the callers' unprefixed `calledElement` names `Process_Callee` in it under both resolutions. The called instance of a Call is addressed by the derived identity `call:<byte length>:<caller>:<byte length>:<Call element>:<activation>`.
 
-The CIB schedules run under `cibseven-2.2.0` with no source overlay; their CIB answer comes from the CIB runner's population mode in the hosted lane, so none is retained yet. [recovery-keeps-binding](recovery-keeps-binding.population-scenario.json) is kernel-only under `bpmn-2.0.2`: it continues a running instance after a redeployment, which CIB's invocation-time resolution cannot separate from a fresh one.
+The CIB schedules run under `cibseven-2.2.0` with no source overlay; their CIB answer comes from the CIB runner's population mode in the hosted lane and is retained beside each schedule. [recovery-keeps-binding](recovery-keeps-binding.population-scenario.json) is kernel-only under `bpmn-2.0.2`: it continues a running instance after a redeployment, which CIB's invocation-time resolution cannot separate from a fresh one.
 
 ## Models
 
