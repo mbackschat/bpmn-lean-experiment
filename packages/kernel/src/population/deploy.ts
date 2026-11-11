@@ -15,6 +15,7 @@ import {
   valueSourceLiteral,
   type CalledProcess,
   type Header,
+  type MessageCorrelation,
   type MessageTrigger,
   type Program,
 } from "../il/types.js";
@@ -179,7 +180,8 @@ export function timerStarts(program: Program): readonly (readonly [Header, Resol
 /**
  * What registering a deployment and firing its Timer starts read of it, as plain data a host keeps without the program:
  * its deploy ordinal, root key and own keys with their versions, its deploy time, whether Message names address its
- * starts (CIB-LIM-0022), its root Message start names and its root Timer starts by public identifier.
+ * starts (CIB-LIM-0022), its Message correlation reading, which a publication's criteria must pass (`criteriaRefusal`),
+ * its root Message start names and its root Timer starts by public identifier.
  */
 export interface DeploymentSummary {
   readonly deploymentId: number;
@@ -188,6 +190,7 @@ export interface DeploymentSummary {
   readonly versions: readonly (readonly [string, number])[];
   readonly deployedAtMs: number;
   readonly namesAddress: boolean;
+  readonly messageCorrelation: MessageCorrelation;
   readonly messageStartNames: readonly string[];
   readonly timerStarts: readonly (readonly [string, Resolved])[];
 }
@@ -200,7 +203,8 @@ export function deploymentSummary(program: Program): DeploymentSummary {
   const deploymentId = program.identity.deployment ?? 0;
   return {
     deploymentId, key: program.identity.processId, keys: ownKeys(deploymentId, program), versions: [], deployedAtMs: 0,
-    namesAddress: program.options.messageNames === MessageNames.Addresses, messageStartNames: messageStartNames(program),
+    namesAddress: program.options.messageNames === MessageNames.Addresses, messageCorrelation: program.options.messageCorrelation,
+    messageStartNames: messageStartNames(program),
     timerStarts: timerStarts(program).map(([header, resolved]) => [programPublicId(program, header.id), resolved] as const),
   };
 }

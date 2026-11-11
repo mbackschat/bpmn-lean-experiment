@@ -86,7 +86,8 @@ def timerStarts (program : Program) : List (Header × Timer.Resolved) :=
 
 /-- What registering a deployment and firing its Timer starts read of it, as plain data a host keeps without the
 program: its deploy ordinal, root key and own keys with their versions, its deploy time, whether Message names address
-its starts (CIB-LIM-0022), its root Message start names and its root Timer starts by public identifier. -/
+its starts (CIB-LIM-0022), its Message correlation reading, which a publication's criteria must pass
+(`criteriaRefusal`), its root Message start names and its root Timer starts by public identifier. -/
 structure DeploymentSummary where
   deploymentId : Nat
   key : String
@@ -94,6 +95,7 @@ structure DeploymentSummary where
   versions : List (String × Nat) := []
   deployedAtMs : Nat := 0
   namesAddress : Bool
+  messageCorrelation : MessageCorrelation
   messageStartNames : List String
   timerStarts : List (String × Timer.Resolved)
 
@@ -102,7 +104,8 @@ has no versions and the deploy time 0 until it is registered. -/
 def deploymentSummary (program : Program) : DeploymentSummary :=
   let deploymentId := program.identity.deployment.getD 0
   { deploymentId, key := program.identity.processId, keys := ownKeys deploymentId program
-    namesAddress := program.options.messageNames == .addresses, messageStartNames := messageStartNames program
+    namesAddress := program.options.messageNames == .addresses, messageCorrelation := program.options.messageCorrelation
+    messageStartNames := messageStartNames program
     timerStarts := (timerStarts program).map fun (header, resolved) => ((program.publicId header.id).value, resolved) }
 
 /-- A registered deployment's summary. -/

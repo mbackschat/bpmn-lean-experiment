@@ -38,6 +38,7 @@ const witnesses = [
   "scenarios/open-rows/message-start-population/criteria-select-one-of-two-instances.population-scenario.json",
   "scenarios/open-rows/message-start-population/criteria-ambiguous-two-instances.population-scenario.json",
   "scenarios/open-rows/message-start-population/criteria-none-no-start-definition.population-scenario.json",
+  "scenarios/open-rows/message-start-population/object-valued-criterion-with-start.population-scenario.json",
   "scenarios/open-rows/message-start-population/publish-falls-back-to-start.population-scenario.json",
   "scenarios/open-rows/message-start-population/publish-waiting-catch-wins-over-start.population-scenario.json",
   "scenarios/open-rows/message-start-population/start-replay-different-content.population-scenario.json",

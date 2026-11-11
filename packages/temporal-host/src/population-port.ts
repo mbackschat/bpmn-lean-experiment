@@ -24,6 +24,7 @@ import {
   cascadeBound,
   channelToJson,
   conditionalStartVerdict,
+  criteriaRefusal,
   currentSummary,
   definitionCapabilities,
   deploymentSummary,
@@ -51,7 +52,6 @@ import {
   signalStartReceivers,
   startedInstanceId,
   step,
-  targetsRepeat,
   timerInstanceId,
   timerStartCheck,
   type Binding,
@@ -168,7 +168,6 @@ function commandView(command: Command): CommandView {
         definition: selectorView(publication.definition),
         executions: publication.mode !== PublishMode.StartOnly,
         starts: publication.mode !== PublishMode.ExecutionsOnly,
-        criteriaRepeat: targetsRepeat(publication.criteria),
         channel: message.tag === MessageAddressTag.Channel ? channelToJson(message.channel) as JsonValue : null,
         name: message.tag === MessageAddressTag.Name ? message.name : null,
       };
@@ -236,6 +235,7 @@ function parts(resolution: ResolutionParts): Resolution {
     case "noMatch": return { tag: ResolutionTag.NoMatch };
     case "ambiguous": return { tag: ResolutionTag.Ambiguous };
     case "rejected": return { tag: ResolutionTag.Rejected, code: resolution.code };
+    case "unsupported": return { tag: ResolutionTag.Unsupported, code: resolution.code };
   }
   return assertNever(resolution);
 }
@@ -283,6 +283,22 @@ export const populationPort: PopulationPort<Program, State, FanOutMachine> = {
     const keys = [...new Set(summaries.map((summary) => summary.key))];
     return summaries.filter((summary) => keys.some((key) => currentSummary(summaries, key)?.deploymentId === summary.deploymentId))
       .map((summary) => summary.deploymentId);
+  },
+  publicationRefusal: (registry, command) => {
+    const issued = decode<Command>(command);
+    if (issued.tag !== CommandTag.Publish) throw new TypeError("not a publication");
+    const readings = registry.map((wire) => decode<DeploymentSummary>(wire).messageCorrelation);
+    const refusal = criteriaRefusal(readings, issued.publication.criteria);
+    if (refusal === null) return null;
+    switch (refusal.tag) {
+      case FailureTag.Rejected: return { kind: "rejected", code: refusal.code };
+      case FailureTag.Unsupported: return { kind: "unsupported", code: refusal.code };
+      // `criteriaRefusal` only rejects or refuses as unsupported, as `publish` relies on too.
+      case FailureTag.RolledBack:
+      case FailureTag.SemanticFailure:
+        throw new TypeError(`criteria refusal ${refusal.code} is not command-level`);
+    }
+    return assertNever(refusal.tag);
   },
   timerStartCheck: (registry, deploymentId, startEvent, dueMs, atMs, consumed) =>
     timerStartCheck(registry.map((wire) => decode<DeploymentSummary>(wire)), deploymentId, startEvent, dueMs, atMs, consumed),

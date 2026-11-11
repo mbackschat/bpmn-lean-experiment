@@ -412,7 +412,8 @@ function take<P, S, M>(port: PopulationPort<P, S, M>, state: IngressState<M>, at
   }
   switch (view.kind) {
     case "publish": {
-      if (view.criteriaRepeat) return rejected(port, started, "criteria-duplicate");
+      const refusal = port.publicationRefusal(summaries(state), command);
+      if (refusal !== null) return resolve(port, started, refusal);
       if (scope(port, state, view.definition) === null) return rejected(port, started, "definition-not-deployed");
       return withPhase(started, view.executions ? { kind: "messageScan" } : { kind: "messageStarts" });
     }

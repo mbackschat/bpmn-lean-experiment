@@ -221,7 +221,6 @@ export type CommandView =
       readonly definition: SelectorView | null;
       readonly executions: boolean;
       readonly starts: boolean;
-      readonly criteriaRepeat: boolean;
       readonly channel: JsonValue | null;
       readonly name: string | null;
     }
@@ -243,7 +242,8 @@ export type ResolutionParts =
   | { readonly kind: "fanOut"; readonly entries: readonly Wire[] }
   | { readonly kind: "noMatch" }
   | { readonly kind: "ambiguous" }
-  | { readonly kind: "rejected"; readonly code: string };
+  | { readonly kind: "rejected"; readonly code: string }
+  | { readonly kind: "unsupported"; readonly code: string };
 
 /** A population input's step: its committed state, or the kernel's failure. */
 export type PopulationStep<S> = { readonly kind: "committed"; readonly state: S } | { readonly kind: "failed"; readonly failure: Wire };
@@ -274,6 +274,12 @@ export interface PopulationPort<P, S, M> {
   readonly registerSummary: (registry: readonly Wire[], deploymentId: number, candidate: Wire, atMs: number) =>
     { readonly summary: Wire; readonly key: string; readonly versions: readonly (readonly [string, number])[] } | { readonly refused: string };
   readonly currentDeployments: (registry: readonly Wire[]) => readonly number[];
+  /**
+   * A publication's refusal when `criteriaRefusal` refuses its criteria under the reading of any deployment in `registry`,
+   * decided once for the command before any receiver or start is sought (`Kernel.Population.Messages.publish`), else
+   * `null`: the receiver scan reads refused criteria as no match.
+   */
+  readonly publicationRefusal: (registry: readonly Wire[], command: Wire) => ResolutionParts | null;
   readonly timerStartCheck: (registry: readonly Wire[], deploymentId: number, startEvent: string, dueMs: number, atMs: number,
     consumed: boolean) => string | null;
   readonly startedInstanceId: (commandId: string, deploymentId: number, startEvent: string) => string;
