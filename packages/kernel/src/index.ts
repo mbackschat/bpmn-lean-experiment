@@ -28,5 +28,5 @@ export { WorkTag, elementActivity, elementHeader } from "./il/types.js";
 export type { Program, Value } from "./il/types.js";
 export { EffectOutcomeTag, FailureTag, InputTag, SignalAddressTag } from "./state.js";
 export type { CorrelationMatch, EffectOutcome, Input, MessageChannel, OccurrenceRef, Outcome, State } from "./state.js";
-export { matching } from "./population.js";
-export type { DeploymentRef } from "./population.js";
+export { matching } from "./population/messages.js";
+export type { DeploymentRef } from "./population/contract.js";

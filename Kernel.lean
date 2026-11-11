@@ -41,6 +41,9 @@ public import Kernel.IL.Types.Lexical
 public import Kernel.IL.Types.Options
 public import Kernel.IL.Types.Reference
 public import Kernel.Population
+public import Kernel.Population.Contract
+public import Kernel.Population.Deploy
+public import Kernel.Population.Messages
 public import Kernel.Publish
 public import Kernel.Registry
 public import Kernel.Run.Population

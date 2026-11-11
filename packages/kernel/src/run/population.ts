@@ -44,7 +44,7 @@ import {
   type Resolution,
   type Result as PopulationResult,
   type Stimulus,
-} from "../population.js";
+} from "../population/contract.js";
 import { arrayField, field, referenceJson, requiredString, stimulusOf, type ScenarioStimulus } from "./wire.js";
 /** A scenario's BPMN resource (`{id, sha256, sourceOverlay}`) under the scenario's profile. */
 export function definitionRefFromJson(resource: unknown, profile: string, where: string): DeploymentRef {
