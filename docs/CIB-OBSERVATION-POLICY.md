@@ -182,3 +182,52 @@ Some command outcomes are `adapter-decided` too: `CibSevenCommandExecutor.timerF
 One command outcome is `adapter-derived`: in a single-instance run, `CibSevenCommandExecutor.deliver` answers `rejected` when CIB's criteria correlation throws `MismatchingMessageCorrelationException`, which CIB throws for no matching execution and for several while it selects the target, before it triggers anything (`CorrelateMessageCmd.java:86-88`, `DefaultCorrelationHandler.java:46-53`), so the input changed no state. Every other CIB failure of a delivery stays `rolledBack`. A population run keeps such a publication `rolledBack` with a `noMatch` or `ambiguous` resolution (`CibSevenPopulationCommands.apply`).
 
 Neutral projection does not increase source-binding independence. The raw Camunda binding to neutral protocol/operation translation is performed once by the kernel reader; neither kernel derives that translation from source bytes.
+
+## Population evidence
+
+This table classifies every field of `cibseven-population-evidence.schema.json` at schema depth, as the canonical table does, and states how the [population comparator](../packages/differential/src/population-comparator.ts) treats it and why. A reference into another schema is classified where that schema is: each `processStates[]` item is a canonical state, classified above and compared at `atCibBoundary`, and the envelope's identities are bound by [the evidence script](../scripts/cibseven-population-evidence.ts). The CIB runner writes the result in `CibSevenPopulationRunner.run`, the deployments in `CibSevenPopulationRegistry.deploy` and each command's answer in `CibSevenPopulationCommands`.
+
+| Field path | Fidelity | Comparator treatment | Reason |
+|---|---|---|---|
+| `kind` | `not-claimed` | not compared | Evidence discriminator `cibSevenPopulationEvidence` |
+| `scenario` | `not-claimed` | not compared | Binds the evidence to the scenario's exact bytes, which the evidence script checks before the comparator runs |
+| `profile` | `not-claimed` | not compared | Binds the evidence to the profile's exact bytes, which the evidence script checks |
+| `producer` | `not-claimed` | not compared | The engine version, revision, Java and database of the run, checked against the profile's oracle by the evidence script |
+| `projection` | `not-claimed` | not compared | Names the projection the result is in |
+| `projection.id` | `not-claimed` | not compared | The constant `cib-population-result` |
+| `result` | `adapter-derived` | compared after projecting the kernel's result onto these members | `CibSevenPopulationRunner.run` assembles it; members the kernel records beyond it are listed below the table |
+| `result.deployments` | `adapter-derived` | compared in deploy order | `CibSevenPopulationRegistry.entries`: one entry per deployment, a refused one included |
+| `result.deployments[].deploymentId` | `adapter-derived` | compared | The deploy ordinal (`CibSevenPopulationRegistry.deploy`), not CIB's deployment identifier, so both sides number deployments alike |
+| `result.deployments[].definitionRef` | `not-claimed` | compared | Scenario-supplied definition name |
+| `result.deployments[].versions` | `adapter-derived` | compared, both sides sorted by key | The process definitions of the CIB deployment (`CibSevenPopulationRegistry.deploy`); empty for a refused one. The kernel's order is its program's process order, which CIB does not record |
+| `result.deployments[].versions[].key` | `engine-observed` | compared | `ProcessDefinition.getKey` |
+| `result.deployments[].versions[].version` | `engine-observed` | compared | `ProcessDefinition.getVersion` |
+| `result.deployments[].outcome` | `adapter-derived` | compared without the kernel's `code` | `deploymentRefused` when `RepositoryService` deployment throws `ProcessEngineException` or `DmnEngineException`; CIB names no refusal code the kernel's could match |
+| `result.deployments[].outcome.kind` | `adapter-derived` | compared | `deployed` or `deploymentRefused`, as above |
+| `result.steps` | `adapter-derived` | compared in arrival order | One entry per population command (`CibSevenPopulationRunner.run`); an instance input is no command on either side |
+| `result.steps[].commandId` | `not-claimed` | compared | Scenario-supplied command identity |
+| `result.steps[].ordinal` | `adapter-derived` | compared | The command's position from 1, as the kernel numbers it |
+| `result.steps[].at` | `not-claimed` | compared | The step's scenario time, or the one before it inherited, to which the runner sets CIB's clock |
+| `result.steps[].outcome` | `adapter-derived` | compared against the kernel resolution's outcome class: `committed` and `fanOut` commit; `noMatch` and `ambiguous` roll back; a `failed` delivery takes its outcome class; `rejected` and `unsupported` keep theirs | `CibSevenPopulationCommands.apply`: committed when CIB returns, the class of CIB's exception otherwise, `rejected` without a CIB call for a scenario precondition (`adapter-decided`, see above). CIB refuses an unmatched or ambiguous correlation inside its command (`CorrelateMessageCmd.java:57-95`), so it rolls back where the kernel changes no instance; both leave the population unchanged |
+| `result.steps[].resolution` | `adapter-derived` | compared for `committed` without its `cascade`, for `fanOut` as below, and for `noMatch` and `ambiguous`; the kernel's `failed`, `rejected` and `unsupported` keep no resolution | CIB reports a resolution only for a delivery, the instances a command started and an unmatched or ambiguous correlation |
+| `result.steps[].resolution.kind` | `adapter-derived` | compared | `committed` for a publication CIB delivered to a waiting execution (`CibSevenPopulationCommands.delivered`), `fanOut` for the instances it started (`started`), `noMatch` or `ambiguous` from the wording of CIB's `MismatchingMessageCorrelationException` (`CommandLogger.java:192-206`) |
+| `result.steps[].resolution.target` | `adapter-derived` | compared | The one projected open wait subscribed to the Message name on the execution CIB delivered to (`CibSevenPopulationCommands.delivered`) |
+| `result.steps[].resolution.target.processInstanceId` | `adapter-derived` | compared | The instance's public identity from `CibSevenOccurrences`, never a CIB Process-instance ID |
+| `result.steps[].resolution.target.elementId` | `engine-observed` | compared | `EventSubscription.getActivityId` of the delivered subscription |
+| `result.steps[].resolution.target.activation` | `adapter-derived` | compared | `CibSevenOccurrences.delivered` numbers the activation as for a delivery input |
+| `result.steps[].resolution.entries` | `adapter-derived` | compared after keeping the kernel's `started` and `failed` entries without their `code`, both sides sorted by their JSON text | CIB reports the instances a command started (`CibSevenPopulationCommands.started`) and no receiver it delivered to, so a `delivered` or `skipped` entry shows only in its instance's state. A `failed` entry stays, so a receiver failure the kernel commits around and CIB rolls back is a disagreement (CIB-LIM-0029). CIB reaches receivers in `HashSet` order, so order is not compared (CIB-INT-0030) |
+| `result.steps[].resolution.entries[].kind` | `adapter-derived` | compared | Always `started` |
+| `result.steps[].resolution.entries[].instanceId` | `adapter-derived` | compared | `startedInstanceId`: the kernel's derived identity `start:<len>:<commandId>:<len>:<deploymentId>:<len>:<startEvent>`, or `timer:` for a Timer start, never a CIB ID |
+| `result.steps[].resolution.entries[].deploymentId` | `adapter-derived` | compared | `CibSevenPopulationRegistry.ordinalOf` the started definition's CIB deployment |
+| `result.steps[].resolution.entries[].version` | `engine-observed` | compared | `ProcessDefinition.getVersion` of the started instance's definition |
+| `result.steps[].resolution.entries[].startEvent` | `engine-observed` | compared | `HistoricProcessInstance.getStartActivityId` |
+| `result.inputFailures` | `adapter-derived` | compared, absent on both sides when empty | The instance inputs whose answer did not commit (`CibSevenPopulationRunner.run`) |
+| `result.inputFailures[].commandId` | `not-claimed` | compared | Scenario-supplied command identity of the input |
+| `result.inputFailures[].outcome` | `adapter-derived` | compared without the kernel's `code` | The input's outcome class (`CibSevenEngineScenarioRunner.execute`, `rolledBack`); CIB names no refusal code |
+| `result.processStates` | `adapter-derived` | compared per instance at `atCibBoundary`, both sides sorted by instance identifier, with each kernel state's `logicalTimeMs` replaced by the population clock (`populationClockMs`) and each open wait's `definition.sourceSha256` nulled | Every root instance the population names, projected by `CibSevenStateProjector.observe` after the last step. CIB keeps one clock, which every state shows at the end, where the kernel keeps one per instance; the runner writes no source digest, which records only which document the kernel's assembly copied a process from |
+
+The kernel's population result records members that no CIB field above carries, and the comparator drops them for this reason:
+
+- `steps[].resolution.cascade` and `inputCascades`: CIB reports no receivers of a cascade. The instances a cascade starts are compared in `processStates`.
+- `delivered` and `skipped` fan-out entries: CIB reports no receiver it delivered to.
+- Every `code`, of a deployment outcome, a `failed` entry and an input failure: CIB names none.

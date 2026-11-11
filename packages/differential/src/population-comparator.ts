@@ -2,10 +2,12 @@
  * Population results compared at CIB Seven's observation boundary (population contract §8): the kernel's population
  * result (`contracts/schemas/engine-population-result.schema.json`) projected onto what retained CIB population evidence
  * (`cibseven-population-evidence.schema.json`) records, then compared structurally. The projection drops what CIB
- * cannot observe and restates what CIB records in another form, so every remaining difference is a disagreement:
+ * cannot observe and restates what CIB records in another form, so every remaining difference is a disagreement. The
+ * [observation policy](../../../docs/CIB-OBSERVATION-POLICY.md#population-evidence) classifies every evidence field
+ * with this treatment and its reason:
  *
  * - CIB names no refusal codes: a deployment outcome, failed fan-out entry or input failure keeps no `code`.
- * - CIB delivers every receiver of a command in one transaction (M8-LIM-G) and reports the instances the command
+ * - CIB delivers every receiver of a command in one transaction (CIB-LIM-0029) and reports the instances the command
  *   started, not the receivers it delivered to: a fan-out keeps its `started` and `failed` entries, and a `delivered`
  *   or `skipped` entry shows only in its instance's state. The entries' order is CIB's `HashSet` order (population
  *   contract §6), so both sides compare sorted.

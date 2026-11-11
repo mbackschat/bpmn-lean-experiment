@@ -20,6 +20,7 @@ type SchemaSet = ReadonlyMap<string, SchemaDocument>;
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 const fidelityHeading = "## Canonical CIB observation fidelity";
+const populationHeading = "## Population evidence";
 /**
  * The recursive portable member type. Expanding it never terminates, so its members take the fidelity of the field that
  * carries them and only that carrying field is classified.
@@ -44,34 +45,51 @@ test("classifies every canonical CIB state field at schema depth", async () => {
   );
   const state = requiredDefinition(result, "state");
   const expectedPaths = collectFieldPaths(schemas, result, state);
-  const sectionStart = testingSpec.indexOf(fidelityHeading);
-  assert.notEqual(
-    sectionStart,
-    -1,
-    "CIB-OBSERVATION-POLICY must own the canonical CIB fidelity table",
+  const classifiedPaths = classifiedRows(testingSpec, fidelityHeading);
+  assert.deepEqual(
+    classifiedPaths.toSorted(),
+    [...expectedPaths].toSorted(),
   );
-  const nextHeading = testingSpec.indexOf("\n## ", sectionStart + 1);
-  const section = testingSpec.slice(
-    sectionStart,
-    nextHeading === -1 ? undefined : nextHeading,
+});
+
+test("classifies every field of retained CIB population evidence with the comparator's treatment", async () => {
+  const [populationSource, scenarioSource, policy] = await Promise.all([
+    readFile(`${projectRoot}/contracts/schemas/cibseven-population-evidence.schema.json`, "utf8"),
+    readFile(`${projectRoot}/contracts/schemas/scenario.schema.json`, "utf8"),
+    readFile(`${projectRoot}/docs/CIB-OBSERVATION-POLICY.md`, "utf8"),
+  ]);
+  const population = JSON.parse(populationSource) as SchemaDocument;
+  // A reference into any other schema is a leaf: the canonical state and outcome are classified by the canonical
+  // table, and the evidence envelope's identities by the evidence script that binds them.
+  const schemas: SchemaSet = new Map(
+    [population, JSON.parse(scenarioSource) as SchemaDocument].map((document) => [document.$id, document]),
   );
+  const expectedPaths = collectFieldPaths(schemas, population, population);
+  assert.deepEqual(classifiedRows(policy, populationHeading).toSorted(), [...expectedPaths].toSorted());
+  const section = policy.slice(policy.indexOf(populationHeading));
+  const treated = Array.from(section.matchAll(/^\| `[^`]+` \| `[^`]+` \| [^|]*\S[^|]* \| [^|]*\S[^|]* \|$/gmu));
+  assert.equal(treated.length, expectedPaths.size, "each population field row states the comparator's treatment and its reason");
+});
+
+/** The field paths a policy section classifies, each exactly once. */
+function classifiedRows(policy: string, heading: string): string[] {
+  const sectionStart = policy.indexOf(heading);
+  assert.notEqual(sectionStart, -1, `CIB-OBSERVATION-POLICY must own the section ${heading}`);
+  const nextHeading = policy.indexOf("\n## ", sectionStart + 1);
+  const section = policy.slice(sectionStart, nextHeading === -1 ? undefined : nextHeading);
   const rows = Array.from(
     section.matchAll(
       /^\| `([^`]+)` \| `(engine-observed|adapter-derived|adapter-decided|not-claimed)` \|/gmu,
     ),
   );
   const classifiedPaths = rows.map((row) => row[1] as string);
-
   assert.equal(
     new Set(classifiedPaths).size,
     classifiedPaths.length,
-    "each canonical field path must have exactly one fidelity row",
+    `each field path of ${heading} must have exactly one fidelity row`,
   );
-  assert.deepEqual(
-    classifiedPaths.toSorted(),
-    [...expectedPaths].toSorted(),
-  );
-});
+  return classifiedPaths;
+}
 
 function requiredDefinition(
   schema: SchemaDocument,
@@ -84,16 +102,20 @@ function requiredDefinition(
   return definition;
 }
 
-/** Resolves a `#/$defs/<name>` or `<schema id>#/$defs/<name>` reference to its schema file and definition. */
+/**
+ * Resolves a `#/$defs/<name>` or `<schema id>#/$defs/<name>` reference to its schema file and definition; null for a
+ * reference into a schema outside `schemas`, which the caller classifies as a leaf.
+ */
 function resolveReference(
   schemas: SchemaSet,
   owner: SchemaDocument,
   reference: string,
-): Readonly<{ document: SchemaDocument; name: string }> {
+): Readonly<{ document: SchemaDocument; name: string }> | null {
   const [id, fragment] = reference.split("#") as [string, string];
   const prefix = "/$defs/";
   const document = id === "" ? owner : schemas.get(id);
-  if (document === undefined || !fragment.startsWith(prefix)) {
+  if (document === undefined) return null;
+  if (!fragment.startsWith(prefix)) {
     throw new Error(`unsupported schema reference ${reference}`);
   }
   return { document, name: fragment.slice(prefix.length) };
@@ -107,7 +129,11 @@ function collectFieldPaths(
   paths = new Set<string>(),
 ): ReadonlySet<string> {
   if (node.$ref !== undefined) {
-    const { document, name } = resolveReference(schemas, owner, node.$ref);
+    const resolved = resolveReference(schemas, owner, node.$ref);
+    if (resolved === null) {
+      return paths;
+    }
+    const { document, name } = resolved;
     if (name === recursiveMemberDefinition) {
       return paths;
     }
