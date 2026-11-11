@@ -1,0 +1,46 @@
+{
+  "kind": "populationScenario",
+  "id": "timer-start-population-kernel-cron-start-between-matches",
+  "profile": "bpmn-2.0.2",
+  "definitions": [
+    {
+      "definitionRef": "cron-start",
+      "bpmn": {
+        "id": "timer-start-population-cron-start",
+        "relativePath": "scenarios/open-rows/timer-start-population/cron-start.bpmn",
+        "sha256": "473169eeb7b82b5cf5a144d70d0b4276cbcb9518f2f0782e8fdd1abc2d26b4b7",
+        "sourceOverlay": null
+      }
+    }
+  ],
+  "steps": [
+    {
+      "kind": "timerStart",
+      "commandId": "s01-fire-before-first-match",
+      "deploymentId": 1,
+      "startEvent": "StartEveryHalfHour",
+      "dueMs": 1000,
+      "at": 1000
+    },
+    {
+      "kind": "timerStart",
+      "commandId": "s02-fire-between-matches",
+      "deploymentId": 1,
+      "startEvent": "StartEveryHalfHour",
+      "dueMs": 2700000,
+      "at": 2700000
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.5.2",
+      "BPMN 2.0.2 Clause 10.5.5",
+      "BPMN 2.0.2 Clause 13.2",
+      "BPMN 2.0.2 Clause 13.5.1",
+      "BPMN 2.0.2 Table 10.84",
+      "BPMN 2.0.2 Table 10.101"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

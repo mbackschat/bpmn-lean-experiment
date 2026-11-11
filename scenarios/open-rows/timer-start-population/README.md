@@ -37,5 +37,6 @@ The schedules also bind two models of [timer-start-forms](../timer-start-forms/R
 | [timer-start-replay-later-time](timer-start-replay-later-time.population-scenario.json) | duration-start | kernel-only, `bpmn-2.0.2` | One firing at 3,600,000 ms and the identical step at 7,200,000 ms, after the occurrence is consumed. |
 | [timer-start-other-command-same-occurrence](timer-start-other-command-same-occurrence.population-scenario.json) | duration-start | kernel-only, `bpmn-2.0.2` | One firing and another command that fires the same occurrence. |
 | [kernel-timer-start-refusals](kernel-timer-start-refusals.population-scenario.json) | duration-start | kernel-only, `bpmn-2.0.2` | A firing one millisecond before its occurrence is due, then one naming a deployment that does not exist. |
+| [kernel-cron-start-between-matches](kernel-cron-start-between-matches.population-scenario.json) | cron-start | kernel-only, `bpmn-2.0.2` | The Cron expression `0 0/30 * * * ?` is fired for a due instant of 1,000 ms, before its first match, and then for 2,700,000 ms, between two matches; neither is an occurrence. |
 
 The schedules carry no expected deployment, instance, task or resolution.

@@ -1,0 +1,63 @@
+{
+  "kind": "scenario",
+  "id": "timer-data-derived-date-offset-past-range",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "timer-data-derived",
+    "relativePath": "scenarios/open-rows/timer-data-derived/derived-deadlines.bpmn",
+    "sha256": "b2d986fb6397ce5082b19754d86a39fa74ee4143a1f0810dfe5e4361c75f9ebb",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "due",
+          "value": {
+            "kind": "string",
+            "value": "1970-01-01T01:00:00+24:00"
+          }
+        },
+        {
+          "name": "route",
+          "value": {
+            "kind": "string",
+            "value": "date"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-complete-Prepare",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Prepare",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.5.4",
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 Table 10.101"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/jobexecutor/TimerDeclarationImpl.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/calendar/DurationHelper.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/calendar/DueDateBusinessCalendar.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/calendar/CycleBusinessCalendar.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/calendar/CronExpression.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/persistence/entity/TimerEntity.java"
+    ]
+  }
+}
