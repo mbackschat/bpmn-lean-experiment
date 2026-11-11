@@ -71,3 +71,15 @@ export function pipelineTestTimeoutMs(caseCount: number = discoveredScenarioCoun
 export function pipelineCommandTimeoutMs(caseCount: number = discoveredScenarioCount()): number {
   return pipelineTestTimeoutMs(caseCount) + timeoutMarginMs;
 }
+
+/** Checkout, toolchain and cache restore ahead of the pipeline step took 53 s in Verify run 42948391400 (2026-11-11). */
+const jobSetupMinutes = 5;
+
+/**
+ * The hosted `verify_pipeline` job ceiling in whole minutes, above the command deadline plus job setup, so a
+ * pathological run ends as the budget failure rather than an anonymous cancellation. The workflow's classify job
+ * derives it on the checked-out tree; it grows with the discovered count exactly as the deadlines above do.
+ */
+export function pipelineJobTimeoutMinutes(caseCount: number = discoveredScenarioCount()): number {
+  return Math.ceil(pipelineCommandTimeoutMs(caseCount) / 60_000) + jobSetupMinutes;
+}

@@ -8,6 +8,7 @@ import {
   leanDriverBatchTimeoutMsFor,
   pipelineBudgetMsFor,
   pipelineCommandTimeoutMs,
+  pipelineJobTimeoutMinutes,
   pipelineTestTimeoutMs,
 } from "./pipeline-budget.ts";
 
@@ -47,9 +48,22 @@ test("the runner, the oracle and the hosted job all take the derived deadlines",
   assert.match(oracle, /timeout: pipelineTestTimeoutMs\(\)/u, "the oracle's test deadline must be the derived one");
   // Searched inside the job's own block, so a removed timeout cannot borrow a later job's. A job timeout below the
   // pipeline's own deadline would end a pathological run as an anonymous cancellation instead of the budget failure.
-  const pipelineJob = workflow.match(/\n {2}verify_pipeline:\n((?: {4}.*\n|\n)*)/u)?.[1];
-  const minutes = pipelineJob?.match(/^ {4}timeout-minutes: (\d+)$/mu)?.[1];
-  assert.notEqual(minutes, undefined, "the verify_pipeline job declares no timeout");
-  assert.ok(Number(minutes) * 60_000 > pipelineCommandTimeoutMs(),
-    `verify_pipeline's ${String(minutes)} minutes must exceed the pipeline command deadline ${String(pipelineCommandTimeoutMs())} ms`);
+  const jobBlock = (name: string): string | undefined =>
+    workflow.match(new RegExp(String.raw`\n {2}${name}:\n((?: {4}.*\n|\n)*)`, "u"))?.[1];
+  // A written-down job ceiling falls below the derived deadline as scenarios are added, so the classify job derives it
+  // from this module on the checked-out tree and the pipeline job takes exactly that output.
+  assert.match(jobBlock("verify_pipeline") ?? "",
+    /^ {4}timeout-minutes: \$\{\{ fromJSON\(needs\.changes\.outputs\.pipeline_minutes\) \}\}$/mu,
+    "the verify_pipeline job must take the derived ceiling");
+  const changes = jobBlock("changes") ?? "";
+  assert.match(changes, /^ {6}pipeline_minutes: \$\{\{ steps\.pipeline_ceiling\.outputs\.minutes \}\}$/mu);
+  assert.match(changes, /id: pipeline_ceiling\n\s+run: .*pipelineJobTimeoutMinutes\(\).*>> "\$GITHUB_OUTPUT"/u);
+});
+
+test("the hosted job ceiling stays above the command deadline with room for job setup", () => {
+  for (const count of [1, 1_340, 1_396, 5_000]) {
+    const minutes = pipelineJobTimeoutMinutes(count);
+    assert.ok(Number.isSafeInteger(minutes));
+    assert.ok((minutes - 5) * 60_000 >= pipelineCommandTimeoutMs(count));
+  }
 });

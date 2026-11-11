@@ -38,6 +38,7 @@ jobs:
     timeout-minutes: 5
     outputs:
       product1: ${{ steps.classify.outputs.product1 }}
+      pipeline_minutes: ${{ steps.pipeline_ceiling.outputs.minutes }}
     steps:
       - name: Check out source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -54,6 +55,10 @@ jobs:
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: ${{ steps.pins.outputs.node }}
+
+      - name: Derive the integration pipeline job ceiling
+        id: pipeline_ceiling
+        run: node --input-type=module -e 'const { pipelineJobTimeoutMinutes } = await import("./scripts/pipeline-budget.ts"); console.log(`minutes=${pipelineJobTimeoutMinutes()}`);' >> "$GITHUB_OUTPUT"
 
       - name: Classify changed paths
         id: classify
@@ -402,9 +407,9 @@ jobs:
       - verify_runtime
     if: needs.changes.outputs.product1 == 'true'
     runs-on: ubuntu-latest
-    # Above the derived pipeline deadline (scenario count × the per-scenario bound, `scripts/pipeline-budget.ts`) plus
-    # setup, so a pathological run ends as that budget failure; the bound itself is unchanged.
-    timeout-minutes: 30
+    # Derived by the classify job from `scripts/pipeline-budget.ts` (scenario count × the per-scenario bound, plus
+    # setup), so a pathological run ends as that budget failure; the bound itself is unchanged.
+    timeout-minutes: ${{ fromJSON(needs.changes.outputs.pipeline_minutes) }}
     steps:
       - name: Check out source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
