@@ -86,8 +86,8 @@ def CallWork.namesDefinition (resolution : CalledElementResolution) (work : Call
 /-- The definitions among `carried` a Call's selector admits for a caller deployed at `callerDeployment`: the eligible
 ones it targets, narrowed by its binding. `latest` keeps the highest version; `deployment` the caller's own deployment;
 a literal `version` or `versionTag` the definitions carrying it; an expression admits none. A definition no population
-stamped is version 1, as every process of a single-instance program is its one deployment's first (population
-contract §2.1). More than one result is an ambiguous selector, none a missing one. -/
+stamped is version 1, as every process of a single-instance program is its one deployment's first
+(docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md#deployments). More than one result is an ambiguous selector, none a missing one. -/
 def CallWork.selects (resolution : CalledElementResolution) (callerDeployment : Option Nat) (work : CallWork)
     (carried : List DefinitionRef) : List DefinitionRef :=
   let targets := carried.filter fun definition =>
