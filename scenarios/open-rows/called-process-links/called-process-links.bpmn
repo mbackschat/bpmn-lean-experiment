@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="Definitions_CalledProcessLinks" targetNamespace="urn:bpmn-lean:test:called-process-links">
+  <bpmn:process id="ClaimIntake" name="Take in a claim" isExecutable="true">
+    <bpmn:startEvent id="ClaimReceived" name="Claim received" />
+    <bpmn:callActivity id="Call_AssessClaim" name="Assess the claim" calledElement="AssessClaim" />
+    <bpmn:userTask id="NotifyClaimant" name="Notify the claimant" />
+    <bpmn:endEvent id="ClaimClosed" name="Claim closed" />
+    <bpmn:sequenceFlow id="Flow_Received_Assess" sourceRef="ClaimReceived" targetRef="Call_AssessClaim" />
+    <bpmn:sequenceFlow id="Flow_Assess_Notify" sourceRef="Call_AssessClaim" targetRef="NotifyClaimant" />
+    <bpmn:sequenceFlow id="Flow_Notify_Closed" sourceRef="NotifyClaimant" targetRef="ClaimClosed" />
+  </bpmn:process>
+  <bpmn:process id="AssessClaim" name="Assess a claim" isExecutable="true">
+    <bpmn:startEvent id="AssessmentRequested" name="Assessment requested" />
+    <bpmn:intermediateThrowEvent id="ToReview" name="To review">
+      <bpmn:linkEventDefinition id="LinkDefinition_ToReview" name="Review" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:intermediateCatchEvent id="FromIntake" name="From intake">
+      <bpmn:linkEventDefinition id="LinkDefinition_FromIntake" name="Review" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:userTask id="ReviewClaim" name="Review the claim" />
+    <bpmn:endEvent id="AssessmentDone" name="Assessment done" />
+    <bpmn:sequenceFlow id="Flow_Requested_ToReview" sourceRef="AssessmentRequested" targetRef="ToReview" />
+    <bpmn:sequenceFlow id="Flow_FromIntake_Review" sourceRef="FromIntake" targetRef="ReviewClaim" />
+    <bpmn:sequenceFlow id="Flow_Review_Done" sourceRef="ReviewClaim" targetRef="AssessmentDone" />
+  </bpmn:process>
+</bpmn:definitions>

@@ -27,6 +27,7 @@ import {
   programChildren,
   programElement,
   programFlow,
+  programSiblings,
   programTarget,
   triggerTimer,
   workCall,
@@ -368,7 +369,7 @@ function enteredChildren(program: Program, id: ElementId): readonly Element[] {
 function onward(program: Program, element: Element): readonly Element[] {
   const event = elementEvent(element);
   const name = event === null ? null : eventPayloadLinkThrow(event[1]);
-  const link = event === null || name === null ? [] : programChildren(program, event[0].parent).flatMap((other) => {
+  const link = event === null || name === null ? [] : programSiblings(program, event[0]).flatMap((other) => {
     const caught = elementEvent(other);
     return caught !== null && eventPayloadLinkCatch(caught[1]) === name ? elementOutgoing(other) : [];
   });
@@ -487,7 +488,7 @@ export function link(program: Program, header: Header, payload: EventPayload): s
     return event !== null && eventPayloadLinkCatch(event[1]) === name;
   };
   const thrown = eventPayloadLinkThrow(payload);
-  if (thrown !== null) return programChildren(program, header.parent).filter(catches(thrown)).length === 1 ? null : "link.catch";
+  if (thrown !== null) return programSiblings(program, header).filter(catches(thrown)).length === 1 ? null : "link.catch";
   const caught = eventPayloadLinkCatch(payload);
   if (caught === null) return null;
   return program.elements.filter(catches(caught)).length >= 2 ? "link.duplicateCatch" : null;

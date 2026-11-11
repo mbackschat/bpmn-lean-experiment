@@ -113,16 +113,16 @@ def leaving (ctx : Ctx) (element : Element) : List FlowId :=
   | some envelope, .outgoingOnly => envelope.outgoing
   | none, _ => element.outgoing
 
-/-- The Link catch Events named `name` among the siblings of `parent`. -/
-def linkCatches (program : Program) (parent : Option ElementId) (name : String) : List (Header × EventPayload) :=
-  (program.children parent).filterMap fun element =>
+/-- The Link catch Events named `name` on the level of `header`'s element. -/
+def linkCatches (program : Program) (header : Header) (name : String) : List (Header × EventPayload) :=
+  (program.siblings header).filterMap fun element =>
     element.event?.bind fun (header, payload) =>
       if payload.linkCatch? == some name then some (header, payload) else none
 
 /-- The flows a token continues on after reaching `element`; a throwing Link continues at its catching Links. -/
 def successors (ctx : Ctx) (element : Element) : List FlowId :=
   match element.event?.bind fun (header, payload) => payload.linkThrow?.map (header, ·) with
-  | some (header, name) => (linkCatches ctx.program header.parent name).flatMap (·.2.outgoing)
+  | some (header, name) => (linkCatches ctx.program header name).flatMap (·.2.outgoing)
   | none => leaving ctx element
 
 /-- Whether a token on one of `start` can reach one of `targets` without passing through `gateway`. -/
@@ -242,7 +242,7 @@ def arriveLink (ctx : Ctx) (header : Header) (payload : EventPayload) (occurrenc
     Outcome :=
   match payload.linkThrow? with
   | some name =>
-    match linkCatches ctx.program header.parent name with
+    match linkCatches ctx.program header name with
     | [(_, target)] => .ok (signalComplete state occurrence.id (.flows target.outgoing))
     | [] => .error (.semanticFailure "link-without-catch")
     | _ :: _ :: _ => .error (.semanticFailure "link-ambiguous-catch")

@@ -1,0 +1,56 @@
+{
+  "kind": "scenario",
+  "id": "called-process-links-review-then-notify",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "called-process-links",
+    "relativePath": "scenarios/open-rows/called-process-links/called-process-links.bpmn",
+    "sha256": "61114c2611e5238b62afd1f3c27f722c45a51d0643e77ea102d5084287ae0eaa",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start-claim",
+      "instanceId": "ClaimLinks_1",
+      "variables": []
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-review",
+      "occurrence": {
+        "processInstanceId": "call:12:ClaimLinks_1:16:Call_AssessClaim:1",
+        "elementId": "ReviewClaim",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-notify",
+      "occurrence": {
+        "processInstanceId": "ClaimLinks_1",
+        "elementId": "NotifyClaimant",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.5.5",
+      "BPMN 2.0.2 Clause 10.3.6",
+      "BPMN 2.0.2 Clause 13.3.4"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java"
+    ]
+  }
+}

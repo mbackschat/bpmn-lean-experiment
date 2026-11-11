@@ -232,7 +232,7 @@ def enteredChildren (program : Program) (id : ElementId) : List Element :=
 Link's catch's, and a Scope's `enteredChildren`. -/
 def onward (program : Program) (element : Element) : List Element :=
   let link := (element.event?.bind fun (header, payload) => payload.linkThrow?.map (header, ·)).map fun (header, name) =>
-    (program.children header.parent).flatMap fun other =>
+    (program.siblings header).flatMap fun other =>
       if (other.event?.bind (·.2.linkCatch?)) == some name then other.outgoing else []
   let entered := element.scope?.map fun (header, _) => enteredChildren program header.id
   flowTargets program (element.outgoing ++ link.getD []) ++ entered.getD []
@@ -319,7 +319,7 @@ def link (program : Program) (header : Header) (payload : EventPayload) : Option
   let catches (name : String) (element : Element) : Bool := (element.event?.bind (·.2.linkCatch?)) == some name
   match payload.linkThrow?, payload.linkCatch? with
   | some name, _ =>
-    match (program.children header.parent).filter (catches name) with
+    match (program.siblings header).filter (catches name) with
     | [_] => none
     | [] => some "link.catch"
     | _ :: _ :: _ => some "link.catch"

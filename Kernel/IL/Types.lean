@@ -695,6 +695,14 @@ def beginsImplicitly (program : Program) (element : Element) : Bool :=
 def processChildren (program : Program) (process : CalledProcess) : List Element :=
   process.children.filterMap program.element?
 
+/-- The elements on the level of `header`'s element: its parent's children, or at a process's top level that process's
+own, since `children none` is only the root process's and a called Process behaves as a normal Process (BPMN 2.0.2
+§13.3.4). -/
+def siblings (program : Program) (header : Header) : List Element :=
+  match header.parent, program.processes.find? (·.children.contains header.id) with
+  | none, some process => program.processChildren process
+  | parent, _ => program.children parent
+
 /-- The source element type of an element or boundary, which semantic publication shows. A boundary has no header; BPMN
 has one element type for it. -/
 def sourceType? (program : Program) (id : ElementId) : Option String :=

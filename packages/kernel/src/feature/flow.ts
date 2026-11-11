@@ -34,9 +34,9 @@ import {
   elementOutgoing,
   eventPayloadLinkCatch,
   eventPayloadLinkThrow,
-  programChildren,
   programElement,
   programFlow,
+  programSiblings,
   programTarget,
   type Element,
   type ElementId,
@@ -249,9 +249,9 @@ function leaving(ctx: Ctx, element: Element): readonly FlowId[] {
   return assertNever(ctx.program.options.inclusiveJoinReach);
 }
 
-/** The Link catch Events named `name` among the siblings of `parent`. */
-function linkCatches(program: Program, parent: ElementId | null, name: string): readonly (readonly [Header, EventPayload])[] {
-  return programChildren(program, parent).flatMap((element) => {
+/** The Link catch Events named `name` on the level of `header`'s element. */
+function linkCatches(program: Program, header: Header, name: string): readonly (readonly [Header, EventPayload])[] {
+  return programSiblings(program, header).flatMap((element) => {
     const event = elementEvent(element);
     return event !== null && eventPayloadLinkCatch(event[1]) === name ? [event] : [];
   });
@@ -262,7 +262,7 @@ function successors(ctx: Ctx, element: Element): readonly FlowId[] {
   const event = elementEvent(element);
   const name = event === null ? null : eventPayloadLinkThrow(event[1]);
   if (event === null || name === null) return leaving(ctx, element);
-  return linkCatches(ctx.program, event[0].parent, name).flatMap(([, payload]) => payload.outgoing);
+  return linkCatches(ctx.program, event[0], name).flatMap(([, payload]) => payload.outgoing);
 }
 
 /** Whether a token on one of `start` can reach one of `targets` without passing through `gateway`. */
@@ -400,7 +400,7 @@ export function arriveGateway(ctx: Ctx, header: Header, payload: GatewayPayload,
 export function arriveLink(ctx: Ctx, header: Header, payload: EventPayload, occurrence: Occurrence, state: State): Outcome {
   const name = eventPayloadLinkThrow(payload);
   if (name === null) return committed(signalComplete(state, occurrence.id, leaveOutgoing));
-  const catches = linkCatches(ctx.program, header.parent, name);
+  const catches = linkCatches(ctx.program, header, name);
   const [only] = catches;
   if (only === undefined) return failed(FailureTag.SemanticFailure, "link-without-catch");
   if (catches.length > 1) return failed(FailureTag.SemanticFailure, "link-ambiguous-catch");

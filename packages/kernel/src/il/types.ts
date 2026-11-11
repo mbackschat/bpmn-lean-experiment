@@ -857,6 +857,16 @@ export function programProcessChildren(program: Program, process: CalledProcess)
 }
 
 /**
+ * The elements on the level of `header`'s element: its parent's children, or at a process's top level that process's
+ * own, since `programChildren(program, null)` is only the root process's and a called Process behaves as a normal
+ * Process (BPMN 2.0.2 §13.3.4).
+ */
+export function programSiblings(program: Program, header: Header): readonly Element[] {
+  const process = header.parent === null ? program.processes.find((candidate) => candidate.children.includes(header.id)) : undefined;
+  return process === undefined ? programChildren(program, header.parent) : programProcessChildren(program, process);
+}
+
+/**
  * The source element type of an element or boundary, which semantic publication shows. A boundary has no header; BPMN
  * has one element type for it.
  */
