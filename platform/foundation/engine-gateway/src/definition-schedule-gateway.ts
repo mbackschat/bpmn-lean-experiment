@@ -160,7 +160,7 @@ export class BpmnDefinitionScheduleGateway implements DefinitionScheduleHost {
       expectedProcessId: definition.processId,
       version: definition.version,
       expectedStarts: resolved.compilation.capabilities.starts,
-      timerStart: { startEventId: request.timerStart.startEventId, timer },
+      timerStart: { startEventId: request.timerStart.startEventId, schedule: timer },
       processInstanceId: request.processInstanceId,
       scheduleId: request.hostScheduleId,
       workflowIdBase: request.configuredWorkflowIdBase,

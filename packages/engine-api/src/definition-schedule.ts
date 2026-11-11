@@ -25,13 +25,8 @@ import {
   type EngineSourceOverlaySelection,
   type JsonValue,
 } from "./common.js";
-import {
-  atVersion,
-  compileProgram,
-  type CompiledDefinition,
-  type EngineStartCapability,
-  type EngineTimerSchedule,
-} from "./definition.js";
+import type { EngineStartCapability, EngineTimerSchedule } from "./definition-capabilities.js";
+import { atVersion, compileProgram, type CompiledDefinition } from "./definition.js";
 import { engineCorrelationScope, engineHostConfig, type EngineHost } from "./host.js";
 import { engineProcessLocatorForWorkflowId, type EngineProcessLocator } from "./process-locator.js";
 import { prepareStart, startMemo, type PreparedStart } from "./start-dispatch.js";
@@ -55,7 +50,7 @@ export enum EngineDefinitionScheduleIntegrityCode {
   ScheduleMissing = "temporalScheduleMissing",
 }
 
-export type EngineTimerStartSelection = Readonly<{ startEventId: string; timer: EngineTimerSchedule }>;
+export type EngineTimerStartSelection = Readonly<{ startEventId: string; schedule: EngineTimerSchedule }>;
 
 export type EngineDefinitionScheduleBindingRequest = Readonly<{
   host: EngineHost;
@@ -174,7 +169,8 @@ async function prepare(snapshot: Snapshot, host: EngineHost): Promise<PreparedSc
   }
   const starts = compiled.compilation.capabilities.starts;
   const selected = starts.filter((start) =>
-    start.startEventId === snapshot.timerStart.startEventId && start.timer !== null && sameJson(start.timer, snapshot.timerStart.timer));
+    start.startEventId === snapshot.timerStart.startEventId && start.schedule !== null &&
+    sameJson(start.schedule, snapshot.timerStart.schedule));
   if (!sameJson(starts, snapshot.expectedStarts) || selected.length !== 1) {
     return integrityFailure(EngineDefinitionScheduleIntegrityCode.CapabilityDrift,
       "The compiled Timer start did not match the stored definition version.");

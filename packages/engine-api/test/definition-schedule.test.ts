@@ -30,7 +30,7 @@ async function request(host: TestHost): Promise<EngineDefinitionScheduleBindingR
   const compiled = await compileBpmnDefinition({ bytes, sourceId: "t", profile: standardProfile, limits });
   if (compiled.status !== EngineDefinitionCompilationStatus.Accepted) throw new Error("not admitted");
   const [start] = compiled.capabilities.starts;
-  if (start?.timer == null) throw new Error("no Timer start");
+  if (start?.schedule == null) throw new Error("no Timer start");
   return {
     host,
     bytes,
@@ -41,7 +41,7 @@ async function request(host: TestHost): Promise<EngineDefinitionScheduleBindingR
     expectedProcessId: compiled.definition.ref.definitionKey,
     version: 1,
     expectedStarts: compiled.capabilities.starts,
-    timerStart: { startEventId: start.startEventId, timer: start.timer },
+    timerStart: { startEventId: start.startEventId, schedule: start.schedule },
     processInstanceId: "timer-instance",
     scheduleId: engineDefinitionScheduleId({ processId: compiled.definition.ref.definitionKey, version: 1, scheduleId: "s" }),
     workflowIdBase: "timer-workflow",
@@ -116,7 +116,7 @@ test("pause expects the Schedule paused afterwards; delete removes it by identif
 
 test("a selected Timer start the definition does not publish is capability drift", async () => {
   const host = testHost();
-  const result = await createBpmnDefinitionSchedule({ ...await request(host), timerStart: { startEventId: "Other", timer: { durationMs: 1_000 } } });
+  const result = await createBpmnDefinitionSchedule({ ...await request(host), timerStart: { startEventId: "Other", schedule: { durationMs: 1_000 } } });
   assert.equal(result.status, EngineDefinitionScheduleStatus.IntegrityFailure);
   if (result.status === EngineDefinitionScheduleStatus.IntegrityFailure) {
     assert.equal(result.failure.code, EngineDefinitionScheduleIntegrityCode.CapabilityDrift);

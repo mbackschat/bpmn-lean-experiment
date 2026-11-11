@@ -16,13 +16,8 @@ import {
   type EngineSourceOverlaySelection,
   type JsonValue,
 } from "./common.js";
-import {
-  atVersion,
-  compileProgram,
-  type CompiledDefinition,
-  type EngineMessageChannel,
-  type EngineStartCapability,
-} from "./definition.js";
+import type { EngineMessageChannel, EngineStartCapability } from "./definition-capabilities.js";
+import { atVersion, compileProgram, type CompiledDefinition } from "./definition.js";
 import { engineProcessWorkflowId, type EngineHost } from "./host.js";
 import {
   StartDispatchKind,
@@ -176,8 +171,8 @@ async function prepare(snapshot: Snapshot, host: EngineHost): Promise<PreparedSt
     return integrityFailure(EngineDefinitionMessageStartFailureCode.CapabilityDrift,
       "Compiled start capabilities did not match the stored definition version.");
   }
-  const selected = starts.filter((start) =>
-    start.startEventId === snapshot.messageStart.startEventId && sameJson(start.channel, snapshot.messageStart.channel));
+  const selected = starts.filter((start) => start.startEventId === snapshot.messageStart.startEventId &&
+    start.trigger.kind === "message" && sameJson(start.trigger.channel, snapshot.messageStart.channel));
   if (selected.length !== 1) {
     return {
       status: EngineDefinitionMessageStartStatus.Rejected,

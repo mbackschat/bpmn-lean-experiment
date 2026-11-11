@@ -56,13 +56,16 @@ def hostRequirements (program : Program) : Requirements :=
   let waits := !triggers.isEmpty || messages || effects || userTasks || calls
   { timers, messages, effects, userTasks, calls, maxConcurrentWaits := if waits then none else some 0 }
 
-/-- A start the host can offer: a none start, a Message start on its channel, or a Timer start with its resolved
-schedule (`Kernel.Timer.resolve`). -/
+/-- A start the host can offer, by how it fires: a Message start on its channel with its literal Message name, a Signal
+or a Conditional start, a Timer start with its resolved schedule (`Kernel.Timer.resolve`), or a none start, which sets
+none of these. The engine API's start list (`{startEventId, trigger, schedule}`) renders it. -/
 structure StartCapability where
   startEventId : ElementId
   channel : Option MessageChannel := none
   messageName : Option String := none
-  timer : Option Timer.Resolved := none
+  signal : Bool := false
+  condition : Bool := false
+  schedule : Option Timer.Resolved := none
   deriving Repr
 
 /-- A correlated Message subscription as its host routes to it: the public identifier of the element that declares it
@@ -98,12 +101,13 @@ def byChannel (catches : List (MessageChannel × CorrelatedCatch)) : List Correl
 program's every Timer start is offered. -/
 def definitionCapabilities (program : Program) : Capabilities :=
   let starts := (program.children none).filterMap (·.start?) |>.filterMap fun (header, payload) =>
-    let trigger := payload.subscription.map (·.trigger)
-    let message := trigger.bind (·.message?)
-    let offered (timer : Option Timer.Resolved) : StartCapability :=
+    let trigger := payload.subscription.map (triggerView ·.trigger)
+    let message := trigger.bind (·.message)
+    let offered (schedule : Option Timer.Resolved) : StartCapability :=
       { startEventId := header.id, channel := message.map (·.channel)
-        messageName := message.bind (·.name.bind ValueSource.literal?), timer }
-    match trigger.bind (·.timer?) with
+        messageName := message.bind (·.name.bind ValueSource.literal?)
+        signal := (trigger.bind (·.signal)).isSome, condition := (trigger.bind (·.condition)).isSome, schedule }
+    match trigger.bind (·.timer) with
     | none => some (offered none)
     | some timer => (Timer.resolve timer.schedule).toOption.map (offered ∘ some)
   let correlated := (subscriptions program).filterMap fun (element, subscription) =>

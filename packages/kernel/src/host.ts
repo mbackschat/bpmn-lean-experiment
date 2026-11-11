@@ -21,6 +21,7 @@ import {
   throwEffect,
   triggerMessage,
   triggerTimer,
+  triggerView,
   valueSourceLiteral,
   workCall,
   workIsService,
@@ -117,14 +118,17 @@ export function hostRequirements(program: Program): Requirements {
 }
 
 /**
- * A start the host can offer: a none start, a Message start on its channel, or a Timer start with its resolved schedule
- * (`il/timer.ts#resolve`).
+ * A start the host can offer, by how it fires: a Message start on its channel with its literal Message name, a Signal or
+ * a Conditional start, a Timer start with its resolved schedule (`il/timer.ts#resolve`), or a none start, which sets
+ * none of these. The engine API's start list (`{startEventId, trigger, schedule}`) renders it.
  */
 export interface StartCapability {
   readonly startEventId: ElementId;
   readonly channel: MessageChannel | null;
   readonly messageName: string | null;
-  readonly timer: Resolved | null;
+  readonly signal: boolean;
+  readonly condition: boolean;
+  readonly schedule: Resolved | null;
 }
 
 /**
@@ -166,15 +170,18 @@ export function definitionCapabilities(program: Program): Capabilities {
   const starts = programChildren(program, null).flatMap((element): StartCapability[] => {
     const start = elementStart(element);
     if (start === null) return [];
-    const trigger = start[1].subscription?.trigger ?? null;
-    const message = trigger === null ? null : triggerMessage(trigger);
-    const offered = (timer: Resolved | null): StartCapability => ({
+    const subscription = start[1].subscription;
+    const trigger = subscription === null ? null : triggerView(subscription.trigger);
+    const message = trigger?.message ?? null;
+    const offered = (schedule: Resolved | null): StartCapability => ({
       startEventId: start[0].id,
       channel: message === null ? null : messageTriggerChannel(message),
       messageName: message === null || message.name === null ? null : valueSourceLiteral(message.name),
-      timer,
+      signal: trigger?.signal != null,
+      condition: trigger?.condition != null,
+      schedule,
     });
-    const timer = trigger === null ? null : triggerTimer(trigger);
+    const timer = trigger?.timer ?? null;
     if (timer === null) return [offered(null)];
     const resolved = resolve(timer.schedule);
     return resolved.ok ? [offered(resolved.value)] : [];

@@ -14,8 +14,8 @@ import {
 
 import { limits, scenarioBytes, sha256, standardProfile } from "./support.ts";
 
-const { engineTimerScheduleFromJson } = await import(new URL("../dist/definition.js", import.meta.url).href) as
-  typeof import("../src/definition.ts");
+const { engineDefinitionCapabilitiesFromJson, engineTimerScheduleFromJson } =
+  await import(new URL("../dist/definition-capabilities.js", import.meta.url).href) as typeof import("../src/definition-capabilities.ts");
 
 test("an admitted definition publishes its identity, its host requirements and a none start", async () => {
   const bytes = await scenarioBytes("user-task-preserved-notation/process.bpmn");
@@ -31,7 +31,7 @@ test("an admitted definition publishes its identity, its host requirements and a
   });
   assert.equal(result.hostRequirements.userTasks, true);
   assert.equal(result.hostRequirements.effects, false);
-  assert.deepEqual(result.capabilities.starts.map((start) => [start.channel, start.timer]), [[null, null]]);
+  assert.deepEqual(result.capabilities.starts.map((start) => [start.trigger, start.schedule]), [[{ kind: "none" }, null]]);
 });
 
 test("a Message start publishes its channel and a Timer start the schedule the kernel resolves", async () => {
@@ -41,19 +41,23 @@ test("a Message start publishes its channel and a Timer start the schedule the k
   if (message.status !== EngineDefinitionCompilationStatus.Accepted) return;
   assert.deepEqual(message.capabilities.starts, [{
     startEventId: "MessageStart_ApprovalRequest",
-    channel: {
-      kind: "operationMessage",
-      interfaceId: "Interface_ProcessMessages",
-      interfaceOperationId: "Operation_ReceiveApprovalRequest",
-      messageId: "Message_ApprovalRequest",
+    trigger: {
+      kind: "message",
+      channel: {
+        kind: "operationMessage",
+        interfaceId: "Interface_ProcessMessages",
+        interfaceOperationId: "Operation_ReceiveApprovalRequest",
+        messageId: "Message_ApprovalRequest",
+      },
+      messageName: "Approval request",
     },
-    timer: null,
+    schedule: null,
   }]);
   const timer = await compileBpmnDefinition({
     bytes: await scenarioBytes("timer-start-event/process.bpmn"), sourceId: "t", profile: standardProfile, limits });
   assert.equal(timer.status, EngineDefinitionCompilationStatus.Accepted);
   if (timer.status !== EngineDefinitionCompilationStatus.Accepted) return;
-  assert.deepEqual(timer.capabilities.starts, [{ startEventId: "TimerStart_PT1S", channel: null, timer: { durationMs: 1_000 } }]);
+  assert.deepEqual(timer.capabilities.starts, [{ startEventId: "TimerStart_PT1S", trigger: { kind: "timer" }, schedule: { durationMs: 1_000 } }]);
 });
 
 /** One line per schedule form, so that a form the type does not declare fails the type check. */
@@ -69,11 +73,41 @@ test("a Timer start publishes a date as its instant, a cycle as its period and a
     const result = await compileBpmnDefinition({ bytes: await scenarioBytes(path), sourceId: path, profile: standardProfile, limits });
     assert.equal(result.status, EngineDefinitionCompilationStatus.Accepted, path);
     if (result.status !== EngineDefinitionCompilationStatus.Accepted) return [];
-    return result.capabilities.starts.flatMap((start) => (start.timer === null ? [] : [describeSchedule(start.timer)]));
+    return result.capabilities.starts.flatMap((start) => (start.schedule === null ? [] : [describeSchedule(start.schedule)]));
   };
   assert.deepEqual(await offered("open-rows/timer-start-forms/date-start.bpmn"), ["at 1970-01-01T02:00:00.000Z"]);
   assert.deepEqual(await offered("open-rows/timer-start-population/cron-start.bpmn"), ["on Cron 0 0/30 * * * ?"]);
   assert.deepEqual(await offered("open-rows/timer-start-population/bounded-cycle-start.bpmn"), ["every 600000 ms, 3 times"]);
+});
+
+test("a capability rendering outside the contract is a fault, never a capability", () => {
+  const channel = { kind: "operationMessage", interfaceId: "I", interfaceOperationId: "O", messageId: "M" };
+  const of = (starts: unknown[], correlatedChannels: unknown[] = []) =>
+    engineDefinitionCapabilitiesFromJson({ starts, correlatedChannels, relations: [] });
+  assert.deepEqual(of([{ startEventId: "S", trigger: { kind: "signal" } }, { startEventId: "C", trigger: { kind: "condition" } }]).starts, [
+    { startEventId: "S", trigger: { kind: "signal" }, schedule: null },
+    { startEventId: "C", trigger: { kind: "condition" }, schedule: null },
+  ]);
+  assert.deepEqual(of([{ startEventId: "M", trigger: { kind: "message", channel: { kind: "directMessage", messageId: "M" } } }]).starts,
+    [{ startEventId: "M", trigger: { kind: "message", channel: { kind: "directMessage", messageId: "M" }, messageName: null }, schedule: null }]);
+  const correlated = { channel, catches: [{ elementId: "T", criteria: [{ key: "K", value: { variable: { name: "k" } } }] }] };
+  assert.deepEqual(of([], [correlated]).correlatedChannels, [correlated]);
+  for (const [starts, correlatedChannels] of [
+    [[{ startEventId: "S", trigger: { kind: "timer" } }], []],
+    [[{ startEventId: "S", trigger: { kind: "none" }, schedule: { durationMs: 1 } }], []],
+    [[{ startEventId: "S", trigger: { kind: "escalation" } }], []],
+    [[{ startEventId: "S", trigger: { kind: "none" }, channel }], []],
+    [[{ startEventId: "", trigger: { kind: "none" } }], []],
+    [[{ startEventId: "S", trigger: { kind: "message" } }], []],
+    [[{ startEventId: "S", trigger: { kind: "message", channel: { ...channel, interfaceId: 7 } } }], []],
+    [[{ startEventId: "S", trigger: { kind: "message", channel: { kind: "directMessage", messageId: "M", extra: 1 } } }], []],
+    [[], [{ channel, catches: [{ elementId: "T", criteria: [{ key: "K" }] }] }]],
+    [[], [{ channel: { kind: "named" }, catches: [] }]],
+    [[], [{ channel, catches: {} }]],
+  ] as const) {
+    assert.throws(() => of([...starts], [...correlatedChannels]), TypeError, JSON.stringify([starts, correlatedChannels]));
+  }
+  assert.throws(() => engineDefinitionCapabilitiesFromJson({ starts: [], correlatedChannels: [] }), TypeError);
 });
 
 test("a schedule rendering outside the contract is a fault, never a schedule", () => {

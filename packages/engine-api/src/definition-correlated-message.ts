@@ -23,7 +23,8 @@ import {
   type EngineValue,
   type JsonValue,
 } from "./common.js";
-import { engineHostRefusalCodes, type EngineMessageChannel } from "./definition.js";
+import type { EngineMessageChannel } from "./definition-capabilities.js";
+import { engineHostRefusalCodes } from "./definition.js";
 import { engineCorrelationScope, type EngineHost } from "./host.js";
 import { engineProcessLocatorForWorkflowId, type EngineProcessLocator } from "./process-locator.js";
 

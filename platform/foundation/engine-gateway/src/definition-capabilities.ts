@@ -3,7 +3,7 @@
  * addresses, and Timer starts with the delay the engine resolves for them. A Message start on another channel is
  * outside that contract, so a definition with one is refused at the gateway with a stable code.
  */
-import type { EngineDefinitionCapabilities, EngineStartCapability, EngineTimerSchedule } from "@bpmn-lean/engine-api";
+import type { EngineDefinitionCapabilities, EngineTimerSchedule } from "@bpmn-lean/engine-api";
 import type {
   PublicDefinitionStartCapabilities,
   PublicMessageStartCapability,
@@ -23,18 +23,14 @@ export type StartCapabilityMapping =
   | Readonly<{ kind: "mapped"; capabilities: DefinitionStartCapabilities }>
   | Readonly<{ kind: "refused"; code: string; element: string; evidence: string }>;
 
-function operationChannel(start: EngineStartCapability): DefinitionOperationMessageChannel | null {
-  const channel = start.channel;
-  return channel !== null && channel.kind === "operationMessage" ? { ...channel } : null;
-}
 
 export function mapDefinitionStartCapabilities(capabilities: EngineDefinitionCapabilities): StartCapabilityMapping {
   const messageStarts: DefinitionMessageStartCapability[] = [];
   const timerStarts: DefinitionTimerStartCapability[] = [];
   for (const start of capabilities.starts) {
-    if (start.channel !== null) {
-      const channel = operationChannel(start);
-      if (channel === null) {
+    if (start.trigger.kind === "message") {
+      const channel = start.trigger.channel;
+      if (channel.kind !== "operationMessage") {
         return {
           kind: "refused",
           code: unaddressableMessageStartCode,
@@ -42,11 +38,11 @@ export function mapDefinitionStartCapabilities(capabilities: EngineDefinitionCap
           evidence: "A Message start that names no Operation cannot be addressed by a Product 2 publication.",
         };
       }
-      messageStarts.push({ startEventId: start.startEventId, channel });
+      messageStarts.push({ startEventId: start.startEventId, channel: { ...channel } });
     }
-    // A one-shot Schedule realizes a delay; a cycle has none, and admission refuses it on a root start.
-    if (start.timer !== null) {
-      timerStarts.push({ startEventId: start.startEventId, durationMs: "durationMs" in start.timer ? start.timer.durationMs : null });
+    // A one-shot Schedule realizes a delay; a date, a cycle and a Cron expression have none.
+    if (start.schedule !== null) {
+      timerStarts.push({ startEventId: start.startEventId, durationMs: "durationMs" in start.schedule ? start.schedule.durationMs : null });
     }
   }
   return { kind: "mapped", capabilities: { messageStarts, timerStarts } };
@@ -54,8 +50,8 @@ export function mapDefinitionStartCapabilities(capabilities: EngineDefinitionCap
 
 /** The resolved schedule of the Timer start `startEventId`, `null` when the definition publishes no such start. */
 export function engineTimerSchedule(capabilities: EngineDefinitionCapabilities, startEventId: string): EngineTimerSchedule | null {
-  const selected = capabilities.starts.filter((start) => start.startEventId === startEventId && start.timer !== null);
-  return selected.length === 1 ? selected[0]!.timer : null;
+  const selected = capabilities.starts.filter((start) => start.startEventId === startEventId && start.schedule !== null);
+  return selected.length === 1 ? selected[0]!.schedule : null;
 }
 
 /** The value with every object's keys sorted, so stored and recompiled capabilities compare by content. */

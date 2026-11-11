@@ -90,7 +90,7 @@ test("a bound Message throw needs the host to serve effects, as a Service Task d
 test("a Timer start offers the duration the kernel resolves from its schedule", () => {
   const program = admitted(replace(base(), "S", start("S", duration("PT1M30S"))));
   assert.deepEqual(capabilitiesJson(definitionCapabilities(program)), {
-    starts: [{ startEventId: "S", timer: { durationMs: 90_000 } }],
+    starts: [{ startEventId: "S", trigger: { kind: "timer" }, schedule: { durationMs: 90_000 } }],
     correlatedChannels: [],
     relations: program.options.relations,
   });
@@ -107,9 +107,10 @@ function refusedStarts(trigger: Json, refusal: string): Json {
 test("a Timer start offers the instant of a literal date, the period of a cycle and the text of a literal Cron expression", () => {
   const offered = (trigger: Json): Json =>
     (capabilitiesJson(definitionCapabilities(admitted(replace(base(), "S", start("S", trigger))))) as Json).starts as Json;
-  assert.deepEqual(offered(date("2026-11-09T10:00:00Z")), [{ startEventId: "S", timer: { instantMs: Date.parse("2026-11-09T10:00:00Z") } }]);
-  assert.deepEqual(offered(cycle("R3/PT1H")), [{ startEventId: "S", timer: { cycle: { periodMs: 3_600_000, repetitions: 3 } } }]);
-  assert.deepEqual(offered(cycle("0 0 12 * * ?", "cron")), [{ startEventId: "S", timer: { cron: "0 0 12 * * ?" } }]);
+  const timer = (schedule: Json): Json[] => [{ startEventId: "S", trigger: { kind: "timer" }, schedule }];
+  assert.deepEqual(offered(date("2026-11-09T10:00:00Z")), timer({ instantMs: Date.parse("2026-11-09T10:00:00Z") }));
+  assert.deepEqual(offered(cycle("R3/PT1H")), timer({ cycle: { periodMs: 3_600_000, repetitions: 3 } }));
+  assert.deepEqual(offered(cycle("0 0 12 * * ?", "cron")), timer({ cron: "0 0 12 * * ?" }));
 });
 
 test("a Timer start whose schedule is an expression is not offered", () => {
@@ -121,9 +122,20 @@ test("a Message start offers its channel and its literal Message name", () => {
   const program = admitted(replace(base(), "S", start("S", message(channel()))));
   assert.deepEqual((capabilitiesJson(definitionCapabilities(program)) as Json).starts, [{
     startEventId: "S",
-    channel: { kind: "operationMessage", interfaceId: "I", interfaceOperationId: "O", messageId: "M" },
-    messageName: "M",
+    trigger: {
+      kind: "message",
+      channel: { kind: "operationMessage", interfaceId: "I", interfaceOperationId: "O", messageId: "M" },
+      messageName: "M",
+    },
   }]);
+});
+
+test("a Signal and a Conditional start offer their trigger kind, a none start the kind none", () => {
+  const offered = (trigger: Json | null): Json => (capabilitiesJson(definitionCapabilities(admitted(withOptions(
+    replace(base(), "S", start("S", trigger)), { conditionalStart: "submittedContext" })))) as Json).starts as Json;
+  assert.deepEqual(offered(signal()), [{ startEventId: "S", trigger: { kind: "signal" } }]);
+  assert.deepEqual(offered(condition()), [{ startEventId: "S", trigger: { kind: "condition" } }]);
+  assert.deepEqual(offered(null), [{ startEventId: "S", trigger: { kind: "none" } }]);
 });
 
 const correlatedCatch = catchEvent("T", message({ ...channel(), correlation: [criterion("OrderKey", variable("orderId"))] }));
@@ -132,7 +144,7 @@ const correlatedProgram = (): Program => admitted({ ...replace(base(), "T", corr
 test("a correlated catch publishes its channel, its element and the criteria the kernel evaluates", () => {
   const program = correlatedProgram();
   assert.deepEqual(capabilitiesJson(definitionCapabilities(program)), {
-    starts: [{ startEventId: "S" }],
+    starts: [{ startEventId: "S", trigger: { kind: "none" } }],
     correlatedChannels: [{
       channel: { kind: "operationMessage", interfaceId: "I", interfaceOperationId: "O", messageId: "M" },
       catches: [{ elementId: "T", criteria: [{ key: "OrderKey", value: { variable: { name: "orderId" } } }] }],

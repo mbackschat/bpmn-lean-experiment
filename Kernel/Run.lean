@@ -296,12 +296,20 @@ def correlatedChannelJson (group : Host.CorrelatedChannel) : Json :=
       ("criteria", Json.arr (entry.criteria.map fun criterion =>
         Json.mkObj [("key", Json.str criterion.key), ("value", toJson criterion.value)]).toArray)]).toArray)]
 
+/-- A start's trigger as the engine API offers it: its kind, the vocabulary's `startTrigger` name, and for a Message
+start its channel and literal name. -/
+def startTriggerJson (start : Host.StartCapability) : Json :=
+  match start.channel with
+  | some channel => Json.mkObj ([("kind", Json.str "message"), ("channel", Codec.channelToJson channel)] ++
+      (start.messageName.map fun name => ("messageName", Json.str name)).toList)
+  | none =>
+    Json.mkObj [("kind", Json.str (if start.schedule.isSome then "timer" else if start.signal then "signal"
+      else if start.condition then "condition" else "none"))]
+
 def capabilitiesJson (capabilities : Host.Capabilities) : Json :=
   Json.mkObj [("starts", Json.arr (capabilities.starts.map fun start =>
-      Json.mkObj ([("startEventId", Json.str start.startEventId.value)] ++
-        (start.channel.map fun channel => ("channel", Codec.channelToJson channel)).toList ++
-        (start.messageName.map fun name => ("messageName", Json.str name)).toList ++
-        (start.timer.map fun timer => ("timer", resolvedTimerJson timer)).toList)).toArray),
+      Json.mkObj ([("startEventId", Json.str start.startEventId.value), ("trigger", startTriggerJson start)] ++
+        (start.schedule.map fun schedule => ("schedule", resolvedTimerJson schedule)).toList)).toArray),
     ("correlatedChannels", Json.arr (capabilities.correlatedChannels.map correlatedChannelJson).toArray),
     ("relations", Json.arr (capabilities.relations.map Json.str).toArray)]
 

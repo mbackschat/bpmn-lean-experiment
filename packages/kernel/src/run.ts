@@ -47,6 +47,7 @@ import {
   type CorrelatedChannel,
   type OpenWait,
   type Requirements,
+  type StartCapability,
   type View,
 } from "./host.js";
 import { ResolvedTag, type Resolved } from "./il/timer.js";
@@ -421,13 +422,23 @@ function correlatedChannelJson(group: CorrelatedChannel): JsonValue {
   };
 }
 
+/**
+ * A start's trigger as the engine API offers it: its kind, the vocabulary's `startTrigger` name, and for a Message start
+ * its channel and literal name.
+ */
+function startTriggerJson(start: StartCapability): JsonValue {
+  if (start.channel !== null) {
+    return { kind: "message", channel: channelToJson(start.channel), ...(start.messageName === null ? {} : { messageName: start.messageName }) };
+  }
+  return { kind: start.schedule !== null ? "timer" : start.signal ? "signal" : start.condition ? "condition" : "none" };
+}
+
 export function capabilitiesJson(capabilities: Capabilities): JsonValue {
   return {
     starts: capabilities.starts.map((start) => ({
       startEventId: start.startEventId,
-      ...(start.channel === null ? {} : { channel: channelToJson(start.channel) }),
-      ...(start.messageName === null ? {} : { messageName: start.messageName }),
-      ...(start.timer === null ? {} : { timer: resolvedTimerJson(start.timer) }),
+      trigger: startTriggerJson(start),
+      ...(start.schedule === null ? {} : { schedule: resolvedTimerJson(start.schedule) }),
     })),
     correlatedChannels: capabilities.correlatedChannels.map(correlatedChannelJson),
     relations: [...capabilities.relations],
