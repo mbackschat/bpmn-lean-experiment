@@ -103,7 +103,10 @@ async function replay(relativePath: string, document: PopulationScenarioDocument
   const deploy = async (): Promise<void> => {
     const program = sources[next] as JsonValue;
     const definitionRef = order[next] as string;
-    const answer = await population.registerDeployment({ deploymentRequestId: `${name}:${String(next)}`, digest: definitionRef, program });
+    const deploymentRequestId = `${name}:${String(next)}`;
+    const answer = await population.registerDeployment({ deploymentRequestId, digest: definitionRef, program });
+    // The registry records the answer the caller received, deploy time included, across the start Activity's await.
+    assert.deepEqual(await population.deployment(deploymentRequestId), answer, `${relativePath}: deployment ${deploymentRequestId}`);
     if ("deploymentId" in answer) deployed.set(definitionRef, { deploymentId: answer.deploymentId, program });
     next += 1;
   };

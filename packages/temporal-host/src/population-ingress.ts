@@ -125,13 +125,16 @@ async function hostIngress<P, S, I>(kernel: KernelPort<P, S, I>, port: Populatio
       const program = kernel.decodeProgram(request.program);
       const refusal = kernel.admit(program);
       const candidate = refusal === null ? { summary: port.deploymentSummary(program) } : { refused: refusal };
-      const [next, deployed] = registerDeployment(port, state, request.deploymentRequestId, request.digest, candidate, Date.now());
+      // One instant for both evaluations: Workflow time advances across the Activity's await, and the answer's
+      // `deployedAtMs` must be the one the registry records and `deployment` reports.
+      const atMs = Date.now();
+      const [next, deployed] = registerDeployment(port, state, request.deploymentRequestId, request.digest, candidate, atMs);
       if (next === state) return deployed;
       if ("deploymentId" in deployed) {
         await activities.startDeployment({ population: args.population, deploymentId: deployed.deploymentId, program: request.program });
       }
       // Only registrations change the deployment ordinal, and they are serialized here, so the ordinal is still free.
-      const [registered] = registerDeployment(port, state, request.deploymentRequestId, request.digest, candidate, Date.now());
+      const [registered] = registerDeployment(port, state, request.deploymentRequestId, request.digest, candidate, atMs);
       state = registered;
       return deployed;
     });
