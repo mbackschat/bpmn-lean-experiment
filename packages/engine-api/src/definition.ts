@@ -5,7 +5,7 @@
  */
 import { declaredSourceEncoding, kernelProfileOptions, readKernelProgram } from "@bpmn-lean/bpmn-source";
 import {
-  admit,
+  admitLocated,
   capabilitiesJson,
   decodeProgram,
   definitionCapabilities,
@@ -128,11 +128,13 @@ export async function readDefinition(
   return { source, profile, overlay, program: programJson, decoded: decoded.value };
 }
 
-/** Admits a decoded source: its compilation, or the kernel's refusal as one diagnostic. */
+/** Admits a decoded source: its compilation, or the kernel's refusal as one diagnostic naming the refused element. */
 export function admitDefinition(read: ReadDefinition): CompiledDefinition | EngineRejectedDefinitionCompilation {
   const { source, profile, overlay, decoded } = read;
-  const refusal = admit(decoded);
-  if (refusal !== null) return rejected(source, refusal, null, `Kernel admission refused the definition: ${refusal}.`);
+  const refusal = admitLocated(decoded);
+  if (refusal !== null) {
+    return rejected(source, refusal.code, refusal.element, `Kernel admission refused the definition: ${refusal.code}.`);
+  }
   return {
     program: read.program,
     compilation: {

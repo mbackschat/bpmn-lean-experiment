@@ -409,26 +409,59 @@ function executable(program: Program): string | null {
   return !program.executable || program.processes.some((process) => !process.executable) ? "process.notExecutable" : null;
 }
 
+/** A refusal code, and the element or flow it names when that element's or flow's own check refused. */
+export type AdmissionRefusal = Readonly<{ code: string; element: string | null }>;
+
+/** A check of the whole program, which names no element. */
+function unlocated(check: () => string | null): () => AdmissionRefusal | null {
+  return () => {
+    const code = check();
+    return code === null ? null : { code, element: null };
+  };
+}
+
+/** The first of `items` whose own check refuses, named by `id`. */
+function located<T>(items: readonly T[], id: (item: T) => string, check: (item: T) => string | null): () => AdmissionRefusal | null {
+  return () => {
+    for (const item of items) {
+      const code = check(item);
+      if (code !== null) return { code, element: id(item) };
+    }
+    return null;
+  };
+}
+
 /**
  * The first refusal: references, profile options, a process not marked executable, the carried DMN resources, then
  * called-process bindings, the process levels' Event Sub-Processes, flows and elements in program order, the instances
  * of each loop, the Conditional starts of each process level, then the Message and the Signal names of the whole program.
+ * A flow's, an element's or a loop's own refusal names it, so a host can point at the refused element.
  */
-export function admit(program: Program): string | null {
+export function admitLocated(program: Program): AdmissionRefusal | null {
   const throws = program.elements.filter(compensationThrow);
-  return first(
-    () => FlowAdmission.references(program),
-    () => Scopes.membership(program),
-    () => Profile.options(abnormalScope(program), loops(program), program.options),
-    () => executable(program),
-    () => Decision.resources(program),
-    () => firstOf(program.processes, calledProcessBinding),
-    () => processEventSubProcesses(program),
-    () => firstOf(program.flows, (entry) => flow(program, entry)),
-    () => firstOf(program.elements, (entry) => element(program, throws, entry)),
-    () => firstOf(program.elements, (entry) => loopInstances(program, entry)),
-    () => Starts.startConditions(program),
-    () => Subscriptions.messageNames(program.options, program.elements.flatMap((entry) => sites(program, messages, entry))),
-    () => signalDeclarations(program),
-  );
+  const elementId = (entry: Element): string => elementHeader(entry).id;
+  for (const check of [
+    unlocated(() => FlowAdmission.references(program)),
+    unlocated(() => Scopes.membership(program)),
+    unlocated(() => Profile.options(abnormalScope(program), loops(program), program.options)),
+    unlocated(() => executable(program)),
+    unlocated(() => Decision.resources(program)),
+    unlocated(() => firstOf(program.processes, calledProcessBinding)),
+    unlocated(() => processEventSubProcesses(program)),
+    located(program.flows, (entry) => entry.id, (entry) => flow(program, entry)),
+    located(program.elements, elementId, (entry) => element(program, throws, entry)),
+    located(program.elements, elementId, (entry) => loopInstances(program, entry)),
+    unlocated(() => Starts.startConditions(program)),
+    unlocated(() => Subscriptions.messageNames(program.options, program.elements.flatMap((entry) => sites(program, messages, entry)))),
+    unlocated(() => signalDeclarations(program)),
+  ]) {
+    const refused = check();
+    if (refused !== null) return refused;
+  }
+  return null;
+}
+
+/** The code of the first refusal (`admitLocated`). */
+export function admit(program: Program): string | null {
+  return admitLocated(program)?.code ?? null;
 }

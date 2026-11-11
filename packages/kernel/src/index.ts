@@ -32,7 +32,7 @@ export {
   stimulusFromJson,
   type TimerFiring,
 } from "./il/codec/stimulus.js";
-export { admit } from "./admission-registry.js";
+export { admit, admitLocated, type AdmissionRefusal } from "./admission-registry.js";
 export { hooks } from "./registry.js";
 export { step } from "./step.js";
 export { definitionCapabilities, hostRequirements, hostView, refusesSignalVariables, rootStarts } from "./host.js";

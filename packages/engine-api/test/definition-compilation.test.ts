@@ -157,6 +157,15 @@ test("unreadable bytes and a digest other than expected are refused with the rea
   assert.deepEqual([drifted.source.declaredEncoding, drifted.source.decodedAs], ["UTF-8", null]);
 });
 
+test("a kernel admission refusal of one element names that element", async () => {
+  const source = new TextDecoder().decode(await scenarioBytes("user-task-preserved-notation/process.bpmn"));
+  const result = await compileBpmnDefinition({
+    bytes: new TextEncoder().encode(source.replaceAll("bpmn:userTask", "bpmn:scriptTask")), sourceId: "x", profile: standardProfile, limits });
+  assert.equal(result.status, EngineDefinitionCompilationStatus.Rejected);
+  if (result.status !== EngineDefinitionCompilationStatus.Rejected) return;
+  assert.deepEqual(result.diagnostics.map(({ code, element }) => [code, element]), [["work.script", "UserTask_Approve"]]);
+});
+
 test("the host refusal table names the first required capability a deployment does not serve", () => {
   const requirements = { timers: true, messages: false, effects: true, userTasks: true, calls: false, maxConcurrentWaits: null };
   const served = { timers: true, messages: true, effects: false, userTasks: false, calls: true };

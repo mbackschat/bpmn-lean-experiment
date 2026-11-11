@@ -251,21 +251,41 @@ def calledProcessBinding (process : CalledProcess) : Option String :=
 def executable (program : Program) : Option String :=
   if !program.executable || program.processes.any (!·.executable) then some "process.notExecutable" else none
 
+/-- A refusal code, and the element or flow it names when that element's or flow's own check refused. -/
+structure AdmissionRefusal where
+  code : String
+  element : Option String
+  deriving DecidableEq, Repr
+
+/-- A check of the whole program, which names no element. -/
+def unlocated (code : Option String) : Option AdmissionRefusal :=
+  code.map ({ code := ·, element := none })
+
+/-- The first of `items` whose own check refuses, named by `id`. -/
+def located {α : Type} (items : List α) (id : α → String) (check : α → Option String) : Option AdmissionRefusal :=
+  items.findSome? fun item => (check item).map ({ code := ·, element := some (id item) })
+
 /-- The first refusal: references, profile options, a process not marked executable, the carried DMN resources, then
 called-process bindings, the process levels' Event Sub-Processes, flows and elements in program order, the instances of
-each loop, the Conditional starts of each process level, then the Message and the Signal names of the whole program. -/
+each loop, the Conditional starts of each process level, then the Message and the Signal names of the whole program. A
+flow's, an element's or a loop's own refusal names it, so a host can point at the refused element. -/
+def admitLocated (program : Program) : Option AdmissionRefusal :=
+  let elementId (element : Element) : String := element.header.id.value
+  unlocated (Admission.Flow.references program) <|> unlocated (Admission.Scopes.membership program) <|>
+    unlocated (Admission.Profile.options (abnormalScope program) (loops program) program.options) <|>
+    unlocated (executable program) <|>
+    unlocated (Admission.Work.Decision.resources program) <|>
+    unlocated (program.processes.findSome? calledProcessBinding) <|>
+    unlocated (processEventSubProcesses program) <|>
+    located program.flows (·.id.value) (flow program) <|>
+    located program.elements elementId (element program (program.elements.filter compensationThrow)) <|>
+    located program.elements elementId (loopInstances program) <|>
+    unlocated (Admission.Subscriptions.startConditions program) <|>
+    unlocated (Admission.Subscriptions.messageNames program.options (program.elements.flatMap (sites program messages))) <|>
+    unlocated (signalDeclarations program)
+
+/-- The code of the first refusal (`admitLocated`). -/
 def admit (program : Program) : Option String :=
-  Admission.Flow.references program <|> Admission.Scopes.membership program <|>
-    Admission.Profile.options (abnormalScope program) (loops program) program.options <|>
-    executable program <|>
-    Admission.Work.Decision.resources program <|>
-    program.processes.findSome? calledProcessBinding <|>
-    processEventSubProcesses program <|>
-    program.flows.findSome? (flow program) <|>
-    program.elements.findSome? (element program (program.elements.filter compensationThrow)) <|>
-    program.elements.findSome? (loopInstances program) <|>
-    Admission.Subscriptions.startConditions program <|>
-    Admission.Subscriptions.messageNames program.options (program.elements.flatMap (sites program messages)) <|>
-    signalDeclarations program
+  (admitLocated program).map (·.code)
 
 end Kernel.AdmissionRegistry
