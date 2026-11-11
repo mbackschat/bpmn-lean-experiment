@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "conditional-boundary-hosts",
     "relativePath": "scenarios/open-rows/conditional-boundary-hosts/conditional-hosts.bpmn",
-    "sha256": "a678e65e35a55648e0a8febb7b93fba19976dc2c63feb575333795d7706f5a72",
+    "sha256": "1103110216c74d059c70057df8604e7567e1a3d160c7cf5ec22291ee1374c49f",
     "sourceOverlay": null
   },
   "stimuli": [

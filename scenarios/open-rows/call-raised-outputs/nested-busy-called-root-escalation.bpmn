@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  id="Definitions_NestedBusyCalledRootEscalation"
+  targetNamespace="urn:bpmn-lean:scenarios:call-raised-outputs:nested-busy-called-root-escalation">
+  <bpmn:escalation id="Escalation_PartSlipped" name="Part slipped" escalationCode="PART_SLIPPED" />
+
+  <bpmn:process id="Process_Assembly" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_AssemblyOrdered" />
+    <bpmn:callActivity id="CallActivity_Build" name="Build the unit" calledElement="Process_Build">
+      <bpmn:extensionElements>
+        <camunda:in source="seed" target="progress" />
+        <camunda:out source="progress" target="progress" />
+      </bpmn:extensionElements>
+    </bpmn:callActivity>
+    <bpmn:userTask id="UserTask_AfterBuild" name="Accept the unit" />
+    <bpmn:endEvent id="EndEvent_Accepted" />
+    <bpmn:sequenceFlow id="Flow_Assembly_Start_Build" sourceRef="StartEvent_AssemblyOrdered" targetRef="CallActivity_Build" />
+    <bpmn:sequenceFlow id="Flow_Assembly_Build_After" sourceRef="CallActivity_Build" targetRef="UserTask_AfterBuild" />
+    <bpmn:sequenceFlow id="Flow_Assembly_After_End" sourceRef="UserTask_AfterBuild" targetRef="EndEvent_Accepted" />
+  </bpmn:process>
+
+  <bpmn:process id="Process_Build" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_BuildRequested" />
+    <bpmn:parallelGateway id="Gateway_BuildFork" name="Build in parallel" gatewayDirection="Diverging" />
+    <bpmn:userTask id="UserTask_Frame" name="Build the frame" />
+    <bpmn:callActivity id="CallActivity_Wire" name="Wire the unit" calledElement="Process_Wire" />
+    <bpmn:endEvent id="EndEvent_FrameBuilt" />
+    <bpmn:endEvent id="EndEvent_WireReturned" />
+    <bpmn:subProcess id="Handler_Build_PartSlipped" triggeredByEvent="true">
+      <bpmn:startEvent id="Start_Build_PartSlipped" isInterrupting="true">
+        <bpmn:escalationEventDefinition id="EscalationEventDefinition_Handler_PartSlipped" escalationRef="Escalation_PartSlipped" />
+      </bpmn:startEvent>
+      <bpmn:userTask id="UserTask_Recover" name="Recover the build" />
+      <bpmn:endEvent id="EndEvent_Recovered" />
+      <bpmn:sequenceFlow id="Flow_Handler_Start_Recover" sourceRef="Start_Build_PartSlipped" targetRef="UserTask_Recover" />
+      <bpmn:sequenceFlow id="Flow_Handler_Recover_End" sourceRef="UserTask_Recover" targetRef="EndEvent_Recovered" />
+    </bpmn:subProcess>
+    <bpmn:sequenceFlow id="Flow_Build_Start_Fork" sourceRef="StartEvent_BuildRequested" targetRef="Gateway_BuildFork" />
+    <bpmn:sequenceFlow id="Flow_Build_Fork_Frame" sourceRef="Gateway_BuildFork" targetRef="UserTask_Frame" />
+    <bpmn:sequenceFlow id="Flow_Build_Fork_Wire" sourceRef="Gateway_BuildFork" targetRef="CallActivity_Wire" />
+    <bpmn:sequenceFlow id="Flow_Build_Frame_End" sourceRef="UserTask_Frame" targetRef="EndEvent_FrameBuilt" />
+    <bpmn:sequenceFlow id="Flow_Build_Wire_End" sourceRef="CallActivity_Wire" targetRef="EndEvent_WireReturned" />
+  </bpmn:process>
+
+  <bpmn:process id="Process_Wire" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_WireRequested" />
+    <bpmn:userTask id="UserTask_Wiring" name="Wire the unit" />
+    <bpmn:endEvent id="EndEvent_WiringSlipped">
+      <bpmn:escalationEventDefinition id="EscalationEventDefinition_Wire_PartSlipped" escalationRef="Escalation_PartSlipped" />
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_Wire_Start_Wiring" sourceRef="StartEvent_WireRequested" targetRef="UserTask_Wiring" />
+    <bpmn:sequenceFlow id="Flow_Wire_Wiring_Slipped" sourceRef="UserTask_Wiring" targetRef="EndEvent_WiringSlipped" />
+  </bpmn:process>
+</bpmn:definitions>

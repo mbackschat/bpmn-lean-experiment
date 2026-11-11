@@ -1,6 +1,6 @@
 # Call outputs when a raised Error reaches the called root
 
-This directory serves [PC-SCOPE-06](../../../docs/PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list): the contract "Call outputs when a raised event reaches the called root" of [the scopes semantics](../../../docs/kernel/semantics/SCOPES-SEMANTICS-SPEC.md) (CIB-EXT-0034), items 3 and 4. The [busy-root model](busy-called-root.bpmn) and the [shared-name model](catch-shares-out-target.bpmn) are project-authored MIT source for the `cibseven-2.2.0` profile; every schedule is answer-free and CIB Seven `2.2.0` supplies the retained answer. The other PC-SCOPE-06 cases are in [call-exceptional-return](../call-exceptional-return/README.md).
+This directory serves [PC-SCOPE-06](../../../docs/PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list): the contract "Call outputs when a raised event reaches the called root" of [the scopes semantics](../../../docs/kernel/semantics/SCOPES-SEMANTICS-SPEC.md) (CIB-EXT-0034), items 3 and 4. The [busy-root model](busy-called-root.bpmn), the [shared-name model](catch-shares-out-target.bpmn) and the [nested busy-root models](#nested-busy-root-models) are project-authored MIT source for the `cibseven-2.2.0` profile; every schedule is answer-free and CIB Seven `2.2.0` supplies the retained answer. The other PC-SCOPE-06 cases are in [call-exceptional-return](../call-exceptional-return/README.md).
 
 ## Busy-root model
 
@@ -20,4 +20,16 @@ The root `Process_Dispatch` calls `Process_Ship` from `CallActivity_Ship`, which
 | [ship-failed-catch-after-pass](ship-failed-catch-after-pass.scenario.json) | `UserTask_Pack` writes `note` and `outcome` `failed`, so the Call's output and the boundary's code variable both write `reason` in one crossing (item 3). |
 | [ship-returned-normally](ship-returned-normally.scenario.json) | `UserTask_Pack` writes `note` and a shipped `outcome`, so `reason` comes from the normal return alone. |
 
-Called instances are addressed by the kernel's derived identifier. The schedules carry no expected variables, route or Process state; the retained CIB evidence is the answer.
+## Nested busy-root models
+
+These models serve [#76](https://github.com/mbackschat/bpmn-lean-experiment/issues/76). The root `Process_Assembly` calls `Process_Build` from `CallActivity_Build`, which maps `camunda:in` `seed` as `progress` and `camunda:out` `progress` as `progress`, then runs the Human Task `UserTask_AfterBuild`. `Process_Build` forks into the Human Task `UserTask_Frame`, which ends normally, and the Call `CallActivity_Wire` of `Process_Wire`, which has no boundary, no `camunda:inputOutput` and no `camunda:out`. `Process_Build` declares an interrupting Error Event Sub-Process for `PART_FAILED` whose body is the Human Task `UserTask_Recover`. `Process_Wire` runs the Human Task `UserTask_Wiring` and ends in an Error End `PART_FAILED` that nothing in it catches, so the Error reaches `Process_Build` through the nested Call, where the Event Sub-Process catches it. The [escalation twin](nested-busy-called-root-escalation.bpmn) replaces the Error pair by an Escalation End `PART_SLIPPED` and an interrupting Escalation Event Sub-Process; every other element and identifier is the same.
+
+The question is whether `progress` `a` reaches `Process_Assembly` when the raise reaches the busy called root `Process_Build` through a nested Call. CIB treats a Call Activity that is no Multi-Instance as a scope (`BpmnParse.java:3998-4005`), so its walk passes a scope level that the other models in this directory do not have. The second schedule is the control: the raise reaches `Process_Build` with no other path standing there.
+
+| Schedule | Model | Case it separates |
+|---|---|---|
+| [nested-raise-caught-at-busy-root](nested-raise-caught-at-busy-root.scenario.json) | nested-busy-called-root | The Process starts with `seed` `a`; `UserTask_Wiring` completes while `UserTask_Frame` is open, so the Error reaches the busy root `Process_Build`; `UserTask_Recover` and `UserTask_AfterBuild` complete. |
+| [nested-raise-after-sibling-ended](nested-raise-after-sibling-ended.scenario.json) | nested-busy-called-root | The control: `UserTask_Frame` completes first, so the failing path is the only one at `Process_Build` when the same Error is caught; the rest of the schedule is the same. |
+| [nested-escalation-caught-at-busy-root](nested-escalation-caught-at-busy-root.scenario.json) | nested-busy-called-root-escalation | The first schedule with an Escalation in place of the Error, which CIB walks by the same propagator. |
+
+Called instances are addressed by the kernel's derived identifier; the nested one carries the identifier of its caller. The schedules carry no expected variables, route or Process state; the retained CIB evidence is the answer.

@@ -1,0 +1,83 @@
+{
+  "kind": "scenario",
+  "id": "call-raised-outputs-nested-escalation-caught-at-busy-root",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "call-raised-outputs-nested-busy-called-root-escalation",
+    "relativePath": "scenarios/open-rows/call-raised-outputs/nested-busy-called-root-escalation.bpmn",
+    "sha256": "21a6d11c6c5958e5b1d7b5e3513ed54780111e7b68d2a69d1ce2083b6488a5c7",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "seed",
+          "value": {
+            "kind": "string",
+            "value": "a"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-wiring-fails",
+      "occurrence": {
+        "processInstanceId": "call:42:call:10:Instance_1:18:CallActivity_Build:1:17:CallActivity_Wire:1",
+        "elementId": "UserTask_Wiring",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-recover",
+      "occurrence": {
+        "processInstanceId": "call:10:Instance_1:18:CallActivity_Build:1",
+        "elementId": "UserTask_Recover",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s04-accept",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_AfterBuild",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.6",
+      "BPMN 2.0.2 §10.5.1",
+      "BPMN 2.0.2 §13.3.4",
+      "BPMN 2.0.2 §13.5.3"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/helper/EscalationHandler.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/tree/ActivityExecutionHierarchyWalker.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/tree/OutputVariablesPropagator.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/helper/BpmnExceptionHandler.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/pvm/runtime/PvmExecutionImpl.java"
+    ]
+  }
+}

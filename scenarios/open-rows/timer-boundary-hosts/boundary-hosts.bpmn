@@ -49,22 +49,6 @@
     <bpmn:userTask id="Chase_Receive" name="Chase the sender" />
     <bpmn:endEvent id="End_Chase_Receive" />
     <bpmn:endEvent id="End_Receive" />
-    <bpmn:serviceTask id="Host_Service" name="Call the registry" implementation="urn:bpmn-lean:effect:probe-v1" camunda:delegateExpression="${bpmnLeanEffectHandler}" camunda:asyncBefore="true" />
-    <bpmn:boundaryEvent id="Soft_Service" attachedToRef="Host_Service" cancelActivity="false">
-      <bpmn:timerEventDefinition>
-        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT4S</bpmn:timeDuration>
-      </bpmn:timerEventDefinition>
-    </bpmn:boundaryEvent>
-    <bpmn:userTask id="Nudge_Service" name="Note the slow registry" />
-    <bpmn:endEvent id="End_Nudge_Service" />
-    <bpmn:boundaryEvent id="Late_Service" attachedToRef="Host_Service">
-      <bpmn:timerEventDefinition>
-        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT8S</bpmn:timeDuration>
-      </bpmn:timerEventDefinition>
-    </bpmn:boundaryEvent>
-    <bpmn:userTask id="Chase_Service" name="Chase the registry" />
-    <bpmn:endEvent id="End_Chase_Service" />
-    <bpmn:endEvent id="End_Service" />
     <bpmn:callActivity id="Host_Call" name="Run the external check" calledElement="Process_Child" />
     <bpmn:boundaryEvent id="Remind_Call" attachedToRef="Host_Call" cancelActivity="false">
       <bpmn:timerEventDefinition>
@@ -139,12 +123,6 @@
     <bpmn:sequenceFlow id="Flow_Chase_Receive_End_Chase_Receive" sourceRef="Chase_Receive" targetRef="End_Chase_Receive" />
     <bpmn:sequenceFlow id="Flow_Host_Receive_End_Receive" sourceRef="Host_Receive" targetRef="End_Receive" />
     <bpmn:sequenceFlow id="Flow_Fork_Hosts_Host_Receive" sourceRef="Fork_Hosts" targetRef="Host_Receive" />
-    <bpmn:sequenceFlow id="Flow_Soft_Service_Nudge_Service" sourceRef="Soft_Service" targetRef="Nudge_Service" />
-    <bpmn:sequenceFlow id="Flow_Nudge_Service_End_Nudge_Service" sourceRef="Nudge_Service" targetRef="End_Nudge_Service" />
-    <bpmn:sequenceFlow id="Flow_Late_Service_Chase_Service" sourceRef="Late_Service" targetRef="Chase_Service" />
-    <bpmn:sequenceFlow id="Flow_Chase_Service_End_Chase_Service" sourceRef="Chase_Service" targetRef="End_Chase_Service" />
-    <bpmn:sequenceFlow id="Flow_Host_Service_End_Service" sourceRef="Host_Service" targetRef="End_Service" />
-    <bpmn:sequenceFlow id="Flow_Fork_Hosts_Host_Service" sourceRef="Fork_Hosts" targetRef="Host_Service" />
     <bpmn:sequenceFlow id="Flow_Remind_Call_Ping_Call" sourceRef="Remind_Call" targetRef="Ping_Call" />
     <bpmn:sequenceFlow id="Flow_Ping_Call_End_Ping_Call" sourceRef="Ping_Call" targetRef="End_Ping_Call" />
     <bpmn:sequenceFlow id="Flow_Late_Call_Chase_Call" sourceRef="Late_Call" targetRef="Chase_Call" />

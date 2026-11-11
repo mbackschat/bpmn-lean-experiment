@@ -3,9 +3,9 @@
   "id": "conditional-boundary-hosts-effect-host-condition",
   "profile": "cibseven-2.2.0",
   "bpmn": {
-    "id": "conditional-boundary-hosts",
-    "relativePath": "scenarios/open-rows/conditional-boundary-hosts/conditional-hosts.bpmn",
-    "sha256": "a678e65e35a55648e0a8febb7b93fba19976dc2c63feb575333795d7706f5a72",
+    "id": "conditional-boundary-hosts-effect-host",
+    "relativePath": "scenarios/open-rows/conditional-boundary-hosts/effect-host.bpmn",
+    "sha256": "242439b410ba2ed62474fdc36b89e939e5092019c2d0f0e2d4a3615e466ede96",
     "sourceOverlay": null
   },
   "stimuli": [
@@ -13,18 +13,7 @@
       "kind": "start",
       "commandId": "s01-start",
       "instanceId": "Instance_1",
-      "variables": [
-        {
-          "name": "items",
-          "value": {
-            "kind": "stringList",
-            "value": [
-              "a",
-              "b"
-            ]
-          }
-        }
-      ]
+      "variables": []
     },
     {
       "kind": "command",

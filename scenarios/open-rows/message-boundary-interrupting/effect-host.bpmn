@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_EffectHost"
+  targetNamespace="urn:bpmn-lean:scenarios:message-boundary-interrupting">
+  <bpmn:message id="Message_Abort" name="abort" />
+  <bpmn:process id="Process_EffectHost" name="Registry call with a message deadline" isExecutable="true">
+    <bpmn:startEvent id="Start_Hosts" />
+    <bpmn:parallelGateway id="Fork_Hosts" gatewayDirection="Diverging" />
+    <bpmn:userTask id="Keep_Open" name="Keep the instance open" />
+    <bpmn:endEvent id="End_Keep_Open" />
+    <bpmn:serviceTask id="Host_Service" name="Call the registry" implementation="urn:bpmn-lean:effect:probe-v1" camunda:delegateExpression="${bpmnLeanEffectHandler}" camunda:asyncBefore="true" />
+    <bpmn:endEvent id="End_Service" />
+    <bpmn:boundaryEvent id="Abort_Service" attachedToRef="Host_Service">
+      <bpmn:messageEventDefinition id="MED_Abort_Service" messageRef="Message_Abort" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handle_Abort_Service" name="Handle the abort" />
+    <bpmn:endEvent id="End_Abort_Service" />
+    <bpmn:sequenceFlow id="Flow_Start_Hosts_Fork_Hosts" sourceRef="Start_Hosts" targetRef="Fork_Hosts" />
+    <bpmn:sequenceFlow id="Flow_Fork_Hosts_Keep_Open" sourceRef="Fork_Hosts" targetRef="Keep_Open" />
+    <bpmn:sequenceFlow id="Flow_Keep_Open_End_Keep_Open" sourceRef="Keep_Open" targetRef="End_Keep_Open" />
+    <bpmn:sequenceFlow id="Flow_Fork_Hosts_Host_Service" sourceRef="Fork_Hosts" targetRef="Host_Service" />
+    <bpmn:sequenceFlow id="Flow_Host_Service_End_Service" sourceRef="Host_Service" targetRef="End_Service" />
+    <bpmn:sequenceFlow id="Flow_Abort_Service_Handle_Abort_Service" sourceRef="Abort_Service" targetRef="Handle_Abort_Service" />
+    <bpmn:sequenceFlow id="Flow_Handle_Abort_Service_End_Abort_Service" sourceRef="Handle_Abort_Service" targetRef="End_Abort_Service" />
+  </bpmn:process>
+</bpmn:definitions>

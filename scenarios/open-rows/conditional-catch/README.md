@@ -23,7 +23,7 @@ Answer-free schedules for [PC-CONDITION-03](../../../docs/PRACTICAL-CIB7-COVERAG
 | [message-wins-then-condition-changes](message-wins-then-condition-changes.scenario.json) | race | PC-CONDITION-03 | `approved` is `false` at the start; `Prepare` completes; the Message arm is delivered; `approved` is then set to `true` on `Rejected`; `Rejected` completes. |
 | [true-at-the-gateway](true-at-the-gateway.scenario.json) | race | PC-CONDITION-03 | `approved` is `true` at the start; `Prepare` completes and reaches the gateway; the Message arm is then delivered. |
 | [timer-wins-then-condition-changes](timer-wins-then-condition-changes.scenario.json) | race | PC-CONDITION-03 | `approved` is `false` at the start; `Prepare` completes; the Timer arm fires at 30,000; `approved` is then set to `true` on `Expired`; `Expired` completes. |
-| [gateway-two-true-arms](gateway-two-true-arms.scenario.json) | arms | PC-CONDITION-03 | `ready` is `true` at the start, so both arms are true when the token arrives; the schedule is the start alone. Separates the order of the gateway's Sequence Flows from the declaration order of its catch Events. No evidence yet. |
+| [gateway-two-true-arms](gateway-two-true-arms.scenario.json) | arms | PC-CONDITION-03 | `ready` is `true` at the start, so both arms are true when the token arrives; the schedule is the start alone. Separates the order of the gateway's Sequence Flows from the declaration order of its catch Events. |
 
 ## Notes for the target runners
 

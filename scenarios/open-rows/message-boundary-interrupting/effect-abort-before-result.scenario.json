@@ -3,9 +3,9 @@
   "id": "message-boundary-interrupting-effect-abort-before-result",
   "profile": "cibseven-2.2.0",
   "bpmn": {
-    "id": "message-boundary-interrupting",
-    "relativePath": "scenarios/open-rows/message-boundary-interrupting/message-hosts.bpmn",
-    "sha256": "68164368269900a949d7afd407852038844e7635d9742f62cf5b36aef60012f3",
+    "id": "message-boundary-interrupting-effect-host",
+    "relativePath": "scenarios/open-rows/message-boundary-interrupting/effect-host.bpmn",
+    "sha256": "a7f4e45f27ab6897ca6a3d55f94be525fbdccd53ba782212df4d3f20dcbc78ee",
     "sourceOverlay": null
   },
   "stimuli": [
@@ -13,18 +13,7 @@
       "kind": "start",
       "commandId": "s01-start",
       "instanceId": "Instance_1",
-      "variables": [
-        {
-          "name": "items",
-          "value": {
-            "kind": "stringList",
-            "value": [
-              "a",
-              "b"
-            ]
-          }
-        }
-      ]
+      "variables": []
     },
     {
       "kind": "deliver",

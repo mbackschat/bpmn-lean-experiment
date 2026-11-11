@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "message-boundary-interrupting",
     "relativePath": "scenarios/open-rows/message-boundary-interrupting/message-hosts.bpmn",
-    "sha256": "68164368269900a949d7afd407852038844e7635d9742f62cf5b36aef60012f3",
+    "sha256": "e53e357b6db75d6d130b12f99320507a24bf1e5b117d306ffc6f386dbc4088bd",
     "sourceOverlay": null
   },
   "stimuli": [

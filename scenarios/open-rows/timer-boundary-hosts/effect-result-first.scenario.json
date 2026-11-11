@@ -3,9 +3,9 @@
   "id": "timer-boundary-hosts-effect-result-first",
   "profile": "cibseven-2.2.0",
   "bpmn": {
-    "id": "timer-boundary-hosts",
-    "relativePath": "scenarios/open-rows/timer-boundary-hosts/boundary-hosts.bpmn",
-    "sha256": "0c52d58aee7767eda5ebf5626e454e7fffb7daf38247844b3c36dea091759787",
+    "id": "timer-boundary-hosts-effect-host",
+    "relativePath": "scenarios/open-rows/timer-boundary-hosts/effect-host.bpmn",
+    "sha256": "80fc3cc2cfe8c20f3d362d582e005fcee4ce4992faf4c7ccbb657b510a9de61a",
     "sourceOverlay": null
   },
   "stimuli": [

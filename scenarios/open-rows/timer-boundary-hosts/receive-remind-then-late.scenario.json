@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "timer-boundary-hosts",
     "relativePath": "scenarios/open-rows/timer-boundary-hosts/boundary-hosts.bpmn",
-    "sha256": "0c52d58aee7767eda5ebf5626e454e7fffb7daf38247844b3c36dea091759787",
+    "sha256": "fae4eee5320401362b09e472fd29c55f6e014f7f4e0038cef14a532fdc949e67",
     "sourceOverlay": null
   },
   "stimuli": [
