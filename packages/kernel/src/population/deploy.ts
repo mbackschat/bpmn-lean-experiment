@@ -8,11 +8,12 @@ import {
   elementHeader,
   elementStart,
   programChildren,
-  programElement,
+  programProcessOf,
   triggerMessage,
   valueSourceLiteral,
   type CalledProcess,
-  type ElementId,
+  type Header,
+  type MessageTrigger,
   type Program,
 } from "../il/types.js";
 import {
@@ -21,6 +22,42 @@ import {
   type DeploymentRef,
   type DeploymentResult,
   type Refusable,
+} from "./contract.js";
+
+// `Kernel/Population/Deploy.lean` imports `Contract` publicly, so its importers read the contract through it.
+export {
+  cascadeInstanceId,
+  commandIdOf,
+  CommandTag,
+  DefinitionSelectorTag,
+  DeploymentOutcomeTag,
+  FanOutEntryTag,
+  MessageAddressTag,
+  PublishMode,
+  ReceiverTag,
+  ResolutionTag,
+  startedInstanceId,
+  StimulusTag,
+  type Broadcast,
+  type Command,
+  type ConditionEvaluation,
+  type DefinitionSelector,
+  type Deployment,
+  type DeploymentRef,
+  type DeploymentResult,
+  type FanOutEntry,
+  type Instance,
+  type LedgerEntry,
+  type MessageAddress,
+  type Publication,
+  type Receiver,
+  type Refusable,
+  type Resolution,
+  type Result,
+  type StepResult,
+  type Stimulus,
+  type TimerOccurrence,
+  type TimerStart,
 } from "./contract.js";
 
 /**
@@ -38,7 +75,7 @@ function ownKeys(deploymentId: number, program: Program): readonly string[] {
 }
 
 /** The version a registered deployment gave `key`. */
-function versionOf(deployment: Deployment, key: string): number | null {
+export function versionOf(deployment: Deployment, key: string): number | null {
   return deployment.versions.find(([known]) => known === key)?.[1] ?? null;
 }
 
@@ -53,8 +90,13 @@ function namespaceOf(deployment: Deployment, key: string): string | null | undef
  * The current deployment of `key`: the last registered deployment whose root it is; redeploying a key supersedes its
  * earlier versions' start subscriptions (`BpmnDeployer.java:232-292`).
  */
-function current(registry: readonly Deployment[], key: string): Deployment | null {
+export function current(registry: readonly Deployment[], key: string): Deployment | null {
   return registry.filter((deployment) => deployment.key === key).at(-1) ?? null;
+}
+
+/** The current deployment of every key, in deploy order. */
+export function currentDeployments(registry: readonly Deployment[]): readonly Deployment[] {
+  return registry.filter((deployment) => current(registry, deployment.key)?.deploymentId === deployment.deploymentId);
 }
 
 /**
@@ -62,14 +104,10 @@ function current(registry: readonly Deployment[], key: string): Deployment | nul
  * lists, and every flow touching one of them.
  */
 function withoutCarried(program: Program, drop: (process: CalledProcess) => boolean): Program {
-  const roots = program.processes.filter(drop).flatMap((process) => process.children);
-  const topLevel = (fuel: number, id: ElementId): ElementId => {
-    const element = programElement(program, id);
-    const parent = element === null ? null : elementHeader(element).parent;
-    return fuel === 0 || parent === null ? id : topLevel(fuel - 1, parent);
-  };
-  const removed = program.elements.map(elementHeader).filter((header) => roots.includes(topLevel(program.elements.length, header.id)))
-    .map((header) => header.id);
+  const removed = program.elements.map(elementHeader).filter((header) => {
+    const process = programProcessOf(program, header);
+    return process !== null && drop(process);
+  }).map((header) => header.id);
   return {
     ...program,
     processes: program.processes.filter((process) => !drop(process)),
@@ -103,12 +141,20 @@ function stampCarried(
   return { ok: true, value: { ...process, definition: { ...definition, version } } };
 }
 
+/** A program's root Message starts with their triggers, in document order. */
+export function messageStarts(program: Program): readonly (readonly [Header, MessageTrigger])[] {
+  return programChildren(program, null).flatMap((element) => {
+    const started = elementStart(element);
+    const trigger = started?.[1].subscription?.trigger;
+    const sent = trigger === undefined ? null : triggerMessage(trigger);
+    return started === null || sent === null ? [] : [[started[0], sent] as const];
+  });
+}
+
 /** The literal names of a program's root Message starts. */
 function messageStartNames(program: Program): readonly string[] {
-  return programChildren(program, null).flatMap((element) => {
-    const trigger = elementStart(element)?.[1].subscription?.trigger;
-    const name = trigger === undefined ? null : triggerMessage(trigger)?.name ?? null;
-    const literal = name === null ? null : valueSourceLiteral(name);
+  return messageStarts(program).flatMap(([, trigger]) => {
+    const literal = trigger.name === null ? null : valueSourceLiteral(trigger.name);
     return literal === null ? [] : [literal];
   });
 }

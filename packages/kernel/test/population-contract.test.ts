@@ -1,9 +1,8 @@
 /**
  * The population runner's contract: deployments in deploy order, each taking the next deployment source, with versions
  * per process key; a program admission refuses or a source the reader refused as a `deploymentRefused` deployment; an
- * instance input addressing nothing deployed as `definition-not-deployed`; every command form it does not route as
- * `unsupported population-not-implemented`; each command at its given or inherited logical time; and the three harness
- * refusals of a malformed scenario.
+ * instance input addressing nothing deployed as `definition-not-deployed`; each command at its given or inherited logical
+ * time; and the three harness refusals of a malformed scenario.
  */
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -82,23 +81,15 @@ test("an instance step before its definition's deploy step is not deployed", () 
   assert.deepEqual((result.processStates as Json[]).map((state) => state.instanceId), ["J"]);
 });
 
-test("answers every command form it does not route as unsupported, each at its given or inherited time", () => {
+test("answers each command at its given or inherited time", () => {
   const result = run([program], ["a"], [
-    publish("by-name", { address: { definition: { deploymentId: 1 }, name: "M" }, at: 5 }),
-    publish("with-payload", { payload: { kind: "string", value: "x" } }),
-    publish("any-mode", { mode: "any" }),
     { kind: "broadcast", commandId: "broadcast", address: { name: "S" }, variables: [], at: 9 },
-    { kind: "evaluateConditions", commandId: "conditions", variables: [] },
-    { kind: "timerStart", commandId: "timer", deploymentId: 1, startEvent: "Start", dueMs: 3, at: 12 },
+    { kind: "broadcast", commandId: "again", address: { name: "S" }, variables: [] },
   ]);
-  const unsupported = { kind: "unsupported", code: "population-not-implemented" };
+  const unreceived = { kind: "fanOut", entries: [] };
   assert.deepEqual(result.steps, [
-    { commandId: "by-name", ordinal: 1, at: 5, resolution: unsupported },
-    { commandId: "with-payload", ordinal: 2, at: 5, resolution: unsupported },
-    { commandId: "any-mode", ordinal: 3, at: 5, resolution: unsupported },
-    { commandId: "broadcast", ordinal: 4, at: 9, resolution: unsupported },
-    { commandId: "conditions", ordinal: 5, at: 9, resolution: unsupported },
-    { commandId: "timer", ordinal: 6, at: 12, resolution: unsupported },
+    { commandId: "broadcast", ordinal: 1, at: 9, resolution: unreceived },
+    { commandId: "again", ordinal: 2, at: 9, resolution: unreceived },
   ]);
 });
 

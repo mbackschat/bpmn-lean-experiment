@@ -44,7 +44,7 @@ import {
   type Resolution,
   type Result as PopulationResult,
   type Stimulus,
-} from "../population/contract.js";
+} from "../population.js";
 import { arrayField, field, referenceJson, requiredString, stimulusOf, type ScenarioStimulus } from "./wire.js";
 /** A scenario's BPMN resource (`{id, sha256, sourceOverlay}`) under the scenario's profile. */
 export function definitionRefFromJson(resource: unknown, profile: string, where: string): DeploymentRef {
@@ -278,12 +278,12 @@ function instanceStimulus(declared: readonly Declared[], scripts: Script[], json
   const index = scripts.findIndex((known) => known.instanceId === script.instanceId);
   if (index === -1) {
     scripts.push(script);
-    return { tag: StimulusTag.Input, script: scripts.length - 1, definitionRef: script.definitionRef, commandId, input };
+    return { tag: StimulusTag.Input, instanceId: script.instanceId, definitionRef: script.definitionRef, commandId, input };
   }
   if (scripts[index]?.definitionRef !== script.definitionRef) {
     throw new Error(`${where}: instance ${script.instanceId} names two definitions`);
   }
-  return { tag: StimulusTag.Input, script: index, definitionRef: script.definitionRef, commandId, input };
+  return { tag: StimulusTag.Input, instanceId: script.instanceId, definitionRef: script.definitionRef, commandId, input };
 }
 
 function failureFields(failure: Failure): Record<string, JsonValue> {

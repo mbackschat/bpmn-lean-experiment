@@ -172,8 +172,8 @@ def instanceStimulus (declared : List Declared) (scripts : List Script) (json : 
   | some index =>
     unless (scripts[index]?.map (·.definitionRef)) == some script.definitionRef do
       throw s!"instance {script.instanceId} names two definitions"
-    pure (scripts, .input index script.definitionRef commandId input)
-  | none => pure (scripts ++ [script], .input scripts.length script.definitionRef commandId input)
+    pure (scripts, .input script.instanceId script.definitionRef commandId input)
+  | none => pure (scripts ++ [script], .input script.instanceId script.definitionRef commandId input)
 
 /-- The population's stimuli, in scenario order: the definitions no `deploy` step names deploy at 0 in list order,
 then every step at its logical time, which a step gives as `at` or inherits from the step before (0 for the first) and

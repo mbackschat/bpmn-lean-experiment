@@ -800,6 +800,46 @@ BPMN 2.0.2 Table 10.100 lets an event reference its Signal by `signalRef`, a QNa
 
 **Boundary:** Intermediate Signal catches, Event-Based Gateway arms and Signal throws (PC-SIGNAL-01, PC-SIGNAL-02); root Signal starts as PC-SIGNAL-02 admits them. Two Signals of one document with one name, and two subscriptions of one name in one CIB event scope, which CIB refuses at deployment, are CIB-LIM-0026. Signal boundaries and Event Sub-Process starts stay refused (`boundary.signal`, `start.signal`, PC-SIGNAL-03).
 
+### CIB-INT-0029 — a Timer start counts from its deployment and fires each occurrence once while the deployment is current
+
+**Status:** Recorded bounded interpretation from the pinned source; selected by every profile
+
+BPMN 2.0.2 lets a Timer start a Process at a date, after a duration or by a cycle (Table 10.84, Table 10.101) but names no reference instant for a duration or an undated cycle on a top-level Start Event, and has no deployments. CIB Seven `2.2.0` computes a Timer-start job's due date from the deployment instant, anchors an undated cycle there, deletes every Timer-start job of a key it redeploys and runs the job at the clock of its firing. The kernel makes the origin and the due instants population semantics: a duration and an undated cycle count from the deployment's logical deploy time, a date is absolute, also before the deployment, and a Cron expression matches strictly after the origin. A `timerStart` names an occurrence by its due instant and commits only when that instant is one of the schedule's (`timer-occurrence-unknown`), the firing time is not before it (`timer-not-due`), the deployment is still current for its key (`timer-start-superseded`) and the occurrence is unconsumed (`timer-start-occurrence-consumed`). The started instance takes the firing time and the identity `timer:<len>:<deploymentId>:<len>:<startEvent>:<dueMs>`, so one occurrence never starts two instances. CIB agrees on the origin and on every due instant of an on-time firing; after a late cycle firing it skips the missed grid points (CIB-DEV-0008).
+
+**Evidence:** Pinned `bpmn/deployer/BpmnDeployer.java:144-146`, `:232-258`, `jobexecutor/TimerDeclarationImpl.java:109-153`, `:170-190`, `jobexecutor/TimerStartEventJobHandler.java:38-63`, `persistence/entity/TimerEntity.java:178-183`; kernel witnesses in `packages/kernel/test/population-timers.test.ts`.
+
+**Boundary:** Root Timer starts whose schedule `Timer.resolve` offers a host. Schedule identity, catch-up of missed occurrences and overlap stay host and product policy (`TSTART-SCHEDULE-01`).
+
+### CIB-INT-0030 — a Signal reaches a snapshot of its receivers, waiting catches by instance before starts
+
+**Status:** Recorded bounded interpretation from the pinned source; selected by every profile
+
+BPMN 2.0.2 broadcasts a Signal "to any Process that can receive" it (Table 10.88) and lets any catching Event in any scope receive a published trigger (§10.5.1), but names neither which receivers one broadcast reaches when receivers appear during it nor their order. CIB Seven `2.2.0` lists the subscriptions of the name once per API broadcast or throw before delivering to any, and an API broadcast notifies the waiting catches before it starts instances; within each group, and for a throw altogether, the list comes from a `HashSet`. The kernel reaches the snapshot taken when each delivery begins (an API `broadcast`, or each intent of a cascade), so a receiver armed during it is not reached, in the command's explicit `order` when it gives one, else in a fixed linearization: open Signal items of running instances, instances by instance identifier and items in arming order, then root Signal starts, deployments in deploy order and starts in document order. Within one State the linearization decides which of two same-Signal catches or Event-Based arms fires when the first one's continuation withdraws the second; the other is `skipped`. CIB-compared witnesses avoid order within one State.
+
+**Evidence:** Pinned `cmd/SignalEventReceivedCmd.java:75`, `:84-85`, `persistence/entity/EventSubscriptionManager.java:94-105`, `bpmn/behavior/ThrowSignalEventActivityBehavior.java:53-56`; kernel witnesses in `packages/kernel/test/population-signals.test.ts`. No retained CIB answer yet: the runner has no population mode.
+
+**Boundary:** Signal broadcasts and thrown Signals' intents across the instances of one tenant-less population (PC-SIGNAL-04); receivers in the thrower's own State fire inside the throwing step (CIB-OP-0019).
+
+### CIB-INT-0031 — a triggered start reaches the current deployment of its key unless the command names one deployment
+
+**Status:** Recorded bounded interpretation from the pinned source; selected by every profile
+
+BPMN 2.0.2 has no deployments or versions: each occurrence of a Start Event creates a new Process instance (§13.2, §10.5.6), without saying which of several deployed copies of one Process it instantiates. CIB Seven `2.2.0` numbers a key's versions by deployment and, when a key is redeployed, deletes the previous version's Message, Signal and Conditional start subscriptions and its Timer-start jobs, so a triggered start reaches the latest version unless the request names one process definition (`correlateStartMessage` and `evaluateStartConditions` with a `processDefinitionId`). The kernel's population makes the same choice: a start a command triggers reaches, per key, the last deployment of that key earlier in step order; a `{processKey}` selector names that current deployment and a `{deploymentId}` selector one exact deployment, superseded or not. The started instance takes the command's logical time and the identity `start:<len>:<commandId>:<len>:<deploymentId>:<len>:<startEvent>`, so a command starts at most one instance per deployment and start Event.
+
+**Evidence:** Pinned `bpmn/deployer/BpmnDeployer.java:144-146`, `:232-238`, `:251-292`, `runtime/DefaultCorrelationHandler.java:154-165`, `:206-218`, `runtime/DefaultConditionHandler.java:46-50`, `:86-105`, `jobexecutor/TimerStartEventJobHandler.java:43-44`, `:54-58`; kernel witnesses in `packages/kernel/test/population-messages.test.ts`. CIB-compared population witnesses wait for the runner's population mode.
+
+**Boundary:** Root Message starts a publication reaches (PC-MESSAGE-02) and root Timer starts (PC-TIMER-04, CIB-INT-0029), root Signal starts a broadcast or intent reaches (PC-SIGNAL-04) and root Conditional starts an `evaluateConditions` reaches (PC-CONDITION-02). Instances of a superseded deployment keep running, and a publication still reaches their waiting subscriptions.
+
+### CIB-INT-0032 — a publication's definition selector restricts its waiting receivers too
+
+**Status:** Recorded source disagreement from the pinned source; selected by every profile
+
+BPMN 2.0.2 routes a Message to a waiting subscription or to a start of the Process it addresses (§13.2, §8.4.2) and has no deployment selector. CIB Seven `2.2.0` accepts a process definition only on a start-only correlation: every correlation that may reach executions throws when a `processDefinitionId` is set, so CIB never restricts its execution search to one definition. The kernel gives the selector one meaning in every mode: it resolves to one deployment (`{processKey}` the current one, `{deploymentId}` that one) and restricts both the waiting receivers and the start candidates to it; without a selector both range over the whole population. CIB has no answer for a selector outside start-only mode, so the CIB runner never issues one and CIB-compared witnesses avoid the combination.
+
+**Evidence:** Pinned `MessageCorrelationBuilderImpl.java:249-257`, `:320-324`; kernel witness `packages/kernel/test/population-messages.test.ts` (a start-only publication by key and by deployment).
+
+**Boundary:** Message publications in `any` and `executionsOnly` mode carrying a definition selector; a start-only publication with a selector is CIB-INT-0031.
+
 ## Known limitation register
 
 ### CIB-LIM-0001: standard sequential Multi-Instance output aggregation is absent
@@ -1093,6 +1133,26 @@ BPMN 2.0.2 names no deployment and no rule that two processes' Message starts mu
 **Evidence:** Pinned `BpmnDeployer.java:328-363`; the kernel test `packages/kernel/test/population-deploy.test.ts`. No retained CIB answer yet: the runner has no population mode.
 
 **Boundary:** Root Message starts of each deployment's root process in one tenant-less population; a called process's starts are never a population's start addresses.
+
+### CIB-LIM-0029 — CIB commits every receiver of one stimulus together, the kernel each receiver on its own
+
+**Status:** Profile limitation selected by the cibseven profiles; not a deviation
+
+BPMN 2.0.2 states no transaction across process instances: each instance a Signal or a Conditional start reaches is independent (Table 10.88: a Signal is broadcast "to any Process that can receive"). The kernel commits each receiver of one stimulus as its own unit under every profile: each instance start of a Conditional start evaluation and each catch delivery and start of a broadcast or a thrown Signal. A failing receiver is its own `failed {target, outcome, code}` entry and changes only itself; the stimulus's other receivers and the emitter's command keep their results. CIB Seven `2.2.0` runs them in one command transaction, so one failing receiver rolls back every other receiver and the emitter.
+
+**Evidence:** Pinned `cmd/EvaluateStartConditionCmd.java:56-83`, `cmd/SignalEventReceivedCmd.java:73-86`, `bpmn/behavior/ThrowSignalEventActivityBehavior.java:53-61`; the kernel tests `packages/kernel/test/population-conditions.test.ts` and `population-signals.test.ts`. No retained CIB answer yet: the runner has no population mode.
+
+**Boundary:** Stimuli with more than one receiver in one tenant-less population, where a receiver fails beside another receiver or the emitter; the ledger owner of every such witness.
+
+### CIB-LIM-0030 — the kernel finishes a thrower's step before other instances receive its Signal
+
+**Status:** Profile limitation selected by the cibseven profiles; not a deviation
+
+BPMN 2.0.2 sends a thrown Signal when the throw Event is reached (§13.5.6) and states no order between the thrower's continuation and the receivers in other Processes. CIB Seven `2.2.0` delivers to every other instance's subscription inside the throw and only then lets the thrower leave, so the thrower's continuation has not run when a receiver rethrows. The kernel publishes a throw's intent with its committed step: other instances receive it after the thrower has continued to its next wait. When a receiver rethrows a Signal the thrower's continuation waits for, the kernel delivers it to the thrower, CIB does not. Separating witness: A throws S1 and then reaches a catch of S2; B's catch of S1 rethrows S2.
+
+**Evidence:** Pinned `bpmn/behavior/ThrowSignalEventActivityBehavior.java:53-61`. No retained CIB answer yet: the runner has no population mode.
+
+**Boundary:** Thrown Signals reaching other instances in one tenant-less population (PC-SIGNAL-04); the ledger owner of every witness whose receiver rethrows to a catch the thrower's continuation arms.
 
 ### CIB-LIM-0031 — a Call binds its callee when its caller is deployed, CIB at each invocation
 
@@ -1645,11 +1705,11 @@ BPMN 2.0.2 §10.5.1 gives a Signal no data for its catchers; under `SignalPayloa
 
 **Status:** Optional CIB extension; selected by `ConditionalStart.submittedContext` through the cibseven profiles
 
-BPMN 2.0.2 Table 10.84 lets a Conditional Start Event's condition refer only to "static Process attributes and states of entities in the environment" and leaves the mechanism that accesses those states out of scope, so the standard defines no input that makes a root Conditional start true. CIB Seven `2.2.0` evaluates root Conditional starts on an API request (`evaluateStartConditions`) that submits variables and optionally names one definition and a business key: each condition is evaluated in a temporary execution holding only the submitted variables; a `camunda:variableName` the request does not submit makes the start false; an absent variable or property reads false and a `null` or non-Boolean result fails the request; every true start creates one instance with the business key and all submitted variables, and the handler keeps no state between requests. Under `submittedContext` the kernel evaluates a root Conditional start the same way over a start input's variables alone (`Hooks.startsFired`), with the Events-level predicate rules of CIB-INT-0025 (`condition-not-boolean`, rolled back); a start input that names one start evaluates only that start, and an unnamed one starts the single true start (`start-ambiguous` for several, `no-start-event` for none). Under `refused` (the standards profile) a root Conditional start is refused (`start.condition`). BPMN's rule that a condition must become false and then true again is not claimed: each request is independent. `camunda:variableEvents` on a root start, which CIB deploys and ignores, is refused under every profile (`start.condition.variableEvents`), and two root Conditional starts of one process with one predicate are CIB-LIM-0027.
+BPMN 2.0.2 Table 10.84 lets a Conditional Start Event's condition refer only to "static Process attributes and states of entities in the environment" and leaves the mechanism that accesses those states out of scope, so the standard defines no input that makes a root Conditional start true. CIB Seven `2.2.0` evaluates root Conditional starts on an API request (`evaluateStartConditions`) that submits variables and optionally names one definition and a business key: each condition is evaluated in a temporary execution holding only the submitted variables; a `camunda:variableName` the request does not submit makes the start false; an absent variable or property reads false and a `null` or non-Boolean result fails the request; every true start creates one instance with the business key and all submitted variables, and the handler keeps no state between requests. Under `submittedContext` the kernel evaluates a root Conditional start the same way over a start input's variables alone (`Hooks.startsFired`), with the Events-level predicate rules of CIB-INT-0025 (`condition-not-boolean`, rolled back); a start input that names one start evaluates only that start, and an unnamed one starts the single true start (`start-ambiguous` for several, `no-start-event` for none). A population's `evaluateConditions` evaluates every root Conditional start of the selected deployment, or of each key's current deployment, and starts one instance at each true start, each start its own unit of commitment (CIB-LIM-0029); none in scope is `rejected no-conditional-start`, as CIB fails such a request. Under `refused` (the standards profile) a root Conditional start is refused (`start.condition`). BPMN's rule that a condition must become false and then true again is not claimed: each request is independent. `camunda:variableEvents` on a root start, which CIB deploys and ignores, is refused under every profile (`start.condition.variableEvents`), and two root Conditional starts of one process with one predicate are CIB-LIM-0027.
 
 **Evidence:** Pinned `cmd/EvaluateStartConditionCmd.java:49-83`, `runtime/DefaultConditionHandler.java:44-134`, `el/UelExpressionCondition.java:49-67`; retained `conditional-start-compositions/large-order-*` and `expedited-order-*`, which agree once the profile selects this entry.
 
-**Boundary:** Root Conditional start Events of the root process, started by a single-instance start input. Event Sub-Process and intermediate Conditional Events stay CIB-EXT-0035.
+**Boundary:** Root Conditional start Events of the root process, started by a single-instance start input or a population's `evaluateConditions` in one tenant-less population. Event Sub-Process and intermediate Conditional Events stay CIB-EXT-0035.
 
 ### CIB-EXT-0045 — a Call names its callee by key text and binds a deployment, a version or a version tag
 

@@ -153,13 +153,14 @@ structure Instance where
   deployment : Deployment
   state : State
 
-/-- One population scenario stimulus, in scenario order: a deployment, an input for the instance of `script`, or a
-command with its logical time and the digest of its canonical wire form, which the harness computes. -/
+/-- One population scenario stimulus, in scenario order: a deployment, an input for the instance `instanceId` (one the
+input starts, or one a step or a command started before), or a command with its logical time and the digest of its
+canonical wire form, which the harness computes. -/
 inductive Stimulus where
   | deploy (definitionRef : String) (ref : DeploymentRef) (program : Program) (atMs : Nat)
   /-- A deployment whose program the reader or the assembly refused with `code`. -/
   | deployRefused (definitionRef : String) (ref : DeploymentRef) (code : String) (atMs : Nat)
-  | input (script : Nat) (definitionRef : String) (commandId : String) (input : Input)
+  | input (instanceId : String) (definitionRef : String) (commandId : String) (input : Input)
   | command (command : Command) (atMs : Nat) (digest : String)
 
 structure Result where
@@ -170,8 +171,22 @@ structure Result where
   /-- The instance inputs that did not commit, with their failures. -/
   inputFailures : List (String × Failure)
 
-/-- dynamic-only: a command form the population runner does not route yet; it is a scenario stimulus, not a program
-shape, so no admission refusal can stand for it. -/
-def notImplemented : Resolution := .unsupported "population-not-implemented"
+/-- The identity of the instance a command starts at `startEvent` of a deployment (population contract §4): each part
+prefixed by its UTF-8 byte length, as `State.calledInstanceId`, so a command starts at most one instance per deployment
+and start Event and a retried command can never start a second one. -/
+def startedInstanceId (commandId : String) (deploymentId : Nat) (startEvent : String) : String :=
+  let deployment := toString deploymentId
+  s!"start:{commandId.utf8ByteSize}:{commandId}:{deployment.utf8ByteSize}:{deployment}:" ++
+    s!"{startEvent.utf8ByteSize}:{startEvent}"
+
+/-- The identity of the instance a thrown Signal's intent starts at `startEvent` of a deployment, in the cascade the
+command `commandId` began (population contract §4): `startedInstanceId`'s parts, then the throw's own occurrence
+`emitter` as one length-prefixed key `<len>:<processInstanceId>:<len>:<publicElementId>:<activation>`, written as
+`State.calledInstanceId` writes an occurrence, so two throws of one cascade never start the same instance. -/
+def cascadeInstanceId (commandId : String) (deploymentId : Nat) (startEvent : String) (emitter : OccurrenceRef) :
+    String :=
+  let key := s!"{emitter.processInstanceId.utf8ByteSize}:{emitter.processInstanceId}:" ++
+    s!"{emitter.element.value.utf8ByteSize}:{emitter.element.value}:{emitter.activation}"
+  s!"{startedInstanceId commandId deploymentId startEvent}:{key.utf8ByteSize}:{key}"
 
 end Kernel.Population

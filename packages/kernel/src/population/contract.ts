@@ -3,7 +3,7 @@
  * answers: deployments, stimuli, commands, their resolutions and the run's result
  * ([specification](../../../../docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md)).
  */
-import { assertNever, type Program, type Value } from "../il/types.js";
+import { assertNever, utf8ByteSize, type Program, type Value } from "../il/types.js";
 import type {
   Binding,
   CorrelationMatch,
@@ -260,7 +260,7 @@ export type Stimulus =
     }
   | {
       readonly tag: StimulusTag.Input;
-      readonly script: number;
+      readonly instanceId: string;
       readonly definitionRef: string;
       readonly commandId: string;
       readonly input: Input;
@@ -277,7 +277,24 @@ export interface Result {
 }
 
 /**
- * dynamic-only: a command form the population runner does not route yet; it is a scenario stimulus, not a program
- * shape, so no admission refusal can stand for it.
+ * The identity of the instance a command starts at `startEvent` of a deployment (population contract §4): each part
+ * prefixed by its UTF-8 byte length, as `calledInstanceId`, so a command starts at most one instance per deployment and
+ * start Event and a retried command can never start a second one.
  */
-export const notImplemented: Resolution = { tag: ResolutionTag.Unsupported, code: "population-not-implemented" };
+export function startedInstanceId(commandId: string, deploymentId: number, startEvent: string): string {
+  const deployment = String(deploymentId);
+  return `start:${utf8ByteSize(commandId)}:${commandId}:${utf8ByteSize(deployment)}:${deployment}:` +
+    `${utf8ByteSize(startEvent)}:${startEvent}`;
+}
+
+/**
+ * The identity of the instance a thrown Signal's intent starts at `startEvent` of a deployment, in the cascade the
+ * command `commandId` began (population contract §4): `startedInstanceId`'s parts, then the throw's own occurrence
+ * `emitter` as one length-prefixed key `<len>:<processInstanceId>:<len>:<publicElementId>:<activation>`, written as
+ * `calledInstanceId` writes an occurrence, so two throws of one cascade never start the same instance.
+ */
+export function cascadeInstanceId(commandId: string, deploymentId: number, startEvent: string, emitter: OccurrenceRef): string {
+  const key = `${utf8ByteSize(emitter.processInstanceId)}:${emitter.processInstanceId}:` +
+    `${utf8ByteSize(emitter.element)}:${emitter.element}:${emitter.activation}`;
+  return `${startedInstanceId(commandId, deploymentId, startEvent)}:${utf8ByteSize(key)}:${key}`;
+}

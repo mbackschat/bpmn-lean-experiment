@@ -36,16 +36,14 @@ earlier versions' start subscriptions (`BpmnDeployer.java:232-292`). -/
 def current (registry : List Deployment) (key : String) : Option Deployment :=
   (registry.filter (·.key == key)).getLast?
 
+/-- The current deployment of every key, in deploy order. -/
+def currentDeployments (registry : List Deployment) : List Deployment :=
+  registry.filter fun deployment => (current registry deployment.key).any (·.deploymentId == deployment.deploymentId)
+
 /-- The program without the carried processes `drop` refuses: each process, every element whose top-level ancestor it
 lists, and every flow touching one of them. -/
 def withoutCarried (program : Program) (drop : CalledProcess → Bool) : Program :=
-  let roots := (program.processes.filter drop).flatMap (·.children)
-  let rec topLevel (fuel : Nat) (id : ElementId) : ElementId :=
-    match fuel, (program.element? id).bind (·.header.parent) with
-    | 0, _ | _, none => id
-    | fuel + 1, some parent => topLevel fuel parent
-  let removed := (program.elements.filter fun element =>
-    roots.contains (topLevel program.elements.length element.header.id)).map (·.header.id)
+  let removed := (program.elements.filter fun element => (program.processOf element.header).any drop).map (·.header.id)
   { program with
     processes := program.processes.filter (!drop ·)
     elements := program.elements.filter (!removed.contains ·.header.id)
@@ -70,10 +68,14 @@ def stampCarried (registry : List Deployment) (deploymentId : Nat) (versions : L
       else .error "population.callee.stamp"
     | none => .error "population.callee.stamp"
 
+/-- A program's root Message starts with their triggers, in document order. -/
+def messageStarts (program : Program) : List (Header × MessageTrigger) :=
+  ((program.children none).filterMap Element.start?).filterMap fun (header, start) =>
+    (start.subscription.bind (·.trigger.message?)).map (header, ·)
+
 /-- The literal names of a program's root Message starts. -/
 def messageStartNames (program : Program) : List String :=
-  ((program.children none).filterMap Element.start?).filterMap fun (_, start) =>
-    ((start.subscription.bind (·.trigger.message?)).bind (·.name)).bind ValueSource.literal?
+  (messageStarts program).filterMap fun (_, trigger) => trigger.name.bind ValueSource.literal?
 
 /-- Under `MessageNames.addresses` a root Message start name is unique across the current deployments of other keys:
 CIB refuses deploying one another key's current deployment already subscribes (`BpmnDeployer.java:328-363`,
