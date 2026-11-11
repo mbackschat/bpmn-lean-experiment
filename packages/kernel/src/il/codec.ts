@@ -112,7 +112,7 @@ import {
 import type { Binding } from "../state.js";
 import { decisionResource } from "./codec/decision.js";
 import {
-  accept, bool, entriesFromJson, entryToJson, inductive, isObject, list, mapDecoded, members, nat, nullary, objVal, objValD,
+  accept, bool, entriesFromJson, entryToJson, inductive, isObject, list, mapDecoded, members, nat, objVal, objValD,
   option, pair, refuseDecoding, string, struct, valueCodec, type Codec, type Decoded, type JsonValue,
 } from "./codec/value.js";
 export { accept, isObject, mapDecoded, nat, objVal, objValD, refuseDecoding, string, valueCodec, type Decoded, type JsonValue };

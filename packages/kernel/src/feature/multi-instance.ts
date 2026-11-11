@@ -54,7 +54,6 @@ import {
   enterScope,
   failed,
   leaveOutgoing,
-  root,
   signal,
   type BeginRequest,
   type Binding,

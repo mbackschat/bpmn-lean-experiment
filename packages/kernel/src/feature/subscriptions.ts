@@ -28,7 +28,6 @@ import {
   elementEnvelope,
   elementEvent,
   elementGateway,
-  elementHeader,
   elementScope,
   elementStart,
   eventPayloadCatch,

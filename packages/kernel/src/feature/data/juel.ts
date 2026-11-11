@@ -6,7 +6,7 @@
  * Integers are 64-bit `bigint`s carrying their Java class; a rule that would build a Double, or reach a Java surface the
  * kernel does not represent, ends as `unsupported`. Strings are indexed and ordered in UTF-16 code units, as Java does.
  */
-import { ValueTag, assertNever, integerLexeme, isAscii, parseJavaInt, type Value } from "../../il/types.js";
+import { assertNever, integerLexeme, isAscii, parseJavaInt, type Value } from "../../il/types.js";
 import {
   JuelBinary, JuelCallTag, JuelMethod, JuelNodeTag, JuelUnary, juelMethodCounts, type JuelCallNode, type JuelNode,
 } from "../../il/types/juel.js";

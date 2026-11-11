@@ -2,7 +2,7 @@
  * Kernel inputs, transcribed from `Kernel/State/Input.lean`: the inputs a host submits, the occurrence identities they
  * name and the start triggers and deliveries they carry. Part of `state.ts`, which re-exports it.
  */
-import { type ElementId, TechnicalFailure, type Trigger, type Value } from "../il/types.js";
+import { type ElementId, type Value } from "../il/types.js";
 import { type Binding, InputTag, type MessageChannel, type SignalAddress } from "./wait.js";
 
 /** The public identity of an occurrence: its process instance, the element and its activation number. */

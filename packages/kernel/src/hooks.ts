@@ -10,7 +10,6 @@
 import {
   MappingDialect,
   OutputContext,
-  ValueSourceTag,
   ValueTag,
   assertNever,
   compareStrings,
