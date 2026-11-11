@@ -48,7 +48,7 @@ import org.cibseven.bpm.model.bpmn.instance.TimerEventDefinition;
  *
  * <p>A subscription without an activity instance of its own (a Timer, Message, Signal or Conditional boundary Event,
  * Event Sub-Process start, or arm of an Event-Based Gateway) is numbered by counting the kernel's reservations of its
- * element (CIB-OP draft, PC-TIMER-06): each activation of its host reserves one, observed or not; a cycle successor
+ * element (CIB-OP-0018): each activation of its host reserves one, observed or not; a cycle successor
  * reserves one when the runner fires its predecessor; a firing whose subscription stays open (a repeating Message)
  * begins a fresh one; a firing that closes its subscription begins that subscription's own. A begin the runner did not
  * drive (a Conditional or Signal firing) takes a fresh activation when its element does not interrupt, otherwise the

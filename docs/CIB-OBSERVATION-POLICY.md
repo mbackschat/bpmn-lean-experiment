@@ -155,4 +155,6 @@ The CIB runner fills the state in `CibSevenStateProjector` (status, logical time
 
 Retained `stateQueries` bind canonical status, logical time, and the root scope's Process-variable projection to raw public runtime/history queries and the controlled engine clock; `CibSevenStateProjector.rootVariables` reads every root-scope variable from history rather than a name set derived from commands. The task, Message-subscription, timer, effect and incident job snapshots retain the raw rows from which `CibSevenOpenWaitProjector` projects `openWaits`. No TypeScript consumer reads these snapshots: the runner's projector owns the projection, and the hosted lane reproduces every retained result from them.
 
+Some command outcomes are `adapter-decided` too: `CibSevenCommandExecutor.timerFire` answers `rejected` without a CIB call when no open Timer wait matches the named occurrence, when the firing's deadline is not the wait's, when its `at` is before the deadline, or when `at` would move the controlled clock backwards. These are preconditions of the scenario protocol, not CIB observations.
+
 Neutral projection does not increase source-binding independence. The raw Camunda binding to neutral protocol/operation translation is performed once by the kernel reader; neither kernel derives that translation from source bytes.

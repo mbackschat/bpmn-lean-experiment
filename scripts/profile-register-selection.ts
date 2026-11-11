@@ -3,7 +3,8 @@
  * behaviour only through a profile's relationship list (`kernelProfileOptions` reads nothing else), so a register entry
  * that calls itself selected while no profile lists it claims behaviour the kernel does not run. The class was found
  * three times in wave 1 (CIB-INT-0012, -0015, -0016, CIB-LIM-0007; CIB-INT-0017; CIB-LIM-0014 and -0015 landing after
- * their behaviour), which makes it a guard.
+ * their behaviour), which makes it a guard. Wave 2 found it again behind a "Recorded" prefix (CIB-INT-0023 to -0025), so
+ * a selection claim anywhere in the status counts.
  */
 import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
@@ -22,13 +23,18 @@ export function registerStatuses(register: string): ReadonlyMap<string, string> 
   return statuses;
 }
 
+/** Whether a status claims that some profile selects its entry; "not selected", "selected by no profile" and "no … selected" do not. */
+export function claimsSelection(status: string): boolean {
+  return /\bselected\b/iu.test(status) && !/\bnot selected\b|\bselected by no profile\b|\bno\b[^;]*\bselected\b/iu.test(status);
+}
+
 /** The violations of the selection contract; empty when the profile data and the register agree. */
 export function selectionViolations(inputs: SelectionInputs): string[] {
   const statuses = registerStatuses(inputs.register);
   const violations: string[] = [];
   const listedBy = (id: string) => [...inputs.profiles].filter(([, ids]) => ids.has(id)).map(([profile]) => profile);
   for (const [id, status] of statuses) {
-    if (status.startsWith("Selected") && listedBy(id).length === 0) {
+    if (claimsSelection(status) && listedBy(id).length === 0) {
       violations.push(`${id}: status says selected, but no profile lists it`);
     }
     for (const link of status.matchAll(/\.\.\/profiles\/([^/)]+)\/profile\.json/gu)) {

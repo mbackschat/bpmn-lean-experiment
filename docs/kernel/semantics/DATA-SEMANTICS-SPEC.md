@@ -57,6 +57,7 @@ How values are carried, read, copied into Activities and Scopes and written back
 - Structured values keep multiplicity, order, Map keys, Decimal scale and present nulls through every frame, snapshot, result, called root and restoration; every copy across a boundary is by value ([CSSD-VALUE-01][cssd-rules], [NSD-VALUE-01][nsd-rules], [normative basis][cssd-norm]).
 - CIB also runs outputs when a scope is destroyed abnormally; outputs at normal completion only is a restriction, and the abnormal-exit output policy belongs to the interruption and Error rows ([normative basis][nsd-norm]).
 - An End and a sibling path's declared Scope entry are unordered by BPMN (§10.5.3, §13.5.6); both orders give one state, data or not ([normative basis][dtb-norm], [DTB-ADMIT-01, DTB-COMMUTE-01][dtb-rules]).
+- A variable command naming a waiting occurrence acts from that occurrence's own scope, its local or child frame when it has one, else the enclosing frame: `setVariables` writes each name outward from there, so an input-mapped local is rewritten in place, and `removeVariables` removes each name from the nearest frame on the chain that declares it; CIB's `setVariables` and `removeVariables` on the waiting activity's execution do the same (`AbstractVariableScope#setVariable`, `#removeVariable`).
 - Every refusal leaves state, frames, waits and snapshots unchanged ([NSD-REFUSE-01][nsd-rules], [CSD-REFUSE-01][csd-rules], [CSSD-REFUSE-01][cssd-rules]).
 
 ### Source mapping grammar

@@ -24,9 +24,9 @@ The counts below cover only entries recorded by this project, including the sepa
 |---|---:|---:|---|
 | Normative agreement records | 19 | 2 | A bounded BPMN requirement and pinned CIB observation agree; candidates remain unapproved |
 | Permitted operational details | 18 | 0 | CIB or the oracle adapter chooses host mechanics without changing required BPMN observations |
-| Confirmed normative deviations | 0 | 10 | Clear BPMN requirement and pinned CIB evidence establish incompatible behavior |
+| Confirmed normative deviations | 0 | 9 | Clear BPMN requirement and pinned CIB evidence establish incompatible behavior |
 | CIB interpretations of BPMN gaps or inconsistencies | 25 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
-| CIB extension records | 37 | 3 | Project profile deliberately includes behavior beyond bare BPMN execution; candidates remain unselected |
+| CIB extension records | 38 | 3 | Project profile deliberately includes behavior beyond bare BPMN execution; candidates remain unselected |
 | Configuration-specific realizations | 14 | 1 | Behavior is permitted or meaningful only under a declared CIB environment |
 | Known CIB limitations within reviewed scope | 24 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
 
@@ -164,7 +164,7 @@ Ready joins are independent. When they are offered, the arrivals parked at one j
 
 Tables 10.89 and 10.90 trigger a Conditional Event when its condition becomes true; a re-fire on a write that leaves the condition true (150 → 150) fires without the condition becoming true. For Event Sub-Process starts the basis is weaker: Table 10.86 is silent and `:7378` only lets them use the boundary Event types. Interrupting subscriptions and catches fire once under either reading.
 
-**Evidence:** Retained `conditional-evaluation/create-false-then-update-true` (`Handle_Update#2`), `conditional-esp/process-alert-repeats`; pinned `BoundaryConditionalEventActivityBehavior.java:46-52`, `EventSubProcessStartConditionalEventActivityBehavior.java:44-50`.
+**Evidence:** Retained `conditional-evaluation/portable-create-false-then-update-true` (`Handle_Update#2`), `conditional-esp/process-alert-repeats`; pinned `BoundaryConditionalEventActivityBehavior.java:46-52`, `EventSubProcessStartConditionalEventActivityBehavior.java:44-50`.
 
 **Boundary:** Non-interrupting Conditional boundaries and Event Sub-Process starts under the cibseven profiles.
 
@@ -218,15 +218,11 @@ ISO 8601 makes `PnW` `7n` days. CIB parses `P\\d+W` as `newDuration(n·604,800,0
 
 **Boundary:** `PnW` with `n ≥ 5` (and `n = 4` armed in a 28-day February window where the months differ).
 
-### CIB-DEV-0010 — CIB never holds an effect Activity's boundaries open while its effect waits
+### CIB-DEV-0010 — withdrawn: the boundaries of an `asyncBefore` effect host
 
-**Status:** Candidate deviation; every profile keeps BPMN's arming
+**Status:** Withdrawn, not a deviation (M6 track review, 2026-11-11); recorded as CIB-EXT-0038
 
-BPMN arms a Boundary Event while its host Activity is active (§10.5.6, §13.5.3), so a Timer, Message or Conditional boundary of a Service Task can interrupt or accompany the work the Task waits for. Under CIB-EXT-0001 (and CIB-EXT-0023 for a Send Task) the effect's wait is CIB's `asyncBefore` continuation job, which comes before the Activity exists: `PvmAtomicOperationTransitionCreateScope#isAsync` answers `isAsyncBefore` (`PvmAtomicOperationTransitionCreateScope.java:28-31`), so the job is scheduled before `PvmAtomicOperationCreateScope#execute` creates the Activity's scope execution and its `initialize` creates the boundary subscriptions (`PvmAtomicOperationCreateScope.java:37-46`, `ExecutionEntity.java:409-414`). The job then creates them, runs the delegate and completes the Task in one transaction, so no committed state holds them. The kernel's effect occurrence is the active Task (CIB-EXT-0001 maps CIB's pre-activation wait onto it) and arms its boundaries when it begins: it publishes them open, fires a Timer at its deadline, accepts a Message for them and offers writes to a Conditional one, where CIB has no subscription (a Timer never armed, a delivery rejected, a write unseen).
-
-**Evidence:** Pinned sources above; retained `timer-boundary-hosts/*` (`Soft_Service`, `Late_Service`), `message-boundary-interrupting/*` (`Abort_Service`, `effect-abort-before-result`: the kernel commits the delivery, CIB rejects it) and `conditional-boundary-hosts/*` (`Service_Cond`, `effect-host-condition`: the kernel begins `Handle_Poke`), each the kernel's one extra open wait on the `asyncBefore` effect host `Host_Service`.
-
-**Boundary:** Boundaries of Activities whose work is an effect (Service Task, Send Task) under the cibseven profiles. The User Task, Receive Task, Sub-Process and Call hosts of the same models agree. A profile option that imitated CIB would refuse or never arm these boundaries; none is proposed.
+CIB arms a Service Task's boundaries exactly while the Task is active, and its delegate realization makes that period atomic; BPMN does not require the Active state to last, so no clear requirement is broken. The difference comes from the project's mapping of CIB's pre-activation wait onto the active effect occurrence and is recorded as [CIB-EXT-0038](#cib-ext-0038--the-kernels-effect-wait-holds-its-hosts-boundaries-armed-which-cibs-asyncbefore-realization-never-commits).
 
 A candidate must appear here immediately when evidence suggests conflict with a clear BPMN requirement. It remains a candidate until the evidence threshold below is satisfied. Implementation of the disputed profile-dependent behavior pauses unless the capsule explicitly preserves competing accounts as an unresolved experiment.
 
@@ -1036,7 +1032,7 @@ BPMN addresses a Message by its identifier and lets it be nameless. CIB Seven `2
 
 **Evidence:** Pinned `BpmnParse.java:1271-1282`, `:1297-1299`, `EventSubscriptionDeclaration.java:85-87`; retained `message-name-addressing/unnamed-message` (refused at deployment).
 
-**Boundary:** Catches, boundaries, Event Sub-Process starts and root starts. The duplicate rule is checked among the boundaries of one host only; two Event Sub-Process starts of one scope and two Event-Based Gateway arms of one name are not yet refused (remaining work of PC-MESSAGE-01). A Receive Task with a nameless Message is not yet refused under the cibseven profiles (work admission).
+**Boundary:** Catches, boundaries, Event Sub-Process starts, root starts and Receive Tasks; a Receive Task with a nameless Message is refused (`message.unnamed`, work admission). The duplicate rule is checked among the boundaries of one host only; two Event Sub-Process starts of one scope, two Event-Based Gateway arms of one name ([#74](https://github.com/mbackschat/bpmn-lean-experiment/issues/74)) and a Receive Task with a boundary of its own Message name are not yet refused (remaining work of PC-MESSAGE-01). The cibseven profiles also admit a Message name given by an expression, which CIB resolves when the subscription opens (CIB-INT-0024).
 
 ### CIB-LIM-0023 — CIB ignores a Message Event's `operationRef`
 
@@ -1054,7 +1050,7 @@ BPMN lets a Message Event name the Operation that carries its Message (Table 10.
 
 BPMN 2.0.2 §13.3.4 lets a Sub-Process without a start Event begin, on entry, every Activity and Scope without incoming flow. CIB Seven `2.2.0` refuses deploying a `subProcess` without a `startEvent` ("must define a startEvent element"). It parses a `transaction` without that check, but runs it with `SubProcessActivityBehavior`, whose entry requires the initial activity that only a start Event sets, so entering such a Transaction fails and rolls the entering command back. Under the cibseven profiles the kernel refuses an embedded Sub-Process or Transaction that holds no start Event at admission (`scope.withoutStart`). Under `bpmn-2.0.2` it begins the Scope's Activities and Scopes without incoming flow, and a Gateway or Event among them stays refused (`scope.implicitStart`).
 
-**Evidence:** Pinned `BpmnParse.java:967-968` (the deployment check, `process` and `subProcess` only), `:1083-1084` (a start Event sets `INITIAL_ACTIVITY`), `:3902-3917` (`parseTransaction`), `SubProcessActivityBehavior.java:41-45` (`ensureNotNull` on the initial activity); the kernel test `packages/differential/test/scope-start-profiles.test.ts`. The witnesses `scenarios/open-rows/scope-without-start` await evidence.
+**Evidence:** Pinned `BpmnParse.java:967-968` (the deployment check, `process` and `subProcess` only), `:1083-1084` (a start Event sets `INITIAL_ACTIVITY`), `:3902-3917` (`parseTransaction`), `SubProcessActivityBehavior.java:41-45` (`ensureNotNull` on the initial activity); the kernel test `packages/differential/test/scope-start-profiles.test.ts`. The witnesses are [scope-without-start](../scenarios/open-rows/scope-without-start/README.md).
 
 **Boundary:** Embedded Sub-Processes, a looping one and a compensation handler included, and Transactions. An Event Sub-Process always holds its triggering start. A process or called process without a start Event is outside this entry: the kernel admits it and rejects the start (`no-start-event`) or fails the Call (`called-process-without-none-start`), where CIB refuses the deployment.
 
@@ -1359,7 +1355,7 @@ Correlation criteria are API-supplied and match Process or local variables, busi
 
 ### CIB-EXT-0026 — a continuation failure after an effect result fails the job
 
-**Status:** Recorded extension; selected only by `ContinuationFailure.incident`
+**Status:** Recorded extension; selected by no profile (the option `ContinuationFailure.incident` reads it)
 
 A failure in a continuation reached by an effect result fails the job and raises an incident instead of rolling back, the path CIB-INT-0003 excludes from its own boundary and CIB-EXT-0013 describes for a failing job.
 
@@ -1461,7 +1457,7 @@ The kernel's `Propagation.passCallOutputs` calls `PropagationHooks.callOutputs` 
 
 BPMN triggers an intermediate or boundary Conditional Event "when a condition becomes true" (Tables 10.89, 10.90). CIB Seven `2.2.0` evaluates a Conditional subscription on every variable create, update (same value included) and delete in the subtree of the scope that owns the variable, filtered by `camunda:variableName` and `camunda:variableEvents`, and fires a non-interrupting one each time the predicate holds; arming evaluation ignores the filters. Under `eachWrite` the kernel does the same and publishes `lastValue: null`; under `edge` (the standards profile) it fires only on a false-to-true change, tracks `lastValue`, and refuses the two filters (`event.condition.filter`).
 
-**Evidence:** Pinned `ConditionalEventDefinition.java:91-113`, `VariableListenerInvocationListener.java:75-80`, `ExecutionEntity.java:1731-1755`, `PvmExecutionImpl.java:1999-2010`, `:2185-2203`; retained `conditional-evaluation/create-false-then-update-true`, `conditional-esp/process-alert-repeats`.
+**Evidence:** Pinned `ConditionalEventDefinition.java:91-113`, `VariableListenerInvocationListener.java:75-80`, `ExecutionEntity.java:1731-1755`, `PvmExecutionImpl.java:1999-2010`, `:2185-2203`; retained `conditional-evaluation/portable-create-false-then-update-true` (the kernel agrees; its JUEL twin `create-false-then-update-true` is refused whole, CIB-LIM-0009), `conditional-esp/process-alert-repeats`.
 
 **Boundary:** Conditional catches, boundaries, Event Sub-Process starts and Event-Based Gateway arms; root Conditional starts are PC-CONDITION-02's. An event name other than `create`, `update`, `delete` is refused (`event.condition.variableEvents`).
 
@@ -1484,6 +1480,16 @@ BPMN Table 10.101 requires `timeDate`, `timeDuration` and `timeCycle` to conform
 **Evidence:** Pinned `cmd/RecalculateJobDuedateCmd.java`.
 
 **Boundary:** Not reachable through the scenario stimuli.
+
+### CIB-EXT-0038 — the kernel's effect wait holds its host's boundaries armed, which CIB's `asyncBefore` realization never commits
+
+**Status:** Selected bounded extension, a consequence of CIB-EXT-0001 and CIB-EXT-0023; selected by the cibseven profiles
+
+Under CIB-EXT-0001 (CIB-EXT-0023 for a Send Task) CIB's effect wait is its `asyncBefore` continuation job, which precedes the Activity: `PvmAtomicOperationTransitionCreateScope#isAsync` answers `isAsyncBefore` (`PvmAtomicOperationTransitionCreateScope.java:28-31`), so the job is scheduled before `PvmAtomicOperationCreateScope` creates the scope execution whose `initialize` creates the boundary subscriptions (`PvmAtomicOperationCreateScope.java:31-46`, `ExecutionEntity.java:409-414`). The job then activates the Task, runs the delegate and completes it in one transaction, so no committed CIB state holds the Task's Timer, Message or Conditional boundaries. That is conformant: a Service Task may begin and finish atomically. The project maps the pre-activation wait onto the kernel's active effect occurrence (CIB-EXT-0001, CIB-OP-0002), and the kernel keeps BPMN's meaning for an active Task (§10.5.6, §13.5.3): its boundaries arm when it begins and are published open, a Timer fires at its deadline, a Message is accepted and a write reaches a Conditional boundary. CIB gives a Service Task whose work waits inside the Activity the same arming: an external task is created in the active, initialized scope (`ExternalTaskActivityBehavior.java:48-57`). The profiles therefore keep the arming and refuse nothing, and the oracle's delegate realization cannot observe these boundaries. The same mapping makes effect arguments unobservable before the job (CIB-OP-0013) and a failure after the crossing unsupported (CIB-EXT-0027).
+
+**Evidence:** The cited source; the retained effect-host witnesses of `timer-boundary-hosts`, `message-boundary-interrupting` and `conditional-boundary-hosts`, in which the kernel holds the host's boundary subscriptions open where CIB holds none.
+
+**Boundary:** Timer, Message and Conditional boundaries (Signal boundaries once admitted) of a CIB-EXT-0001 or CIB-EXT-0023 effect host under the cibseven profiles. Error boundaries agree. Not an operational detail, since Timer firings and Message acceptance are required observations.
 
 ## Permitted operational-detail register
 
@@ -1749,7 +1755,7 @@ The mapping-free phase-zero control isolates that default: the Process has no re
 
 ### CIB-CFG-0005 — pinned read-only JUEL condition environment
 
-**Status:** Superseded for CIB Seven `2.2.0` by `CIB-CFG-0011`; selected bounded configuration for the deferred JUEL compatibility lane; production capsule unimplemented
+**Status:** Superseded for CIB Seven `2.2.0` by `CIB-CFG-0011`; selected by no profile (bounded configuration of the deferred JUEL compatibility lane; production capsule unimplemented)
 
 When reopened, the first JUEL compatibility profile uses `org.cibseven.bpm.juel:cibseven-juel:2.0.0`, matching pinned CIB Seven `2.0.0`, over a complete immutable Process-scope context whose values use the project's existing tagged `VariableValue.String | VariableValue.Null` contract. The Java evaluator converts those variants to `String | null` after validation. It exposes exact root-variable lookup and no bean, property-on-Java-object, method, function, class, `execution`, Process Engine service, Spring, file, network, or mutation capability.
 
