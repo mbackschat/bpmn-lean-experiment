@@ -1,0 +1,120 @@
+{
+  "kind": "cibSevenPopulationEvidence",
+  "scenario": {
+    "id": "call-binding-population-nested-callee-binds-at-own-deployment-key-text",
+    "sha256": "ae27981166e5350f10455d014890e0c708875bb7c5f2a9153c18aef14bfb8384"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "14179e635f344e04e6650a10fb0393a82e8decdad6af63bcd9b4bbbd4d17c3a0"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "projection": {
+    "id": "cib-population-result"
+  },
+  "result": {
+    "deployments": [
+      {
+        "deploymentId": 1,
+        "definitionRef": "call-binding-population-review-first",
+        "versions": [
+          {
+            "key": "ReviewDamage",
+            "version": 1
+          }
+        ],
+        "outcome": {
+          "kind": "deployed"
+        }
+      },
+      {
+        "deploymentId": 2,
+        "definitionRef": "call-binding-population-triage-key",
+        "versions": [
+          {
+            "key": "TriageDamage",
+            "version": 1
+          }
+        ],
+        "outcome": {
+          "kind": "deployed"
+        }
+      },
+      {
+        "deploymentId": 3,
+        "definitionRef": "call-binding-population-review-second",
+        "versions": [
+          {
+            "key": "ReviewDamage",
+            "version": 2
+          }
+        ],
+        "outcome": {
+          "kind": "deployed"
+        }
+      },
+      {
+        "deploymentId": 4,
+        "definitionRef": "call-binding-population-damage-claim-key",
+        "versions": [
+          {
+            "key": "DamageClaim",
+            "version": 1
+          }
+        ],
+        "outcome": {
+          "kind": "deployed"
+        }
+      }
+    ],
+    "steps": [],
+    "processStates": [
+      {
+        "kind": "state",
+        "instanceId": "DamageClaim_1",
+        "status": "running",
+        "logicalTimeMs": 40,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "call:44:call:13:DamageClaim_1:17:Call_TriageDamage:1:17:Call_ReviewDamage:1",
+              "elementId": "VisitSite",
+              "activation": 1
+            },
+            "definition": {
+              "key": "ReviewDamage",
+              "version": 2,
+              "versionTag": null,
+              "deployment": 3,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Visit the site",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      }
+    ]
+  }
+}

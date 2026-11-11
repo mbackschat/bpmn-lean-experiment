@@ -1,0 +1,179 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "message-payload-catches-payload-offered-without-data-output",
+    "sha256": "ead87fc104c11bb5bc13b03f1b58f1907d10017f4beb99de8d1cd3a365f4e42a"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "14179e635f344e04e6650a10fb0393a82e8decdad6af63bcd9b4bbbd4d17c3a0"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "s02-deliver-with-payload",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "s03-deliver-without-payload",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": []
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "s02-deliver-with-payload",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "s03-deliver-without-payload",
+        "tasks": []
+      }
+    ],
+    "messageSubscriptions": [
+      {
+        "afterCommandId": "s01-start",
+        "subscriptions": [
+          {
+            "elementId": "ReceiveTask_WaitForInvoice",
+            "eventName": "newInvoiceMessage",
+            "messageId": "Message_NewInvoice",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-deliver-with-payload",
+        "subscriptions": []
+      },
+      {
+        "afterCommandId": "s03-deliver-without-payload",
+        "subscriptions": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s02-deliver-with-payload",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s03-deliver-without-payload",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "s01-start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s02-deliver-with-payload",
+        "state": "COMPLETED"
+      },
+      {
+        "afterCommandId": "s03-deliver-without-payload",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "rejected"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "ReceiveTaskInstance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "ReceiveTaskInstance_1",
+              "elementId": "ReceiveTask_WaitForInvoice",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_NewInvoice"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s02-deliver-with-payload",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "ReceiveTaskInstance_1",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": []
+      },
+      {
+        "kind": "command",
+        "commandId": "s03-deliver-without-payload",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "ReceiveTaskInstance_1",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": []
+      }
+    ]
+  }
+}
