@@ -1,13 +1,16 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
+import { wrapCibSevenMavenFailure } from "./cibseven-maven-budget.ts";
 import {
   bridgeOutcomes,
   cibBridgeDeadlineMs,
   cibEvidenceEffectSchedule,
+  isolateDeadlineFailures,
   requireCleanPopulation,
   requireReplacementAuthorization,
 } from "./replace-cibseven-evidence.ts";
+import { CommandTimeoutError } from "./run-command.ts";
 
 test("routes a scenario to its CIB schedule by its incident options and its cancel command", () => {
   const retry = { kind: "command", commandId: "retry", action: { kind: "retryIncident", generation: 1 } };
@@ -72,4 +75,57 @@ test("gives the preparing bridge call the shared Maven ceiling and every scenari
   assert.equal(cibBridgeDeadlineMs(0, { BPMN_CIB_MAVEN_TIMEOUT_MS: "200000" }), 200_000);
   assert.equal(cibBridgeDeadlineMs(20, {}), 30_000);
   assert.equal(cibBridgeDeadlineMs(1, { BPMN_CIB_MAVEN_TIMEOUT_MS: "200000" }), 30_000);
+});
+
+/** A bridge stand-in that answers every scenario, or times out as `runCibBatch` does when its batch holds `slow`. */
+function bridgeStandIn(slow: string | undefined) {
+  const invocations: string[][] = [];
+  const run = async (batch: ReadonlyArray<Readonly<{ id: string }>>) => {
+    const ids = batch.map(({ id }) => id);
+    invocations.push(ids);
+    if (slow !== undefined && ids.includes(slow)) {
+      throw wrapCibSevenMavenFailure("2.2.0", new CommandTimeoutError("mvnw", 30_000, "", ""));
+    }
+    return bridgeOutcomes(ids, ids.map((scenarioId) => JSON.stringify({ kind: "scenarioResult", scenarioId })));
+  };
+  return { invocations, run };
+}
+
+test("isolates the one scenario that exceeds the batch deadline as a harness failure and answers the rest", async () => {
+  const { invocations, run } = bridgeStandIn("c");
+  const logged: string[] = [];
+  const outcome = await isolateDeadlineFailures([{ id: "a" }, { id: "b" }, { id: "c" }, { id: "d" }], run, (line) => {
+    logged.push(line);
+  });
+  assert.deepEqual(outcome.results.map(({ scenarioId }) => scenarioId), ["a", "b", "d"]);
+  assert.deepEqual(outcome.failures, [{ scenarioId: "c", failure: "CIB_SCENARIO_DEADLINE_EXCEEDED budgetMs=30000" }]);
+  assert.deepEqual(invocations, [["a", "b", "c", "d"], ["a", "b"], ["c", "d"], ["c"], ["d"]]);
+  assert.equal(logged.length, 2);
+  assert.match(logged[0]!, /a, b, c, d/u);
+  assert.match(logged[1]!, /c, d/u);
+});
+
+test("propagates a bridge failure other than the deadline unchanged, without splitting", async () => {
+  const failure = new Error("mvnw exited with code 1");
+  const invocations: number[] = [];
+  await assert.rejects(
+    isolateDeadlineFailures([{ id: "a" }, { id: "b" }], async () => {
+      invocations.push(1);
+      throw wrapCibSevenMavenFailure("2.2.0", failure);
+    }, () => {}),
+    (error) => error === failure,
+  );
+  assert.equal(invocations.length, 1);
+});
+
+test("runs a batch inside its deadline in one bridge call", async () => {
+  const { invocations, run } = bridgeStandIn(undefined);
+  const logged: string[] = [];
+  const outcome = await isolateDeadlineFailures([{ id: "a" }, { id: "b" }, { id: "c" }], run, (line) => {
+    logged.push(line);
+  });
+  assert.equal(outcome.results.length, 3);
+  assert.deepEqual(outcome.failures, []);
+  assert.deepEqual(invocations, [["a", "b", "c"]]);
+  assert.deepEqual(logged, []);
 });

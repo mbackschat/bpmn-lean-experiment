@@ -14,7 +14,7 @@ import { populationEvidenceCases, populationEvidenceDocument } from "./cibseven-
 import type { CibPopulationResult } from "./cibseven-population-evidence.ts";
 import { oracleEvidenceCases } from "./contract-artifact-cases.ts";
 import { resolveJavaHome } from "./java-home.ts";
-import { runCommand } from "./run-command.ts";
+import { CommandTimeoutError, runCommand } from "./run-command.ts";
 import { parseWireJson, parseWireJsonBytes } from "./strict-json.ts";
 import type { CibSevenEvidence, ScenarioDocument } from "./contract-artifacts.ts";
 
@@ -190,6 +190,49 @@ export function bridgeOutcomes(requested: ReadonlyArray<string>, lines: Readonly
   return { results, populations, failures };
 }
 
+/**
+ * Runs `scenarios` through `run` under its batch deadline. When that deadline kills a batch of several scenarios, each
+ * half runs again under the same deadline, recursively, so that a single scenario that alone exceeds it becomes its own
+ * harness failure and keeps its retained evidence; every other failure propagates unchanged.
+ */
+export async function isolateDeadlineFailures<S extends Readonly<{ id: string }>>(
+  scenarios: ReadonlyArray<S>,
+  run: (batch: ReadonlyArray<S>) => Promise<BatchOutcome>,
+  log: (line: string) => void,
+): Promise<BatchOutcome> {
+  try {
+    return await run(scenarios);
+  } catch (error) {
+    const timeout = error instanceof Error && error.cause instanceof CommandTimeoutError ? error.cause : undefined;
+    if (timeout === undefined) throw error;
+    if (scenarios.length === 1) {
+      return {
+        results: [],
+        populations: [],
+        failures: [{ scenarioId: scenarios[0]!.id, failure: `CIB_SCENARIO_DEADLINE_EXCEEDED budgetMs=${String(timeout.timeoutMs)}` }],
+      };
+    }
+    // A chunk's composition is arbitrary, so one costly scenario must not decide the fate of the others: in Verify run
+    // 43069801261 the chunk holding `cycle-compositions/automatic-loop-beyond-bound` (about 13 s of engine time alone)
+    // exceeded the deadline and aborted the whole replacement. Splitting keeps the deadline and names the culprit.
+    log(`CIB batch exceeded budgetMs=${String(timeout.timeoutMs)}; splitting ${scenarios.map(({ id }) => id).join(", ")}`);
+    const middle = Math.ceil(scenarios.length / 2);
+    const halves = [
+      await isolateDeadlineFailures(scenarios.slice(0, middle), run, log),
+      await isolateDeadlineFailures(scenarios.slice(middle), run, log),
+    ];
+    return {
+      results: halves.flatMap(({ results }) => results),
+      populations: halves.flatMap(({ populations }) => populations),
+      failures: halves.flatMap(({ failures }) => failures),
+    };
+  }
+}
+
+function logSplit(line: string): void {
+  process.stdout.write(`${line}\n`);
+}
+
 async function runCibBatch(
   scenarios: ReadonlyArray<Readonly<{ id: string }>>,
   temporaryDirectory: string,
@@ -305,8 +348,11 @@ async function populationReplacements(
     await runCibBatch([], temporaryDirectory, engineVersion, "plainSuccess");
     for (let start = 0; start < versionSources.length; start += cibBatchChunkSize) {
       const chunk = versionSources.slice(start, start + cibBatchChunkSize);
-      const batch = await runCibBatch(
-        chunk.map(({ scenario }) => scenario.value), temporaryDirectory, engineVersion, "plainSuccess");
+      const batch = await isolateDeadlineFailures(
+        chunk.map(({ scenario }) => scenario.value),
+        (scenarios) => runCibBatch(scenarios, temporaryDirectory, engineVersion, "plainSuccess"),
+        logSplit,
+      );
       if (batch.results.length > 0) throw new Error("CIB answered a population with a single-instance result");
       failures.push(...batch.failures.map(({ scenarioId, failure }) => `${scenarioId}: ${failure}`));
       for (const result of batch.populations) {
@@ -374,8 +420,11 @@ async function replaceEvidence() {
       const scenarios = versionSources.map(({ scenario }) => scenario.value);
       await runCibBatch([], temporaryDirectory, engineVersion, effectSchedule);
       for (let start = 0; start < scenarios.length; start += cibBatchChunkSize) {
-        const batch = await runCibBatch(
-          scenarios.slice(start, start + cibBatchChunkSize), temporaryDirectory, engineVersion, effectSchedule);
+        const batch = await isolateDeadlineFailures(
+          scenarios.slice(start, start + cibBatchChunkSize),
+          (chunk) => runCibBatch(chunk, temporaryDirectory, engineVersion, effectSchedule),
+          logSplit,
+        );
         results.push(...batch.results);
         failures.push(...batch.failures.map(({ scenarioId, failure }) => `${scenarioId}: ${failure}`));
       }
