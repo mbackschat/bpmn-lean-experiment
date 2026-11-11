@@ -50,6 +50,7 @@ import {
   type OccurrenceKey,
   type OccurrenceRef,
   type OpenItem,
+  type SignalAddress,
   type State,
   type Transition,
   type WaitView,
@@ -206,13 +207,35 @@ export interface OpenWait {
 }
 
 /**
+ * The address a population command reaches an open wait by: a Message wait's channel and literal name (`null` when the
+ * name is no literal), or a Signal wait's address. The population ingress registers each one
+ * ([population ingress](../../../docs/kernel/ARCHITECTURE-SPEC.md#population-ingress)).
+ */
+export interface WaitAddress {
+  readonly occurrence: OccurrenceRef;
+  readonly message: Readonly<{ channel: MessageChannel; name: string | null }> | null;
+  readonly signal: SignalAddress | null;
+}
+
+export function addressesOf(waits: readonly OpenWait[]): readonly WaitAddress[] {
+  return waits.flatMap((wait): WaitAddress[] => {
+    if (wait.view.channel !== null) {
+      return [{ occurrence: wait.id, message: { channel: wait.view.channel, name: wait.view.name }, signal: null }];
+    }
+    if (wait.view.signal !== null) return [{ occurrence: wait.id, message: null, signal: wait.view.signal.address }];
+    return [];
+  });
+}
+
+/**
  * `broadcasts` are the Signals the input threw to the population (`State.outbox`), which the host publishes once the
- * input commits (PC-SIGNAL-01).
+ * input commits (PC-SIGNAL-01); `addresses` are the open waits' addresses (`addressesOf`).
  */
 export interface View {
   readonly status: InstanceStatus;
   readonly failure: InstanceFailure | null;
   readonly openWaits: readonly OpenWait[];
+  readonly addresses: readonly WaitAddress[];
   readonly journal: readonly Transition[];
   readonly broadcasts: readonly BroadcastIntent[];
 }
@@ -268,10 +291,12 @@ function openWait(program: Program, state: State, item: OpenItem): OpenWait {
 }
 
 export function hostView(program: Program, state: State): View {
+  const openWaits = state.openItems.map((item) => openWait(program, state, item));
   return {
     status: state.status,
     failure: state.failure === null ? null : publicFailure(program, state.failure),
-    openWaits: state.openItems.map((item) => openWait(program, state, item)),
+    openWaits,
+    addresses: addressesOf(openWaits),
     journal: state.journal.map((transition) => publicTransition(program, transition)),
     broadcasts: state.outbox.map((intent) => ({ ...intent, origin: publicRef(program, intent.origin) })),
   };

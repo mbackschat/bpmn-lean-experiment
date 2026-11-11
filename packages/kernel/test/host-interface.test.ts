@@ -13,6 +13,8 @@ import {
   decodeProgram,
   definitionCapabilities,
   hostRequirements,
+  hostView,
+  hostViewJson,
   InputTag,
   hooks,
   matching,
@@ -172,6 +174,23 @@ test("matching finds the open wait whose criteria the waiting instance's current
   assert.deepEqual(matching(hooks, program, state, ...delivery("o-7")), [{ processInstanceId: "Instance_1", element: "T", activation: 1 }]);
   assert.deepEqual(matching(hooks, program, state, ...delivery("o-8")), []);
   assert.deepEqual(matching(hooks, program, state, ...delivery("o-7", "Other")), []);
+});
+
+test("the host view names each open Message and Signal wait's address, which the population ingress registers", () => {
+  const signalProgram = admitted(replace(base(), "T", catchEvent("T", signal())));
+  const signalState = committed(run(signalProgram, null, begin()));
+  assert.deepEqual((hostViewJson(hostView(signalProgram, signalState)) as Json).addresses, [{
+    occurrence: { processInstanceId: "Instance_1", elementId: "T", activation: 1 },
+    signal: { signalRef: { id: "Sig" } },
+  }]);
+  const messageProgram = admitted(replace(base(), "T", catchEvent("T", message(channel()))));
+  const messageState = committed(run(messageProgram, null, begin()));
+  assert.deepEqual((hostViewJson(hostView(messageProgram, messageState)) as Json).addresses, [{
+    occurrence: { processInstanceId: "Instance_1", elementId: "T", activation: 1 },
+    message: { channel: { kind: "operationMessage", interfaceId: "I", interfaceOperationId: "O", messageId: "M" } },
+  }]);
+  const plain = admitted(base());
+  assert.equal((hostViewJson(hostView(plain, committed(run(plain, null, begin())))) as Json).addresses, undefined);
 });
 
 test("an incident command naming another generation than the open incident's is rejected as stale", () => {

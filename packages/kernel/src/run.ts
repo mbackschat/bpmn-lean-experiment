@@ -49,6 +49,7 @@ import {
   type Requirements,
   type StartCapability,
   type View,
+  type WaitAddress,
 } from "./host.js";
 import { ResolvedTag, type Resolved } from "./il/timer.js";
 import { runStimuli as runInstances } from "./population.js";
@@ -364,6 +365,17 @@ function failureViewJson(failure: InstanceFailure): JsonValue {
   };
 }
 
+function addressJson(address: WaitAddress): JsonValue {
+  return {
+    occurrence: referenceJson(address.occurrence),
+    ...(address.message === null ? {} : {
+      message: { channel: channelToJson(address.message.channel), ...(address.message.name === null ? {} : { name: address.message.name }) },
+    }),
+    ...(address.signal === null ? {} : { signal: signalAddressToJson(address.signal) }),
+  };
+}
+
+/** `addresses` appears only when an open wait has one; the scenario contract's `waitJson` stays as it is. */
 export function hostViewJson(view: View): JsonValue {
   return {
     status: statusName(view.status),
@@ -371,6 +383,7 @@ export function hostViewJson(view: View): JsonValue {
     journal: view.journal.map(transitionJson),
     ...(view.failure === null ? {} : { failure: failureViewJson(view.failure) }),
     ...broadcastsJson(view.broadcasts),
+    ...(view.addresses.length === 0 ? {} : { addresses: view.addresses.map(addressJson) }),
   };
 }
 

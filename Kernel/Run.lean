@@ -260,11 +260,19 @@ def failureViewJson (failure : InstanceFailure) : Json :=
     ("occurrence", referenceJson failure.occurrence),
     ("related", Json.mkObj (failure.related.map fun (name, ref) => (name, referenceJson ref)))]
 
+def addressJson (address : Host.WaitAddress) : Json :=
+  Json.mkObj ([("occurrence", referenceJson address.occurrence)] ++
+    (address.message.map fun (channel, name) => ("message", Json.mkObj ([("channel", Codec.channelToJson channel)] ++
+      (name.map fun name => ("name", Json.str name)).toList))).toList ++
+    (address.signal.map fun signal => ("signal", Json.mkObj (Codec.signalAddressToJson signal))).toList)
+
+/-- `addresses` appears only when an open wait has one; the scenario contract's `waitJson` stays as it is. -/
 def hostViewJson (view : Host.View) : Json :=
   Json.mkObj ([("status", Json.str (Publish.statusName view.status)),
     ("openWaits", Json.arr (view.openWaits.map waitJson).toArray),
     ("journal", Json.arr (view.journal.map transitionJson).toArray)] ++
-    (view.failure.map fun failure => ("failure", failureViewJson failure)).toList ++ broadcastsJson view.broadcasts)
+    (view.failure.map fun failure => ("failure", failureViewJson failure)).toList ++ broadcastsJson view.broadcasts ++
+    (if view.addresses.isEmpty then [] else [("addresses", Json.arr (view.addresses.map addressJson).toArray)]))
 
 /-- Every committed input's host view. -/
 def hostViews (program : Program) : Option State → List ((String × Input) × Option String) → List Host.View

@@ -124,12 +124,29 @@ structure OpenWait where
   view : WaitView
   deriving Repr
 
+/-- The address a population command reaches an open wait by: a Message wait's channel and literal name (`none` when
+the name is no literal), or a Signal wait's address. The population ingress registers each one
+([population ingress](../docs/kernel/ARCHITECTURE-SPEC.md#population-ingress)). -/
+structure WaitAddress where
+  occurrence : OccurrenceRef
+  message : Option (MessageChannel × Option String) := none
+  signal : Option SignalAddress := none
+  deriving Repr
+
+def addressesOf (waits : List OpenWait) : List WaitAddress :=
+  waits.filterMap fun wait =>
+    match wait.view.channel, wait.view.signal with
+    | some channel, _ => some { occurrence := wait.id, message := some (channel, wait.view.name) }
+    | none, some signal => some { occurrence := wait.id, signal := some signal.address }
+    | none, none => none
+
 /-- `broadcasts` are the Signals the input threw to the population (`State.outbox`), which the host publishes once the
-input commits (PC-SIGNAL-01). -/
+input commits (PC-SIGNAL-01); `addresses` are the open waits' addresses (`addressesOf`). -/
 structure View where
   status : InstanceStatus
   failure : Option InstanceFailure
   openWaits : List OpenWait
+  addresses : List WaitAddress
   journal : List Transition
   broadcasts : List BroadcastIntent := []
   deriving Repr
@@ -168,8 +185,9 @@ def openWait (program : Program) (state : State) (item : OpenItem) : OpenWait :=
     view := currentInputs state item item.kind.view }
 
 def hostView (program : Program) (state : State) : View :=
-  { status := state.status, failure := state.failure.map (publicFailure program)
-    openWaits := state.openItems.map (openWait program state)
+  let openWaits := state.openItems.map (openWait program state)
+  { status := state.status, failure := state.failure.map (publicFailure program), openWaits
+    addresses := addressesOf openWaits
     journal := state.journal.map (publicTransition program)
     broadcasts := state.outbox.map fun intent => { intent with origin := publicRef program intent.origin } }
 
