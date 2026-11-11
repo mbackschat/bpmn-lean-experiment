@@ -1,0 +1,384 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "transaction-and-error-exits-transaction-completes-while-boundary-path-runs",
+    "sha256": "37f85937b303062d55ae8365eb12a959df7a8931166c605f62f151e7075b08e4"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "13a1bfc9834c109b22ff684204ea92e32d432bc1bfb62debe4907de0bec7cc27"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "s01-fire-timer-Boundary_Slow-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 10000,
+        "variables": []
+      },
+      {
+        "afterCommandId": "s02-complete-UserTask_Work-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 10000,
+        "variables": []
+      },
+      {
+        "afterCommandId": "s03-complete-UserTask_Done-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 10000,
+        "variables": []
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_Side-1",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 10000,
+        "variables": []
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "tasks": [
+          {
+            "elementId": "UserTask_Work",
+            "name": "Do the work"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s01-fire-timer-Boundary_Slow-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_Work",
+            "name": "Do the work"
+          },
+          {
+            "elementId": "UserTask_Side",
+            "name": "Follow up on the slow work"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-complete-UserTask_Work-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_Side",
+            "name": "Follow up on the slow work"
+          },
+          {
+            "elementId": "UserTask_Done",
+            "name": "Finish after the transaction"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-complete-UserTask_Done-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_Side",
+            "name": "Follow up on the slow work"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_Side-1",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": [
+          {
+            "elementId": "Boundary_Slow",
+            "dueDateDeltaMs": 10000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s01-fire-timer-Boundary_Slow-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s02-complete-UserTask_Work-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s03-complete-UserTask_Done-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_Side-1",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "s01-start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s01-fire-timer-Boundary_Slow-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s02-complete-UserTask_Work-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s03-complete-UserTask_Done-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_Side-1",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Boundary_Slow",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 10000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Work",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Do the work",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-fire-timer-Boundary_Slow-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 10000,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Side",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Follow up on the slow work",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Work",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Do the work",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s02-complete-UserTask_Work-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 10000,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Done",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Finish after the transaction",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Side",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Follow up on the slow work",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s03-complete-UserTask_Done-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 10000,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Side",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Follow up on the slow work",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s04-complete-UserTask_Side-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "completed",
+        "logicalTimeMs": 10000,
+        "variables": [],
+        "openWaits": []
+      }
+    ]
+  }
+}

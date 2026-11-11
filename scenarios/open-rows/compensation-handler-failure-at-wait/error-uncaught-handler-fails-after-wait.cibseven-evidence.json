@@ -1,0 +1,312 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "compensation-handler-failure-at-wait-error-uncaught-handler-fails-after-wait",
+    "sha256": "cdf93a7d8bb4d0e91ee174e2a45ef79c0f952e35778fc40d3d6ec8876962f860"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "13a1bfc9834c109b22ff684204ea92e32d432bc1bfb62debe4907de0bec7cc27"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "s01-complete-UserTask_Work-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "s02-complete-UserTask_UndoReview-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "s03-complete-UserTask_After-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_Settle-1",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": []
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "tasks": [
+          {
+            "elementId": "UserTask_Work",
+            "name": "Do the work"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s01-complete-UserTask_Work-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_UndoReview",
+            "name": "Review the undo"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-complete-UserTask_UndoReview-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_After",
+            "name": "Continue after compensation"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-complete-UserTask_After-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_Settle",
+            "name": "Settle the booking"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_Settle-1",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s01-complete-UserTask_Work-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s02-complete-UserTask_UndoReview-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s03-complete-UserTask_After-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_Settle-1",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "s01-start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s01-complete-UserTask_Work-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s02-complete-UserTask_UndoReview-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s03-complete-UserTask_After-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_Settle-1",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Work",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Do the work",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-complete-UserTask_Work-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_UndoReview",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review the undo",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s02-complete-UserTask_UndoReview-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_After",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Continue after compensation",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s03-complete-UserTask_After-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Settle",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Settle the booking",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s04-complete-UserTask_Settle-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": []
+      }
+    ]
+  }
+}

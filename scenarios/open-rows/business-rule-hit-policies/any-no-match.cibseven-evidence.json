@@ -1,0 +1,144 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "business-rule-hit-policies-any-no-match",
+    "sha256": "f940dfccbb254aaf6901b4ef7356a14fca3eafff5e78f032fcf055f4ed1a2922"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "13a1bfc9834c109b22ff684204ea92e32d432bc1bfb62debe4907de0bec7cc27"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "grade",
+            "value": {
+              "kind": "null"
+            }
+          },
+          {
+            "name": "policy",
+            "value": {
+              "kind": "string",
+              "value": "any-agree"
+            }
+          },
+          {
+            "name": "score",
+            "value": {
+              "kind": "null"
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start",
+        "tasks": [
+          {
+            "elementId": "Inspect",
+            "name": "Inspect result"
+          }
+        ]
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start",
+        "state": "ACTIVE"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Applicant_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "grade",
+            "value": {
+              "kind": "null"
+            }
+          },
+          {
+            "name": "policy",
+            "value": {
+              "kind": "string",
+              "value": "any-agree"
+            }
+          },
+          {
+            "name": "score",
+            "value": {
+              "kind": "null"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Applicant_1",
+              "elementId": "Inspect",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Inspect result",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      }
+    ]
+  }
+}

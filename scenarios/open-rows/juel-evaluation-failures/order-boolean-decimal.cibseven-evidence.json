@@ -1,0 +1,46 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "juel-evaluation-failures-order-boolean-decimal",
+    "sha256": "18bd2b01d55544783e955358564942ea925faaeb33c01a638464da5f07b8c2d0"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "13a1bfc9834c109b22ff684204ea92e32d432bc1bfb62debe4907de0bec7cc27"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "producerObservations": {
+    "stateQueries": [],
+    "taskQueries": [],
+    "timerJobs": [],
+    "historicProcessStates": []
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "rolledBack"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start",
+        "outcome": "rolledBack"
+      }
+    ]
+  }
+}

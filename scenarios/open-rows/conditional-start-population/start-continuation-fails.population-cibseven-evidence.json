@@ -1,0 +1,49 @@
+{
+  "kind": "cibSevenPopulationEvidence",
+  "scenario": {
+    "id": "conditional-start-population-start-continuation-fails",
+    "sha256": "3766d3085b2bfc31acf819dde6b1b2f1c9b914534d492274897033be247b3918"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "13a1bfc9834c109b22ff684204ea92e32d432bc1bfb62debe4907de0bec7cc27"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "projection": {
+    "id": "cib-population-result"
+  },
+  "result": {
+    "deployments": [
+      {
+        "deploymentId": 1,
+        "definitionRef": "large-order-audit",
+        "versions": [
+          {
+            "key": "Process_LargeOrderAudit",
+            "version": 1
+          }
+        ],
+        "outcome": {
+          "kind": "deployed"
+        }
+      }
+    ],
+    "steps": [
+      {
+        "commandId": "s01-evaluate",
+        "ordinal": 1,
+        "at": 0,
+        "outcome": "rolledBack"
+      }
+    ],
+    "processStates": []
+  }
+}

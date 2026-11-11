@@ -1,0 +1,483 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "receive-task-payload-correlation-items-parallel-local-element",
+    "sha256": "4eb9e8524c29216cba646ffa4c248fb207896dd3d034184d9270b4dacf7155d6"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "13a1bfc9834c109b22ff684204ea92e32d432bc1bfb62debe4907de0bec7cc27"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "apple",
+                "pear"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "deliver-body-1-pear",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "apple",
+                "pear"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "deliver-body-1-apple",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "apple",
+                "pear"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "deliver-body-2-pear",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "apple",
+                "pear"
+              ]
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "deliver-body-1-pear",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "deliver-body-1-apple",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "deliver-body-2-pear",
+        "tasks": []
+      }
+    ],
+    "messageSubscriptions": [
+      {
+        "afterCommandId": "start",
+        "subscriptions": [
+          {
+            "elementId": "AwaitItemPayment",
+            "eventName": "paymentReceived",
+            "messageId": "Message_Payment",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          },
+          {
+            "elementId": "AwaitItemPayment",
+            "eventName": "paymentReceived",
+            "messageId": "Message_Payment",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "deliver-body-1-pear",
+        "subscriptions": [
+          {
+            "elementId": "AwaitItemPayment",
+            "eventName": "paymentReceived",
+            "messageId": "Message_Payment",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          },
+          {
+            "elementId": "AwaitItemPayment",
+            "eventName": "paymentReceived",
+            "messageId": "Message_Payment",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "deliver-body-1-apple",
+        "subscriptions": [
+          {
+            "elementId": "AwaitItemPayment",
+            "eventName": "paymentReceived",
+            "messageId": "Message_Payment",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          },
+          {
+            "elementId": "AwaitItemPayment",
+            "eventName": "paymentReceived",
+            "messageId": "Message_Payment",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "deliver-body-2-pear",
+        "subscriptions": [
+          {
+            "elementId": "AwaitItemPayment",
+            "eventName": "paymentReceived",
+            "messageId": "Message_Payment",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          },
+          {
+            "elementId": "AwaitItemPayment",
+            "eventName": "paymentReceived",
+            "messageId": "Message_Payment",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "deliver-body-1-pear",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "deliver-body-1-apple",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "deliver-body-2-pear",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "deliver-body-1-pear",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "deliver-body-1-apple",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "deliver-body-2-pear",
+        "state": "ACTIVE"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "rejected"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Items_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "apple",
+                "pear"
+              ]
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Items_1",
+              "elementId": "AwaitItemPayment",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Payment"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Items_1",
+              "elementId": "AwaitItemPayment",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Payment"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "deliver-body-1-pear",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Items_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "apple",
+                "pear"
+              ]
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Items_1",
+              "elementId": "AwaitItemPayment",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Payment"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Items_1",
+              "elementId": "AwaitItemPayment",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Payment"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "deliver-body-1-apple",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Items_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "apple",
+                "pear"
+              ]
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Items_1",
+              "elementId": "AwaitItemPayment",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Payment"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Items_1",
+              "elementId": "AwaitItemPayment",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Payment"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "deliver-body-2-pear",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Items_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "items",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "apple",
+                "pear"
+              ]
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Items_1",
+              "elementId": "AwaitItemPayment",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Payment"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Items_1",
+              "elementId": "AwaitItemPayment",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Payment"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          }
+        ]
+      }
+    ]
+  }
+}

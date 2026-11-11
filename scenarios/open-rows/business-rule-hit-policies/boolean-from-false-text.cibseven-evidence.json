@@ -1,0 +1,148 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "business-rule-hit-policies-boolean-from-false-text",
+    "sha256": "21e762931df4932b1647fadeb954957742f22143de2578975a7bee63c28247e3"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "13a1bfc9834c109b22ff684204ea92e32d432bc1bfb62debe4907de0bec7cc27"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "label",
+            "value": {
+              "kind": "string",
+              "value": "regular"
+            }
+          },
+          {
+            "name": "policy",
+            "value": {
+              "kind": "string",
+              "value": "boolean"
+            }
+          },
+          {
+            "name": "vip",
+            "value": {
+              "kind": "string",
+              "value": "false"
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start",
+        "tasks": [
+          {
+            "elementId": "Inspect",
+            "name": "Inspect result"
+          }
+        ]
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start",
+        "state": "ACTIVE"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Applicant_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "label",
+            "value": {
+              "kind": "string",
+              "value": "regular"
+            }
+          },
+          {
+            "name": "policy",
+            "value": {
+              "kind": "string",
+              "value": "boolean"
+            }
+          },
+          {
+            "name": "vip",
+            "value": {
+              "kind": "string",
+              "value": "false"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Applicant_1",
+              "elementId": "Inspect",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Inspect result",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      }
+    ]
+  }
+}

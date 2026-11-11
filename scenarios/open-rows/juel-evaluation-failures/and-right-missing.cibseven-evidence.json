@@ -1,0 +1,46 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "juel-evaluation-failures-and-right-missing",
+    "sha256": "c61e32f7d26e89f61602a600117f889ab6240959fd78869ea50456272fbb6139"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "13a1bfc9834c109b22ff684204ea92e32d432bc1bfb62debe4907de0bec7cc27"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "producerObservations": {
+    "stateQueries": [],
+    "taskQueries": [],
+    "timerJobs": [],
+    "historicProcessStates": []
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "rolledBack"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start",
+        "outcome": "rolledBack"
+      }
+    ]
+  }
+}

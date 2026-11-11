@@ -1,0 +1,169 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "juel-core-forms-text-forms",
+    "sha256": "9a819b5930994edc15a6a4dbbac3876cc38937ecc61169e077dc11959cef3c22"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "13a1bfc9834c109b22ff684204ea92e32d432bc1bfb62debe4907de0bec7cc27"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "tags",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "x",
+                "y"
+              ]
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start",
+        "tasks": [
+          {
+            "elementId": "UserTask_Observe",
+            "name": "Observe the evaluated inputs"
+          }
+        ]
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start",
+        "state": "ACTIVE"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Run_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "tags",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "x",
+                "y"
+              ]
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Run_1",
+              "elementId": "UserTask_Observe",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Observe the evaluated inputs",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "fourByteText",
+                  "value": {
+                    "kind": "string",
+                    "value": "😀"
+                  }
+                },
+                {
+                  "name": "stringListContains",
+                  "value": {
+                    "kind": "boolean",
+                    "value": true
+                  }
+                },
+                {
+                  "name": "stringListFirst",
+                  "value": {
+                    "kind": "string",
+                    "value": "x"
+                  }
+                },
+                {
+                  "name": "stringListSize",
+                  "value": {
+                    "kind": "integer",
+                    "value": 2
+                  }
+                },
+                {
+                  "name": "threeByteText",
+                  "value": {
+                    "kind": "string",
+                    "value": "€"
+                  }
+                },
+                {
+                  "name": "twoByteText",
+                  "value": {
+                    "kind": "string",
+                    "value": "é"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      }
+    ]
+  }
+}

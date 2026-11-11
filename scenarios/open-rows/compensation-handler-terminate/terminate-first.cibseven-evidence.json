@@ -1,0 +1,163 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "compensation-handler-terminate-terminate-first",
+    "sha256": "566d4874b688731ff6b6c2d9eebb7673f18199d4beef6100797daf368d057886"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "13a1bfc9834c109b22ff684204ea92e32d432bc1bfb62debe4907de0bec7cc27"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "s01-complete-UserTask_Work-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "tasks": [
+          {
+            "elementId": "UserTask_Work",
+            "name": "Do the work"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s01-complete-UserTask_Work-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_Work",
+            "name": "Do the work"
+          }
+        ]
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s01-complete-UserTask_Work-1",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "s01-start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s01-complete-UserTask_Work-1",
+        "state": "ACTIVE"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "rolledBack"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Work",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Do the work",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-complete-UserTask_Work-1",
+        "outcome": "rolledBack"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_Work",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Do the work",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      }
+    ]
+  }
+}

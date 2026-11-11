@@ -1,0 +1,653 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "compensation-order-and-multiplicity-with-message-before-a-completes",
+    "sha256": "da6b92e8967acca470b84d446e975fb0d49db9fb356e6e6a7cf7279dafadc6f4"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "13a1bfc9834c109b22ff684204ea92e32d432bc1bfb62debe4907de0bec7cc27"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "s01-deliver-message-Boundary_Note-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "s02-complete-UserTask_B-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "s03-complete-UserTask_InA-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_UndoA-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "s05-complete-UserTask_UndoB-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "s06-complete-UserTask_UndoA-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "s07-complete-UserTask_After-1",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": []
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "tasks": [
+          {
+            "elementId": "UserTask_InA",
+            "name": "Work inside A"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s01-deliver-message-Boundary_Note-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_InA",
+            "name": "Work inside A"
+          },
+          {
+            "elementId": "UserTask_B",
+            "name": "Do B after the note"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-complete-UserTask_B-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_InA",
+            "name": "Work inside A"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-complete-UserTask_InA-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_UndoB",
+            "name": "Undo B"
+          },
+          {
+            "elementId": "UserTask_UndoA",
+            "name": "Undo A"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_UndoA-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_UndoB",
+            "name": "Undo B"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-complete-UserTask_UndoB-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_After",
+            "name": "Continue after compensation"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s06-complete-UserTask_UndoA-1",
+        "tasks": [
+          {
+            "elementId": "UserTask_After",
+            "name": "Continue after compensation"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s07-complete-UserTask_After-1",
+        "tasks": []
+      }
+    ],
+    "messageSubscriptions": [
+      {
+        "afterCommandId": "s01-start",
+        "subscriptions": [
+          {
+            "elementId": "Boundary_Note",
+            "eventName": "note",
+            "messageId": "Message_Note",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s01-deliver-message-Boundary_Note-1",
+        "subscriptions": [
+          {
+            "elementId": "Boundary_Note",
+            "eventName": "note",
+            "messageId": "Message_Note",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-complete-UserTask_B-1",
+        "subscriptions": [
+          {
+            "elementId": "Boundary_Note",
+            "eventName": "note",
+            "messageId": "Message_Note",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-complete-UserTask_InA-1",
+        "subscriptions": []
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_UndoA-1",
+        "subscriptions": []
+      },
+      {
+        "afterCommandId": "s05-complete-UserTask_UndoB-1",
+        "subscriptions": []
+      },
+      {
+        "afterCommandId": "s06-complete-UserTask_UndoA-1",
+        "subscriptions": []
+      },
+      {
+        "afterCommandId": "s07-complete-UserTask_After-1",
+        "subscriptions": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s01-deliver-message-Boundary_Note-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s02-complete-UserTask_B-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s03-complete-UserTask_InA-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_UndoA-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s05-complete-UserTask_UndoB-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s06-complete-UserTask_UndoA-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s07-complete-UserTask_After-1",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "s01-start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s01-deliver-message-Boundary_Note-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s02-complete-UserTask_B-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s03-complete-UserTask_InA-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s04-complete-UserTask_UndoA-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s05-complete-UserTask_UndoB-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s06-complete-UserTask_UndoA-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s07-complete-UserTask_After-1",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Boundary_Note",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Note"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_InA",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Work inside A",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-deliver-message-Boundary_Note-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Boundary_Note",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Note"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_B",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Do B after the note",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_InA",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Work inside A",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s02-complete-UserTask_B-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Boundary_Note",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Note"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_InA",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Work inside A",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s03-complete-UserTask_InA-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_UndoA",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Undo A",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_UndoB",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Undo B",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s04-complete-UserTask_UndoA-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_UndoB",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Undo B",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s05-complete-UserTask_UndoB-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_After",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Continue after compensation",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s06-complete-UserTask_UndoA-1",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_After",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Continue after compensation",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s07-complete-UserTask_After-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": []
+      }
+    ]
+  }
+}
