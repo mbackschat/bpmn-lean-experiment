@@ -1,0 +1,133 @@
+{
+  "kind": "scenario",
+  "id": "juel-evaluation-failures-map-to-upper-case",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "juel-evaluation-failures-method-receivers",
+    "relativePath": "scenarios/open-rows/juel-evaluation-failures/method-receivers.bpmn",
+    "sha256": "2a01706cb77196c0549c885a6c0a00e2a6bdd8669c415ba6c93c574bb7edca88",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start",
+      "instanceId": "Probe_1",
+      "variables": [
+        {
+          "name": "flag",
+          "value": {
+            "kind": "boolean",
+            "value": true
+          }
+        },
+        {
+          "name": "fraction",
+          "value": {
+            "kind": "string",
+            "value": "1.5"
+          }
+        },
+        {
+          "name": "ints",
+          "value": {
+            "kind": "map",
+            "value": [
+              {
+                "name": "k",
+                "value": {
+                  "kind": "integer",
+                  "value": 3
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "n",
+          "value": {
+            "kind": "integer",
+            "value": 3
+          }
+        },
+        {
+          "name": "nothing",
+          "value": {
+            "kind": "null"
+          }
+        },
+        {
+          "name": "nums",
+          "value": {
+            "kind": "list",
+            "value": [
+              {
+                "kind": "integer",
+                "value": 3
+              }
+            ]
+          }
+        },
+        {
+          "name": "pairs",
+          "value": {
+            "kind": "map",
+            "value": [
+              {
+                "name": "a",
+                "value": {
+                  "kind": "string",
+                  "value": "x"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "price",
+          "value": {
+            "kind": "decimal",
+            "coefficient": "15",
+            "scale": 1
+          }
+        },
+        {
+          "name": "probe",
+          "value": {
+            "kind": "string",
+            "value": "map-to-upper-case"
+          }
+        },
+        {
+          "name": "word",
+          "value": {
+            "kind": "string",
+            "value": "abc"
+          }
+        }
+      ]
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.3",
+      "BPMN 2.0.2 Clause 10.4.2",
+      "BPMN 2.0.2 §10.5.1"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/el/JuelExpression.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/el/VariableScopeElResolver.java",
+      "juel/src/main/java/org/cibseven/bpm/impl/juel/NumberOperations.java",
+      "juel/src/main/java/org/cibseven/bpm/impl/juel/BooleanOperations.java",
+      "juel/src/main/java/org/cibseven/bpm/impl/juel/TypeConverterImpl.java",
+      "juel/src/main/java/org/cibseven/bpm/impl/juel/AstBinary.java",
+      "juel/src/main/java/org/cibseven/bpm/impl/juel/AstUnary.java",
+      "juel/src/main/java/org/cibseven/bpm/impl/juel/AstChoice.java",
+      "juel/src/main/java/org/cibseven/bpm/impl/juel/AstProperty.java",
+      "juel/src/main/java/org/cibseven/bpm/impl/juel/AstMethod.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/variable/mapping/IoMapping.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/variable/mapping/InputParameter.java"
+    ]
+  }
+}

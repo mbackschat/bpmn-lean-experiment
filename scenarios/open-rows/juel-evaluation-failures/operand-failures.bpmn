@@ -1,0 +1,433 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_OperandFailures" targetNamespace="urn:bpmn-lean:scenarios:juel-evaluation-failures:operand-failures">
+  <process id="Process_OperandFailures" name="One failing operand form per probe, selected by the start variable probe" isExecutable="true">
+    <startEvent id="StartEvent_Start" name="Probe selected" />
+    <sequenceFlow id="Flow_Start_Select" sourceRef="StartEvent_Start" targetRef="Gateway_Select" />
+    <exclusiveGateway id="Gateway_Select" name="Select probe" gatewayDirection="Diverging" default="Flow_NoProbe" />
+    <userTask id="UserTask_DecimalPlusBooleanLeft" name="decimal plus boolean left">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${flag + price}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_DecimalPlusBooleanRight" name="decimal plus boolean right">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${price + flag}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_DecimalPlusList" name="decimal plus list">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${price + nums}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_DecimalPlusMap" name="decimal plus map">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${price + pairs}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_DecimalPlusWord" name="decimal plus word">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${price + word}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_DecimalPlusLonePoint" name="decimal plus lone point">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${price + '.'}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_DecimalPlusExponentBeyondInt" name="decimal plus exponent beyond int">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${price + '1e3000000000'}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_IntegerPlusBooleanRight" name="integer plus boolean right">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${n + flag}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_RemainderBooleanLeft" name="remainder boolean left">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${flag % n}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_RemainderBooleanRight" name="remainder boolean right">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${n % flag}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_NegateBoolean" name="negate boolean">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${-flag}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_NegateList" name="negate list">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${-nums}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_NegateMap" name="negate map">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${-pairs}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_NegateWord" name="negate word">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${-word}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_OrderBooleanDecimal" name="order boolean decimal">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${flag &lt; price}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_OrderDecimalBoolean" name="order decimal boolean">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${price &lt; flag}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_OrderBooleanInteger" name="order boolean integer">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${flag &lt; n}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_OrderIntegerBoolean" name="order integer boolean">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${n &lt; flag}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_EqualBooleanDecimal" name="equal boolean decimal">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${flag == price}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_EqualDecimalBoolean" name="equal decimal boolean">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${price == flag}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_EqualBooleanInteger" name="equal boolean integer">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${flag == n}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_EqualIntegerBoolean" name="equal integer boolean">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${n == flag}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_EqualListBoolean" name="equal list boolean">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${nums == flag}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_EqualBooleanList" name="equal boolean list">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${flag == nums}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_UnequalIntegerBoolean" name="unequal integer boolean">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${n != flag}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_EqualRightMissing" name="equal right missing">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${n == missing}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_AndRightMissing" name="and right missing">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${flag and missing}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_AndRightInteger" name="and right integer">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${flag and n}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_ChoiceConditionMissing" name="choice condition missing">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${missing ? 1 : 2}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_ChoiceConditionInteger" name="choice condition integer">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${n ? 1 : 2}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_CompositePartMissing" name="composite part missing">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">v=${missing}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_BracketBaseMissing" name="bracket base missing">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${missing['a']}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_BracketIndexMissing" name="bracket index missing">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${pairs[missing]}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_MethodReceiverMissing" name="method receiver missing">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${missing.size()}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_MethodArgumentMissing" name="method argument missing">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${word.contains(missing)}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_DoublePlusBoolean" name="double plus boolean">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${fraction + flag}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_DoublePlusList" name="double plus list">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${fraction + nums}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_DoublePlusMap" name="double plus map">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${fraction + pairs}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <exclusiveGateway id="Gateway_Merge" name="Merge" gatewayDirection="Converging" />
+    <endEvent id="EndEvent_Done" />
+    <sequenceFlow id="Flow_ToDecimalPlusBooleanLeft" sourceRef="Gateway_Select" targetRef="UserTask_DecimalPlusBooleanLeft">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'decimal-plus-boolean-left'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToDecimalPlusBooleanRight" sourceRef="Gateway_Select" targetRef="UserTask_DecimalPlusBooleanRight">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'decimal-plus-boolean-right'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToDecimalPlusList" sourceRef="Gateway_Select" targetRef="UserTask_DecimalPlusList">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'decimal-plus-list'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToDecimalPlusMap" sourceRef="Gateway_Select" targetRef="UserTask_DecimalPlusMap">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'decimal-plus-map'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToDecimalPlusWord" sourceRef="Gateway_Select" targetRef="UserTask_DecimalPlusWord">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'decimal-plus-word'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToDecimalPlusLonePoint" sourceRef="Gateway_Select" targetRef="UserTask_DecimalPlusLonePoint">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'decimal-plus-lone-point'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToDecimalPlusExponentBeyondInt" sourceRef="Gateway_Select" targetRef="UserTask_DecimalPlusExponentBeyondInt">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'decimal-plus-exponent-beyond-int'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToIntegerPlusBooleanRight" sourceRef="Gateway_Select" targetRef="UserTask_IntegerPlusBooleanRight">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'integer-plus-boolean-right'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToRemainderBooleanLeft" sourceRef="Gateway_Select" targetRef="UserTask_RemainderBooleanLeft">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'remainder-boolean-left'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToRemainderBooleanRight" sourceRef="Gateway_Select" targetRef="UserTask_RemainderBooleanRight">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'remainder-boolean-right'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToNegateBoolean" sourceRef="Gateway_Select" targetRef="UserTask_NegateBoolean">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'negate-boolean'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToNegateList" sourceRef="Gateway_Select" targetRef="UserTask_NegateList">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'negate-list'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToNegateMap" sourceRef="Gateway_Select" targetRef="UserTask_NegateMap">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'negate-map'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToNegateWord" sourceRef="Gateway_Select" targetRef="UserTask_NegateWord">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'negate-word'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToOrderBooleanDecimal" sourceRef="Gateway_Select" targetRef="UserTask_OrderBooleanDecimal">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'order-boolean-decimal'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToOrderDecimalBoolean" sourceRef="Gateway_Select" targetRef="UserTask_OrderDecimalBoolean">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'order-decimal-boolean'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToOrderBooleanInteger" sourceRef="Gateway_Select" targetRef="UserTask_OrderBooleanInteger">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'order-boolean-integer'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToOrderIntegerBoolean" sourceRef="Gateway_Select" targetRef="UserTask_OrderIntegerBoolean">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'order-integer-boolean'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToEqualBooleanDecimal" sourceRef="Gateway_Select" targetRef="UserTask_EqualBooleanDecimal">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'equal-boolean-decimal'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToEqualDecimalBoolean" sourceRef="Gateway_Select" targetRef="UserTask_EqualDecimalBoolean">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'equal-decimal-boolean'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToEqualBooleanInteger" sourceRef="Gateway_Select" targetRef="UserTask_EqualBooleanInteger">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'equal-boolean-integer'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToEqualIntegerBoolean" sourceRef="Gateway_Select" targetRef="UserTask_EqualIntegerBoolean">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'equal-integer-boolean'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToEqualListBoolean" sourceRef="Gateway_Select" targetRef="UserTask_EqualListBoolean">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'equal-list-boolean'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToEqualBooleanList" sourceRef="Gateway_Select" targetRef="UserTask_EqualBooleanList">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'equal-boolean-list'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToUnequalIntegerBoolean" sourceRef="Gateway_Select" targetRef="UserTask_UnequalIntegerBoolean">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'unequal-integer-boolean'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToEqualRightMissing" sourceRef="Gateway_Select" targetRef="UserTask_EqualRightMissing">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'equal-right-missing'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToAndRightMissing" sourceRef="Gateway_Select" targetRef="UserTask_AndRightMissing">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'and-right-missing'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToAndRightInteger" sourceRef="Gateway_Select" targetRef="UserTask_AndRightInteger">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'and-right-integer'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToChoiceConditionMissing" sourceRef="Gateway_Select" targetRef="UserTask_ChoiceConditionMissing">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'choice-condition-missing'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToChoiceConditionInteger" sourceRef="Gateway_Select" targetRef="UserTask_ChoiceConditionInteger">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'choice-condition-integer'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToCompositePartMissing" sourceRef="Gateway_Select" targetRef="UserTask_CompositePartMissing">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'composite-part-missing'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToBracketBaseMissing" sourceRef="Gateway_Select" targetRef="UserTask_BracketBaseMissing">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'bracket-base-missing'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToBracketIndexMissing" sourceRef="Gateway_Select" targetRef="UserTask_BracketIndexMissing">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'bracket-index-missing'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToMethodReceiverMissing" sourceRef="Gateway_Select" targetRef="UserTask_MethodReceiverMissing">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'method-receiver-missing'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToMethodArgumentMissing" sourceRef="Gateway_Select" targetRef="UserTask_MethodArgumentMissing">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'method-argument-missing'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToDoublePlusBoolean" sourceRef="Gateway_Select" targetRef="UserTask_DoublePlusBoolean">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'double-plus-boolean'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToDoublePlusList" sourceRef="Gateway_Select" targetRef="UserTask_DoublePlusList">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'double-plus-list'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToDoublePlusMap" sourceRef="Gateway_Select" targetRef="UserTask_DoublePlusMap">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'double-plus-map'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_NoProbe" sourceRef="Gateway_Select" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_DecimalPlusBooleanLeft_Merge" sourceRef="UserTask_DecimalPlusBooleanLeft" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_DecimalPlusBooleanRight_Merge" sourceRef="UserTask_DecimalPlusBooleanRight" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_DecimalPlusList_Merge" sourceRef="UserTask_DecimalPlusList" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_DecimalPlusMap_Merge" sourceRef="UserTask_DecimalPlusMap" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_DecimalPlusWord_Merge" sourceRef="UserTask_DecimalPlusWord" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_DecimalPlusLonePoint_Merge" sourceRef="UserTask_DecimalPlusLonePoint" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_DecimalPlusExponentBeyondInt_Merge" sourceRef="UserTask_DecimalPlusExponentBeyondInt" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_IntegerPlusBooleanRight_Merge" sourceRef="UserTask_IntegerPlusBooleanRight" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_RemainderBooleanLeft_Merge" sourceRef="UserTask_RemainderBooleanLeft" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_RemainderBooleanRight_Merge" sourceRef="UserTask_RemainderBooleanRight" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_NegateBoolean_Merge" sourceRef="UserTask_NegateBoolean" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_NegateList_Merge" sourceRef="UserTask_NegateList" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_NegateMap_Merge" sourceRef="UserTask_NegateMap" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_NegateWord_Merge" sourceRef="UserTask_NegateWord" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_OrderBooleanDecimal_Merge" sourceRef="UserTask_OrderBooleanDecimal" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_OrderDecimalBoolean_Merge" sourceRef="UserTask_OrderDecimalBoolean" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_OrderBooleanInteger_Merge" sourceRef="UserTask_OrderBooleanInteger" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_OrderIntegerBoolean_Merge" sourceRef="UserTask_OrderIntegerBoolean" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_EqualBooleanDecimal_Merge" sourceRef="UserTask_EqualBooleanDecimal" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_EqualDecimalBoolean_Merge" sourceRef="UserTask_EqualDecimalBoolean" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_EqualBooleanInteger_Merge" sourceRef="UserTask_EqualBooleanInteger" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_EqualIntegerBoolean_Merge" sourceRef="UserTask_EqualIntegerBoolean" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_EqualListBoolean_Merge" sourceRef="UserTask_EqualListBoolean" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_EqualBooleanList_Merge" sourceRef="UserTask_EqualBooleanList" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_UnequalIntegerBoolean_Merge" sourceRef="UserTask_UnequalIntegerBoolean" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_EqualRightMissing_Merge" sourceRef="UserTask_EqualRightMissing" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_AndRightMissing_Merge" sourceRef="UserTask_AndRightMissing" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_AndRightInteger_Merge" sourceRef="UserTask_AndRightInteger" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_ChoiceConditionMissing_Merge" sourceRef="UserTask_ChoiceConditionMissing" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_ChoiceConditionInteger_Merge" sourceRef="UserTask_ChoiceConditionInteger" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_CompositePartMissing_Merge" sourceRef="UserTask_CompositePartMissing" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_BracketBaseMissing_Merge" sourceRef="UserTask_BracketBaseMissing" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_BracketIndexMissing_Merge" sourceRef="UserTask_BracketIndexMissing" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_MethodReceiverMissing_Merge" sourceRef="UserTask_MethodReceiverMissing" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_MethodArgumentMissing_Merge" sourceRef="UserTask_MethodArgumentMissing" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_DoublePlusBoolean_Merge" sourceRef="UserTask_DoublePlusBoolean" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_DoublePlusList_Merge" sourceRef="UserTask_DoublePlusList" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_DoublePlusMap_Merge" sourceRef="UserTask_DoublePlusMap" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_Merge_Done" sourceRef="Gateway_Merge" targetRef="EndEvent_Done" />
+  </process>
+</definitions>

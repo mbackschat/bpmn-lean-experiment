@@ -1,0 +1,312 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_MethodReceivers" targetNamespace="urn:bpmn-lean:scenarios:juel-evaluation-failures:method-receivers">
+  <process id="Process_MethodReceivers" name="One method outside the closed list of its receiver per probe, selected by the start variable probe" isExecutable="true">
+    <startEvent id="StartEvent_Start" name="Probe selected" />
+    <sequenceFlow id="Flow_Start_Select" sourceRef="StartEvent_Start" targetRef="Gateway_Select" />
+    <exclusiveGateway id="Gateway_Select" name="Select probe" gatewayDirection="Diverging" default="Flow_NoProbe" />
+    <userTask id="UserTask_TextSize" name="text size">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${word.size()}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_TextGet" name="text get">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${word.get(1)}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_TextContainsKey" name="text contains key">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${word.containsKey('a')}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_TextContainsValue" name="text contains value">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${word.containsValue('a')}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_ListLength" name="list length">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${nums.length()}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_ListStartsWith" name="list starts with">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${nums.startsWith('a')}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_ListEndsWith" name="list ends with">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${nums.endsWith('a')}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_ListSubstring" name="list substring">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${nums.substring(1)}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_ListToUpperCase" name="list to upper case">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${nums.toUpperCase()}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_ListToLowerCase" name="list to lower case">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${nums.toLowerCase()}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_ListTrim" name="list trim">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${nums.trim()}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_ListConcat" name="list concat">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${nums.concat('a')}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_ListReplace" name="list replace">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${nums.replace('a', 'b')}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_ListContainsKey" name="list contains key">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${nums.containsKey('a')}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_ListContainsValue" name="list contains value">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${nums.containsValue('a')}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_MapLength" name="map length">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${pairs.length()}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_MapContains" name="map contains">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${pairs.contains('a')}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_MapStartsWith" name="map starts with">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${pairs.startsWith('a')}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_MapEndsWith" name="map ends with">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${pairs.endsWith('a')}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_MapIndexOf" name="map index of">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${pairs.indexOf('a')}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_MapLastIndexOf" name="map last index of">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${pairs.lastIndexOf('a')}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_MapSubstring" name="map substring">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${pairs.substring(1)}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_MapToUpperCase" name="map to upper case">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${pairs.toUpperCase()}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_MapToLowerCase" name="map to lower case">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${pairs.toLowerCase()}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_MapTrim" name="map trim">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${pairs.trim()}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_MapConcat" name="map concat">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${pairs.concat('a')}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="UserTask_MapReplace" name="map replace">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="value">${pairs.replace('a', 'b')}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <exclusiveGateway id="Gateway_Merge" name="Merge" gatewayDirection="Converging" />
+    <endEvent id="EndEvent_Done" />
+    <sequenceFlow id="Flow_ToTextSize" sourceRef="Gateway_Select" targetRef="UserTask_TextSize">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'text-size'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToTextGet" sourceRef="Gateway_Select" targetRef="UserTask_TextGet">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'text-get'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToTextContainsKey" sourceRef="Gateway_Select" targetRef="UserTask_TextContainsKey">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'text-contains-key'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToTextContainsValue" sourceRef="Gateway_Select" targetRef="UserTask_TextContainsValue">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'text-contains-value'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToListLength" sourceRef="Gateway_Select" targetRef="UserTask_ListLength">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'list-length'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToListStartsWith" sourceRef="Gateway_Select" targetRef="UserTask_ListStartsWith">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'list-starts-with'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToListEndsWith" sourceRef="Gateway_Select" targetRef="UserTask_ListEndsWith">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'list-ends-with'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToListSubstring" sourceRef="Gateway_Select" targetRef="UserTask_ListSubstring">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'list-substring'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToListToUpperCase" sourceRef="Gateway_Select" targetRef="UserTask_ListToUpperCase">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'list-to-upper-case'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToListToLowerCase" sourceRef="Gateway_Select" targetRef="UserTask_ListToLowerCase">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'list-to-lower-case'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToListTrim" sourceRef="Gateway_Select" targetRef="UserTask_ListTrim">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'list-trim'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToListConcat" sourceRef="Gateway_Select" targetRef="UserTask_ListConcat">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'list-concat'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToListReplace" sourceRef="Gateway_Select" targetRef="UserTask_ListReplace">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'list-replace'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToListContainsKey" sourceRef="Gateway_Select" targetRef="UserTask_ListContainsKey">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'list-contains-key'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToListContainsValue" sourceRef="Gateway_Select" targetRef="UserTask_ListContainsValue">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'list-contains-value'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToMapLength" sourceRef="Gateway_Select" targetRef="UserTask_MapLength">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'map-length'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToMapContains" sourceRef="Gateway_Select" targetRef="UserTask_MapContains">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'map-contains'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToMapStartsWith" sourceRef="Gateway_Select" targetRef="UserTask_MapStartsWith">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'map-starts-with'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToMapEndsWith" sourceRef="Gateway_Select" targetRef="UserTask_MapEndsWith">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'map-ends-with'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToMapIndexOf" sourceRef="Gateway_Select" targetRef="UserTask_MapIndexOf">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'map-index-of'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToMapLastIndexOf" sourceRef="Gateway_Select" targetRef="UserTask_MapLastIndexOf">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'map-last-index-of'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToMapSubstring" sourceRef="Gateway_Select" targetRef="UserTask_MapSubstring">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'map-substring'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToMapToUpperCase" sourceRef="Gateway_Select" targetRef="UserTask_MapToUpperCase">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'map-to-upper-case'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToMapToLowerCase" sourceRef="Gateway_Select" targetRef="UserTask_MapToLowerCase">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'map-to-lower-case'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToMapTrim" sourceRef="Gateway_Select" targetRef="UserTask_MapTrim">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'map-trim'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToMapConcat" sourceRef="Gateway_Select" targetRef="UserTask_MapConcat">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'map-concat'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToMapReplace" sourceRef="Gateway_Select" targetRef="UserTask_MapReplace">
+      <conditionExpression xsi:type="tFormalExpression">${probe == 'map-replace'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_NoProbe" sourceRef="Gateway_Select" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_TextSize_Merge" sourceRef="UserTask_TextSize" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_TextGet_Merge" sourceRef="UserTask_TextGet" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_TextContainsKey_Merge" sourceRef="UserTask_TextContainsKey" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_TextContainsValue_Merge" sourceRef="UserTask_TextContainsValue" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_ListLength_Merge" sourceRef="UserTask_ListLength" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_ListStartsWith_Merge" sourceRef="UserTask_ListStartsWith" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_ListEndsWith_Merge" sourceRef="UserTask_ListEndsWith" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_ListSubstring_Merge" sourceRef="UserTask_ListSubstring" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_ListToUpperCase_Merge" sourceRef="UserTask_ListToUpperCase" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_ListToLowerCase_Merge" sourceRef="UserTask_ListToLowerCase" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_ListTrim_Merge" sourceRef="UserTask_ListTrim" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_ListConcat_Merge" sourceRef="UserTask_ListConcat" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_ListReplace_Merge" sourceRef="UserTask_ListReplace" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_ListContainsKey_Merge" sourceRef="UserTask_ListContainsKey" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_ListContainsValue_Merge" sourceRef="UserTask_ListContainsValue" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_MapLength_Merge" sourceRef="UserTask_MapLength" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_MapContains_Merge" sourceRef="UserTask_MapContains" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_MapStartsWith_Merge" sourceRef="UserTask_MapStartsWith" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_MapEndsWith_Merge" sourceRef="UserTask_MapEndsWith" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_MapIndexOf_Merge" sourceRef="UserTask_MapIndexOf" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_MapLastIndexOf_Merge" sourceRef="UserTask_MapLastIndexOf" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_MapSubstring_Merge" sourceRef="UserTask_MapSubstring" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_MapToUpperCase_Merge" sourceRef="UserTask_MapToUpperCase" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_MapToLowerCase_Merge" sourceRef="UserTask_MapToLowerCase" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_MapTrim_Merge" sourceRef="UserTask_MapTrim" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_MapConcat_Merge" sourceRef="UserTask_MapConcat" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_MapReplace_Merge" sourceRef="UserTask_MapReplace" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_Merge_Done" sourceRef="Gateway_Merge" targetRef="EndEvent_Done" />
+  </process>
+</definitions>
