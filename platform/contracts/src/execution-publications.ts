@@ -120,7 +120,17 @@ export type StateOpenWait = Readonly<{
   detail: { kind: string } & PublicJsonObject;
 }>;
 
-/** The canonical state observation (`canonical-result.schema.json#/$defs/state`); `failure` only when failed. */
+/** A Signal a committed input threw to the population (`canonical-result.schema.json#/$defs/broadcast`). */
+export type StateBroadcast = Readonly<{
+  variables: readonly StateVariableBinding[];
+  businessKey?: string;
+  origin: StateOccurrenceId;
+}> & (Readonly<{ name: string }> | Readonly<{ signalRef: Readonly<{ id: string; namespace?: string }> }>);
+
+/**
+ * The canonical state observation (`canonical-result.schema.json#/$defs/state`); `failure` only when failed and
+ * `broadcasts` only after an input that threw a Signal.
+ */
 export type ExecutionState = Readonly<{
   kind: "state";
   instanceId: string;
@@ -129,6 +139,7 @@ export type ExecutionState = Readonly<{
   variables: readonly StateVariableBinding[];
   scopes: readonly PublicJsonObject[];
   openWaits: readonly StateOpenWait[];
+  broadcasts?: readonly StateBroadcast[];
   failure?: PublicJsonObject;
 }>;
 

@@ -241,6 +241,34 @@ test("binds the page to the requested cursor and batch limit", () => {
   );
 });
 
+test("decodes the Signals a committed input threw exactly as canonical-result.schema.json#/$defs/broadcast", () => {
+  const origin = { processInstanceId: publicationIdentity.processInstanceId, elementId: "Throw_Go", activation: 1 };
+  const named = { name: "Go", variables: runningState.variables, origin };
+  const addressed = { signalRef: { id: "Signal_Go", namespace: "urn:orders" }, variables: [], businessKey: "", origin };
+  const thrown = pageWithState({ ...runningState, broadcasts: [named, addressed, { signalRef: { id: "Signal_Go" }, variables: [], origin }] });
+  assert.deepEqual(decodePage(thrown), thrown);
+  const none = pageWithState({ ...runningState, broadcasts: [] });
+  assert.deepEqual(decodePage(none), none);
+
+  const malformed: Array<[unknown, RegExp]> = [
+    [{ ...named, signalRef: addressed.signalRef }, /exactly one of name and signalRef/u],
+    [{ variables: [], origin }, /exactly one of name and signalRef/u],
+    [{ ...named, name: "" }, /must not be empty/u],
+    [{ ...named, extra: true }, /exactly/u],
+    [{ ...addressed, signalRef: { id: "" } }, /must not be empty/u],
+    [{ ...addressed, signalRef: { id: "Signal_Go", namespace: 1 } }, /namespace must be a string/u],
+    [{ ...addressed, signalRef: { id: "Signal_Go", local: "Go" } }, /exactly/u],
+    [{ ...addressed, businessKey: 7 }, /businessKey must be a string/u],
+    [{ ...named, variables: [{ name: "amount" }] }, /exactly/u],
+    [{ ...named, origin: { ...origin, activation: 0 } }, /positive safe integer/u],
+    [{ ...named, origin: { ...origin, elementId: "" } }, /must not be empty/u],
+  ];
+  for (const [broadcast, message] of malformed) {
+    rejectPage(pageWithState({ ...runningState, broadcasts: [broadcast] }), message);
+  }
+  rejectPage(pageWithState({ ...runningState, broadcasts: {} }), /broadcasts must be a dense array/u);
+});
+
 test("binds the page to the expected definition and Process-instance identity", () => {
   const page = executionPublicationPage();
   const { definition } = page;
@@ -502,7 +530,8 @@ test("keeps the decoded members synchronized with the producer schemas", async (
   assert.deepEqual(keys(publication.committedTransitionRecord), Object.keys(record).toSorted());
   assert.deepEqual(keys(publication.currentCommittedExecution), Object.keys(page.current!).toSorted());
   assert.deepEqual(keys(publication.executionPublicationExport), Object.keys(executionPublicationExport()).toSorted());
-  assert.deepEqual(keys(result.state), [...Object.keys(runningState), "failure"].toSorted());
+  assert.deepEqual(keys(result.state), [...Object.keys(runningState), "broadcasts", "failure"].toSorted());
+  assert.deepEqual(keys(result.broadcast), ["name", "signalRef", "variables", "businessKey", "origin"].toSorted());
   assert.deepEqual(
     result.state!.required!.toSorted(),
     Object.keys(runningState).filter((key) => key !== "scopes").toSorted(),

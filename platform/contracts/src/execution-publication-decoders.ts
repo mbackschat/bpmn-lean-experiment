@@ -5,6 +5,7 @@ import {
   requireNonnegativeSafeInteger,
   requireObject,
   requirePositiveSafeInteger,
+  requireString,
 } from "./decoder-primitives.js";
 import {
   ExecutionInputKind,
@@ -255,9 +256,12 @@ function requireState(value: unknown, processInstanceId: string, label: string):
   const status = readOwn(value, "status");
   if (!statuses.has(status)) throw new TypeError(`${label}.status is unknown`);
   // canonical-result.schema.json#/$defs/state: a failed state carries its failure and no open wait; no other does.
+  // `broadcasts` is present only after an input that threw a Signal.
   const failed = status === ProcessStatus.Failed;
+  const threw = Object.hasOwn(value, "broadcasts");
   exact(value, label, [
     "kind", "instanceId", "status", "logicalTimeMs", "variables", "scopes", "openWaits",
+    ...(threw ? ["broadcasts"] : []),
     ...(failed ? ["failure"] : []),
   ]);
   if (readOwn(value, "kind") !== "state") throw new TypeError(`${label}.kind must be state`);
@@ -265,28 +269,19 @@ function requireState(value: unknown, processInstanceId: string, label: string):
     throw new TypeError(`${label}.instanceId does not match the Process instance`);
   }
   requireNonnegativeSafeInteger(readOwn(value, "logicalTimeMs"), `${label}.logicalTimeMs`);
-  requireList(readOwn(value, "variables"), `${label}.variables`, (binding, itemLabel) => {
-    requireObject(binding, itemLabel);
-    exact(binding, itemLabel, ["name", "value"]);
-    requireNonemptyString(readOwn(binding, "name"), `${itemLabel}.name`);
-    requireKinded(readOwn(binding, "value"), `${itemLabel}.value`);
-  });
+  requireList(readOwn(value, "variables"), `${label}.variables`, requireBinding);
   requireList(readOwn(value, "scopes"), `${label}.scopes`, requirePublicJsonObject);
   requireList(readOwn(value, "openWaits"), `${label}.openWaits`, (wait, itemLabel) => {
     requireObject(wait, itemLabel);
     exact(wait, itemLabel, ["id", "definition", "input", "detail"]);
-    const id = readOwn(wait, "id");
-    requireObject(id, `${itemLabel}.id`);
-    exact(id, `${itemLabel}.id`, ["processInstanceId", "elementId", "activation"]);
-    requireNonemptyString(readOwn(id, "processInstanceId"), `${itemLabel}.id.processInstanceId`);
-    requireNonemptyString(readOwn(id, "elementId"), `${itemLabel}.id.elementId`);
-    requirePositiveSafeInteger(readOwn(id, "activation"), `${itemLabel}.id.activation`);
+    requireOccurrenceId(readOwn(wait, "id"), `${itemLabel}.id`);
     const definition = readOwn(wait, "definition");
     if (definition !== null) requirePublicJsonObject(definition, `${itemLabel}.definition`);
     const input = readOwn(wait, "input");
     if (input !== null) requireNonemptyString(input, `${itemLabel}.input`);
     requireKinded(readOwn(wait, "detail"), `${itemLabel}.detail`);
   });
+  if (threw) requireList(readOwn(value, "broadcasts"), `${label}.broadcasts`, requireBroadcast);
   if (failed) {
     requirePublicJsonObject(readOwn(value, "failure"), `${label}.failure`);
     if ((readOwn(value, "openWaits") as readonly unknown[]).length > 0) {
@@ -294,6 +289,47 @@ function requireState(value: unknown, processInstanceId: string, label: string):
     }
   }
   return value as ExecutionState;
+}
+
+function requireBinding(value: unknown, label: string): void {
+  requireObject(value, label);
+  exact(value, label, ["name", "value"]);
+  requireNonemptyString(readOwn(value, "name"), `${label}.name`);
+  requireKinded(readOwn(value, "value"), `${label}.value`);
+}
+
+/** `scenario.schema.json#/$defs/occurrenceId`. */
+function requireOccurrenceId(value: unknown, label: string): void {
+  requireObject(value, label);
+  exact(value, label, ["processInstanceId", "elementId", "activation"]);
+  requireNonemptyString(readOwn(value, "processInstanceId"), `${label}.processInstanceId`);
+  requireNonemptyString(readOwn(value, "elementId"), `${label}.elementId`);
+  requirePositiveSafeInteger(readOwn(value, "activation"), `${label}.activation`);
+}
+
+/** `canonical-result.schema.json#/$defs/broadcast`: a Signal named by `name` or addressed by `signalRef`, never both. */
+function requireBroadcast(value: unknown, label: string): void {
+  requireObject(value, label);
+  const named = Object.hasOwn(value, "name");
+  if (named === Object.hasOwn(value, "signalRef")) {
+    throw new TypeError(`${label} must carry exactly one of name and signalRef`);
+  }
+  const keyed = Object.hasOwn(value, "businessKey");
+  exact(value, label, [named ? "name" : "signalRef", "variables", ...(keyed ? ["businessKey"] : []), "origin"]);
+  if (named) {
+    requireNonemptyString(readOwn(value, "name"), `${label}.name`);
+  } else {
+    // scenario.schema.json#/$defs/signalRef: the Signal's id and, when its Definitions declare one, their namespace.
+    const signalRef = readOwn(value, "signalRef");
+    requireObject(signalRef, `${label}.signalRef`);
+    const spaced = Object.hasOwn(signalRef, "namespace");
+    exact(signalRef, `${label}.signalRef`, ["id", ...(spaced ? ["namespace"] : [])]);
+    requireNonemptyString(readOwn(signalRef, "id"), `${label}.signalRef.id`);
+    if (spaced) requireString(readOwn(signalRef, "namespace"), `${label}.signalRef.namespace`);
+  }
+  requireList(readOwn(value, "variables"), `${label}.variables`, requireBinding);
+  if (keyed) requireString(readOwn(value, "businessKey"), `${label}.businessKey`);
+  requireOccurrenceId(readOwn(value, "origin"), `${label}.origin`);
 }
 
 /** An engine-typed object: plain JSON whose `kind` names its form. */
