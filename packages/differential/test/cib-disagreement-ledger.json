@@ -315,6 +315,13 @@
     ]
   },
   {
+    "evidence": "scenarios/open-rows/compensation-context-live-outer/default-handler-reads-and-writes-outer.cibseven-evidence.json",
+    "owners": [
+      "PC-COMPENSATION-01",
+      "PC-COMPENSATION-05"
+    ]
+  },
+  {
     "evidence": "scenarios/open-rows/compensation-effect-and-call-records/call-completed-then-throw.cibseven-evidence.json",
     "owners": [
       "PC-COMPENSATION-03",
@@ -364,6 +371,39 @@
     ]
   },
   {
+    "evidence": "scenarios/open-rows/compensation-event-subprocess-throws/error-esp-completes-then-outer-throw.cibseven-evidence.json",
+    "owners": [
+      "PC-COMPENSATION-02",
+      "PC-COMPENSATION-05"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/compensation-event-subprocess-throws/error-esp-throws-targeted.cibseven-evidence.json",
+    "owners": [
+      "PC-COMPENSATION-02",
+      "PC-COMPENSATION-05"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/compensation-event-subprocess-throws/error-esp-throws-untargeted.cibseven-evidence.json",
+    "owners": [
+      "PC-COMPENSATION-02",
+      "PC-COMPENSATION-05"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/compensation-handler-bodies-without-receive/abandoned-while-handlers-wait.cibseven-evidence.json",
+    "owners": [
+      "PC-COMPENSATION-04"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/compensation-handler-bodies-without-receive/all-forms-complete.cibseven-evidence.json",
+    "owners": [
+      "PC-COMPENSATION-04"
+    ]
+  },
+  {
     "evidence": "scenarios/open-rows/compensation-handler-bodies/abandoned-while-handlers-wait.cibseven-evidence.json",
     "owners": [
       "PC-COMPENSATION-04"
@@ -378,6 +418,46 @@
   {
     "evidence": "scenarios/open-rows/compensation-handler-bodies/premature-and-stale-handler-results.cibseven-evidence.json",
     "owners": [
+      "PC-COMPENSATION-04"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/compensation-handler-consumption/subprocess-handler-over-inner-record.cibseven-evidence.json",
+    "owners": [
+      "PC-COMPENSATION-05"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/compensation-handler-consumption/task-handler-over-inner-record.cibseven-evidence.json",
+    "owners": [
+      "PC-COMPENSATION-05"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/compensation-handler-failure-at-wait/error-caught-handler-fails-after-wait.cibseven-evidence.json",
+    "owners": [
+      "PC-COMPENSATION-01",
+      "PC-COMPENSATION-04"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/compensation-handler-failure-at-wait/error-uncaught-handler-fails-after-wait.cibseven-evidence.json",
+    "owners": [
+      "PC-COMPENSATION-01",
+      "PC-COMPENSATION-04"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/compensation-handler-failure-at-wait/escalation-caught-handler-fails-after-wait.cibseven-evidence.json",
+    "owners": [
+      "PC-COMPENSATION-01",
+      "PC-COMPENSATION-04"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/compensation-handler-failure-at-wait/escalation-uncaught-handler-fails-after-wait.cibseven-evidence.json",
+    "owners": [
+      "PC-COMPENSATION-01",
       "PC-COMPENSATION-04"
     ]
   },
@@ -473,6 +553,18 @@
     ]
   },
   {
+    "evidence": "scenarios/open-rows/compensation-handler-terminate/slow-first.cibseven-evidence.json",
+    "owners": [
+      "PC-COMPENSATION-04"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/compensation-handler-terminate/terminate-first.cibseven-evidence.json",
+    "owners": [
+      "PC-COMPENSATION-04"
+    ]
+  },
+  {
     "evidence": "scenarios/open-rows/compensation-multi-instance-bodies/regions-parallel-out-of-order.cibseven-evidence.json",
     "owners": [
       "PC-COMPENSATION-03"
@@ -493,6 +585,41 @@
   {
     "evidence": "scenarios/open-rows/compensation-multi-instance-bodies/tasks-sequential-in-turn.cibseven-evidence.json",
     "owners": [
+      "PC-COMPENSATION-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/compensation-order-and-multiplicity/call-parallel-three-reviewers.cibseven-evidence.json",
+    "owners": [
+      "PC-COMPENSATION-01",
+      "PC-COMPENSATION-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/compensation-order-and-multiplicity/call-sequential-three-reviewers.cibseven-evidence.json",
+    "owners": [
+      "PC-COMPENSATION-01",
+      "PC-COMPENSATION-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/compensation-order-and-multiplicity/user-handler-two-items.cibseven-evidence.json",
+    "owners": [
+      "PC-COMPENSATION-01",
+      "PC-COMPENSATION-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/compensation-order-and-multiplicity/user-handler-zero-items.cibseven-evidence.json",
+    "owners": [
+      "PC-COMPENSATION-01",
+      "PC-COMPENSATION-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/compensation-order-and-multiplicity/user-parallel-quorum-ends-after-one.cibseven-evidence.json",
+    "owners": [
+      "PC-COMPENSATION-01",
       "PC-COMPENSATION-03"
     ]
   },
@@ -1317,6 +1444,12 @@
     "owners": [
       "PC-DATA-07",
       "PC-DATA-09"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/juel-evaluation-failures/map-replace.cibseven-evidence.json",
+    "owners": [
+      "PC-DATA-07"
     ]
   },
   {
@@ -2187,15 +2320,81 @@
     ]
   },
   {
+    "evidence": "scenarios/open-rows/timer-data-derived/catch-interval-text.cibseven-evidence.json",
+    "owners": [
+      "PC-TIMER-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/timer-data-derived/catch-point-without-digits.cibseven-evidence.json",
+    "owners": [
+      "PC-TIMER-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/timer-data-derived/cron-arming-past-bound.cibseven-evidence.json",
+    "owners": [
+      "CIB-LIM-0003"
+    ]
+  },
+  {
     "evidence": "scenarios/open-rows/timer-data-derived/cron-descending-range.cibseven-evidence.json",
     "owners": [
       "CIB-LIM-0003"
     ]
   },
   {
+    "evidence": "scenarios/open-rows/timer-data-derived/cron-item-with-letter.cibseven-evidence.json",
+    "owners": [
+      "PC-TIMER-03"
+    ]
+  },
+  {
     "evidence": "scenarios/open-rows/timer-data-derived/cron-never-matches.cibseven-evidence.json",
     "owners": [
       "CIB-LIM-0003"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/timer-data-derived/cron-open-range.cibseven-evidence.json",
+    "owners": [
+      "PC-TIMER-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/timer-data-derived/cron-step-from-letter.cibseven-evidence.json",
+    "owners": [
+      "PC-TIMER-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/timer-data-derived/cron-step-with-letter.cibseven-evidence.json",
+    "owners": [
+      "PC-TIMER-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/timer-data-derived/cron-step-zero-from-start.cibseven-evidence.json",
+    "owners": [
+      "PC-TIMER-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/timer-data-derived/cron-step-zero-over-range.cibseven-evidence.json",
+    "owners": [
+      "PC-TIMER-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/timer-data-derived/cron-two-steps.cibseven-evidence.json",
+    "owners": [
+      "PC-TIMER-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/timer-data-derived/cron-unspecified-seconds.cibseven-evidence.json",
+    "owners": [
+      "PC-TIMER-03"
     ]
   },
   {
@@ -2290,6 +2489,12 @@
     ]
   },
   {
+    "evidence": "scenarios/open-rows/transaction-and-error-exits/error-end-in-subprocess.cibseven-evidence.json",
+    "owners": [
+      "PC-TX-01"
+    ]
+  },
+  {
     "evidence": "scenarios/open-rows/transaction-cancel-mixed/cancel-with-effect-unanswered.cibseven-evidence.json",
     "owners": [
       "PC-TX-02"
@@ -2341,6 +2546,18 @@
     ]
   },
   {
+    "evidence": "scenarios/open-rows/transaction-cancel-waiting-handlers/handlers-user-first.cibseven-evidence.json",
+    "owners": [
+      "PC-TX-02"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/transaction-cancel-waiting-handlers/stale-interior-result-while-handlers-wait.cibseven-evidence.json",
+    "owners": [
+      "PC-TX-02"
+    ]
+  },
+  {
     "evidence": "scenarios/open-rows/transaction-methods/image-method.cibseven-evidence.json",
     "owners": [
       "PC-TX-01"
@@ -2350,6 +2567,30 @@
     "evidence": "scenarios/open-rows/transaction-methods/store-method.cibseven-evidence.json",
     "owners": [
       "PC-TX-01"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/transaction-multi-instance-concurrent-cancel/completion-condition-closes-while-run-waits.cibseven-evidence.json",
+    "owners": [
+      "PC-TX-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/transaction-multi-instance-concurrent-cancel/concurrent-cancel-first-run-completes-first.cibseven-evidence.json",
+    "owners": [
+      "PC-TX-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/transaction-multi-instance-concurrent-cancel/concurrent-cancel-second-run-completes-first.cibseven-evidence.json",
+    "owners": [
+      "PC-TX-03"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/transaction-multi-instance-concurrent-cancel/sequential-cancel-before-third-body-begins.cibseven-evidence.json",
+    "owners": [
+      "PC-TX-03"
     ]
   },
   {
