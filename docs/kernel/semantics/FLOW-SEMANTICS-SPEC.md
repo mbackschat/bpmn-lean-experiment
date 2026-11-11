@@ -174,7 +174,7 @@ Only reviewed reader rules, shared by every profile, make a warning safe.
 
 It asserts that the reader refuses every rejected document and refuses no valid one as `source.schema`. A second guard locks the committed table to its generator.
 
-**Consequence: a `calledElement` expression is refused.** A `calledElement` written as an expression (`${calleeKey}`) is valid in CIB's schema copy and invalid in OMG's, so it is refused as `source.schema`. This touches PC-SCOPE-03's [binding-forms](../../../scenarios/open-rows/call-binding-time/README.md) model; it is listed under the open questions of the track hand-back.
+**Consequence: a `calledElement` expression is refused.** A `calledElement` written as an expression (`${calleeKey}`) is valid in CIB's schema copy and invalid in OMG's, so it is refused as `source.schema`. This touches PC-SCOPE-03's [binding-dynamic](../../../scenarios/open-rows/call-binding-time/README.md) model; it is listed under the open questions of the track hand-back.
 
 ### Diagnostics
 

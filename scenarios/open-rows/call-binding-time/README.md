@@ -40,8 +40,4 @@ Each schedule starts its caller (`binding-dynamic` with the Process variable `ca
 | [tag-unknown](tag-unknown.scenario.json) | tag-unknown | no |
 | [call-tenant-selector](call-tenant-selector.scenario.json) | tenant-binding | no |
 
-## Superseded cut
-
-The first cut bound every form to one model: [binding-forms](binding-forms.bpmn) takes the Process variable `route` at an Exclusive Gateway into one of seven Call Activities that merge into *Confirm the request*, and [tag-binding](tag-binding.bpmn) does the same for the two tag forms. Its schedules are [call-latest](call-latest.scenario.json), [call-deployment](call-deployment.scenario.json), [call-version](call-version.scenario.json), [call-dynamic](call-dynamic.scenario.json), [call-version-absent](call-version-absent.scenario.json), [call-missing](call-missing.scenario.json), [call-other-namespace](call-other-namespace.scenario.json), [call-tag](call-tag.scenario.json) and [call-tag-unknown](call-tag-unknown.scenario.json), each setting `route` to the form it names. The per-form cut above replaces it. Its schedules and retained CIB evidence stay in place, since the evidence binds their exact bytes, until the per-form schedules have retained evidence of their own.
-
 The schedules carry no expected called definition, task or variable; the retained CIB evidence is the answer.

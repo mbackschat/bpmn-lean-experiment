@@ -265,74 +265,9 @@
     ]
   },
   {
-    "evidence": "scenarios/open-rows/call-binding-time/call-deployment.cibseven-evidence.json",
-    "owners": [
-      "CIB-INT-0034",
-      "CIB-LIM-0032"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/call-binding-time/call-dynamic.cibseven-evidence.json",
-    "owners": [
-      "CIB-INT-0034",
-      "CIB-LIM-0032"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/call-binding-time/call-latest.cibseven-evidence.json",
-    "owners": [
-      "CIB-INT-0034",
-      "CIB-LIM-0032"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/call-binding-time/call-missing.cibseven-evidence.json",
-    "owners": [
-      "CIB-INT-0034",
-      "CIB-LIM-0032"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/call-binding-time/call-other-namespace.cibseven-evidence.json",
-    "owners": [
-      "CIB-EXT-0045",
-      "CIB-INT-0034",
-      "CIB-LIM-0032"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/call-binding-time/call-tag-unknown.cibseven-evidence.json",
-    "owners": [
-      "CIB-EXT-0045",
-      "CIB-INT-0034"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/call-binding-time/call-tag.cibseven-evidence.json",
-    "owners": [
-      "CIB-EXT-0045",
-      "CIB-INT-0034"
-    ]
-  },
-  {
     "evidence": "scenarios/open-rows/call-binding-time/call-tenant-selector.cibseven-evidence.json",
     "owners": [
       "CIB-LIM-0033"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/call-binding-time/call-version-absent.cibseven-evidence.json",
-    "owners": [
-      "CIB-EXT-0045",
-      "CIB-INT-0034",
-      "CIB-LIM-0032"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/call-binding-time/call-version.cibseven-evidence.json",
-    "owners": [
-      "CIB-INT-0034",
-      "CIB-LIM-0032"
     ]
   },
   {
