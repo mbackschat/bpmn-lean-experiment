@@ -9,9 +9,13 @@ import {
   EngineDefinitionCompilationStatus,
   compileBpmnDefinition,
   engineHostRefusal,
+  type EngineTimerSchedule,
 } from "@bpmn-lean/engine-api";
 
 import { limits, scenarioBytes, sha256, standardProfile } from "./support.ts";
+
+const { engineTimerScheduleFromJson } = await import(new URL("../dist/definition.js", import.meta.url).href) as
+  typeof import("../src/definition.ts");
 
 test("an admitted definition publishes its identity, its host requirements and a none start", async () => {
   const bytes = await scenarioBytes("user-task-preserved-notation/process.bpmn");
@@ -50,6 +54,39 @@ test("a Message start publishes its channel and a Timer start the schedule the k
   assert.equal(timer.status, EngineDefinitionCompilationStatus.Accepted);
   if (timer.status !== EngineDefinitionCompilationStatus.Accepted) return;
   assert.deepEqual(timer.capabilities.starts, [{ startEventId: "TimerStart_PT1S", channel: null, timer: { durationMs: 1_000 } }]);
+});
+
+/** One line per schedule form, so that a form the type does not declare fails the type check. */
+function describeSchedule(schedule: EngineTimerSchedule): string {
+  if ("durationMs" in schedule) return `after ${String(schedule.durationMs)} ms`;
+  if ("instantMs" in schedule) return `at ${new Date(schedule.instantMs).toISOString()}`;
+  if ("cycle" in schedule) return `every ${String(schedule.cycle.periodMs)} ms, ${String(schedule.cycle.repetitions)} times`;
+  return `on Cron ${schedule.cron}`;
+}
+
+test("a Timer start publishes a date as its instant, a cycle as its period and a Cron expression as its text", async () => {
+  const offered = async (path: string): Promise<readonly string[]> => {
+    const result = await compileBpmnDefinition({ bytes: await scenarioBytes(path), sourceId: path, profile: standardProfile, limits });
+    assert.equal(result.status, EngineDefinitionCompilationStatus.Accepted, path);
+    if (result.status !== EngineDefinitionCompilationStatus.Accepted) return [];
+    return result.capabilities.starts.flatMap((start) => (start.timer === null ? [] : [describeSchedule(start.timer)]));
+  };
+  assert.deepEqual(await offered("open-rows/timer-start-forms/date-start.bpmn"), ["at 1970-01-01T02:00:00.000Z"]);
+  assert.deepEqual(await offered("open-rows/timer-start-population/cron-start.bpmn"), ["on Cron 0 0/30 * * * ?"]);
+  assert.deepEqual(await offered("open-rows/timer-start-population/bounded-cycle-start.bpmn"), ["every 600000 ms, 3 times"]);
+});
+
+test("a schedule rendering outside the contract is a fault, never a schedule", () => {
+  assert.deepEqual(engineTimerScheduleFromJson({ cron: "0 0 12 * * ?" }), { cron: "0 0 12 * * ?" });
+  assert.deepEqual(engineTimerScheduleFromJson({ cycle: { periodMs: 1_000, repetitions: null } }),
+    { cycle: { periodMs: 1_000, repetitions: null } });
+  for (const rendering of [
+    null, [], {}, { durationMs: -1 }, { durationMs: 1.5 }, { instantMs: "1970" }, { cron: "" }, { cron: 7 },
+    { durationMs: 1, instantMs: 2 }, { cycle: { periodMs: 1 } }, { cycle: { periodMs: 1, repetitions: null, extra: 0 } },
+    { cycle: { periodMs: 1, repetitions: -2 } }, { seconds: 3 },
+  ]) {
+    assert.throws(() => engineTimerScheduleFromJson(rendering), TypeError, JSON.stringify(rendering));
+  }
 });
 
 test("a correlated catch publishes its channel, its element and the correlation key the kernel evaluates", async () => {

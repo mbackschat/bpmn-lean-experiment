@@ -17,6 +17,7 @@ import {
   overlayIdentity,
   requireBytes,
   requireWireString,
+  sameJson,
   sha256Hex,
   snapshotOverlay,
   snapshotProfile,
@@ -38,12 +39,61 @@ export type EngineMessageChannel =
   | Readonly<{ kind: "unspecifiedMessage" }>;
 
 /**
- * A Timer start's schedule as the kernel resolves it from the definition (`Kernel.IL.Timer.resolve`): one delay, or a
- * cycle's period and its repetitions (`null` unbounded). Admission refuses every other form.
+ * A Timer start's schedule as the kernel resolves it from the definition (`Kernel.IL.Timer.resolve`): one delay, one
+ * instant, a cycle's period and its repetitions (`null` unbounded), or a Cron expression's text. Admission refuses every
+ * other form.
  */
 export type EngineTimerSchedule =
   | Readonly<{ durationMs: number }>
-  | Readonly<{ cycle: Readonly<{ periodMs: number; repetitions: number | null }> }>;
+  | Readonly<{ instantMs: number }>
+  | Readonly<{ cycle: Readonly<{ periodMs: number; repetitions: number | null }> }>
+  | Readonly<{ cron: string }>;
+
+function naturalOf(json: unknown, name: string): number {
+  if (typeof json !== "number" || !Number.isSafeInteger(json) || json < 0) {
+    throw new TypeError(`${name} must be a non-negative safe integer`);
+  }
+  return json;
+}
+
+function onlyMember(json: unknown, keys: readonly string[], name: string): string {
+  if (json === null || typeof json !== "object" || Array.isArray(json)) throw new TypeError(`${name} must be an object`);
+  const present = Object.keys(json);
+  const [key] = present;
+  if (present.length !== 1 || key === undefined || !keys.includes(key)) {
+    throw new TypeError(`${name} must have exactly one member of ${JSON.stringify(keys)}`);
+  }
+  return key;
+}
+
+/**
+ * A Timer start's schedule from the kernel's rendering (`Kernel.Run.resolvedTimerJson`), member by member. A rendering
+ * outside the contract is a Product 1 defect, so it throws `TypeError` rather than offering a schedule.
+ */
+export function engineTimerScheduleFromJson(json: unknown): EngineTimerSchedule {
+  const name = "Timer start schedule";
+  const key = onlyMember(json, ["durationMs", "instantMs", "cycle", "cron"], name);
+  const value = member(json, key);
+  switch (key) {
+    case "durationMs": return { durationMs: naturalOf(value, `${name}.durationMs`) };
+    case "instantMs": return { instantMs: naturalOf(value, `${name}.instantMs`) };
+    case "cron": return { cron: requireWireString(value, `${name}.cron`) };
+    case "cycle": {
+      const keys = value !== null && typeof value === "object" && !Array.isArray(value) ? Object.keys(value).sort() : null;
+      if (keys === null || !sameJson(keys, ["periodMs", "repetitions"])) {
+        throw new TypeError(`${name}.cycle must have exactly periodMs and repetitions`);
+      }
+      const repetitions = member(value, "repetitions");
+      return {
+        cycle: {
+          periodMs: naturalOf(member(value, "periodMs"), `${name}.cycle.periodMs`),
+          repetitions: repetitions === null ? null : naturalOf(repetitions, `${name}.cycle.repetitions`),
+        },
+      };
+    }
+  }
+  throw new TypeError(`${name} has no member ${key}`);
+}
 
 /** One start a host can offer: a none start (neither field), a Message start on its channel, or a Timer start. */
 export type EngineStartCapability = Readonly<{
@@ -166,7 +216,7 @@ export async function compileProgram(
         starts: (member(capabilities, "starts") as readonly JsonValue[]).map((start) => ({
           startEventId: member(start, "startEventId") as string,
           channel: (member(start, "channel") ?? null) as EngineMessageChannel | null,
-          timer: (member(start, "timer") ?? null) as EngineTimerSchedule | null,
+          timer: member(start, "timer") === undefined ? null : engineTimerScheduleFromJson(member(start, "timer")),
         })),
         correlatedChannels: member(capabilities, "correlatedChannels") as readonly EngineCorrelatedChannel[],
       },
