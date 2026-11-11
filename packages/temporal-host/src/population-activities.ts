@@ -119,8 +119,32 @@ async function scan(client: Client, population: string, action: ScanAction): Pro
   }
 }
 
-export function createPopulationActivities(): PopulationActivities {
+/**
+ * A population Activity's Update or Query waits for a Workflow task of its own Task Queue, which only a polling Worker
+ * takes and a draining Worker no longer polls. Every population Activity therefore settles as cancelled once its
+ * Worker cancels it, which a shutting-down Worker does at once (`shutdownGraceTime` defaults to 0), and abandons its
+ * unanswered call: the native connection takes no abort signal
+ * (`@temporalio/worker` 1.21.0 `NativeConnection.sendRequest`), so, as after a Worker crash, the abandoned call may
+ * still take effect and the Activity's retry repeats it.
+ */
+function settlingOnCancellation(activities: PopulationActivities): PopulationActivities {
+  const settling = <Request, Result>(activity: (request: Request) => Promise<Result>) =>
+    (request: Request): Promise<Result> => Promise.race([activity(request), Context.current().cancelled]);
   return {
+    scanPopulation: settling(activities.scanPopulation),
+    deliverPopulation: settling(activities.deliverPopulation),
+    startPopulation: settling(activities.startPopulation),
+    readPopulationIntents: settling(activities.readPopulationIntents),
+    settlePopulationEmit: settling(activities.settlePopulationEmit),
+    registerPopulation: settling(activities.registerPopulation),
+    emitPopulation: settling(activities.emitPopulation),
+    startDeployment: settling(activities.startDeployment),
+    fireTimerStart: settling(activities.fireTimerStart),
+  };
+}
+
+export function createPopulationActivities(): PopulationActivities {
+  return settlingOnCancellation({
     scanPopulation: async (request) => scan(Context.current().client, request.population, request.action),
     deliverPopulation: async (request) => {
       const { client } = Context.current();
@@ -199,5 +223,5 @@ export function createPopulationActivities(): PopulationActivities {
         throw error;
       }
     },
-  };
+  });
 }
