@@ -236,6 +236,7 @@ if (connectionString === undefined) {
         "second:message-start",
         "second:schedule-inspect",
         "second:schedule-occurrences",
+        "second:schedule-validate",
       ]));
       assert.deepEqual(deployed.startCapabilities, {
         messageStarts: [sharedMessageStartCapability],
