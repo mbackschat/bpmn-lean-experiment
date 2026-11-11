@@ -70,15 +70,16 @@ def signalReceiversOf (program : Program) (state : State) (address : SignalAddre
     ordered.map (·.2.2)
 
 /-- The root Signal starts of `program`, deployed as `deploymentId`, that a delivery of `address` carrying `variables`
-fires (`Hooks.startsFired`), in document order. -/
+fires (`Hooks.startsFired`), in document order. A start whose firing fails is a receiver too, so its start step records
+the failure as its `failed` entry instead of the scan dropping it. -/
 def signalStartReceivers (hooks : Hooks) (deploymentId : Nat) (program : Program) (address : SignalAddress)
     (variables : List (String × Value)) : List Receiver :=
   let ctx := Step.context hooks program
   ((program.children none).filterMap Element.start?).filterMap fun (header, _) =>
     let probe : StartInput := { instanceId := "", startEvent := some header.id, trigger := .signal address variables }
     match hooks.startsFired ctx probe with
-    | .ok (_ :: _) => some (.start deploymentId (program.publicId header.id).value)
-    | .ok [] | .error _ => none
+    | .ok (_ :: _) | .error _ => some (.start deploymentId (program.publicId header.id).value)
+    | .ok [] => none
 
 /-- The defined linearization of a delivery's snapshot
 (docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md#signal-broadcasts, CIB-INT-0030): the waiting receivers of every

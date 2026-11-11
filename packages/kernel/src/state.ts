@@ -13,8 +13,8 @@
  * (guard 17).
  */
 import {
-  VariableEvent, assertNever, definitionRefEquals, programChildren, programProcessChildren, programPublicId, utf8ByteSize,
-  type DefinitionRef, type Element, type ElementId, type FlowId, type Program, type Value,
+  MessageCorrelation, ValueTag, VariableEvent, assertNever, definitionRefEquals, programChildren, programProcessChildren,
+  programPublicId, utf8ByteSize, type DefinitionRef, type Element, type ElementId, type FlowId, type Program, type Value,
 } from "./il/types.js";
 import {
   type Binding, type ConditionalWaitDetail, type EffectDetail, type IncidentDetail, InputTag, type MessageChannel,
@@ -381,6 +381,72 @@ export type Result<T> =
   | { readonly ok: false; readonly failure: Failure };
 
 export type Outcome = Result<State>;
+
+/**
+ * Whether CIB's variable query can compare a criterion's value: it refuses a value whose serializer is no primitive type
+ * ("Object values cannot be used to query", `SingleQueryVariableValueCondition.java:83-85`), and the runner hands a
+ * Decimal, a String list, a list and a map over as `BigDecimal`, `ArrayList` and `LinkedHashMap` (CIB-CFG-0009).
+ */
+export function queryable(value: Value): boolean {
+  switch (value.tag) {
+    case ValueTag.Null:
+    case ValueTag.Bool:
+    case ValueTag.Int:
+    case ValueTag.String:
+      return true;
+    case ValueTag.Decimal:
+    case ValueTag.StringList:
+    case ValueTag.List:
+    case ValueTag.Map:
+      return false;
+  }
+  return assertNever(value);
+}
+
+/** Whether a criterion names a variable, whose value CIB's variable query compares. */
+export function namesVariable(criterion: CorrelationMatch): boolean {
+  switch (criterion.target.tag) {
+    case CriterionTargetTag.ProcessVariable:
+    case CriterionTargetTag.LocalVariable:
+      return true;
+    case CriterionTargetTag.BusinessKey:
+    case CriterionTargetTag.ProcessInstance:
+      return false;
+  }
+  return assertNever(criterion.target);
+}
+
+/**
+ * Why a delivery's or publication's API `criteria` are refused under any of `readings`, or `null`. Two naming one target
+ * are `rejected criteria-duplicate` (`targetsRepeat`) under every reading; under `ApiCriteria` a variable criterion whose
+ * value is not `queryable` is `unsupported`, since CIB rolls such a correlation back (CIB-EXT-0025); under `ModeledKey`,
+ * which matches a criterion only as a modeled key, any other target is `unsupported`. The refusal reads the criteria and
+ * the readings alone, so it is the command's: a caller decides it before asking any waiting item, never per item.
+ */
+export function criteriaRefusal(readings: readonly MessageCorrelation[], criteria: readonly CorrelationMatch[]): Failure | null {
+  if (targetsRepeat(criteria)) return { tag: FailureTag.Rejected, code: "criteria-duplicate" };
+  for (const reading of readings) {
+    const refusal = readingRefusal(reading, criteria);
+    if (refusal !== null) return refusal;
+  }
+  return null;
+}
+
+function readingRefusal(reading: MessageCorrelation, criteria: readonly CorrelationMatch[]): Failure | null {
+  switch (reading) {
+    case MessageCorrelation.ApiCriteria:
+      return criteria.some((criterion) => namesVariable(criterion) && !queryable(criterion.expected))
+        // dynamic-only: a delivery's criteria are its caller's.
+        ? { tag: FailureTag.Unsupported, code: "correlation-criterion-not-primitive" }
+        : null;
+    case MessageCorrelation.ModeledKey:
+      return criteria.some((criterion) => criterion.target.tag !== CriterionTargetTag.ProcessVariable)
+        // dynamic-only: a delivery's criteria are its caller's.
+        ? { tag: FailureTag.Unsupported, code: "profile-message-correlation-api-criteria" }
+        : null;
+  }
+  return assertNever(reading);
+}
 
 export function committed<T>(value: T): Result<T> { return { ok: true, value }; }
 

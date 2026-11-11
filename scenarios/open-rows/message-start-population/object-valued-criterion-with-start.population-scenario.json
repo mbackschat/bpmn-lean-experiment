@@ -1,0 +1,112 @@
+{
+  "kind": "populationScenario",
+  "id": "message-start-population-object-valued-criterion-with-start",
+  "profile": "cibseven-2.2.0",
+  "definitions": [
+    {
+      "definitionRef": "order-confirmation",
+      "bpmn": {
+        "id": "message-correlation-criteria-order-confirmation",
+        "relativePath": "scenarios/open-rows/message-correlation-criteria/order-confirmation.bpmn",
+        "sha256": "04f9e455a7064fda3193bd836ea8fec3360301564f41ffabbcc2681140b49340",
+        "sourceOverlay": null
+      }
+    },
+    {
+      "definitionRef": "confirmation-intake",
+      "bpmn": {
+        "id": "message-start-population-confirmation-intake",
+        "relativePath": "scenarios/open-rows/message-start-population/confirmation-intake.bpmn",
+        "sha256": "f7a8a387e6cc8ef04b6d581ce92b988fea4b052c4c088aa12718bd6c33a46804",
+        "sourceOverlay": null
+      }
+    }
+  ],
+  "steps": [
+    {
+      "kind": "instance",
+      "definitionRef": "order-confirmation",
+      "instanceId": "Order_1",
+      "at": 0,
+      "stimulus": {
+        "kind": "start",
+        "commandId": "s01-start-order-1",
+        "instanceId": "Order_1",
+        "variables": [
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "A-1"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "publish",
+      "commandId": "s02-publish-order-as-list",
+      "address": {
+        "name": "order-confirmed"
+      },
+      "criteria": [
+        {
+          "target": {
+            "kind": "processVariable",
+            "name": "orderId"
+          },
+          "expected": {
+            "kind": "list",
+            "value": [
+              {
+                "kind": "string",
+                "value": "A-1"
+              }
+            ]
+          }
+        }
+      ],
+      "variables": [],
+      "mode": "any",
+      "at": 10
+    },
+    {
+      "kind": "publish",
+      "commandId": "s03-publish-order-as-string",
+      "address": {
+        "name": "order-confirmed"
+      },
+      "criteria": [
+        {
+          "target": {
+            "kind": "processVariable",
+            "name": "orderId"
+          },
+          "expected": {
+            "kind": "string",
+            "value": "A-1"
+          }
+        }
+      ],
+      "variables": [],
+      "mode": "any",
+      "at": 20
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 8.4.2",
+      "BPMN 2.0.2 Clause 8.4.11",
+      "BPMN 2.0.2 Clause 10.5.2",
+      "BPMN 2.0.2 Clause 10.5.4",
+      "BPMN 2.0.2 Table 10.84"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/runtime/DefaultCorrelationHandler.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/MessageCorrelationBuilderImpl.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/cmd/CorrelateMessageCmd.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/SingleQueryVariableValueCondition.java"
+    ]
+  }
+}

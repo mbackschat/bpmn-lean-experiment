@@ -23,13 +23,6 @@ public section
 
 namespace Kernel.Feature.Correlation
 
-/-- Whether CIB's variable query can compare a criterion's value: it refuses a value whose serializer is no primitive
-type ("Object values cannot be used to query", `SingleQueryVariableValueCondition.java:83-85`), and the runner hands a
-Decimal, a String list, a list and a map over as `BigDecimal`, `ArrayList` and `LinkedHashMap` (CIB-CFG-0009). -/
-def queryable : Value → Bool
-  | .null | .bool _ | .int _ | .string _ => true
-  | .decimal _ _ | .stringList _ | .list _ | .map _ => false
-
 /-- Exact equality of kind and value of a queryable criterion value: `41` never equals `"41"`, and a held value of
 another kind matches nothing. -/
 def sameKindAndValue : Value → Value → Bool
@@ -59,21 +52,12 @@ def criterionHolds (state : State) (scope : ScopeOccurrenceId) (criterion : Corr
   | .businessKey => names ((state.slots.instances.find? (·.root == root)).bind (·.businessKey))
   | .processInstance => names (some (state.instanceOf scope))
 
-/-- Whether a criterion names a variable, whose value CIB's variable query compares. -/
-def namesVariable (criterion : CorrelationMatch) : Bool :=
-  match criterion.target with
-  | .processVariable _ | .localVariable _ => true
-  | .businessKey | .processInstance => false
-
 /-- Whether every one of a delivery's API `criteria` holds for an item waiting in `scope` (`criterionHolds`), the empty
-list included; two naming one target are `criteria-duplicate` (`targetsRepeat`). A variable criterion whose value is not
-`queryable` is `unsupported`: CIB rolls the correlation back, which the profile does not select (CIB-EXT-0025). -/
+list included, unless `criteriaRefusal` refuses the criteria under `apiCriteria`. -/
 def criteriaHold (state : State) (scope : ScopeOccurrenceId) (criteria : List CorrelationMatch) : Except Failure Bool :=
-  if targetsRepeat criteria then .error (.rejected "criteria-duplicate")
-  else if criteria.any fun criterion => namesVariable criterion && !queryable criterion.expected then
-    -- dynamic-only: a delivery's criteria are its caller's.
-    .error (.unsupported "correlation-criterion-not-primitive")
-  else .ok (criteria.all (criterionHolds state scope))
+  match criteriaRefusal [.apiCriteria] criteria with
+  | some failure => .error failure
+  | none => .ok (criteria.all (criterionHolds state scope))
 
 def criteria (trigger : Trigger) : List CorrelationCriterion :=
   (trigger.message?.map (·.correlation)).getD []
@@ -91,12 +75,13 @@ def keyValue (ctx : Ctx) (context : EvalContext) (criterion : CorrelationCriteri
 
 /-- Whether the delivered `correlation` names exactly the criteria's keys, in order, each with the String its criterion
 binds, under `MessageCorrelation.modeledKey`, where a modeled key matches as `.processVariable`. Criteria delivered to a
-wait that models no key, and the other targets, are API criteria, which that reading does not select: `unsupported`, never
-a mismatch. -/
+wait that models no key, and criteria `criteriaRefusal` refuses under that reading, are `unsupported` or `rejected`,
+never a mismatch. -/
 def correlationMatches (ctx : Ctx) (context : EvalContext) (bound : List CorrelationCriterion)
     (correlation : List CorrelationMatch) : Except Failure Bool :=
   -- dynamic-only: a delivery's criteria are its caller's.
   if bound.isEmpty && !correlation.isEmpty then .error (.unsupported "profile-message-correlation-api-criteria")
+  else if let some failure := criteriaRefusal [.modeledKey] correlation then .error failure
   else if bound.length != correlation.length then .ok false
   else (bound.zip correlation).allM fun (criterion, delivered) => do
     let expected ← keyValue ctx context criterion
@@ -105,8 +90,8 @@ def correlationMatches (ctx : Ctx) (context : EvalContext) (bound : List Correla
       pure (criterion.key == key && match delivered.expected with
         | .string value => value == expected
         | _ => false)
-    -- dynamic-only: a delivery's criteria are its caller's.
-    | .localVariable _ | .businessKey | .processInstance => .error (.unsupported "profile-message-correlation-api-criteria")
+    -- `criteriaRefusal` refused every other target above; the arm keeps the match total.
+    | .localVariable _ | .businessKey | .processInstance => pure false
 
 /-- Whether `correlation` accepts an item waiting in `scope` whose subscription's `trigger` models the keys it binds:
 under `modeledKey` as `correlationMatches` says; under `apiCriteria` as `criteriaHold` says, where admission leaves

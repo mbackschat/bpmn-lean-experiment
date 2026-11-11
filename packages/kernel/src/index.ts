@@ -27,7 +27,8 @@ export { definitionCapabilities, hostRequirements, hostView, refusesSignalVariab
 export { WorkTag, elementActivity, elementHeader } from "./il/types.js";
 export type { Program, Value } from "./il/types.js";
 export {
-  DeliveryTriggerTag, EffectOutcomeTag, FailureTag, InputTag, SignalAddressTag, SignalReach, StartTriggerTag, targetsRepeat,
+  criteriaRefusal, DeliveryTriggerTag, EffectOutcomeTag, FailureTag, InputTag, SignalAddressTag, SignalReach, StartTriggerTag,
+  targetsRepeat,
 } from "./state.js";
 export type {
   Binding, BroadcastIntent, CorrelationMatch, EffectOutcome, Failure, Input, MessageChannel, OccurrenceRef, Outcome,

@@ -254,6 +254,39 @@ inductive Failure where
 
 abbrev Outcome := Except Failure State
 
+/-- Whether CIB's variable query can compare a criterion's value: it refuses a value whose serializer is no primitive
+type ("Object values cannot be used to query", `SingleQueryVariableValueCondition.java:83-85`), and the runner hands a
+Decimal, a String list, a list and a map over as `BigDecimal`, `ArrayList` and `LinkedHashMap` (CIB-CFG-0009). -/
+def queryable : Value → Bool
+  | .null | .bool _ | .int _ | .string _ => true
+  | .decimal _ _ | .stringList _ | .list _ | .map _ => false
+
+/-- Whether a criterion names a variable, whose value CIB's variable query compares. -/
+def namesVariable (criterion : CorrelationMatch) : Bool :=
+  match criterion.target with
+  | .processVariable _ | .localVariable _ => true
+  | .businessKey | .processInstance => false
+
+/-- Why a delivery's or publication's API `criteria` are refused under any of `readings`, or `none`. Two naming one
+target are `rejected criteria-duplicate` (`targetsRepeat`) under every reading; under `apiCriteria` a variable criterion
+whose value is not `queryable` is `unsupported`, since CIB rolls such a correlation back (CIB-EXT-0025); under
+`modeledKey`, which matches a criterion only as a modeled key, any other target is `unsupported`. The refusal reads the
+criteria and the readings alone, so it is the command's: a caller decides it before asking any waiting item, never per
+item. -/
+def criteriaRefusal (readings : List MessageCorrelation) (criteria : List CorrelationMatch) : Option Failure :=
+  if targetsRepeat criteria then some (.rejected "criteria-duplicate")
+  else readings.findSome? fun
+    | .apiCriteria =>
+      if criteria.any fun criterion => namesVariable criterion && !queryable criterion.expected then
+        -- dynamic-only: a delivery's criteria are its caller's.
+        some (.unsupported "correlation-criterion-not-primitive")
+      else none
+    | .modeledKey =>
+      if criteria.any fun criterion => !(criterion.target matches .processVariable _) then
+        -- dynamic-only: a delivery's criteria are its caller's.
+        some (.unsupported "profile-message-correlation-api-criteria")
+      else none
+
 namespace State
 
 def root : ScopeOccurrenceId := ⟨0⟩

@@ -3,7 +3,7 @@
  * across the population with exact cardinality, to a waiting subscription, else to a root Message start
  * ([specification](../../../../docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md)).
  */
-import { MessageNames, programPublicId, valueSourceLiteral, type ElementId, type Program } from "../il/types.js";
+import { MessageNames, assertNever, programPublicId, valueSourceLiteral, type ElementId, type Program } from "../il/types.js";
 import { messageTriggerChannel, type Hooks } from "../hooks.js";
 import {
   DeliveryTriggerTag,
@@ -15,7 +15,8 @@ import {
   occurrenceOf,
   openKindView,
   type CorrelationMatch,
-  targetsRepeat,
+  FailureTag,
+  criteriaRefusal,
   type Input,
   type MessageChannel,
   type OccurrenceRef,
@@ -83,7 +84,8 @@ export function occurrence(program: Program, state: State, item: OpenItem): Occu
 /**
  * The open subscriptions of one instance of `program` that `Hooks.correlates` accepts for a delivery on `channel`
  * carrying `correlation`, by public occurrence identity; a subscription whose key cannot be evaluated is no match. A host
- * that routes a publication across instances asks it of each instance.
+ * that routes a publication across instances asks it of each instance, after refusing the criteria `criteriaRefusal`
+ * refuses, which this scan would read as no match.
  */
 export function matching(
   hooks: Hooks,
@@ -103,9 +105,11 @@ export function matching(
 /**
  * The open Message subscriptions of one instance of `program` a publication reaches, each with the channel its delivery
  * names: those on the publication's channel, or, for a name, those that resolved that name when they opened (only under
- * `MessageNames.addresses`, CIB-LIM-0022), on their own channel. Each must accept the criteria (`Hooks.correlates`; a key
- * that cannot be evaluated is no match) and, when the publication carries a business key, belong to an instance with
- * that key, a called instance's own (CIB `processInstanceBusinessKey`).
+ * `MessageNames.addresses`, CIB-LIM-0022), on their own channel. Each must accept the criteria (`Hooks.correlates`; a
+ * modeled key that does not evaluate to a non-empty String is no match) and, when the publication carries a business key,
+ * belong to an instance with that key, a called instance's own (CIB `processInstanceBusinessKey`). Criteria
+ * `criteriaRefusal` refuses are the command's refusal, which the caller decides before this scan: here they would read as
+ * no match.
  */
 export function messageReceivers(
   hooks: Hooks,
@@ -229,9 +233,11 @@ function startFor(
  * the instances of its selected deployment, or of every deployment without a selector; when there is none and it is not
  * executions-only, start its sole start candidate. The delivery or start takes the command's logical time, so the step it
  * causes evaluates `now` and arms Timers from it. Zero is `noMatch` and several are `ambiguous`, either leaving every
- * instance unchanged; candidate order never picks a winner. Criteria naming one target twice are
- * `rejected criteria-duplicate`, a selector naming no registered deployment `rejected definition-not-deployed`. A
- * delivery also answers its receiver's root instance, whose committed step's intents cascade next.
+ * instance unchanged; candidate order never picks a winner. Criteria `criteriaRefusal` refuses under the reading of any
+ * registered deployment refuse the command before any receiver or start is sought (`rejected criteria-duplicate`, or
+ * `unsupported`, which CIB answers by rolling the correlation back), a selector naming no registered deployment
+ * `rejected definition-not-deployed`. A delivery also answers its receiver's root instance, whose committed step's
+ * intents cascade next.
  */
 export function publish(
   hooks: Hooks,
@@ -242,7 +248,20 @@ export function publish(
 ): Refusable<readonly [readonly Instance[], Resolution, string | null]> {
   const answer = (resolution: Resolution): Refusable<readonly [readonly Instance[], Resolution, string | null]> =>
     ({ ok: true, value: [instances, resolution, null] });
-  if (targetsRepeat(publication.criteria)) return answer({ tag: ResolutionTag.Rejected, code: "criteria-duplicate" });
+  const refusal = criteriaRefusal(registry.map((deployment) => deployment.program.options.messageCorrelation), publication.criteria);
+  if (refusal !== null) {
+    switch (refusal.tag) {
+      case FailureTag.Rejected:
+        return answer({ tag: ResolutionTag.Rejected, code: refusal.code });
+      case FailureTag.Unsupported:
+        return answer({ tag: ResolutionTag.Unsupported, code: refusal.code });
+      // `criteriaRefusal` only rejects or refuses as unsupported, so another failure is a harness defect.
+      case FailureTag.RolledBack:
+      case FailureTag.SemanticFailure:
+        return { ok: false, error: "criteria-refusal-not-command-level" };
+    }
+    return assertNever(refusal.tag);
+  }
   const scope = selected(registry, publication.definition);
   if (scope === undefined) return answer({ tag: ResolutionTag.Rejected, code: "definition-not-deployed" });
   const reached = publication.mode === PublishMode.StartOnly ? [] : instances.flatMap((member, index) =>

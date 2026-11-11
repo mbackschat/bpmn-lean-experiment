@@ -143,7 +143,8 @@ export function signalReceiversOf(
 
 /**
  * The root Signal starts of `program`, deployed as `deploymentId`, that a delivery of `address` carrying `variables`
- * fires (`Hooks.startsFired`), in document order.
+ * fires (`Hooks.startsFired`), in document order. A start whose firing fails is a receiver too, so its start step records
+ * the failure as its `failed` entry instead of the scan dropping it.
  */
 export function signalStartReceivers(
   hooks: Hooks,
@@ -161,7 +162,7 @@ export function signalStartReceivers(
       trigger: { tag: StartTriggerTag.Signal, address, variables },
     };
     const fired = hooks.startsFired(ctx, probe);
-    if (!fired.ok || fired.value.length === 0) return [];
+    if (fired.ok && fired.value.length === 0) return [];
     return [{ tag: ReceiverTag.Start, deploymentId, startEvent: programPublicId(program, started[0].id) } as Receiver];
   });
 }

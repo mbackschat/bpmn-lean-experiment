@@ -154,7 +154,7 @@ test("a replayed command answers its recorded resolution and one of different co
 });
 
 test("criteria naming one target twice are rejected, for every target kind, and distinct targets are not", () => {
-  const program = starting("Order");
+  const program = starting("Order", { messageCorrelation: "apiCriteria" });
   const criterion = (target: Json, value: string): Json => ({ target, expected: { kind: "string", value } });
   const targets: Json[] = [
     { kind: "processVariable", name: "a" }, { kind: "localVariable", name: "a" }, { kind: "businessKey" }, { kind: "processInstance" },
@@ -210,4 +210,26 @@ test("a delivery takes the publication's logical time, so a Timer its step arms 
   const state = (result.processStates as Json[])[0] as Json;
   assert.equal(state.logicalTimeMs, 1000);
   assert.deepEqual((state.openWaits as Json[]).map((wait) => wait.detail), [{ kind: "timer", deadlineMs: 61000, recurrence: null }]);
+});
+
+test("criteria the reading refuses refuse the publication before any receiver or start is sought", () => {
+  const listed = [{ target: { kind: "processVariable", name: "orderId" }, expected: { kind: "list", value: [{ kind: "string", value: "o-7" }] } }];
+  const program = starting("Order", { messageCorrelation: "apiCriteria" });
+  const notPrimitive = { kind: "unsupported", code: "correlation-criterion-not-primitive" };
+  const api = populate([definition("d1", program)], [program], [
+    publish("p1", { channel: order }, "any", { criteria: listed }),
+    publish("p2", { channel: order }, "startOnly", { criteria: listed }),
+    publish("p3", { channel: order }, "executionsOnly", { criteria: listed }),
+  ]);
+  assert.deepEqual(resolutions(api), [notPrimitive, notPrimitive, notPrimitive]);
+  assert.deepEqual(api.processStates, []);
+  const modeled = populate([definition("d1", waiting)], [waiting], [
+    {
+      kind: "instance", definitionRef: "d1", instanceId: "W1",
+      stimulus: { kind: "start", commandId: "start-W1", instanceId: "W1", variables: [{ name: "orderId", value: { kind: "string", value: "o-7" } }] },
+    },
+    publish("q1", { channel: ordered }, "any", { criteria: [{ target: { kind: "businessKey" }, expected: { kind: "string", value: "o-7" } }] }),
+  ]);
+  assert.deepEqual(resolutions(modeled), [{ kind: "unsupported", code: "profile-message-correlation-api-criteria" }]);
+  assert.equal((modeled.processStates as Json[]).length, 1);
 });

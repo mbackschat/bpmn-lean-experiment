@@ -31,7 +31,7 @@ import {
   instanceRoot,
   messageChannelEquals,
   openKindView,
-  targetsRepeat,
+  criteriaRefusal,
   type CorrelationMatch,
   type EvalContext,
   type MessageChannel,
@@ -41,27 +41,6 @@ import {
   type State,
 } from "../state.js";
 import { EvaluationTag, evalContext, subscriptionOf, type Ctx } from "../hooks.js";
-
-/**
- * Whether CIB's variable query can compare a criterion's value: it refuses a value whose serializer is no primitive type
- * ("Object values cannot be used to query", `SingleQueryVariableValueCondition.java:83-85`), and the runner hands a
- * Decimal, a String list, a list and a map over as `BigDecimal`, `ArrayList` and `LinkedHashMap` (CIB-CFG-0009).
- */
-function queryable(value: Value): boolean {
-  switch (value.tag) {
-    case ValueTag.Null:
-    case ValueTag.Bool:
-    case ValueTag.Int:
-    case ValueTag.String:
-      return true;
-    case ValueTag.Decimal:
-    case ValueTag.StringList:
-    case ValueTag.List:
-    case ValueTag.Map:
-      return false;
-  }
-  return assertNever(value);
-}
 
 /**
  * Exact equality of kind and value of a queryable criterion value: `41` never equals `"41"`, and a held value of another
@@ -112,29 +91,13 @@ function criterionHolds(state: State, scope: ScopeOccurrenceId, criterion: Corre
   return assertNever(target);
 }
 
-/** Whether a criterion names a variable, whose value CIB's variable query compares. */
-function namesVariable(criterion: CorrelationMatch): boolean {
-  switch (criterion.target.tag) {
-    case CriterionTargetTag.ProcessVariable:
-    case CriterionTargetTag.LocalVariable:
-      return true;
-    case CriterionTargetTag.BusinessKey:
-    case CriterionTargetTag.ProcessInstance:
-      return false;
-  }
-  return assertNever(criterion.target);
-}
-
 /**
  * Whether every one of a delivery's API `criteria` holds for an item waiting in `scope` (`criterionHolds`), the empty
- * list included; two naming one target are `criteria-duplicate` (`targetsRepeat`). A variable criterion whose value is
- * not `queryable` is `unsupported`: CIB rolls the correlation back, which the profile does not select (CIB-EXT-0025).
+ * list included, unless `criteriaRefusal` refuses the criteria under `ApiCriteria`.
  */
 export function criteriaHold(state: State, scope: ScopeOccurrenceId, criteria: readonly CorrelationMatch[]): Result<boolean> {
-  if (targetsRepeat(criteria)) return failed(FailureTag.Rejected, "criteria-duplicate");
-  if (criteria.some((criterion) => namesVariable(criterion) && !queryable(criterion.expected))) {
-    return failed(FailureTag.Unsupported, "correlation-criterion-not-primitive"); // dynamic-only: a delivery's criteria are its caller's
-  }
+  const refusal = criteriaRefusal([MessageCorrelation.ApiCriteria], criteria);
+  if (refusal !== null) return failedWith(refusal);
   return committed(criteria.every((entry) => criterionHolds(state, scope, entry)));
 }
 
@@ -165,7 +128,7 @@ function keyValue(ctx: Ctx, context: EvalContext, criterion: CorrelationCriterio
 /**
  * Whether the delivered `correlation` names exactly the criteria's keys, in order, each with the String its criterion
  * binds, under `MessageCorrelation.ModeledKey`, where a modeled key matches as `processVariable`. Criteria delivered to a
- * wait that models no key, and the other targets, are API criteria, which that reading does not select: `unsupported`,
+ * wait that models no key, and criteria `criteriaRefusal` refuses under that reading, are `unsupported` or `rejected`,
  * never a mismatch.
  */
 function correlationMatches(
@@ -177,6 +140,8 @@ function correlationMatches(
   if (bound.length === 0 && correlation.length > 0) {
     return failed(FailureTag.Unsupported, "profile-message-correlation-api-criteria"); // dynamic-only: a delivery's criteria are its caller's
   }
+  const refusal = criteriaRefusal([MessageCorrelation.ModeledKey], correlation);
+  if (refusal !== null) return failedWith(refusal);
   if (bound.length !== correlation.length) return committed(false);
   for (const [index, criterion] of bound.entries()) {
     const expected = keyValue(ctx, context, criterion);
@@ -194,10 +159,11 @@ function criterionMatches(criterion: CorrelationCriterion, delivered: Correlatio
       const value = delivered.expected;
       return committed(criterion.key === target.name && value.tag === ValueTag.String && value.value === expected);
     }
+    // `criteriaRefusal` refused every other target before; the cases keep the switch total.
     case CriterionTargetTag.LocalVariable:
     case CriterionTargetTag.BusinessKey:
     case CriterionTargetTag.ProcessInstance:
-      return failed(FailureTag.Unsupported, "profile-message-correlation-api-criteria"); // dynamic-only: a delivery's criteria are its caller's
+      return committed(false);
   }
   return assertNever(target);
 }
