@@ -65,7 +65,7 @@ HIGH track agents author kernel feature, admission and laws modules in Lean and 
 
 Active work: Practical CIB7 Coverage, through the [kernel architecture](kernel/ARCHITECTURE-SPEC.md) (owner direction 2026-11-08).
 
-Current task: the first wave of [mechanism tracks](#mechanism-tracks-then-rows), M1, M2 and M3, step 4 of the [after-W0 sequence](#after-w0). The pilot rows closed on 2026-11-10 (`336a99ea`): PC-ERROR-01 and PC-AUTO-02 done, PC-MI-02 a slice. Wave 1 closed eight rows on 2026-11-10 against retained CIB evidence (receipt `c07dc2e3`): PC-CF-06, PC-BASIC-04, PC-HUM-05, PC-DATA-03, PC-DATA-04, PC-HUM-06, PC-AUTO-07 and PC-AUTO-08.
+Current task: the remaining rows of tracks M4–M7, then M8, M9 and the rows M1–M3 left open, step 4 of the [after-W0 sequence](#after-w0); 27 of 115 rows are done. The pilot rows closed on 2026-11-10 (`336a99ea`): PC-ERROR-01 and PC-AUTO-02 done, PC-MI-02 a slice. Wave 1 closed eight rows on 2026-11-10 against retained CIB evidence (receipt `c07dc2e3`): PC-CF-06, PC-BASIC-04, PC-HUM-05, PC-DATA-03, PC-DATA-04, PC-HUM-06, PC-AUTO-07 and PC-AUTO-08. Wave 2 (M4, M5, M7) landed on 2026-11-10 (`19abb5ab`); its track closure reviews remain. The M6 track review closed eight rows on 2026-11-11: PC-TIMER-01, -02, -05, -07, PC-MESSAGE-05, -07, PC-CONDITION-01 and -05; its other ten rows stay open, PC-CONDITION-03 on CIB's arbitrary gateway arm order ([#79](https://github.com/mbackschat/bpmn-lean-experiment/issues/79)).
 
 Deliverable after W0: the [after-W0 sequence](#after-w0), then mechanism tracks M1–M9 and the integration track.
 

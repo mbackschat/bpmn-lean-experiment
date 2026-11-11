@@ -138,17 +138,15 @@ Superseded first-profile restrictions: the boundary, catch and start profiles ea
 
 | Row | Decision owed or not yet implemented |
 |---|---|
-| PC-TIMER-01 | Acceptance of the classifier above: evidence under the UTC-pinned runner and `malformedTimer` selected by the cibseven profiles. |
-| PC-TIMER-02 | Acceptance of finite and Cron cycles (runner counting, [CIB-OP-0018][r-op-0018]); dated cycles stay refused. |
 | PC-TIMER-03 | Acceptance of data-derived values; the clock after a rolled-back firing ([CIB-OP-0017][r-op-0017]). |
 | PC-TIMER-04 | Root Timer start schedules bound to an exact definition version (see [population](POPULATION-SEMANTICS-SPEC.md)); the engine-published Timer start capability ([TST scheduling][tst-schedule]). |
-| PC-TIMER-05 to PC-TIMER-08 | Whole-model acceptance of what the kernel arms: catches in cycles, several boundaries per host on every host kind, Timer Event Sub-Processes, and lifetimes across nested, called, Multi-Instance and Transaction owners. |
+| PC-TIMER-06, PC-TIMER-08 | Several boundaries per host on every host kind, the effect host's under CIB-EXT-0038, and lifetimes across Transaction owners. |
 | PC-MESSAGE-01 | Two Event Sub-Process starts or Event-Based Gateway arms of one Message name (`message.duplicateName` covers one host's boundaries only); a nameless Receive Task under `messageNames = addresses` (work admission). |
-| PC-MESSAGE-03 to PC-MESSAGE-05 | Payload catches in branches and nested work; interrupting and repeated non-interrupting Message boundaries on every host, with acceptance. |
-| PC-MESSAGE-06, PC-MESSAGE-07 | Interrupting Message Event Sub-Processes (refused); non-interrupting ones under every parent. |
+| PC-MESSAGE-03, PC-MESSAGE-04 | Payload catches in branches and nested work; interrupting Message boundaries on every host, the effect host's under CIB-EXT-0038. |
+| PC-MESSAGE-06 | Interrupting Message Event Sub-Processes (refused). |
 | PC-MESSAGE-09 | Modeled Message throws and Message End (`throw.message`, see [propagation](PROPAGATION-SEMANTICS-SPEC.md)). |
 | PC-SIGNAL-01 to PC-SIGNAL-04 | Every Signal trigger. |
-| PC-CONDITION-01, PC-CONDITION-03 to PC-CONDITION-05 | Acceptance on the `portable-*` witnesses; a completion's writes read by its own boundaries ([CIB-DEV-0005][r-dev-0005]); Event Sub-Process starts of one scope with one condition, which CIB refuses at deployment. |
+| PC-CONDITION-03, PC-CONDITION-04 | Event-Based Gateway arms true at once, which CIB picks in a per-JVM arbitrary order ([#79](https://github.com/mbackschat/bpmn-lean-experiment/issues/79)); a completion's writes read by its own boundaries ([CIB-DEV-0005][r-dev-0005]); Event Sub-Process starts of one scope with one condition, which CIB refuses at deployment. |
 | PC-CONDITION-02 | Root Conditional starts (`start.condition`). |
 
 ## Sources

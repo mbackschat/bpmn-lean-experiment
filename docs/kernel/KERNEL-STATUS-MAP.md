@@ -2,7 +2,7 @@
 
 ## Status
 
-Living map of what the kernel implements per row of the [Practical CIB7 Coverage target](../PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list), its open proof lanes and its assurance and adoption state. Measured 2026-11-09 on the W0 kernel, the pilot rows PC-MI-02, PC-ERROR-01 and PC-AUTO-02 on 2026-11-10; it changes only at a milestone or track closure, or at a stop. It replaces the deleted implementation, assurance-and-adoption, Temporal hosting and Temporal test evidence maps ([assurance and adoption map](https://github.com/mbackschat/bpmn-lean-experiment/blob/404a39d7/docs/ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md), [Temporal hosting map](https://github.com/mbackschat/bpmn-lean-experiment/blob/404a39d7/docs/TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md), [Temporal test evidence map](https://github.com/mbackschat/bpmn-lean-experiment/blob/404a39d7/docs/TEMPORAL-TEST-EVIDENCE-MAP.md), [router](https://github.com/mbackschat/bpmn-lean-experiment/blob/404a39d7/docs/IMPLEMENTATION-MAP.md)), whose claims rested on the deleted stack and are not carried over. Row states are the coverage target's; required meaning is the [kernel semantics documents](semantics/)'.
+Living map of what the kernel implements per row of the [Practical CIB7 Coverage target](../PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list), its open proof lanes and its assurance and adoption state. Measured 2026-11-09 on the W0 kernel, the pilot rows PC-MI-02, PC-ERROR-01 and PC-AUTO-02 on 2026-11-10, the M6 rows on 2026-11-11; it changes only at a milestone or track closure, or at a stop. It replaces the deleted implementation, assurance-and-adoption, Temporal hosting and Temporal test evidence maps ([assurance and adoption map](https://github.com/mbackschat/bpmn-lean-experiment/blob/404a39d7/docs/ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md), [Temporal hosting map](https://github.com/mbackschat/bpmn-lean-experiment/blob/404a39d7/docs/TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md), [Temporal test evidence map](https://github.com/mbackschat/bpmn-lean-experiment/blob/404a39d7/docs/TEMPORAL-TEST-EVIDENCE-MAP.md), [router](https://github.com/mbackschat/bpmn-lean-experiment/blob/404a39d7/docs/IMPLEMENTATION-MAP.md)), whose claims rested on the deleted stack and are not carried over. Row states are the coverage target's; required meaning is the [kernel semantics documents](semantics/)'.
 
 ## Row status
 
@@ -61,32 +61,32 @@ The kernel column reads: `accepted`, the row is `done` and the listed kernel sce
 | PC-MI-10 | absent | — | Multi-Instance |
 | PC-MI-11 | absent | — | concurrency, Multi-Instance |
 | PC-MI-12 | slice | [`sequential-multi-instance`](../../scenarios/sequential-multi-instance/README.md); [`parallel-multi-instance`](../../scenarios/parallel-multi-instance/README.md) | cancellation, Multi-Instance |
-| PC-TIMER-01 | slice | [`intermediate-catch-timer`](../../scenarios/intermediate-catch-timer/README.md); [`intermediate-catch-timer-alarm-debounce`](../../scenarios/intermediate-catch-timer-alarm-debounce/README.md) | — |
-| PC-TIMER-02 | absent | — | — |
+| PC-TIMER-01 | accepted | [`intermediate-catch-timer`](../../scenarios/intermediate-catch-timer/README.md); [`intermediate-catch-timer-alarm-debounce`](../../scenarios/intermediate-catch-timer-alarm-debounce/README.md); [`timer-duration-forms`](../../scenarios/open-rows/timer-duration-forms/README.md); [`timer-date-forms`](../../scenarios/open-rows/timer-date-forms/README.md) | — |
+| PC-TIMER-02 | accepted | [`timer-recurrence`](../../scenarios/open-rows/timer-recurrence/README.md); [`timer-data-derived`](../../scenarios/open-rows/timer-data-derived/README.md) (cycles) | — |
 | PC-TIMER-03 | absent | — | — |
 | PC-TIMER-04 | slice | [`timer-start-event`](../../scenarios/timer-start-event/README.md) | — |
-| PC-TIMER-05 | absent | — | — |
+| PC-TIMER-05 | accepted | [`timer-catch-cycles`](../../scenarios/open-rows/timer-catch-cycles/README.md) | — |
 | PC-TIMER-06 | slice | [`activity-boundary-timer`](../../scenarios/activity-boundary-timer/README.md); [`non-interrupting-boundary-timer`](../../scenarios/non-interrupting-boundary-timer/README.md); [`subprocess-boundary-timer`](../../scenarios/subprocess-boundary-timer/README.md); [`timer-user-task-composition`](../../scenarios/timer-user-task-composition/README.md); [`repeatable-event-subscriptions`](../../scenarios/repeatable-event-subscriptions/README.md) (refused: `profile.abnormalScopeEnd.withoutOutflow`) | cancellation |
-| PC-TIMER-07 | absent | — | concurrency, cancellation |
+| PC-TIMER-07 | accepted | [`timer-event-subprocess`](../../scenarios/open-rows/timer-event-subprocess/README.md) | concurrency, cancellation |
 | PC-TIMER-08 | absent | — | cancellation |
 | PC-MESSAGE-01 | absent | — | — |
 | PC-MESSAGE-02 | slice | [`message-start-event`](../../scenarios/message-start-event/README.md) | — |
 | PC-MESSAGE-03 | slice | [`intermediate-catch-message`](../../scenarios/intermediate-catch-message/README.md); [`message-payload-catch`](../../scenarios/message-payload-catch/README.md); [`portable-business-message-payload`](../../scenarios/portable-business-message-payload/README.md) | — |
 | PC-MESSAGE-04 | slice | [`activity-boundary-message`](../../scenarios/activity-boundary-message/README.md) | cancellation |
-| PC-MESSAGE-05 | slice | [`repeatable-event-subscriptions`](../../scenarios/repeatable-event-subscriptions/README.md) | — |
+| PC-MESSAGE-05 | accepted | [`repeatable-event-subscriptions`](../../scenarios/repeatable-event-subscriptions/README.md); [`message-boundary-repeated`](../../scenarios/open-rows/message-boundary-repeated/README.md) | — |
 | PC-MESSAGE-06 | absent | — | cancellation |
-| PC-MESSAGE-07 | absent | — | concurrency |
+| PC-MESSAGE-07 | accepted | [`message-esp-repeatable`](../../scenarios/open-rows/message-esp-repeatable/README.md) | concurrency |
 | PC-MESSAGE-08 | slice | [`message-key-correlation`](../../scenarios/message-key-correlation/README.md) | — |
 | PC-MESSAGE-09 | absent | — | — |
 | PC-SIGNAL-01 | absent | — | — |
 | PC-SIGNAL-02 | absent | — | — |
 | PC-SIGNAL-03 | absent | — | cancellation |
 | PC-SIGNAL-04 | absent | — | concurrency |
-| PC-CONDITION-01 | absent | — | — |
+| PC-CONDITION-01 | accepted | [`conditional-evaluation`](../../scenarios/open-rows/conditional-evaluation/README.md) (`portable-*`) | — |
 | PC-CONDITION-02 | absent | — | — |
 | PC-CONDITION-03 | absent | — | — |
 | PC-CONDITION-04 | absent | — | cancellation |
-| PC-CONDITION-05 | absent | — | cancellation |
+| PC-CONDITION-05 | accepted | [`conditional-esp`](../../scenarios/open-rows/conditional-esp/README.md) | cancellation |
 | PC-ERROR-01 | accepted | [`mapped-boundary-error-service-task`](../../scenarios/mapped-boundary-error-service-task/README.md); [`mixed-task-business-error`](../../scenarios/mixed-task-business-error/README.md); [`subprocess-error-propagation`](../../scenarios/subprocess-error-propagation/README.md); [`error-boundary-candidates`](../../scenarios/open-rows/error-boundary-candidates/README.md); [`error-ancestor-search`](../../scenarios/open-rows/error-ancestor-search/README.md); [`error-null-message`](../../scenarios/open-rows/error-null-message/README.md); [`error-catch-variables`](../../scenarios/open-rows/error-catch-variables/README.md); [`error-esp-catch-variables`](../../scenarios/open-rows/error-esp-catch-variables/README.md); [`error-non-interrupting-declarations`](../../scenarios/open-rows/error-non-interrupting-declarations/README.md); [`error-java-class-codes`](../../scenarios/open-rows/error-java-class-codes/README.md); [`error-unhandled`](../../scenarios/open-rows/error-unhandled/README.md); [`error-unhandled-standards`](../../scenarios/open-rows/error-unhandled-standards/README.md); [`error-unhandled-outcomes`](../../scenarios/open-rows/error-unhandled-outcomes/README.md) | cancellation |
 | PC-ERROR-02 | absent | — | cancellation |
 | PC-ERROR-03 | absent | — | cancellation, Multi-Instance |
