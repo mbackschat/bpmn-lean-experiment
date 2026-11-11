@@ -11,9 +11,11 @@
  * source, a gateway's or an Activity's candidate order (BPMN 2.0.2 §13.4.2: "the conditions are evaluated in order";
  * CIB-INT-0001 reads it as XML Sequence Flow declaration order); the Boundary Events of one host and the Event
  * Sub-Processes of one scope, among which a thrown Error, Escalation or Message picks its catcher in declaration order
- * where several match. Names, data items, Messages, Signals and Errors keep their identifiers: they are values a
- * schedule or expression names, not references the reader resolves. A called instance's identifier embeds its Call
- * Activity's (`calledInstanceId`), so it is renamed through that encoding.
+ * where several match; and the root start Events of one Process, which a population reaches in document order when
+ * one command fires several of them. Names, data items, Messages, Signals and Errors keep their identifiers: they are
+ * values a schedule or expression names, not references the reader resolves. A derived instance identifier embeds
+ * element identifiers (a called instance's its Call Activity's, a started one's its start Event's, a cascade-started
+ * one's its emitter's), so it is renamed through its encoding.
  *
  * Keeping those declaration orders hides an identifier dependence inside them, so the check runs twice per witness: on
  * the retained source and on its declaration-reversed twin, whose flow nodes and Sequence Flows are all reversed. The
@@ -141,23 +143,29 @@ function permuteSlots(children: XmlNode[], select: (local: string) => boolean, r
   slots.forEach((slot, position) => { children[slot] = reordered[position]!; });
 }
 
-/** The candidates among which declaration order is semantic share a group; any other node is its own. */
-function candidateGroup(node: XmlNode): string | null {
+/**
+ * The candidates among which declaration order is semantic share a group; any other node is its own. The root start
+ * Events of one Process form a group: a broadcast or a Conditional start evaluation that fires several of them reaches
+ * them in document order (POPULATION-SEMANTICS-SPEC.md, "Conditional start evaluations" and "Signal broadcasts"), so
+ * their order is observable in which instance starts first and in the fan-out it reports.
+ */
+function candidateGroup(node: XmlNode, container: string): string | null {
   if (node.kind !== "element") return null;
   if (node.local === "boundaryEvent") return `boundary:${attribute(node, "attachedToRef") ?? ""}`;
+  if (node.local === "startEvent" && container === "process") return "rootStart";
   return node.local === "subProcess" && attribute(node, "triggeredByEvent") === "true" ? "eventSubProcess" : null;
 }
 
 /** `picked` reversed, except that the members of one candidate group keep their declared order among themselves. */
-function reverseKeepingGroups(picked: XmlNode[]): XmlNode[] {
+function reverseKeepingGroups(picked: XmlNode[], container: string): XmlNode[] {
   const reversed = [...picked].reverse();
   const groups = new Map<string, XmlNode[]>();
   for (const node of picked) {
-    const group = candidateGroup(node);
+    const group = candidateGroup(node, container);
     if (group !== null) groups.set(group, [...(groups.get(group) ?? []), node]);
   }
   return reversed.map((node) => {
-    const group = candidateGroup(node);
+    const group = candidateGroup(node, container);
     return group === null ? node : groups.get(group)!.shift()!;
   });
 }
@@ -165,7 +173,7 @@ function reverseKeepingGroups(picked: XmlNode[]): XmlNode[] {
 function permute(nodes: readonly XmlNode[]): void {
   for (const [element] of elements(nodes)) {
     if (!containers.has(element.local)) continue;
-    permuteSlots(element.children, (local) => flowNodes.has(local), reverseKeepingGroups);
+    permuteSlots(element.children, (local) => flowNodes.has(local), (picked) => reverseKeepingGroups(picked, element.local));
     // Stable, so the flows leaving one source keep their declared order.
     const source = (node: XmlNode): string => (node.kind === "element" ? attribute(node, "sourceRef") ?? "" : "");
     permuteSlots(element.children, (local) => local === "sequenceFlow",
@@ -205,25 +213,91 @@ export function declarationReversed(xml: string): string {
   return serialize(tree);
 }
 
-/** A called instance's identifier with its Call Activity renamed, nested callers included (`calledInstanceId`). */
-function renamedInstance(id: string, names: ReadonlyMap<string, string>): string {
-  const parsed = /^call:(\d+):/u.exec(id);
-  if (parsed === null) return id;
-  const encoder = new TextEncoder();
+const encoder = new TextEncoder();
+const decoder = new TextDecoder("utf-8", { fatal: true });
+
+/** A cursor over an identifier's UTF-8 bytes that reads literal text and `<len>:<bytes>` segments. */
+function segments(id: string) {
   const bytes = encoder.encode(id);
-  const callerStart = parsed[0].length;
-  const callerEnd = callerStart + Number(parsed[1]);
-  const decoder = new TextDecoder();
-  const caller = decoder.decode(bytes.slice(callerStart, callerEnd));
-  const rest = /^:(\d+):/u.exec(decoder.decode(bytes.slice(callerEnd)));
-  if (rest === null) return id;
-  const callStart = callerEnd + rest[0].length;
-  const callEnd = callStart + Number(rest[1]);
-  const call = decoder.decode(bytes.slice(callStart, callEnd));
-  const activation = decoder.decode(bytes.slice(callEnd));
-  const renamedCaller = renamedInstance(caller, names);
-  const renamedCall = names.get(call) ?? call;
-  return `call:${encoder.encode(renamedCaller).length}:${renamedCaller}:${encoder.encode(renamedCall).length}:${renamedCall}${activation}`;
+  let at = 0;
+  return {
+    literal(text: string): boolean {
+      const expected = encoder.encode(text);
+      if (expected.some((byte, index) => bytes[at + index] !== byte)) return false;
+      at += expected.length;
+      return true;
+    },
+    segment(): string | null {
+      let digits = at;
+      while (digits < bytes.length && bytes[digits]! >= 0x30 && bytes[digits]! <= 0x39) digits += 1;
+      if (digits === at || bytes[digits] !== 0x3a) return null;
+      const length = Number(decoder.decode(bytes.slice(at, digits)));
+      if (digits + 1 + length > bytes.length) return null;
+      try {
+        const text = decoder.decode(bytes.slice(digits + 1, digits + 1 + length));
+        at = digits + 1 + length;
+        return text;
+      } catch {
+        return null;
+      }
+    },
+    rest(): string {
+      const text = decoder.decode(bytes.slice(at));
+      at = bytes.length;
+      return text;
+    },
+  };
+}
+
+const prefixed = (text: string): string => `${encoder.encode(text).length}:${text}`;
+
+/**
+ * An emitter key `<len>:<instanceId>:<len>:<elementId>:<activation>` with its element and instance renamed; null when
+ * `key` is not one.
+ */
+function renamedEmitter(key: string, names: ReadonlyMap<string, string>): string | null {
+  const cursor = segments(key);
+  const instance = cursor.segment();
+  const element = instance !== null && cursor.literal(":") ? cursor.segment() : null;
+  const activation = cursor.rest();
+  if (instance === null || element === null || !/^:\d+$/u.test(activation)) return null;
+  return `${prefixed(renamedInstance(instance, names))}:${prefixed(names.get(element) ?? element)}${activation}`;
+}
+
+/**
+ * A derived instance identifier with the element identifiers it embeds renamed, each length prefix recomputed: a
+ * called instance's Call Activity, nested callers included (`calledInstanceId`); a started instance's start Event,
+ * with a cascade's emitter key (`startedInstanceId`, `cascadeInstanceId`); a Timer-started one's start Event
+ * (`timerInstanceId`). Any other identifier, a scenario's own among them, is returned as it is.
+ */
+function renamedInstance(id: string, names: ReadonlyMap<string, string>): string {
+  const cursor = segments(id);
+  if (cursor.literal("call:")) {
+    const caller = cursor.segment();
+    const call = caller !== null && cursor.literal(":") ? cursor.segment() : null;
+    if (caller === null || call === null) return id;
+    return `call:${prefixed(renamedInstance(caller, names))}:${prefixed(names.get(call) ?? call)}${cursor.rest()}`;
+  }
+  if (cursor.literal("start:")) {
+    const command = cursor.segment();
+    const deployment = command !== null && cursor.literal(":") ? cursor.segment() : null;
+    const start = deployment !== null && cursor.literal(":") ? cursor.segment() : null;
+    if (command === null || deployment === null || start === null) return id;
+    const base = `start:${prefixed(command)}:${prefixed(deployment)}:${prefixed(names.get(start) ?? start)}`;
+    if (cursor.literal(":")) {
+      const key = cursor.segment();
+      const emitter = key === null ? null : renamedEmitter(key, names);
+      return emitter === null || cursor.rest() !== "" ? id : `${base}:${prefixed(emitter)}`;
+    }
+    return cursor.rest() === "" ? base : id;
+  }
+  if (cursor.literal("timer:")) {
+    const deployment = cursor.segment();
+    const start = deployment !== null && cursor.literal(":") ? cursor.segment() : null;
+    if (deployment === null || start === null) return id;
+    return `timer:${prefixed(deployment)}:${prefixed(names.get(start) ?? start)}${cursor.rest()}`;
+  }
+  return id;
 }
 
 /** `json` with every string at a field `selects` picks renamed through `names`, as an element or an instance. */
@@ -267,7 +341,6 @@ const boundTo = (source: ScenarioDocument["bpmn"], bytes: Uint8Array): ScenarioD
 
 /** The disagreement between `xml`'s run and its renamed and permuted variant's, mapped back; null when they agree. */
 async function renamedDisagreement(scenarioPath: string, scenario: ScenarioDocument, xml: string): Promise<string | null> {
-  const encoder = new TextEncoder();
   const original = await readSourceFor(scenarioPath, boundTo(scenario.bpmn, encoder.encode(xml)), scenario.profile, encoder.encode(xml));
   if (original.kind !== "read") return `the source is refused (${JSON.stringify(original)})`;
   const expected = JSON.parse(JSON.stringify(runScenario(original.program, scenario)));
@@ -284,15 +357,21 @@ async function renamedDisagreement(scenarioPath: string, scenario: ScenarioDocum
   return comparison.kind === ComparisonKind.Disagreement ? JSON.stringify(comparison.disagreement) : null;
 }
 
-/** `json` with every `scopes` and `openWaits` list in one order, which a renaming permutes (see `scopesSorted`). */
+/**
+ * `json` with every `scopes`, `openWaits` and `processStates` list in one order, and a refused deployment's code
+ * dropped. The kernel orders these lists by identifiers a renaming changes (see `scopesSorted`; a population's states
+ * by instance identifier, which embeds start Events), and a refused deployment reports the first refused element in
+ * document order, which a permutation changes as well; the variant must still refuse the same deployment.
+ */
 function listsSorted(json: Json, field = ""): Json {
   if (Array.isArray(json)) {
     const items = json.map((item) => listsSorted(item));
-    return field === "scopes" || field === "openWaits"
+    return field === "scopes" || field === "openWaits" || field === "processStates"
       ? items.sort((left, right) => (JSON.stringify(left) < JSON.stringify(right) ? -1 : 1)) : items;
   }
   if (json !== null && typeof json === "object") {
-    return Object.fromEntries(Object.entries(json).map(([key, value]) => [key, listsSorted(value, key)]));
+    const entries = Object.entries(json).filter(([key]) => !(key === "code" && json.kind === "deploymentRefused"));
+    return Object.fromEntries(entries.map(([key, value]) => [key, listsSorted(value, key)]));
   }
   return json;
 }
@@ -303,7 +382,6 @@ function listsSorted(json: Json, field = ""): Json {
  */
 async function renamedPopulationDisagreement(scenarioPath: string, document: PopulationScenarioDocument,
   xmls: readonly string[]): Promise<string | null> {
-  const encoder = new TextEncoder();
   const run = async (sources: readonly string[], schedule: PopulationScenarioDocument): Promise<Json> => {
     const bytes = new Map(document.definitions.map((definition, index) => [definition.definitionRef, encoder.encode(sources[index]!)]));
     const bound = { ...schedule, definitions: schedule.definitions.map((definition) =>
