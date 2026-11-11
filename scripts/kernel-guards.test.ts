@@ -298,34 +298,22 @@ test("guard 9 reports shape-file edits per branch, marking a kernel-shape commit
   assert.match(report, /\[NOT scoped kernel-shape\]: feat\(kernel\): quiet edit/u);
 });
 
-test("guard 9 fails an IL record edit outside a kernel-shape commit unless its SHA is exempt", () => {
+test("guard 9 fails an IL record edit outside a kernel-shape commit", () => {
   const edit = (sha: string, subject: string, files: string[]) => ({ sha: sha.repeat(40), subject, files });
   const commits = [
     edit("a", "feat(kernel-shape): widen", ["Kernel/IL/Types.lean"]),
     edit("b", "fix(data): quiet field", ["Kernel/IL/Types/Options.lean", "Kernel/Feature/Data.lean"]),
     edit("c", "feat(kernel): untouched records", ["packages/kernel/src/il/codec.ts"]),
-    edit("d", "fix(data): exempt field", ["packages/kernel/src/il/types.ts"]),
+    edit("d", "fix(data): quiet type", ["packages/kernel/src/il/types.ts"]),
   ];
-  assert.deepEqual(ilRecordScopeFindings(commits, new Set(["d".repeat(40)])), [
+  assert.deepEqual(ilRecordScopeFindings(commits), [
     "G9 bbbbbbbb fix(data): quiet field: edits IL records outside a kernel-shape commit (Kernel/IL/Types/Options.lean)",
+    "G9 dddddddd fix(data): quiet type: edits IL records outside a kernel-shape commit (packages/kernel/src/il/types.ts)",
   ]);
 });
 
-/**
- * The commits after main's merge base that edited an IL record outside a kernel-shape commit before guard 9 failed on
- * it, which history cannot re-cut (M8 track review S1, 2026-11-11). They leave the range once the branch reaches main.
- */
-const ilRecordEditsBeforeTheGuard: ReadonlySet<string> = new Set([
-  "b63709817ad9369dc97b757b8a415c3eaf21a709",
-  "840ce4da5d74f308de556becb8263e4450cf1192",
-  "9df723057ab0e1349ecabd0cdbb923ecfc61b6a7",
-  "375cfe70b007bca1b8dd608a812e99a56a1cecd7",
-  "c1b6013c864d08a1ef6f69358c26530d1b742254",
-  "4d3821a30ef307660e5583134109838b3c6f6c9d",
-]);
-
 test("after main's merge base, IL records change only in kernel-shape commits", () => {
-  assert.deepEqual(ilRecordScopeFindings(ilRecordCommits(), ilRecordEditsBeforeTheGuard), []);
+  assert.deepEqual(ilRecordScopeFindings(ilRecordCommits()), []);
 });
 
 test("guard 10 reports functions above 80 lines in both languages", () => {
