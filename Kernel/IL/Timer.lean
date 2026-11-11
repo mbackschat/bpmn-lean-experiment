@@ -516,4 +516,28 @@ def resolve : TimerSchedule → Except String Resolved
     | some (.outside .cron) | some (.malformed .cron) => .error Code.cron.dynamic
     | _ => .error Code.cycle.dynamic
 
+/-- Whether a Cron match strictly after `afterMs`, or a successor of one, is `dueMs`; each match is a whole second
+after the one before, so `fuel` of `(dueMs - afterMs) / 1000 + 2` reaches every match up to `dueMs`. -/
+def cronOccurs (fields : CronFields) (dueMs : Nat) : Nat → Nat → Bool
+  | 0, _ => false
+  | fuel + 1, afterMs =>
+    match cronNext fields afterMs with
+    | some next => next == dueMs || (next < dueMs && cronOccurs fields dueMs fuel next)
+    | none => false
+
+/-- Whether `dueMs` is an occurrence of a root Timer start resolved as `resolved` whose schedule counts from
+`originMs`, its deployment's deploy time (M8-INT-A): a duration `originMs + d`; a date its own instant, also before the
+origin; the `k`-th period after the origin for `1 ≤ k ≤ n`, every `k ≥ 1` when unbounded (CIB-INT-0008); a Cron match
+strictly after the origin or after the match before it, as `successor` repeats it. -/
+def occurs (originMs dueMs : Nat) : Resolved → Bool
+  | .duration ms => dueMs == originMs + ms
+  | .date instantMs => dueMs == instantMs
+  | .cycle periodMs repetitions =>
+    periodMs > 0 && dueMs > originMs && (dueMs - originMs) % periodMs == 0 &&
+      repetitions.all ((dueMs - originMs) / periodMs ≤ ·)
+  | .cron text =>
+    match classifyCron text with
+    | .admitted (.cron _ fields) => dueMs > originMs && cronOccurs fields dueMs ((dueMs - originMs) / 1000 + 2) originMs
+    | .admitted _ | .outside _ | .malformed _ => false
+
 end Kernel.Timer

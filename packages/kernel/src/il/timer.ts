@@ -570,3 +570,44 @@ export function resolve(schedule: TimerSchedule): { readonly ok: true; readonly 
   }
   return assertNever(schedule);
 }
+
+/**
+ * Whether a Cron match strictly after `afterMs`, or a successor of one, is `dueMs`; each match is a whole second after
+ * the one before, so `fuel` of `(dueMs - afterMs) / 1000 + 2` reaches every match up to `dueMs`.
+ */
+function cronOccurs(fields: CronFields, dueMs: number, fuel: number, afterMs: number): boolean {
+  let after = afterMs;
+  for (let left = fuel; left > 0; left -= 1) {
+    const next = cronNext(fields, after);
+    if (next === null || next > dueMs) return false;
+    if (next === dueMs) return true;
+    after = next;
+  }
+  return false;
+}
+
+/**
+ * Whether `dueMs` is an occurrence of a root Timer start resolved as `resolved` whose schedule counts from `originMs`,
+ * its deployment's deploy time (M8-INT-A): a duration `originMs + d`; a date its own instant, also before the origin;
+ * the `k`-th period after the origin for `1 ≤ k ≤ n`, every `k ≥ 1` when unbounded (CIB-INT-0008); a Cron match strictly
+ * after the origin or after the match before it, as `successor` repeats it.
+ */
+export function occurs(originMs: number, dueMs: number, resolved: Resolved): boolean {
+  switch (resolved.tag) {
+    case ResolvedTag.Duration:
+      return dueMs === originMs + resolved.ms;
+    case ResolvedTag.Date:
+      return dueMs === resolved.instantMs;
+    case ResolvedTag.Cycle: {
+      const elapsed = dueMs - originMs;
+      return resolved.periodMs > 0 && elapsed > 0 && elapsed % resolved.periodMs === 0 &&
+        (resolved.repetitions === null || Math.floor(elapsed / resolved.periodMs) <= resolved.repetitions);
+    }
+    case ResolvedTag.Cron: {
+      const classified = classifyCron(resolved.text);
+      if (classified.tag !== ClassifiedTag.Admitted || classified.parsed.tag !== ParsedTag.Cron) return false;
+      return dueMs > originMs && cronOccurs(classified.parsed.fields, dueMs, Math.floor((dueMs - originMs) / 1000) + 2, originMs);
+    }
+  }
+  return assertNever(resolved);
+}
