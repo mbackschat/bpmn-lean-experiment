@@ -11,6 +11,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 import org.bpmnlean.cibseven.CibSevenOpenWaitProjector.ProjectedWait;
 import org.bpmnlean.cibseven.CibSevenOpenWaitProjector.SubscriptionHandle;
 import org.bpmnlean.cibseven.CibSevenPopulationRegistry.Registered;
@@ -29,6 +30,7 @@ import org.bpmnlean.cibseven.PopulationProtocol.TimerStartStep;
 import org.bpmnlean.cibseven.ScenarioProtocol.CommandOutcome;
 import org.cibseven.bpm.engine.MismatchingMessageCorrelationException;
 import org.cibseven.bpm.engine.ProcessEngine;
+import org.cibseven.bpm.engine.ProcessEngineException;
 import org.cibseven.bpm.engine.history.HistoricProcessInstance;
 import org.cibseven.bpm.engine.impl.MessageCorrelationBuilderImpl;
 import org.cibseven.bpm.engine.runtime.ProcessInstance;
@@ -44,6 +46,10 @@ import org.cibseven.bpm.model.bpmn.instance.StartEvent;
  * Signal started inside the command are no instances it started; the population runner names them as cascades.
  */
 final class CibSevenPopulationCommands {
+
+  private static final Pattern IDENTIFIER = Pattern.compile("(ENGINE-\\d{5}) ");
+  private static final Set<String> SEVERAL_CANDIDATES = Set.of("ENGINE-13030", "ENGINE-13031");
+  private static final Set<String> NO_CONDITIONAL_START = Set.of("ENGINE-13042", "ENGINE-13043");
 
   /** A command's outcome, its resolution when CIB names one, and the roots it started under their identities. */
   record Answer(CommandOutcome outcome, Resolution resolution, Map<String, String> started) {
@@ -85,7 +91,10 @@ final class CibSevenPopulationCommands {
    * Applies `command` at the logical time `atMs`, to which the clock is already set; `activities` are the activity
    * instances before it ({@link CibSevenCascades#activities}). A Message CIB correlates to no
    * candidate, or to several, rolls the command back with `noMatch` or `ambiguous` (`CorrelateMessageCmd.java:57-95`,
-   * `DefaultCorrelationHandler.java:46-71`); any other CIB failure rolls it back without a resolution.
+   * `DefaultCorrelationHandler.java:46-71`); any other CIB failure rolls it back without a resolution. CIB raises its
+   * two several-candidate refusals through its command logger, as `ENGINE-13030` for process definitions and
+   * `ENGINE-13031` for executions (`CommandLogger.java:192-206`), and constructs each no-candidate refusal without an
+   * identifier (`CorrelateMessageCmd.java:73`, `:87`).
    */
   Answer apply(PopulationCommand command, long atMs, Set<String> activities) {
     try {
@@ -96,9 +105,7 @@ final class CibSevenPopulationCommands {
         case TimerStartStep timer -> timerStart(timer, atMs);
       };
     } catch (MismatchingMessageCorrelationException mismatch) {
-      // CIB words its two several-candidate refusals "to a single execution" and "to a single process definition"
-      // (`CommandLogger.java:192-206`, codes 030 and 031); every other mismatch is a correlation without a candidate.
-      var several = String.valueOf(mismatch.getMessage()).contains("to a single");
+      var several = SEVERAL_CANDIDATES.contains(identifier(mismatch));
       return new Answer(CibSevenEngineScenarioRunner.rolledBack(mismatch), several ? new Ambiguous() : new NoMatch(),
           Map.of());
     } catch (RuntimeException failed) {
@@ -211,6 +218,13 @@ final class CibSevenPopulationCommands {
   }
 
   /** Evaluates the Conditional starts of one deployment, or of every current one, against the given variables. */
+  /**
+   * Evaluates the root Conditional starts in scope. A scope without one is `rejected`: CIB's condition handler refuses
+   * the request, as `ENGINE-13043` when no deployment holds a Conditional start subscription and `ENGINE-13042` when the
+   * named definition declares none (`DefaultConditionHandler.java:56`, `:96`; `CommandLogger.java:285-296`), before
+   * `EvaluateStartConditionCmd` instantiates anything (`EvaluateStartConditionCmd.java:54`, `:61-63`), so the command
+   * changed no state. Any other failure, such as a condition that is not Boolean, rolls the command back.
+   */
   private Answer evaluate(EvaluateConditionsStep evaluation) {
     var builder = engine.getRuntimeService().createConditionEvaluation();
     if (evaluation.definition() != null) {
@@ -223,11 +237,33 @@ final class CibSevenPopulationCommands {
     if (evaluation.businessKey() != null) {
       builder.processInstanceBusinessKey(evaluation.businessKey());
     }
-    var started = builder.setVariables(ScenarioVariableBindings.toEngineMap(evaluation.variables()))
-        .evaluateStartConditions().stream()
-        .map(ProcessInstance::getId)
-        .toList();
-    return started(evaluation.commandId(), started);
+    List<ProcessInstance> instances;
+    try {
+      instances = builder.setVariables(ScenarioVariableBindings.toEngineMap(evaluation.variables()))
+          .evaluateStartConditions();
+    } catch (ProcessEngineException refused) {
+      if (NO_CONDITIONAL_START.contains(identifier(refused))) {
+        return Answer.of(REJECTED);
+      }
+      throw refused;
+    }
+    return started(evaluation.commandId(), instances.stream().map(ProcessInstance::getId).toList());
+  }
+
+  /**
+   * The catalogued identifier a CIB exception message opens with, such as `ENGINE-13031`, or the empty string for one
+   * CIB constructs without it. CIB's loggers open every message they format with their project code, their component and
+   * the message's own number (`BaseLogger.java:255-256`); the command logger's component is `13`
+   * (`ProcessEngineLogger.java:94-95`). An identifier names one message template of the pinned release, so it separates
+   * CIB's refusals without reading their wording.
+   */
+  static String identifier(ProcessEngineException failure) {
+    var message = failure.getMessage();
+    if (message == null) {
+      return "";
+    }
+    var matched = IDENTIFIER.matcher(message);
+    return matched.lookingAt() ? matched.group(1) : "";
   }
 
   /**
