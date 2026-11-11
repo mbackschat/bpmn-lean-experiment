@@ -204,7 +204,7 @@ structure ActivationCount where
 
 /-- A Signal thrown to the population, which the host publishes after the input commits (PC-SIGNAL-01, PC-SIGNAL-04). -/
 structure BroadcastIntent where
-  name : String
+  address : SignalAddress
   variables : List (String × Value) := []
   businessKey : Option String := none
   origin : OccurrenceRef
@@ -225,6 +225,7 @@ structure State where
   signals : List Signal := []
   /-- Every variable write since the last drain, same-value writes included: `Step` hands them to `Hooks.written`. -/
   writes : List WriteEvent := []
+  /-- The intents of the input in progress; `Step.step` empties it first, so a host publishes a committed input's own. -/
   outbox : List BroadcastIntent := []
   slots : FeatureSlots := {}
   /-- Present exactly when `status` is `failed`. -/

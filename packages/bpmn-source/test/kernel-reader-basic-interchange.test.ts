@@ -56,7 +56,7 @@ test("a message reference prefixed with the target namespace's root prefix binds
 test("a signal reference prefixed with the target namespace's root prefix binds", async () => {
   // Pinned `BpmnParse:3542` resolves a signalRef the same way.
   assert.match(await admitted(model(catching(`<bpmn:signalEventDefinition signalRef="tns:Sg"/>`), message)),
-    /"literal":\{"value":"Sg"\}/u);
+    /"signalRef":\{"namespace":"urn:t","localName":"Sg"\},"name":\{"literal":\{"value":"present"\}\}/u);
 });
 
 test("an unresolvable reference is one code, renamed or not", async () => {

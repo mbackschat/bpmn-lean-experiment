@@ -3,7 +3,7 @@
  * name and the start triggers and deliveries they carry. Part of `state.ts`, which re-exports it.
  */
 import { type ElementId, TechnicalFailure, type Trigger, type Value } from "../il/types.js";
-import { type Binding, InputTag, type MessageChannel } from "./wait.js";
+import { type Binding, InputTag, type MessageChannel, type SignalAddress } from "./wait.js";
 
 /** The public identity of an occurrence: its process instance, the element and its activation number. */
 export interface OccurrenceRef {
@@ -25,7 +25,7 @@ export type StartTrigger =
   | { readonly tag: StartTriggerTag.None }
   | { readonly tag: StartTriggerTag.Timer; readonly logicalTimeMs: number }
   | { readonly tag: StartTriggerTag.Message; readonly channel: MessageChannel; readonly payload: Value | null }
-  | { readonly tag: StartTriggerTag.Signal; readonly name: string; readonly variables: readonly Binding[] }
+  | { readonly tag: StartTriggerTag.Signal; readonly address: SignalAddress; readonly variables: readonly Binding[] }
   | { readonly tag: StartTriggerTag.Condition };
 
 export const noStartTrigger: StartTrigger = { tag: StartTriggerTag.None };
@@ -35,7 +35,7 @@ export enum DeliveryTriggerTag { Message = "message", Signal = "signal" }
 
 export type DeliveryTrigger =
   | { readonly tag: DeliveryTriggerTag.Message; readonly channel: MessageChannel }
-  | { readonly tag: DeliveryTriggerTag.Signal; readonly name: string };
+  | { readonly tag: DeliveryTriggerTag.Signal; readonly address: SignalAddress };
 
 export enum CriterionTargetTag {
   ProcessVariable = "processVariable",
@@ -53,12 +53,17 @@ export type CriterionTarget =
 /** A present null matches only a present null; an absent name matches nothing (PC-MESSAGE-08). */
 export interface CorrelationMatch { readonly target: CriterionTarget; readonly expected: Value; }
 
-/** A Message or Signal delivered to the subscription `occurrence` names. */
+/**
+ * A Message or Signal delivered to the subscription `occurrence` names. `variables` are the delivery's own variables
+ * beside its payload, which CIB installs in the receiving scope (CIB-EXT-0025); `step` rejects a non-empty list
+ * (`delivery-variables-not-admitted`) while no profile installs them.
+ */
 export interface DeliveryInput {
   readonly occurrence: OccurrenceRef;
   readonly trigger: DeliveryTrigger;
   readonly correlation: readonly CorrelationMatch[];
   readonly payload: Value | null;
+  readonly variables: readonly Binding[];
   /** The input's logical time (`Input.atMs`). */
   readonly atMs: number | null;
 }

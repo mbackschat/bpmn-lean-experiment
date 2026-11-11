@@ -18,7 +18,7 @@
  */
 import { assertNever, compareStrings, mergeSort, type DefinitionRef, type Program } from "./il/types.js";
 import { bindingsToJson, decodeProgram, encodeExpression, isObject, type JsonValue } from "./il/codec.js";
-import { channelFromJson, channelToJson, failureCode, failureName, stimulusFromJson } from "./il/codec/stimulus.js";
+import { channelFromJson, channelToJson, failureCode, failureName, signalAddressToJson, stimulusFromJson } from "./il/codec/stimulus.js";
 import {
   CauseTag,
   FailureTag,
@@ -27,6 +27,7 @@ import {
   type InstanceFailure,
   type Input,
   type OccurrenceKey,
+  type BroadcastIntent,
   type OccurrenceRef,
   type State,
   type Transition,
@@ -81,7 +82,7 @@ function definitionRefJson(ref: DefinitionRef): JsonValue {
     key: ref.key,
     version: nullable(ref.version, number),
     versionTag: nullable(ref.versionTag, jsonString),
-    deployment: nullable(ref.deployment, jsonString),
+    deployment: nullable(ref.deployment, number),
     tenant: nullable(ref.tenant, jsonString),
     sourceSha256: nullable(ref.sourceSha256, jsonString),
   };
@@ -120,7 +121,7 @@ function detail(view: WaitView): readonly [string, Record<string, JsonValue>] | 
     return ["incident", { effect: effectFields(incident.effect), generation: incident.generation, cancellable: incident.cancellable }];
   }
   if (view.effect !== null) return ["effect", effectFields(view.effect)];
-  if (view.signal !== null) return ["signal", { name: view.signal.name, payload: view.signal.payload }];
+  if (view.signal !== null) return ["signal", { ...signalAddressToJson(view.signal.address), payload: view.signal.payload }];
   if (view.conditional !== null) {
     const condition = view.conditional;
     return ["conditional", {
@@ -195,6 +196,25 @@ function scopeJson(scope: PublishedScope): JsonValue {
   };
 }
 
+/**
+ * A Signal an input threw to the population: kernel-only, since an observer sees an intent only through its receivers
+ * (PC-SIGNAL-01).
+ */
+function broadcastJson(intent: BroadcastIntent): JsonValue {
+  return {
+    ...signalAddressToJson(intent.address),
+    variables: bindingsToJson(intent.variables),
+    ...(intent.businessKey === null ? {} : { businessKey: intent.businessKey }),
+    origin: referenceJson(intent.origin),
+  };
+}
+
+/** `broadcasts` when the input threw a Signal to the population, else nothing. */
+function broadcastsJson(intents: readonly BroadcastIntent[]): Record<string, JsonValue> {
+  return intents.length === 0 ? {} : { broadcasts: intents.map(broadcastJson) };
+}
+
+/** The state observation; `failure` appears only in a failed state, `broadcasts` only after an input that threw a Signal to the population. */
 export function observationJson(program: Program, state: State): JsonValue {
   const view = hostView(program, state);
   const waits = mergeSort(view.openWaits.map(renderWait), publishedWaitLe);
@@ -207,6 +227,7 @@ export function observationJson(program: Program, state: State): JsonValue {
     scopes: scopes(program, state).map(scopeJson),
     openWaits: waits.map((wait) => wait.json),
     ...(view.failure === null ? {} : { failure: failureJson(view.failure) }),
+    ...broadcastsJson(view.broadcasts),
   };
 }
 
@@ -379,6 +400,7 @@ export function hostViewJson(view: View): JsonValue {
     openWaits: view.openWaits.map(waitJson),
     journal: view.journal.map(transitionJson),
     ...(view.failure === null ? {} : { failure: failureViewJson(view.failure) }),
+    ...broadcastsJson(view.broadcasts),
   };
 }
 

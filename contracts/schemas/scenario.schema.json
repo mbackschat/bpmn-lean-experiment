@@ -663,7 +663,6 @@
           "additionalProperties": false,
           "required": [
             "kind",
-            "name",
             "variables"
           ],
           "properties": {
@@ -673,10 +672,35 @@
             "name": {
               "$ref": "#/$defs/nonEmptyString"
             },
+            "signalRef": {
+              "$ref": "#/$defs/signalRef"
+            },
             "variables": {
               "$ref": "#/$defs/bindings"
             }
-          }
+          },
+          "oneOf": [
+            {
+              "required": [
+                "name"
+              ],
+              "properties": {
+                "name": {
+                  "$ref": "#/$defs/nonEmptyString"
+                }
+              }
+            },
+            {
+              "required": [
+                "signalRef"
+              ],
+              "properties": {
+                "signalRef": {
+                  "$ref": "#/$defs/signalRef"
+                }
+              }
+            }
+          ]
         },
         {
           "type": "object",
@@ -843,6 +867,10 @@
         "payload": {
           "$ref": "#/$defs/variableValue"
         },
+        "variables": {
+          "$ref": "#/$defs/bindings",
+          "description": "Variables the delivery carries beside its payload; the kernel rejects a non-empty list as delivery-variables-not-admitted."
+        },
         "at": {
           "$ref": "#/$defs/logicalTime"
         }
@@ -870,8 +898,7 @@
           "type": "object",
           "additionalProperties": false,
           "required": [
-            "kind",
-            "name"
+            "kind"
           ],
           "properties": {
             "kind": {
@@ -879,10 +906,51 @@
             },
             "name": {
               "$ref": "#/$defs/nonEmptyString"
+            },
+            "signalRef": {
+              "$ref": "#/$defs/signalRef"
             }
-          }
+          },
+          "oneOf": [
+            {
+              "required": [
+                "name"
+              ],
+              "properties": {
+                "name": {
+                  "$ref": "#/$defs/nonEmptyString"
+                }
+              }
+            },
+            {
+              "required": [
+                "signalRef"
+              ],
+              "properties": {
+                "signalRef": {
+                  "$ref": "#/$defs/signalRef"
+                }
+              }
+            }
+          ]
         }
       ]
+    },
+    "signalRef": {
+      "description": "A Signal addressed by the QName of its definition: the id of the Signal element and, when the Definitions declaring it have one, their targetNamespace.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "namespace": {
+          "type": "string"
+        }
+      }
     },
     "correlationMatch": {
       "type": "object",

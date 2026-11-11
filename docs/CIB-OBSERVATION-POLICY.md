@@ -56,6 +56,9 @@ The CIB runner fills the state in `CibSevenStateProjector` (status, logical time
 | `openWaits[].detail` | `adapter-derived` | The kind-tagged detail built by `CibSevenOpenWaitProjector.projectTasks`, `projectSubscriptions`, `projectAddressless`, `projectJobs` and `projectEffect` from the engine collection that holds the wait |
 | `openWaits[].detail.kind` | `adapter-derived` | Selected by the engine collection: task query to `userTask`; subscription event type to `message`, `signal` or `conditional`; addressless Receive Task to `message`; `TimerEntity` job to `timer`; Service Task job to `effect`, or `incident` when one public incident references the job |
 | `openWaits[].detail.name` | `engine-observed` | `Task.getName` for a User Task, including null; `EventSubscription.getEventName` for a Signal (`CibSevenOpenWaitProjector.userTaskDetail`, `projectSubscriptions`) |
+| `openWaits[].detail.signalRef` | `not-claimed` | Signal reference; the CIB runner addresses a Signal wait by its event name only (`CibSevenOpenWaitProjector.projectSubscriptions`); the kernel writes a Signal reference under `signalNames = identifier` |
+| `openWaits[].detail.signalRef.id` | `not-claimed` | Signal reference id; the CIB runner addresses a Signal wait by its event name only (`CibSevenOpenWaitProjector.projectSubscriptions`); the kernel writes a Signal reference under `signalNames = identifier` |
+| `openWaits[].detail.signalRef.namespace` | `not-claimed` | Signal reference namespace; the CIB runner addresses a Signal wait by its event name only (`CibSevenOpenWaitProjector.projectSubscriptions`); the kernel writes a Signal reference under `signalNames = identifier` |
 | `openWaits[].detail.assignee` | `engine-observed` | `Task.getAssignee` (`CibSevenOpenWaitProjector.userTaskDetail`) |
 | `openWaits[].detail.candidateUsers` | `adapter-derived` | `userId` of the task's public identity links of type `candidate`, nulls dropped (`CibSevenOpenWaitProjector.userTaskDetail`) |
 | `openWaits[].detail.candidateGroups` | `adapter-derived` | `groupId` of the task's public identity links of type `candidate`, nulls dropped (`CibSevenOpenWaitProjector.userTaskDetail`) |
@@ -152,6 +155,25 @@ The CIB runner fills the state in `CibSevenStateProjector` (status, logical time
 | `failure.related[].occurrence.processInstanceId` | `not-claimed` | Related occurrence; `CibSevenStateProjector.observe` passes a null failure, and `status` never projects `failed` |
 | `failure.related[].occurrence.elementId` | `not-claimed` | Related occurrence; `CibSevenStateProjector.observe` passes a null failure, and `status` never projects `failed` |
 | `failure.related[].occurrence.activation` | `not-claimed` | Related occurrence; `CibSevenStateProjector.observe` passes a null failure, and `status` never projects `failed` |
+| `broadcasts` | `not-claimed` | kernel-only: CIB exposes no throw intent, only its receivers; the comparator compares broadcasts between the kernels |
+| `broadcasts[].name` | `not-claimed` | kernel-only: CIB exposes no throw intent, only its receivers; the comparator compares broadcasts between the kernels |
+| `broadcasts[].signalRef` | `not-claimed` | kernel-only: CIB exposes no throw intent, only its receivers; the comparator compares broadcasts between the kernels |
+| `broadcasts[].signalRef.id` | `not-claimed` | kernel-only: CIB exposes no throw intent, only its receivers; the comparator compares broadcasts between the kernels |
+| `broadcasts[].signalRef.namespace` | `not-claimed` | kernel-only: CIB exposes no throw intent, only its receivers; the comparator compares broadcasts between the kernels |
+| `broadcasts[].variables` | `not-claimed` | kernel-only: CIB exposes no throw intent, only its receivers; the comparator compares broadcasts between the kernels |
+| `broadcasts[].variables[].name` | `not-claimed` | kernel-only: CIB exposes no throw intent, only its receivers; the comparator compares broadcasts between the kernels |
+| `broadcasts[].variables[].value` | `not-claimed` | kernel-only: CIB exposes no throw intent, only its receivers; the comparator compares broadcasts between the kernels |
+| `broadcasts[].variables[].value.kind` | `not-claimed` | kernel-only: CIB exposes no throw intent, only its receivers; the comparator compares broadcasts between the kernels |
+| `broadcasts[].variables[].value.value` | `not-claimed` | kernel-only: CIB exposes no throw intent, only its receivers; the comparator compares broadcasts between the kernels |
+| `broadcasts[].variables[].value.coefficient` | `not-claimed` | kernel-only: CIB exposes no throw intent, only its receivers; the comparator compares broadcasts between the kernels |
+| `broadcasts[].variables[].value.scale` | `not-claimed` | kernel-only: CIB exposes no throw intent, only its receivers; the comparator compares broadcasts between the kernels |
+| `broadcasts[].variables[].value.value[].name` | `not-claimed` | kernel-only: CIB exposes no throw intent, only its receivers; the comparator compares broadcasts between the kernels |
+| `broadcasts[].variables[].value.value[].value` | `not-claimed` | kernel-only: CIB exposes no throw intent, only its receivers; the comparator compares broadcasts between the kernels |
+| `broadcasts[].businessKey` | `not-claimed` | kernel-only: CIB exposes no throw intent, only its receivers; the comparator compares broadcasts between the kernels |
+| `broadcasts[].origin` | `not-claimed` | kernel-only: CIB exposes no throw intent, only its receivers; the comparator compares broadcasts between the kernels |
+| `broadcasts[].origin.processInstanceId` | `not-claimed` | kernel-only: CIB exposes no throw intent, only its receivers; the comparator compares broadcasts between the kernels |
+| `broadcasts[].origin.elementId` | `not-claimed` | kernel-only: CIB exposes no throw intent, only its receivers; the comparator compares broadcasts between the kernels |
+| `broadcasts[].origin.activation` | `not-claimed` | kernel-only: CIB exposes no throw intent, only its receivers; the comparator compares broadcasts between the kernels |
 
 Retained `stateQueries` bind canonical status, logical time, and the root scope's Process-variable projection to raw public runtime/history queries and the controlled engine clock; `CibSevenStateProjector.rootVariables` reads every root-scope variable from history rather than a name set derived from commands. The task, Message-subscription, timer, effect and incident job snapshots retain the raw rows from which `CibSevenOpenWaitProjector` projects `openWaits`. No TypeScript consumer reads these snapshots: the runner's projector owns the projection, and the hosted lane reproduces every retained result from them.
 

@@ -220,6 +220,29 @@ export function namespaceOf(element: ElementRecord, definitions: ElementRecord, 
   return typeof namespace === "string" ? namespace : undefined;
 }
 
+/** An XML QName as the kernel IL carries it (`Kernel.QName`). */
+export type QualifiedName = { namespace: string | null; localName: string };
+
+/** The Definitions' `targetNamespace`, the namespace of every element they declare. */
+export const targetNamespaceOf = (definitions: ElementRecord): string | null =>
+  typeof definitions.targetNamespace === "string" ? definitions.targetNamespace : null;
+
+/**
+ * The QName an `xsd:QName` attribute value names: a prefix resolves through the element's in-scope declarations, and
+ * one without a binding names nothing (`null`); an unprefixed name takes the Definitions' `targetNamespace`, the
+ * namespace of the elements the same document declares (PC-SCOPE-03).
+ */
+export function qualifiedName(element: ElementRecord, definitions: ElementRecord, value: string): QualifiedName | null {
+  const separator = value.indexOf(":");
+  if (separator < 0) return { namespace: targetNamespaceOf(definitions), localName: value };
+  const namespace = namespaceOf(element, definitions, value.slice(0, separator));
+  return namespace === undefined ? null : { namespace, localName: value.slice(separator + 1) };
+}
+
+/** Whether `name` is the QName of `element`, which these Definitions declare: their `targetNamespace` and its id. */
+export const namesElement = (name: QualifiedName | null, definitions: ElementRecord, element: ElementRecord): boolean =>
+  name !== null && name.namespace === targetNamespaceOf(definitions) && name.localName === element.id;
+
 const prefixOf = (qualifiedName: string): string =>
   qualifiedName.includes(":") ? qualifiedName.slice(0, qualifiedName.indexOf(":")) : "";
 

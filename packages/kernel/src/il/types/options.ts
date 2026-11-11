@@ -269,6 +269,75 @@ export enum ScopeStart {
   Required = "required",
 }
 
+/** What addresses a Signal. */
+export enum SignalNames {
+  /**
+   * BPMN 2.0.2 Table 10.100: an event references its Signal by `signalRef`, a QName; the Signal's `name` is descriptive
+   * (`tSignal.name` is `xsd:string`, `Semantic.xsd:1394`).
+   */
+  Identifier = "identifier",
+  /**
+   * CIB keys a Signal subscription and a throw by the Signal's `name`, an expression where it holds one
+   * (`BpmnParse.java:474-498`, `EventSubscriptionDeclaration#resolveExpressionOfEventName`).
+   */
+  Addresses = "addresses",
+}
+
+/** What a Signal carries besides its address. */
+export enum SignalPayload {
+  /** BPMN 2.0.2 §10.5.1: a Signal is a broadcast trigger and carries no data to its catchers. */
+  None = "none",
+  /**
+   * CIB installs a Signal's variables into the receiving scope and the instance a Signal start creates
+   * (`EventHandlerImpl.java:56-58`, `SignalEventHandler.java:56-57`, `SignalEventReceivedCmd.java:179`).
+   */
+  Variables = "variables",
+}
+
+/** Whom an external Signal reaches. */
+export enum SignalDelivery {
+  /** BPMN 2.0.2 Table 10.88: a Signal is broadcast to every process that can receive it. */
+  BroadcastOnly = "broadcastOnly",
+  /** CIB also delivers an external Signal to the one execution a request names (`SignalEventReceivedCmd.java:119-131`). */
+  OccurrenceTargeted = "occurrenceTargeted",
+}
+
+/** What a Conditional root start Event evaluates. */
+export enum ConditionalStart {
+  /** BPMN 2.0.2 Table 10.84: the condition's environment lies outside the process, so no start input carries it. */
+  Refused = "refused",
+  /**
+   * CIB evaluates a root start condition per request over the submitted variables alone
+   * (`EvaluateStartConditionCmd.java:49-83`, `DefaultConditionHandler.java:44-134`).
+   */
+  SubmittedContext = "submittedContext",
+}
+
+/** How a Call Activity's `calledElement` names the process it calls. */
+export enum CalledElementResolution {
+  /**
+   * BPMN 2.0.2 §15.3.2 and `Semantic.xsd:149`: a QName resolved against the element's namespace bindings, whose local
+   * part is the called process's id.
+   */
+  QualifiedName = "qualifiedName",
+  /**
+   * CIB reads `calledElement` as a definition key text and selects by its `calledElementBinding`
+   * (`BpmnParse.java:3934, 3945-3990`, `CallableElementUtil.java:75-103`).
+   */
+  CibKey = "cibKey",
+}
+
+/** Which Message throw forms run. */
+export enum MessageThrowForms {
+  /** BPMN 2.0.2 Tables 10.88 and 10.89: a Message throw sends a Message and names no transport, so it is refused. */
+  Refused = "refused",
+  /**
+   * CIB runs a Message throw with a declared implementation as a Service Task and passes on one without
+   * (`BpmnParse.java:1643-1659`, `3174-3189`).
+   */
+  CibForms = "cibForms",
+}
+
 export interface ProfileOptions {
   readonly relations: readonly string[];
   readonly evaluator: Evaluator;
@@ -310,4 +379,10 @@ export interface ProfileOptions {
   readonly malformedTimer: MalformedTimer;
   readonly messageNames: MessageNames;
   readonly scopeStart: ScopeStart;
+  readonly signalNames: SignalNames;
+  readonly signalPayload: SignalPayload;
+  readonly signalDelivery: SignalDelivery;
+  readonly conditionalStart: ConditionalStart;
+  readonly calledElementResolution: CalledElementResolution;
+  readonly messageThrowForms: MessageThrowForms;
 }

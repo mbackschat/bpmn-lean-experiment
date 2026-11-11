@@ -55,7 +55,7 @@ def inputTagName : InputTag → String
 
 def definitionRefJson (ref : DefinitionRef) : Json :=
   Json.mkObj [("key", Json.str ref.key), ("version", nullable ref.version toJson),
-    ("versionTag", nullable ref.versionTag Json.str), ("deployment", nullable ref.deployment Json.str),
+    ("versionTag", nullable ref.versionTag Json.str), ("deployment", nullable ref.deployment toJson),
     ("tenant", nullable ref.tenant Json.str), ("sourceSha256", nullable ref.sourceSha256 Json.str)]
 
 def effectFields (effect : EffectDetail) : List (String × Json) :=
@@ -79,7 +79,7 @@ def detail (view : WaitView) : Option (String × List (String × Json)) :=
   (view.incident.map fun incident => ("incident", [("effect", Json.mkObj (effectFields incident.effect)),
     ("generation", toJson incident.generation), ("cancellable", toJson incident.cancellable)])) <|>
   (view.effect.map fun effect => ("effect", effectFields effect)) <|>
-  (view.signal.map fun signal => ("signal", [("name", Json.str signal.name), ("payload", toJson signal.payload)])) <|>
+  (view.signal.map fun signal => ("signal", Codec.signalAddressToJson signal.address ++ [("payload", toJson signal.payload)])) <|>
   (view.conditional.map fun condition => ("conditional", [("variableName", nullable condition.variableName Json.str),
     ("variableEvents", toJson condition.variableEvents), ("lastValue", nullable condition.lastValue toJson)])) <|>
   (view.deadlineMs.map fun deadline => ("timer", [("deadlineMs", toJson deadline),
@@ -110,6 +110,16 @@ def PublishedWait.canonicalLe (left right : PublishedWait) : Bool :=
     (decide (l.element.value < r.element.value) || (l.element.value == r.element.value &&
       (l.activation < r.activation || (l.activation == r.activation && decide (left.kind ≤ right.kind))))))
 
+/-- A Signal an input threw to the population: kernel-only, since an observer sees an intent only through its
+receivers (PC-SIGNAL-01). -/
+def broadcastJson (intent : BroadcastIntent) : Json :=
+  Json.mkObj (Codec.signalAddressToJson intent.address ++ [("variables", Codec.bindingsToJson intent.variables)] ++
+    (intent.businessKey.map fun key => ("businessKey", Json.str key)).toList ++ [("origin", referenceJson intent.origin)])
+
+/-- `broadcasts` when the input threw a Signal to the population, else nothing. -/
+def broadcastsJson (intents : List BroadcastIntent) : List (String × Json) :=
+  if intents.isEmpty then [] else [("broadcasts", Json.arr (intents.map broadcastJson).toArray)]
+
 def failureJson (failure : InstanceFailure) : Json :=
   Json.mkObj [("code", Json.str failure.code), ("message", nullable failure.message Json.str),
     ("occurrence", referenceJson failure.occurrence),
@@ -124,7 +134,8 @@ def scopeJson (scope : Publish.PublishedScope) : Json :=
       ("role", Json.str (Publish.scopeRoleName scope.role))] ++ place)),
     ("variables", Codec.bindingsToJson scope.variables)]
 
-/-- The state observation; `failure` appears only in a failed state. -/
+/-- The state observation; `failure` appears only in a failed state, `broadcasts` only after an input that threw a
+Signal to the population. -/
 def observationJson (program : Program) (state : State) : Json :=
   let view := Host.hostView program state
   let waits := (view.openWaits.map renderWait).mergeSort PublishedWait.canonicalLe
@@ -134,7 +145,7 @@ def observationJson (program : Program) (state : State) : Json :=
     ("scopes", Json.arr ((Publish.scopes program state).map scopeJson).toArray),
     ("openWaits", Json.arr (waits.map (·.json)).toArray)]
   Json.mkObj (fields ++
-    (view.failure.map fun failure => ("failure", failureJson failure)).toList)
+    (view.failure.map fun failure => ("failure", failureJson failure)).toList ++ broadcastsJson view.broadcasts)
 
 /-- `code` appears only on an input that did not commit. -/
 def commandJson (commandId outcome : String) (code : Option String) : Json :=
@@ -264,7 +275,7 @@ def hostViewJson (view : Host.View) : Json :=
   Json.mkObj ([("status", Json.str (Publish.statusName view.status)),
     ("openWaits", Json.arr (view.openWaits.map waitJson).toArray),
     ("journal", Json.arr (view.journal.map transitionJson).toArray)] ++
-    (view.failure.map fun failure => ("failure", failureViewJson failure)).toList)
+    (view.failure.map fun failure => ("failure", failureViewJson failure)).toList ++ broadcastsJson view.broadcasts)
 
 /-- Every committed input's host view. -/
 def hostViews (program : Program) : Option State → List (String × Input) → List Host.View

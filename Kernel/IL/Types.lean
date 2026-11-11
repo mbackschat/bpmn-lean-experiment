@@ -5,6 +5,7 @@ public import Kernel.IL.Types.Juel
 public import Kernel.IL.Types.Expression
 public import Kernel.IL.Types.Decision
 public import Kernel.IL.Types.Lexical
+public import Kernel.IL.Types.Reference
 
 /-! # Kernel IL
 
@@ -63,8 +64,11 @@ structure MessageTrigger where
   operationRef : Option String := none
   deriving Repr
 
+/-- `signalRef` is the Signal the event references, `none` when the model names none; `name` is that Signal's `name`
+(BPMN 2.0.2 Table 10.100), `none` when it has none. -/
 structure SignalTrigger where
-  name : ValueSource
+  signalRef : Option QName := none
+  name : Option ValueSource := none
   deriving Repr
 
 /-- A variable write a Conditional Event's `camunda:variableEvents` filter can name (`ConditionalEventDefinition.java:91-113`):
@@ -145,10 +149,13 @@ structure MessageThrow where
   payload : List Mapping := []
   deriving Repr
 
+/-- `signalRef` and `name` as `SignalTrigger`'s; `propagateAll` is the position among `payload` at which
+`camunda:in variables="all"` copies every visible variable (PC-SIGNAL-01). -/
 structure SignalThrow where
-  name : ValueSource
+  signalRef : Option QName := none
+  name : Option ValueSource := none
   payload : List Mapping := []
-  propagateAll : Bool := false
+  propagateAll : Option Nat := none
   localOnly : Bool := false
   businessKey : Option Expression := none
   asynchronous : Bool := false
@@ -224,13 +231,6 @@ structure ScriptWork where
   resultVariable : Option String := none
   deriving Repr
 
-inductive CallBinding where
-  | latest
-  | deployment
-  | version (value : ValueSource)
-  | versionTag (value : ValueSource)
-  deriving Repr
-
 inductive DecisionResultMapping where
   | singleEntry
   | singleResult
@@ -244,17 +244,6 @@ structure RuleWork where
   binding : CallBinding := .latest
   resultMapping : DecisionResultMapping := .resultList
   tenant : Option ValueSource := none
-  deriving Repr
-
-structure CallWork where
-  calledElement : ValueSource
-  binding : CallBinding := .latest
-  tenant : Option ValueSource := none
-  businessKey : Option Expression := none
-  inputs : List Mapping := []
-  outputs : List Mapping := []
-  propagateAllInputs : Bool := false
-  propagateAllOutputs : Bool := false
   deriving Repr
 
 /-- Guarded type: `Kernel.Feature.Work` owns matching on it. -/
@@ -408,17 +397,6 @@ structure StartPayload where
   outgoing : List FlowId := []
   deriving Repr
 
-/-- The definition a called process is bound to. `version` to `tenant` name a binding of a Call Activity, `none` for
-the process this program carries; `sourceSha256` pins the source (PC-SCOPE-03). -/
-structure DefinitionRef where
-  key : String
-  version : Option Nat := none
-  versionTag : Option String := none
-  deployment : Option String := none
-  tenant : Option String := none
-  sourceSha256 : Option String := none
-  deriving DecidableEq, Repr
-
 /-- `sourceId` is the identifier the model's author wrote, which publication shows. `Header.id` is unique in the
 program, so that two versions of one called definition can coexist. -/
 structure ElementOrigin where
@@ -447,12 +425,6 @@ structure Flow where
   source : ElementId
   target : ElementId
   condition : Option Expression := none
-  deriving Repr
-
-structure ProgramIdentity where
-  processId : String
-  sourceSha256 : String
-  profile : String
   deriving Repr
 
 /-- A process the program carries besides its root process, for a Call Activity to call: its bound definition and
@@ -693,14 +665,16 @@ def declares (program : Program) (definition : Option DefinitionRef) (name : Str
   | none => program.variables.contains name
   | some bound => program.processes.any fun process => process.definition == bound && process.variables.contains name
 
-/-- The called process of `key` the latest binding selects: the highest version the program carries, a process without
-a version counting lowest. Two versions of one key coexist because `Header.id` stays unique (PC-SCOPE-03). -/
-def calledProcess? (program : Program) (key : String) : Option CalledProcess :=
-  (program.processes.filter (·.definition.key == key)).foldl (fun chosen process =>
-    match chosen with
-    | none => some process
-    | some current =>
-      if (current.definition.version.getD 0) < (process.definition.version.getD 0) then some process else chosen) none
+/-- The carried processes a Call's selector admits for a caller deployed at `callerDeployment` (`CallWork.selects`);
+admission requires exactly one. Two versions of one key coexist because `Header.id` stays unique (PC-SCOPE-03). -/
+def calledProcessFor (program : Program) (resolution : CalledElementResolution) (callerDeployment : Option Nat)
+    (work : CallWork) : List CalledProcess :=
+  let chosen := work.selects resolution callerDeployment (program.processes.map (·.definition))
+  program.processes.filter (chosen.contains ·.definition)
+
+/-- Whether a Call names the root process: by QName under `qualifiedName`, by key text under `cibKey`. -/
+def callsRoot (program : Program) (resolution : CalledElementResolution) (work : CallWork) : Bool :=
+  work.namesDefinition resolution { key := program.identity.processId, «namespace» := program.identity.«namespace» }
 
 /-- The decision a DMN resource the program carries declares under `key`; admission refuses a key two resources
 declare (`decision.duplicateId`). -/

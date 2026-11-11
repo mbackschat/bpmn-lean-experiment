@@ -407,7 +407,7 @@ def onRunning (hooks : Hooks) (ctx : Ctx) (input : Input) (before : Option State
     if state.status != .running then .error (.rejected "instance-not-running")
     else do
       let (tag, at?) := inputHead input
-      let start ← advanceClock at? { state with journal := [] }
+      let start ← advanceClock at? { state with journal := [], outbox := [] }
       orderJournal (settle hooks ctx closureBound closureWorkBound (← microStep hooks ctx (.input tag) none State.root transition start))
 
 /-- `Ctx.scopeRole`: read from the slots, since the occurrences that ended there may be gone when an event arrives. -/
@@ -435,10 +435,10 @@ def step (hooks : Hooks) (program : Program) (before : Option State) (input : In
   let ctx := context hooks program
   match input with
   | .start payload =>
-    match before, hooks.selectStart ctx payload.startEvent payload.trigger with
-    | some _, _ => .error (.rejected "instance-already-started")
-    | none, none => .error (.rejected "no-start-event")
-    | none, some start => do
+    match before with
+    | some _ => .error (.rejected "instance-already-started")
+    | none => do
+      let start ← chooseStart payload.startEvent (← hooks.startsFired ctx payload)
       admitValues (payload.variables.map (·.2))
       let initial ← advanceClock payload.atMs
         ((State.initial payload.instanceId payload.variables payload.businessKey).signal (.armScope State.root))
@@ -446,6 +446,7 @@ def step (hooks : Hooks) (program : Program) (before : Option State) (input : In
         (begin hooks ctx { element := start, scope := State.root, trigger := payload.trigger }) initial)
   | .command data => onRunning hooks ctx input before (command hooks ctx data)
   | .deliver data => onRunning hooks ctx input before fun state =>
+    if !data.variables.isEmpty then .error (.rejected "delivery-variables-not-admitted") else
     match data.trigger with
     | .message _ =>
       match item? ctx state data.occurrence (·.channel) with

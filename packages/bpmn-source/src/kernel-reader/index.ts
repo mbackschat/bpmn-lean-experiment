@@ -19,11 +19,13 @@ import {
   createExtensionTracker,
   flowElementKind,
   list,
+  namesElement,
   optionalId,
   requireId,
   requireInertRoot,
-  text,
   requireCarried,
+  targetNamespaceOf,
+  text,
 } from "./model.js";
 import type { Built, ModelNode, ReadContext, SourceFactNotCarried } from "./model.js";
 import { childIds, readScope } from "./scopes.js";
@@ -31,7 +33,7 @@ import { parseKernelSource } from "./source.js";
 import type { KernelSource } from "./source.js";
 import { assertNever, compareIds, defaultKernelProfileOptions } from "./wire.js";
 import type { KernelJson, KernelProfileOptions } from "./wire.js";
-import { readActivity } from "./work.js";
+import { calledQName, readActivity } from "./work.js";
 import { readDecisionResource } from "./decision.js";
 
 export { defaultKernelProfileOptions, kernelProfileOptions } from "./wire.js";
@@ -68,14 +70,16 @@ function scanContainer(scan: Scan, container: ElementRecord, parent: string | nu
 
 const endpoint = (flow: ElementRecord, key: string): string | null => optionalId(asElement(flow[key]) ?? {});
 
-/** A Process is called when some Call Activity names it; the root is the first Process nothing calls. */
-function selectRootProcess(processes: ReadonlyArray<ElementRecord>, nodes: ReadonlyMap<string, ModelNode>): ElementRecord {
-  const called = new Set([...nodes.values()].flatMap((node) => {
-    if (node.kind !== FlowElementKind.CallActivity) return [];
-    const name = text(node.element, "calledElement") ?? "";
-    return [name.includes(":") ? name.slice(name.indexOf(":") + 1) : name];
-  }));
-  const root = processes.find((process) => !called.has(String(process.id))) ?? processes[0];
+/**
+ * A Process is called when some Call Activity's resolved QName is its own (`{targetNamespace, id}`), so a Call into
+ * another namespace or through an unbound prefix calls none of these Processes; the root is the first Process nothing
+ * calls (PC-SCOPE-03).
+ */
+function selectRootProcess(definitions: ElementRecord, processes: ReadonlyArray<ElementRecord>,
+  nodes: ReadonlyMap<string, ModelNode>): ElementRecord {
+  const called = [...nodes.values()].flatMap((node) =>
+    node.kind === FlowElementKind.CallActivity ? [calledQName(definitions, node.element)] : []);
+  const root = processes.find((process) => !called.some((name) => namesElement(name, definitions, process))) ?? processes[0];
   if (root === undefined) throw new ReadRefusal(ReadRefusalCode.SourceNoProcess, null, "no Process");
   return root;
 }
@@ -90,7 +94,7 @@ function createContext(definitions: ElementRecord, parsed: Awaited<ReturnType<ty
   return {
     ...tracker,
     definitions,
-    rootProcess: selectRootProcess(processes, scan.nodes),
+    rootProcess: selectRootProcess(definitions, processes, scan.nodes),
     processes,
     nodes: scan.nodes,
     flows,
@@ -208,9 +212,9 @@ function declaredItems(process: ElementRecord): string[] {
     .map(requireId).sort(compareIds);
 }
 
-/** A process these Definitions carry: its key is its id, and no deployment has bound it yet. */
-const processDefinition = (key: string): KernelJson =>
-  ({ key, version: null, versionTag: null, deployment: null, tenant: null, sourceSha256: null });
+/** A process these Definitions carry: its key is its id, its namespace theirs, and no deployment has bound it yet. */
+const processDefinition = (key: string, namespace: string | null): KernelJson =>
+  ({ key, namespace, version: null, versionTag: null, deployment: null, tenant: null, sourceSha256: null });
 
 function requireAllCarried(ctx: ReadContext & { consumedBy: (element: ElementRecord) => ReadonlySet<string> },
   processes: ReadonlyArray<ElementRecord>): void {
@@ -243,18 +247,22 @@ export async function readKernelProgram(source: KernelSource, options: KernelPro
     for (const process of processes) scanContainer(scan, process, null);
     const notCarried: SourceFactNotCarried[] = [];
     const ctx = createContext(parsed.definitions, parsed, scan, processes, notCarried);
+    const targetNamespace = targetNamespaceOf(parsed.definitions);
     requireReadableForms([...scan.nodes.values()].sort(byId));
     const elements = buildProgramElements(ctx);
     requireAllCarried(ctx, processes);
     const program: KernelJson = {
-      identity: { processId: requireId(ctx.rootProcess), sourceSha256: parsed.sha256, profile: source.profile },
+      identity: {
+        processId: requireId(ctx.rootProcess), namespace: targetNamespace, sourceSha256: parsed.sha256, profile: source.profile,
+        deployment: null,
+      },
       options,
       elements,
       flows: ctx.flows.map((flow) => readFlow(ctx, flow)),
       variables: declaredItems(ctx.rootProcess),
       processes: processes.filter((process) => process !== ctx.rootProcess)
         .sort((left, right) => compareIds(requireId(left), requireId(right)))
-        .map((process) => ({ definition: processDefinition(requireId(process)), children: childIds(ctx, process),
+        .map((process) => ({ definition: processDefinition(requireId(process), targetNamespace), children: childIds(ctx, process),
           variables: declaredItems(process), executable: process.isExecutable === true })),
       // Table 10.1 `isExecutable`; admission refuses a process not marked executable (`process.notExecutable`).
       executable: ctx.rootProcess.isExecutable === true,

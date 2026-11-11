@@ -3,9 +3,9 @@ import type { ElementRecord } from "../moddle-graph.js";
 import { fixed, headerOf } from "./build.js";
 import { declaredImplementation, effectBinding } from "./binding.js";
 import { conditionExpression, eventInputs, eventOutputs, valueSource, variableCopies } from "./data.js";
-import { FlowElementKind, ReadRefusal, ReadRefusalCode, list, optionalId, reference, requireId, text } from "./model.js";
+import { FlowElementKind, ReadRefusal, ReadRefusalCode, list, optionalId, reference, requireId, targetNamespaceOf, text } from "./model.js";
 import type { Built, ModelNode, ReadContext } from "./model.js";
-import { assertNever, ctor, foreign, literalSource, subscription, variable } from "./wire.js";
+import { assertNever, ctor, foreign, subscription, variable } from "./wire.js";
 import type { KernelJson } from "./wire.js";
 
 const correlationPathLanguage = "urn:bpmn-lean:correlation-scalar-path:v1";
@@ -146,7 +146,7 @@ function readTrigger(ctx: ReadContext, event: ElementRecord, definition: Element
     case EventDefinitionKind.Timer:
       return ctor("timer", { payload: { schedule: timerSchedule(definition) } });
     case EventDefinitionKind.Signal:
-      return ctor("signal", { payload: { name: signalName(definition) } });
+      return ctor("signal", { payload: signalAddress(ctx, definition) });
     case EventDefinitionKind.Conditional:
       return ctor("condition", { payload: conditionPayload(ctx, definition) });
     case EventDefinitionKind.Error: {
@@ -175,12 +175,20 @@ function readTrigger(ctx: ReadContext, event: ElementRecord, definition: Element
   return assertNever(kind);
 }
 
-function signalName(definition: ElementRecord): KernelJson {
+/**
+ * A Signal definition's `signalRef`, the QName of a Signal these Definitions declare (Table 10.100), and that Signal's
+ * descriptive `name`, a value source CIB may evaluate (PC-SIGNAL-01).
+ */
+function signalAddress(ctx: ReadContext, definition: ElementRecord): Record<string, KernelJson> {
   const signal = reference(definition, "signalRef", "bpmn:Signal");
   if (signal === null) {
     throw new ReadRefusal(ReadRefusalCode.SignalWithoutReference, optionalId(definition), "signalRef absent");
   }
-  return literalSource(requireId(signal));
+  const name = text(signal, "name");
+  return {
+    signalRef: { namespace: targetNamespaceOf(ctx.definitions), localName: requireId(signal) },
+    name: name === null ? null : valueSource(name),
+  };
 }
 
 function conditionPayload(ctx: ReadContext, definition: ElementRecord): KernelJson {
@@ -217,10 +225,11 @@ function messageThrow(ctx: ReadContext, event: ElementRecord, definition: Elemen
 function signalThrow(ctx: ReadContext, event: ElementRecord, definition: ElementRecord): KernelJson {
   const copies = variableCopies(definition, ctx.extensions(definition, "in"));
   if (copies.localCopy) ctx.noteNotCarried({ element: optionalId(definition), fact: "camunda:in local" });
+  const inputs = eventInputs(ctx, event);
   return {
-    name: signalName(definition),
-    payload: [...eventInputs(ctx, event), ...copies.mappings],
-    propagateAll: copies.propagateAll,
+    ...signalAddress(ctx, definition),
+    payload: [...inputs, ...copies.mappings],
+    propagateAll: copies.propagateAllAt === null ? null : inputs.length + copies.propagateAllAt,
     localOnly: copies.localOnly,
     businessKey: copies.businessKey,
     asynchronous: ctx.attribute(definition, "async") === "true",

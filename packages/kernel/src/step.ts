@@ -24,7 +24,7 @@ import {
 import {
   ActivationRole, CauseTag, CommandActionTag, ContinuationTag, DeliveryTriggerTag, EffectOutcomeTag, FailureTag,
   FiredTag, InputTag, InstanceStatus, IterationTag, LeaveTag, SignalTag, Terminal, TokenTag, WriteRule, beginOccurrence,
-  beginRequest, busyScopes, closeOwnItems, committed, crossed, emptyDraft, entryCount, failed, idle,
+  beginRequest, busyScopes, closeOwnItems, committed, crossed, emptyDraft, entryCount, failed, failedWith, idle,
   initial, instanceOf, keyOf, occurrenceOf, openKindView, ownScope, recordEnd, reserve, root, signal as enqueue,
   startReserved,
   type BeginRequest, type Binding, type Cause, type CommandAction, type CommandInput, type EffectInput, type Fired,
@@ -33,7 +33,7 @@ import {
   type Token, type Transition, type WaitView,
 } from "./state.js";
 import {
-  ScopeRole, admitThen, cancelOccurrence, clearInside, removeOccurrence, type Ctx, type Hooks, type ScopeEntry,
+  ScopeRole, admitThen, cancelOccurrence, chooseStart, clearInside, removeOccurrence, type Ctx, type Hooks, type ScopeEntry,
 } from "./hooks.js";
 
 /** The name a transition records for a signal: its tag, which spells the Lean constructor. */
@@ -535,7 +535,7 @@ function onRunning(
 ): Outcome {
   if (before === null) return failed(FailureTag.Rejected, "instance-not-started");
   if (before.status !== InstanceStatus.Running) return failed(FailureTag.Rejected, "instance-not-running");
-  const advanced = advanceClock(atMs, { ...before, journal: [] });
+  const advanced = advanceClock(atMs, { ...before, journal: [], outbox: [] });
   if (!advanced.ok) return advanced;
   const started = microStep(hooks, ctx, { tag: CauseTag.Input, input: tag }, null, root, transition, advanced.value);
   return started.ok ? settle(hooks, ctx, closureBound, started.value) : started;
@@ -582,6 +582,7 @@ export function context(hooks: Hooks, program: Program): Ctx {
 
 function deliver(hooks: Hooks, ctx: Ctx, input: Extract<Input, { tag: InputTag.Deliver }>, state: State): Outcome {
   const data = input.payload;
+  if (data.variables.length > 0) return failed(FailureTag.Rejected, "delivery-variables-not-admitted");
   switch (data.trigger.tag) {
     case DeliveryTriggerTag.Message: {
       const item = itemOf(ctx, state, data.occurrence, (view) => view.channel);
@@ -609,12 +610,13 @@ export function step(hooks: Hooks, program: Program, before: State | null, input
     case InputTag.Start: {
       const payload = input.payload;
       if (before !== null) return failed(FailureTag.Rejected, "instance-already-started");
-      const start = hooks.selectStart(ctx, payload.startEvent, payload.trigger);
-      if (start === null) return failed(FailureTag.Rejected, "no-start-event");
+      const fired = hooks.startsFired(ctx, payload);
+      const start = fired.ok ? chooseStart(payload.startEvent, fired.value) : failedWith<ElementId>(fired.failure);
+      if (!start.ok) return start;
       const fresh = admitThen(payload.variables.map(([, value]) => value), () => advanceClock(payload.atMs, enqueue(initial(payload.instanceId, payload.variables, payload.businessKey), { tag: SignalTag.ArmScope, scope: root })));
       if (!fresh.ok) return fresh;
-      const started = microStep(hooks, ctx, { tag: CauseTag.Input, input: InputTag.Start }, start, root,
-        (state) => begin(hooks, ctx, beginRequest({ element: start, scope: root, trigger: payload.trigger }), state), fresh.value);
+      const started = microStep(hooks, ctx, { tag: CauseTag.Input, input: InputTag.Start }, start.value, root,
+        (state) => begin(hooks, ctx, beginRequest({ element: start.value, scope: root, trigger: payload.trigger }), state), fresh.value);
       return started.ok ? settle(hooks, ctx, closureBound, started.value) : started;
     }
     case InputTag.Command:

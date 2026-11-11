@@ -30,6 +30,7 @@ import {
   EffectOutcomeTag,
   FailureTag,
   InputTag,
+  SignalAddressTag,
   StartTriggerTag,
   noStartTrigger,
   type Binding,
@@ -42,6 +43,7 @@ import {
   type Input,
   type MessageChannel,
   type OccurrenceRef,
+  type SignalAddress,
   type StartTrigger,
 } from "../../state.js";
 import { assertNever, compareStrings, type Value } from "../types.js";
@@ -200,6 +202,30 @@ function stringList(json: unknown): readonly string[] {
   return json.map((item: unknown) => get(string.decode(item)));
 }
 
+/** A Signal address: `name` for a named one, `signalRef` (`{id, namespace?}`) for a QName; a stimulus gives exactly one. */
+function signalAddressFromJson(json: unknown): SignalAddress {
+  const name = optionalField(json, "name");
+  const ref = optionalField(json, "signalRef");
+  if (name !== undefined && ref === undefined) return { tag: SignalAddressTag.Named, name: get(string.decode(name)) };
+  if (name === undefined && ref !== undefined) {
+    fields(ref, ["id"], ["namespace"]);
+    return { tag: SignalAddressTag.Qualified, ref: { namespace: optionalString(ref, "namespace"), localName: get(stringField(ref, "id")) } };
+  }
+  if (name !== undefined) throw new Refusal(`${CodecRefusalCode.Malformed}: a Signal address is a name or a signalRef, not both`);
+  throw new Refusal(`${CodecRefusalCode.MissingField}: name`);
+}
+
+/** The members `signalAddressFromJson` reads back. */
+export function signalAddressToJson(address: SignalAddress): Readonly<Record<string, JsonValue>> {
+  switch (address.tag) {
+    case SignalAddressTag.Named:
+      return { name: address.name };
+    case SignalAddressTag.Qualified:
+      return { signalRef: { ...(address.ref.namespace === null ? {} : { namespace: address.ref.namespace }), id: address.ref.localName } };
+  }
+  return assertNever(address);
+}
+
 function startTriggerFromJson(json: unknown): StartTrigger {
   const kind = get(kindOf(json));
   switch (kind) {
@@ -215,11 +241,9 @@ function startTriggerFromJson(json: unknown): StartTrigger {
       const payload = optionalField(json, "payload");
       return { tag: StartTriggerTag.Message, channel, payload: payload === undefined ? null : valueAt(payload) };
     }
-    case "signal": {
-      fields(json, ["kind", "name", "variables"]);
-      const name = get(stringField(json, "name"));
-      return { tag: StartTriggerTag.Signal, name, variables: bindingsAt(json, "variables") };
-    }
+    case "signal":
+      fields(json, ["kind", "variables"], ["name", "signalRef"]);
+      return { tag: StartTriggerTag.Signal, address: signalAddressFromJson(json), variables: bindingsAt(json, "variables") };
     case "condition":
       fields(json, ["kind"]);
       return { tag: StartTriggerTag.Condition };
@@ -256,8 +280,8 @@ function deliveryTriggerFromJson(json: unknown): DeliveryTrigger {
       fields(json, ["kind", "channel"]);
       return { tag: DeliveryTriggerTag.Message, channel: get(channelFromJson(present(json, "channel"))) };
     case "signal":
-      fields(json, ["kind", "name"]);
-      return { tag: DeliveryTriggerTag.Signal, name: get(stringField(json, "name")) };
+      fields(json, ["kind"], ["name", "signalRef"]);
+      return { tag: DeliveryTriggerTag.Signal, address: signalAddressFromJson(json) };
   }
   throw new Refusal(`unknown delivery trigger kind ${kind}`);
 }
@@ -332,9 +356,10 @@ function inputFromJson(json: unknown, kind: string, atMs: number | null): Input 
       const trigger = deliveryTriggerFromJson(present(json, "trigger"));
       const correlation = entries.map(correlationFromJson);
       const payload = optionalField(json, "payload");
+      const variables = optionalField(json, "variables") === undefined ? [] : bindingsAt(json, "variables");
       return {
         tag: InputTag.Deliver,
-        payload: { occurrence: ref, trigger, correlation, payload: payload === undefined ? null : valueAt(payload), atMs },
+        payload: { occurrence: ref, trigger, correlation, payload: payload === undefined ? null : valueAt(payload), variables, atMs },
       };
     }
     case "timerFire": {
@@ -352,7 +377,7 @@ function inputFromJson(json: unknown, kind: string, atMs: number | null): Input 
 const stimulusForms: Readonly<Record<string, readonly [readonly string[], readonly string[]]>> = {
   start: [["instanceId", "variables"], ["startEvent", "trigger", "businessKey", "at"]],
   command: [["occurrence", "action"], ["at"]],
-  deliver: [["occurrence", "trigger"], ["correlation", "payload", "at"]],
+  deliver: [["occurrence", "trigger"], ["correlation", "payload", "variables", "at"]],
   timerFire: [["occurrence", "logicalTimeMs"], ["at"]],
   effectResult: [["occurrence", "outcome"], ["at"]],
 };

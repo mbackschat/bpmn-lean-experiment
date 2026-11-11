@@ -157,6 +157,15 @@ def inValueDomain : Value → Bool
 def admitValues (values : List Value) : Except Failure Unit :=
   if values.all inValueDomain then .ok () else .error (.rejected "value-outside-domain")
 
+/-- The start Event a start input starts among the starts its trigger fired (`Hooks.startsFired`): the one it names,
+else the only one; several unnamed are `start-ambiguous`, since one input starts one instance at one start. -/
+def chooseStart (named : Option ElementId) (fired : List ElementId) : Except Failure ElementId :=
+  match named, fired with
+  | some id, _ => if fired.contains id then .ok id else .error (.rejected "no-start-event")
+  | none, [only] => .ok only
+  | none, [] => .error (.rejected "no-start-event")
+  | none, _ :: _ :: _ => .error (.rejected "start-ambiguous")
+
 /-- Hold an occurrence whose InputSet is unavailable (`FeatureSlots.held`). -/
 def State.hold (state : State) (held : Parked) : State :=
   { state with slots := { state.slots with held := state.slots.held ++ [held] } }
@@ -368,9 +377,9 @@ structure Hooks where
   catches : Raised → Trigger → Option Catch := fun _ _ => none
   /-- Scopes: `Ctx.eventStart`. -/
   eventStart : ScopePayload → Option (Subscription × Bool) := fun _ => none
-  /-- Subscriptions: the root start Event an input selects: the one it names, else the one its trigger fires (a none
-  trigger, the sole none start). `Kernel.Population` asks it too. -/
-  selectStart : Ctx → Option ElementId → StartTrigger → Option ElementId := fun _ _ _ => none
+  /-- Subscriptions: the root start Events a start input's trigger fires, in document order; `chooseStart` picks the one
+  the input starts. `Kernel.Population` asks it too, to start every fired start. -/
+  startsFired : Ctx → StartInput → Except Failure (List ElementId) := fun _ _ => .ok []
   /-- Subscriptions: whether the open item is a correlated Message subscription on the channel whose criteria, evaluated
   in the current state, equal the delivered correlation; `false` for any other item. `Kernel.Population` asks it to
   find the candidates of a correlated publication. -/

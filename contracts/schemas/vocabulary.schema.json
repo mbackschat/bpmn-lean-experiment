@@ -355,6 +355,42 @@
             "implicit",
             "required"
           ]
+        },
+        "signalNames": {
+          "enum": [
+            "identifier",
+            "addresses"
+          ]
+        },
+        "signalPayload": {
+          "enum": [
+            "none",
+            "variables"
+          ]
+        },
+        "signalDelivery": {
+          "enum": [
+            "broadcastOnly",
+            "occurrenceTargeted"
+          ]
+        },
+        "conditionalStart": {
+          "enum": [
+            "refused",
+            "submittedContext"
+          ]
+        },
+        "calledElementResolution": {
+          "enum": [
+            "qualifiedName",
+            "cibKey"
+          ]
+        },
+        "messageThrowForms": {
+          "enum": [
+            "refused",
+            "cibForms"
+          ]
         }
       }
     },
@@ -469,13 +505,19 @@
         "process.notExecutable",
         "profile.abnormalScopeEnd.withoutOutflow",
         "profile.callBindingTime.invocation",
+        "profile.calledElementResolution.cibKey",
         "profile.compensationHandlerFailure.selected",
         "profile.compensationOrder.reverseCreation",
+        "profile.conditionalStart.submittedContext",
         "profile.deliveryVariables.installs",
         "profile.messageCorrelation.apiCriteria",
+        "profile.messageThrowForms.cibForms",
         "profile.multiInstanceCounters.cibLocals",
         "profile.multiInstanceCounters.none",
         "profile.multiInstanceInputFailure.hold",
+        "profile.signalDelivery.occurrenceTargeted",
+        "profile.signalNames.addresses",
+        "profile.signalPayload.variables",
         "profile.timerZone",
         "reader.conditionExpressionType",
         "reader.dataAssociationShape",
@@ -535,9 +577,11 @@
         "timer.cycleNotAttached",
         "timer.date",
         "timer.duration",
+        "work.call.ambiguous",
         "work.call.binding",
         "work.call.businessKey",
         "work.call.calledElementExpression",
+        "work.call.calledElementUnbound",
         "work.call.calledProcessMissing",
         "work.call.dataCorrespondence",
         "work.call.multiInstanceCounterOutput",

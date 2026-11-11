@@ -9,6 +9,7 @@ public import Kernel.Feature.MultiInstance
 public import Kernel.Feature.Propagation
 public import Kernel.Feature.Scopes
 public import Kernel.Feature.Subscriptions
+public import Kernel.Feature.Subscriptions.Starts
 
 /-! # Registry: the hooks record the features fill. Only `Kernel.Run` imports it. -/
 
@@ -56,7 +57,7 @@ def hooks : Hooks :=
     evaluate := Feature.Data.evaluate
     catches := Feature.Subscriptions.catches
     correlates := Feature.Subscriptions.correlates
-    selectStart := Feature.Subscriptions.selectStart
+    startsFired := Feature.Subscriptions.startsFired
     eventStart := Feature.Scopes.eventStart }
 
 end Kernel.Registry

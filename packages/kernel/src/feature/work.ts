@@ -229,7 +229,7 @@ export function arriveActivity(hooks: WorkHooks, ctx: Ctx, header: Header, paylo
     case WorkTag.Receive: {
       if (!begunByToken) return failed(FailureTag.Unsupported, "scope-implicit-start");
       const channel = messageTriggerChannel(work.payload.message);
-      return committed(openWork({ tag: OpenKindTag.Message, detail: { channel, payload: false, criteria: [] } }, header, payload, occurrence, entered));
+      return committed(openWork({ tag: OpenKindTag.Message, detail: { channel, payload: false, criteria: [], name: null } }, header, payload, occurrence, entered));
     }
     case WorkTag.Service:
       return committed(openWork({

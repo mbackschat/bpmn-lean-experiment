@@ -111,11 +111,14 @@ structure OpenWait where
   view : WaitView
   deriving Repr
 
+/-- `broadcasts` are the Signals the input threw to the population (`State.outbox`), which the host publishes once the
+input commits (PC-SIGNAL-01). -/
 structure View where
   status : InstanceStatus
   failure : Option InstanceFailure
   openWaits : List OpenWait
   journal : List Transition
+  broadcasts : List BroadcastIntent := []
   deriving Repr
 
 def publicRef (program : Program) (ref : OccurrenceRef) : OccurrenceRef :=
@@ -154,6 +157,7 @@ def openWait (program : Program) (state : State) (item : OpenItem) : OpenWait :=
 def hostView (program : Program) (state : State) : View :=
   { status := state.status, failure := state.failure.map (publicFailure program)
     openWaits := state.openItems.map (openWait program state)
-    journal := state.journal.map (publicTransition program) }
+    journal := state.journal.map (publicTransition program)
+    broadcasts := state.outbox.map fun intent => { intent with origin := publicRef program intent.origin } }
 
 end Kernel.Host

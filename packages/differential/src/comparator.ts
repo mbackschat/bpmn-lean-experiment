@@ -98,15 +98,19 @@ function compareOpenWaits(left: unknown, right: unknown): number {
 
 /**
  * The comparable form of one observation. Open waits are sorted by the schema's canonical key, since their order is not
- * a semantic claim. Two fields are compared only when both targets are kernels: a command's or deployment's `code`,
- * kernel-internal, and a state's non-root variable `scopes`, beyond the CIB Seven projection's observation boundary.
+ * a semantic claim. Three fields are compared only when both targets are kernels: a command's or deployment's `code`,
+ * kernel-internal, a state's non-root variable `scopes`, beyond the CIB Seven projection's observation boundary, and the
+ * Signal `broadcasts` an input threw to the population, which a host publishes rather than observes in the instance.
  * A target without them, retained CIB Seven evidence among them, omits them.
  */
 function comparable(observation: unknown, observed: Observed): unknown {
   if (!isJsonRecord(observation)) return observation;
-  const { code, scopes, ...rest } = observation;
+  const { code, scopes, broadcasts, ...rest } = observation;
   const kept: Readonly<Record<string, unknown>> = observed.kernelFields
-    ? { ...rest, ...(code === undefined ? {} : { code }), ...(scopes === undefined ? {} : { scopes }) }
+    ? {
+      ...rest, ...(code === undefined ? {} : { code }), ...(scopes === undefined ? {} : { scopes }),
+      ...(broadcasts === undefined ? {} : { broadcasts }),
+    }
     : rest;
   const variables = kept["variables"];
   const rooted = observed.cibEvidence && Array.isArray(variables) ? { ...kept, variables: cibBindings(variables) } : kept;

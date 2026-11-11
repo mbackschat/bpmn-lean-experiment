@@ -16,13 +16,17 @@ import {
   UnhandledError, ErrorCatchVariables,
   MultiInstanceBinding, ResultValues, OutputContext, MultiInstanceCounters, MultiInstanceInputFailure, MultiInstanceCount,
   multiInstanceCounterNames, BusinessRuleTask, InclusiveJoinReach, BranchSchedule, ConditionalRetrigger, MalformedTimer, MessageNames,
-  ScopeStart,
+  ScopeStart, SignalNames, SignalPayload, SignalDelivery, ConditionalStart, CalledElementResolution, MessageThrowForms,
 } from "./types/options.js";
 import {
   ExpressionTag, MappingDialect, SimpleBooleanTag, ValueSourceTag, ValueTag, type Expression, type Mapping,
   type SimpleBoolean, type Value, type ValueSource,
 } from "./types/expression.js";
 import type { Decision, DecisionResource } from "./types/decision.js";
+import {
+  type CallBinding, type CallWork, callWorkSelects, callWorkNamesDefinition, type DefinitionRef, definitionRefEquals,
+  type ProgramIdentity, type QName,
+} from "./types/reference.js";
 export { integerLexeme, isAscii, parseJavaInt, parseJavaLong, signedDigits, withinJavaInt } from "./types/lexical.js";
 export {
   AbnormalScopeEnd, CallBindingTime, type CompensationHandlerFailure, CompensationHandlerFailureTag, CompensationOrder,
@@ -31,12 +35,16 @@ export {
   UnhandledError, ErrorCatchVariables,
   MultiInstanceBinding, ResultValues, OutputContext, MultiInstanceCounters, MultiInstanceInputFailure, MultiInstanceCount,
   multiInstanceCounterNames, BusinessRuleTask, InclusiveJoinReach, BranchSchedule, ConditionalRetrigger, MalformedTimer, MessageNames,
-  ScopeStart,
+  ScopeStart, SignalNames, SignalPayload, SignalDelivery, ConditionalStart, CalledElementResolution, MessageThrowForms,
 };
 export {
   ExpressionTag, MappingDialect, SimpleBooleanTag, ValueSourceTag, ValueTag, type Expression, type Mapping,
   type SimpleBoolean, type Value, type ValueSource,
 };
+export {
+  type CallBinding, CallBindingTag, type CallWork, callWorkSelects, callWorkNamesDefinition, type DefinitionRef, definitionRefEquals,
+  definitionRefEligibleFor, type ProgramIdentity, type QName,
+} from "./types/reference.js";
 
 export type ElementId = string;
 export type FlowId = string;
@@ -135,7 +143,13 @@ export interface MessageTrigger {
   readonly operationRef: string | null;
 }
 
-export interface SignalTrigger { readonly name: ValueSource; }
+/**
+ * `signalRef` is the Signal the event references, `null` when the model names none; `name` is that Signal's `name`
+ * (BPMN 2.0.2 Table 10.100), `null` when it has none.
+ */
+// guard-exception(19): `signalRef` is read once a Signal subscription is admitted; admission refuses each whole
+// (`event.catch.signal`, `boundary.signal`, `start.signal`, admission/subscriptions.ts).
+export interface SignalTrigger { readonly signalRef: QName | null; readonly name: ValueSource | null; }
 
 /**
  * A variable write a Conditional Event's `camunda:variableEvents` filter can name (`ConditionalEventDefinition.java:91-113`):
@@ -211,15 +225,21 @@ export interface EffectBinding { readonly protocol: string; readonly operation: 
 /** `binding = null` is an unbound pass-through (PC-MESSAGE-09). */
 export interface MessageThrow { readonly binding: EffectBinding | null; readonly payload: readonly Mapping[]; }
 
+/**
+ * `signalRef` and `name` as `SignalTrigger`'s; `propagateAll` is the position among `payload` at which
+ * `camunda:in variables="all"` copies every visible variable (PC-SIGNAL-01).
+ */
 export interface SignalThrow {
-  readonly name: ValueSource;
-  readonly payload: readonly Mapping[];
   // guard-exception(19): a Signal throw is refused whole (`throw.signal`, admission/propagation.ts).
-  readonly propagateAll: boolean;
-  // guard-exception(19): refused with its throw, as `propagateAll` above.
+  readonly signalRef: QName | null;
+  readonly name: ValueSource | null;
+  readonly payload: readonly Mapping[];
+  // guard-exception(19): refused with its throw, as `signalRef` above.
+  readonly propagateAll: number | null;
+  // guard-exception(19): refused with its throw, as `signalRef` above.
   readonly localOnly: boolean;
   readonly businessKey: Expression | null;
-  // guard-exception(19): refused with its throw, as `propagateAll` above.
+  // guard-exception(19): refused with its throw, as `signalRef` above.
   readonly asynchronous: boolean;
 }
 
@@ -293,19 +313,6 @@ export interface ScriptWork {
   readonly resultVariable: string | null;
 }
 
-export enum CallBindingTag {
-  Latest = "latest",
-  Deployment = "deployment",
-  Version = "version",
-  VersionTag = "versionTag",
-}
-
-export type CallBinding =
-  | { readonly tag: CallBindingTag.Latest }
-  | { readonly tag: CallBindingTag.Deployment }
-  | { readonly tag: CallBindingTag.Version; readonly value: ValueSource }
-  | { readonly tag: CallBindingTag.VersionTag; readonly value: ValueSource };
-
 export enum DecisionResultMapping {
   SingleEntry = "singleEntry",
   SingleResult = "singleResult",
@@ -319,17 +326,6 @@ export interface RuleWork {
   readonly binding: CallBinding;
   readonly resultMapping: DecisionResultMapping;
   readonly tenant: ValueSource | null;
-}
-
-export interface CallWork {
-  readonly calledElement: ValueSource;
-  readonly binding: CallBinding;
-  readonly tenant: ValueSource | null;
-  readonly businessKey: Expression | null;
-  readonly inputs: readonly Mapping[];
-  readonly outputs: readonly Mapping[];
-  readonly propagateAllInputs: boolean;
-  readonly propagateAllOutputs: boolean;
 }
 
 /** Guarded type: `feature/work` owns matching on it. */
@@ -492,19 +488,6 @@ export interface GatewayPayload {
 export interface StartPayload { readonly subscription: Subscription | null; readonly outgoing: readonly FlowId[]; }
 
 /**
- * The definition a called process is bound to. `version` to `tenant` name a binding of a Call Activity, `null` for the
- * process this program carries; `sourceSha256` pins the source (PC-SCOPE-03).
- */
-export interface DefinitionRef {
-  readonly key: string;
-  readonly version: number | null;
-  readonly versionTag: string | null;
-  readonly deployment: string | null;
-  readonly tenant: string | null;
-  readonly sourceSha256: string | null;
-}
-
-/**
  * `sourceId` is the identifier the model's author wrote, which publication shows. `Header.id` is unique in the program,
  * so that two versions of one called definition can coexist.
  */
@@ -532,12 +515,6 @@ export interface Flow {
   readonly source: ElementId;
   readonly target: ElementId;
   readonly condition: Expression | null;
-}
-
-export interface ProgramIdentity {
-  readonly processId: string;
-  readonly sourceSha256: string;
-  readonly profile: string;
 }
 
 /**
@@ -830,12 +807,6 @@ export function programChildren(program: Program, parent: ElementId | null): rea
   });
 }
 
-/** Lean's derived `DecidableEq DefinitionRef`. */
-export function definitionRefEquals(left: DefinitionRef, right: DefinitionRef): boolean {
-  return left.key === right.key && left.version === right.version && left.versionTag === right.versionTag &&
-    left.deployment === right.deployment && left.tenant === right.tenant && left.sourceSha256 === right.sourceSha256;
-}
-
 /**
  * Whether the process an instance runs declares the item `name`: the root process for `null`, else the called process
  * of the definition its Call bound.
@@ -846,16 +817,19 @@ export function programDeclares(program: Program, definition: DefinitionRef | nu
 }
 
 /**
- * The called process of `key` the latest binding selects: the highest version the program carries, a process without
- * a version counting lowest. Two versions of one key coexist because `Header.id` stays unique (PC-SCOPE-03).
+ * The carried processes a Call's selector admits for a caller deployed at `callerDeployment` (`callWorkSelects`);
+ * admission requires exactly one. Two versions of one key coexist because `Header.id` stays unique (PC-SCOPE-03).
  */
-export function programCalledProcess(program: Program, key: string): CalledProcess | null {
-  let chosen: CalledProcess | null = null;
-  for (const process of program.processes) {
-    if (process.definition.key !== key) continue;
-    if (chosen === null || (chosen.definition.version ?? 0) < (process.definition.version ?? 0)) chosen = process;
-  }
-  return chosen;
+export function programCalledProcessFor(program: Program, resolution: CalledElementResolution, callerDeployment: number | null,
+  work: CallWork): readonly CalledProcess[] {
+  const chosen = callWorkSelects(resolution, callerDeployment, work, program.processes.map((process) => process.definition));
+  return program.processes.filter((process) => chosen.some((definition) => definitionRefEquals(definition, process.definition)));
+}
+
+/** Whether a Call names the root process: by QName under `qualifiedName`, by key text under `cibKey`. */
+export function programCallsRoot(program: Program, resolution: CalledElementResolution, work: CallWork): boolean {
+  const { processId: key, namespace } = program.identity;
+  return callWorkNamesDefinition(resolution, work, { key, namespace, version: null, versionTag: null, deployment: null, tenant: null, sourceSha256: null });
 }
 
 /**

@@ -261,6 +261,61 @@ inductive ScopeStart where
   | required
   deriving DecidableEq, Repr
 
+/-- What addresses a Signal. -/
+inductive SignalNames where
+  /-- BPMN 2.0.2 Table 10.100: an event references its Signal by `signalRef`, a QName; the Signal's `name` is
+  descriptive (`tSignal.name` is `xsd:string`, `Semantic.xsd:1394`). -/
+  | identifier
+  /-- CIB keys a Signal subscription and a throw by the Signal's `name`, an expression where it holds one
+  (`BpmnParse.java:474-498`, `EventSubscriptionDeclaration#resolveExpressionOfEventName`). -/
+  | addresses
+  deriving DecidableEq, Repr
+
+/-- What a Signal carries besides its address. -/
+inductive SignalPayload where
+  /-- BPMN 2.0.2 §10.5.1: a Signal is a broadcast trigger and carries no data to its catchers. -/
+  | none
+  /-- CIB installs a Signal's variables into the receiving scope and the instance a Signal start creates
+  (`EventHandlerImpl.java:56-58`, `SignalEventHandler.java:56-57`, `SignalEventReceivedCmd.java:179`). -/
+  | variables
+  deriving DecidableEq, Repr
+
+/-- Whom an external Signal reaches. -/
+inductive SignalDelivery where
+  /-- BPMN 2.0.2 Table 10.88: a Signal is broadcast to every process that can receive it. -/
+  | broadcastOnly
+  /-- CIB also delivers an external Signal to the one execution a request names (`SignalEventReceivedCmd.java:119-131`). -/
+  | occurrenceTargeted
+  deriving DecidableEq, Repr
+
+/-- What a Conditional root start Event evaluates. -/
+inductive ConditionalStart where
+  /-- BPMN 2.0.2 Table 10.84: the condition's environment lies outside the process, so no start input carries it. -/
+  | refused
+  /-- CIB evaluates a root start condition per request over the submitted variables alone
+  (`EvaluateStartConditionCmd.java:49-83`, `DefaultConditionHandler.java:44-134`). -/
+  | submittedContext
+  deriving DecidableEq, Repr
+
+/-- How a Call Activity's `calledElement` names the process it calls. -/
+inductive CalledElementResolution where
+  /-- BPMN 2.0.2 §15.3.2 and `Semantic.xsd:149`: a QName resolved against the element's namespace bindings, whose local
+  part is the called process's id. -/
+  | qualifiedName
+  /-- CIB reads `calledElement` as a definition key text and selects by its `calledElementBinding`
+  (`BpmnParse.java:3934, 3945-3990`, `CallableElementUtil.java:75-103`). -/
+  | cibKey
+  deriving DecidableEq, Repr
+
+/-- Which Message throw forms run. -/
+inductive MessageThrowForms where
+  /-- BPMN 2.0.2 Tables 10.88 and 10.89: a Message throw sends a Message and names no transport, so it is refused. -/
+  | refused
+  /-- CIB runs a Message throw with a declared implementation as a Service Task and passes on one without
+  (`BpmnParse.java:1643-1659`, `3174-3189`). -/
+  | cibForms
+  deriving DecidableEq, Repr
+
 structure ProfileOptions where
   relations : List String := []
   evaluator : Evaluator := .simpleBoolean
@@ -300,6 +355,12 @@ structure ProfileOptions where
   malformedTimer : MalformedTimer := .refused
   messageNames : MessageNames := .description
   scopeStart : ScopeStart := .implicit
+  signalNames : SignalNames := .identifier
+  signalPayload : SignalPayload := .none
+  signalDelivery : SignalDelivery := .broadcastOnly
+  conditionalStart : ConditionalStart := .refused
+  calledElementResolution : CalledElementResolution := .qualifiedName
+  messageThrowForms : MessageThrowForms := .refused
   deriving Repr
 
 end Kernel

@@ -26,16 +26,19 @@ def copy (ctx : Ctx) (unavailable : String) (context : EvalContext) (mappings : 
   | some bindings => .ok bindings
   | none => .error (.unsupported unavailable) -- dynamic-only: whether a source is set is the run's data
 
-/-- The called process a Call names. An expression-named called element and a call of the root process are refused
-at admission (`work.call.calledElementExpression`, `work.call.rootProcess`). -/
+/-- The called process a Call names, the one its selector admits (`Program.calledProcessFor`). An expression-named
+called element, a call of the root process and a selector admitting no process or several are refused at admission
+(`work.call.calledElementExpression`, `work.call.rootProcess`, `work.call.calledProcessMissing`,
+`work.call.ambiguous`). -/
 def calledProcess (ctx : Ctx) (work : CallWork) : Except Failure CalledProcess :=
+  let resolution := ctx.program.options.calledElementResolution
   match work.calledElement with
   | .expression _ => .error (.unsupported "work-call-called-element-expression")
-  | .literal id =>
-    if id == ctx.program.identity.processId then .error (.unsupported "work-call-root-process")
-    else match ctx.program.calledProcess? id with
-      | some process => .ok process
-      | none => .error (.semanticFailure "call-without-called-process")
+  | .literal _ =>
+    if ctx.program.callsRoot resolution work then .error (.unsupported "work-call-root-process")
+    else match ctx.program.calledProcessFor resolution ctx.program.identity.deployment work with
+      | [process] => .ok process
+      | _ => .error (.semanticFailure "call-without-called-process")
 
 /-- Start the called instance: enter its root, arm the Call's boundaries and the called process's Event Sub-Process
 starts (`Signal.armScope`, as `Scopes.enter` arms a Sub-Process), and begin its none start. -/

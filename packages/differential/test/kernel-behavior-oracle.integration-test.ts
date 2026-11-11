@@ -165,6 +165,17 @@ test("the Lean and TypeScript kernels refuse the same malformed inputs with the 
   const [first, ...rest] = scenario.stimuli;
   const withFirst = (stimulus: Record<string, unknown>): string => JSON.stringify({ ...scenario, stimuli: [stimulus, ...rest] });
   const { variables: _variables, ...withoutVariables } = first!;
+  const referencing = {
+    ...program,
+    identity: { ...(program.identity as Record<string, unknown>), namespace: "urn:example:root", deployment: 2 },
+    options: {
+      ...(program.options as Record<string, unknown>), signalNames: "addresses", signalPayload: "variables",
+      signalDelivery: "occurrenceTargeted", conditionalStart: "submittedContext", calledElementResolution: "cibKey",
+      messageThrowForms: "cibForms",
+    },
+  };
+  const signalStart = (address: Record<string, unknown>): Record<string, unknown> =>
+    ({ ...first, trigger: { kind: "signal", variables: [], ...address } });
   const cases: ReadonlyArray<readonly [string, string, string, string]> = [
     ["control", programText, scenarioText, "accepted"],
     ["repeated program key", `{"variables":[],${programText.slice(1)}`, scenarioText, "codec.duplicateField"],
@@ -173,6 +184,10 @@ test("the Lean and TypeScript kernels refuse the same malformed inputs with the 
     ["unknown stimulus key", programText, withFirst({ ...first, extra: true }), "codec.unknownField"],
     ["missing stimulus key", programText, withFirst(withoutVariables), "codec.missingField"],
     ["null optional member", programText, withFirst({ ...first, at: null }), "codec.malformed"],
+    ["namespaced, deployed identity and non-default options", JSON.stringify(referencing), scenarioText, "accepted"],
+    ["Signal start addressed by signalRef", programText, withFirst(signalStart({ signalRef: { namespace: "urn:x", id: "Sig" } })), "accepted"],
+    ["Signal address with name and signalRef", programText, withFirst(signalStart({ name: "S", signalRef: { id: "Sig" } })), "codec.malformed"],
+    ["Signal address with neither name nor signalRef", programText, withFirst(signalStart({})), "codec.missingField"],
   ];
   const directory = await mkdtemp(path.join(tmpdir(), "bpmn-kernel-strict-"));
   try {

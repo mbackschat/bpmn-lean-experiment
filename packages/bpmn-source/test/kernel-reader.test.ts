@@ -75,7 +75,7 @@ test("every element header names its source identifier, and a called process its
   const p = await program(xml);
   assert.deepEqual(element(p, "Call").activity.header, { id: "Call", origin: { definition: null, sourceId: "Call" }, sourceType: "callActivity", parent: null });
   assert.deepEqual(p.processes, [{
-    definition: { key: "Q", version: null, versionTag: null, deployment: null, tenant: null, sourceSha256: null },
+    definition: { key: "Q", namespace: "urn:t", version: null, versionTag: null, deployment: null, tenant: null, sourceSha256: null },
     children: ["Inner"],
     variables: [],
     executable: true,
@@ -156,6 +156,34 @@ test("a Multi-Instance loop carries its own asynchronous continuations and the l
     [true, false, "Vns", null]);
 });
 
+test("a Call's called element keeps its text and resolves to the QName its prefix binds", async () => {
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:tns="urn:t" xmlns:other="urn:other" id="D" targetNamespace="urn:t">
+<bpmn:process id="P" isExecutable="true"><bpmn:callActivity id="Own" calledElement="tns:Q"/><bpmn:callActivity id="Plain" calledElement="Q"/>
+<bpmn:callActivity id="Foreign" calledElement="other:Q"/></bpmn:process>
+<bpmn:process id="Q" isExecutable="true"><bpmn:task id="Inner"/></bpmn:process></bpmn:definitions>`;
+  const p = await program(xml);
+  const call = (id: string): Json => element(p, id).activity.payload.work.call.payload;
+  assert.deepEqual([call("Own").calledElement, call("Own").calledQName],
+    [{ literal: { value: "tns:Q" } }, { namespace: "urn:t", localName: "Q" }]);
+  assert.deepEqual(call("Plain").calledQName, { namespace: "urn:t", localName: "Q" });
+  assert.deepEqual([call("Foreign").calledElement, call("Foreign").calledQName],
+    [{ literal: { value: "other:Q" } }, { namespace: "urn:other", localName: "Q" }]);
+  assert.deepEqual(p.identity.namespace, "urn:t");
+  assert.equal(p.identity.deployment, null);
+  // `Semantic.xsd` types `calledElement` as `xsd:QName`, so the source schema already refuses an unbound prefix.
+  assert.equal(await refusal(xml.replace(`calledElement="other:Q"`, `calledElement="nobound:Q"`)), ReadRefusalCode.SourceSchema);
+});
+
+test("a Call into another namespace leaves the same-id local Process a root candidate", async () => {
+  const xml = (calledElement: string): string => `<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:tns="urn:t" xmlns:other="urn:other" id="D" targetNamespace="urn:t">
+<bpmn:process id="Q" isExecutable="true"><bpmn:task id="Inner"/></bpmn:process>
+<bpmn:process id="P" isExecutable="true"><bpmn:callActivity id="Call" calledElement="${calledElement}"/></bpmn:process></bpmn:definitions>`;
+  assert.equal((await program(xml("other:Q"))).identity.processId, "Q");
+  for (const own of ["tns:Q", "Q"]) assert.equal((await program(xml(own))).identity.processId, "P", own);
+});
+
 test("a Transaction carries its BPMN method, Compensate when absent", async () => {
   const p = await program(model(`<bpmn:transaction id="A"/><bpmn:transaction id="C" method="##Compensate"/><bpmn:transaction id="I" method="##Image"/>
     <bpmn:transaction id="S" method="##Store"/><bpmn:transaction id="O" method="urn:x:method"/>`));
@@ -170,7 +198,10 @@ test("throws carry their message, binding and Signal propagation", async () => {
     <bpmn:intermediateThrowEvent id="Msg"><bpmn:messageEventDefinition messageRef="M"/></bpmn:intermediateThrowEvent>
     <bpmn:intermediateThrowEvent id="MsgD"><bpmn:messageEventDefinition messageRef="M" camunda:delegateExpression="\${sender}"/></bpmn:intermediateThrowEvent>
     <bpmn:intermediateThrowEvent id="Sig"><bpmn:signalEventDefinition signalRef="S" camunda:async="true"><bpmn:extensionElements>
-      <camunda:in variables="all" local="true"/><camunda:in businessKey="\${key}"/><camunda:in source="a" target="b"/></bpmn:extensionElements></bpmn:signalEventDefinition></bpmn:intermediateThrowEvent>`,
+      <camunda:in variables="all" local="true"/><camunda:in businessKey="\${key}"/><camunda:in source="a" target="b"/></bpmn:extensionElements></bpmn:signalEventDefinition></bpmn:intermediateThrowEvent>
+    <bpmn:intermediateThrowEvent id="SigAll"><bpmn:signalEventDefinition signalRef="S"><bpmn:extensionElements>
+      <camunda:in source="a" target="b"/><camunda:in variables="all"/></bpmn:extensionElements></bpmn:signalEventDefinition></bpmn:intermediateThrowEvent>
+    <bpmn:intermediateThrowEvent id="SigNone"><bpmn:signalEventDefinition signalRef="S"/></bpmn:intermediateThrowEvent>`,
   `<bpmn:error id="E1" errorCode="c1" camunda:errorMessage="failed"/><bpmn:error id="E2" errorCode="c2" camunda:errorMessage="\${why}"/>
     <bpmn:message id="M"/><bpmn:signal id="S" name="s"/>`));
   const record = (id: string): Json => element(p, id).event.payload.role.throw.record;
@@ -179,13 +210,16 @@ test("throws carry their message, binding and Signal propagation", async () => {
   assert.deepEqual(record("Msg"), { message: { payload: { binding: null, payload: [] } } });
   assert.deepEqual(record("MsgD").message.payload.binding, { protocol: "##WebService", operation: "${sender}" });
   assert.deepEqual(record("Sig"), { signal: { payload: {
-    name: { literal: { value: "S" } },
+    signalRef: { namespace: "urn:t", localName: "S" },
+    name: { literal: { value: "s" } },
     payload: [{ target: "b", source: { variable: { name: "a" } }, dialect: "callVariable" }],
-    propagateAll: true,
+    propagateAll: 0,
     localOnly: true,
     businessKey: { variable: { name: "key" } },
     asynchronous: true,
   } } });
+  assert.equal(record("SigAll").signal.payload.propagateAll, 1, "the copy of every variable follows the mapping before it");
+  assert.equal(record("SigNone").signal.payload.propagateAll, null);
 });
 
 test("a Message throw's Message has no IL field and is reported", async () => {
@@ -248,6 +282,12 @@ test("the profile options are the full record, each non-default selected by the 
     malformedTimer: "refused",
     messageNames: "description",
     scopeStart: "implicit",
+    signalNames: "identifier",
+    signalPayload: "none",
+    signalDelivery: "broadcastOnly",
+    conditionalStart: "refused",
+    calledElementResolution: "qualifiedName",
+    messageThrowForms: "refused",
   });
   const relations = ["CIB-EXT-0010", "CIB-EXT-0020", "CIB-EXT-0016", "CIB-CFG-0008", "CIB-OP-0009", "CIB-EXT-0026",
     "CIB-INT-0011", "CIB-EXT-0025", "CIB-INT-0009", "CIB-LIM-0001", "CIB-INT-0007", "CIB-INT-0013", "CIB-EXT-0028"];
@@ -287,6 +327,12 @@ test("the profile options are the full record, each non-default selected by the 
     malformedTimer: "refused",
     messageNames: "description",
     scopeStart: "implicit",
+    signalNames: "identifier",
+    signalPayload: "none",
+    signalDelivery: "broadcastOnly",
+    conditionalStart: "refused",
+    calledElementResolution: "qualifiedName",
+    messageThrowForms: "refused",
   });
   assert.equal(kernelProfileOptions(["CIB-EXT-0031"]).outputContext, "activityScope");
   assert.equal(kernelProfileOptions(["CIB-INT-0014"]).multiInstanceBinding, "loopReferences");

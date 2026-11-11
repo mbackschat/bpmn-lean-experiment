@@ -41,7 +41,9 @@ export const date = (lexeme: string): Json => timer({ date: { value: text(lexeme
 export const cycle = (lexeme: string, dialect = "iso8601"): Json => timer({ cycle: { value: text(lexeme), dialect } });
 export const messageBody = (over: Json = {}): Json => ({ messageRef: null, name: null, correlation: [], interfaceRef: null, operationRef: null, ...over });
 export const message = (over: Json = {}): Json => ({ message: { payload: messageBody(over) } });
-export const signal = (): Json => ({ signal: { payload: { name: text("S") } } });
+/** A QName in its wire form, of the base program's namespace (none) unless `namespace` says otherwise. */
+export const qName = (localName: string, namespace: string | null = null): Json => ({ namespace, localName });
+export const signal = (): Json => ({ signal: { payload: { signalRef: qName("Sig"), name: text("S") } } });
 export const condition = (): Json => ({ condition: { payload: { condition: simpleBoolean(), variableName: null, variableEvents: [] } } });
 export const errorTrigger = (over: Json = {}): Json => ({ error: { payload: { code: null, codeVariable: null, messageVariable: null, ...over } } });
 export const escalationTrigger = (over: Json = {}): Json => ({ escalation: { payload: { code: null, codeVariable: null, ...over } } });
@@ -78,14 +80,22 @@ export const userWork = (over: Json = {}): Json => ({
 export const serviceWork = (protocol = "http", operation = "get", handlerKey: string | null = null): Json =>
   ({ service: { payload: { protocol, operation, handlerKey } } });
 export const receiveWork = (over: Json = {}, instantiate = false): Json => ({ receive: { payload: { message: messageBody(over), instantiate } } });
-export const callWork = (over: Json = {}): Json => ({
-  call: {
-    payload: {
-      calledElement: text("Called"), binding: "latest", tenant: null, businessKey: null, inputs: [], outputs: [],
-      propagateAllInputs: false, propagateAllOutputs: false, ...over,
+/**
+ * A Call Activity's work; unless `over` sets `calledQName`, a literal `calledElement` resolves to that id in the base
+ * program's namespace, as the reader resolves an unprefixed name.
+ */
+export const callWork = (over: Json = {}): Json => {
+  const calledElement = (over.calledElement ?? text("Called")) as Json;
+  const literal = (calledElement.literal as Json | undefined)?.value;
+  return {
+    call: {
+      payload: {
+        calledElement, calledQName: typeof literal === "string" ? qName(literal) : null, binding: "latest", tenant: null,
+        businessKey: null, inputs: [], outputs: [], propagateAllInputs: false, propagateAllOutputs: false, ...over,
+      },
     },
-  },
-});
+  };
+};
 
 export const sendWork = (): Json => ({ send: { payload: { binding: { protocol: "http", operation: "post" }, handlerKey: null, recipient: null, correlation: [], messageRef: null, operationRef: null } } });
 export const scriptWork = (): Json => ({ script: { payload: { format: "js", source: "1", resultVariable: null } } });
@@ -101,7 +111,7 @@ export const loop = (over: Json = {}): Json => ({
 
 /** The definition a called process is bound to; a binding field set here is refused. */
 export const definitionRef = (key: string, over: Json = {}): Json =>
-  ({ key, version: null, versionTag: null, deployment: null, tenant: null, sourceSha256: null, ...over });
+  ({ key, namespace: null, version: null, versionTag: null, deployment: null, tenant: null, sourceSha256: null, ...over });
 
 /** An Activity: `work` is a `Work` value, `env` overrides the envelope fields, `parent` its enclosing Scope. */
 export const activity = (id: string, work: Json | string, env: Json = {}, parent: string | null = null): Json =>

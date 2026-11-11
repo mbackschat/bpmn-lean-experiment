@@ -14,7 +14,8 @@ import {
   assertNever,
   elementActivity,
   elementStart,
-  programCalledProcess,
+  programCalledProcessFor,
+  programCallsRoot,
   programElement,
   programProcessChildren,
   workCall,
@@ -60,18 +61,22 @@ function copy(ctx: Ctx, unavailable: string, context: EvalContext, mappings: rea
 }
 
 /**
- * The called process a Call names. An expression-named called element and a call of the root process are refused at
- * admission (`work.call.calledElementExpression`, `work.call.rootProcess`).
+ * The called process a Call names, the one its selector admits (`programCalledProcessFor`). An expression-named called
+ * element, a call of the root process and a selector admitting no process or several are refused at admission
+ * (`work.call.calledElementExpression`, `work.call.rootProcess`, `work.call.calledProcessMissing`, `work.call.ambiguous`).
  */
 function calledProcess(ctx: Ctx, work: CallWork): Result<CalledProcess> {
   const called = work.calledElement;
+  const resolution = ctx.program.options.calledElementResolution;
   switch (called.tag) {
     case ValueSourceTag.Expression:
       return failed(FailureTag.Unsupported, "work-call-called-element-expression");
     case ValueSourceTag.Literal: {
-      if (called.value === ctx.program.identity.processId) return failed(FailureTag.Unsupported, "work-call-root-process");
-      const process = programCalledProcess(ctx.program, called.value);
-      return process === null ? failed(FailureTag.SemanticFailure, "call-without-called-process") : committed(process);
+      if (programCallsRoot(ctx.program, resolution, work)) return failed(FailureTag.Unsupported, "work-call-root-process");
+      const [process, ...others] = programCalledProcessFor(ctx.program, resolution, ctx.program.identity.deployment, work);
+      return process === undefined || others.length > 0
+        ? failed(FailureTag.SemanticFailure, "call-without-called-process")
+        : committed(process);
     }
   }
   return assertNever(called);

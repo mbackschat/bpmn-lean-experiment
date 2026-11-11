@@ -82,6 +82,42 @@ export const rows: readonly Row[] = [
     mutate: (program) => terminatingCalledProcess(withOptions(program, { abnormalScopeEnd: "withoutOutflow" })),
     control: (program) => terminatingCalledProcess(withOptions(program, completesNormally)),
   },
+  {
+    code: "profile.signalNames.addresses",
+    description: "Signals addressed by their names",
+    mutate: option({ signalNames: "addresses" }),
+    control: option({ signalNames: "identifier" }),
+  },
+  {
+    code: "profile.signalPayload.variables",
+    description: "a Signal that carries variables",
+    mutate: option({ signalPayload: "variables" }),
+    control: option({ signalPayload: "none" }),
+  },
+  {
+    code: "profile.signalDelivery.occurrenceTargeted",
+    description: "a Signal delivered to one targeted occurrence",
+    mutate: option({ signalDelivery: "occurrenceTargeted" }),
+    control: option({ signalDelivery: "broadcastOnly" }),
+  },
+  {
+    code: "profile.conditionalStart.submittedContext",
+    description: "a conditional start evaluated in a submitted context",
+    mutate: option({ conditionalStart: "submittedContext" }),
+    control: option({ conditionalStart: "refused" }),
+  },
+  {
+    code: "profile.calledElementResolution.cibKey",
+    description: "a called element resolved as CIB's key text",
+    mutate: option({ calledElementResolution: "cibKey" }),
+    control: option({ calledElementResolution: "qualifiedName" }),
+  },
+  {
+    code: "profile.messageThrowForms.cibForms",
+    description: "CIB's message throw forms",
+    mutate: option({ messageThrowForms: "cibForms" }),
+    control: option({ messageThrowForms: "refused" }),
+  },
 ];
 
 refusalTests("profile", rows);

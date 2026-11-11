@@ -38,6 +38,7 @@ import {
   occurrenceOf,
   openKindView,
   ownScope,
+  type BroadcastIntent,
   type InstanceFailure,
   type InstanceStatus,
   type MessageChannel,
@@ -177,11 +178,16 @@ export interface OpenWait {
   readonly view: WaitView;
 }
 
+/**
+ * `broadcasts` are the Signals the input threw to the population (`State.outbox`), which the host publishes once the
+ * input commits (PC-SIGNAL-01).
+ */
 export interface View {
   readonly status: InstanceStatus;
   readonly failure: InstanceFailure | null;
   readonly openWaits: readonly OpenWait[];
   readonly journal: readonly Transition[];
+  readonly broadcasts: readonly BroadcastIntent[];
 }
 
 function publicRef(program: Program, ref: OccurrenceRef): OccurrenceRef {
@@ -240,5 +246,6 @@ export function hostView(program: Program, state: State): View {
     failure: state.failure === null ? null : publicFailure(program, state.failure),
     openWaits: state.openItems.map((item) => openWait(program, state, item)),
     journal: state.journal.map((transition) => publicTransition(program, transition)),
+    broadcasts: state.outbox.map((intent) => ({ ...intent, origin: publicRef(program, intent.origin) })),
   };
 }

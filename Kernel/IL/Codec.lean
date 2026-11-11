@@ -36,7 +36,7 @@ instance : ToJson JuelCall where
     | .other name => toJson name
 
 deriving instance FromJson, ToJson for JuelFunctionNode, JuelCallNode, JuelComputedCallNode, JuelBinaryNode,
-  JuelChoiceNode, JuelNode, Expression, ValueSource, MappingDialect, Mapping, CycleDialect,
+  JuelChoiceNode, JuelNode, Expression, ValueSource, MappingDialect, Mapping, QName, CycleDialect,
   TimerSchedule, TimerTrigger, CorrelationCriterion, MessageTrigger, SignalTrigger, ConditionTrigger, ErrorTrigger,
   EscalationTrigger, Trigger, Subscription, Boundary, EffectBinding, MessageThrow, SignalThrow, ErrorThrow,
   EscalationThrow, CompensationThrow, Throw, UserWork, ReceiveWork, ServiceWork, SendWork, ScriptWork, CallBinding,
@@ -48,7 +48,7 @@ deriving instance FromJson, ToJson for JuelFunctionNode, JuelCallNode, JuelCompu
   CompensationHandlerFailure, AbnormalScopeEnd, UnhandledError, ErrorCatchVariables, CallBindingTime, Evaluator, ConditionOrder,
   MultiInstanceBinding, ResultValues, OutputContext, MultiInstanceCounters, MultiInstanceInputFailure, MultiInstanceCount,
   BusinessRuleTask, InclusiveJoinReach, BranchSchedule, ConditionalRetrigger, MalformedTimer, MessageNames, ScopeStart,
-  ProfileOptions,
+  SignalNames, SignalPayload, SignalDelivery, ConditionalStart, CalledElementResolution, MessageThrowForms, ProfileOptions,
   CalledProcess, Program
 
 /-- `[{name, value}]`, the scenario contract's variable bindings. -/

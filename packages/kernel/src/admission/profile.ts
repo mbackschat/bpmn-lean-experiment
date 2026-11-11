@@ -10,13 +10,19 @@
 import {
   AbnormalScopeEnd,
   CallBindingTime,
+  CalledElementResolution,
   CompensationHandlerFailureTag,
   CompensationOrder,
+  ConditionalStart,
   DeliveryVariables,
   Evaluator,
   MessageCorrelation,
+  MessageThrowForms,
   MultiInstanceCounters,
   MultiInstanceInputFailure,
+  SignalDelivery,
+  SignalNames,
+  SignalPayload,
   assertNever,
   type CompensationHandlerFailure,
   type ProfileOptions,
@@ -55,5 +61,12 @@ export function options(abnormalScope: boolean, loops: boolean, selected: Profil
   if (selected.callBindingTime === CallBindingTime.Invocation) return "profile.callBindingTime.invocation";
   if (selected.timerZone !== null) return "profile.timerZone";
   if (abnormalScope && selected.abnormalScopeEnd === AbnormalScopeEnd.WithoutOutflow) return "profile.abnormalScopeEnd.withoutOutflow";
-  return multiInstance(loops, selected);
+  const loop = multiInstance(loops, selected);
+  if (loop !== null) return loop;
+  if (selected.signalNames === SignalNames.Addresses) return "profile.signalNames.addresses";
+  if (selected.signalPayload === SignalPayload.Variables) return "profile.signalPayload.variables";
+  if (selected.signalDelivery === SignalDelivery.OccurrenceTargeted) return "profile.signalDelivery.occurrenceTargeted";
+  if (selected.conditionalStart === ConditionalStart.SubmittedContext) return "profile.conditionalStart.submittedContext";
+  if (selected.calledElementResolution === CalledElementResolution.CibKey) return "profile.calledElementResolution.cibKey";
+  return selected.messageThrowForms === MessageThrowForms.CibForms ? "profile.messageThrowForms.cibForms" : null;
 }

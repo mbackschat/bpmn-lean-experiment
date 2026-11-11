@@ -8,6 +8,7 @@ public import Kernel.Admission.MultiInstance
 public import Kernel.Admission.Propagation
 public import Kernel.Admission.Scopes
 public import Kernel.Admission.Subscriptions
+public import Kernel.Admission.Subscriptions.Starts
 
 /-! # Admission registry: the first refusal of any element, in program order. Only `Kernel.Run` imports it. -/
 

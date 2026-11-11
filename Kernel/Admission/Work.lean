@@ -123,14 +123,20 @@ def dataCorrespondence (work : CallWork) : Option String :=
 def multiInstanceCounters : List String := multiInstanceCounterNames.erase "loopCounter"
 
 /-- A Call names a called process literally that the program carries, not the root process, binds the latest version, carries no business key or tenant and maps its data explicitly; its mappings
-live in `CallWork`, never in the envelope. -/
+live in `CallWork`, never in the envelope. Under `CalledElementResolution.qualifiedName` the literal is a QName, and one
+whose prefix has no namespace binding names nothing (`Semantic.xsd:149`). A carried process must answer the name before
+the binding is read, and exactly one the whole selector (`Program.calledProcessFor`, PC-SCOPE-03). -/
 def call (program : Program) (work : CallWork) : Option String :=
+  let resolution := program.options.calledElementResolution
+  let deployment := program.identity.deployment
   let element : Option String :=
     match work.calledElement with
-    | .literal id =>
-      if id == program.identity.processId then some "work.call.rootProcess"
-      else
-        if (program.calledProcess? id).isSome then none else some "work.call.calledProcessMissing"
+    | .literal _ =>
+      if resolution == .qualifiedName && work.calledQName.isNone then some "work.call.calledElementUnbound"
+      else if program.callsRoot resolution work then some "work.call.rootProcess"
+      else if program.processes.any (fun process =>
+          process.definition.eligibleFor deployment && work.namesDefinition resolution process.definition) then none
+      else some "work.call.calledProcessMissing"
     | .expression _ => some "work.call.calledElementExpression"
   let binding : Option String :=
     match work.binding with
@@ -138,7 +144,12 @@ def call (program : Program) (work : CallWork) : Option String :=
     | .deployment => some "work.call.binding"
     | .version _ => some "work.call.binding"
     | .versionTag _ => some "work.call.binding"
-  element <|> binding <|>
+  let selected : Option String :=
+    match program.calledProcessFor resolution deployment work with
+    | [_] => none
+    | [] => some "work.call.calledProcessMissing"
+    | _ :: _ :: _ => some "work.call.ambiguous"
+  element <|> binding <|> selected <|>
     (if work.outputs.any (multiInstanceCounters.contains ·.target) then some "work.call.multiInstanceCounterOutput"
      else if work.businessKey.isSome then some "work.call.businessKey"
      else if work.tenant.isSome then some "work.call.tenant"

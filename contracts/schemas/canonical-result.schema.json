@@ -181,6 +181,13 @@
         },
         "failure": {
           "$ref": "#/$defs/instanceFailure"
+        },
+        "broadcasts": {
+          "description": "The Signals the input threw to the population; present only after an input that threw one. Kernel-only: comparisons against a target without it leave it out.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/broadcast"
+          }
         }
       },
       "allOf": [
@@ -294,9 +301,14 @@
           ]
         },
         "deployment": {
-          "type": [
-            "string",
-            "null"
+          "description": "The deploy ordinal of the deployment that carries the called process.",
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonnegativeSafeInteger"
+            }
           ]
         },
         "tenant": {
@@ -685,7 +697,6 @@
       "additionalProperties": false,
       "required": [
         "kind",
-        "name",
         "payload"
       ],
       "properties": {
@@ -695,10 +706,83 @@
         "name": {
           "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonEmptyString"
         },
+        "signalRef": {
+          "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/signalRef"
+        },
         "payload": {
           "type": "boolean"
         }
-      }
+      },
+      "oneOf": [
+        {
+          "required": [
+            "name"
+          ],
+          "properties": {
+            "name": {
+              "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonEmptyString"
+            }
+          }
+        },
+        {
+          "required": [
+            "signalRef"
+          ],
+          "properties": {
+            "signalRef": {
+              "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/signalRef"
+            }
+          }
+        }
+      ]
+    },
+    "broadcast": {
+      "description": "A Signal an input threw to the population, which the host publishes once the input commits; kernel-only.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "variables",
+        "origin"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonEmptyString"
+        },
+        "signalRef": {
+          "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/signalRef"
+        },
+        "variables": {
+          "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/bindings"
+        },
+        "businessKey": {
+          "type": "string"
+        },
+        "origin": {
+          "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/occurrenceId"
+        }
+      },
+      "oneOf": [
+        {
+          "required": [
+            "name"
+          ],
+          "properties": {
+            "name": {
+              "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonEmptyString"
+            }
+          }
+        },
+        {
+          "required": [
+            "signalRef"
+          ],
+          "properties": {
+            "signalRef": {
+              "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/signalRef"
+            }
+          }
+        }
+      ]
     },
     "conditionalDetail": {
       "type": "object",

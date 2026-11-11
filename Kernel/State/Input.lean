@@ -24,14 +24,14 @@ inductive StartTrigger where
   | none
   | timer (logicalTimeMs : Nat)
   | message (channel : MessageChannel) (payload : Option Value)
-  | signal (name : String) (variables : List (String × Value))
+  | signal (address : SignalAddress) (variables : List (String × Value))
   | condition
   deriving Repr
 
 /-- What a delivery delivers. An addressless Receive stays a delivery on the unspecified channel (CIB-INT-0004). -/
 inductive DeliveryTrigger where
   | message (channel : MessageChannel)
-  | signal (name : String)
+  | signal (address : SignalAddress)
   deriving Repr
 
 inductive CriterionTarget where
@@ -47,12 +47,15 @@ structure CorrelationMatch where
   expected : Value
   deriving Repr
 
-/-- A Message or Signal delivered to the subscription `occurrence` names. -/
+/-- A Message or Signal delivered to the subscription `occurrence` names. `variables` are the delivery's own variables
+beside its payload, which CIB installs in the receiving scope (CIB-EXT-0025); `Kernel.Step` rejects a non-empty list
+(`delivery-variables-not-admitted`) while no profile installs them. -/
 structure DeliveryInput where
   occurrence : OccurrenceRef
   trigger : DeliveryTrigger
   correlation : List CorrelationMatch := []
   payload : Option Value := none
+  variables : List (String × Value) := []
   /-- The input's logical time (`Input.atMs`). -/
   atMs : Option Nat := none
   deriving Repr

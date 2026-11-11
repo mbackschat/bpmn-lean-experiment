@@ -3,7 +3,7 @@
  * one typed detail per `OpenKind`, and `WaitView`, the uniform reading of an open wait. Part of `state.ts`, which
  * re-exports it.
  */
-import { assertNever, type Value } from "../il/types.js";
+import { assertNever, type QName, type Value } from "../il/types.js";
 
 export type Binding = readonly [string, Value];
 
@@ -53,9 +53,39 @@ export interface MessageWaitDetail {
   readonly channel: MessageChannel;
   readonly payload: boolean;
   readonly criteria: readonly string[];
+  /**
+   * The Message name the subscription resolved when it opened, under `MessageNames.addresses` (CIB-LIM-0022), which an
+   * engine-wide publication addresses; `null` otherwise.
+   */
+  readonly name: string | null;
 }
 
-export interface SignalWaitDetail { readonly name: string; readonly payload: boolean; }
+/**
+ * A Signal address: the Signal's QName under `SignalNames.identifier` (BPMN 2.0.2 Table 10.100), its evaluated name
+ * under `SignalNames.addresses`.
+ */
+export enum SignalAddressTag { Qualified = "qualified", Named = "named" }
+
+export type SignalAddress =
+  | { readonly tag: SignalAddressTag.Qualified; readonly ref: QName }
+  | { readonly tag: SignalAddressTag.Named; readonly name: string };
+
+/**
+ * The one match of a Signal delivery, intent or start trigger against a subscription: an equal address of the same
+ * kind, so a name never reaches a QName subscription or the reverse. Lean derives it (`DecidableEq SignalAddress`).
+ */
+export function signalAddressMatches(delivered: SignalAddress, subscribed: SignalAddress): boolean {
+  switch (delivered.tag) {
+    case SignalAddressTag.Qualified:
+      return subscribed.tag === SignalAddressTag.Qualified && delivered.ref.namespace === subscribed.ref.namespace &&
+        delivered.ref.localName === subscribed.ref.localName;
+    case SignalAddressTag.Named:
+      return subscribed.tag === SignalAddressTag.Named && delivered.name === subscribed.name;
+  }
+  return assertNever(delivered);
+}
+
+export interface SignalWaitDetail { readonly address: SignalAddress; readonly payload: boolean; }
 
 /** `lastValue` is the most recent evaluation under `conditionalRetrigger.edge`; `null` under `eachWrite`, where every passing write is its own fact (PC-CONDITION-01). */
 export interface ConditionalWaitDetail {
@@ -136,6 +166,7 @@ export interface WaitView {
   readonly channel: MessageChannel | null;
   readonly payload: boolean;
   readonly criteria: readonly string[];
+  readonly name: string | null;
   readonly signal: SignalWaitDetail | null;
   readonly conditional: ConditionalWaitDetail | null;
   readonly userTask: UserTaskDetail | null;
@@ -151,6 +182,7 @@ const emptyView: WaitView = {
   channel: null,
   payload: false,
   criteria: [],
+  name: null,
   signal: null,
   conditional: null,
   userTask: null,
@@ -170,6 +202,7 @@ export function openKindView(kind: OpenKind): WaitView {
         channel: kind.detail.channel,
         payload: kind.detail.payload,
         criteria: kind.detail.criteria,
+        name: kind.detail.name,
       };
     case OpenKindTag.Signal:
       return { ...emptyView, input: InputTag.Deliver, signal: kind.detail, payload: kind.detail.payload };

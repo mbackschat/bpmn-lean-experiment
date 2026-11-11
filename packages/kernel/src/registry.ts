@@ -10,6 +10,7 @@ import * as MultiInstance from "./feature/multi-instance.js";
 import * as Propagation from "./feature/propagation.js";
 import * as Scopes from "./feature/scopes.js";
 import * as Subscriptions from "./feature/subscriptions.js";
+import * as Starts from "./feature/subscriptions/starts.js";
 import { WriteRule } from "./state.js";
 
 const workHooks: Work.WorkHooks = { ...Work.defaultWorkHooks, runDecision: Decision.runDecision };
@@ -25,7 +26,7 @@ const propagationHooks: Propagation.PropagationHooks = {
 
 export const hooks: Hooks = {
   ...defaultHooks,
-  arriveStart: Subscriptions.arriveStart,
+  arriveStart: Starts.arriveStart,
   arriveActivity: (ctx, header, payload, occurrence, state) => Work.arriveActivity(workHooks, ctx, header, payload, occurrence, state),
   arriveMultiInstance: MultiInstance.arriveMultiInstance,
   arriveScope: Scopes.arriveScope,
@@ -59,6 +60,6 @@ export const hooks: Hooks = {
   evaluate: Data.evaluate,
   catches: Subscriptions.catches,
   correlates: Subscriptions.correlates,
-  selectStart: Subscriptions.selectStart,
+  startsFired: Starts.startsFired,
   eventStart: Scopes.eventStart,
 };

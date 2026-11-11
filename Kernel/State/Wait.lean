@@ -43,10 +43,25 @@ structure MessageWaitDetail where
   publication, never as a directly addressed delivery
   ([specification](../../docs/kernel/semantics/SUBSCRIPTIONS-SEMANTICS-SPEC.md)). -/
   criteria : List String := []
+  /-- The Message name the subscription resolved when it opened, under `MessageNames.addresses` (CIB-LIM-0022), which
+  an engine-wide publication addresses; `none` otherwise. -/
+  name : Option String := none
   deriving Repr
 
+/-- A Signal address: the Signal's QName under `SignalNames.identifier` (BPMN 2.0.2 Table 10.100), its evaluated name
+under `SignalNames.addresses`. -/
+inductive SignalAddress where
+  | qualified (ref : QName)
+  | named (name : String)
+  deriving DecidableEq, Repr
+
+/-- The one match of a Signal delivery, intent or start trigger against a subscription: an equal address of the same
+kind, so a name never reaches a QName subscription or the reverse. -/
+def SignalAddress.matches (delivered subscribed : SignalAddress) : Bool :=
+  decide (delivered = subscribed)
+
 structure SignalWaitDetail where
-  name : String
+  address : SignalAddress
   payload : Bool := false
   deriving Repr
 
@@ -124,6 +139,7 @@ structure WaitView where
   channel : Option MessageChannel := none
   payload : Bool := false
   criteria : List String := []
+  name : Option String := none
   signal : Option SignalWaitDetail := none
   conditional : Option ConditionalWaitDetail := none
   userTask : Option UserTaskDetail := none
@@ -135,7 +151,7 @@ def OpenKind.view : OpenKind → WaitView
   | .userTask detail => { input := some .command, published := some ("userTask", 0), userTask := some detail }
   | .message detail =>
     { input := some .deliver, published := some ("message", 1), channel := some detail.channel, payload := detail.payload
-      criteria := detail.criteria }
+      criteria := detail.criteria, name := detail.name }
   | .signal detail => { input := some .deliver, signal := some detail, payload := detail.payload }
   | .conditional detail => { input := none, conditional := some detail }
   | .timer detail =>

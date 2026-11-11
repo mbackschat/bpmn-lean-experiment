@@ -202,7 +202,7 @@ function publish(
   const [index, target] = sole;
   const delivery: Input = {
     tag: InputTag.Deliver,
-    payload: { occurrence: target, trigger: { tag: DeliveryTriggerTag.Message, channel: address.channel }, correlation, payload: null, atMs: null },
+    payload: { occurrence: target, trigger: { tag: DeliveryTriggerTag.Message, channel: address.channel }, correlation, payload: null, variables: [], atMs: null },
   };
   const member = instances[index];
   if (member === undefined) return { ok: false, error: "candidate-without-instance" };

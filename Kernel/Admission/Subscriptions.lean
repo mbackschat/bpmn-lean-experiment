@@ -3,7 +3,10 @@ module
 public import Kernel.IL.Types
 public import Kernel.IL.Timer
 
-/-! # Admission of catch Events, boundaries and triggered starts. A refusal carries a stable code.
+/-! # Admission of catch Events, boundaries and Event Sub-Process starts. A refusal carries a stable code.
+
+`Kernel.Admission.Subscriptions.Starts` dispatches a start Event's trigger and hands an Event Sub-Process start's Signal
+to `eventSubProcessSignal`.
 
 Admitted: Timers with a literal `Kernel.Timer.classify` admits, Messages with a literal name and no
 correlation, a correlated Message only on a catch Event, and, on boundaries, the triggers that
@@ -323,23 +326,8 @@ def messageNames (options : ProfileOptions) (sites : List MessageSite) : Option 
   if options.messageNames != .addresses then none
   else sites.zipIdx.findSome? fun (site, index) => (sites.take index).findSome? (clash · site)
 
-/-- A triggered start. At process level (`nested = false`) the start input names it; nested, it is an Event
-Sub-Process start, which may also repeat a cycle and catch what `Kernel.Feature.Propagation` raises. -/
-def start (options : ProfileOptions) (reading : Reading) (nested : Bool) (subscription : Subscription) :
-    Option String :=
-  let variables := options.errorCatchVariables
-  let raised (code : String) : Option String := if nested then none else some code
-  definitions subscription <|> subscriptionOutputs subscription <|>
-  match subscription.trigger with
-  | .timer trigger => timerAt options reading (!nested) trigger
-  | .message trigger =>
-    (if !nested && !subscription.outputs.isEmpty then some "start.message.outputs" else none) <|>
-      message options reading (!nested) trigger
-  | .signal _ => some "start.signal"
-  | .condition trigger => if nested then conditionRefusal options reading trigger else some "start.condition"
-  | .error trigger => raised "start.error" <|> errorTrigger variables trigger
-  | .escalation trigger => raised "start.escalation" <|> escalationTrigger variables trigger
-  | .compensation => raised "start.compensation"
-  | .cancel => some "start.cancel"
+/-- The Signal of an Event Sub-Process start, which `start` (`Kernel.Admission.Subscriptions.Starts`) hands here:
+refused, as every Signal subscription is. -/
+def eventSubProcessSignal (_ : SignalTrigger) : Option String := some "start.signal"
 
 end Kernel.Admission.Subscriptions

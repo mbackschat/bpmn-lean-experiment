@@ -7,6 +7,7 @@ public import Kernel.Admission.Profile
 public import Kernel.Admission.Propagation
 public import Kernel.Admission.Scopes
 public import Kernel.Admission.Subscriptions
+public import Kernel.Admission.Subscriptions.Starts
 public import Kernel.Admission.Work
 public import Kernel.Admission.Work.Decision
 public import Kernel.AdmissionRegistry
@@ -21,6 +22,7 @@ public import Kernel.Feature.Propagation
 public import Kernel.Feature.Scopes
 public import Kernel.Feature.Subscriptions
 public import Kernel.Feature.Subscriptions.Conditions
+public import Kernel.Feature.Subscriptions.Starts
 public import Kernel.Feature.Work
 public import Kernel.Feature.Work.Call
 public import Kernel.Feature.Work.Submission
@@ -37,6 +39,7 @@ public import Kernel.IL.Types.Expression
 public import Kernel.IL.Types.Juel
 public import Kernel.IL.Types.Lexical
 public import Kernel.IL.Types.Options
+public import Kernel.IL.Types.Reference
 public import Kernel.Population
 public import Kernel.Publish
 public import Kernel.Registry

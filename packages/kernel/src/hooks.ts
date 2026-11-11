@@ -67,6 +67,7 @@ import {
   type Resume,
   type ScopeOccurrence,
   type ScopeOccurrenceId,
+  type StartInput,
   type StartTrigger,
   type State,
   type WriteEvent,
@@ -301,6 +302,17 @@ export function admitValues(values: readonly Value[]): Result<null> {
 export function admitThen<T>(values: readonly Value[], next: () => Result<T>): Result<T> {
   const admitted = admitValues(values);
   return admitted.ok ? next() : failedWith(admitted.failure);
+}
+
+/**
+ * The start Event a start input starts among the starts its trigger fired (`Hooks.startsFired`): the one it names, else
+ * the only one; several unnamed are `start-ambiguous`, since one input starts one instance at one start.
+ */
+export function chooseStart(named: ElementId | null, fired: readonly ElementId[]): Result<ElementId> {
+  if (named !== null) return fired.includes(named) ? committed(named) : failed(FailureTag.Rejected, "no-start-event");
+  const [only, ...others] = fired;
+  if (only === undefined) return failed(FailureTag.Rejected, "no-start-event");
+  return others.length === 0 ? committed(only) : failed(FailureTag.Rejected, "start-ambiguous");
 }
 
 /** Hold an occurrence whose InputSet is unavailable (`FeatureSlots.held`). */
@@ -584,10 +596,10 @@ export interface Hooks {
   /** Scopes: `Ctx.eventStart`. */
   readonly eventStart: (payload: ScopePayload) => readonly [Subscription, boolean] | null;
   /**
-   * Subscriptions: the root start Event an input selects: the one it names, else the one its trigger fires (a none
-   * trigger, the sole none start). `population.ts` asks it too.
+   * Subscriptions: the root start Events a start input's trigger fires, in document order; `chooseStart` picks the one
+   * the input starts. `population.ts` asks it too, to start every fired start.
    */
-  readonly selectStart: (ctx: Ctx, named: ElementId | null, trigger: StartTrigger) => ElementId | null;
+  readonly startsFired: (ctx: Ctx, input: StartInput) => Result<readonly ElementId[]>;
   /**
    * Subscriptions: whether the open item is a correlated Message subscription on the channel whose criteria, evaluated
    * in the current state, equal the delivered correlation; `false` for any other item. `population.ts` asks it to find
@@ -633,6 +645,6 @@ export const defaultHooks: Hooks = {
   evaluate: () => ({ tag: EvaluationTag.Failure, code: "no-evaluator" }),
   catches: () => null,
   eventStart: () => null,
-  selectStart: () => null,
+  startsFired: () => committed([]),
   correlates: () => failed(FailureTag.Unsupported, "correlates"), // dynamic-only: a registry without the hook
 };

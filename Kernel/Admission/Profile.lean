@@ -38,6 +38,12 @@ def options (abnormalScope loops : Bool) (selected : ProfileOptions) : Option St
   (if selected.callBindingTime == .invocation then some "profile.callBindingTime.invocation" else none) <|>
   (if selected.timerZone.isSome then some "profile.timerZone" else none) <|>
   (if abnormalScope && selected.abnormalScopeEnd == .withoutOutflow then some "profile.abnormalScopeEnd.withoutOutflow" else none) <|>
-  multiInstance loops selected
+  multiInstance loops selected <|>
+  (if selected.signalNames == .addresses then some "profile.signalNames.addresses" else none) <|>
+  (if selected.signalPayload == .variables then some "profile.signalPayload.variables" else none) <|>
+  (if selected.signalDelivery == .occurrenceTargeted then some "profile.signalDelivery.occurrenceTargeted" else none) <|>
+  (if selected.conditionalStart == .submittedContext then some "profile.conditionalStart.submittedContext" else none) <|>
+  (if selected.calledElementResolution == .cibKey then some "profile.calledElementResolution.cibKey" else none) <|>
+  (if selected.messageThrowForms == .cibForms then some "profile.messageThrowForms.cibForms" else none)
 
 end Kernel.Admission.Profile

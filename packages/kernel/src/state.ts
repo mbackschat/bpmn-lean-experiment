@@ -19,14 +19,14 @@ import {
 import {
   type Binding, type ConditionalWaitDetail, type EffectDetail, type IncidentDetail, InputTag, type MessageChannel,
   messageChannelEquals, type MessageWaitDetail, type OpenKind, OpenKindTag, openKindView, optionalChannelEquals,
-  type SendDescriptor, type SignalWaitDetail, type TimerDetail, type TimerRecurrence, type UserTaskDetail,
-  type WaitView,
+  type SendDescriptor, type SignalAddress, SignalAddressTag, signalAddressMatches, type SignalWaitDetail, type TimerDetail,
+  type TimerRecurrence, type UserTaskDetail, type WaitView,
 } from "./state/wait.js";
 export {
   type Binding, type ConditionalWaitDetail, type EffectDetail, type IncidentDetail, InputTag, type MessageChannel,
   messageChannelEquals, type MessageWaitDetail, type OpenKind, OpenKindTag, openKindView, optionalChannelEquals,
-  type SendDescriptor, type SignalWaitDetail, type TimerDetail, type TimerRecurrence, type UserTaskDetail,
-  type WaitView,
+  type SendDescriptor, type SignalAddress, SignalAddressTag, signalAddressMatches, type SignalWaitDetail, type TimerDetail,
+  type TimerRecurrence, type UserTaskDetail, type WaitView,
 };
 import {
   type CommandAction, CommandActionTag, type CommandInput, type CorrelationMatch, type CriterionTarget,
@@ -319,7 +319,7 @@ export interface ActivationCount {
 
 /** A Signal thrown to the population, which the host publishes after the input commits (PC-SIGNAL-01, PC-SIGNAL-04). */
 export interface BroadcastIntent {
-  readonly name: string;
+  readonly address: SignalAddress;
   readonly variables: readonly Binding[];
   readonly businessKey: string | null;
   readonly origin: OccurrenceRef;
@@ -340,6 +340,7 @@ export interface State {
   readonly signals: readonly Signal[];
   /** Every variable write since the last drain, same-value writes included: `Step` hands them to `Hooks.written`. */
   readonly writes: readonly WriteEvent[];
+  /** The intents of the input in progress; `step` empties it first, so a host publishes a committed input's own. */
   readonly outbox: readonly BroadcastIntent[];
   readonly slots: FeatureSlots;
   /** Present exactly when `status` is `failed`. */

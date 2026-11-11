@@ -226,6 +226,11 @@ export type VariableCopies = Readonly<{
   mappings: KernelJson[];
   /** A `variables="all"` entry copies every variable. */
   propagateAll: boolean;
+  /**
+   * The number of `mappings` before the last `variables="all"` entry, `null` without one: a later copy of every
+   * variable re-copies what an earlier one did, so the last one's position is the copy's place in the order.
+   */
+  propagateAllAt: number | null;
   /** That entry also carries `local="true"`, so it copies only the local variables. */
   localOnly: boolean;
   businessKey: KernelJson | null;
@@ -237,12 +242,14 @@ export type VariableCopies = Readonly<{
 export function variableCopies(element: ElementRecord, entries: ReadonlyArray<ElementRecord>): VariableCopies {
   const mappings: KernelJson[] = [];
   let propagateAll = false;
+  let propagateAllAt: number | null = null;
   let localOnly = false;
   let localCopy = false;
   let businessKey: KernelJson | null = null;
   for (const entry of entries) {
     if (entry.variables === "all") {
       propagateAll = true;
+      propagateAllAt = mappings.length;
       localOnly ||= entry.local === "true";
     } else if (typeof entry.businessKey === "string") {
       businessKey = businessKeyExpression(entry.businessKey);
@@ -261,5 +268,5 @@ export function variableCopies(element: ElementRecord, entries: ReadonlyArray<El
       throw new ReadRefusal(ReadRefusalCode.UnknownAttributeValue, optionalId(element), "camunda variable copy without a target");
     }
   }
-  return { mappings, propagateAll, localOnly, businessKey, localCopy };
+  return { mappings, propagateAll, propagateAllAt, localOnly, businessKey, localCopy };
 }

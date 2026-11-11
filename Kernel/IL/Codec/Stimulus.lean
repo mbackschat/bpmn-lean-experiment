@@ -75,6 +75,24 @@ def valueAt (json : Json) : Except String Value :=
 def bindingsAt (json : Json) (field : String) : Except String (List (String × Value)) := do
   strictly bindingsFromJson bindingsToJson (← json.getObjVal? field)
 
+/-- A Signal address: `name` for a named one, `signalRef` (`{id, namespace?}`) for a QName; a stimulus gives exactly
+one. -/
+def signalAddressFromJson (json : Json) : Except String SignalAddress := do
+  match optionalField json "name", optionalField json "signalRef" with
+  | some name, none => SignalAddress.named <$> name.getStr?
+  | none, some ref =>
+    fields ref ["id"] ["namespace"]
+    pure (.qualified { «namespace» := ← optionalString ref "namespace", localName := ← ref.getObjValAs? String "id" })
+  | some _, some _ => throw s!"{malformedCode}: a Signal address is a name or a signalRef, not both"
+  | none, none => throw s!"{missingField}: name"
+
+/-- The members `signalAddressFromJson` reads back. -/
+def signalAddressToJson : SignalAddress → List (String × Json)
+  | .named name => [("name", Json.str name)]
+  | .qualified ref =>
+    [("signalRef", Json.mkObj ((ref.«namespace».map fun uri => ("namespace", Json.str uri)).toList ++
+      [("id", Json.str ref.localName)]))]
+
 def startTriggerFromJson (json : Json) : Except String StartTrigger := do
   match ← kindOf json with
   | "none" => fields json ["kind"]; pure .none
@@ -83,8 +101,8 @@ def startTriggerFromJson (json : Json) : Except String StartTrigger := do
     fields json ["kind", "channel"] ["payload"]
     pure (.message (← channelFromJson (← json.getObjVal? "channel")) (← (optionalField json "payload").mapM valueAt))
   | "signal" =>
-    fields json ["kind", "name", "variables"]
-    pure (.signal (← json.getObjValAs? String "name") (← bindingsAt json "variables"))
+    fields json ["kind", "variables"] ["name", "signalRef"]
+    pure (.signal (← signalAddressFromJson json) (← bindingsAt json "variables"))
   | "condition" => fields json ["kind"]; pure .condition
   | other => throw s!"unknown start trigger kind {other}"
 
@@ -104,7 +122,7 @@ def commandActionFromJson (json : Json) : Except String CommandAction := do
 def deliveryTriggerFromJson (json : Json) : Except String DeliveryTrigger := do
   match ← kindOf json with
   | "message" => fields json ["kind", "channel"]; pure (.message (← channelFromJson (← json.getObjVal? "channel")))
-  | "signal" => fields json ["kind", "name"]; pure (.signal (← json.getObjValAs? String "name"))
+  | "signal" => fields json ["kind"] ["name", "signalRef"]; pure (.signal (← signalAddressFromJson json))
   | other => throw s!"unknown delivery trigger kind {other}"
 
 def criterionTargetFromJson (json : Json) : Except String CriterionTarget := do
@@ -137,7 +155,7 @@ def decodeStimulus (json : Json) : Except String (String × Input) := do
   match kind with
   | "start" => fields json (common ++ ["instanceId", "variables"]) ["startEvent", "trigger", "businessKey", "at"]
   | "command" => fields json (common ++ ["occurrence", "action"]) ["at"]
-  | "deliver" => fields json (common ++ ["occurrence", "trigger"]) ["correlation", "payload", "at"]
+  | "deliver" => fields json (common ++ ["occurrence", "trigger"]) ["correlation", "payload", "variables", "at"]
   | "timerFire" => fields json (common ++ ["occurrence", "logicalTimeMs"]) ["at"]
   | "effectResult" => fields json (common ++ ["occurrence", "outcome"]) ["at"]
   | _ => pure ()
@@ -159,7 +177,9 @@ def decodeStimulus (json : Json) : Except String (String × Input) := do
       let entries ← ((optionalField json "correlation").getD (Json.arr #[])).getArr?
       pure (.deliver { occurrence := ← occurrence (), trigger := ← deliveryTriggerFromJson (← json.getObjVal? "trigger")
                        correlation := ← entries.toList.mapM correlationFromJson
-                       payload := ← (optionalField json "payload").mapM valueAt, atMs })
+                       payload := ← (optionalField json "payload").mapM valueAt
+                       variables := ← if (optionalField json "variables").isSome then bindingsAt json "variables" else pure []
+                       atMs })
     | "timerFire" =>
       pure (.timerFire { occurrence := ← occurrence (), logicalTimeMs := ← json.getObjValAs? Nat "logicalTimeMs"
                          atMs })

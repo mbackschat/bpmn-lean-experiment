@@ -35,17 +35,18 @@ structure Arming where
   names : EvalContext := values
   repeats : Bool := false
 
-/-- A Message name given by an expression, resolved once when the subscription opens; it is not kept, since the channel
-addresses the subscription (PC-MESSAGE-01). CIB casts the value to a String (`EventSubscriptionDeclaration.java:172-184`):
-a failure or another type rolls the arming back, and `null` or `""` opens a subscription no name reaches, which the
-kernel does not claim. -/
-def resolveName (ctx : Ctx) (context : EvalContext) : Option ValueSource → Except Failure Unit
-  | none | some (.literal _) => .ok ()
+/-- A Message name, an expression's resolved once when the subscription opens (PC-MESSAGE-01). The channel addresses the
+subscription; the name is kept for an engine-wide publication under `MessageNames.addresses` (CIB-LIM-0022). CIB casts
+the value to a String (`EventSubscriptionDeclaration.java:172-184`): a failure or another type rolls the arming back,
+and `null` or `""` opens a subscription no name reaches, which the kernel does not claim. -/
+def resolveName (ctx : Ctx) (context : EvalContext) : Option ValueSource → Except Failure (Option String)
+  | none => .ok none
+  | some (.literal text) => .ok (some text)
   | some (.expression body) =>
     match ctx.evaluate context body with
     -- dynamic-only: the resolved name is the run's data.
     | .value (.string "") | .value .null => .error (.unsupported "message-name-empty")
-    | .value (.string _) => .ok ()
+    | .value (.string text) => .ok (some text)
     | .value _ => .error (.rolledBack "message-name-type")
     | .failure code => .error (.rolledBack code)
     | .unsupported code => .error (.unsupported code)
@@ -91,11 +92,12 @@ def waitKind (ctx : Ctx) (arming : Arming) (subscription : Subscription) : Excep
   match subscription.trigger with
   | .timer trigger => (some ∘ OpenKind.timer) <$> timerDetail ctx arming trigger
   | .message trigger => do
-    resolveName ctx arming.names trigger.name
+    let name ← resolveName ctx arming.names trigger.name
     let channel := trigger.channel
     -- Admission refuses it (`message.correlation.keys`).
     if trigger.correlation.length > 1 then throw (.unsupported "message-correlation-keys")
-    pure (some (.message { channel, payload := !subscription.outputs.isEmpty, criteria := trigger.correlation.map (·.key) }))
+    pure (some (.message { channel, payload := !subscription.outputs.isEmpty, criteria := trigger.correlation.map (·.key),
+                           name := if ctx.program.options.messageNames == .addresses then name else none }))
   -- Admission refuses both (`event.catch.signal`, `boundary.signal`, `start.signal` and their conditional counterparts).
   | .signal _ => .error (.unsupported "event-catch-signal")
   | .condition trigger =>
@@ -336,52 +338,6 @@ def trigger (ctx : Ctx) (item : OpenItem) (fired : Fired) (state : State) : Outc
     | some subscription, _ => fireCatch ctx subscription item fired state
     | none, some eventSubProcess => fireEventStart ctx eventSubProcess item fired state
     | none, none => .error (.semanticFailure "trigger-without-subscription")
-
-/-! ## Starts -/
-
-/-- Whether `trigger` fires a start with `subscription`. A none trigger names its start by identifier and consumes its
-trigger itself. -/
-def fires (trigger : StartTrigger) (subscription : Option Subscription) : Bool :=
-  match trigger, (subscription.map (·.trigger) : Option Trigger) with
-  | .none, _ => true
-  | _, none => false
-  | .timer _, some (.timer _) => true
-  | .message channel _, some (.message subscribed) => subscribed.channel == channel
-  | .signal name _, some (.signal subscribed) => ValueSource.literal? subscribed.name == some name
-  | .condition, some (.condition _) => true
-  | _, some (.timer _) | _, some (.message _) | _, some (.signal _) | _, some (.condition _) | _, some (.error _)
-  | _, some (.escalation _) | _, some .compensation | _, some .cancel => false
-
-/-- `Hooks.selectStart`: the named start if the trigger fires it, else the one start the trigger fires, and the sole none
-start for a none trigger. -/
-def selectStart (ctx : Ctx) (named : Option ElementId) (trigger : StartTrigger) : Option ElementId :=
-  let starts : List (Header × StartPayload) := (ctx.program.children none).filterMap Element.start?
-  let accepted := starts.filter fun (_, start) => fires trigger start.subscription
-  match named, trigger with
-  | some id, _ => (accepted.find? (·.1.id == id)).map (·.1.id)
-  | none, .none =>
-    match starts.filter (·.2.subscription.isNone) with
-    | [only] => some only.1.id
-    | _ => none
-  | none, _ =>
-    match accepted with
-    | [only] => some only.1.id
-    | _ => none
-
-/-- `Hooks.arriveStart`: a start Event leaves on its outgoing flows, writing what its trigger carried; a none trigger's
-start was consumed by the input that names it. -/
-def arriveStart (ctx : Ctx) (_ : Header) (payload : StartPayload) (trigger : StartTrigger) (occurrence : Occurrence)
-    (state : State) : Outcome := do
-  let (state, values) ← match trigger, payload.subscription with
-    | .timer at_, _ => .ok ({ state with logicalTimeMs := at_ }, [])
-    | .message _ (some delivered), some subscription => do
-      admitValues [delivered]
-      .ok (state, ← payloadBindings ctx state.logicalTimeMs subscription.outputs delivered)
-    | .signal _ variables, _ => do
-      admitValues (variables.map (·.2))
-      .ok (state, variables)
-    | .none, _ | .condition, _ | .message _ none, _ | .message _ (some _), none => .ok (state, [])
-  .ok (state.signal (.complete occurrence.id .outgoing values .outward))
 
 /-- `Hooks.arriveCatch`: the catch Event's occurrence waits on its subscription. -/
 def arriveCatch (ctx : Ctx) (_ : Header) (_ : EventPayload) (subscription : Subscription) (occurrence : Occurrence)

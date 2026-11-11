@@ -1,8 +1,10 @@
 {
   "identity": {
     "processId": "Process_SimpleBooleanChoice",
+    "namespace": null,
     "sourceSha256": "a57b7fe4919ff3cf0806f22e16fc05f4c37ecd326ffc97d8d66cbf693b53c21b",
-    "profile": "bpmn-2.0.2"
+    "profile": "bpmn-2.0.2",
+    "deployment": null
   },
   "options": {
     "relations": [
@@ -35,7 +37,9 @@
     "multiInstanceCounters": "none", "multiInstanceInputFailure": "hold", "multiInstanceCount": "integer", "businessRuleTask": "refused",
     "inclusiveJoinReach": "withBoundaries", "branchSchedule": "orderInvariant",
     "conditionalRetrigger": "edge", "malformedTimer": "refused", "messageNames": "description",
-    "scopeStart": "implicit"
+    "scopeStart": "implicit",
+    "signalNames": "identifier", "signalPayload": "none", "signalDelivery": "broadcastOnly", "conditionalStart": "refused",
+    "calledElementResolution": "qualifiedName", "messageThrowForms": "refused"
   },
   "elements": [
     {

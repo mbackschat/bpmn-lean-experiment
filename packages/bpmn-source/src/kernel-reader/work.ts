@@ -4,10 +4,12 @@ import { envelopeFor, headerOf } from "./build.js";
 import { activityProtocol, declaredImplementation, effectBinding, handlerKey, operation } from "./binding.js";
 import { associationMappings, associationSourceId, associationTargetId, inputOutputParameters, valueSource, variableCopies } from "./data.js";
 import { messageTrigger } from "./events.js";
-import { FlowElementKind, ReadRefusal, ReadRefusalCode, extensionValues, list, optionalId, reference, requireId, text } from "./model.js";
-import type { Built, ModelNode, ReadContext } from "./model.js";
+import {
+  FlowElementKind, ReadRefusal, ReadRefusalCode, extensionValues, list, namesElement, optionalId, qualifiedName, reference, requireId, text,
+} from "./model.js";
+import type { Built, ModelNode, QualifiedName, ReadContext } from "./model.js";
 import { readMultiInstance } from "./multi-instance.js";
-import { assertNever, ctor, literalSource, mapping, MappingSyntax, variable } from "./wire.js";
+import { assertNever, ctor, mapping, MappingSyntax, variable } from "./wire.js";
 import type { KernelJson } from "./wire.js";
 
 const configuredHandlers: ReadonlyMap<string, string> = new Map([["urn:bpmn-lean:task-handler:probe-v1", operation("probe")]]);
@@ -52,11 +54,12 @@ function userWork(ctx: ReadContext, element: ElementRecord): KernelJson {
   } });
 }
 
-/** A Process id named by a QName or a plain key: the local part when it names a Process in these Definitions. */
-function resolveCalledProcess(ctx: ReadContext, calledElement: string): ElementRecord | undefined {
-  const local = calledElement.includes(":") ? calledElement.slice(calledElement.indexOf(":") + 1) : calledElement;
-  return ctx.processes.find((process) => process.id === local);
-}
+/**
+ * The QName a Call's `calledElement` names. `Semantic.xsd` types it `xsd:QName`, so the source schema has refused an
+ * expression and an unbound prefix before this reads it (PC-SCOPE-03).
+ */
+export const calledQName = (definitions: ElementRecord, element: ElementRecord): QualifiedName | null =>
+  qualifiedName(element, definitions, text(element, "calledElement") ?? "");
 
 enum CallBindingKind {
   Latest = "latest",
@@ -102,8 +105,8 @@ function correspondingData(call: ElementRecord, called: ElementRecord | undefine
 }
 
 function callWork(ctx: ReadContext, element: ElementRecord): KernelJson {
-  const calledElement = text(element, "calledElement") ?? "";
-  const called = resolveCalledProcess(ctx, calledElement);
+  const name = calledQName(ctx.definitions, element);
+  const called = ctx.processes.find((process) => namesElement(name, ctx.definitions, process));
   const inCopies = variableCopies(element, ctx.extensions(element, "in"));
   const outCopies = variableCopies(element, ctx.extensions(element, "out"));
   if ([inCopies, outCopies].some((copies) => copies.localOnly || copies.localCopy)) {
@@ -120,7 +123,8 @@ function callWork(ctx: ReadContext, element: ElementRecord): KernelJson {
   const associated = (entry: Readonly<{ target: string | null; source: string | null }>): KernelJson =>
     mapping(String(entry.target), variable(String(entry.source)), MappingSyntax.DataAssociation);
   return ctor("call", { payload: {
-    calledElement: called === undefined ? valueSource(calledElement) : literalSource(requireId(called)),
+    calledElement: valueSource(text(element, "calledElement") ?? ""),
+    calledQName: name,
     binding: callableBinding(ctx, element, "calledElementBinding", "calledElementVersion", "calledElementVersionTag"),
     tenant: tenantSource(ctx, element, "calledElementTenantId"),
     businessKey: inCopies.businessKey,

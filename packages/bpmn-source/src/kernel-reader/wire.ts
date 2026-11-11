@@ -82,6 +82,12 @@ export type KernelProfileOptions = Readonly<{
   malformedTimer: "refused" | "rollsBackArming";
   messageNames: "description" | "addresses";
   scopeStart: "implicit" | "required";
+  signalNames: "identifier" | "addresses";
+  signalPayload: "none" | "variables";
+  signalDelivery: "broadcastOnly" | "occurrenceTargeted";
+  conditionalStart: "refused" | "submittedContext";
+  calledElementResolution: "qualifiedName" | "cibKey";
+  messageThrowForms: "refused" | "cibForms";
 }>;
 
 /** One portable value's allowance, which bounds a scope-chain submission (`NSD-TASK-01`). */
@@ -131,6 +137,12 @@ export function kernelProfileOptions(relations: readonly string[]): KernelProfil
     malformedTimer: selects("CIB-EXT-0036") ? "rollsBackArming" : "refused",
     messageNames: selects("CIB-LIM-0022") ? "addresses" : "description",
     scopeStart: selects("CIB-LIM-0024") ? "required" : "implicit",
+    signalNames: "identifier",
+    signalPayload: "none",
+    signalDelivery: "broadcastOnly",
+    conditionalStart: "refused",
+    calledElementResolution: "qualifiedName",
+    messageThrowForms: "refused",
   };
 }
 

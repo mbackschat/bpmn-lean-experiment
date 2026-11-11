@@ -15,7 +15,11 @@ import {
   ValueSourceTag,
   WorkTag,
   assertNever,
-  programCalledProcess,
+  CalledElementResolution,
+  callWorkNamesDefinition,
+  definitionRefEligibleFor,
+  programCalledProcessFor,
+  programCallsRoot,
   elementActivity,
   elementEnvelope,
   multiInstanceCounterNames,
@@ -176,19 +180,34 @@ function dataCorrespondence(work: CallWork): string | null {
   return mappings.some(isData) && !exact ? "work.call.dataCorrespondence" : null;
 }
 
+/**
+ * Under `CalledElementResolution.qualifiedName` the literal is a QName, and one whose prefix has no namespace binding
+ * names nothing (`Semantic.xsd:149`). A carried process must answer the name before the binding is read (PC-SCOPE-03).
+ */
 function calledElement(program: Program, work: CallWork): string | null {
   const called = work.calledElement;
+  const resolution = program.options.calledElementResolution;
+  const deployment = program.identity.deployment;
   switch (called.tag) {
     case ValueSourceTag.Expression:
       return "work.call.calledElementExpression";
     case ValueSourceTag.Literal: {
-      if (called.value === program.identity.processId) return "work.call.rootProcess";
-      const process = programCalledProcess(program, called.value);
-      if (process === null) return "work.call.calledProcessMissing";
-      return null;
+      if (resolution === CalledElementResolution.QualifiedName && work.calledQName === null) return "work.call.calledElementUnbound";
+      if (programCallsRoot(program, resolution, work)) return "work.call.rootProcess";
+      return program.processes.some((process) =>
+        definitionRefEligibleFor(deployment, process.definition) && callWorkNamesDefinition(resolution, work, process.definition))
+        ? null : "work.call.calledProcessMissing";
     }
   }
   return assertNever(called);
+}
+
+/** Exactly one carried process must answer the whole selector (`programCalledProcessFor`, PC-SCOPE-03). */
+function calledProcess(program: Program, work: CallWork): string | null {
+  const resolution = program.options.calledElementResolution;
+  const processes = programCalledProcessFor(program, resolution, program.identity.deployment, work);
+  if (processes.length === 0) return "work.call.calledProcessMissing";
+  return processes.length === 1 ? null : "work.call.ambiguous";
 }
 
 function callBinding(binding: CallBinding): string | null {
@@ -216,7 +235,7 @@ const multiInstanceCounters: readonly string[] = multiInstanceCounterNames.filte
  * live in `CallWork`, never in the envelope.
  */
 function call(program: Program, work: CallWork): string | null {
-  const refused = calledElement(program, work) ?? callBinding(work.binding);
+  const refused = calledElement(program, work) ?? callBinding(work.binding) ?? calledProcess(program, work);
   if (refused !== null) return refused;
   if (work.outputs.some((mapping) => multiInstanceCounters.includes(mapping.target))) return "work.call.multiInstanceCounterOutput";
   if (work.businessKey !== null) return "work.call.businessKey";

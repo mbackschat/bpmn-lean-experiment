@@ -3,7 +3,7 @@
  * message must be literal, a Compensation names no Activity and waits for its handlers, and a Message or Signal throw
  * has no kernel meaning.
  */
-import { append, computed, end, flow, refusalTests, replace, scope, start, task, text, variable, withFlows } from "./admission-refusal-support.ts";
+import { append, computed, end, flow, qName, refusalTests, replace, scope, start, task, text, variable, withFlows } from "./admission-refusal-support.ts";
 import type { Json, Row } from "./admission-refusal-support.ts";
 
 /** `E` becomes an End Event throwing `record`. */
@@ -34,7 +34,7 @@ export const rows: readonly Row[] = [
     code: "throw.signal",
     description: "a Signal throw",
     mutate: throwing({
-      signal: { payload: { name: text("S"), payload: [], propagateAll: false, localOnly: false, businessKey: null, asynchronous: false } },
+      signal: { payload: { signalRef: qName("Sig"), name: text("S"), payload: [], propagateAll: null, localOnly: false, businessKey: null, asynchronous: false } },
     }),
     control: throwing("none"),
   },

@@ -17,10 +17,12 @@ import {
   AbnormalScopeEnd,
   CallBindingTag,
   CallBindingTime,
+  CalledElementResolution,
   CollectionRead,
   CompensationHandlerFailureTag,
   CompensationOrder,
   ConditionOrder,
+  ConditionalStart,
   ContinuationFailure,
   CycleDialect,
   DecisionResultMapping,
@@ -44,7 +46,11 @@ import {
   ConditionalRetrigger,
   MalformedTimer,
   MessageNames,
+  MessageThrowForms,
   ScopeStart,
+  SignalDelivery,
+  SignalNames,
+  SignalPayload,
   MultiInstanceCounters,
   MultiInstanceInputFailure,
   MultiInstanceFinalBody,
@@ -87,6 +93,7 @@ import {
   type MultiInstance,
   type ProfileOptions,
   type Program,
+  type QName,
   type ScopeKind,
   type SimpleBoolean,
   type Subscription,
@@ -205,10 +212,12 @@ const messageTrigger = struct<MessageTrigger>("MessageTrigger", {
   operationRef: option(string),
 });
 
+const qName = struct<QName>("QName", { namespace: option(string), localName: string });
+
 const trigger = inductive<Trigger>("Trigger", {
   [TriggerTag.Timer]: { payload: struct("TimerTrigger", { schedule: timerSchedule }) },
   [TriggerTag.Message]: { payload: messageTrigger },
-  [TriggerTag.Signal]: { payload: struct("SignalTrigger", { name: valueSource }) },
+  [TriggerTag.Signal]: { payload: struct("SignalTrigger", { signalRef: option(qName), name: option(valueSource) }) },
   [TriggerTag.Condition]: {
     payload: struct("ConditionTrigger", { condition: expression, variableName: option(string), variableEvents: list(string) }),
   },
@@ -241,9 +250,10 @@ const throwRecord = inductive<Throw>("Throw", {
   [ThrowTag.Message]: { payload: struct("MessageThrow", { binding: option(effectBinding), payload: list(mapping) }) },
   [ThrowTag.Signal]: {
     payload: struct("SignalThrow", {
-      name: valueSource,
+      signalRef: option(qName),
+      name: option(valueSource),
       payload: list(mapping),
-      propagateAll: bool,
+      propagateAll: option(nat),
       localOnly: bool,
       businessKey: option(expression),
       asynchronous: bool,
@@ -304,6 +314,7 @@ const work = inductive<Work>("Work", {
   [WorkTag.Call]: {
     payload: struct("CallWork", {
       calledElement: valueSource,
+      calledQName: option(qName),
       binding: callBinding,
       tenant: option(valueSource),
       businessKey: option(expression),
@@ -376,9 +387,10 @@ const gatewayKind = inductive<GatewayKind>("GatewayKind", {
 
 const definitionRef = struct<DefinitionRef>("DefinitionRef", {
   key: string,
+  namespace: option(string),
   version: option(nat),
   versionTag: option(string),
-  deployment: option(string),
+  deployment: option(nat),
   tenant: option(string),
   sourceSha256: option(string),
 });
@@ -459,10 +471,18 @@ const profileOptions = struct<ProfileOptions>("ProfileOptions", {
   malformedTimer: members("MalformedTimer", MalformedTimer),
   messageNames: members("MessageNames", MessageNames),
   scopeStart: members("ScopeStart", ScopeStart),
+  signalNames: members("SignalNames", SignalNames),
+  signalPayload: members("SignalPayload", SignalPayload),
+  signalDelivery: members("SignalDelivery", SignalDelivery),
+  conditionalStart: members("ConditionalStart", ConditionalStart),
+  calledElementResolution: members("CalledElementResolution", CalledElementResolution),
+  messageThrowForms: members("MessageThrowForms", MessageThrowForms),
 });
 
 const program = struct<Program>("Program", {
-  identity: struct("ProgramIdentity", { processId: string, sourceSha256: string, profile: string }),
+  identity: struct("ProgramIdentity", {
+    processId: string, namespace: option(string), sourceSha256: string, profile: string, deployment: option(nat),
+  }),
   options: profileOptions,
   elements: list(element),
   flows: list(flow),

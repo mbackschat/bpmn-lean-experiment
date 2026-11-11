@@ -19,6 +19,7 @@
 import {
   ExpressionTag,
   MalformedTimer,
+  MessageNames,
   TimerScheduleTag,
   TriggerTag,
   ValueSourceTag,
@@ -36,14 +37,12 @@ import {
   programElement,
   programTarget,
   triggerMessage,
-  valueSourceLiteral,
   type Boundary,
   type CorrelationCriterion,
   type ElementId,
   type EventPayload,
   type Header,
   type Mapping,
-  type StartPayload,
   type Subscription,
   type TimerTrigger,
   type Trigger,
@@ -57,7 +56,6 @@ import {
   OpenKindTag,
   RaisedTag,
   SignalTag,
-  StartTriggerTag,
   WriteRule,
   beginRequest,
   closeItem,
@@ -89,7 +87,6 @@ import {
   type Raised,
   type Result,
   type ScopeOccurrenceId,
-  type StartTrigger,
   type State,
   type TimerDetail,
   calledRoot,
@@ -119,16 +116,16 @@ interface Arming {
 }
 
 /**
- * A Message name given by an expression, resolved once when the subscription opens; it is not kept, since the channel
- * addresses the subscription (PC-MESSAGE-01). CIB casts the value to a String (`EventSubscriptionDeclaration.java:172-184`):
- * a failure or another type rolls the arming back, and `null` or `""` opens a subscription no name reaches, which the
- * kernel does not claim.
+ * A Message name, an expression's resolved once when the subscription opens (PC-MESSAGE-01). The channel addresses the
+ * subscription; the name is kept for an engine-wide publication under `MessageNames.addresses` (CIB-LIM-0022). CIB casts
+ * the value to a String (`EventSubscriptionDeclaration.java:172-184`): a failure or another type rolls the arming back,
+ * and `null` or `""` opens a subscription no name reaches, which the kernel does not claim.
  */
-function resolveName(ctx: Ctx, context: EvalContext, name: ValueSource | null): Result<null> {
+function resolveName(ctx: Ctx, context: EvalContext, name: ValueSource | null): Result<string | null> {
   if (name === null) return committed(null);
   switch (name.tag) {
     case ValueSourceTag.Literal:
-      return committed(null);
+      return committed(name.value);
     case ValueSourceTag.Expression: {
       const evaluation = ctx.evaluate(context, name.body);
       switch (evaluation.tag) {
@@ -138,7 +135,7 @@ function resolveName(ctx: Ctx, context: EvalContext, name: ValueSource | null): 
             // dynamic-only: the resolved name is the run's data.
             return failed(FailureTag.Unsupported, "message-name-empty");
           }
-          return result.tag === ValueTag.String ? committed(null) : failed(FailureTag.RolledBack, "message-name-type");
+          return result.tag === ValueTag.String ? committed(result.value) : failed(FailureTag.RolledBack, "message-name-type");
         }
         case EvaluationTag.Failure:
           return failed(FailureTag.RolledBack, evaluation.code);
@@ -238,7 +235,8 @@ function waitKind(ctx: Ctx, arming: Arming, subscription: Subscription): Result<
       // Admission refuses it (`message.correlation.keys`).
       if (trigger.payload.correlation.length > 1) return failed(FailureTag.Unsupported, "message-correlation-keys");
       const criteria = trigger.payload.correlation.map((criterion) => criterion.key);
-      return committed({ tag: OpenKindTag.Message, detail: { channel, payload: subscription.outputs.length > 0, criteria } });
+      const name = ctx.program.options.messageNames === MessageNames.Addresses ? named.value : null;
+      return committed({ tag: OpenKindTag.Message, detail: { channel, payload: subscription.outputs.length > 0, criteria, name } });
     }
     // Admission refuses both (`event.catch.signal`, `boundary.signal`, `start.signal` and their conditional counterparts).
     case TriggerTag.Signal:
@@ -354,7 +352,7 @@ export function armScope(ctx: Ctx, scope: ScopeOccurrenceId, state: State): Outc
 // Firing
 
 /** Bind the delivered payload to every data output an output mapping reads, then evaluate the mappings. */
-function payloadBindings(ctx: Ctx, nowMs: number, outputs: readonly Mapping[], payload: Value): Result<readonly Binding[]> {
+export function payloadBindings(ctx: Ctx, nowMs: number, outputs: readonly Mapping[], payload: Value): Result<readonly Binding[]> {
   const outputsRead = outputs.flatMap((mapping): Binding[] => {
     const source = mapping.source;
     switch (source.tag) {
@@ -581,81 +579,6 @@ export function trigger(ctx: Ctx, item: OpenItem, fired: Fired, state: State): O
   const eventSubProcess = start === null ? null : start[0].parent;
   if (eventSubProcess !== null) return fireEventStart(ctx, eventSubProcess, item, fired, state);
   return failed(FailureTag.SemanticFailure, "trigger-without-subscription");
-}
-
-// Starts
-
-/** Whether `trigger` fires a start with `subscription`. A none trigger names its start by identifier and consumes its trigger itself. */
-function fires(trigger: StartTrigger, subscription: Subscription | null): boolean {
-  if (trigger.tag === StartTriggerTag.None) return true;
-  if (subscription === null) return false;
-  const subscribed = subscription.trigger;
-  switch (subscribed.tag) {
-    case TriggerTag.Timer:
-      return trigger.tag === StartTriggerTag.Timer;
-    case TriggerTag.Message:
-      return trigger.tag === StartTriggerTag.Message &&
-        trigger.channel !== null && messageChannelEquals(messageTriggerChannel(subscribed.payload), trigger.channel);
-    case TriggerTag.Signal:
-      return trigger.tag === StartTriggerTag.Signal && valueSourceLiteral(subscribed.payload.name) === trigger.name;
-    case TriggerTag.Condition:
-      return trigger.tag === StartTriggerTag.Condition;
-    case TriggerTag.Error:
-    case TriggerTag.Escalation:
-    case TriggerTag.Compensation:
-    case TriggerTag.Cancel:
-      return false;
-  }
-  return assertNever(subscribed);
-}
-
-/**
- * `Hooks.selectStart`: the named start if the trigger fires it, else the one start the trigger fires, and the sole none
- * start for a none trigger.
- */
-export function selectStart(ctx: Ctx, named: ElementId | null, trigger: StartTrigger): ElementId | null {
-  const starts = programChildren(ctx.program, null).flatMap((element) => {
-    const start = elementStart(element);
-    return start === null ? [] : [start];
-  });
-  const accepted = starts.filter(([, start]) => fires(trigger, start.subscription));
-  if (named !== null) return accepted.find(([header]) => header.id === named)?.[0].id ?? null;
-  const candidates = trigger.tag === StartTriggerTag.None ? starts.filter(([, start]) => start.subscription === null) : accepted;
-  const [only] = candidates;
-  return candidates.length === 1 && only !== undefined ? only[0].id : null;
-}
-
-/**
- * `Hooks.arriveStart`: a start Event leaves on its outgoing flows, writing what its trigger carried; a none trigger's
- * start was consumed by the input that names it.
- */
-export function arriveStart(ctx: Ctx, _header: Header, payload: StartPayload, trigger: StartTrigger, occurrence: Occurrence, state: State): Outcome {
-  const started = startValues(ctx, payload, trigger, state);
-  if (!started.ok) return failedWith(started.failure);
-  const [current, values] = started.value;
-  return committed(signal(current, completeSignal(occurrence.id, leaveOutgoing, values, WriteRule.Outward)));
-}
-
-function startValues(ctx: Ctx, payload: StartPayload, trigger: StartTrigger, state: State): Result<readonly [State, readonly Binding[]]> {
-  switch (trigger.tag) {
-    case StartTriggerTag.Timer:
-      return committed([{ ...state, logicalTimeMs: trigger.logicalTimeMs }, []]);
-    case StartTriggerTag.Message: {
-      if (trigger.payload === null || payload.subscription === null) return committed([state, []]);
-      const admitted = admitValues([trigger.payload]);
-      if (!admitted.ok) return failedWith(admitted.failure);
-      const bound = payloadBindings(ctx, state.logicalTimeMs, payload.subscription.outputs, trigger.payload);
-      return bound.ok ? committed([state, bound.value]) : failedWith(bound.failure);
-    }
-    case StartTriggerTag.Signal: {
-      const admitted = admitValues(trigger.variables.map(([, value]) => value));
-      return admitted.ok ? committed([state, trigger.variables]) : failedWith(admitted.failure);
-    }
-    case StartTriggerTag.None:
-    case StartTriggerTag.Condition:
-      return committed([state, []]);
-  }
-  return assertNever(trigger);
 }
 
 /** `Hooks.arriveCatch`: the catch Event's occurrence waits on its subscription. */

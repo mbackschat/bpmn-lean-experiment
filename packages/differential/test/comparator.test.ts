@@ -140,6 +140,22 @@ test("compares a state's variable scopes between the two kernels only, never aga
   );
 });
 
+test("compares a state's Signal broadcasts between the two kernels only, never against retained CIB evidence", () => {
+  const thrown = (name: string) => {
+    const result = recut([], null);
+    const broadcast = { name, variables: [],
+      origin: { processInstanceId: "Instance_1", elementId: "Throw", activation: 1 } };
+    return { ...result, trace: result.trace.map((entry) => entry.kind === "state" ? { ...entry, broadcasts: [broadcast] } : entry) };
+  };
+  const lean = { target: DifferentialTarget.Kernel, result: thrown("S") };
+  assert.equal(compareTargetResults({ target: DifferentialTarget.RetainedCibEvidence, result: recut([], null) }, [lean]).kind,
+    ComparisonKind.Agreement);
+  assert.deepEqual(
+    requireDisagreement(compareTargetResults(lean, [{ target: DifferentialTarget.KernelTs, result: thrown("T") }])),
+    { kind: DisagreementKind.ObservationValue, path: "trace[2].broadcasts[0].name", expected: "S", actual: "T" },
+  );
+});
+
 test("compares an effect wait's arguments only when neither side is retained CIB evidence (CIB-OP-0013)", () => {
   const effect = (value: string) => recut([{ ...wait("Task_A", "effect"), input: "effectResult",
     detail: { kind: "effect", protocol: "p", operation: "o", arguments: value === "" ? [] : [{ name: "order", value: { kind: "string", value } }], failures: 0, send: null } }], null);

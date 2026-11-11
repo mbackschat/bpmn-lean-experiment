@@ -5,7 +5,7 @@
  * Task's decisions are `admission-refusals-decision.test.ts`'s.
  */
 import {
-  activity, append, callWork, computed, criterion, definitionRef, loop, mapping, receiveWork, refusalTests,
+  activity, append, callWork, computed, criterion, definitionRef, loop, mapping, qName, receiveWork, refusalTests,
   ruleWork, scriptWork, sendWork, serviceWork, task, text, userWork, variable, withOptions,
 } from "./admission-refusal-support.ts";
 import type { Json, Row } from "./admission-refusal-support.ts";
@@ -23,6 +23,13 @@ const withCalled = (child: Json = calledChild) => (program: Json): Json =>
 /** `T` becomes a Call Activity of the called process `Called`. */
 const calling = (over: Json = {}, child?: Json) => (program: Json): Json =>
   withCalled(child)(withTask(callWork(over))(program));
+
+const foreignNamespace = "urn:example:foreign";
+const cibKey = { calledElementResolution: "cibKey" };
+
+/** A second process declaring the same definition as `Called`, with its own process-level Task `CU`. */
+const secondCalledChild = activity("CU", "manual", { incoming: [], outgoing: [] });
+const secondCalled: Json = { definition: definitionRef("Called"), children: ["CU"], variables: [], executable: true };
 
 const dataAssociation = (target: string) => mapping(target, variable("source"), "dataAssociation");
 const callVariable = (target: string) => mapping(target, variable("source"), "callVariable");
@@ -115,6 +122,47 @@ export const rows: readonly Row[] = [
     code: "work.call.calledProcessMissing",
     description: "a Call Activity naming a process the program does not carry",
     mutate: calling({ calledElement: text("Missing") }),
+    control: calling(),
+  },
+  {
+    // `Semantic.xsd:149` types `calledElement` as `xsd:QName`; a prefix without a namespace binding names nothing.
+    code: "work.call.calledElementUnbound",
+    description: "a Call Activity whose called element's prefix has no namespace binding",
+    mutate: calling({ calledElement: text("missing:Called"), calledQName: null }),
+    control: calling(),
+  },
+  {
+    code: "profile.calledElementResolution.cibKey",
+    description: "under CIB's key reading, a Call Activity whose called element's prefix has no namespace binding",
+    mutate: (program) => calling({ calledQName: null })(withOptions(program, cibKey)),
+  },
+  {
+    code: "work.call.calledProcessMissing",
+    description: "a Call Activity whose called element names a same-id process of another namespace",
+    mutate: calling({ calledQName: qName("Called", foreignNamespace) }),
+    control: calling(),
+  },
+  {
+    code: "profile.calledElementResolution.cibKey",
+    description: "under CIB's key reading, a Call Activity whose called element names another namespace",
+    mutate: (program) => calling({ calledQName: qName("Called", foreignNamespace) })(withOptions(program, cibKey)),
+  },
+  {
+    code: "work.call.calledProcessMissing",
+    description: "a Call Activity whose called element names the root process's id in another namespace",
+    mutate: (program) => {
+      const root = (program.identity as Json).processId as string;
+      return calling({ calledElement: text(root), calledQName: qName(root, foreignNamespace) })(program);
+    },
+    control: calling(),
+  },
+  {
+    code: "work.call.ambiguous",
+    description: "a Call Activity whose selector two carried processes answer",
+    mutate: (program) => {
+      const called = calling()(program);
+      return { ...append(called, secondCalledChild), processes: [...(called.processes as Json[]), secondCalled] };
+    },
     control: calling(),
   },
   {

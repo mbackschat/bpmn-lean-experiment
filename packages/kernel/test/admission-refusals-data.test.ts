@@ -170,7 +170,7 @@ export const rows: readonly Row[] = [
     code: "element.origin.definition",
     description: "an element bound to a definition",
     mutate: task(withOrigin(activity("T", "manual"), {
-      definition: { key: "Q", version: null, versionTag: null, deployment: null, tenant: null, sourceSha256: null },
+      definition: { key: "Q", namespace: null, version: null, versionTag: null, deployment: null, tenant: null, sourceSha256: null },
       sourceId: "T",
     })),
   },

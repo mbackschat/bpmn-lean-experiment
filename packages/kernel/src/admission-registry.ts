@@ -45,6 +45,7 @@ import * as MultiInstance from "./admission/multi-instance.js";
 import * as Propagation from "./admission/propagation.js";
 import * as Scopes from "./admission/scopes.js";
 import * as Subscriptions from "./admission/subscriptions.js";
+import * as Starts from "./admission/subscriptions/starts.js";
 
 /** Whether an element is some Activity's or Scope's compensation handler. */
 function isHandler(program: Program, id: ElementId): boolean {
@@ -291,7 +292,7 @@ function element(program: Program, throws: readonly Element[], entry: Element): 
         () => FlowAdmission.startCombination(program, header),
         () => (subscription === null
           ? null
-          : Subscriptions.start(program.options, subscriptionReading(program, header.id), header.parent !== null, subscription) ??
+          : Starts.start(program.options, subscriptionReading(program, header.id), header.parent !== null, subscription) ??
             subscriptionData(program, header.id, subscription)),
       );
     }

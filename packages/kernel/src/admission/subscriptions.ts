@@ -1,6 +1,7 @@
 /**
- * Admission of catch Events, boundaries and triggered starts, transcribed from `Kernel/Admission/Subscriptions.lean`. A
- * refusal carries a stable code.
+ * Admission of catch Events, boundaries and Event Sub-Process starts, transcribed from
+ * `Kernel/Admission/Subscriptions.lean`. A refusal carries a stable code. `admission/subscriptions/starts.ts` dispatches a
+ * start Event's trigger and hands an Event Sub-Process start's Signal to `eventSubProcessSignal`.
  *
  * Admitted: Timers with a literal `il/timer.ts#classify` admits, Messages with a literal name and no
  * correlation, a correlated Message only on a catch Event, and, on boundaries, the triggers that
@@ -32,6 +33,7 @@ import {
   type ErrorTrigger,
   type EscalationTrigger,
   type MessageTrigger,
+  type SignalTrigger,
   type Subscription,
   type TimerTrigger,
   type ValueSource,
@@ -88,7 +90,7 @@ function eventsExpression(options: ProfileOptions, reading: Reading, refusal: st
  * `camunda:variableName` and `camunda:variableEvents` belong to its each-write model (CIB-EXT-0035), so they are refused
  * under `edge`, and an event name CIB does not dispatch is refused under `eachWrite`.
  */
-function conditionRefusal(options: ProfileOptions, reading: Reading, trigger: ConditionTrigger): string | null {
+export function conditionRefusal(options: ProfileOptions, reading: Reading, trigger: ConditionTrigger): string | null {
   const filters = ((): string | null => {
     switch (options.conditionalRetrigger) {
       case ConditionalRetrigger.Edge:
@@ -152,7 +154,7 @@ export function timer(admitMalformed: boolean, rootStart: boolean, trigger: Time
  * A Timer at a subscription site: a value given by an expression is read at the Events level and classified when it is
  * armed (PC-TIMER-03); a literal is classified now (`timer`). A root start's expression is PC-TIMER-04's.
  */
-function timerAt(options: ProfileOptions, reading: Reading, rootStart: boolean, trigger: TimerTrigger): string | null {
+export function timerAt(options: ProfileOptions, reading: Reading, rootStart: boolean, trigger: TimerTrigger): string | null {
   const schedule = trigger.schedule;
   const code = schedule.tag === TimerScheduleTag.Duration ? "timer.duration" : schedule.tag === TimerScheduleTag.Date ? "timer.date" : "timer.cycle";
   const admitMalformed = options.malformedTimer === MalformedTimer.RollsBackArming;
@@ -188,7 +190,7 @@ function messageName(options: ProfileOptions, reading: Reading, rootStart: boole
  * A Message subscription is addressed by its Message (`messageRef`, BPMN 2.0.2 §10.5.5); without one only an
  * occurrence-addressed command could reach it, which CIB-INT-0004 selects for a Receive Task alone (PC-MESSAGE-01).
  */
-function message(options: ProfileOptions, reading: Reading, rootStart: boolean, trigger: MessageTrigger): string | null {
+export function message(options: ProfileOptions, reading: Reading, rootStart: boolean, trigger: MessageTrigger): string | null {
   if (trigger.correlation.length > 0) return "message.correlation";
   if (trigger.messageRef === null) return "message.unspecified";
   return messageName(options, reading, rootStart, trigger.name);
@@ -229,18 +231,18 @@ function correlatedCatch(options: ProfileOptions, reading: Reading, subscription
  * A Multiple or Parallel Multiple Event (BPMN 2.0.2 §10.5.1): pinned CIB keeps one of several definitions by a precedence
  * that depends on the position and never reads `parallelMultiple` (CIB-LIM-0008) (PC-BASIC-04).
  */
-function definitions(subscription: Subscription): string | null {
+export function definitions(subscription: Subscription): string | null {
   if (subscription.parallelMultiple) return "event.parallelMultiple";
   return subscription.alternatives.length > 0 ? "event.multipleDefinitions" : null;
 }
 
 /** Only a Message subscription writes what its delivery carries; any other trigger's outputs would be dropped. */
-function subscriptionOutputs(subscription: Subscription): string | null {
+export function subscriptionOutputs(subscription: Subscription): string | null {
   return triggerMessage(subscription.trigger) !== null || subscription.outputs.length === 0 ? null : "event.outputs";
 }
 
 /** Catch variables are a CIB extension (CIB-EXT-0028) the profile selects; BPMN 2.0.2 defines none. */
-function errorTrigger(variables: ErrorCatchVariables, trigger: ErrorTrigger): string | null {
+export function errorTrigger(variables: ErrorCatchVariables, trigger: ErrorTrigger): string | null {
   switch (variables) {
     case ErrorCatchVariables.EventScope:
       return null;
@@ -253,7 +255,7 @@ function errorTrigger(variables: ErrorCatchVariables, trigger: ErrorTrigger): st
 }
 
 /** The code variable is CIB's extension (`camunda:escalationCodeVariable`), admitted with the Error catch variables (CIB-EXT-0028). */
-function escalationTrigger(variables: ErrorCatchVariables, trigger: EscalationTrigger): string | null {
+export function escalationTrigger(variables: ErrorCatchVariables, trigger: EscalationTrigger): string | null {
   switch (variables) {
     case ErrorCatchVariables.EventScope:
       return null;
@@ -503,32 +505,9 @@ export function messageNames(options: ProfileOptions, sites: readonly MessageSit
 }
 
 /**
- * A triggered start. At process level (`nested = false`) the start input names it; nested, it is an Event Sub-Process
- * start, which may also repeat a cycle and catch what `feature/propagation.ts` raises.
+ * The Signal of an Event Sub-Process start, which `start` (`admission/subscriptions/starts.ts`) hands here: refused, as
+ * every Signal subscription is.
  */
-export function start(options: ProfileOptions, reading: Reading, nested: boolean, subscription: Subscription): string | null {
-  const variables = options.errorCatchVariables;
-  const raised = (code: string): string | null => (nested ? null : code);
-  const refused = definitions(subscription) ?? subscriptionOutputs(subscription);
-  if (refused !== null) return refused;
-  const trigger = subscription.trigger;
-  switch (trigger.tag) {
-    case TriggerTag.Timer:
-      return timerAt(options, reading, !nested, trigger.payload);
-    case TriggerTag.Message:
-      return (!nested && subscription.outputs.length > 0 ? "start.message.outputs" : null) ?? message(options, reading, !nested, trigger.payload);
-    case TriggerTag.Signal:
-      return "start.signal";
-    case TriggerTag.Condition:
-      return nested ? conditionRefusal(options, reading, trigger.payload) : "start.condition";
-    case TriggerTag.Error:
-      return raised("start.error") ?? errorTrigger(variables, trigger.payload);
-    case TriggerTag.Escalation:
-      return raised("start.escalation") ?? escalationTrigger(variables, trigger.payload);
-    case TriggerTag.Compensation:
-      return raised("start.compensation");
-    case TriggerTag.Cancel:
-      return "start.cancel";
-  }
-  return assertNever(trigger);
+export function eventSubProcessSignal(_trigger: SignalTrigger): string | null {
+  return "start.signal";
 }
