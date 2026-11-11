@@ -129,8 +129,11 @@ structure Subscription where
   parallelMultiple : Bool := false
   deriving Repr
 
+/-- `sourceId` is the identifier the model's author wrote, which publication shows; `id` is unique in the program, as
+`Header.id` is. -/
 structure Boundary where
   id : ElementId
+  sourceId : String
   subscription : Subscription
   interrupting : Bool
   outgoing : List FlowId
@@ -681,11 +684,6 @@ declare (`decision.duplicateId`). -/
 def decision? (program : Program) (key : String) : Option Decision :=
   (program.decisionResources.flatMap (·.decisions)).find? (·.id == key)
 
-/-- The identifier publication and addressing show for an element: the one its author wrote. A boundary has no header
-and keeps its identifier. -/
-def publicId (program : Program) (id : ElementId) : ElementId :=
-  ((program.element? id).map fun element => ⟨element.header.origin.sourceId⟩).getD id
-
 /-- Whether an element begins when its parent Scope is entered without a none start Event: it has no incoming flow, is
 no compensation handler, and is no Event Sub-Process (BPMN 2.0.2 §13.3.4, §13.5.5). -/
 def beginsImplicitly (program : Program) (element : Element) : Bool :=
@@ -709,6 +707,12 @@ def sourceType? (program : Program) (id : ElementId) : Option String :=
 def boundary? (program : Program) (id : ElementId) : Option (Element × Boundary) :=
   program.elements.findSome? fun element =>
     (element.envelope?.bind fun envelope => envelope.boundaries.find? (·.id == id)).map (element, ·)
+
+/-- The identifier publication and addressing show for an element or boundary: the one its author wrote. -/
+def publicId (program : Program) (id : ElementId) : ElementId :=
+  match program.element? id with
+  | some element => ⟨element.header.origin.sourceId⟩
+  | none => ((program.boundary? id).map fun (_, boundary) => ⟨boundary.sourceId⟩).getD id
 
 end Program
 

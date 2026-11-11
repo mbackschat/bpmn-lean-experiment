@@ -347,6 +347,7 @@ function readBoundary(ctx: ReadContext, node: ModelNode): Built {
     attachedTo: requireId(host),
     boundary: {
       id,
+      sourceId: id,
       subscription: catchSubscription(ctx, node.element, definition),
       interrupting,
       outgoing: ctx.outgoing(id),

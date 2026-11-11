@@ -211,8 +211,10 @@ export interface Subscription {
   readonly parallelMultiple: boolean;
 }
 
+/** `sourceId` as `ElementOrigin.sourceId`: the identifier the author wrote; `id` is unique in the program. */
 export interface Boundary {
   readonly id: ElementId;
+  readonly sourceId: string;
   readonly subscription: Subscription;
   readonly interrupting: boolean;
   readonly outgoing: readonly FlowId[];
@@ -841,15 +843,6 @@ export function programDecision(program: Program, key: string): Decision | null 
 }
 
 /**
- * The identifier publication and addressing show for an element: the one its author wrote. A boundary has no header
- * and keeps its identifier.
- */
-export function programPublicId(program: Program, id: ElementId): ElementId {
-  const element = programElement(program, id);
-  return element === null ? id : elementHeader(element).origin.sourceId;
-}
-
-/**
  * Whether an element begins when its parent Scope is entered without a none start Event: it has no incoming flow, is
  * no compensation handler, and is no Event Sub-Process (BPMN 2.0.2 §13.3.4, §13.5.5).
  */
@@ -889,4 +882,11 @@ export function programBoundary(program: Program, id: ElementId): readonly [Elem
     if (boundary !== undefined) return [element, boundary];
   }
   return null;
+}
+
+/** The identifier publication and addressing show for an element or boundary: the one its author wrote. */
+export function programPublicId(program: Program, id: ElementId): ElementId {
+  const element = programElement(program, id);
+  if (element !== null) return elementHeader(element).origin.sourceId;
+  return programBoundary(program, id)?.[1].sourceId ?? id;
 }

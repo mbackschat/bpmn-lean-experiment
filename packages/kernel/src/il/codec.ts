@@ -238,6 +238,7 @@ const subscription = struct<Subscription>("Subscription", {
 
 const boundary = struct<Boundary>("Boundary", {
   id: string,
+  sourceId: string,
   subscription,
   interrupting: bool,
   outgoing: list(string),

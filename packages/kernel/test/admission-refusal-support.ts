@@ -67,7 +67,7 @@ export const envelope = (over: Json = {}): Json => ({
 });
 
 export const boundary = (id: string, trigger: Json | string, over: Json = {}, outputs: Json[] = []): Json =>
-  ({ id, subscription: subscription(trigger, outputs), interrupting: true, outgoing: [], ...over });
+  ({ id, sourceId: id, subscription: subscription(trigger, outputs), interrupting: true, outgoing: [], ...over });
 
 export const userWork = (over: Json = {}): Json => ({
   user: {
