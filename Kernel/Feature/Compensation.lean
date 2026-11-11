@@ -5,9 +5,11 @@ public import Kernel.Hooks
 /-! # Compensation and Transaction cancellation
 
 Owns `FeatureSlots.compensation`. An Activity or Scope with a compensation handler that completes is retained in the
-scope occurrence it completed in, together with the context its handler restores: for a Sub-Process, the variables
-visible inside it when it completed ("snapshot data", [BPMN 2.0.2 §13.5.5](../../docs/reference/bpmn-2.0.2/README.md));
-a boundary handler restores none.
+scope occurrence it completed in, together with the context its handler restores: for a Sub-Process whose handler is a
+Compensation Event Sub-Process, its own variables as they were when it completed ("snapshot data … associated with the
+parent Activity", [BPMN 2.0.2 §13.5.5](../../docs/reference/bpmn-2.0.2/README.md); CIB copies only them,
+`CompensationUtil.java:118-124`); every other name the handler reads live through its context's chain (D9). A boundary
+handler restores none.
 
 A trigger (`Signal.compensate`) takes every record retained in its scope occurrence and runs their handlers, each
 begun in a context scope occurrence of its own inside that one, holding the restored context, with continuation
@@ -37,8 +39,8 @@ def ownedScope? (ctx : Ctx) (occurrence : Occurrence) (state : State) : Option S
 
 /-- `Hooks.completed`, before the pipeline disposes of the owned scope: a completed Scope's inner records stay
 compensable (BPMN 2.0.2 §13.5.5). A Scope with a handler keeps them as the children its handler may trigger, the others
-move to the parent. The record restores the variables visible inside a completed Scope ("snapshot data"), an Activity's
-handler none. -/
+move to the parent. A Compensation Event Sub-Process, the handler inside its subject, restores the completed Scope's own
+variables ("snapshot data"); a boundary handler restores none (§13.5.5: it "can only perform black-box compensation"). -/
 def completed (ctx : Ctx) (occurrence : Occurrence) (state : State) : Outcome :=
   -- Admission admits at most one handler (`compensation.handlerCount`).
   let handler := ((ctx.program.element? occurrence.element).bind (·.envelope?)).bind (·.compensationHandlers.head?)
@@ -51,7 +53,9 @@ def completed (ctx : Ctx) (occurrence : Occurrence) (state : State) : Outcome :=
       retained := outer ++ inner.map fun record => { record with scope := occurrence.scope } })
   | some handler =>
     let (state, completion) := state.issue
-    let snapshot := (owned.map (state.visible ·.id)).getD []
+    let inside := ((ctx.program.element? handler).bind (·.header.parent)) == some occurrence.element
+    let own := (owned.map fun scope => ((state.variables.find? (·.scope == scope.id)).map (·.entries)).getD []).getD []
+    let snapshot := if inside then own else []
     let reference : OccurrenceRef :=
       { processInstanceId := state.instanceOf occurrence.scope, element := occurrence.element
         activation := occurrence.activation }

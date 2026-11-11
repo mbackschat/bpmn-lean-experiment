@@ -2,8 +2,10 @@
  * Compensation and Transaction cancellation, transcribed from `Kernel/Feature/Compensation.lean`.
  *
  * Owns `FeatureSlots.compensation`. An Activity or Scope with a compensation handler that completes is retained in the
- * scope occurrence it completed in, together with the context its handler restores: for a Sub-Process, the variables
- * visible inside it when it completed ("snapshot data", BPMN 2.0.2 §13.5.5); a boundary handler restores none.
+ * scope occurrence it completed in, together with the context its handler restores: for a Sub-Process whose handler is a
+ * Compensation Event Sub-Process, its own variables as they were when it completed ("snapshot data … associated with the
+ * parent Activity", BPMN 2.0.2 §13.5.5; CIB copies only them, `CompensationUtil.java:118-124`); every other name the
+ * handler reads live through its context's chain (D9). A boundary handler restores none.
  *
  * A trigger (`Signal.compensate`) takes every record retained in its scope occurrence and runs their handlers, each
  * begun in a context scope occurrence of its own inside that one, holding the restored context, with continuation
@@ -42,7 +44,6 @@ import {
   instanceOf,
   issue,
   signal,
-  visible,
   type Compensable,
   type CompensationRun,
   type Compensations,
@@ -73,8 +74,9 @@ function ownedScope(ctx: Ctx, occurrence: Occurrence, state: State): ScopeOccurr
 /**
  * `Hooks.completed`, before the pipeline disposes of the owned scope: a completed Scope's inner records stay
  * compensable (BPMN 2.0.2 §13.5.5). A Scope with a handler keeps them as the children its handler may trigger, the
- * others move to the parent. The record restores the variables visible inside a completed Scope ("snapshot data"), an
- * Activity's handler none.
+ * others move to the parent. A Compensation Event Sub-Process, the handler inside its subject, restores the completed
+ * Scope's own variables ("snapshot data"); a boundary handler restores none (§13.5.5: it "can only perform black-box
+ * compensation").
  */
 export function completed(ctx: Ctx, occurrence: Occurrence, state: State): Outcome {
   const element = programElement(ctx.program, occurrence.element);
@@ -92,7 +94,9 @@ export function completed(ctx: Ctx, occurrence: Occurrence, state: State): Outco
     }));
   }
   const [issued, completion] = issue(state);
-  const snapshot = owned === null ? [] : visible(issued, owned.id);
+  const handlerElement = programElement(ctx.program, handler);
+  const inside = handlerElement !== null && elementHeader(handlerElement).parent === occurrence.element;
+  const snapshot = owned === null || !inside ? [] : (issued.variables.find((scoped) => scoped.scope === owned.id)?.entries ?? []);
   const reference: OccurrenceRef = {
     processInstanceId: instanceOf(issued, occurrence.scope),
     element: occurrence.element,
