@@ -1,0 +1,71 @@
+{
+  "kind": "populationScenario",
+  "id": "signal-broadcast-population-kernel-cascade-bound",
+  "profile": "bpmn-2.0.2",
+  "definitions": [
+    {
+      "definitionRef": "echo-relay",
+      "bpmn": {
+        "id": "signal-broadcast-population-echo-relay",
+        "relativePath": "scenarios/open-rows/signal-broadcast-population/echo-relay.bpmn",
+        "sha256": "eccb58eb90a1d095d786ec36eace44137380417931eacf2ca36b0a01db1b556f",
+        "sourceOverlay": null
+      }
+    }
+  ],
+  "steps": [
+    {
+      "kind": "instance",
+      "definitionRef": "echo-relay",
+      "instanceId": "Echo_A",
+      "at": 0,
+      "stimulus": {
+        "kind": "start",
+        "commandId": "s01-start-echo-a",
+        "instanceId": "Echo_A",
+        "variables": []
+      }
+    },
+    {
+      "kind": "instance",
+      "definitionRef": "echo-relay",
+      "instanceId": "Echo_B",
+      "at": 0,
+      "stimulus": {
+        "kind": "start",
+        "commandId": "s02-start-echo-b",
+        "instanceId": "Echo_B",
+        "variables": []
+      }
+    },
+    {
+      "kind": "broadcast",
+      "commandId": "s03-broadcast-echo",
+      "address": {
+        "signalRef": {
+          "id": "Signal_Echo",
+          "namespace": "urn:bpmn-lean:scenarios:signal-broadcast-population:echo-relay"
+        }
+      },
+      "variables": [],
+      "at": 10
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.5.2",
+      "BPMN 2.0.2 Clause 10.5.4",
+      "BPMN 2.0.2 Clause 10.5.5",
+      "BPMN 2.0.2 Clause 13.2",
+      "BPMN 2.0.2 Clause 13.5.1",
+      "BPMN 2.0.2 Clause 13.5.2",
+      "BPMN 2.0.2 Table 10.84",
+      "BPMN 2.0.2 Table 10.89",
+      "BPMN 2.0.2 Table 10.100",
+      "BPMN 2.0.2 Clause 10.6.6",
+      "BPMN 2.0.2 Clause 13.4.4"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

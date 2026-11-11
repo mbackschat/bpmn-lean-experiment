@@ -11,13 +11,15 @@ The CIB schedules run under `cibseven-2.2.0` with no source overlay; their CIB a
 | Model | What it holds |
 |---|---|
 | [large-order-v2](large-order-v2.bpmn) | The process `Process_LargeOrder` of [large-order](../conditional-start-compositions/large-order.bpmn) with the condition `${amount >= 500}` and the task renamed *ReviewOrderRevised*: a second version of one process key. |
+| [conditional-echo-trigger](conditional-echo-trigger.bpmn) | The Conditional Start *Large order* (`${amount >= 1000}`) into an End Event that throws the Signal `echo`. |
 
-The schedules also bind four models of other directories:
+The schedules also bind five models of other directories:
 
 - [large-order](../conditional-start-compositions/large-order.bpmn): the Conditional Start *Large order* (`${amount >= 1000}`).
 - [expedited-order](../conditional-start-compositions/expedited-order.bpmn): the Conditional Start *Order flagged* (`${expedite}`).
 - [routed-orders](../conditional-start-compositions/routed-orders.bpmn): two Conditional Starts, *Large order* (`${amount >= 1000}`, filtered on `amount`) and *Urgent order* (`${urgent}`, filtered on `urgent`).
 - [order-intake](../message-start-compositions/order-intake.bpmn): two Message Starts and no Conditional Start.
+- [echo-relay](../signal-broadcast-population/echo-relay.bpmn): a catch of the Signal `echo` that throws `echo` and waits again.
 
 ## Population schedules
 
@@ -30,6 +32,7 @@ The schedules also bind four models of other directories:
 | [one-start-fails-others-start](one-start-fails-others-start.population-scenario.json) | routed-orders | CIB | `amount` 2500 and `urgent` as a present null: the first start's condition holds and the second's reads a null. |
 | [standards-conditional-start-refused](standards-conditional-start-refused.population-scenario.json) | large-order | kernel-only, `bpmn-2.0.2` | The standards profile deploys a Conditional Start and is asked to evaluate it. |
 | [evaluate-replay-later-time](evaluate-replay-later-time.population-scenario.json) | routed-orders | kernel-only, `cibseven-2.2.0` | One evaluation over `amount` 2500 and `urgent` true at 0, then the identical step at 60,000 ms. |
+| [kernel-cascade-bound](kernel-cascade-bound.population-scenario.json) | conditional-echo-trigger, echo-relay, large-order | kernel-only, `cibseven-2.2.0` | Two echo instances wait; `amount` 2500 starts the trigger, whose `echo` the two instances relay until the cascade bound stops the fan-out before the later start of *large-order*. |
 | [kernel-order-scope-and-filter](kernel-order-scope-and-filter.population-scenario.json) | routed-orders, large-order | kernel-only, `cibseven-2.2.0` | An explicit `order` naming the three starts in reverse, an `order` naming one of them, a selector naming no deployment, and `amount` alone, which the start filtered on `urgent` does not see. |
 
 The schedules carry no expected deployment, instance, task or resolution.

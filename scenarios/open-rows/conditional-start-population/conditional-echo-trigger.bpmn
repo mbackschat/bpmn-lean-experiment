@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             id="Definitions_ConditionalEchoTrigger" targetNamespace="urn:bpmn-lean:scenarios:conditional-start-population:conditional-echo-trigger">
+  <signal id="Signal_Echo" name="echo" />
+  <process id="Process_ConditionalEchoTrigger" name="Send an echo once an order is large" isExecutable="true">
+    <startEvent id="StartLargeEcho" name="Large order">
+      <conditionalEventDefinition id="StartLargeEcho_Condition">
+        <condition xsi:type="tFormalExpression">${amount >= 1000}</condition>
+      </conditionalEventDefinition>
+    </startEvent>
+    <endEvent id="EchoSent" name="Echo sent">
+      <signalEventDefinition id="EchoSent_Signal" signalRef="Signal_Echo" />
+    </endEvent>
+    <sequenceFlow id="Flow_Started" sourceRef="StartLargeEcho" targetRef="EchoSent" />
+  </process>
+</definitions>

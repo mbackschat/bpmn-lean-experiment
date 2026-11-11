@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             id="Definitions_EchoRelay" targetNamespace="urn:bpmn-lean:scenarios:signal-broadcast-population:echo-relay">
+  <signal id="Signal_Echo" name="echo" />
+  <process id="Process_EchoRelay" name="Answer every echo with an echo" isExecutable="true">
+    <startEvent id="StartEcho" name="Echo opened" />
+    <intermediateCatchEvent id="CatchEcho" name="Echo heard">
+      <signalEventDefinition id="CatchEcho_Signal" signalRef="Signal_Echo" />
+    </intermediateCatchEvent>
+    <intermediateThrowEvent id="ThrowEcho" name="Echo answered">
+      <signalEventDefinition id="ThrowEcho_Signal" signalRef="Signal_Echo" />
+    </intermediateThrowEvent>
+    <sequenceFlow id="Flow_Opened" sourceRef="StartEcho" targetRef="CatchEcho" />
+    <sequenceFlow id="Flow_Heard" sourceRef="CatchEcho" targetRef="ThrowEcho" />
+    <sequenceFlow id="Flow_Again" sourceRef="ThrowEcho" targetRef="CatchEcho" />
+  </process>
+</definitions>
