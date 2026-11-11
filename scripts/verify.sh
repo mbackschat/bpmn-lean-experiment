@@ -50,9 +50,12 @@ verify_runtime() {
   ./scripts/pnpm.sh run test:differential:built
 }
 
+# Both hosted lanes run before the stage fails, so one lane's failure never hides the other's witnesses.
 verify_temporal() {
-  ./scripts/pnpm.sh run test:temporal-host:hosted:built
-  ./scripts/pnpm.sh run test:differential:hosted:built
+  temporal_status=0
+  ./scripts/pnpm.sh run test:temporal-host:hosted:built || temporal_status=1
+  ./scripts/pnpm.sh run test:differential:hosted:built || temporal_status=1
+  return "$temporal_status"
 }
 
 # The oracle runs as its own gate so the Lean lane guard sees it here, after the restored `.lake`; `test:pipeline` is

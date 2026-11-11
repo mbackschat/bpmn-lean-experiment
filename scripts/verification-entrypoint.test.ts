@@ -153,12 +153,14 @@ async function assertLineOccursOnce(
   );
 }
 
-test("default verification runs every hosted Temporal gate exactly once, on prepared output", async () => {
+test("default verification runs every hosted Temporal gate exactly once, on prepared output, and fails after all of them", async () => {
   const manifest = JSON.parse(
     await readFile(rootPackageManifestPath, "utf8"),
   ) as { scripts?: Record<string, string> };
+  // Each gate records its failure instead of exiting, and the stage returns what they recorded.
+  await assertLineOccursOnce(verifyScriptPath, 'return "$temporal_status"');
   for (const gate of ["test:temporal-host:hosted:built", "test:differential:hosted:built"]) {
-    await assertLineOccursOnce(verifyScriptPath, `./scripts/pnpm.sh run ${gate}`);
+    await assertLineOccursOnce(verifyScriptPath, `./scripts/pnpm.sh run ${gate} || temporal_status=1`);
     assert.match(manifest.scripts?.[gate] ?? "", /^node --test --test-concurrency=1 packages\/[\w-]+\/test\/\*\.temporal-test\.ts$/u, gate);
   }
 });
