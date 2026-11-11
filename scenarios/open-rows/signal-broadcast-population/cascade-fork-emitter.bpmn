@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             id="Definitions_CascadeForkEmitter" targetNamespace="urn:bpmn-lean:scenarios:signal-broadcast-population:cascade-fork-emitter">
+  <signal id="Signal_SignalOne" name="signal-one" />
+  <signal id="Signal_SignalTwo" name="signal-two" />
+  <process id="Process_CascadeForkEmitter" name="Emit one signal on one branch and wait for another on its sibling" isExecutable="true">
+    <startEvent id="StartEmit" name="Batch ready" />
+    <userTask id="Dispatch" name="Dispatch the batch" />
+    <parallelGateway id="Fork" name="Split the batch" />
+    <intermediateThrowEvent id="ThrowSignalOne" name="Signal one">
+      <signalEventDefinition id="ThrowSignalOne_Signal" signalRef="Signal_SignalOne" />
+    </intermediateThrowEvent>
+    <endEvent id="Emitted" name="Signal emitted" />
+    <intermediateCatchEvent id="CatchSignalTwo" name="Signal two">
+      <signalEventDefinition id="CatchSignalTwo_Signal" signalRef="Signal_SignalTwo" />
+    </intermediateCatchEvent>
+    <userTask id="Wrap" name="Wrap up the batch" />
+    <endEvent id="BatchWrapped" name="Batch wrapped" />
+    <sequenceFlow id="Flow_Ready" sourceRef="StartEmit" targetRef="Dispatch" />
+    <sequenceFlow id="Flow_Dispatched" sourceRef="Dispatch" targetRef="Fork" />
+    <sequenceFlow id="Flow_ToThrow" sourceRef="Fork" targetRef="ThrowSignalOne" />
+    <sequenceFlow id="Flow_ToCatch" sourceRef="Fork" targetRef="CatchSignalTwo" />
+    <sequenceFlow id="Flow_Thrown" sourceRef="ThrowSignalOne" targetRef="Emitted" />
+    <sequenceFlow id="Flow_Answered" sourceRef="CatchSignalTwo" targetRef="Wrap" />
+    <sequenceFlow id="Flow_Wrapped" sourceRef="Wrap" targetRef="BatchWrapped" />
+  </process>
+</definitions>

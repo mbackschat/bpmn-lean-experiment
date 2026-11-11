@@ -7,7 +7,7 @@
  * with this treatment and its reason:
  *
  * - CIB names no refusal codes: a deployment outcome, failed fan-out entry or input failure keeps no `code`.
- * - CIB delivers every receiver of a command in one transaction (CIB-LIM-0029) and reports the instances the command
+ * - CIB delivers every receiver of a command in one transaction (CIB-INT-0033) and reports the instances the command
  *   started, not the receivers it delivered to: a fan-out keeps its `started` and `failed` entries, and a `delivered`
  *   or `skipped` entry shows only in its instance's state. The entries' order is CIB's `HashSet` order (population
  *   contract §6), so both sides compare sorted.

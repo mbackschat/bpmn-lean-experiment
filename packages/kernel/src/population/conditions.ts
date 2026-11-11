@@ -84,7 +84,7 @@ export function evaluateStart(
 /**
  * Evaluate the Conditional root starts in scope at `atMs` (PC-CONDITION-02): each that holds starts one instance, each
  * start its own unit of commitment, so a failing start leaves every other start's instance in place (CIB starts all or
- * none, CIB-LIM-0029). The answer is the fan-out of the starts that held or failed and of their cascades, in order, and
+ * none, CIB-INT-0033). The answer is the fan-out of the starts that held or failed and of their cascades, in order, and
  * `fanOut []` when none held. A selector naming no registered deployment is `rejected definition-not-deployed`, a scope
  * without a Conditional start `rejected no-conditional-start` and an `order` naming other starts
  * `rejected discovery-order-mismatch`.

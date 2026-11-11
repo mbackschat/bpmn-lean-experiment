@@ -1,5 +1,5 @@
 /**
- * `Population.broadcast` and the intent cascade (PC-SIGNAL-04, CIB-LIM-0029): a Signal reaches the snapshot taken when
+ * `Population.broadcast` and the intent cascade (PC-SIGNAL-04, CIB-INT-0033): a Signal reaches the snapshot taken when
  * its delivery begins, waiting catches of running instances by instance identifier and arming order, then the root
  * Signal starts of every current deployment, or the command's explicit `order`; each receiver is its own unit of
  * commitment, a receiver withdrawn before its turn is `skipped`, and the intents a committed receiver leaves cascade
