@@ -548,7 +548,6 @@
         "profile.multiInstanceCounters.none",
         "profile.multiInstanceInputFailure.hold",
         "profile.timerZone",
-        "profile.transactionMethods.compatibilityAsCompensate",
         "reader.conditionExpressionType",
         "reader.dataAssociationShape",
         "reader.emptyLoopCardinality",

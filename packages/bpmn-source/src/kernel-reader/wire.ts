@@ -127,7 +127,7 @@ export function kernelProfileOptions(relations: readonly string[]): KernelProfil
     implicitCompensation: "refused",
     errorExitCompensation: "drops",
     multiInstanceCompensation: "perSubProcessInstance",
-    transactionMethods: "compensateOnly",
+    transactionMethods: selects("CIB-INT-0039") ? "compatibilityAsCompensate" : "compensateOnly",
     compensationReferenceScope: "visible",
     abnormalScopeEnd: selects("CIB-INT-0007") ? "completesNormally" : "withoutOutflow",
     unhandledError: selects("CIB-INT-0013") ? "endsThrowingPath" : "failsInstance",

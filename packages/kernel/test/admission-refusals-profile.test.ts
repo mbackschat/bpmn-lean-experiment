@@ -78,12 +78,6 @@ export const rows: readonly Row[] = [
     control: option({ multiInstanceCompensation: "perInstance" }),
   },
   {
-    code: "profile.transactionMethods.compatibilityAsCompensate",
-    description: "the compatibility Transaction methods run as compensate",
-    mutate: option({ transactionMethods: "compatibilityAsCompensate" }),
-    control: option({ transactionMethods: "compensateOnly" }),
-  },
-  {
     code: "profile.compensationReferenceScope.eventSubProcessParent",
     description: "a Compensation throw in an Event Sub-Process naming an Activity of its parent's level",
     mutate: option({ compensationReferenceScope: "eventSubProcessParent" }),

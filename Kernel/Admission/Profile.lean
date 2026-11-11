@@ -51,8 +51,6 @@ def options (reach : Reach) (selected : ProfileOptions) : Option String :=
     some "profile.errorExitCompensation.compensatesContained" else none) <|>
   (if reach.loopedHandler && selected.multiInstanceCompensation == .perInstance then
     some "profile.multiInstanceCompensation.perInstance" else none) <|>
-  (if selected.transactionMethods == .compatibilityAsCompensate then
-    some "profile.transactionMethods.compatibilityAsCompensate" else none) <|>
   (if selected.compensationReferenceScope == .eventSubProcessParent then
     some "profile.compensationReferenceScope.eventSubProcessParent" else none) <|>
   (if selected.callBindingTime == .invocation then some "profile.callBindingTime.invocation" else none) <|>

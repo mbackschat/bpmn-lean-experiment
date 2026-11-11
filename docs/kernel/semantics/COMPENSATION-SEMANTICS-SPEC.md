@@ -35,7 +35,7 @@ Adopted kernel owner document (W0 extraction, 2026-11-09). The kernel modules it
 - A Transaction is a Sub-Process whose cancellation interrupts its running work and compensates its completed eligible work; its Cancel Boundary Event takes control after rollback and compensation finish (BPMN 2.0.2 §10.3.5). Ordinary interruption is no implicit compensation trigger, and quiescence alone does not implement protocol success ([TXC basis][txc-normative]).
 - A Cancel End Event raises Cancel from the scope occurrence it ran in. A caught Cancel clears the Transaction's interior, compensates the records retained in it, and only once the last handler has completed cancels the Transaction occurrence and takes the Cancel boundary's flows in the parent; the Transaction's normal outflow never fires (`TXC-CANCEL-01`, `TXC-EMPTY-01`, `TXC-JOIN-01`; [`Propagation`](../../../Kernel/Feature/Propagation.lean)). With no eligible record the boundary is taken in the same step; unfinished work disappears uncompensated. Records of nested scopes the cancellation interrupts are dropped with them.
 - A handler failure during cancellation fails the instance as above, and neither the boundary nor the normal flow continues (`TXC-FAIL-01`, a project extension of `COMPH-FAIL-01`, not a hazard boundary). Regional cancellation preserves everything outside the Transaction's region except its continuation (`TXC-FRAME-01`).
-- `method` is omitted or exactly `##Compensate`, the XSD default; other spellings are neither case-folded nor aliased (OMG BPMN2-60; [TXC basis][txc-normative]).
+- `method` is omitted or exactly `##Compensate`, the XSD default; other spellings are neither case-folded nor aliased (OMG BPMN2-60; [TXC basis][txc-normative]). Under `transactionMethods = compatibilityAsCompensate` (CIB-INT-0039, the cibseven profiles) `##Store` and `##Image` run as `##Compensate`; a protocol URI is refused under every profile (I14).
 - Publication: the Transaction stays open while it compensates, interrupted work closes as cancelled, the handler's lifecycle is published, and the Transaction then closes as cancelled before the boundary occurrence; retention and trigger ownership are no public fields, and there is no public cancel command ([TXC public][txc-public]).
 - The old account rejected a Cancel boundary on an ordinary Sub-Process, a non-interrupting Cancel boundary and a Cancel End outside a Transaction before lowering (§10.5.5; [TXC contract][txc-contract]). The kernel refuses the same set (§10.5.5): `boundary.cancel.host` for a Cancel boundary on anything but a Transaction, `boundary.cancel.nonInterrupting` for a non-interrupting one, and `throw.cancel.outsideTransaction` for a Cancel throw whose direct parent is not a Transaction (`Admission.Subscriptions.boundary`, `Admission.Propagation.throwRecord`) (PC-TX-02).
 
@@ -281,7 +281,7 @@ Not in the shape commit: every cibseven profile selection (`implicitCompensation
 
 ## CIB relations
 
-No register entry governs compensation or Transactions; every compensation account is standards-only and CIB's ordering, persistence and invocation algorithms stay outside the kernel ([CBR CIB][cbr-cib], [CESP CIB][cesp-cib], [CSL CIB][csl-cib], [CTH basis][cth-normative]). Seven `ProfileOptions` fields name the CIB alternatives without selecting them ([Interpretation M9](#interpretation-m9)):
+CIB's ordering, persistence and invocation algorithms stay outside the kernel ([CBR CIB][cbr-cib], [CESP CIB][cesp-cib], [CSL CIB][csl-cib], [CTH basis][cth-normative]). Seven `ProfileOptions` fields name the CIB alternatives; the cibseven profiles select an alternative only through the register entry its row names, and the standards profile none ([Interpretation M9](#interpretation-m9)):
 
 | Option | Kernel reading | Alternative |
 |---|---|---|
@@ -290,7 +290,7 @@ No register entry governs compensation or Transactions; every compensation accou
 | `implicitCompensation` | `refused` (Tables 10.88 and 10.89) | `everySubProcess`, CIB's group of a handler-less Sub-Process's records; refused, PC-COMPENSATION-03 |
 | `errorExitCompensation` | `drops` (§10.3.5) | `compensatesContained` (§10.7.3); refused for a program with a Sub-Process retaining compensable work, PC-COMPENSATION-03 |
 | `multiInstanceCompensation` | `perSubProcessInstance` (§13.5.5) | `perInstance`, CIB's record per instance; refused for a program with a Multi-Instance Task or Call with a handler, PC-COMPENSATION-03 |
-| `transactionMethods` | `compensateOnly` | `compatibilityAsCompensate`, `##Store` and `##Image` run as `##Compensate`; refused, PC-TX-01 |
+| `transactionMethods` | `compensateOnly` | `compatibilityAsCompensate`, `##Store` and `##Image` run as `##Compensate`; selected by the cibseven profiles ([CIB-INT-0039](../../CIB-BPMN-RELATION-REGISTER.md#cib-int-0039--cib-runs-every-transaction-method-as-compensate)) |
 | `compensationReferenceScope` | `visible` (Tables 10.88 and 10.89) | `eventSubProcessParent`, CIB's lookup at the parent's level from any Event Sub-Process; refused, PC-COMPENSATION-02 |
 
 ## Restrictions
@@ -303,11 +303,11 @@ No register entry governs compensation or Transactions; every compensation accou
 | `activity.compensationHandler.input` | a handler with input mappings | PC-COMPENSATION-04 |
 | `compensation.handlerWork` | a handler whose work cannot begin without a token (anything but none, manual, User or Service work) | PC-COMPENSATION-04 |
 | `compensation.handlerMultiInstance` | a handler with Multi-Instance loop characteristics, whose asynchronous marks CIB skips (`BpmnParse.java:2416`) | PC-COMPENSATION-04 |
-| `scope.transaction.method` | a Transaction method other than `##Compensate` | PC-TX-01 |
+| `scope.transaction.method` | a Transaction method other than `##Compensate`, except `##Store` and `##Image` under `transactionMethods = compatibilityAsCompensate` | PC-TX-01 |
 | `compensation.implicit`, `compensation.recursive` | a compensable Activity whose records a completed Sub-Process would hand to its parent beside a Compensation throw, or to a handler that throws Compensation | BPMN21-403 open; PC-COMPENSATION-03 |
 | `boundary.cancel.host`, `boundary.cancel.nonInterrupting`, `throw.cancel.outsideTransaction` | a Cancel boundary off a Transaction or non-interrupting, a Cancel throw outside a Transaction | §10.5.5; PC-TX-02 |
 | `compensation.handlerCount` | more than one compensation handler of one Activity or Scope | PC-COMPENSATION-04 |
-| `profile.compensationOrder.allAtOnce`, `profile.compensationHandlerFailure.selected`, `profile.compensationHandlerFailure.propagatesFromTrigger`, `profile.implicitCompensation.everySubProcess`, `profile.errorExitCompensation.compensatesContained`, `profile.multiInstanceCompensation.perInstance`, `profile.transactionMethods.compatibilityAsCompensate`, `profile.compensationReferenceScope.eventSubProcessParent` | the CIB alternatives above | PC-COMPENSATION-01 to -04, PC-TX-01 |
+| `profile.compensationOrder.allAtOnce`, `profile.compensationHandlerFailure.selected`, `profile.compensationHandlerFailure.propagatesFromTrigger`, `profile.implicitCompensation.everySubProcess`, `profile.errorExitCompensation.compensatesContained`, `profile.multiInstanceCompensation.perInstance`, `profile.compensationReferenceScope.eventSubProcessParent` | the CIB alternatives above the kernel does not run | PC-COMPENSATION-01 to -04, PC-TX-01 |
 | `compensation-concurrent-trigger`, `compensation-repeated-subject`, `compensation-dependency-cycle` (dynamic-only `unsupported`) | a second run in one scope, a subject retained twice, a dependency cycle among retained subjects | PC-COMPENSATION-02, PC-COMPENSATION-03 |
 | `compensation-handler-escalation`, `compensation-handler-cancel` (dynamic-only `unsupported`) | an Escalation or a Cancel leaving a handler | PC-COMPENSATION-04 |
 | `raise-cancel` (dynamic-only `unsupported`) | a Cancel nothing catches | PC-TX-02 |

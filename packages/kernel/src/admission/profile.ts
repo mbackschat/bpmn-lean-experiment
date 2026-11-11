@@ -20,7 +20,6 @@ import {
   MultiInstanceCompensation,
   MultiInstanceCounters,
   MultiInstanceInputFailure,
-  TransactionMethods,
   assertNever,
   type CompensationHandlerFailure,
   type ProfileOptions,
@@ -74,9 +73,6 @@ export function options(reach: Reach, selected: ProfileOptions): string | null {
   }
   if (reach.loopedHandler && selected.multiInstanceCompensation === MultiInstanceCompensation.PerInstance) {
     return "profile.multiInstanceCompensation.perInstance";
-  }
-  if (selected.transactionMethods === TransactionMethods.CompatibilityAsCompensate) {
-    return "profile.transactionMethods.compatibilityAsCompensate";
   }
   if (selected.compensationReferenceScope === CompensationReferenceScope.EventSubProcessParent) {
     return "profile.compensationReferenceScope.eventSubProcessParent";

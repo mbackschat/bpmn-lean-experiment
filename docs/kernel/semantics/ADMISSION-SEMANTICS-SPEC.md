@@ -47,7 +47,6 @@ A profile may select only behaviour the kernel implements ([`Kernel/Admission/Pr
 | `profile.implicitCompensation.everySubProcess` | compensating a handler-less Sub-Process as the group of its records | PC-COMPENSATION rows, PC-TX-01 |
 | `profile.errorExitCompensation.compensatesContained` | compensating the contained work of a Sub-Process an Error leaves, for a program with a Sub-Process retaining compensable work | PC-COMPENSATION rows, PC-TX-01 |
 | `profile.multiInstanceCompensation.perInstance` | a compensation record per instance, for a program with a Multi-Instance Task or Call with a handler | PC-COMPENSATION rows |
-| `profile.transactionMethods.compatibilityAsCompensate` | running `##Store` and `##Image` Transactions as `##Compensate` | PC-TX-01 |
 | `profile.compensationReferenceScope.eventSubProcessParent` | a targeted Compensation throw in any Event Sub-Process naming an Activity of its parent's level | PC-COMPENSATION rows |
 | `profile.callBindingTime.invocation` | binding the called definition at invocation | PC-SCOPE-03 |
 | `profile.timerZone` | a timer zone other than UTC | PC-TIMER-02 |

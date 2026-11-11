@@ -25,7 +25,7 @@ The counts below cover only entries recorded by this project, including the sepa
 | Normative agreement records | 23 | 0 | A bounded BPMN requirement and pinned CIB observation agree; candidates remain unapproved |
 | Permitted operational details | 18 | 0 | CIB or the oracle adapter chooses host mechanics without changing required BPMN observations |
 | Confirmed normative deviations | 0 | 9 | Clear BPMN requirement and pinned CIB evidence establish incompatible behavior |
-| CIB interpretations of BPMN gaps or inconsistencies | 34 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
+| CIB interpretations of BPMN gaps or inconsistencies | 35 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
 | CIB extension records | 43 | 2 | Project profile deliberately includes behavior beyond bare BPMN execution; candidates remain unselected |
 | Configuration-specific realizations | 13 | 0 | Behavior is permitted or meaningful only under a declared CIB environment |
 | Known CIB limitations within reviewed scope | 37 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
@@ -881,6 +881,16 @@ BPMN 2.0.2 sends a thrown Signal when the throw Event is reached (§13.5.6) and 
 **Evidence:** Pinned `bpmn/behavior/ThrowSignalEventActivityBehavior.java:53-61` (each receiver's `eventReceived`, then `leave`), `interceptor/CommandInvocationContext.java:93-135` (an invocation is queued first at `:95` and deferred at `:102` while the loop at `:126` runs), the only async-capable operations `pvm/runtime/operation/PvmAtomicOperationTransitionNotifyListenerTake.java:35`, `PvmAtomicOperationTransitionCreateScope.java:42`, `PvmAtomicOperationActivityStartCreateScope.java:33` and `PvmAtomicOperationProcessStart.java:37`, and `PvmAtomicOperationTransitionDestroyScope.java:128-132` (a fork queues all its branches at once); the retained answer of `signal-broadcast-population/emitter-first-cascade` (profile `cibseven-2.2.0`), where CIB, like the kernel, leaves the emitter at *Wrap up the batch*; and the retained answer of the separating witness `signal-broadcast-population/sibling-branch-cascade` (`sibling-branch-cascade.population-cibseven-evidence.json`), where the kernel leaves the emitter at *Wrap up the batch* and CIB leaves `Emitter_1` at its catch of `signal-two` (`CatchSignalTwo`), as the source predicts.
 
 **Boundary:** Thrown Signals reaching other instances in one tenant-less population (PC-SIGNAL-04) whose receiver rethrows to a catch of the thrower: a catch on the throw's own continuation agrees, and this entry owns every witness whose catch is on a sibling branch queued before the throw.
+
+### CIB-INT-0039 — CIB runs every Transaction method as `##Compensate`
+
+**Status:** Recorded interpretation from the pinned source and retained evidence; selected by `ProfileOptions.transactionMethods = compatibilityAsCompensate` through the [cibseven-2.2.0 cumulative profile](../profiles/cibseven-2.2.0/profile.json) and the scope-chain profile; not a deviation
+
+BPMN 2.0.2 Table 10.21 lets a Transaction's `method` name the transaction protocol, a technology URI, and keeps `##Compensate`, `##Store` and `##Image` "for compatibility with BPMN 1.1" without stating what `##Store` and `##Image` mean in 2.0.2. CIB Seven `2.2.0` never reads the attribute: every Transaction gets the Sub-Process behavior and compensates on cancellation. The kernel runs `##Store` and `##Image` as `##Compensate` under `compatibilityAsCompensate`; a protocol URI names a protocol-controlled Transaction, which PC-TX-01 excludes, so admission refuses it as `scope.transaction.method` under every profile, and the standards profile refuses `##Store` and `##Image` as well ([compensation semantics](kernel/semantics/COMPENSATION-SEMANTICS-SPEC.md#i14--transaction-method-pc-tx-01)).
+
+**Evidence:** Pinned `bpmn/parser/BpmnParse.java:3902-3915` (`parseTransaction` reads no `method`); the retained answers of [image-method and store-method](../scenarios/open-rows/transaction-methods/README.md) (profile `cibseven-2.2.0`), which commit like `compensate-method`; the kernel's `Admission.Scopes.transaction`.
+
+**Boundary:** Transactions whose `method` is `##Store` or `##Image`; a protocol URI stays refused under every profile.
 
 ## Known limitation register
 

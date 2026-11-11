@@ -3,6 +3,7 @@ import {
   ScopeKindTag,
   ScopeStart,
   TransactionMethodTag,
+  TransactionMethods,
   assertNever,
   elementActivity,
   elementEnvelope,
@@ -71,12 +72,24 @@ export function eventSubProcessOf(payload: ScopePayload): readonly [Subscription
 }
 
 /**
- * A Transaction's method is carried only by BPMN; the kernel runs the compensate method (`BpmnParse#parseTransaction`
- * reads no such attribute).
+ * The kernel runs a Transaction's compensate method (BPMN 2.0.2 Table 10.21); `CompatibilityAsCompensate` runs the BPMN
+ * 1.1 compatibility methods `##Store` and `##Image` as it, as CIB, which reads no method (`BpmnParse.java:3902-3915`,
+ * CIB-INT-0039). A protocol URI names a protocol-controlled Transaction, which PC-TX-01 excludes under every profile.
  */
-function transaction(payload: ScopePayload): string | null {
+function transaction(methods: TransactionMethods, payload: ScopePayload): string | null {
   const record = transactionOf(payload);
-  return record === null || record.method.tag === TransactionMethodTag.Compensate ? null : "scope.transaction.method";
+  if (record === null) return null;
+  const { method } = record;
+  switch (method.tag) {
+    case TransactionMethodTag.Compensate:
+      return null;
+    case TransactionMethodTag.Store:
+    case TransactionMethodTag.Image:
+      return methods === TransactionMethods.CompatibilityAsCompensate ? null : "scope.transaction.method";
+    case TransactionMethodTag.Other:
+      return "scope.transaction.method";
+  }
+  return assertNever(method);
 }
 
 export function isTransaction(payload: ScopePayload): boolean {
@@ -132,7 +145,7 @@ export function scope(program: Program, header: Header, payload: ScopePayload): 
     return "scope.multiInstance";
   }
   if (payload.localVariables.some((name) => !declared.includes(name))) return "scope.localVariableWithoutInput";
-  return eventSubProcessBoundary(payload) ?? transaction(payload) ?? withoutStart(program, header, payload) ??
+  return eventSubProcessBoundary(payload) ?? transaction(program.options.transactionMethods, payload) ?? withoutStart(program, header, payload) ??
     implicitStart(program, header);
 }
 

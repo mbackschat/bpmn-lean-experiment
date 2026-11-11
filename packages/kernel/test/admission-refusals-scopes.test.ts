@@ -8,7 +8,7 @@ import { test } from "node:test";
 
 import {
   activity, append, base, boundary, duration, elementId, end, eventSubProcess, flow, gateway, loop, mapping, receiveWork, refusalOf,
-  refusalTests, replace, scope, start, task, userWork, variable, wired, withFlows,
+  refusalTests, replace, scope, start, task, userWork, variable, wired, withFlows, withOptions,
 } from "./admission-refusal-support.ts";
 import type { Json, Row } from "./admission-refusal-support.ts";
 
@@ -21,6 +21,7 @@ const unconnected = { incoming: [], outgoing: [] };
 const noneStart = start("SS", null, [], "T");
 
 const transaction = (method: Json | string) => task(scope("T", { transaction: { payload: { method } } }));
+const compatibility: Json = { transactionMethods: "compatibilityAsCompensate" };
 
 const compensate: Json = { compensation: { payload: { activity: null, waitForCompletion: true } } };
 
@@ -75,6 +76,19 @@ export const rows: readonly Row[] = [
     description: "a Transaction with a method given by URI",
     mutate: transaction({ other: { uri: "urn:method" } }),
     control: transaction("compensate"),
+  },
+  {
+    // CIB-INT-0039: the compatibility methods run as `##Compensate`; a protocol URI stays refused (PC-TX-01).
+    code: "scope.transaction.method",
+    description: "a Transaction with a method given by URI, under the compatibility methods",
+    mutate: (program) => withOptions(transaction({ other: { uri: "urn:method" } })(program), compatibility),
+    control: (program) => withOptions(transaction("store")(program), compatibility),
+  },
+  {
+    code: "scope.transaction.method",
+    description: "a Transaction with the image method, unless the compatibility methods run",
+    mutate: transaction("image"),
+    control: (program) => withOptions(transaction("image")(program), compatibility),
   },
   {
     code: "scope.multiInstance",

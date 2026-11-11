@@ -39,11 +39,18 @@ def eventSubProcess? (payload : ScopePayload) : Option (Subscription × Bool) :=
   | .embedded => none
   | .transaction _ => none
 
-/-- A Transaction's method is carried only by BPMN; the kernel runs the compensate method (`BpmnParse#parseTransaction`
-reads no such attribute). -/
-def transaction (payload : ScopePayload) : Option String :=
+/-- The kernel runs a Transaction's compensate method (BPMN 2.0.2 Table 10.21); `compatibilityAsCompensate` runs the BPMN
+1.1 compatibility methods `##Store` and `##Image` as it, as CIB, which reads no method (`BpmnParse.java:3902-3915`,
+CIB-INT-0039). A protocol URI names a protocol-controlled Transaction, which PC-TX-01 excludes under every profile. -/
+def transaction (methods : TransactionMethods) (payload : ScopePayload) : Option String :=
   (transaction? payload).bind fun record =>
-    if record.method == .compensate then none else some "scope.transaction.method"
+    match record.method, methods with
+    | .compensate, _ => none
+    | .store, .compatibilityAsCompensate => none
+    | .image, .compatibilityAsCompensate => none
+    | .store, .compensateOnly => some "scope.transaction.method"
+    | .image, .compensateOnly => some "scope.transaction.method"
+    | .other _, _ => some "scope.transaction.method"
 
 def isTransaction (payload : ScopePayload) : Bool :=
   (transaction? payload).isSome
@@ -83,7 +90,7 @@ def scope (program : Program) (header : Header) (payload : ScopePayload) : Optio
     some "scope.multiInstance"
   else if payload.localVariables.any (!declared.contains ·) then some "scope.localVariableWithoutInput"
   else
-    eventSubProcessBoundary payload <|> transaction payload <|> withoutStart program header payload <|>
+    eventSubProcessBoundary payload <|> transaction program.options.transactionMethods payload <|> withoutStart program header payload <|>
       implicitStart program header
 
 /-- Every parent is a Scope that lists the element as a child, every child a Scope lists, an element or a boundary of

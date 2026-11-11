@@ -2516,18 +2516,6 @@
     ]
   },
   {
-    "evidence": "scenarios/open-rows/transaction-methods/image-method.cibseven-evidence.json",
-    "owners": [
-      "PC-TX-01"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/transaction-methods/store-method.cibseven-evidence.json",
-    "owners": [
-      "PC-TX-01"
-    ]
-  },
-  {
     "evidence": "scenarios/open-rows/transaction-multi-instance-concurrent-cancel/completion-condition-closes-while-run-waits.cibseven-evidence.json",
     "owners": [
       "PC-TX-03"
