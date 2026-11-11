@@ -52,8 +52,8 @@ The kernel column reads: `accepted`, the row is `done` and the listed kernel sce
 | PC-MI-01 | slice | [`sequential-multi-instance`](../../scenarios/sequential-multi-instance/README.md); [`parallel-multi-instance`](../../scenarios/parallel-multi-instance/README.md) | Multi-Instance |
 | PC-MI-02 | accepted | [`multi-instance-service-task`](../../scenarios/open-rows/multi-instance-service-task/README.md) (both generation forms; per-instance mapped values belong to PC-MI-10) | Multi-Instance |
 | PC-MI-03 | absent | — | Multi-Instance |
-| PC-MI-04 | absent | — | Multi-Instance |
-| PC-MI-05 | absent | — | concurrency, Multi-Instance |
+| PC-MI-04 | slice | [`multi-instance-sub-process`](../../scenarios/open-rows/multi-instance-sub-process/README.md) (sequential bodies; closes jointly with PC-HUM-01) | Multi-Instance |
+| PC-MI-05 | slice | [`multi-instance-sub-process`](../../scenarios/open-rows/multi-instance-sub-process/README.md) (parallel bodies; closes jointly with PC-HUM-01) | concurrency, Multi-Instance |
 | PC-MI-06 | absent | — | Multi-Instance |
 | PC-MI-07 | absent | — | Multi-Instance |
 | PC-MI-08 | absent | — | Multi-Instance |

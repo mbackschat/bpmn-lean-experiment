@@ -388,7 +388,7 @@ The repository-wide audit on 2026-07-24 found no previously visited observation 
 
 ### CIB-AGR-0013 — sequential Multi-Instance Sub-Process completion
 
-**Status:** Candidate bounded agreement for the [sequential Sub-Process proposal](kernel/semantics/MULTI-INSTANCE-SEMANTICS-SPEC.md); proposal review approved; profile selection and qualification pending.
+**Status:** Selected bounded agreement, listed by the [cibseven-2.2.0 cumulative profile](../profiles/cibseven-2.2.0/profile.json) and the scope-chain profile since sequential Multi-Instance Sub-Process bodies are admitted (`27561b587`); the retained [Sub-Process witnesses](../scenarios/open-rows/multi-instance-sub-process/README.md) agree.
 
 **BPMN basis:** §§13.3.4 and 13.3.7 require a complete inner Sub-Process before the next sequential instance, one-time instance count, empty-input continuation and completion-condition evaluation at body completion.
 
@@ -398,7 +398,7 @@ The repository-wide audit on 2026-07-24 found no previously visited observation 
 
 ### CIB-AGR-0014 — parallel repeated-body completion and cancellation
 
-**Status:** Candidate bounded agreement for the [parallel Sub-Process proposal](kernel/semantics/MULTI-INSTANCE-SEMANTICS-SPEC.md); the linked receipt governs account approval; profile selection and qualification remain pending.
+**Status:** Selected bounded agreement, listed by the [cibseven-2.2.0 cumulative profile](../profiles/cibseven-2.2.0/profile.json) and the scope-chain profile since parallel Multi-Instance Sub-Process bodies are admitted (`27561b587`); the retained [Sub-Process witnesses](../scenarios/open-rows/multi-instance-sub-process/README.md) agree. Under the standards profile a parallel body whose instances race is refused (`multiInstance.concurrentInstances`).
 
 **BPMN basis:** §§13.3.4 and 13.3.7 require completion of the inner Sub-Process before counting an instance, and cancellation of remaining instances when the completion condition succeeds.
 
@@ -794,7 +794,7 @@ BPMN Table 10.101 lets `timeCycle` stand on any Timer Event but states nothing a
 
 ### CIB-LIM-0001: standard sequential Multi-Instance output aggregation is absent
 
-**Status:** Observed bounded limitation; not a confirmed normative deviation
+**Status:** Observed bounded limitation; not a confirmed normative deviation. Selected by `ProfileOptions.multiInstanceOutputs = none` through the [cibseven-2.2.0 cumulative profile](../profiles/cibseven-2.2.0/profile.json) and the scope-chain profile (root decision 2026-11-11, M5 track review R3); the standards profile keeps `aggregates`
 
 BPMN 2.0.2 Clause 13.3.7 and the `loopDataOutputRef`/`outputDataItem` rows of Table 10.29 describe per-instance output transfer into the outer output collection. Clauses 10.4.1–10.4.2 and the Data Association tables describe copying an Activity output back into its Process context after completion.
 
@@ -804,7 +804,7 @@ This remains a limitation rather than a confirmed deviation because the phase-ze
 
 **Evidence:** The [public-service phase-zero probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenSequentialMultiInstancePhaseZeroProbeTest.java), its [exact BPMN fixture](../runners/cibseven/src/test/resources/org/bpmnlean/cibseven/CibSevenSequentialMultiInstancePhaseZeroProbeTest.bpmn), and the [project output rule](kernel/semantics/MULTI-INSTANCE-SEMANTICS-SPEC.md).
 
-**Boundary:** Every User Task Multi-Instance loop that declares an `outputDataItem`, sequential or parallel. CIB's parser reads `loopDataInputRef` and `inputDataItem` but not `loopDataOutputRef` or `outputDataItem` (`BpmnParse.java:1841-1858`), and installs the submitted name instead (CIB-EXT-0005). The kernel keeps the standards reading under every profile (`multiInstanceOutputs = aggregates`). The phase-zero probe covers the sequential fixture; the parallel case rests on the same parser fact. It does not classify Camunda input/output extensions, delegates, expressions, Sub-Process data, or general CIB Data Association behavior.
+**Boundary:** Every User Task Multi-Instance loop that declares an `outputDataItem`, sequential or parallel. CIB's parser reads `loopDataInputRef` and `inputDataItem` but not `loopDataOutputRef` or `outputDataItem` (`BpmnParse.java:1841-1858`), and installs the submitted name instead (CIB-EXT-0005). Under the CIB profiles the kernel writes no output collection either, as PC-MI-01's "no … standard output aggregate is invented" requires under the selected CIB result account; the standards profile keeps BPMN's aggregate (`multiInstanceOutputs = aggregates`). The phase-zero probe covers the sequential fixture; the parallel case rests on the same parser fact. It does not classify Camunda input/output extensions, delegates, expressions, Sub-Process data, or general CIB Data Association behavior.
 
 ### CIB-LIM-0002: modeled BPMN key and context correlation is not executed
 
@@ -1263,7 +1263,7 @@ A widening from PC-ERROR-03 (2026-11-10): a Service Task whose business Error a 
 
 ### CIB-EXT-0017 — repeated Sub-Process body-local mapping and enclosing writes
 
-**Status:** Candidate bounded extension for the [sequential Sub-Process proposal](kernel/semantics/MULTI-INSTANCE-SEMANTICS-SPEC.md); proposal review approved; profile selection and qualification pending.
+**Status:** Candidate bounded extension, owned by PC-MI-10. The body-local initialization from the looping Activity's own input mappings runs under `CIB-INT-0014`'s binding; the enclosing-write clauses stay refused (`multiInstance.mappings`, `multiInstance.instanceResult`), so no profile selects this entry yet.
 
 CIB input parameters initialize local bindings in each new body. Human completion updates the nearest existing binding, while a Service output parameter evaluates its Activity-local result and writes through the enclosing scope. Declared body locals shadow parent variables, including present null. With those declarations absent, the same writes reach the existing Process variables. Body disposal removes locals and the next body reinitializes them. The exact CIB `inputOutput` and Task Service variable protocol are extensions, not normative BPMN data-association syntax.
 
@@ -1275,7 +1275,7 @@ The [research boundary](research/CIB-SEVEN-BPMN-BREADTH-RESEARCH.md#repeated-bod
 
 ### CIB-EXT-0018 — parallel body mappings and post-disposal condition context
 
-**Status:** Candidate bounded extension for the [parallel Sub-Process proposal](kernel/semantics/MULTI-INSTANCE-SEMANTICS-SPEC.md); the linked receipt governs account approval; profile selection and qualification remain pending.
+**Status:** Candidate bounded extension, owned by PC-MI-10. Per-body input capture runs under `CIB-INT-0014`'s binding; the write clauses stay refused (`multiInstance.mappings`, `multiInstance.instanceResult`), The kernel already reads the completion condition without the body's own-input locals: they live in the Sub-Process's scope occurrence below the instance's, which holds only the item and counters (`MultiInstance.conditionContext`); the separating [post-disposal witnesses](../scenarios/open-rows/multi-instance-sub-process/README.md) await their CIB answer. No profile selects this entry yet.
 
 CIB input parameters capture enclosing values into each concurrently created body. Declared locals isolate human completion and mapped Service results, including present null. Removing the declarations makes those writes reach the shared Process binding in explicit command order. The selected JUEL Process-variable completion condition is evaluated after body-local disposal: opposite local/Process Boolean values distinguish the enclosing condition value from the former body value. The proposal protects the selected condition name against local redeclaration rather than implying a general variable-scope contract.
 
