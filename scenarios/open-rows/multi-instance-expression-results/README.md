@@ -21,6 +21,10 @@ The earlier [expression-cardinality-and-collections](../expression-cardinality-a
 | [cardinality-plain-literal](cardinality-plain-literal.bpmn) | parallel | `loopCardinality` with the literal body `3` |
 | [cardinality-cdata-wrapped](cardinality-cdata-wrapped.bpmn) | parallel | `loopCardinality` whose CDATA `${count}` is wrapped in single spaces outside the section |
 | [cardinality-whitespace-only](cardinality-whitespace-only.bpmn) | parallel | `loopCardinality` whose body is three spaces |
+| [cardinality-boolean-expression](cardinality-boolean-expression.bpmn) | parallel | `loopCardinality` `${count > 1}` |
+| [cardinality-decimal-sum](cardinality-decimal-sum.bpmn) | parallel | `loopCardinality` `${count + 0}` |
+| [cardinality-decimal-exponent](cardinality-decimal-exponent.bpmn) | parallel | `loopCardinality` `${count * '1e1'}` |
+| [cardinality-product-over-safe](cardinality-product-over-safe.bpmn) | parallel | `loopCardinality` `${count * count}` |
 
 ## Schedules
 
@@ -62,5 +66,9 @@ The earlier [expression-cardinality-and-collections](../expression-cardinality-a
 | [count-plain-literal](count-plain-literal.scenario.json) | cardinality-plain-literal | three results, then the close task | PC-DATA-08, PC-MI-07 |
 | [count-cdata-wrapped](count-cdata-wrapped.scenario.json) | cardinality-cdata-wrapped | `count = 2`; the start only | PC-DATA-08, PC-DATA-09 |
 | [count-whitespace-only](count-whitespace-only.scenario.json) | cardinality-whitespace-only | the start only | PC-DATA-08, PC-DATA-09 |
+| [count-boolean-expression](count-boolean-expression.scenario.json) | cardinality-boolean-expression | `count = 2`, so the count is the Boolean result of a comparison. Predicted CIB answer: the start fails as in [count-boolean](count-boolean.scenario.json), since a Boolean is no number or numeric text. | PC-DATA-08, PC-DATA-09 |
+| [count-decimal-sum](count-decimal-sum.scenario.json) | cardinality-decimal-sum | `count` is the Decimal `2`, so the count is the Decimal result of a sum; both results, then the close task. Predicted CIB answer: two instances, as in [count-decimal-integral](count-decimal-integral.scenario.json), since a `BigDecimal` is a `Number` read by `intValue`. | PC-DATA-08, PC-DATA-09 |
+| [count-decimal-exponent](count-decimal-exponent.scenario.json) | cardinality-decimal-exponent | `count` is the Decimal `0`, so the count is a Decimal product whose scale is negative; the close task follows at once. Predicted CIB answer: no instance, then the close task, since the product is the `BigDecimal` `0E+1`, whose `intValue` is 0. | PC-DATA-08, PC-DATA-09 |
+| [count-product-over-safe](count-product-over-safe.scenario.json) | cardinality-product-over-safe | `count = 100000000`, so the count is an Integer product above 2^53-1. Predicted CIB answer: a `Long` of 10^16 read by `intValue`, which wraps to an Int-range number the kernel does not decide. | PC-DATA-08, PC-DATA-09 |
 
 After a schedule's last effect result comes the close task. A result sent to a body that no longer runs is a discriminator: CIB rejects it when the condition has closed the Activity, and accepts it otherwise. The kernel reader refuses the two whitespace models (`source.loopBodyWhitespace`), because the parser it uses drops the whitespace-only text nodes CIB keeps; their CIB answer records what that text evaluates to.

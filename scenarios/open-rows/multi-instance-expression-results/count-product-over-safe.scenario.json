@@ -1,0 +1,42 @@
+{
+  "kind": "scenario",
+  "id": "mi-expression-results-cardinality-product-over-safe",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "mi-expression-results-cardinality-product-over-safe",
+    "relativePath": "scenarios/open-rows/multi-instance-expression-results/cardinality-product-over-safe.bpmn",
+    "sha256": "d7b9efb1674f6fba01972ac57338b082fff5b0847bf4273cecb06ade08711dc6",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "count",
+          "value": {
+            "kind": "integer",
+            "value": 100000000
+          }
+        }
+      ]
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.8",
+      "BPMN 2.0.2 Table 10.29",
+      "BPMN 2.0.2 Table 10.30",
+      "BPMN 2.0.2 §13.3.7"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/MultiInstanceActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ParallelMultiInstanceActivityBehavior.java",
+      "juel/src/main/java/org/cibseven/bpm/impl/juel/NumberOperations.java",
+      "juel/src/main/java/org/cibseven/bpm/impl/juel/BooleanOperations.java"
+    ]
+  }
+}

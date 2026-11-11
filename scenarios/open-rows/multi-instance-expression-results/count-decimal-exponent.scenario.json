@@ -1,0 +1,56 @@
+{
+  "kind": "scenario",
+  "id": "mi-expression-results-cardinality-decimal-exponent",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "mi-expression-results-cardinality-decimal-exponent",
+    "relativePath": "scenarios/open-rows/multi-instance-expression-results/cardinality-decimal-exponent.bpmn",
+    "sha256": "1dc740cfe7e3549761a4830505b0d6aa888b37a7a80826b5e6a734a04a337669",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "count",
+          "value": {
+            "kind": "decimal",
+            "coefficient": "0",
+            "scale": 0
+          }
+        }
+      ]
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-complete-UserTask_Close-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Close",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.8",
+      "BPMN 2.0.2 Table 10.29",
+      "BPMN 2.0.2 Table 10.30",
+      "BPMN 2.0.2 §13.3.7"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/MultiInstanceActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ParallelMultiInstanceActivityBehavior.java",
+      "juel/src/main/java/org/cibseven/bpm/impl/juel/NumberOperations.java",
+      "juel/src/main/java/org/cibseven/bpm/impl/juel/BooleanOperations.java"
+    ]
+  }
+}
