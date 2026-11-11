@@ -109,7 +109,7 @@ Browser eligibility separates 3 human-work journeys from 9 guided simulations wi
 | Await an application response during parallel review | retainedScenario | subprocess-termination | accepted | subscription-catch-message-resume | retainedEvidence | notCatalogReady |
 | Await a review deadline beside independent audit | retainedScenario | subprocess-termination | accepted | subscription-catch-timer-resume | retainedEvidence | notCatalogReady |
 | Receive application documents during review | retainedScenario | subprocess-termination | accepted | subscription-receive-task-resume | retainedEvidence | notCatalogReady |
-| Cancel a confirmed travel itinerary | retainedScenario | dependency-aware-travel-compensation | accepted | compensation-success-b-c-a | retainedEvidence | guidedJourneyBacked |
+| Cancel a confirmed travel itinerary | retainedScenario | dependency-aware-travel-compensation | accepted | compensation-success-b-c-a | notSelected | guidedJourneyBacked |
 | Withdraw a resource reservation | retainedScenario | transaction-reservation-withdrawal | accepted | transaction-cancellation-retained-active | notSelected | guidedJourneyBacked |
 | Validate and classify an invoice | retainedScenario | invoice-validation-classification | accepted | classification | notSelected | notCatalogReady |
 | Review and rework an invoice | retainedScenario | invoice-validation-rework | accepted | invoice-rework | notSelected | notCatalogReady |

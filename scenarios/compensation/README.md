@@ -15,7 +15,7 @@ A is hotel reservation, B is ground travel, and C is insurance. Ground travel de
 
 Every scenario retries its first completed User Task occurrence under a new command ID immediately after success. All handler outcomes are explicit neutral inputs with empty local patches and production content-bound completion IDs; expected observations are absent. The ground-travel handler receives the retained itinerary through its direct restored input binding.
 
-The CIB revision and `UserTaskActivityBehavior.java` provenance cover only ordinary human work, as recorded in the [compensation semantics](../../docs/kernel/semantics/COMPENSATION-SEMANTICS-SPEC.md). The pipeline declares no CIB target. Lean, the TypeScript kernel and ordered real Temporal Activities consume the same scenario inputs, with exact semantic comparison and primary-history replay.
+The scenarios declare no CIB counterpart (`cibRevision` `not-applicable`): CIB Seven cannot deploy the model, whose compensation Service Tasks carry no CIB implementation attribute, and open-row witnesses with CIB answers cover the same behavior, as recorded in the [compensation semantics](../../docs/kernel/semantics/COMPENSATION-SEMANTICS-SPEC.md). Lean, the TypeScript kernel and ordered real Temporal Activities consume the same scenario inputs, with exact semantic comparison and primary-history replay.
 
 Run the focused artifact, chronology, identity and comparator checks from the repository root after building the workspace:
 

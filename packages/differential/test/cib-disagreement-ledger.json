@@ -70,48 +70,6 @@
     ]
   },
   {
-    "evidence": "scenarios/compensation/failure-a.cibseven-evidence.json",
-    "owners": [
-      "PC-COMPENSATION-02",
-      "PC-COMPENSATION-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/compensation/failure-b.cibseven-evidence.json",
-    "owners": [
-      "PC-COMPENSATION-02",
-      "PC-COMPENSATION-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/compensation/failure-c.cibseven-evidence.json",
-    "owners": [
-      "PC-COMPENSATION-02",
-      "PC-COMPENSATION-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/compensation/success-b-a-c.cibseven-evidence.json",
-    "owners": [
-      "PC-COMPENSATION-02",
-      "PC-COMPENSATION-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/compensation/success-b-c-a.cibseven-evidence.json",
-    "owners": [
-      "PC-COMPENSATION-02",
-      "PC-COMPENSATION-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/compensation/success-c-b-a.cibseven-evidence.json",
-    "owners": [
-      "PC-COMPENSATION-02",
-      "PC-COMPENSATION-03"
-    ]
-  },
-  {
     "evidence": "scenarios/configured-task/cibseven-evidence.json",
     "owners": [
       "CIB-LIM-0011"
