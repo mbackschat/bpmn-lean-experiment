@@ -1084,6 +1084,16 @@ CIB Seven `2.2.0` refuses deploying a process with two Conditional start Events 
 
 **Boundary:** Root Conditional starts of one process level under `submittedContext`; under `refused` each is refused as `start.condition` first.
 
+### CIB-LIM-0028 — CIB keeps a root Message start name unique across the current deployments of all keys
+
+**Status:** Profile limitation selected by the cibseven profiles; not a deviation
+
+BPMN 2.0.2 names no deployment and no rule that two processes' Message starts must differ; a Message start is addressed by its Message (§10.5.5). CIB Seven `2.2.0` subscribes a root Message start by its Message name and refuses deploying a definition whose root Message start name another process key's current version already subscribes in the tenant (`BpmnDeployer.java:328-363`); redeploying the same key replaces its own subscription. Under `MessageNames.addresses` (CIB-LIM-0022) the kernel's population refuses such a deployment (`deploymentRefused deployment.messageStartName`): a root Message start name of the deployed program equals one of another key's current deployment, the last registered deployment of that key. Under `description` no name addresses a start and nothing is checked.
+
+**Evidence:** Pinned `BpmnDeployer.java:328-363`; the kernel test `packages/kernel/test/population-deploy.test.ts`. No retained CIB answer yet: the runner has no population mode.
+
+**Boundary:** Root Message starts of each deployment's root process in one tenant-less population; a called process's starts are never a population's start addresses.
+
 ## Extension register
 
 ### CIB-LIM-0025 — CIB admits two interrupting Error Event Sub-Processes of one code in one scope

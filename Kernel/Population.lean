@@ -7,7 +7,8 @@ public import Kernel.Step
 Mechanisms across process instances ([architecture](../docs/kernel/ARCHITECTURE-SPEC.md#population)). Every input
 reaches an instance through `Step.step`; this layer only decides which instance an input goes to. A scenario is one
 ordered list of stimuli mixing deployments, instance inputs and population commands, each at a logical time.
-Implemented: deployments, instances of possibly different deployments, each driven by its own inputs, and Message key
+Implemented: deployments with versions per process key and the copies of other deployments' processes they may
+carry (`deploy`), instances of possibly different deployments, each driven by its own inputs, and Message key
 correlation with exact-cardinality routing ([specification](../docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md)): a
 publication addresses one deployment and a Message channel and carries the modeled correlation criteria; the
 candidates are the open subscriptions of that deployment's instances that `Hooks.correlates` accepts; exactly one is
@@ -167,6 +168,8 @@ structure Instance where
 command with its logical time and the digest of its canonical wire form, which the harness computes. -/
 inductive Stimulus where
   | deploy (definitionRef : String) (ref : DeploymentRef) (program : Program) (atMs : Nat)
+  /-- A deployment whose program the reader or the assembly refused with `code`. -/
+  | deployRefused (definitionRef : String) (ref : DeploymentRef) (code : String) (atMs : Nat)
   | input (script : Nat) (definitionRef : String) (commandId : String) (input : Input)
   | command (command : Command) (atMs : Nat) (digest : String)
 
@@ -194,23 +197,104 @@ def matching (hooks : Hooks) (program : Program) (state : State) (channel : Mess
     | .error _ => false
   accepted.map (occurrence program state)
 
-/-- The process keys a program carries: its root and the processes it calls. -/
-def processKeys (program : Program) : List String :=
-  program.identity.processId :: program.processes.map (·.definition.key)
+/-- Whether a carried process is the deploying document's own: unstamped, or stamped with `deploymentId` itself;
+any other stamp is a copy `bpmn-source`'s assembly made from that deployment. -/
+def ownProcess (deploymentId : Nat) (process : CalledProcess) : Bool :=
+  process.definition.deployment.all (· == deploymentId)
 
-/-- Deploy `program` as `deploymentId` at `atMs`: refused with the admission's code, or numbered per process key among
-the deployments in `registry`. The program is deployed as given; stamping its identity and carried definitions is not
-done here. -/
-def deploy (admission : Program → Option String) (registry : List Deployment) (deploymentId : Nat) (definitionRef : String)
-    (ref : DeploymentRef) (program : Program) (atMs : Nat) : DeploymentResult × Option Deployment :=
-  match admission program with
-  | some code => ({ deploymentId, definitionRef, versions := [], outcome := .refused code }, none)
-  | none =>
-    let versions := (processKeys program).map fun key =>
-      (key, 1 + (registry.filter fun earlier => earlier.versions.any (·.1 == key)).length)
-    ({ deploymentId, definitionRef, versions, outcome := .deployed },
-      some { deploymentId, definitionRef, ref, key := program.identity.processId, versions, deployedAtMs := atMs,
-             program })
+/-- The process keys a deployment contains: its root and its own document's processes. -/
+def ownKeys (deploymentId : Nat) (program : Program) : List String :=
+  program.identity.processId :: ((program.processes.filter (ownProcess deploymentId)).map (·.definition.key))
+
+/-- The version a registered deployment gave `key`. -/
+def Deployment.version? (deployment : Deployment) (key : String) : Option Nat :=
+  (deployment.versions.find? (·.1 == key)).map (·.2)
+
+/-- The namespace a registered deployment declares `key` in: its root's, or its own process's. -/
+def Deployment.namespace? (deployment : Deployment) (key : String) : Option (Option String) :=
+  if deployment.key == key then some deployment.program.identity.«namespace»
+  else ((deployment.program.processes.filter (ownProcess deployment.deploymentId)).find? (·.definition.key == key)).map
+    (·.definition.«namespace»)
+
+/-- The current deployment of `key`: the last registered deployment whose root it is; redeploying a key supersedes its
+earlier versions' start subscriptions (`BpmnDeployer.java:232-292`). -/
+def current (registry : List Deployment) (key : String) : Option Deployment :=
+  (registry.filter (·.key == key)).getLast?
+
+/-- The program without the carried processes `drop` refuses: each process, every element whose top-level ancestor it
+lists, and every flow touching one of them. -/
+def withoutCarried (program : Program) (drop : CalledProcess → Bool) : Program :=
+  let roots := (program.processes.filter drop).flatMap (·.children)
+  let rec topLevel (fuel : Nat) (id : ElementId) : ElementId :=
+    match fuel, (program.element? id).bind (·.header.parent) with
+    | 0, _ | _, none => id
+    | fuel + 1, some parent => topLevel fuel parent
+  let removed := (program.elements.filter fun element =>
+    roots.contains (topLevel program.elements.length element.header.id)).map (·.header.id)
+  { program with
+    processes := program.processes.filter (!drop ·)
+    elements := program.elements.filter (!removed.contains ·.header.id)
+    flows := program.flows.filter fun flow => !removed.contains flow.source && !removed.contains flow.target }
+
+/-- Stamp a carried process with its version, or refuse its stamp. The deploying document's own process takes this
+deployment and `versions`; a copy must name a registered deployment that contains its key in its namespace from its
+source (`population.callee.stamp` otherwise), whose version it takes. -/
+def stampCarried (registry : List Deployment) (deploymentId : Nat) (versions : List (String × Nat))
+    (process : CalledProcess) : Except String CalledProcess :=
+  let definition := process.definition
+  if ownProcess deploymentId process then
+    let version := (versions.find? (·.1 == definition.key)).map (·.2)
+    .ok { process with definition := { definition with deployment := some deploymentId, version } }
+  else
+    let source := registry.find? fun deployment => definition.deployment == some deployment.deploymentId
+    match source.bind fun deployment => (deployment.version? definition.key).map (deployment, ·) with
+    | some (deployment, version) =>
+      if deployment.namespace? definition.key == some definition.«namespace» &&
+          definition.sourceSha256.all (· == deployment.program.identity.sourceSha256) then
+        .ok { process with definition := { definition with version := some version } }
+      else .error "population.callee.stamp"
+    | none => .error "population.callee.stamp"
+
+/-- The literal names of a program's root Message starts. -/
+def messageStartNames (program : Program) : List String :=
+  ((program.children none).filterMap Element.start?).filterMap fun (_, start) =>
+    ((start.subscription.bind (·.trigger.message?)).bind (·.name)).bind ValueSource.literal?
+
+/-- Under `MessageNames.addresses` a root Message start name is unique across the current deployments of other keys:
+CIB refuses deploying one another key's current deployment already subscribes (`BpmnDeployer.java:328-363`,
+CIB-LIM-0028). -/
+def messageStartClash (registry : List Deployment) (program : Program) : Option String :=
+  let others := (registry.map (·.key)).eraseDups.filter (· != program.identity.processId)
+  let taken := others.flatMap fun key => ((current registry key).map (messageStartNames ·.program)).getD []
+  if program.options.messageNames == .addresses && (messageStartNames program).any taken.contains then
+    some "deployment.messageStartName"
+  else none
+
+/-- Deploy `program` as `deploymentId` at `atMs` (population contract §2.3, PC-SCOPE-03). Each key it contains takes
+1 + the number of registered deployments containing that key, so a refused deployment numbers nothing, as CIB registers
+none. A copy of another deployment's process stays only if that deployment is registered and no later than this one: a
+copy of a later or a refused deployment is removed, so no Call binds a callee deployed after its caller or never
+deployed. The rest are stamped (`stampCarried`); then admission runs, then the Message start names are checked. -/
+def deploy (admission : Program → Option String) (registry : List Deployment) (refused : List Nat) (deploymentId : Nat)
+    (definitionRef : String) (ref : DeploymentRef) (program : Program) (atMs : Nat) :
+    DeploymentResult × Option Deployment :=
+  let refusal (code : String) : DeploymentResult × Option Deployment :=
+    ({ deploymentId, definitionRef, versions := [], outcome := .refused code }, none)
+  let versions := (ownKeys deploymentId program).map fun key =>
+    (key, 1 + (registry.filter fun earlier => earlier.versions.any (·.1 == key)).length)
+  let unreachable (process : CalledProcess) : Bool :=
+    process.definition.deployment.any fun source => source > deploymentId || refused.contains source
+  let carried := withoutCarried program unreachable
+  match carried.processes.mapM (stampCarried registry deploymentId versions) with
+  | .error code => refusal code
+  | .ok processes =>
+    let stamped := { carried with processes, identity := { carried.identity with deployment := some deploymentId } }
+    match admission stamped <|> messageStartClash registry stamped with
+    | some code => refusal code
+    | none =>
+      ({ deploymentId, definitionRef, versions, outcome := .deployed },
+        some { deploymentId, definitionRef, ref, key := program.identity.processId, versions, deployedAtMs := atMs,
+               program := stamped })
 
 /-- dynamic-only: a command form the population runner does not route yet; it is a scenario stimulus, not a program
 shape, so no admission refusal can stand for it. -/
@@ -257,6 +341,13 @@ structure Progress where
   ledger : List LedgerEntry := []
   inputFailures : List (String × Failure) := []
 
+/-- The deploy ordinals of the refused deployments, which no copy may come from. -/
+def Progress.refused (progress : Progress) : List Nat :=
+  progress.deployments.filterMap fun deployment =>
+    match deployment.outcome with
+    | .deployed => none
+    | .refused _ => some deployment.deploymentId
+
 /-- The deployment an instance input reaches: its instance's, or for a new instance its definition's latest. -/
 def Progress.deploymentFor (progress : Progress) (script : Nat) (definitionRef : String) : Option Deployment :=
   match progress.instances.find? (·.1 == script) with
@@ -270,9 +361,12 @@ def route (hooks : Hooks) (progress : Progress) : Command → Except String (Lis
 /-- Apply one stimulus. A command sees the instances started so far. -/
 def apply (hooks : Hooks) (admission : Program → Option String) (progress : Progress) : Stimulus → Except String Progress
   | .deploy definitionRef ref program atMs =>
-    let (result, deployment) :=
-      deploy admission progress.registry (progress.deployments.length + 1) definitionRef ref program atMs
+    let (result, deployment) := deploy admission progress.registry progress.refused (progress.deployments.length + 1)
+      definitionRef ref program atMs
     .ok { progress with registry := progress.registry ++ deployment.toList, deployments := progress.deployments ++ [result] }
+  | .deployRefused definitionRef _ code _ =>
+    .ok { progress with deployments := progress.deployments ++
+      [{ deploymentId := progress.deployments.length + 1, definitionRef, versions := [], outcome := .refused code }] }
   | .input script definitionRef commandId input =>
     let failed (failure : Failure) : Progress :=
       { progress with inputFailures := progress.inputFailures ++ [(commandId, failure)] }

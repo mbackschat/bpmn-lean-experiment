@@ -82,6 +82,19 @@ test("every element header names its source identifier, and a called process its
   }]);
 });
 
+test("a process's camunda:versionTag is carried: a called process's in its definition, the root's beside the program", async () => {
+  const xml = (rootTag: string): string => `<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:camunda="${camunda}" id="D" targetNamespace="urn:t">
+<bpmn:process id="P" isExecutable="true"${rootTag}><bpmn:callActivity id="Call" calledElement="Q"/></bpmn:process>
+<bpmn:process id="Q" isExecutable="true" camunda:versionTag="stable"><bpmn:task id="Inner"/></bpmn:process></bpmn:definitions>`;
+  const tagged = await read(xml(` camunda:versionTag="v7"`));
+  assert.equal(tagged.kind, "read", JSON.stringify(tagged));
+  const { program: p, versionTag } = tagged as Extract<KernelRead, { kind: "read" }>;
+  assert.equal(versionTag, "v7");
+  assert.equal((p as Json).processes[0].definition.versionTag, "stable");
+  assert.equal(((await read(xml(""))) as Extract<KernelRead, { kind: "read" }>).versionTag, null);
+});
+
 test("each process declares its Properties, Data Objects, their references and its own Data Inputs and Outputs", async () => {
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="D" targetNamespace="urn:t">

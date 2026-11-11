@@ -12,3 +12,5 @@ export type {
   KernelSource,
   SourceFactNotCarried,
 } from "./kernel-reader/index.js";
+export { assembleProgram, carriedId } from "./kernel-reader/assembly.js";
+export type { AssemblyDeployment } from "./kernel-reader/assembly.js";

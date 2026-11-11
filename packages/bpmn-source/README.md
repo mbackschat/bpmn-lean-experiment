@@ -26,7 +26,8 @@ if (read.kind === "refused") {
 // read.program is the kernel IL as JSON; read.notCarried lists source facts the IL deliberately does not carry.
 ```
 
-- `readKernelProgram(source, options)` returns `{ kind: "read", program, notCarried }` or `{ kind: "refused", code, element, evidence }`. The program carries the source SHA-256 and the profile as identity data only.
+- `readKernelProgram(source, options)` returns `{ kind: "read", program, notCarried, versionTag }` or `{ kind: "refused", code, element, evidence }`. The program carries the source SHA-256 and the profile as identity data only; `versionTag` is the root process's `camunda:versionTag`, which the program's identity has no field for.
+- `assembleProgram(deployments, deploymentId)` gives one deployment of a population the program it runs: its own read program plus a renamed, stamped copy of every other deployment's process its Calls name, transitively ([`assembly.ts`](src/kernel-reader/assembly.ts), PC-SCOPE-03). It is mechanical; the kernel's population numbers versions and decides which copies a Call may bind.
 - `kernelProfileOptions(relations)` derives the kernel's profile options from the selected [CIB relation identifiers](../../docs/CIB-BPMN-RELATION-REGISTER.md), never from a profile name; `defaultKernelProfileOptions` is the standards reading with no relation selected.
 - `ReadRefusalCode` enumerates the reader's refusals: source limits and identity (`source.*`), parser failures and warnings (`parser.*`), and unknown or unrepresentable source shapes (`reader.*`).
 - `declaredSourceEncoding(bytes)` reports the encoding an XML declaration names; the reader accepts only UTF-8.

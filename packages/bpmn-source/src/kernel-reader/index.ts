@@ -43,8 +43,12 @@ export type { SourceFactNotCarried } from "./model.js";
 export { declaredSourceEncoding } from "./source.js";
 export type { KernelSource } from "./source.js";
 
+/**
+ * `versionTag` is the root process's `camunda:versionTag`, which `ProgramIdentity` has no field for; `assembly.ts`
+ * stamps it on a copy of the root another deployment's program carries (PC-SCOPE-03).
+ */
 export type KernelRead =
-  | Readonly<{ kind: "read"; program: KernelJson; notCarried: ReadonlyArray<SourceFactNotCarried> }>
+  | Readonly<{ kind: "read"; program: KernelJson; notCarried: ReadonlyArray<SourceFactNotCarried>; versionTag: string | null }>
   | Readonly<{ kind: "refused"; code: ReadRefusalCode; element: string | null; evidence: string }>;
 
 type Scan = Readonly<{
@@ -212,9 +216,12 @@ function declaredItems(process: ElementRecord): string[] {
     .map(requireId).sort(compareIds);
 }
 
-/** A process these Definitions carry: its key is its id, its namespace theirs, and no deployment has bound it yet. */
-const processDefinition = (key: string, namespace: string | null): KernelJson =>
-  ({ key, namespace, version: null, versionTag: null, deployment: null, tenant: null, sourceSha256: null });
+/**
+ * A process these Definitions carry: its key is its id, its namespace theirs, its version tag its `camunda:versionTag`
+ * (CIB `BpmnParse#parseProcess`), and no deployment has bound it yet.
+ */
+const processDefinition = (key: string, namespace: string | null, versionTag: string | null): KernelJson =>
+  ({ key, namespace, version: null, versionTag, deployment: null, tenant: null, sourceSha256: null });
 
 function requireAllCarried(ctx: ReadContext & { consumedBy: (element: ElementRecord) => ReadonlySet<string> },
   processes: ReadonlyArray<ElementRecord>): void {
@@ -250,6 +257,11 @@ export async function readKernelProgram(source: KernelSource, options: KernelPro
     const targetNamespace = targetNamespaceOf(parsed.definitions);
     requireReadableForms([...scan.nodes.values()].sort(byId));
     const elements = buildProgramElements(ctx);
+    const versionTag = ctx.attribute(ctx.rootProcess, "versionTag");
+    const calledProcesses = processes.filter((process) => process !== ctx.rootProcess)
+      .sort((left, right) => compareIds(requireId(left), requireId(right)))
+      .map((process) => ({ definition: processDefinition(requireId(process), targetNamespace, ctx.attribute(process, "versionTag")),
+        children: childIds(ctx, process), variables: declaredItems(process), executable: process.isExecutable === true }));
     requireAllCarried(ctx, processes);
     const program: KernelJson = {
       identity: {
@@ -260,15 +272,12 @@ export async function readKernelProgram(source: KernelSource, options: KernelPro
       elements,
       flows: ctx.flows.map((flow) => readFlow(ctx, flow)),
       variables: declaredItems(ctx.rootProcess),
-      processes: processes.filter((process) => process !== ctx.rootProcess)
-        .sort((left, right) => compareIds(requireId(left), requireId(right)))
-        .map((process) => ({ definition: processDefinition(requireId(process), targetNamespace), children: childIds(ctx, process),
-          variables: declaredItems(process), executable: process.isExecutable === true })),
+      processes: calledProcesses,
       // Table 10.1 `isExecutable`; admission refuses a process not marked executable (`process.notExecutable`).
       executable: ctx.rootProcess.isExecutable === true,
       decisionResources: await readDecisionResources(source),
     };
-    return { kind: "read", program, notCarried };
+    return { kind: "read", program, notCarried, versionTag };
   } catch (error: unknown) {
     if (error instanceof ReadRefusal) return { kind: "refused", code: error.code, element: error.element, evidence: error.evidence };
     throw error;

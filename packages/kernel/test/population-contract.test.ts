@@ -1,8 +1,9 @@
 /**
- * The population runner's contract as the C1 commit leaves it: deployments in deploy order with versions per process
- * key, a refused program as a `deploymentRefused` deployment, an instance input addressing nothing deployed as
- * `definition-not-deployed`, every command form it does not route as `unsupported population-not-implemented`, each
- * command at its given or inherited logical time, and the three harness refusals of a malformed scenario.
+ * The population runner's contract: deployments in deploy order, each taking the next deployment source, with versions
+ * per process key; a program admission refuses or a source the reader refused as a `deploymentRefused` deployment; an
+ * instance input addressing nothing deployed as `definition-not-deployed`; every command form it does not route as
+ * `unsupported population-not-implemented`; each command at its given or inherited logical time; and the three harness
+ * refusals of a malformed scenario.
  */
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -54,6 +55,25 @@ test("a program admission refuses is a refused deployment, and an instance of it
   }]);
   assert.deepEqual(result.inputFailures, [{ commandId: "start-I", outcome: "rejected", code: "definition-not-deployed" }]);
   assert.deepEqual(result.processStates, []);
+});
+
+test("each deployment takes the next source in deploy order, and a source the reader refused deploys refused", () => {
+  const result = run([program, { refused: "reader.factNotCarried" }, program], ["a", "b"], [
+    { kind: "deploy", definitionRef: "a" }, { kind: "deploy", definitionRef: "b" }, { kind: "deploy", definitionRef: "a" }, instance("b", "I"),
+  ]);
+  const key = identity.processId;
+  assert.deepEqual(result.deployments, [
+    { deploymentId: 1, definitionRef: "a", versions: [{ key, version: 1 }], outcome: { kind: "deployed" } },
+    { deploymentId: 2, definitionRef: "b", versions: [], outcome: { kind: "deploymentRefused", code: "reader.factNotCarried" } },
+    { deploymentId: 3, definitionRef: "a", versions: [{ key, version: 2 }], outcome: { kind: "deployed" } },
+  ]);
+  assert.deepEqual(result.inputFailures, [{ commandId: "start-I", outcome: "rejected", code: "definition-not-deployed" }]);
+});
+
+test("the sources match the deployments one to one, and a refused source names only its code", () => {
+  assert.throws(() => run([program], ["a", "b"], []), /no source for a deployment of b/u);
+  assert.throws(() => run([program, program], ["a"], []), /2 deployment sources, 1 deployments/u);
+  assert.throws(() => run([{ refused: "x", extra: true }], ["a"], []), /names only its code/u);
 });
 
 test("an instance step before its definition's deploy step is not deployed", () => {

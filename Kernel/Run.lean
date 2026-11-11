@@ -26,11 +26,11 @@ hostViews}`, one host view per committed input.
 
 `kernelRun --population <digests.json> <program.json>... <population-scenario.json>` prints the
 [engine-population result](../contracts/schemas/engine-population-result.schema.json) for a
-[population scenario](../contracts/schemas/engine-population-scenario.schema.json), one program per scenario definition
-in the same order and one digest of its canonical wire form per step, which the harness computes so that the kernel
-never reimplements canonical JSON or SHA-256. Its entry lives here because this is the one module that may import both
-registries; `Kernel.Run.Population` reads the scenario and renders the result. A program admission refuses is a
-refused deployment, a result; a malformed population scenario is a harness error with a stable code.
+[population scenario](../contracts/schemas/engine-population-scenario.schema.json), one deployment source per
+deployment in deploy order (`Kernel.Run.Population`) and one digest of its canonical wire form per step, which the
+harness computes so that the kernel never reimplements canonical JSON or SHA-256. Its entry lives here because this is the one module that may import both
+registries; `Kernel.Run.Population` reads the scenario and renders the result. A source the reader or admission
+refuses is a refused deployment, a result; a malformed population scenario is a harness error with a stable code.
 -/
 
 public section
@@ -308,25 +308,21 @@ def runHostView (programPath scenarioPath : String) : IO Json := do
 
 /-! ## Population mode -/
 
-/-- `kernelRun --population <digests.json> <program.json>... <population-scenario.json>`: one program per scenario
-definition, in order, and one digest per step. A program the admission registry refuses is a refused deployment. -/
-def runPopulation (digestsPath : String) (programPaths : List String) (scenarioPath : String) : IO Json := do
+/-- `kernelRun --population <digests.json> <source.json>... <population-scenario.json>`: one deployment source per
+deployment, in deploy order, and one digest per step. A program the admission registry refuses is a refused
+deployment. -/
+def runPopulation (digestsPath : String) (sourcePaths : List String) (scenarioPath : String) : IO Json := do
   let scenario ← readJson scenarioPath
   let digests ← orFail digestsPath (Lean.fromJson? (α := List String) (← readJson digestsPath))
   let (scenarioId, profile, resources) ← orFail scenarioPath do
     pure (← scenario.getObjValAs? String "id", ← scenario.getObjValAs? String "profile",
       (← scenario.getObjValAs? (Array Json) "definitions").toList)
-  unless resources.length == programPaths.length do
-    throw (IO.userError s!"{scenarioPath}: {resources.length} definitions, {programPaths.length} programs")
-  let declared ← (resources.zip programPaths).mapM fun (resource, programPath) => do
-    let program ← orFail programPath (Codec.programFromJson (← readJson programPath))
-    let (definitionRef, ref) ← orFail scenarioPath do
-      pure (← resource.getObjValAs? String "definitionRef", ← definitionRefFromJson (← resource.getObjVal? "bpmn") profile)
-    unless program.identity.sourceSha256 == ref.sourceSha256 && program.identity.profile == profile do
-      throw (IO.userError s!"{programPath}: program identity differs from definition {definitionRef}")
-    pure ({ definitionRef, ref, program } : Declared)
+  let declared ← orFail scenarioPath <| resources.mapM fun resource => do
+    pure ({ definitionRef := ← resource.getObjValAs? String "definitionRef"
+            ref := ← definitionRefFromJson (← resource.getObjVal? "bpmn") profile } : Declared)
+  let sources ← sourcePaths.mapM fun sourcePath => do orFail sourcePath (deploymentSourceFromJson (← readJson sourcePath))
   let stimuli ← orFail scenarioPath
-    (stimuliOfPopulation declared (← orFail scenarioPath (scenario.getObjValAs? (Array Json) "steps")).toList digests)
+    (stimuliOfPopulation declared sources (← orFail scenarioPath (scenario.getObjValAs? (Array Json) "steps")).toList digests)
   let result ← orFail scenarioPath (Population.runStimuli Registry.hooks AdmissionRegistry.admit stimuli)
   pure (populationResultJson observationJson scenarioId result)
 
@@ -346,5 +342,5 @@ def main (args : List String) : IO UInt32 := do
   | _ =>
     IO.eprintln ("usage: kernelRun <program.json> <scenario.json>\n" ++
       "       kernelRun --host-view <program.json> <scenario.json>\n" ++
-      "       kernelRun --population <digests.json> <program.json>... <population-scenario.json>")
+      "       kernelRun --population <digests.json> <source.json>... <population-scenario.json>")
     pure 64

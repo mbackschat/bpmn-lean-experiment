@@ -5,9 +5,14 @@
  * because it is the one module that may import both registries. A malformed population scenario is a harness error,
  * three of them with stable codes: `population-time-backward`, `population-time-mismatch` and
  * `population-unknown-definition`.
+ *
+ * The harness passes one source per deployment, in deploy order: the definitions no `deploy` step names, in list order,
+ * then every `deploy` step in step order, so the n-th source is what deployment ordinal n deploys (`population.ts`
+ * numbers deployments by stimulus order). A source is the program assembled for that deployment, or `{"refused": code}`
+ * for a definition the reader refused, which deploys as `deploymentRefused` with that code.
  */
 import { assertNever, type Program } from "../il/types.js";
-import { isObject, type Decoded, type JsonValue } from "../il/codec.js";
+import { decodeProgram, isObject, type Decoded, type JsonValue } from "../il/codec.js";
 import {
   channelFromJson,
   decodeBindings,
@@ -58,11 +63,46 @@ interface Script {
   readonly definitionRef: string;
 }
 
-/** A scenario definition with the program the harness compiled for it. */
+/** A scenario definition: its reference and the BPMN resource it names. */
 export interface Declared {
   readonly definitionRef: string;
   readonly ref: DeploymentRef;
-  readonly program: Program;
+}
+
+export enum DeploymentSourceTag { Program = "program", Refused = "refused" }
+
+/** What one deployment deploys: the program assembled for it, or the code the reader refused its source with. */
+export type DeploymentSource =
+  | { readonly tag: DeploymentSourceTag.Program; readonly program: Program }
+  | { readonly tag: DeploymentSourceTag.Refused; readonly code: string };
+
+/** A source file: `{"refused": code}` exactly, or a program. */
+export function deploymentSourceFromJson(json: unknown, where: string): DeploymentSource {
+  if (optional(json, "refused") === undefined) return { tag: DeploymentSourceTag.Program, program: decoded(decodeProgram(json), where) };
+  const code = requiredString(json, "refused", where);
+  if (Object.keys(json as object).length !== 1) throw new Error(`${where}: a refused deployment names only its code`);
+  return { tag: DeploymentSourceTag.Refused, code };
+}
+
+/**
+ * The deployment of `entry` at `atMs` from the next of `pending`, which it removes; a program must be the definition's
+ * source under the scenario's profile.
+ */
+function deployStimulus(entry: Declared, atMs: number, pending: DeploymentSource[], where: string): Stimulus {
+  const source = pending.shift();
+  if (source === undefined) throw new Error(`${where}: no source for a deployment of ${entry.definitionRef}`);
+  switch (source.tag) {
+    case DeploymentSourceTag.Refused:
+      return { tag: StimulusTag.DeployRefused, definitionRef: entry.definitionRef, ref: entry.ref, code: source.code, atMs };
+    case DeploymentSourceTag.Program: {
+      const identity = source.program.identity;
+      if (identity.sourceSha256 !== entry.ref.sourceSha256 || identity.profile !== entry.ref.profile) {
+        throw new Error(`${where}: program identity differs from definition ${entry.definitionRef}`);
+      }
+      return { tag: StimulusTag.Deploy, definitionRef: entry.definitionRef, ref: entry.ref, program: source.program, atMs };
+    }
+  }
+  return assertNever(source);
 }
 
 /** A malformed population scenario: a harness refusal with its stable code (contract §2.2, §7). */
@@ -190,14 +230,17 @@ function instanceInput(json: unknown, at: number | null, where: string): Scenari
 /**
  * The population's stimuli, in scenario order: the definitions no `deploy` step names deploy at 0 in list order, then
  * every step at its logical time, which a step gives as `at` or inherits from the step before (0 for the first) and
- * which never decreases. `digests` holds each step's digest of its canonical wire form, which the harness computes.
+ * which never decreases. Each deployment takes the next of `sources`, which must all be taken. `digests` holds each
+ * step's digest of its canonical wire form, which the harness computes.
  */
-export function stimuliOfPopulation(declared: readonly Declared[], steps: readonly unknown[], digests: readonly string[], where: string): Stimulus[] {
+export function stimuliOfPopulation(declared: readonly Declared[], sources: readonly DeploymentSource[], steps: readonly unknown[],
+  digests: readonly string[], where: string): Stimulus[] {
   if (digests.length !== steps.length) throw new Error(`${where}: ${steps.length} steps, ${digests.length} digests`);
   const deployedByStep = steps.flatMap((json) => requiredString(json, "kind", where) === "deploy"
     ? [declaredOf(declared, requiredString(json, "definitionRef", where), where).definitionRef] : []);
+  const pending = [...sources];
   const stimuli: Stimulus[] = declared.filter((entry) => !deployedByStep.includes(entry.definitionRef))
-    .map((entry) => ({ tag: StimulusTag.Deploy, definitionRef: entry.definitionRef, ref: entry.ref, program: entry.program, atMs: 0 }));
+    .map((entry) => deployStimulus(entry, 0, pending, where));
   const scripts: Script[] = [];
   let clock = 0;
   steps.forEach((json, index) => {
@@ -207,7 +250,7 @@ export function stimuliOfPopulation(declared: readonly Declared[], steps: readon
     const kind = requiredString(json, "kind", where);
     if (kind === "deploy") {
       const entry = declaredOf(declared, requiredString(json, "definitionRef", where), where);
-      stimuli.push({ tag: StimulusTag.Deploy, definitionRef: entry.definitionRef, ref: entry.ref, program: entry.program, atMs: clock });
+      stimuli.push(deployStimulus(entry, clock, pending, where));
       return;
     }
     if (kind === "instance") {
@@ -218,6 +261,7 @@ export function stimuliOfPopulation(declared: readonly Declared[], steps: readon
     if (command === null) throw new Error(`${where}: unsupported population step ${kind}`);
     stimuli.push({ tag: StimulusTag.Command, command, atMs: clock, digest: digests[index] ?? "" });
   });
+  if (pending.length > 0) throw new Error(`${where}: ${sources.length} deployment sources, ${sources.length - pending.length} deployments`);
   return stimuli;
 }
 

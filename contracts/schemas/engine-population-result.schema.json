@@ -20,7 +20,7 @@
       "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonEmptyString"
     },
     "deployments": {
-      "description": "Every deployment in deploy order; deploymentId is its deploy ordinal.",
+      "description": "Every deployment in deploy order: the definitions no deploy step names, in list order, then every deploy step in step order. deploymentId is its deploy ordinal, which a refused deployment also takes.",
       "type": "array",
       "items": {
         "$ref": "#/$defs/deployment"
@@ -112,6 +112,7 @@
                   "const": "deploymentRefused"
                 },
                 "code": {
+                  "description": "The code the reader refused the source with, or the admission's.",
                   "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonEmptyString"
                 }
               }

@@ -33,6 +33,7 @@ import { ledgerViolations, readCibDisagreementLedger } from "./cib-disagreement-
 import { runLeanKernelPopulation, runLeanKernelScenario, writeProgram } from "./kernel-targets.ts";
 import { projectRoot } from "./pipeline-target-support.ts";
 import { populationStepDigests } from "./population-digest.ts";
+import { populationPrograms } from "./population-programs.ts";
 import { DiscoveredKind, discoverScenarios, kernelProgramFor, scenarioKernelInput } from "./scenario-discovery.ts";
 import type { CanonicalResult, DiscoveredScenario, ScenarioDocument } from "./scenario-discovery.ts";
 
@@ -72,16 +73,15 @@ test("the Lean and TypeScript kernels agree on every discovered scenario, and th
       switch (scenario.kind) {
         case DiscoveredKind.PopulationScenario: {
           populationCount += 1;
-          const programs = await Promise.all(scenario.document.definitions.map((definition) =>
-            kernelProgramFor(scenario.relativePath, definition.bpmn, scenario.document.profile)));
-          const programPaths = programs.map((_, definition) =>
-            path.join(directory, `population-${String(index)}-${String(definition)}.json`));
-          await Promise.all(programs.map((program, definition) => writeProgram(programPaths[definition]!, program)));
+          const sources = await populationPrograms(scenario.relativePath, scenario.document);
+          const sourcePaths = sources.map((_, deployment) =>
+            path.join(directory, `population-${String(index)}-${String(deployment)}.json`));
+          await Promise.all(sources.map((source, deployment) => writeProgram(sourcePaths[deployment]!, source)));
           const digests = populationStepDigests(scenario.document.steps);
           const digestsPath = path.join(directory, `population-${String(index)}-digests.json`);
           await writeFile(digestsPath, JSON.stringify(digests), "utf8");
-          const lean = await runLeanKernelPopulation(digestsPath, programPaths, scenarioPath);
-          const difference = compared(label(scenario), lean, wireValue(runPopulation(programs, scenario.document, digests)));
+          const lean = await runLeanKernelPopulation(digestsPath, sourcePaths, scenarioPath);
+          const difference = compared(label(scenario), lean, wireValue(runPopulation(sources, scenario.document, digests)));
           if (difference !== null) kernelDisagreements.push(difference);
           break;
         }
@@ -233,8 +233,12 @@ test("the Lean and TypeScript kernels agree on the population contract's deploym
     criteria: [{ target: { kind: "processVariable", name: "k" }, expected: { kind: "string", value: "v" } }], variables: [], mode: "executionsOnly",
   });
   const cases: ReadonlyArray<readonly [string, ReadonlyArray<Record<string, unknown>>, ReadonlyArray<string>, ReadonlyArray<Record<string, unknown>>]> = [
-    ["deployments and versions", [program, refused], ["a", "b"], [
+    ["deployments and versions", [refused, program], ["a", "b"], [
       { kind: "deploy", definitionRef: "a", at: 3 }, instance("a", "I", 4), instance("b", "J"), instance("a", "K", 5, 5),
+    ]],
+    ["a redeployed definition and a source the reader refused", [program, { refused: "reader.factNotCarried" }, program], ["a", "b"], [
+      { kind: "deploy", definitionRef: "a", at: 1 }, { kind: "deploy", definitionRef: "b", at: 2 }, { kind: "deploy", definitionRef: "a", at: 3 },
+      instance("a", "I", 4), instance("b", "J", 5),
     ]],
     ["commands", [program], ["a"], [
       publish("routed", 1, { deploymentId: 1 }), publish("missing", 2, { deploymentId: 9 }), publish("by-key", 2, { processKey: "P" }),

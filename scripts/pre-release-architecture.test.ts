@@ -77,6 +77,7 @@ async function sourceFiles(
 }
 
 const kernelTerminateFiles: ReadonlySet<string> = new Set([
+  "packages/bpmn-source/src/kernel-reader/assembly.ts",
   "packages/bpmn-source/src/kernel-reader/events.ts",
   "packages/kernel/src/il/types.ts",
   "packages/kernel/test/admission-refusals-profile.test.ts",
@@ -88,8 +89,8 @@ function retiredSourceFindings(
   source: string,
 ): string[] {
   return source.split("\n").flatMap((line, index) => {
-    // The kernel IL's Terminate End Event throw is BPMN's own name, not the retired operation; the reader writes it and
-    // the generated vocabulary lists it.
+    // The kernel IL's Terminate End Event throw is BPMN's own name, not the retired operation; the reader writes it,
+    // assembly copies it and the generated vocabulary lists it.
     const hasRetiredWireLiteral = !kernelTerminateFiles.has(relativePath) && new RegExp(
       `(["'])${retiredOperationName}\\1`,
       "u",

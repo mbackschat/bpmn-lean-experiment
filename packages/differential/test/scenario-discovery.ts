@@ -50,7 +50,7 @@ export type PopulationScenarioDocument = Readonly<{
   kind: typeof DiscoveredKind.PopulationScenario;
   id: string;
   profile: string;
-  definitions: ReadonlyArray<Readonly<{ bpmn: SourceDefinition }>>;
+  definitions: ReadonlyArray<Readonly<{ definitionRef: string; bpmn: SourceDefinition }>>;
   steps: ReadonlyArray<unknown>;
 }>;
 

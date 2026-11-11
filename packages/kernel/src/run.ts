@@ -12,10 +12,11 @@
  *
  * `runHostView` returns `{result, hostRequirements, definitionCapabilities, hostViews}`, one host view per committed
  * input. `runPopulation` returns the engine-population result for a population scenario
- * (`contracts/schemas/engine-population-scenario.schema.json`), one program per scenario definition in the same order
- * and one digest per step. Its entry lives here because this is the one module that may import both registries;
- * `run/population.ts` reads the scenario and renders the result. A program admission refuses is a refused deployment,
- * a result; a malformed population scenario is a harness error with a stable code, thrown.
+ * (`contracts/schemas/engine-population-scenario.schema.json`), one deployment source per deployment in deploy order
+ * (`run/population.ts`) and one digest per step. Its entry lives here because this is the one module that may import
+ * both registries; `run/population.ts` reads the scenario and renders the result. A source the reader or admission
+ * refuses is a refused deployment, a result; a malformed population scenario is a harness error with a stable code,
+ * thrown.
  */
 import { assertNever, compareStrings, mergeSort, type DefinitionRef, type Program } from "./il/types.js";
 import { bindingsToJson, decodeProgram, encodeExpression, type JsonValue } from "./il/codec.js";
@@ -51,7 +52,9 @@ import { runStimuli as runInstances } from "./population.js";
 import { hooks } from "./registry.js";
 import { admit } from "./admission-registry.js";
 import { arrayField, field, referenceJson, requiredString, stimulusOf, type ScenarioStimulus } from "./run/wire.js";
-import { definitionRefFromJson, populationResultJson, stimuliOfPopulation, type Declared } from "./run/population.js";
+import {
+  definitionRefFromJson, deploymentSourceFromJson, populationResultJson, stimuliOfPopulation, type Declared,
+} from "./run/population.js";
 
 /** A present value, or JSON null: the schema's nullable members. */
 function nullable<T>(value: T | null, encode: (value: T) => JsonValue): JsonValue {
@@ -430,27 +433,20 @@ export function runHostView(programJson: unknown, scenarioJson: unknown): unknow
 // Population mode
 
 /**
- * `kernelRun --population <digests.json> <program.json>... <population-scenario.json>`: one program per scenario
- * definition, in order, and one digest per step. A program the admission registry refuses is a refused deployment.
+ * `kernelRun --population <digests.json> <source.json>... <population-scenario.json>`: one deployment source per
+ * deployment, in deploy order, and one digest per step. A program the admission registry refuses is a refused
+ * deployment.
  */
-export function runPopulation(programJsons: readonly unknown[], scenarioJson: unknown, digests: readonly string[]): unknown {
+export function runPopulation(sourceJsons: readonly unknown[], scenarioJson: unknown, digests: readonly string[]): unknown {
   const where = "population scenario";
   const scenarioId = requiredString(scenarioJson, "id", where);
   const profile = requiredString(scenarioJson, "profile", where);
-  const resources = arrayField(scenarioJson, "definitions", where);
-  if (resources.length !== programJsons.length) {
-    throw new Error(`${where}: ${resources.length} definitions, ${programJsons.length} programs`);
-  }
-  const declared = resources.map((resource, index): Declared => {
-    const program = programFromJson(programJsons[index], `program ${index}`);
-    const definitionRef = requiredString(resource, "definitionRef", where);
-    const ref = definitionRefFromJson(field(resource, "bpmn", where), profile, where);
-    if (program.identity.sourceSha256 !== ref.sourceSha256 || program.identity.profile !== profile) {
-      throw new Error(`program ${index}: program identity differs from definition ${definitionRef}`);
-    }
-    return { definitionRef, ref, program };
-  });
-  const stimuli = stimuliOfPopulation(declared, arrayField(scenarioJson, "steps", where), digests, where);
+  const declared = arrayField(scenarioJson, "definitions", where).map((resource): Declared => ({
+    definitionRef: requiredString(resource, "definitionRef", where),
+    ref: definitionRefFromJson(field(resource, "bpmn", where), profile, where),
+  }));
+  const sources = sourceJsons.map((json, index) => deploymentSourceFromJson(json, `source ${index}`));
+  const stimuli = stimuliOfPopulation(declared, sources, arrayField(scenarioJson, "steps", where), digests, where);
   const population = runInstances(hooks, admit, stimuli);
   if (!population.ok) throw new Error(`${where}: ${population.error}`);
   return populationResultJson(observationJson, scenarioId, population.value);

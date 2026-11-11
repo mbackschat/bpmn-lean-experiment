@@ -103,7 +103,7 @@
       }
     },
     "deploy": {
-      "description": "Deploys a scenario definition at the step's logical time as the next deployment; a definition no deploy step names deploys at 0, in list order, before the first step.",
+      "description": "Deploys a scenario definition at the step's logical time as the next deployment, whose deploy ordinal is one more than the deployments before it; the definitions no deploy step names deploy at 0, in list order, before the first step, so they take the first ordinals.",
       "type": "object",
       "additionalProperties": false,
       "required": [

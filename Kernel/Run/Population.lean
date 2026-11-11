@@ -11,6 +11,11 @@ stimuli and renders the [engine-population result](../../contracts/schemas/engin
 `Kernel.Run` reads the files and runs the stimuli, because it is the one module that may import both registries. A
 malformed population scenario is a harness error, three of them with stable codes: `population-time-backward`,
 `population-time-mismatch` and `population-unknown-definition`.
+
+The harness passes one source per deployment, in deploy order: the definitions no `deploy` step names, in list order,
+then every `deploy` step in step order, so the n-th source is what deployment ordinal n deploys (`Population.apply`
+numbers deployments by stimulus order). A source is the program assembled for that deployment, or `{"refused": code}`
+for a definition the reader refused, which deploys as `deploymentRefused` with that code.
 -/
 
 public section
@@ -33,11 +38,35 @@ structure Script where
   instanceId : String
   definitionRef : String
 
-/-- A scenario definition with the program the harness compiled for it. -/
+/-- A scenario definition: its reference and the BPMN resource it names. -/
 structure Declared where
   definitionRef : String
   ref : Population.DeploymentRef
-  program : Program
+
+/-- What one deployment deploys: the program assembled for it, or the code the reader refused its source with. -/
+inductive DeploymentSource where
+  | program (program : Program)
+  | refused (code : String)
+
+/-- A source file: `{"refused": code}` exactly, or a program. -/
+def deploymentSourceFromJson (json : Json) : Except String DeploymentSource :=
+  match json.getObjVal? "refused" with
+  | .ok _ => do
+    let code ← json.getObjValAs? String "refused"
+    if json == Json.mkObj [("refused", Json.str code)] then pure (.refused code)
+    else throw "a refused deployment names only its code"
+  | .error _ => .program <$> Codec.programFromJson json
+
+/-- The deployment of `entry` at `atMs` from the next source, with the sources left; a program must be the definition's
+source under the scenario's profile. -/
+def deployStimulus (entry : Declared) (atMs : Nat) :
+    List DeploymentSource → Except String (Population.Stimulus × List DeploymentSource)
+  | [] => throw s!"no source for a deployment of {entry.definitionRef}"
+  | .refused code :: rest => pure (.deployRefused entry.definitionRef entry.ref code atMs, rest)
+  | .program program :: rest => do
+    unless program.identity.sourceSha256 == entry.ref.sourceSha256 && program.identity.profile == entry.ref.profile do
+      throw s!"program identity differs from definition {entry.definitionRef}"
+    pure (.deploy entry.definitionRef entry.ref program atMs, rest)
 
 /-- A malformed population scenario: a harness refusal with its stable code (contract §2.2, §7). -/
 def harnessRefusal {α : Type} (code detail : String) : Except String α :=
@@ -148,16 +177,21 @@ def instanceStimulus (declared : List Declared) (scripts : List Script) (json : 
 
 /-- The population's stimuli, in scenario order: the definitions no `deploy` step names deploy at 0 in list order,
 then every step at its logical time, which a step gives as `at` or inherits from the step before (0 for the first) and
-which never decreases. `digests` holds each step's digest of its canonical wire form, which the harness computes. -/
-def stimuliOfPopulation (declared : List Declared) (steps : List Json) (digests : List String) :
-    Except String (List Population.Stimulus) := do
+which never decreases. Each deployment takes the next of `sources`, which must all be taken. `digests` holds each
+step's digest of its canonical wire form, which the harness computes. -/
+def stimuliOfPopulation (declared : List Declared) (sources : List DeploymentSource) (steps : List Json)
+    (digests : List String) : Except String (List Population.Stimulus) := do
   unless digests.length == steps.length do throw s!"{steps.length} steps, {digests.length} digests"
   let mut deployedByStep : List String := []
   for json in steps do
     if (← json.getObjValAs? String "kind") == "deploy" then
       deployedByStep := deployedByStep ++ [(← declaredOf declared (← json.getObjValAs? String "definitionRef")).definitionRef]
-  let mut stimuli : List Population.Stimulus := (declared.filter fun entry => !deployedByStep.contains entry.definitionRef).map
-    fun entry => .deploy entry.definitionRef entry.ref entry.program 0
+  let mut stimuli : List Population.Stimulus := []
+  let mut pending := sources
+  for entry in declared.filter fun entry => !deployedByStep.contains entry.definitionRef do
+    let (stimulus, rest) ← deployStimulus entry 0 pending
+    stimuli := stimuli ++ [stimulus]
+    pending := rest
   let mut scripts : List Script := []
   let mut clock := 0
   for (json, index) in steps.zipIdx do
@@ -170,7 +204,9 @@ def stimuliOfPopulation (declared : List Declared) (steps : List Json) (digests 
     match ← json.getObjValAs? String "kind" with
     | "deploy" =>
       let entry ← declaredOf declared (← json.getObjValAs? String "definitionRef")
-      stimuli := stimuli ++ [.deploy entry.definitionRef entry.ref entry.program clock]
+      let (stimulus, rest) ← deployStimulus entry clock pending
+      stimuli := stimuli ++ [stimulus]
+      pending := rest
     | "instance" =>
       let (known, stimulus) ← instanceStimulus declared scripts json stepAt
       scripts := known
@@ -179,6 +215,7 @@ def stimuliOfPopulation (declared : List Declared) (steps : List Json) (digests 
       match ← commandFromJson json kind with
       | some command => stimuli := stimuli ++ [.command command clock (digests.getD index "")]
       | none => throw s!"unsupported population step {kind}"
+  unless pending.isEmpty do throw s!"{sources.length} deployment sources, {sources.length - pending.length} deployments"
   pure stimuli
 
 def failureFields (failure : Failure) : List (String × Json) :=
