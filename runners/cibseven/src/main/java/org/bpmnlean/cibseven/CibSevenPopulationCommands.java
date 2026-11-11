@@ -232,7 +232,6 @@ final class CibSevenPopulationCommands {
                 && name.equals(signal.getSignal().getName()));
   }
 
-  /** Evaluates the Conditional starts of one deployment, or of every current one, against the given variables. */
   /**
    * Evaluates the root Conditional starts in scope. A scope without one is `rejected` ({@link #REFUSED_UNCHANGED}); any
    * other failure, such as a condition that is not Boolean, rolls the command back.
