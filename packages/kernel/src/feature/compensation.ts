@@ -19,6 +19,7 @@
  * account.
  */
 import {
+  CompensationHandlerFailureTag,
   assertNever,
   distinctCount,
   elementActivity,
@@ -243,6 +244,25 @@ export function handlerCompleted(ctx: Ctx, run: ScopeOccurrenceId, occurrence: O
     ? { ...candidate, running: candidate.running.filter(([context]) => context !== occurrence.scope) }
     : candidate);
   return advance(ctx, run, store(left, { ...compensation, runs }));
+}
+
+/**
+ * `Hooks.handlerEnded`: a handler left without completing, raised away by an event. Under `PropagatesFromTrigger` (I11)
+ * the run, if a catcher that interrupted its scope occurrence has not dropped it, goes on as `handlerCompleted` does;
+ * under `FailsInstance` the failure that follows ends the instance, so nothing changes.
+ */
+export function handlerEnded(ctx: Ctx, run: ScopeOccurrenceId, occurrence: Occurrence, state: State): Outcome {
+  const failure = ctx.program.options.compensationHandlerFailure;
+  switch (failure.tag) {
+    case CompensationHandlerFailureTag.PropagatesFromTrigger:
+      return state.slots.compensation.runs.some((candidate) => candidate.scope === run)
+        ? handlerCompleted(ctx, run, occurrence, state)
+        : committed(state);
+    case CompensationHandlerFailureTag.FailsInstance:
+    case CompensationHandlerFailureTag.Selected:
+      return committed(state);
+  }
+  return assertNever(failure);
 }
 
 /**

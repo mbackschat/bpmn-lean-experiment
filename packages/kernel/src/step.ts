@@ -135,15 +135,22 @@ function begin(hooks: Hooks, ctx: Ctx, request: BeginRequest, state: State): Out
   return deferred(ctx.program, begun, dispatch(hooks, ctx, occurrence, { locals: request.locals, inner: request.inner }, request.trigger, begun));
 }
 
+/**
+ * What follows an occurrence that left: its continuation, or, for one raised away, only a compensation run, which learns
+ * that its handler ended without completing (`Hooks.handlerEnded`).
+ */
 function continueAfter(hooks: Hooks, ctx: Ctx, occurrence: Occurrence, leave: Leave, writes: readonly Binding[], state: State): Outcome {
+  const raised = leave.tag === LeaveTag.Raised;
   const continuation = occurrence.continuation;
   switch (continuation.tag) {
     case ContinuationTag.Flow:
-      return hooks.outflow(ctx, occurrence, leave, state);
+      return raised ? committed(state) : hooks.outflow(ctx, occurrence, leave, state);
     case ContinuationTag.MultiInstance:
-      return hooks.instanceCompleted(ctx, continuation.body, occurrence, writes, state);
+      return raised ? committed(state) : hooks.instanceCompleted(ctx, continuation.body, occurrence, writes, state);
     case ContinuationTag.Compensation:
-      return hooks.handlerCompleted(ctx, continuation.run, occurrence, state);
+      return raised
+        ? hooks.handlerEnded(ctx, continuation.run, occurrence, state)
+        : hooks.handlerCompleted(ctx, continuation.run, occurrence, state);
   }
   return assertNever(continuation);
 }
@@ -152,7 +159,7 @@ function continueAfter(hooks: Hooks, ctx: Ctx, occurrence: Occurrence, leave: Le
  * The one completion pipeline: disarm, write, retain, continue, remove and journal, in that order. The occurrence's
  * record and owned scope go before its continuation runs, so that a continuation leaving its instance or handler scope
  * does not cancel the occurrence that just completed. An occurrence raised away gets no retention, outflow or
- * continuation. A completion naming an occurrence that is gone is dropped defensively, and no admitted schedule reaches
+ * continuation, only a compensation run's notice (`continueAfter`). A completion naming an occurrence that is gone is dropped defensively, and no admitted schedule reaches
  * it (a 2026-11-11 probe catching one throw at interrupting Signal boundaries on a Sub-Process and on a task inside it
  * did not): signals run first in, first out, and an interrupting firing withdraws the items inside at once, so a
  * thrower's completion runs before any cancellation its receivers queue. The kernel thus completes a thrower its
@@ -178,7 +185,7 @@ function complete(
   const leave = selected.value;
   switch (leave.tag) {
     case LeaveTag.Raised:
-      return committed(recordEnd(removeOccurrence(state, id), key, Terminal.Cancelled));
+      return continueAfter(hooks, ctx, occurrence, leave, writes, recordEnd(removeOccurrence(state, id), key, Terminal.Cancelled));
     case LeaveTag.Outgoing:
     case LeaveTag.Flows: {
       const retained = hooks.completed(ctx, occurrence, state);

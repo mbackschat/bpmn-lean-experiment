@@ -52,7 +52,8 @@ def callRules : List CallRule :=
 (guard 17). Each must have a caller there, so a renamed hook fails rather than leaving its rule empty. -/
 def pipelineHooks : List Name :=
   [`Kernel.Hooks.leave, `Kernel.Hooks.writeOutputs, `Kernel.Hooks.completed, `Kernel.Hooks.outflow,
-   `Kernel.Hooks.instanceCompleted, `Kernel.Hooks.handlerCompleted, `Kernel.Hooks.completeScope,
+   `Kernel.Hooks.instanceCompleted, `Kernel.Hooks.handlerCompleted, `Kernel.Hooks.handlerEnded,
+   `Kernel.Hooks.completeScope,
    `Kernel.Hooks.completeCall, `Kernel.Hooks.completeBody, `Kernel.Hooks.cancelled, `Kernel.Hooks.written]
 
 /-- The `State` fields whose writes are ruled, and the modules that may write them through a structure update. -/
@@ -267,6 +268,7 @@ structure Hooks where
   writeOutputs : State → State := id
   instanceCompleted : State → State := id
   handlerCompleted : State → State := id
+  handlerEnded : State → State := id
   completeScope : State → State := id
   completeCall : State → State := id
   completeBody : State → State := id
@@ -285,7 +287,8 @@ def activate (state : State) : State := { state with activations := 1 :: state.a
 end State
 namespace Step
 def complete (hooks : Hooks) (state : State) : State :=
-  hooks.handlerCompleted (hooks.instanceCompleted (hooks.writeOutputs (hooks.leave (hooks.completed (hooks.outflow state)))))
+  hooks.handlerEnded (hooks.handlerCompleted (hooks.instanceCompleted (hooks.writeOutputs (hooks.leave
+    (hooks.completed (hooks.outflow state))))))
 def idle (hooks : Hooks) (state : State) : State :=
   hooks.written (hooks.cancelled (hooks.completeBody (hooks.completeCall (hooks.completeScope state))))
 def lifecycle (state : State) : State :=

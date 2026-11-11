@@ -28,7 +28,7 @@ const callRules: readonly CallRule[] = [
 ];
 
 /** The completion pipeline, idle completion and the lifecycle notifications: only `Step` calls these hooks. */
-const pipelineHooks = new Set(["leave", "writeOutputs", "completed", "outflow", "instanceCompleted", "handlerCompleted",
+const pipelineHooks = new Set(["leave", "writeOutputs", "completed", "outflow", "instanceCompleted", "handlerCompleted", "handlerEnded",
   "completeScope", "completeCall", "completeBody", "cancelled", "written"]);
 
 const stateFieldWriters: Readonly<Record<string, readonly string[]>> = {

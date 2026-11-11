@@ -68,6 +68,7 @@ def hooks : Hooks :=
     outflow := Feature.Flow.outflow
     instanceCompleted := Feature.MultiInstance.instanceCompleted
     handlerCompleted := Feature.Compensation.handlerCompleted
+    handlerEnded := Feature.Compensation.handlerEnded
     evaluate := Feature.Data.evaluate
     catches := Feature.Subscriptions.catches
     correlates := Feature.Correlation.correlates

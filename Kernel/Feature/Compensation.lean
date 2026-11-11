@@ -152,6 +152,15 @@ def handlerCompleted (ctx : Ctx) (run : ScopeOccurrenceId) (occurrence : Occurre
     else candidate
   advance ctx run (store left { compensation with runs })
 
+/-- `Hooks.handlerEnded`: a handler left without completing, raised away by an event. Under `propagatesFromTrigger`
+(I11) the run, if a catcher that interrupted its scope occurrence has not dropped it, goes on as `handlerCompleted` does;
+under `failsInstance` the failure that follows ends the instance, so nothing changes. -/
+def handlerEnded (ctx : Ctx) (run : ScopeOccurrenceId) (occurrence : Occurrence) (state : State) : Outcome :=
+  match ctx.program.options.compensationHandlerFailure with
+  | .propagatesFromTrigger =>
+    if state.slots.compensation.runs.any (·.scope == run) then handlerCompleted ctx run occurrence state else .ok state
+  | .failsInstance | .selected _ => .ok state
+
 /-- `Signal.compensationFailed`: an Error raised at `origin`, an effect's reported Error or an Error End Event inside a
 handler Sub-Process, left the handler context `handler` uncaught (COMPH-FAIL-01). The handler's public occurrence is the
 raising Activity itself or, for a Sub-Process handler, its occurrence in that context. -/

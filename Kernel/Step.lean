@@ -127,10 +127,23 @@ def begin (hooks : Hooks) (ctx : Ctx) (request : BeginRequest) (state : State) :
   let (state, occurrence) := state.beginOccurrence request (roleOf ctx.program request) sourceType
   deferred ctx.program state (dispatch hooks ctx occurrence { locals := request.locals, inner := request.inner } request.trigger state)
 
+/-- What follows an occurrence that left: its continuation, or, for one raised away, only a compensation run, which
+learns that its handler ended without completing (`Hooks.handlerEnded`). -/
+def continueAfter (hooks : Hooks) (ctx : Ctx) (occurrence : Occurrence) (leave : Leave) (writes : List (String × Value))
+    (state : State) : Outcome :=
+  let raised := match leave with
+    | .raised => true
+    | .outgoing | .flows _ => false
+  match occurrence.continuation with
+  | .flow => if raised then .ok state else hooks.outflow ctx occurrence leave state
+  | .multiInstance body => if raised then .ok state else hooks.instanceCompleted ctx body occurrence writes state
+  | .compensation run =>
+    if raised then hooks.handlerEnded ctx run occurrence state else hooks.handlerCompleted ctx run occurrence state
+
 /-- The one completion pipeline: disarm, write, retain, continue, remove and journal, in that order. The occurrence's
 record and owned scope go before its continuation runs, so that a continuation leaving its instance or handler scope
 does not cancel the occurrence that just completed. An occurrence raised away gets no retention, outflow or
-continuation. A completion naming an occurrence that is gone is dropped defensively, and no admitted schedule reaches it
+continuation, only a compensation run's notice (`continueAfter`). A completion naming an occurrence that is gone is dropped defensively, and no admitted schedule reaches it
 (a 2026-11-11 probe catching one throw at interrupting Signal boundaries on a Sub-Process and on a task inside it did
 not): signals run first in, first out, and an interrupting firing withdraws the items inside at once, so a thrower's
 completion runs before any cancellation its receivers queue. The kernel thus completes a thrower its receiver then
@@ -146,15 +159,12 @@ def complete (hooks : Hooks) (ctx : Ctx) (id : Nat) (leave : Leave) (writes : Li
   let state ← hooks.writeOutputs ctx occurrence.scope writes rule state
   let key := state.keyOf occurrence
   match leave with
-  | .raised => .ok ((state.removeOccurrence id).recordEnd key .cancelled)
+  | .raised => continueAfter hooks ctx occurrence leave writes ((state.removeOccurrence id).recordEnd key .cancelled)
   | .outgoing | .flows _ =>
     let state ← hooks.completed ctx occurrence state
     let state := state.removeOccurrence id
     -- An `asyncAfter` boundary lies before the continuation, though the completion's fact is journalled after it.
-    let state ← deferred ctx.program (state.recordEnd key .completed) <| match occurrence.continuation with
-      | .flow => hooks.outflow ctx occurrence leave state
-      | .multiInstance body => hooks.instanceCompleted ctx body occurrence writes state
-      | .compensation run => hooks.handlerCompleted ctx run occurrence state
+    let state ← deferred ctx.program (state.recordEnd key .completed) <| continueAfter hooks ctx occurrence leave writes state
     .ok (state.recordEnd key .completed)
 
 /-- A subscription an Activity opened goes back to its Activity; every other one to `Hooks.trigger`. -/

@@ -66,6 +66,7 @@ export const hooks: Hooks = {
   outflow: Flow.outflow,
   instanceCompleted: MultiInstance.instanceCompleted,
   handlerCompleted: Compensation.handlerCompleted,
+  handlerEnded: Compensation.handlerEnded,
   evaluate: Data.evaluate,
   catches: Subscriptions.catches,
   correlates: Correlation.correlates,
