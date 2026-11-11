@@ -581,6 +581,7 @@ const fixtureEntries: Readonly<Record<string, (fixture: unknown, input: unknown)
   refusesSignalVariables: (fixture) => refusesSignalVariables(onlyProgram(fixturePrograms(fixture))),
   matching: matchingAnswer,
   registerSummary: (fixture, input) => registrations(fixturePrograms(fixture), arrayField(input, "deploymentIds", "fixture")),
+  definitionCapabilities: (fixture) => capabilitiesJson(definitionCapabilities(onlyProgram(fixturePrograms(fixture)))),
 };
 
 /** `kernelRun --fixture <fixture.json>`, for one fixture. */

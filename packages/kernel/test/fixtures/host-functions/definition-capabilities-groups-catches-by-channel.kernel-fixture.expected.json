@@ -1,0 +1,75 @@
+{
+  "starts": [
+    {
+      "startEventId": "S",
+      "trigger": {
+        "kind": "none"
+      }
+    }
+  ],
+  "correlatedChannels": [
+    {
+      "channel": {
+        "kind": "operationMessage",
+        "interfaceId": "I",
+        "interfaceOperationId": "O",
+        "messageId": "M"
+      },
+      "catches": [
+        {
+          "elementId": "T",
+          "criteria": [
+            {
+              "key": "OrderKey",
+              "value": {
+                "variable": {
+                  "name": "orderId"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "elementId": "T2",
+          "criteria": [
+            {
+              "key": "ShipKey",
+              "value": {
+                "variable": {
+                  "name": "orderId"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "channel": {
+        "kind": "operationMessage",
+        "interfaceId": "I",
+        "interfaceOperationId": "P",
+        "messageId": "M"
+      },
+      "catches": [
+        {
+          "elementId": "T3",
+          "criteria": [
+            {
+              "key": "BillKey",
+              "value": {
+                "variable": {
+                  "name": "orderId"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "relations": [
+    "CIB-AGR-0006",
+    "CIB-INT-0001"
+  ]
+}

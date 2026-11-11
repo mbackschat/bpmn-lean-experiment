@@ -417,7 +417,8 @@ def registrations (programs : List Program) (deploymentIds : List Nat) : Except 
   pure (Json.arr answers.toArray)
 
 /-- The answer of the host-facing function a fixture's `entry` names: `rootStarts`, `refusesSignalVariables`,
-`matching` (over the state its stimuli commit, for a delivery's channel and correlation) or `registerSummary`. -/
+`matching` (over the state its stimuli commit, for a delivery's channel and correlation), `registerSummary` or
+`definitionCapabilities` (as the host view renders it). -/
 def fixtureAnswer (fixture : Json) : Except String Json := do
   let input ← fixture.getObjVal? "input"
   match ← fixture.getObjValAs? String "entry" with
@@ -432,6 +433,8 @@ def fixtureAnswer (fixture : Json) : Except String Json := do
     let correlation ← (← input.getObjValAs? (List Json) "correlation").mapM Codec.correlationFromJson
     pure (Json.arr ((Population.matching Registry.hooks program state channel correlation).map referenceJson).toArray)
   | "registerSummary" => registrations (← fixturePrograms fixture) (← input.getObjValAs? (List Nat) "deploymentIds")
+  | "definitionCapabilities" =>
+    pure (capabilitiesJson (Host.definitionCapabilities (← onlyProgram (← fixturePrograms fixture))))
   | other => throw s!"fixture-entry-unknown: {other}"
 
 def runFixtures (paths : List String) : IO Json := do
