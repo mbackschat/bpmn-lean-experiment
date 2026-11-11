@@ -97,7 +97,7 @@ Three probes give CIB a value the canonical result cannot hold (a Long beyond 2^
 | [map-to-lower-case](map-to-lower-case.scenario.json) | [method-receivers](method-receivers.bpmn) | `toLowerCase()` called on a map. Predicted CIB answer: an evaluation failure (`MethodNotFoundException`), so the starting command is rolled back. | PC-DATA-07, PC-DATA-09 |
 | [map-trim](map-trim.scenario.json) | [method-receivers](method-receivers.bpmn) | `trim()` called on a map. Predicted CIB answer: an evaluation failure (`MethodNotFoundException`), so the starting command is rolled back. | PC-DATA-07, PC-DATA-09 |
 | [map-concat](map-concat.scenario.json) | [method-receivers](method-receivers.bpmn) | `concat('a')` called on a map. Predicted CIB answer: an evaluation failure (`MethodNotFoundException`), so the starting command is rolled back. | PC-DATA-07, PC-DATA-09 |
-| [map-replace](map-replace.scenario.json) | [method-receivers](method-receivers.bpmn) | `replace('a', 'b')` called on a map. Predicted CIB answer: an evaluation failure (`MethodNotFoundException`), so the starting command is rolled back. | PC-DATA-07, PC-DATA-09 |
+| [map-replace](map-replace.scenario.json) | [method-receivers](method-receivers.bpmn) | `replace('a', 'b')` called on a map. Predicted CIB answer was an evaluation failure; CIB instead calls `Map.replace`, which answers the previous value `x` and writes `b` into the root variable `pairs`, and commits the start. | PC-DATA-07, PC-DATA-09 |
 
 Notes for the target runners:
 
