@@ -1,0 +1,99 @@
+{
+  "kind": "populationScenario",
+  "id": "signal-broadcast-population-broadcast-boundary-and-esp-standards",
+  "profile": "bpmn-2.0.2",
+  "definitions": [
+    {
+      "definitionRef": "guarded-work",
+      "bpmn": {
+        "id": "signal-broadcast-population-guarded-work",
+        "relativePath": "scenarios/open-rows/signal-broadcast-population/guarded-work.bpmn",
+        "sha256": "5e3bb118f8a70c9104fea61a0361ebb43d615a4e60151e14594a33aa0202c84f",
+        "sourceOverlay": null
+      }
+    }
+  ],
+  "steps": [
+    {
+      "kind": "instance",
+      "definitionRef": "guarded-work",
+      "instanceId": "Guarded_1",
+      "at": 0,
+      "stimulus": {
+        "kind": "start",
+        "commandId": "s01-start-guarded-1",
+        "instanceId": "Guarded_1",
+        "variables": []
+      }
+    },
+    {
+      "kind": "broadcast",
+      "commandId": "s02-broadcast-alert",
+      "address": {
+        "signalRef": {
+          "id": "Signal_Alert",
+          "namespace": "urn:bpmn-lean:scenarios:signal-broadcast-population:guarded-work"
+        }
+      },
+      "variables": [],
+      "at": 10
+    },
+    {
+      "kind": "broadcast",
+      "commandId": "s03-broadcast-alert-again",
+      "address": {
+        "signalRef": {
+          "id": "Signal_Alert",
+          "namespace": "urn:bpmn-lean:scenarios:signal-broadcast-population:guarded-work"
+        }
+      },
+      "variables": [],
+      "at": 20
+    },
+    {
+      "kind": "broadcast",
+      "commandId": "s04-broadcast-stop",
+      "address": {
+        "signalRef": {
+          "id": "Signal_Stop",
+          "namespace": "urn:bpmn-lean:scenarios:signal-broadcast-population:guarded-work"
+        }
+      },
+      "variables": [],
+      "at": 30
+    },
+    {
+      "kind": "instance",
+      "definitionRef": "guarded-work",
+      "instanceId": "Guarded_1",
+      "at": 40,
+      "stimulus": {
+        "kind": "command",
+        "commandId": "s05-complete-HandleStop-1",
+        "occurrence": {
+          "processInstanceId": "Guarded_1",
+          "elementId": "HandleStop",
+          "activation": 1
+        },
+        "action": {
+          "kind": "completeUserTask",
+          "values": []
+        }
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.5.5",
+      "BPMN 2.0.2 Clause 10.5.6",
+      "BPMN 2.0.2 Clause 13.2",
+      "BPMN 2.0.2 Clause 13.5.3",
+      "BPMN 2.0.2 Table 10.84",
+      "BPMN 2.0.2 Table 10.91",
+      "BPMN 2.0.2 Table 10.92",
+      "BPMN 2.0.2 Table 10.100"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

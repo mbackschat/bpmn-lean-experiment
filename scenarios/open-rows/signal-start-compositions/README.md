@@ -30,6 +30,6 @@ A Signal start stimulus names its Start Event and carries the Signal name with t
 | [failing-signal-start-start](failing-signal-start-start.scenario.json) | failing-signal-start | The Signal Start fires. |
 | [race-approved-standards](race-approved-standards.scenario.json) | approval-race | The `bpmn-2.0.2` profile: `Signal_Approved` is delivered to its arm by QName. Separates a targeted delivery, which only `signalDelivery = occurrenceTargeted` admits, from a broadcast. No CIB evidence: CIB runs only its own profile. |
 
-The population witnesses of this directory are held outside the repository with the M8 track: the CIB runner realizes no population scenario and the kernel's population runner refuses an inadmissible definition, so they have no comparable result yet.
+The population witnesses of these rows, which need more than one instance or definition, are in [signal-broadcast-population](../signal-broadcast-population/README.md).
 
 The schedules carry no expected instance, task or variable; the retained CIB evidence is the answer.

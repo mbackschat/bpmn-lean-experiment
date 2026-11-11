@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             id="Definitions_BoundedCycleStart" targetNamespace="urn:bpmn-lean:scenarios:timer-start-population:bounded-cycle-start">
+  <process id="Process_BoundedCycleBatch" name="Review a batch every ten minutes, three times" isExecutable="true">
+    <startEvent id="StartEveryTenMinutes" name="Every ten minutes">
+      <timerEventDefinition id="StartEveryTenMinutes_Timer">
+        <timeCycle xsi:type="tFormalExpression">R3/PT10M</timeCycle>
+      </timerEventDefinition>
+    </startEvent>
+    <userTask id="ReviewCycleBatch" name="Review the cycle batch" />
+    <endEvent id="CycleBatchReviewed" name="Cycle batch reviewed" />
+    <sequenceFlow id="Flow_Started" sourceRef="StartEveryTenMinutes" targetRef="ReviewCycleBatch" />
+    <sequenceFlow id="Flow_Reviewed" sourceRef="ReviewCycleBatch" targetRef="CycleBatchReviewed" />
+  </process>
+</definitions>

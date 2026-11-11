@@ -40,6 +40,6 @@ A Condition start stimulus carries the context as its start variables and names 
 | [lexeme-differing-conditions-start](lexeme-differing-conditions-start.scenario.json) | lexeme-differing-conditions | `amount` 2500, naming *Large online order*; kernel-only. |
 | [operator-differing-conditions-start](operator-differing-conditions-start.scenario.json) | operator-differing-conditions | `amount` 2500, naming *Large online order*; kernel-only. |
 
-The population witnesses of this directory are held outside the repository with the M8 track: the CIB runner realizes no population scenario and the kernel's population runner refuses an inadmissible definition, so they have no comparable result yet.
+The population witnesses of these rows, which need more than one instance or definition, are in [conditional-start-population](../conditional-start-population/README.md).
 
 The schedules carry no expected instance, task or variable; the retained CIB evidence is the answer.

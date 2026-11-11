@@ -1,0 +1,45 @@
+{
+  "kind": "populationScenario",
+  "id": "signal-broadcast-population-broadcast-standards-duplicate-starts-two-instances",
+  "profile": "bpmn-2.0.2",
+  "definitions": [
+    {
+      "definitionRef": "duplicate-signal-starts",
+      "bpmn": {
+        "id": "signal-start-compositions-duplicate-signal-starts",
+        "relativePath": "scenarios/open-rows/signal-start-compositions/duplicate-signal-starts.bpmn",
+        "sha256": "b594fcb3b307f9dcc20ba7ce373a93c74d66d2b986468886849d69556f6df4c0",
+        "sourceOverlay": null
+      }
+    }
+  ],
+  "steps": [
+    {
+      "kind": "broadcast",
+      "commandId": "s01-broadcast-shift-opened",
+      "address": {
+        "signalRef": {
+          "id": "Signal_ShiftOpened",
+          "namespace": "urn:bpmn-lean:scenarios:signal-start-compositions:duplicate-signal-starts"
+        }
+      },
+      "variables": [],
+      "at": 0
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.5.2",
+      "BPMN 2.0.2 Clause 10.5.4",
+      "BPMN 2.0.2 Clause 10.5.5",
+      "BPMN 2.0.2 Clause 13.2",
+      "BPMN 2.0.2 Clause 13.5.1",
+      "BPMN 2.0.2 Clause 13.5.2",
+      "BPMN 2.0.2 Table 10.84",
+      "BPMN 2.0.2 Table 10.89",
+      "BPMN 2.0.2 Table 10.100"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

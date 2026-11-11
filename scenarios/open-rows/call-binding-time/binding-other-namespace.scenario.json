@@ -1,0 +1,34 @@
+{
+  "kind": "scenario",
+  "id": "call-binding-time-binding-other-namespace",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "call-binding-time-binding-other-namespace",
+    "relativePath": "scenarios/open-rows/call-binding-time/binding-other-namespace.bpmn",
+    "sha256": "8b567665096e636e63c0a655c12d769a56ad74f8c63d2cd3fbf52daf8c498bac",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.3.6",
+      "BPMN 2.0.2 Clause 13.3.4",
+      "BPMN 2.0.2 Table 10.23",
+      "BPMN 2.0.2 Table 10.24"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/util/CallableElementUtil.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/CallActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/model/BaseCallableElement.java"
+    ]
+  }
+}

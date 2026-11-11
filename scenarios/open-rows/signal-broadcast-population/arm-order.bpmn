@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             id="Definitions_ArmOrder" targetNamespace="urn:bpmn-lean:scenarios:signal-broadcast-population:arm-order">
+  <signal id="Signal_Go" name="go" />
+  <process id="Process_ArmOrder" name="Wait for one signal at two arms of one gateway" isExecutable="true">
+    <startEvent id="StartArms" name="Waiting requested" />
+    <eventBasedGateway id="AwaitGo" name="Await go" />
+    <intermediateCatchEvent id="CatchFirst" name="First arm">
+      <signalEventDefinition id="CatchFirst_Signal" signalRef="Signal_Go" />
+    </intermediateCatchEvent>
+    <intermediateCatchEvent id="CatchSecond" name="Second arm">
+      <signalEventDefinition id="CatchSecond_Signal" signalRef="Signal_Go" />
+    </intermediateCatchEvent>
+    <userTask id="FirstArm" name="Proceed on the first arm" />
+    <userTask id="SecondArm" name="Proceed on the second arm" />
+    <endEvent id="FirstDone" name="First arm done" />
+    <endEvent id="SecondDone" name="Second arm done" />
+    <sequenceFlow id="Flow_Waiting" sourceRef="StartArms" targetRef="AwaitGo" />
+    <sequenceFlow id="Flow_ToFirst" sourceRef="AwaitGo" targetRef="CatchFirst" />
+    <sequenceFlow id="Flow_ToSecond" sourceRef="AwaitGo" targetRef="CatchSecond" />
+    <sequenceFlow id="Flow_First" sourceRef="CatchFirst" targetRef="FirstArm" />
+    <sequenceFlow id="Flow_Second" sourceRef="CatchSecond" targetRef="SecondArm" />
+    <sequenceFlow id="Flow_FirstDone" sourceRef="FirstArm" targetRef="FirstDone" />
+    <sequenceFlow id="Flow_SecondDone" sourceRef="SecondArm" targetRef="SecondDone" />
+  </process>
+</definitions>

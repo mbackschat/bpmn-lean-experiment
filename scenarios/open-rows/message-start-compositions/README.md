@@ -27,6 +27,6 @@ A Message start stimulus names its Start Event and the Message it triggers; a Me
 | [shipment-payload-absent](shipment-payload-absent.scenario.json) | shipment-start | The trigger carries no payload. |
 | [duplicate-message-starts-start](duplicate-message-starts-start.scenario.json) | duplicate-message-starts | The shared Message triggers the first of the two starts. |
 
-The population witnesses of this directory are held outside the repository with the M8 track: the CIB runner realizes no population scenario and the kernel's population runner refuses an inadmissible definition, so they have no comparable result yet.
+The population witnesses of these rows, which need more than one instance or definition, are in [message-start-population](../message-start-population/README.md).
 
 The schedules carry no expected instance, task or variable; the retained CIB evidence is the answer.

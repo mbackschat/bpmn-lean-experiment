@@ -1,0 +1,78 @@
+{
+  "kind": "populationScenario",
+  "id": "signal-broadcast-population-broadcast-within-state-order",
+  "profile": "bpmn-2.0.2",
+  "definitions": [
+    {
+      "definitionRef": "arm-order",
+      "bpmn": {
+        "id": "signal-broadcast-population-arm-order",
+        "relativePath": "scenarios/open-rows/signal-broadcast-population/arm-order.bpmn",
+        "sha256": "fc6916d018344a0eb6cbf2a7718f33664b065bd48cb9916d3fa3aafafcd2f58b",
+        "sourceOverlay": null
+      }
+    }
+  ],
+  "steps": [
+    {
+      "kind": "instance",
+      "definitionRef": "arm-order",
+      "instanceId": "Arms_1",
+      "at": 0,
+      "stimulus": {
+        "kind": "start",
+        "commandId": "s01-start-arms-1",
+        "instanceId": "Arms_1",
+        "variables": []
+      }
+    },
+    {
+      "kind": "broadcast",
+      "commandId": "s02-broadcast-go",
+      "address": {
+        "signalRef": {
+          "id": "Signal_Go",
+          "namespace": "urn:bpmn-lean:scenarios:signal-broadcast-population:arm-order"
+        }
+      },
+      "variables": [],
+      "at": 10
+    },
+    {
+      "kind": "instance",
+      "definitionRef": "arm-order",
+      "instanceId": "Arms_1",
+      "at": 20,
+      "stimulus": {
+        "kind": "command",
+        "commandId": "s03-complete-FirstArm-1",
+        "occurrence": {
+          "processInstanceId": "Arms_1",
+          "elementId": "FirstArm",
+          "activation": 1
+        },
+        "action": {
+          "kind": "completeUserTask",
+          "values": []
+        }
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.5.2",
+      "BPMN 2.0.2 Clause 10.5.4",
+      "BPMN 2.0.2 Clause 10.5.5",
+      "BPMN 2.0.2 Clause 13.2",
+      "BPMN 2.0.2 Clause 13.5.1",
+      "BPMN 2.0.2 Clause 13.5.2",
+      "BPMN 2.0.2 Table 10.84",
+      "BPMN 2.0.2 Table 10.89",
+      "BPMN 2.0.2 Table 10.100",
+      "BPMN 2.0.2 Clause 10.6.6",
+      "BPMN 2.0.2 Clause 13.4.4"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

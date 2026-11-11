@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_TagStable" targetNamespace="urn:bpmn-lean:scenarios:call-binding-time:tag-stable">
+  <process id="Process_TagCaller" name="Assess a request through a callee selected by version tag" isExecutable="true">
+    <startEvent id="RequestReceived" name="Request received" />
+    <callActivity id="CallStable" name="Call the stable version" calledElement="Process_Callee" camunda:calledElementBinding="versionTag" camunda:calledElementVersionTag="stable" />
+    <userTask id="ConfirmCaller" name="Confirm the request" />
+    <endEvent id="RequestConfirmed" name="Request confirmed" />
+    <sequenceFlow id="Flow_Received" sourceRef="RequestReceived" targetRef="CallStable" />
+    <sequenceFlow id="Flow_Returned" sourceRef="CallStable" targetRef="ConfirmCaller" />
+    <sequenceFlow id="Flow_Confirmed" sourceRef="ConfirmCaller" targetRef="RequestConfirmed" />
+  </process>
+  <process id="Process_Callee" name="Assess a request" camunda:versionTag="stable" isExecutable="true">
+    <startEvent id="AssessmentRequested" name="Assessment requested" />
+    <userTask id="AssessRequest" name="Assess the request" />
+    <endEvent id="RequestAssessed" name="Request assessed" />
+    <sequenceFlow id="Flow_AssessmentRequested" sourceRef="AssessmentRequested" targetRef="AssessRequest" />
+    <sequenceFlow id="Flow_Assessed" sourceRef="AssessRequest" targetRef="RequestAssessed" />
+  </process>
+</definitions>

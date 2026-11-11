@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             id="Definitions_GuardedWork" targetNamespace="urn:bpmn-lean:scenarios:signal-broadcast-population:guarded-work">
+  <signal id="Signal_Stop" name="stop" />
+  <signal id="Signal_Alert" name="alert" />
+  <process id="Process_GuardedWork" name="Do work that a stop signal cancels and an alert signal accompanies" isExecutable="true">
+    <startEvent id="StartWork" name="Work requested" />
+    <userTask id="Work" name="Do the work" />
+    <endEvent id="WorkDone" name="Work done" />
+    <boundaryEvent id="StopWork" name="Stop requested" attachedToRef="Work" cancelActivity="true">
+      <signalEventDefinition id="StopWork_Signal" signalRef="Signal_Stop" />
+    </boundaryEvent>
+    <userTask id="HandleStop" name="Handle the stop" />
+    <endEvent id="WorkStopped" name="Work stopped" />
+    <subProcess id="AlertWatch" triggeredByEvent="true">
+      <startEvent id="StartAlert" name="Alert raised" isInterrupting="false">
+        <signalEventDefinition id="StartAlert_Signal" signalRef="Signal_Alert" />
+      </startEvent>
+      <userTask id="HandleAlert" name="Handle the alert" />
+      <endEvent id="AlertHandled" name="Alert handled" />
+      <sequenceFlow id="Flow_Raised" sourceRef="StartAlert" targetRef="HandleAlert" />
+      <sequenceFlow id="Flow_AlertHandled" sourceRef="HandleAlert" targetRef="AlertHandled" />
+    </subProcess>
+    <sequenceFlow id="Flow_Requested" sourceRef="StartWork" targetRef="Work" />
+    <sequenceFlow id="Flow_Done" sourceRef="Work" targetRef="WorkDone" />
+    <sequenceFlow id="Flow_Stopped" sourceRef="StopWork" targetRef="HandleStop" />
+    <sequenceFlow id="Flow_StopHandled" sourceRef="HandleStop" targetRef="WorkStopped" />
+  </process>
+</definitions>

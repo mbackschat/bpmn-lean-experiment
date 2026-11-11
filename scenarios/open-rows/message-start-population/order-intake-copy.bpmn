@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             id="Definitions_OrderIntakeCopy" targetNamespace="urn:bpmn-lean:scenarios:message-start-population:order-intake-copy">
+  <message id="Message_OrderPlacedAtCopy" name="order-placed" />
+  <process id="Process_OrderIntakeCopy" name="Take in an order placed at a second intake" isExecutable="true">
+    <startEvent id="StartCopyOrderPlaced" name="Order placed at the second intake">
+      <messageEventDefinition id="StartCopyOrderPlaced_Message" messageRef="Message_OrderPlacedAtCopy" />
+    </startEvent>
+    <userTask id="PickCopiedOrder" name="Pick the copied order" />
+    <endEvent id="CopiedOrderPicked" name="Copied order picked" />
+    <sequenceFlow id="Flow_CopyStarted" sourceRef="StartCopyOrderPlaced" targetRef="PickCopiedOrder" />
+    <sequenceFlow id="Flow_CopyPicked" sourceRef="PickCopiedOrder" targetRef="CopiedOrderPicked" />
+  </process>
+</definitions>

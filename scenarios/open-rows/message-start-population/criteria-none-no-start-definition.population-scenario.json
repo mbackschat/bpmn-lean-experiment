@@ -1,0 +1,89 @@
+{
+  "kind": "populationScenario",
+  "id": "message-start-population-criteria-none-no-start-definition",
+  "profile": "cibseven-2.2.0",
+  "definitions": [
+    {
+      "definitionRef": "order-confirmation",
+      "bpmn": {
+        "id": "message-correlation-criteria-order-confirmation",
+        "relativePath": "scenarios/open-rows/message-correlation-criteria/order-confirmation.bpmn",
+        "sha256": "04f9e455a7064fda3193bd836ea8fec3360301564f41ffabbcc2681140b49340",
+        "sourceOverlay": null
+      }
+    }
+  ],
+  "steps": [
+    {
+      "kind": "instance",
+      "definitionRef": "order-confirmation",
+      "instanceId": "Order_1",
+      "at": 0,
+      "stimulus": {
+        "kind": "start",
+        "commandId": "s01-start-order-1",
+        "instanceId": "Order_1",
+        "variables": [
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "A-1"
+            }
+          },
+          {
+            "name": "region",
+            "value": {
+              "kind": "string",
+              "value": "north"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "publish",
+      "commandId": "s02-publish-order-confirmed",
+      "address": {
+        "name": "order-confirmed"
+      },
+      "criteria": [
+        {
+          "target": {
+            "kind": "processVariable",
+            "name": "orderId"
+          },
+          "expected": {
+            "kind": "string",
+            "value": "Z-9"
+          }
+        }
+      ],
+      "variables": [],
+      "mode": "any",
+      "at": 10
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 8.4.2",
+      "BPMN 2.0.2 Clause 8.4.11",
+      "BPMN 2.0.2 Clause 10.5.4",
+      "BPMN 2.0.2 Table 8.31",
+      "BPMN 2.0.2 Table 8.35",
+      "BPMN 2.0.2 Table 10.99",
+      "BPMN 2.0.2 Clause 10.5.2",
+      "BPMN 2.0.2 Table 10.84",
+      "BPMN 2.0.2 Table 10.87"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/deployer/BpmnDeployer.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/runtime/DefaultCorrelationHandler.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/MessageCorrelationBuilderImpl.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/cmd/AbstractCorrelateMessageCmd.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/cmd/CorrelateMessageCmd.java"
+    ]
+  }
+}

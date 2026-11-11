@@ -1,0 +1,60 @@
+{
+  "kind": "populationScenario",
+  "id": "message-start-population-start-replay-different-content",
+  "profile": "bpmn-2.0.2",
+  "definitions": [
+    {
+      "definitionRef": "order-intake",
+      "bpmn": {
+        "id": "message-start-compositions-order-intake",
+        "relativePath": "scenarios/open-rows/message-start-compositions/order-intake.bpmn",
+        "sha256": "347a0155ddfecb032e92bb9940c61931b8058bab867209343bd39d41e54937e5",
+        "sourceOverlay": null
+      }
+    }
+  ],
+  "steps": [
+    {
+      "kind": "publish",
+      "commandId": "s01-publish-order",
+      "address": {
+        "channel": {
+          "kind": "directMessage",
+          "messageId": "Message_OrderPlaced"
+        }
+      },
+      "criteria": [],
+      "variables": [],
+      "mode": "startOnly",
+      "at": 0
+    },
+    {
+      "kind": "publish",
+      "commandId": "s01-publish-order",
+      "address": {
+        "channel": {
+          "kind": "directMessage",
+          "messageId": "Message_OrderAmended"
+        }
+      },
+      "criteria": [],
+      "variables": [],
+      "mode": "startOnly",
+      "at": 0
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 8.4.11",
+      "BPMN 2.0.2 Clause 10.5.2",
+      "BPMN 2.0.2 Clause 10.5.5",
+      "BPMN 2.0.2 Clause 13.2",
+      "BPMN 2.0.2 Clause 13.5.1",
+      "BPMN 2.0.2 Table 10.84",
+      "BPMN 2.0.2 Table 10.87",
+      "BPMN 2.0.2 Table 10.99"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

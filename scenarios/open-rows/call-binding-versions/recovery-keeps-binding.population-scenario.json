@@ -1,0 +1,111 @@
+{
+  "kind": "populationScenario",
+  "id": "call-binding-versions-recovery-keeps-binding",
+  "profile": "bpmn-2.0.2",
+  "definitions": [
+    {
+      "definitionRef": "callee-v1",
+      "bpmn": {
+        "id": "call-binding-versions-callee-v1",
+        "relativePath": "scenarios/open-rows/call-binding-versions/callee-v1.bpmn",
+        "sha256": "cd1192027ba3d33129d10befcb1bb4a03aaf9b6a0a515d6bfa651ce736a73efe",
+        "sourceOverlay": null
+      }
+    },
+    {
+      "definitionRef": "callee-v2",
+      "bpmn": {
+        "id": "call-binding-versions-callee-v2",
+        "relativePath": "scenarios/open-rows/call-binding-versions/callee-v2.bpmn",
+        "sha256": "7f129bbb8afa5270c1cc688c2d41f55f54cbd680c7353805c03e90be693291bb",
+        "sourceOverlay": null
+      }
+    },
+    {
+      "definitionRef": "caller",
+      "bpmn": {
+        "id": "call-binding-versions-caller-latest",
+        "relativePath": "scenarios/open-rows/call-binding-versions/caller-latest.bpmn",
+        "sha256": "dd1b5271dc3e183a65f5ba453d83a154164cb4a8d8fc67c097638a4a1e2f8b09",
+        "sourceOverlay": null
+      }
+    }
+  ],
+  "steps": [
+    {
+      "kind": "deploy",
+      "definitionRef": "callee-v1",
+      "at": 0
+    },
+    {
+      "kind": "deploy",
+      "definitionRef": "caller",
+      "at": 10
+    },
+    {
+      "kind": "instance",
+      "definitionRef": "caller",
+      "instanceId": "Order_1",
+      "at": 20,
+      "stimulus": {
+        "kind": "start",
+        "commandId": "s01-start-order-1",
+        "instanceId": "Order_1",
+        "variables": []
+      }
+    },
+    {
+      "kind": "deploy",
+      "definitionRef": "callee-v2",
+      "at": 30
+    },
+    {
+      "kind": "instance",
+      "definitionRef": "caller",
+      "instanceId": "Order_1",
+      "at": 40,
+      "stimulus": {
+        "kind": "command",
+        "commandId": "s02-complete-AssessRequest-1",
+        "occurrence": {
+          "processInstanceId": "call:7:Order_1:10:CallCallee:1",
+          "elementId": "AssessRequest",
+          "activation": 1
+        },
+        "action": {
+          "kind": "completeUserTask",
+          "values": []
+        }
+      }
+    },
+    {
+      "kind": "instance",
+      "definitionRef": "caller",
+      "instanceId": "Order_1",
+      "at": 50,
+      "stimulus": {
+        "kind": "command",
+        "commandId": "s03-complete-ConfirmCaller-1",
+        "occurrence": {
+          "processInstanceId": "Order_1",
+          "elementId": "ConfirmCaller",
+          "activation": 1
+        },
+        "action": {
+          "kind": "completeUserTask",
+          "values": []
+        }
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.3.6",
+      "BPMN 2.0.2 Clause 13.3.4",
+      "BPMN 2.0.2 Table 10.23",
+      "BPMN 2.0.2 Table 10.24"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

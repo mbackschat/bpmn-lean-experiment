@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             id="Definitions_DateStartEarly" targetNamespace="urn:bpmn-lean:scenarios:timer-start-population:date-start-early">
+  <process id="Process_EarlyDateBatch" name="Review a batch on a date five minutes after the epoch" isExecutable="true">
+    <startEvent id="StartOnEarlyDate" name="On the early batch date">
+      <timerEventDefinition id="StartOnEarlyDate_Timer">
+        <timeDate xsi:type="tFormalExpression">1970-01-01T00:05:00Z</timeDate>
+      </timerEventDefinition>
+    </startEvent>
+    <userTask id="ReviewEarlyBatch" name="Review the early batch" />
+    <endEvent id="EarlyBatchReviewed" name="Early batch reviewed" />
+    <sequenceFlow id="Flow_Started" sourceRef="StartOnEarlyDate" targetRef="ReviewEarlyBatch" />
+    <sequenceFlow id="Flow_Reviewed" sourceRef="ReviewEarlyBatch" targetRef="EarlyBatchReviewed" />
+  </process>
+</definitions>

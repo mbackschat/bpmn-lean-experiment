@@ -1,0 +1,69 @@
+{
+  "kind": "populationScenario",
+  "id": "signal-broadcast-population-broadcast-replay",
+  "profile": "bpmn-2.0.2",
+  "definitions": [
+    {
+      "definitionRef": "shift-signals",
+      "bpmn": {
+        "id": "signal-start-compositions-shift-signals",
+        "relativePath": "scenarios/open-rows/signal-start-compositions/shift-signals.bpmn",
+        "sha256": "a51e981813a56f37b5224ae75eefe7243388f43ed28d476b5e84bbfe4b30519e",
+        "sourceOverlay": null
+      }
+    }
+  ],
+  "steps": [
+    {
+      "kind": "broadcast",
+      "commandId": "s01-broadcast-shift-opened",
+      "address": {
+        "signalRef": {
+          "id": "Signal_ShiftOpened",
+          "namespace": "urn:bpmn-lean:scenarios:signal-start-compositions:shift-signals"
+        }
+      },
+      "variables": [],
+      "at": 0
+    },
+    {
+      "kind": "broadcast",
+      "commandId": "s01-broadcast-shift-opened",
+      "address": {
+        "signalRef": {
+          "id": "Signal_ShiftOpened",
+          "namespace": "urn:bpmn-lean:scenarios:signal-start-compositions:shift-signals"
+        }
+      },
+      "variables": [],
+      "at": 0
+    },
+    {
+      "kind": "broadcast",
+      "commandId": "s01-broadcast-shift-opened",
+      "address": {
+        "signalRef": {
+          "id": "Signal_ShiftClosed",
+          "namespace": "urn:bpmn-lean:scenarios:signal-start-compositions:shift-signals"
+        }
+      },
+      "variables": [],
+      "at": 0
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.5.2",
+      "BPMN 2.0.2 Clause 10.5.4",
+      "BPMN 2.0.2 Clause 10.5.5",
+      "BPMN 2.0.2 Clause 13.2",
+      "BPMN 2.0.2 Clause 13.5.1",
+      "BPMN 2.0.2 Clause 13.5.2",
+      "BPMN 2.0.2 Table 10.84",
+      "BPMN 2.0.2 Table 10.89",
+      "BPMN 2.0.2 Table 10.100"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

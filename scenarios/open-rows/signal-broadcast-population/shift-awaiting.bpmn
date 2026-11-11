@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             id="Definitions_ShiftAwaiting" targetNamespace="urn:bpmn-lean:scenarios:signal-broadcast-population:shift-awaiting">
+  <signal id="Signal_ShiftClosed" name="shift-closed" />
+  <process id="Process_ShiftTill" name="Reconcile the till when the shift closes" isExecutable="true">
+    <startEvent id="StartTillOpened" name="Till opened" />
+    <intermediateCatchEvent id="CatchShiftClosed" name="Shift closed">
+      <signalEventDefinition id="CatchShiftClosed_Signal" signalRef="Signal_ShiftClosed" />
+    </intermediateCatchEvent>
+    <userTask id="ReconcileTill" name="Reconcile the till" />
+    <endEvent id="TillReconciled" name="Till reconciled" />
+    <sequenceFlow id="Flow_TillOpened" sourceRef="StartTillOpened" targetRef="CatchShiftClosed" />
+    <sequenceFlow id="Flow_ShiftClosed" sourceRef="CatchShiftClosed" targetRef="ReconcileTill" />
+    <sequenceFlow id="Flow_Reconciled" sourceRef="ReconcileTill" targetRef="TillReconciled" />
+  </process>
+</definitions>

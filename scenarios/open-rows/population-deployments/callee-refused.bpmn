@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_CalleeRefused" targetNamespace="urn:bpmn-lean:scenarios:population-deployments">
+  <bpmn:process id="Process_Callee" name="Check the order on a condition" isExecutable="true">
+    <bpmn:startEvent id="CalleeConditionalStart">
+      <bpmn:outgoing>Flow_CalleeRefused_Start_Task</bpmn:outgoing>
+      <bpmn:conditionalEventDefinition id="CalleeConditionalStart_Condition">
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">${ready}</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:startEvent>
+    <bpmn:userTask id="CheckOrderOnCondition" name="Check the order on a condition">
+      <bpmn:incoming>Flow_CalleeRefused_Start_Task</bpmn:incoming>
+      <bpmn:outgoing>Flow_CalleeRefused_Task_End</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="CalleeRefusedEnd">
+      <bpmn:incoming>Flow_CalleeRefused_Task_End</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_CalleeRefused_Start_Task" sourceRef="CalleeConditionalStart" targetRef="CheckOrderOnCondition" />
+    <bpmn:sequenceFlow id="Flow_CalleeRefused_Task_End" sourceRef="CheckOrderOnCondition" targetRef="CalleeRefusedEnd" />
+  </bpmn:process>
+</bpmn:definitions>

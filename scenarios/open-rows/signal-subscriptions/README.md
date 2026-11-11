@@ -27,7 +27,7 @@ Answer-free schedules for [PC-SIGNAL-03](../../../docs/PRACTICAL-CIB7-COVERAGE-T
 
 - A delivery addresses one subscription by occurrence; the throw in `Region` is not a stimulus, it happens when `Inner` completes.
 - A schedule names one region's stimuli; the other regions stay open and no schedule ends the Process instance. `items` is the String list `a, b` in every schedule that starts the Multi-Instance region.
-- `Start_Alert` and `Start_Abort` are Event Sub-Process starts, which the CIB runner numbers through a host that has no activity instance before the start fires; `Region_Esp` arms them at the fork, so every schedule of this model can fail as a harness failure until the runner names the declaring scope as the host.
+- `Start_Alert` and `Start_Abort` are Event Sub-Process starts, which `Region_Esp` arms at the fork. The retained CIB run classified every schedule of this model as a semantic outcome, never a harness failure (checked 2026-11-11).
 - The called instance is addressed by the derived identity `call:10:Instance_1:9:Host_Call:1`.
 
 The schedules carry no expected route, open wait, variable or Process state; the retained CIB evidence is the answer.

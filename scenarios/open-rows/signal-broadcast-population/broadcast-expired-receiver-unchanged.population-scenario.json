@@ -1,0 +1,86 @@
+{
+  "kind": "populationScenario",
+  "id": "signal-broadcast-population-broadcast-expired-receiver-unchanged",
+  "profile": "cibseven-2.2.0",
+  "definitions": [
+    {
+      "definitionRef": "approval-race",
+      "bpmn": {
+        "id": "signal-start-compositions-approval-race",
+        "relativePath": "scenarios/open-rows/signal-start-compositions/approval-race.bpmn",
+        "sha256": "9a799154860c41db5408c99cbcec5bd7f01fe8e7dda05fb390edd15f19c40d7f",
+        "sourceOverlay": null
+      }
+    }
+  ],
+  "steps": [
+    {
+      "kind": "instance",
+      "definitionRef": "approval-race",
+      "instanceId": "Race_1",
+      "at": 0,
+      "stimulus": {
+        "kind": "start",
+        "commandId": "s01-start-race-1",
+        "instanceId": "Race_1",
+        "variables": []
+      }
+    },
+    {
+      "kind": "broadcast",
+      "commandId": "s02-broadcast-approved",
+      "address": {
+        "name": "approved"
+      },
+      "variables": [],
+      "at": 10
+    },
+    {
+      "kind": "broadcast",
+      "commandId": "s03-broadcast-rejected",
+      "address": {
+        "name": "rejected"
+      },
+      "variables": [],
+      "at": 20
+    },
+    {
+      "kind": "instance",
+      "definitionRef": "approval-race",
+      "instanceId": "Race_1",
+      "at": 30,
+      "stimulus": {
+        "kind": "command",
+        "commandId": "s04-complete-Proceed-1",
+        "occurrence": {
+          "processInstanceId": "Race_1",
+          "elementId": "Proceed",
+          "activation": 1
+        },
+        "action": {
+          "kind": "completeUserTask",
+          "values": []
+        }
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.5.2",
+      "BPMN 2.0.2 Clause 10.5.4",
+      "BPMN 2.0.2 Clause 10.5.5",
+      "BPMN 2.0.2 Clause 13.2",
+      "BPMN 2.0.2 Clause 13.5.1",
+      "BPMN 2.0.2 Clause 13.5.2",
+      "BPMN 2.0.2 Table 10.84",
+      "BPMN 2.0.2 Table 10.89",
+      "BPMN 2.0.2 Table 10.100"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/cmd/SignalEventReceivedCmd.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/deployer/BpmnDeployer.java"
+    ]
+  }
+}

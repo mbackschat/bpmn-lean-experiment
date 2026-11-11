@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_BindingUnboundPrefix" targetNamespace="urn:bpmn-lean:scenarios:call-binding-time:binding-unbound-prefix">
+  <process id="Process_BindingCaller" name="Assess a request through a called process" isExecutable="true">
+    <startEvent id="RequestReceived" name="Request received" />
+    <callActivity id="CallUnboundPrefix" name="Call under an unbound prefix" calledElement="nobound:Process_Callee" />
+    <userTask id="ConfirmCaller" name="Confirm the request" />
+    <endEvent id="RequestConfirmed" name="Request confirmed" />
+    <sequenceFlow id="Flow_Received" sourceRef="RequestReceived" targetRef="CallUnboundPrefix" />
+    <sequenceFlow id="Flow_Returned" sourceRef="CallUnboundPrefix" targetRef="ConfirmCaller" />
+    <sequenceFlow id="Flow_Confirmed" sourceRef="ConfirmCaller" targetRef="RequestConfirmed" />
+  </process>
+  <process id="Process_Callee" name="Assess a request" isExecutable="true">
+    <startEvent id="AssessmentRequested" name="Assessment requested" />
+    <userTask id="AssessRequest" name="Assess the request" />
+    <endEvent id="RequestAssessed" name="Request assessed" />
+    <sequenceFlow id="Flow_AssessmentRequested" sourceRef="AssessmentRequested" targetRef="AssessRequest" />
+    <sequenceFlow id="Flow_Assessed" sourceRef="AssessRequest" targetRef="RequestAssessed" />
+  </process>
+</definitions>

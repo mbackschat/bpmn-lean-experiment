@@ -1,0 +1,71 @@
+{
+  "kind": "populationScenario",
+  "id": "call-binding-versions-shared-tag-ambiguous",
+  "profile": "cibseven-2.2.0",
+  "definitions": [
+    {
+      "definitionRef": "callee-stable",
+      "bpmn": {
+        "id": "call-binding-versions-callee-stable",
+        "relativePath": "scenarios/open-rows/call-binding-versions/callee-stable.bpmn",
+        "sha256": "ef36c5a21d18ac44d47d8bcc2f80e21df4836337caf5b5138df8b63276863e8f",
+        "sourceOverlay": null
+      }
+    },
+    {
+      "definitionRef": "caller",
+      "bpmn": {
+        "id": "call-binding-versions-caller-tag-stable",
+        "relativePath": "scenarios/open-rows/call-binding-versions/caller-tag-stable.bpmn",
+        "sha256": "38b747b9de4f47ccafec6059eef54b7f77f01b9d4a2a3ce002e1da904d3bca4f",
+        "sourceOverlay": null
+      }
+    }
+  ],
+  "steps": [
+    {
+      "kind": "deploy",
+      "definitionRef": "callee-stable",
+      "at": 0
+    },
+    {
+      "kind": "deploy",
+      "definitionRef": "callee-stable",
+      "at": 10
+    },
+    {
+      "kind": "deploy",
+      "definitionRef": "caller",
+      "at": 20
+    },
+    {
+      "kind": "instance",
+      "definitionRef": "caller",
+      "instanceId": "Order_1",
+      "at": 30,
+      "stimulus": {
+        "kind": "start",
+        "commandId": "s01-start-order-1",
+        "instanceId": "Order_1",
+        "variables": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.3.6",
+      "BPMN 2.0.2 Clause 13.3.4",
+      "BPMN 2.0.2 Table 10.23",
+      "BPMN 2.0.2 Table 10.24"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/util/CallableElementUtil.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/CallActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/model/BaseCallableElement.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/persistence/entity/ProcessDefinitionManager.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/persistence/deploy/cache/ResourceDefinitionCache.java"
+    ]
+  }
+}

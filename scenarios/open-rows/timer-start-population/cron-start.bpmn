@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             id="Definitions_CronStart" targetNamespace="urn:bpmn-lean:scenarios:timer-start-population:cron-start">
+  <process id="Process_CronBatch" name="Review a batch every half hour" isExecutable="true">
+    <startEvent id="StartEveryHalfHour" name="Every half hour">
+      <timerEventDefinition id="StartEveryHalfHour_Timer">
+        <timeCycle xsi:type="tFormalExpression">0 0/30 * * * ?</timeCycle>
+      </timerEventDefinition>
+    </startEvent>
+    <userTask id="ReviewCronBatch" name="Review the cron batch" />
+    <endEvent id="CronBatchReviewed" name="Cron batch reviewed" />
+    <sequenceFlow id="Flow_Started" sourceRef="StartEveryHalfHour" targetRef="ReviewCronBatch" />
+    <sequenceFlow id="Flow_Reviewed" sourceRef="ReviewCronBatch" targetRef="CronBatchReviewed" />
+  </process>
+</definitions>

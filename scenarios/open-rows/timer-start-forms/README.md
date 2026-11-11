@@ -27,6 +27,6 @@ Logical time zero is the Unix epoch `1970-01-01T00:00:00Z`, and every model is d
 | [timer-trigger-names-message-start](timer-trigger-names-message-start.scenario.json) | timer-and-message-start | A timer trigger at the Timer Start's due time names the Message Start. |
 | [two-timer-starts-first](two-timer-starts-first.scenario.json) | two-timer-starts | The first of two Timer Starts fires at its due time and its task completes. |
 
-The population witnesses of this directory are held outside the repository with the M8 track: the CIB runner realizes no population scenario and the kernel's population runner refuses an inadmissible definition, so they have no comparable result yet.
+The population witnesses of these rows, which need more than one instance or definition, are in [timer-start-population](../timer-start-population/README.md).
 
 The schedules carry no expected instance, task or version; the retained CIB evidence is the answer.

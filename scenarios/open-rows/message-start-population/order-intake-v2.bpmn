@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             id="Definitions_OrderIntakeV2" targetNamespace="urn:bpmn-lean:scenarios:message-start-population:order-intake-v2">
+  <message id="Message_OrderPlaced" name="order-placed" />
+  <message id="Message_OrderAmended" name="order-amended" />
+  <process id="Process_OrderIntake" name="Take in an order placed or amended" isExecutable="true">
+    <startEvent id="StartOrderPlaced" name="Order placed">
+      <messageEventDefinition id="StartOrderPlaced_Message" messageRef="Message_OrderPlaced" />
+    </startEvent>
+    <startEvent id="StartOrderAmended" name="Order amended">
+      <messageEventDefinition id="StartOrderAmended_Message" messageRef="Message_OrderAmended" />
+    </startEvent>
+    <userTask id="PickAndPackOrder" name="Pick and pack the order" />
+    <userTask id="ReviseOrder" name="Revise the order" />
+    <endEvent id="OrderPicked" name="Order picked" />
+    <endEvent id="OrderRevised" name="Order revised" />
+    <sequenceFlow id="Flow_PlacedStarted" sourceRef="StartOrderPlaced" targetRef="PickAndPackOrder" />
+    <sequenceFlow id="Flow_AmendedStarted" sourceRef="StartOrderAmended" targetRef="ReviseOrder" />
+    <sequenceFlow id="Flow_Picked" sourceRef="PickAndPackOrder" targetRef="OrderPicked" />
+    <sequenceFlow id="Flow_Revised" sourceRef="ReviseOrder" targetRef="OrderRevised" />
+  </process>
+</definitions>

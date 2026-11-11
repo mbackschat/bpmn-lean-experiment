@@ -1,0 +1,102 @@
+{
+  "kind": "populationScenario",
+  "id": "conditional-start-population-exact-old-version",
+  "profile": "cibseven-2.2.0",
+  "definitions": [
+    {
+      "definitionRef": "large-order-v1",
+      "bpmn": {
+        "id": "conditional-start-compositions-large-order",
+        "relativePath": "scenarios/open-rows/conditional-start-compositions/large-order.bpmn",
+        "sha256": "7b319695497c8a24063f90b108ddbc778acb3c4399a516edc99299f1a784b161",
+        "sourceOverlay": null
+      }
+    },
+    {
+      "definitionRef": "large-order-v2",
+      "bpmn": {
+        "id": "conditional-start-population-large-order-v2",
+        "relativePath": "scenarios/open-rows/conditional-start-population/large-order-v2.bpmn",
+        "sha256": "68ebc1cdba6e90428fee6b16eb2f6c088d5045cb79104641a5e9efd19d2f383f",
+        "sourceOverlay": null
+      }
+    }
+  ],
+  "steps": [
+    {
+      "kind": "deploy",
+      "definitionRef": "large-order-v1",
+      "at": 0
+    },
+    {
+      "kind": "deploy",
+      "definitionRef": "large-order-v2",
+      "at": 10
+    },
+    {
+      "kind": "evaluateConditions",
+      "commandId": "s01-evaluate-current",
+      "variables": [
+        {
+          "name": "amount",
+          "value": {
+            "kind": "integer",
+            "value": 700
+          }
+        }
+      ],
+      "at": 20
+    },
+    {
+      "kind": "evaluateConditions",
+      "commandId": "s02-evaluate-old-below-threshold",
+      "definition": {
+        "deploymentId": 1
+      },
+      "variables": [
+        {
+          "name": "amount",
+          "value": {
+            "kind": "integer",
+            "value": 700
+          }
+        }
+      ],
+      "at": 30
+    },
+    {
+      "kind": "evaluateConditions",
+      "commandId": "s03-evaluate-old-above-threshold",
+      "definition": {
+        "deploymentId": 1
+      },
+      "variables": [
+        {
+          "name": "amount",
+          "value": {
+            "kind": "integer",
+            "value": 2500
+          }
+        }
+      ],
+      "at": 40
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.5.2",
+      "BPMN 2.0.2 Clause 10.5.5",
+      "BPMN 2.0.2 Clause 13.2",
+      "BPMN 2.0.2 Clause 13.5.1",
+      "BPMN 2.0.2 Table 10.84",
+      "BPMN 2.0.2 Table 10.95"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/runtime/DefaultConditionHandler.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/cmd/EvaluateStartConditionCmd.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/el/UelExpressionCondition.java"
+    ]
+  }
+}

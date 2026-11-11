@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="Definitions_Callee" targetNamespace="urn:bpmn-lean:scenarios:population-deployments">
+  <bpmn:process id="Process_Callee" name="Check the order" isExecutable="true">
+    <bpmn:startEvent id="CalleeStart">
+      <bpmn:outgoing>Flow_Callee_Start_Task</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:userTask id="CheckOrder" name="Check the order">
+      <bpmn:incoming>Flow_Callee_Start_Task</bpmn:incoming>
+      <bpmn:outgoing>Flow_Callee_Task_End</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="CalleeEnd">
+      <bpmn:incoming>Flow_Callee_Task_End</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_Callee_Start_Task" sourceRef="CalleeStart" targetRef="CheckOrder" />
+    <bpmn:sequenceFlow id="Flow_Callee_Task_End" sourceRef="CheckOrder" targetRef="CalleeEnd" />
+  </bpmn:process>
+</bpmn:definitions>

@@ -1,0 +1,62 @@
+{
+  "kind": "populationScenario",
+  "id": "timer-start-population-cycle-start-late-firing",
+  "profile": "cibseven-2.2.0",
+  "definitions": [
+    {
+      "definitionRef": "bounded-cycle-start",
+      "bpmn": {
+        "id": "timer-start-population-bounded-cycle-start",
+        "relativePath": "scenarios/open-rows/timer-start-population/bounded-cycle-start.bpmn",
+        "sha256": "535f8cb89c46d7bda2b9a8bb96397dc3a25660ba90483f3a1511080363bcb2bd",
+        "sourceOverlay": null
+      }
+    }
+  ],
+  "steps": [
+    {
+      "kind": "timerStart",
+      "commandId": "s01-fire-first-late",
+      "deploymentId": 1,
+      "startEvent": "StartEveryTenMinutes",
+      "dueMs": 600000,
+      "at": 1500000
+    },
+    {
+      "kind": "timerStart",
+      "commandId": "s02-fire-second-late",
+      "deploymentId": 1,
+      "startEvent": "StartEveryTenMinutes",
+      "dueMs": 1200000,
+      "at": 1500000
+    },
+    {
+      "kind": "timerStart",
+      "commandId": "s03-fire-third",
+      "deploymentId": 1,
+      "startEvent": "StartEveryTenMinutes",
+      "dueMs": 1800000,
+      "at": 1800000
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.5.2",
+      "BPMN 2.0.2 Clause 10.5.5",
+      "BPMN 2.0.2 Clause 13.2",
+      "BPMN 2.0.2 Clause 13.5.1",
+      "BPMN 2.0.2 Table 10.84",
+      "BPMN 2.0.2 Table 10.101"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/deployer/BpmnDeployer.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/jobexecutor/TimerStartEventJobHandler.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/jobexecutor/TimerDeclarationImpl.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/persistence/entity/TimerEntity.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/calendar/DurationHelper.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/calendar/CycleBusinessCalendar.java"
+    ]
+  }
+}

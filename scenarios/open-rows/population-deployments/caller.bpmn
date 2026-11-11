@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="Definitions_Caller" targetNamespace="urn:bpmn-lean:scenarios:population-deployments">
+  <bpmn:process id="Process_Caller" name="Handle the order" isExecutable="true">
+    <bpmn:startEvent id="CallerStart">
+      <bpmn:outgoing>Flow_Caller_Start_Call</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:callActivity id="CallCheckOrder" name="Check the order" calledElement="Process_Callee">
+      <bpmn:incoming>Flow_Caller_Start_Call</bpmn:incoming>
+      <bpmn:outgoing>Flow_Caller_Call_End</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:endEvent id="CallerEnd">
+      <bpmn:incoming>Flow_Caller_Call_End</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_Caller_Start_Call" sourceRef="CallerStart" targetRef="CallCheckOrder" />
+    <bpmn:sequenceFlow id="Flow_Caller_Call_End" sourceRef="CallCheckOrder" targetRef="CallerEnd" />
+  </bpmn:process>
+</bpmn:definitions>

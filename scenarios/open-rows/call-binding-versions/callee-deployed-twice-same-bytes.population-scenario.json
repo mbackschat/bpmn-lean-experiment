@@ -1,0 +1,57 @@
+{
+  "kind": "populationScenario",
+  "id": "call-binding-versions-callee-deployed-twice-same-bytes",
+  "profile": "cibseven-2.2.0",
+  "definitions": [
+    {
+      "definitionRef": "bound-document",
+      "bpmn": {
+        "id": "call-binding-versions-bound-document",
+        "relativePath": "scenarios/open-rows/call-binding-versions/bound-document.bpmn",
+        "sha256": "60581cfcb0946032d8c4b95e321e79a5727f2c4d737f3bfea15b2fabbf47df53",
+        "sourceOverlay": null
+      }
+    }
+  ],
+  "steps": [
+    {
+      "kind": "deploy",
+      "definitionRef": "bound-document",
+      "at": 0
+    },
+    {
+      "kind": "deploy",
+      "definitionRef": "bound-document",
+      "at": 10
+    },
+    {
+      "kind": "instance",
+      "definitionRef": "bound-document",
+      "instanceId": "Order_1",
+      "at": 20,
+      "stimulus": {
+        "kind": "start",
+        "commandId": "s01-start-order-1",
+        "instanceId": "Order_1",
+        "variables": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.3.6",
+      "BPMN 2.0.2 Clause 13.3.4",
+      "BPMN 2.0.2 Table 10.23",
+      "BPMN 2.0.2 Table 10.24"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/util/CallableElementUtil.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/CallActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/model/BaseCallableElement.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/persistence/entity/ProcessDefinitionManager.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/persistence/deploy/cache/ResourceDefinitionCache.java"
+    ]
+  }
+}

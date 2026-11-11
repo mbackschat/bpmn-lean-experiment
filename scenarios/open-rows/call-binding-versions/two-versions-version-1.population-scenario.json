@@ -1,0 +1,80 @@
+{
+  "kind": "populationScenario",
+  "id": "call-binding-versions-two-versions-version-1",
+  "profile": "cibseven-2.2.0",
+  "definitions": [
+    {
+      "definitionRef": "callee-v1",
+      "bpmn": {
+        "id": "call-binding-versions-callee-v1",
+        "relativePath": "scenarios/open-rows/call-binding-versions/callee-v1.bpmn",
+        "sha256": "cd1192027ba3d33129d10befcb1bb4a03aaf9b6a0a515d6bfa651ce736a73efe",
+        "sourceOverlay": null
+      }
+    },
+    {
+      "definitionRef": "callee-v2",
+      "bpmn": {
+        "id": "call-binding-versions-callee-v2",
+        "relativePath": "scenarios/open-rows/call-binding-versions/callee-v2.bpmn",
+        "sha256": "7f129bbb8afa5270c1cc688c2d41f55f54cbd680c7353805c03e90be693291bb",
+        "sourceOverlay": null
+      }
+    },
+    {
+      "definitionRef": "caller",
+      "bpmn": {
+        "id": "call-binding-versions-caller-version-1",
+        "relativePath": "scenarios/open-rows/call-binding-versions/caller-version-1.bpmn",
+        "sha256": "63ea445b07d023b9834d018f75562130420aa34e02ff9b99efbfec6cd236ab4f",
+        "sourceOverlay": null
+      }
+    }
+  ],
+  "steps": [
+    {
+      "kind": "deploy",
+      "definitionRef": "callee-v1",
+      "at": 0
+    },
+    {
+      "kind": "deploy",
+      "definitionRef": "callee-v2",
+      "at": 10
+    },
+    {
+      "kind": "deploy",
+      "definitionRef": "caller",
+      "at": 20
+    },
+    {
+      "kind": "instance",
+      "definitionRef": "caller",
+      "instanceId": "Order_1",
+      "at": 30,
+      "stimulus": {
+        "kind": "start",
+        "commandId": "s01-start-order-1",
+        "instanceId": "Order_1",
+        "variables": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.3.6",
+      "BPMN 2.0.2 Clause 13.3.4",
+      "BPMN 2.0.2 Table 10.23",
+      "BPMN 2.0.2 Table 10.24"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/util/CallableElementUtil.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/CallActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/model/BaseCallableElement.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/persistence/entity/ProcessDefinitionManager.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/persistence/deploy/cache/ResourceDefinitionCache.java"
+    ]
+  }
+}

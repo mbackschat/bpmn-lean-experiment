@@ -1,0 +1,44 @@
+{
+  "kind": "populationScenario",
+  "id": "conditional-start-population-standards-conditional-start-refused",
+  "profile": "bpmn-2.0.2",
+  "definitions": [
+    {
+      "definitionRef": "large-order",
+      "bpmn": {
+        "id": "conditional-start-compositions-large-order",
+        "relativePath": "scenarios/open-rows/conditional-start-compositions/large-order.bpmn",
+        "sha256": "7b319695497c8a24063f90b108ddbc778acb3c4399a516edc99299f1a784b161",
+        "sourceOverlay": null
+      }
+    }
+  ],
+  "steps": [
+    {
+      "kind": "evaluateConditions",
+      "commandId": "s01-evaluate",
+      "variables": [
+        {
+          "name": "amount",
+          "value": {
+            "kind": "integer",
+            "value": 2500
+          }
+        }
+      ],
+      "at": 0
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.5.2",
+      "BPMN 2.0.2 Clause 10.5.5",
+      "BPMN 2.0.2 Clause 13.2",
+      "BPMN 2.0.2 Clause 13.5.1",
+      "BPMN 2.0.2 Table 10.84",
+      "BPMN 2.0.2 Table 10.95"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

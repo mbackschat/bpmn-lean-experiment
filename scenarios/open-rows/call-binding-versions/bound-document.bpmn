@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_BoundDocument" targetNamespace="urn:bpmn-lean:scenarios:call-binding-versions">
+  <process id="Process_BoundCaller" name="Assess a request through the callee of the same deployment" isExecutable="true">
+    <startEvent id="RequestReceived" name="Request received" />
+    <callActivity id="CallBoundCallee" name="Call the callee of this deployment" calledElement="Process_BoundCallee" camunda:calledElementBinding="deployment" />
+    <userTask id="ConfirmCaller" name="Confirm the request" />
+    <endEvent id="RequestConfirmed" name="Request confirmed" />
+    <sequenceFlow id="Flow_Received" sourceRef="RequestReceived" targetRef="CallBoundCallee" />
+    <sequenceFlow id="Flow_Returned" sourceRef="CallBoundCallee" targetRef="ConfirmCaller" />
+    <sequenceFlow id="Flow_Confirmed" sourceRef="ConfirmCaller" targetRef="RequestConfirmed" />
+  </process>
+  <process id="Process_BoundCallee" name="Assess a request" isExecutable="true">
+    <startEvent id="AssessmentRequested" name="Assessment requested" />
+    <userTask id="AssessBound" name="Assess the request in this deployment" />
+    <endEvent id="RequestAssessed" name="Request assessed" />
+    <sequenceFlow id="Flow_AssessmentRequested" sourceRef="AssessmentRequested" targetRef="AssessBound" />
+    <sequenceFlow id="Flow_Assessed" sourceRef="AssessBound" targetRef="RequestAssessed" />
+  </process>
+</definitions>

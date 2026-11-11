@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             xmlns:other="urn:bpmn-lean:scenarios:call-binding-time:other"
+             id="Definitions_BindingOtherNamespace" targetNamespace="urn:bpmn-lean:scenarios:call-binding-time:binding-other-namespace">
+  <process id="Process_BindingCaller" name="Assess a request through a called process" isExecutable="true">
+    <startEvent id="RequestReceived" name="Request received" />
+    <callActivity id="CallOtherNamespace" name="Call in another namespace" calledElement="other:Process_Callee" />
+    <userTask id="ConfirmCaller" name="Confirm the request" />
+    <endEvent id="RequestConfirmed" name="Request confirmed" />
+    <sequenceFlow id="Flow_Received" sourceRef="RequestReceived" targetRef="CallOtherNamespace" />
+    <sequenceFlow id="Flow_Returned" sourceRef="CallOtherNamespace" targetRef="ConfirmCaller" />
+    <sequenceFlow id="Flow_Confirmed" sourceRef="ConfirmCaller" targetRef="RequestConfirmed" />
+  </process>
+  <process id="Process_Callee" name="Assess a request" isExecutable="true">
+    <startEvent id="AssessmentRequested" name="Assessment requested" />
+    <userTask id="AssessRequest" name="Assess the request" />
+    <endEvent id="RequestAssessed" name="Request assessed" />
+    <sequenceFlow id="Flow_AssessmentRequested" sourceRef="AssessmentRequested" targetRef="AssessRequest" />
+    <sequenceFlow id="Flow_Assessed" sourceRef="AssessRequest" targetRef="RequestAssessed" />
+  </process>
+</definitions>

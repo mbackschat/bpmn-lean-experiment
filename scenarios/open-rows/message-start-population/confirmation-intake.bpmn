@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             id="Definitions_ConfirmationIntake" targetNamespace="urn:bpmn-lean:scenarios:message-start-population:confirmation-intake">
+  <message id="Message_OrderConfirmedAtStart" name="order-confirmed" />
+  <process id="Process_ConfirmationIntake" name="Record an order confirmation that arrives unannounced" isExecutable="true">
+    <startEvent id="StartConfirmation" name="Order confirmed">
+      <messageEventDefinition id="StartConfirmation_Message" messageRef="Message_OrderConfirmedAtStart" />
+    </startEvent>
+    <userTask id="RecordConfirmation" name="Record the confirmation" />
+    <endEvent id="ConfirmationRecorded" name="Confirmation recorded" />
+    <sequenceFlow id="Flow_ConfirmationStarted" sourceRef="StartConfirmation" targetRef="RecordConfirmation" />
+    <sequenceFlow id="Flow_ConfirmationRecorded" sourceRef="RecordConfirmation" targetRef="ConfirmationRecorded" />
+  </process>
+</definitions>
