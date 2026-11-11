@@ -251,8 +251,19 @@ jobs:
 
       - name: Set up libxml2 tools
         run: |
-          sudo apt-get update
-          sudo apt-get install --no-install-recommends --yes libxml2-utils
+          if sudo apt-get update && sudo apt-get install --no-install-recommends --yes libxml2-utils; then
+            xmllint --version
+            exit 0
+          fi
+          # Temporary fallback (#86): hosted runners could not reach Ubuntu's archive on 2026-11-11. Debian's build of
+          # the same upstream libxml2 2.9.14 supplies only the xmllint front end, which links the runner's installed
+          # libxml2.so.2, so XSD validation is unchanged; the hash is the one in Debian's signed Packages index.
+          deb="$RUNNER_TEMP/libxml2-utils.deb"
+          curl --fail --silent --show-error --location --retry 3 --max-time 120 --output "$deb" \
+            "https://deb.debian.org/debian/pool/main/libx/libxml2/libxml2-utils_2.9.14+dfsg-1.3~deb12u6_amd64.deb"
+          echo "84a26b289dd6075b8334f252bc445023dc64102e557645284fdbc1bebed21a1a  $deb" | sha256sum --check --strict
+          sudo dpkg --install "$deb"
+          xmllint --version
 
       - name: Resolve pinned toolchain versions
         id: pins
