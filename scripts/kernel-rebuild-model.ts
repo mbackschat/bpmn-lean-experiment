@@ -164,6 +164,23 @@ function isShapeFile(file: string): boolean {
   return shapeFiles.has(file) || shapeDirectories.some((directory) => file.startsWith(directory));
 }
 
+/** The IL record files, by path prefix: an edit there changes the shape every kernel producer and consumer reads. */
+export const ilRecordPaths: readonly string[] = [
+  "Kernel/IL/Types.lean", "Kernel/IL/Types/", "packages/kernel/src/il/types.ts", "packages/kernel/src/il/types/",
+];
+
+/**
+ * Guard 9's failing half: a commit that edits an IL record file and is not scoped `kernel-shape`. `exempt` names, by full
+ * SHA, the commits that did so before the guard failed on it, which history cannot re-cut.
+ */
+export function ilRecordScopeFindings(commits: readonly Commit[], exempt: ReadonlySet<string>): string[] {
+  return commits.flatMap((commit) => {
+    if (exempt.has(commit.sha) || commitScope(commit.subject) === "kernel-shape") return [];
+    const edited = commit.files.filter((file) => ilRecordPaths.some((prefix) => file === prefix || (prefix.endsWith("/") && file.startsWith(prefix))));
+    return edited.length === 0 ? [] : [`G9 ${commit.sha.slice(0, 8)} ${commit.subject}: edits IL records outside a kernel-shape commit (${edited.join(", ")})`];
+  });
+}
+
 /** Guard 9's report: the commits on a branch that edit a shape file, marked accepted when scoped `kernel-shape`. */
 export function shapeEditReport(commits: readonly Commit[]): string[] {
   const edits = commits.filter((commit) => commit.files.some(isShapeFile));

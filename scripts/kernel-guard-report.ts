@@ -10,7 +10,7 @@ import { fileURLToPath } from "node:url";
 import { loadTree, repositoryRoot, type KernelTree } from "./kernel-guard-scan.ts";
 import { kernelModulesChanged, tsMatchSiteCounts, type Commit } from "./kernel-guards-dispatch.ts";
 import { longFunctions } from "./kernel-guards-placement.ts";
-import { shapeEditReport } from "./kernel-rebuild-model.ts";
+import { ilRecordPaths, shapeEditReport } from "./kernel-rebuild-model.ts";
 
 /**
  * The commit the commit-scope rule of guard 18 starts after: the last commit before the guards landed. Earlier history
@@ -38,6 +38,16 @@ function parseCommits(output: string): Commit[] {
 export function branchCommits(root: string = repositoryRoot, epoch: string = commitRuleEpoch): Commit[] {
   const commits = parseCommits(commitsOutput(root, [`${epoch}..HEAD`, "--", "Kernel", "packages/kernel/src"]));
   return commits.length > 0 ? commits : parseCommits(commitsOutput(root, ["-1", "HEAD"]));
+}
+
+/**
+ * The commits after main's merge base that edit an IL record file, with only those files, for guard 9's failing half.
+ * `mainRef` is `origin/main`, which a full clone and the hosted checkout (`fetch-depth: 0`) both hold; a base that cannot
+ * be resolved throws, so the guard never runs over nothing.
+ */
+export function ilRecordCommits(root: string = repositoryRoot, mainRef = "origin/main"): Commit[] {
+  const base = execFileSync("git", ["merge-base", "HEAD", mainRef], { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim();
+  return parseCommits(commitsOutput(root, [`${base}..HEAD`, "--", ...ilRecordPaths.map((prefix) => prefix.replace(/\/$/u, ""))]));
 }
 
 function largestFile(tree: KernelTree): string {

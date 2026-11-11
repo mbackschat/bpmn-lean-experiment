@@ -12,7 +12,7 @@ import path from "node:path";
 import { after, test } from "node:test";
 
 import { buildFindings, inflateLayer, moduleTimes, worstModule } from "./kernel-build-budget.ts";
-import { branchCommits, reportLines } from "./kernel-guard-report.ts";
+import { branchCommits, ilRecordCommits, reportLines } from "./kernel-guard-report.ts";
 import { loadTree, structureInputFindings, tokenizeLean, tokenizeTypeScript, type KernelTree } from "./kernel-guard-scan.ts";
 import {
   closedDispatchFindings,
@@ -38,7 +38,7 @@ import {
   refusalTestFindings,
   shapeSufficiencyFindings,
 } from "./kernel-guards-refusal.ts";
-import { rebuildFindings, shapeEditReport } from "./kernel-rebuild-model.ts";
+import { ilRecordScopeFindings, rebuildFindings, shapeEditReport } from "./kernel-rebuild-model.ts";
 import { pairingFindings, profileLiteralFindings, shapeFindings } from "./kernel-structure.ts";
 
 const roots: string[] = [];
@@ -294,6 +294,36 @@ test("guard 9 reports shape-file edits per branch, marking a kernel-shape commit
   assert.match(report, /shape edits on this branch: 2/u);
   assert.match(report, /\[accepted\]: feat\(kernel-shape\): widen/u);
   assert.match(report, /\[NOT scoped kernel-shape\]: feat\(kernel\): quiet edit/u);
+});
+
+test("guard 9 fails an IL record edit outside a kernel-shape commit unless its SHA is exempt", () => {
+  const edit = (sha: string, subject: string, files: string[]) => ({ sha: sha.repeat(40), subject, files });
+  const commits = [
+    edit("a", "feat(kernel-shape): widen", ["Kernel/IL/Types.lean"]),
+    edit("b", "fix(data): quiet field", ["Kernel/IL/Types/Options.lean", "Kernel/Feature/Data.lean"]),
+    edit("c", "feat(kernel): untouched records", ["packages/kernel/src/il/codec.ts"]),
+    edit("d", "fix(data): exempt field", ["packages/kernel/src/il/types.ts"]),
+  ];
+  assert.deepEqual(ilRecordScopeFindings(commits, new Set(["d".repeat(40)])), [
+    "G9 bbbbbbbb fix(data): quiet field: edits IL records outside a kernel-shape commit (Kernel/IL/Types/Options.lean)",
+  ]);
+});
+
+/**
+ * The commits after main's merge base that edited an IL record outside a kernel-shape commit before guard 9 failed on
+ * it, which history cannot re-cut (M8 track review S1, 2026-11-11). They leave the range once the branch reaches main.
+ */
+const ilRecordEditsBeforeTheGuard: ReadonlySet<string> = new Set([
+  "b63709817ad9369dc97b757b8a415c3eaf21a709",
+  "840ce4da5d74f308de556becb8263e4450cf1192",
+  "9df723057ab0e1349ecabd0cdbb923ecfc61b6a7",
+  "375cfe70b007bca1b8dd608a812e99a56a1cecd7",
+  "c1b6013c864d08a1ef6f69358c26530d1b742254",
+  "4d3821a30ef307660e5583134109838b3c6f6c9d",
+]);
+
+test("after main's merge base, IL records change only in kernel-shape commits", () => {
+  assert.deepEqual(ilRecordScopeFindings(ilRecordCommits(), ilRecordEditsBeforeTheGuard), []);
 });
 
 test("guard 10 reports functions above 80 lines in both languages", () => {
