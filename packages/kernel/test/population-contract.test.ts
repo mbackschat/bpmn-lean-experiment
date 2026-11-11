@@ -15,7 +15,7 @@ type Json = Record<string, unknown>;
 const program = JSON.parse(readFileSync(new URL("./fixtures/simple-boolean.program.json", import.meta.url), "utf8")) as Json;
 const identity = program.identity as Json;
 /** The same source under an option admission refuses. */
-const refused: Json = { ...program, options: { ...(program.options as Json), messageCorrelation: "apiCriteria" } };
+const refused: Json = { ...program, options: { ...(program.options as Json), callBindingTime: "invocation" } };
 
 const definition = (definitionRef: string): Json => ({
   definitionRef,
@@ -50,7 +50,7 @@ test("deploys undeployed definitions at 0 in list order and numbers each key's v
 test("a program admission refuses is a refused deployment, and an instance of it is not deployed", () => {
   const result = run([refused], ["a"], [instance("a", "I")]);
   assert.deepEqual(result.deployments, [{
-    deploymentId: 1, definitionRef: "a", versions: [], outcome: { kind: "deploymentRefused", code: "profile.messageCorrelation.apiCriteria" },
+    deploymentId: 1, definitionRef: "a", versions: [], outcome: { kind: "deploymentRefused", code: "profile.callBindingTime.invocation" },
   }]);
   assert.deepEqual(result.inputFailures, [{ commandId: "start-I", outcome: "rejected", code: "definition-not-deployed" }]);
   assert.deepEqual(result.processStates, []);

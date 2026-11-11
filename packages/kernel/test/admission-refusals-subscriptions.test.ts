@@ -465,6 +465,12 @@ export const rows: readonly Row[] = [
     control: (program) => addressesLooping(signalAddresses(
       hostAndHandler({ multiInstance: loop({ outputDataItem: null, inputDataItemName: "item" }) }, signal(), signal())))(program),
   },
+  {
+    code: "message.correlation.modeled",
+    description: "a correlated catch where API criteria replace the modeled key",
+    mutate: (program) => catching(correlated(key))(withOptions(program, { messageCorrelation: "apiCriteria" })),
+    control: catching(correlated(key)),
+  },
   { code: "event.catch.error", description: "a catch Error", mutate: catching(errorTrigger()) },
   { code: "event.catch.escalation", description: "a catch Escalation", mutate: catching(escalationTrigger()) },
   { code: "event.catch.compensation", description: "a catch Compensation", mutate: catching(compensationTrigger) },

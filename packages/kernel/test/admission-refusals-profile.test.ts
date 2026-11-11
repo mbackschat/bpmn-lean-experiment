@@ -29,18 +29,6 @@ const completesNormally = { abnormalScopeEnd: "completesNormally" };
 
 export const rows: readonly Row[] = [
   {
-    code: "profile.messageCorrelation.apiCriteria",
-    description: "message correlation by API criteria",
-    mutate: option({ messageCorrelation: "apiCriteria" }),
-    control: option({ messageCorrelation: "modeledKey" }),
-  },
-  {
-    code: "profile.deliveryVariables.installs",
-    description: "a delivery that installs its variables",
-    mutate: option({ deliveryVariables: "installs" }),
-    control: option({ deliveryVariables: "mappedOnly" }),
-  },
-  {
     code: "profile.compensationOrder.reverseCreation",
     description: "compensation in reverse creation order",
     mutate: option({ compensationOrder: "reverseCreation" }),

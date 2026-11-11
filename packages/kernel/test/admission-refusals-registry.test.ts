@@ -77,7 +77,7 @@ refusalTests("registry", rows);
 /** A program refused at every level: a profile option, a called-process binding, a flow condition and an element. */
 function refusedEverywhere(): Json {
   const program = calledProcess({ tenant: "tenant" })(conditionOn(task(activity("T", sendWork()))(base()), "f2", foreign()));
-  return withOptions(program, { messageCorrelation: "apiCriteria" });
+  return withOptions(program, { callBindingTime: "invocation" });
 }
 
 test("registry: a called process's population stamps are admitted, since the population validates them", () => {
@@ -85,21 +85,21 @@ test("registry: a called process's population stamps are admitted, since the pop
 });
 
 test("registry: profile options are refused before called processes, flows and elements", () => {
-  assert.equal(refusalOf(refusedEverywhere()), "profile.messageCorrelation.apiCriteria");
+  assert.equal(refusalOf(refusedEverywhere()), "profile.callBindingTime.invocation");
 });
 
 test("registry: a process not marked executable is refused after profile options and before anything else", () => {
-  const program = withOptions(refusedEverywhere(), { messageCorrelation: "modeledKey" });
+  const program = withOptions(refusedEverywhere(), { callBindingTime: "programAssembly" });
   assert.equal(refusalOf({ ...program, executable: false }), "process.notExecutable");
-  assert.equal(refusalOf({ ...refusedEverywhere(), executable: false }), "profile.messageCorrelation.apiCriteria");
+  assert.equal(refusalOf({ ...refusedEverywhere(), executable: false }), "profile.callBindingTime.invocation");
 });
 
 test("registry: a called-process binding is refused before flows and elements", () => {
-  assert.equal(refusalOf(withOptions(refusedEverywhere(), { messageCorrelation: "modeledKey" })), "process.definition.binding");
+  assert.equal(refusalOf(withOptions(refusedEverywhere(), { callBindingTime: "programAssembly" })), "process.definition.binding");
 });
 
 test("registry: a flow is refused before elements", () => {
-  const program = withOptions(refusedEverywhere(), { messageCorrelation: "modeledKey" });
+  const program = withOptions(refusedEverywhere(), { callBindingTime: "programAssembly" });
   assert.equal(refusalOf({ ...program, processes: [] }), "flow.condition.foreign");
 });
 

@@ -3,6 +3,7 @@ module
 public import Kernel.Hooks
 public import Kernel.Feature.Work.Call
 public import Kernel.Feature.Work.Submission
+public import Kernel.State.Criteria
 
 /-! # Work: what an Activity does
 
@@ -320,9 +321,11 @@ def resolveIncident (_ : Ctx) (item : OpenItem) (action : CommandAction) (state 
   | some _, .removeVariables _ => .error (.semanticFailure "incident-variable-command")
 
 /-- A delivery completes a Receive Task only on the channel it waits on; the Message carries no payload here. The wait
-is uncorrelated, since admission refuses a Receive Task correlation (`work.receive.correlation`), so a delivery naming a
-criterion is refused as a Message subscription refuses one it does not bind (`Subscriptions.admitFiring`). -/
-def triggerActivity (_ : Ctx) (_ : Header) (_ : ActivityPayload) (item : OpenItem) (fired : Fired)
+models no key, since admission refuses a Receive Task correlation (`work.receive.correlation`), so a criterion is an API
+criterion: `unsupported` under `modeledKey`, which does not select one, and checked in the task's own scope under
+`apiCriteria` (`State.criteriaHold`), as a Message subscription checks it. The delivery's own variables are the
+completion's writes; `Hooks.delivered` admits them only under `DeliveryVariables.installs`. -/
+def triggerActivity (ctx : Ctx) (_ : Header) (_ : ActivityPayload) (item : OpenItem) (fired : Fired)
     (state : State) : Outcome :=
   match fired with
   | .timer _ => .error (.semanticFailure "activity-timer-without-timer")
@@ -334,9 +337,16 @@ def triggerActivity (_ : Ctx) (_ : Header) (_ : ActivityPayload) (item : OpenIte
     | some channel =>
       if delivery.payload.any (!inValueDomain ·) then .error (.rejected "value-outside-domain")
       else if delivery.trigger.channel? != some channel then .error (.rejected "message-channel-mismatch")
-      else if !delivery.correlation.isEmpty then .error (.rejected "message-correlation-mismatch")
-      else if delivery.payload.isSome then .error (.rejected "unexpected-message-payload")
-      else .ok (state.signal (.complete item.occurrence .outgoing [] .outward))
+      else do
+        let accepted ← match ctx.program.options.messageCorrelation with
+          -- dynamic-only: a delivery's criteria are its caller's.
+          | .modeledKey => if delivery.correlation.isEmpty then .ok true else .error (.unsupported "profile-message-correlation-api-criteria")
+          | .apiCriteria => state.criteriaHold (state.ownScope item.occurrence item.scope) delivery.correlation
+        if !accepted then .error (.rejected "message-correlation-mismatch")
+        else if delivery.payload.isSome then .error (.rejected "unexpected-message-payload")
+        else do
+          admitValues (delivery.variables.map (·.2))
+          .ok (state.signal (.complete item.occurrence .outgoing delivery.variables .outward))
 
 /-- `Hooks.completeCall`: only a Call Activity starts a called instance. -/
 def completeCall (ctx : Ctx) (header : Header) (payload : ActivityPayload) (root : ScopeOccurrence)

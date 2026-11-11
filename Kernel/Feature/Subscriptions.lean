@@ -3,6 +3,7 @@ module
 public import Kernel.Hooks
 public import Kernel.IL.Timer
 public import Kernel.Feature.Subscriptions.Conditions
+public import Kernel.Feature.Subscriptions.Correlation
 
 /-! # Subscriptions: catch Events, boundaries, Event Sub-Process starts and Event-Based Gateway arms
 
@@ -11,8 +12,8 @@ opens one item; the triggers that `Kernel.Feature.Propagation` delivers (Error, 
 nothing and are found through `catches`.
 
 Firing rules: a Timer fires only at exactly its deadline, which becomes the logical time; a Message fires only on its
-own channel, with a payload exactly when the subscription writes one; a Signal fires only on its own address, with
-variables only where the profile installs them. Anything else is `rejected` and changes nothing.
+own channel, with a payload exactly when the subscription writes one and its correlation accepted; a Signal fires only
+on its own address; either carries variables only where the profile installs them. Anything else is `rejected` and changes nothing.
 
 A subscription's item holds a reservation (`State.openSubscription`) that its firing begins. A boundary item is
 attached to its host occurrence; the arms of one Event-Based Gateway are attached to the gateway's occurrence. A
@@ -200,57 +201,6 @@ def payloadBindings (ctx : Ctx) (nowMs : Nat) (outputs : List Mapping) (payload 
     | .foreign _ _ => none
   ctx.requireMappings { variables := outputsRead, nowMs } outputs
 
-/-! ## Correlation
-
-Message key correlation as the [specification](../../docs/kernel/semantics/SUBSCRIPTIONS-SEMANTICS-SPEC.md) bounds it: a
-criterion names one correlation key and the expression its single property's value is bound to in the subscription's
-scope; the delivered value is the Message payload's. Both must be non-empty Strings, compared by exact equality
-([exact subset](../../docs/kernel/semantics/SUBSCRIPTIONS-SEMANTICS-SPEC.md)), and the
-criterion is evaluated when a delivery is matched, never when the subscription opens, so the current Property value
-decides. -/
-
-def criteria (trigger : Trigger) : List CorrelationCriterion :=
-  (trigger.message?.map (·.correlation)).getD []
-
-/-- The key a criterion binds, evaluated in `variables`. -/
-def keyValue (ctx : Ctx) (context : EvalContext) (criterion : CorrelationCriterion) :
-    Except Failure String :=
-  match ctx.evaluate context criterion.value with
-  -- dynamic-only: a key's value is the run's data.
-  | .value (.string key) => if key.isEmpty then .error (.unsupported "correlation-key-empty") else .ok key
-  -- dynamic-only: a key's value type is the run's data.
-  | .value _ => .error (.unsupported "correlation-key-type")
-  | .failure code => .error (.semanticFailure code)
-  | .unsupported code => .error (.unsupported code)
-
-/-- Whether the delivered `correlation` names exactly the criteria's keys, in order, each with the String its criterion
-binds. A modeled key matches as `.processVariable`; the other targets are `O.messageCorrelation = apiCriteria`, which
-admission refuses, so no delivery with such a target reaches a correlated wait of an admitted program. -/
-def correlationMatches (ctx : Ctx) (context : EvalContext) (bound : List CorrelationCriterion)
-    (correlation : List CorrelationMatch) : Except Failure Bool :=
-  if bound.length != correlation.length then .ok false
-  else (bound.zip correlation).allM fun (criterion, delivered) => do
-    let expected ← keyValue ctx context criterion
-    match delivered.target with
-    | .processVariable key =>
-      pure (criterion.key == key && match delivered.expected with
-        | .string value => value == expected
-        | _ => false)
-    | .localVariable _ => .error (.unsupported "profile-message-correlation-api-criteria")
-    | .businessKey => .error (.unsupported "profile-message-correlation-api-criteria")
-    | .processInstance => .error (.unsupported "profile-message-correlation-api-criteria")
-
-/-- `Hooks.correlates`. -/
-def correlates (ctx : Ctx) (item : OpenItem) (channel : MessageChannel) (correlation : List CorrelationMatch)
-    (state : State) : Except Failure Bool :=
-  match item.kind.view.channel, (subscription? ctx item).map (criteria ·.trigger) with
-  | some channel', some bound@(_ :: _) =>
-    if channel' != channel then .ok false
-    else correlationMatches ctx (state.evalContext item.scope) bound correlation
-  | some _, some [] => .ok false
-  | some _, none => .ok false
-  | none, _ => .ok false
-
 /-- The address a delivery names, when it delivers a Signal. -/
 def signalDelivered : DeliveryTrigger → Option SignalAddress
   | .signal address _ => some address
@@ -265,8 +215,10 @@ def signalVariables (ctx : Ctx) (variables : List (String × Value)) : Except Fa
   | .none => if variables.isEmpty then .ok [] else .error (.rejected "signal-variables-not-admitted")
 
 /-- Check that `fired` may fire `item` and return the state at the firing's logical time with the values the
-subscription writes. A Message delivery must carry exactly the subscription's correlation, none for an uncorrelated
-one; the target rechecks it rather than trusting the population's selection (specification, global command). -/
+subscription writes. A Message delivery's correlation must be accepted (`correlationAccepts`); the target rechecks it
+rather than trusting the population's selection (specification, global command). Its own variables follow the mapped
+outputs, as CIB's `setVariables` follows the payload (CIB-EXT-0025); `delivered` admits them only under
+`DeliveryVariables.installs`. -/
 def admitFiring (ctx : Ctx) (subscription : Subscription) (item : OpenItem) (fired : Fired) (state : State) :
     Except Failure (State × List (String × Value)) :=
   let view := item.kind.view
@@ -284,15 +236,16 @@ def admitFiring (ctx : Ctx) (subscription : Subscription) (item : OpenItem) (fir
     | some channel =>
       if delivery.trigger.channel? != some channel then .error (.rejected "message-channel-mismatch")
       else do
-        let correlated ← correlationMatches ctx (state.evalContext item.scope) (criteria subscription.trigger)
-          delivery.correlation
+        let correlated ← correlationAccepts ctx state item.scope (criteria subscription.trigger) delivery.correlation
         if !correlated then .error (.rejected "message-correlation-mismatch")
         else
-          match view.payload, delivery.payload with
-          | true, some payload => do .ok (state, ← payloadBindings ctx state.logicalTimeMs subscription.outputs payload)
-          | true, none => .error (.rejected "message-payload-required")
-          | false, some _ => .error (.rejected "message-payload-not-accepted")
-          | false, none => .ok (state, [])
+          let mapped ← match view.payload, delivery.payload with
+            | true, some payload => payloadBindings ctx state.logicalTimeMs subscription.outputs payload
+            | true, none => .error (.rejected "message-payload-required")
+            | false, some _ => .error (.rejected "message-payload-not-accepted")
+            | false, none => .ok []
+          admitValues (delivery.variables.map (·.2))
+          .ok (state, mapped ++ delivery.variables)
   | .signal delivery =>
     match view.signal, signalDelivered delivery.trigger with
     | some detail, some address =>

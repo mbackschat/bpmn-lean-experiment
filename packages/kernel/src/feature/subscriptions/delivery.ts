@@ -3,14 +3,13 @@
  * input fires (`Hooks.delivered`), the Message subscription or Signal catch its occurrence names, once the delivery's
  * own rules admit it. `step.ts` fires the item; this module only finds it.
  */
-import { SignalDelivery, assertNever } from "../../il/types.js";
+import { DeliveryVariables, SignalDelivery, assertNever } from "../../il/types.js";
 import {
   DeliveryTriggerTag,
   FailureTag,
   FiredTag,
   SignalReach,
   committed,
-  deliveryTriggerFromBroadcast,
   failed,
   type DeliveryInput,
   type Fired,
@@ -21,11 +20,15 @@ import {
 import { itemOf, type Ctx } from "../../hooks.js";
 
 /**
- * The open item `data` fires and its firing, or why the delivery is refused. Only one receiver of a broadcast may carry
- * variables; a targeted Signal needs `occurrenceTargeted`.
+ * The open item `data` fires and its firing, or why the delivery is refused. A Message carries variables only under
+ * `DeliveryVariables.Installs` (CIB-EXT-0025) and a Signal only to a receiver of a broadcast; a targeted Signal needs
+ * `occurrenceTargeted`.
  */
 export function delivered(ctx: Ctx, data: DeliveryInput, state: State): Result<readonly [OpenItem, Fired]> {
-  if (data.variables.length > 0 && !deliveryTriggerFromBroadcast(data.trigger)) {
+  const carries = data.trigger.tag === DeliveryTriggerTag.Message
+    ? ctx.program.options.deliveryVariables === DeliveryVariables.Installs
+    : data.trigger.reach === SignalReach.Broadcast;
+  if (data.variables.length > 0 && !carries) {
     return failed(FailureTag.Rejected, "delivery-variables-not-admitted");
   }
   switch (data.trigger.tag) {

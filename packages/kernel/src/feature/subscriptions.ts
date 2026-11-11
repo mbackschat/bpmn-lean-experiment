@@ -7,8 +7,8 @@
  * and are found through `catches`.
  *
  * Firing rules: a Timer fires only at exactly its deadline, which becomes the logical time; a Message fires only on its
- * own channel, with a payload exactly when the subscription writes one; a Signal fires only on its own address, with
- * variables only where the profile installs them. Anything else is `rejected` and changes nothing.
+ * own channel, with a payload exactly when the subscription writes one and its correlation accepted; a Signal fires only
+ * on its own address; either carries variables only where the profile installs them. Anything else is `rejected` and changes nothing.
  *
  * A subscription's item holds a reservation (`openSubscription`) that its firing begins. A boundary item is attached to
  * its host occurrence; the arms of one Event-Based Gateway are attached to the gateway's occurrence. A firing that ends
@@ -38,9 +38,7 @@ import {
   programChildren,
   programElement,
   programTarget,
-  triggerMessage,
   type Boundary,
-  type CorrelationCriterion,
   type ElementId,
   type EventPayload,
   type Header,
@@ -53,7 +51,6 @@ import {
   type ValueSource,
 } from "../il/types.js";
 import {
-  CriterionTargetTag,
   FailureTag,
   FiredTag,
   OpenKindTag,
@@ -71,7 +68,6 @@ import {
   failedWith,
   leaveFlows,
   leaveOutgoing,
-  messageChannelEquals,
   occurrenceOf,
   openItem,
   openKindView,
@@ -82,11 +78,9 @@ import {
   signal,
   signalAddressMatches,
   type Binding,
-  type CorrelationMatch,
   type DeliveryTrigger,
   type EvalContext,
   type Fired,
-  type MessageChannel,
   type Occurrence,
   type OpenItem,
   type OpenKind,
@@ -107,6 +101,7 @@ import {
 } from "../hooks.js";
 import { ClassifiedTag, TimerKind, armAt as armTimer, classify, dynamicCode, successor } from "../il/timer.js";
 import { armed, subscriptionOf } from "./subscriptions/conditions.js";
+import { correlationAccepts, criteria } from "./subscriptions/correlation.js";
 
 export { offerWrites } from "./subscriptions/conditions.js";
 
@@ -425,87 +420,6 @@ export function payloadBindings(ctx: Ctx, nowMs: number, outputs: readonly Mappi
   return ctxRequireMappings(ctx, { variables: outputsRead, nowMs }, outputs);
 }
 
-// Correlation, as the message key correlation specification bounds it: a criterion names one correlation key and the
-// expression its single property's value is bound to in the subscription's scope; the delivered value is the Message
-// payload's. Both must be non-empty Strings, compared by exact equality, and the criterion is evaluated when a
-// delivery is matched, never when the subscription opens, so the current Property value decides.
-
-function criteria(trigger: Trigger): readonly CorrelationCriterion[] {
-  return triggerMessage(trigger)?.correlation ?? [];
-}
-
-/** The key a criterion binds, evaluated in `variables`. */
-function keyValue(ctx: Ctx, context: EvalContext, criterion: CorrelationCriterion): Result<string> {
-  const evaluation = ctx.evaluate(context, criterion.value);
-  switch (evaluation.tag) {
-    case EvaluationTag.Value:
-      if (evaluation.result.tag !== ValueTag.String) {
-        return failed(FailureTag.Unsupported, "correlation-key-type"); // dynamic-only: a key's value type is the run's data
-      }
-      if (evaluation.result.value === "") {
-        return failed(FailureTag.Unsupported, "correlation-key-empty"); // dynamic-only: a key's value is the run's data
-      }
-      return committed(evaluation.result.value);
-    case EvaluationTag.Failure:
-      return failed(FailureTag.SemanticFailure, evaluation.code);
-    case EvaluationTag.Unsupported:
-      return failed(FailureTag.Unsupported, evaluation.code);
-  }
-  return assertNever(evaluation);
-}
-
-/**
- * Whether the delivered `correlation` names exactly the criteria's keys, in order, each with the String its criterion
- * binds. A modeled key matches as `processVariable`; the other targets are `O.messageCorrelation = apiCriteria`, which
- * admission refuses, so no delivery with such a target reaches a correlated wait of an admitted program.
- */
-function correlationMatches(
-  ctx: Ctx,
-  context: EvalContext,
-  bound: readonly CorrelationCriterion[],
-  correlation: readonly CorrelationMatch[],
-): Result<boolean> {
-  if (bound.length !== correlation.length) return committed(false);
-  for (const [index, criterion] of bound.entries()) {
-    const expected = keyValue(ctx, context, criterion);
-    if (!expected.ok) return failedWith(expected.failure);
-    const matched = criterionMatches(criterion, correlation[index] as CorrelationMatch, expected.value);
-    if (!matched.ok || !matched.value) return matched;
-  }
-  return committed(true);
-}
-
-function criterionMatches(criterion: CorrelationCriterion, delivered: CorrelationMatch, expected: string): Result<boolean> {
-  const target = delivered.target;
-  switch (target.tag) {
-    case CriterionTargetTag.ProcessVariable: {
-      const value = delivered.expected;
-      return committed(criterion.key === target.name && value.tag === ValueTag.String && value.value === expected);
-    }
-    case CriterionTargetTag.LocalVariable:
-    case CriterionTargetTag.BusinessKey:
-    case CriterionTargetTag.ProcessInstance:
-      return failed(FailureTag.Unsupported, "profile-message-correlation-api-criteria");
-  }
-  return assertNever(target);
-}
-
-/** `Hooks.correlates`. */
-export function correlates(
-  ctx: Ctx,
-  item: OpenItem,
-  channel: MessageChannel,
-  correlation: readonly CorrelationMatch[],
-  state: State,
-): Result<boolean> {
-  const waiting = openKindView(item.kind).channel;
-  const subscription = subscriptionOf(ctx, item);
-  const bound = subscription === null ? [] : criteria(subscription.trigger);
-  if (waiting === null || bound.length === 0) return committed(false);
-  if (!messageChannelEquals(waiting, channel)) return committed(false);
-  return correlationMatches(ctx, evalContext(state, item.scope), bound, correlation);
-}
-
 /** The address a delivery names, when it delivers a Signal. */
 function signalDelivered(trigger: DeliveryTrigger): SignalAddress | null {
   switch (trigger.tag) {
@@ -555,16 +469,21 @@ function admitFiring(ctx: Ctx, subscription: Subscription, item: OpenItem, fired
       if (!optionalChannelEquals(deliveryTriggerChannel(delivery.trigger), view.channel)) {
         return failed(FailureTag.Rejected, "message-channel-mismatch");
       }
-      const correlated = correlationMatches(ctx, evalContext(state, item.scope), criteria(subscription.trigger), delivery.correlation);
+      const correlated = correlationAccepts(ctx, state, item.scope, criteria(subscription.trigger), delivery.correlation);
       if (!correlated.ok) return failedWith(correlated.failure);
       if (!correlated.value) return failed(FailureTag.Rejected, "message-correlation-mismatch");
+      let mapped: readonly Binding[] = [];
       if (view.payload && delivery.payload !== null) {
         const values = payloadBindings(ctx, state.logicalTimeMs, subscription.outputs, delivery.payload);
-        return values.ok ? committed([state, values.value]) : failedWith(values.failure);
+        if (!values.ok) return failedWith(values.failure);
+        mapped = values.value;
+      } else if (view.payload) {
+        return failed(FailureTag.Rejected, "message-payload-required");
+      } else if (delivery.payload !== null) {
+        return failed(FailureTag.Rejected, "message-payload-not-accepted");
       }
-      if (view.payload) return failed(FailureTag.Rejected, "message-payload-required");
-      if (delivery.payload !== null) return failed(FailureTag.Rejected, "message-payload-not-accepted");
-      return committed([state, []]);
+      const installed = admitValues(delivery.variables.map(([, value]) => value));
+      return installed.ok ? committed([state, [...mapped, ...delivery.variables]]) : failedWith(installed.failure);
     }
     case FiredTag.Signal: {
       const delivery = fired.delivery;

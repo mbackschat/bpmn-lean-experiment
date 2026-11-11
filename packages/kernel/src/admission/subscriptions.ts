@@ -14,6 +14,7 @@ import {
   Evaluator,
   ExpressionTag,
   MalformedTimer,
+  MessageCorrelation,
   MessageNames,
   SignalNames,
   TimerScheduleTag,
@@ -268,9 +269,11 @@ function criterionValue(
 
 /**
  * A correlated catch, as the [specification](../../../../docs/kernel/semantics/SUBSCRIPTIONS-SEMANTICS-SPEC.md)
- * bounds it: one key bound to a variable, an Operation channel, and no output, since its payload is never written.
+ * bounds it: one key bound to a variable, an Operation channel, and no output, since its payload is never written. Under
+ * `MessageCorrelation.ApiCriteria` CIB executes no modeled key (CIB-LIM-0002), so one is refused rather than erased.
  */
 function correlatedCatch(options: ProfileOptions, reading: Reading, subscription: Subscription, trigger: MessageTrigger): string | null {
+  if (options.messageCorrelation === MessageCorrelation.ApiCriteria && trigger.correlation.length > 0) return "message.correlation.modeled";
   const [criterion, ...others] = trigger.correlation;
   if (criterion === undefined) return message(options, reading, false, trigger);
   if (others.length > 0) return "message.correlation.keys";

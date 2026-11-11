@@ -12,9 +12,7 @@ import {
   CallBindingTime,
   CompensationHandlerFailureTag,
   CompensationOrder,
-  DeliveryVariables,
   Evaluator,
-  MessageCorrelation,
   MessageThrowForms,
   MultiInstanceCounters,
   MultiInstanceInputFailure,
@@ -48,8 +46,6 @@ function multiInstance(loops: boolean, selected: ProfileOptions): string | null 
 }
 
 export function options(abnormalScope: boolean, loops: boolean, selected: ProfileOptions): string | null {
-  if (selected.messageCorrelation === MessageCorrelation.ApiCriteria) return "profile.messageCorrelation.apiCriteria";
-  if (selected.deliveryVariables === DeliveryVariables.Installs) return "profile.deliveryVariables.installs";
   if (selected.compensationOrder === CompensationOrder.ReverseCreation) return "profile.compensationOrder.reverseCreation";
   const handlerFailure = compensationHandlerFailure(selected.compensationHandlerFailure);
   if (handlerFailure !== null) return handlerFailure;

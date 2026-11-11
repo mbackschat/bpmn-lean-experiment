@@ -1,10 +1,8 @@
 /**
- * A Receive Task's wait is uncorrelated, since admission refuses a Receive Task correlation (`work.receive.correlation`)
- * and the API criteria (`profile.messageCorrelation.apiCriteria`). A delivery must carry exactly its wait's
- * correlation, as a Message subscription's must (`feature/subscriptions.ts` `admitFiring`), so a delivery naming a
- * criterion is refused unchanged and never completes the task (PC-HUM-03: wrong correlation refuses without consuming).
- * The oracle is that subscription rule; no retained CIB answer exists, because the runner realizes no `deliver`
- * correlation.
+ * A Receive Task's wait is uncorrelated, since admission refuses a Receive Task correlation (`work.receive.correlation`),
+ * and this program reads the modeled key (`messageCorrelation = modeledKey`). A criterion delivered to a wait that
+ * models no key is an API criterion, which that reading does not select, so the delivery is `unsupported` with the
+ * profile's code and changes nothing, rather than a correlation mismatch; one naming none completes the task.
  *
  * `Start → T → End`, `T` a Receive Task on the unspecified Message channel.
  */
@@ -27,7 +25,7 @@ const deliver = (correlation: unknown[]) => stimulus({
   trigger: { kind: "message", channel: { kind: "unspecifiedMessage" } }, correlation,
 });
 
-test("a delivery naming a correlation criterion is refused unchanged; one naming none completes the task", () => {
+test("a criterion delivered where the profile reads only modeled keys is unsupported; a delivery naming none completes the task", () => {
   const decoded = decodeProgram(wired(task(activity("T", receiveWork()))(base())));
   assert.ok(decoded.ok, decoded.ok ? "" : decoded.refusal);
   const started = step(hooks, decoded.value, null, stimulus({
@@ -36,7 +34,7 @@ test("a delivery naming a correlation criterion is refused unchanged; one naming
   assert.ok(started.ok, JSON.stringify(started));
   const criterion = { target: { kind: "processVariable", name: "orderId" }, expected: { kind: "string", value: "O-1" } };
   const refused = step(hooks, decoded.value, started.value, deliver([criterion]));
-  assert.deepEqual(refused, { ok: false, failure: { tag: "rejected", code: "message-correlation-mismatch" } });
+  assert.deepEqual(refused, { ok: false, failure: { tag: "unsupported", code: "profile-message-correlation-api-criteria" } });
   const completed = step(hooks, decoded.value, started.value, deliver([]));
   assert.ok(completed.ok, JSON.stringify(completed));
   assert.equal((completed.value as State).status, "completed");

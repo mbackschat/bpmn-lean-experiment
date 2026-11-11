@@ -40,8 +40,6 @@ A profile may select only behaviour the kernel implements ([`Kernel/Admission/Pr
 | Refusal code | Refused | Owning row |
 |---|---|---|
 | `profile.evaluator.juel` | the JUEL evaluator | PC-DATA-07 |
-| `profile.messageCorrelation.apiCriteria` | correlation by API criteria | PC-MESSAGE-08 |
-| `profile.deliveryVariables.installs` | delivered variables installed by a correlation | PC-MESSAGE-08 |
 | `profile.compensationOrder.reverseCreation` | reverse-creation compensation order | PC-COMPENSATION rows |
 | `profile.compensationHandlerFailure.selected` | a selected handler-failure code | PC-COMPENSATION rows |
 | `profile.callBindingTime.invocation` | binding the called definition at invocation | PC-SCOPE-03 |

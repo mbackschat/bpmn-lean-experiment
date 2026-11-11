@@ -235,7 +235,7 @@ test("the Lean and TypeScript kernels agree on the population contract's deploym
   const program = JSON.parse(await readFile(path.join(projectRoot, "packages/kernel/test/fixtures/simple-boolean.program.json"), "utf8")) as
     Record<string, unknown>;
   const identity = program.identity as Record<string, unknown>;
-  const refused = { ...program, options: { ...(program.options as Record<string, unknown>), messageCorrelation: "apiCriteria" } };
+  const refused = { ...program, options: { ...(program.options as Record<string, unknown>), callBindingTime: "invocation" } };
   const definition = (definitionRef: string) => ({
     definitionRef,
     bpmn: { id: definitionRef, relativePath: `scenarios/${definitionRef}.bpmn`, sha256: identity.sourceSha256, sourceOverlay: null },

@@ -1226,6 +1226,26 @@ A Message wait takes a delivered payload only through a Data Output that its Dat
 
 **Boundary:** A payload offered to a Message wait that declares no Data Output. A wait that declares one is CIB-LIM-0013, and variables a delivery installs by name are CIB-EXT-0025.
 
+### CIB-LIM-0038 — CIB cannot deliver a Message to one addressed waiting occurrence
+
+**Status:** Profile limitation; not a deviation
+
+A single-instance `deliver` input names one waiting occurrence by its full identity, and the kernel fires exactly that occurrence when its channel and criteria are accepted, under every profile (the [subscriptions specification](kernel/semantics/SUBSCRIPTIONS-SEMANTICS-SPEC.md#messages)). CIB Seven `2.2.0` has no Message delivery to one occurrence: `createMessageCorrelation(name)` with `processInstanceId` and its criteria selects among every subscription of that name in the instance and fails with `MismatchingMessageCorrelationException` on zero or several matches. Where several waits of one instance match the name and criteria, CIB rolls the command back where the kernel delivers to the addressed one; where the addressed wait does not match but another does, CIB delivers to the other where the kernel rejects. CIB's selection is the kernel's population `publish`, which reaches exactly one receiver or is `ambiguous`.
+
+**Evidence:** Pinned `runtime/DefaultCorrelationHandler.java:45-72`, `cmd/CorrelateMessageCmd.java:57-95`; retained `message-correlation-criteria/ambiguous-same-instance` and `receive-task-payload-correlation/order-branches-correlated-delivery`, `order-repetition-previous-occurrence`, `order-wrong-correlation` and `order-wrong-owner-and-activation`, where two waits of one instance subscribe to one Message.
+
+**Boundary:** Single-instance `deliver` inputs to Message catches, boundaries, Event Sub-Process starts and Receive Tasks under the cibseven profiles. A delivery whose instance holds one wait of that Message name agrees.
+
+### CIB-LIM-0039 — CIB reads a local criterion at a Message Receive Task in a scope of its own
+
+**Status:** Profile limitation; not a deviation
+
+BPMN 2.0.2 gives each instance of a Multi-Instance Activity its `loopCounter` (Table 10.30) and no execution tree. The kernel's Multi-Instance Receive Task waits in its body occurrence's scope, which holds its `loopCounter` (CIB-INT-0018), so a local criterion (CIB-EXT-0025) on a body variable reads it there. CIB Seven `2.2.0` makes a Message-addressed Receive Task a scope of its own beneath its Multi-Instance body's execution and evaluates a local criterion only on the execution holding the subscription, so a local criterion on a body variable such as `loopCounter` matches nothing in CIB and rolls the delivery back, where the kernel delivers.
+
+**Evidence:** Pinned `bpmn/parser/BpmnParse.java:2754-2761` (`setScope(true)` for a Receive Task with `messageRef`), `runtime/DefaultCorrelationHandler.java:98-101`; retained `receive-task-payload-correlation/items-parallel-local-correlation`.
+
+**Boundary:** Local criteria naming a variable of the Multi-Instance body at a looping Receive Task under the cibseven profiles. A catch inside a looping Sub-Process waits in a scope beneath its body in both engines and agrees (CIB-EXT-0025).
+
 ## Extension register
 
 ### CIB-LIM-0025 — CIB admits two interrupting Error Event Sub-Processes of one code in one scope
@@ -1527,13 +1547,13 @@ An unresolved `camunda:inputParameter` or `outputParameter` expression raises an
 
 ### CIB-EXT-0025 — Message correlation by API criteria and delivered variables
 
-**Status:** Recorded extension from the pinned source; not selected by the standards reading (`ProfileOptions.messageCorrelation`, `ProfileOptions.deliveryVariables`)
+**Status:** Recorded extension from the pinned source for `MessageCorrelation.apiCriteria` and `DeliveryVariables.installs`; selected by the cibseven profiles
 
-Correlation criteria are API-supplied and match Process or local variables, business key or instance identity, and delivered variables install without a modeled output.
+Correlation criteria are API-supplied and match Process or local variables, business key or instance identity, and delivered variables install without a modeled output. Under `apiCriteria` each criterion of a delivery or publication is checked against the waiting subscription's own state: a Process variable the instance root holds, a local variable the subscription's scope occurrence holds itself, the instance's own business key, or its public instance identifier, values compared by kind and value, a null matching only a present null; the criteria form a conjunction and two naming one target are rejected (`criteria-duplicate`). Under `installs` a delivery's variables install after its mapped outputs, by the nearest-owner rule, in the delivering step.
 
-**Evidence:** Pinned `MessageCorrelationBuilderImpl` (`processInstanceVariableEquals`, `localVariableEquals`, `setVariable`); the kernel's `DeliveryInput.correlation`.
+**Evidence:** Pinned `MessageCorrelationBuilderImpl` (`processInstanceVariableEquals`, `localVariableEquals`, `setVariable`), `DefaultCorrelationHandler.java:79-123`, `AbstractCorrelateMessageCmd.java:69-79`; the kernel test `packages/kernel/test/message-api-criteria.test.ts`.
 
-**Boundary:** The kernel carries the criteria shape, and `profile.messageCorrelation.apiCriteria` and `profile.deliveryVariables.installs` refuse these options until a row admits them.
+**Boundary:** Message catches, boundaries, Event Sub-Process starts and Receive Tasks reached by an occurrence-addressed `deliver` or a population `publish`. A local criterion reads only the waiting item's own scope: CIB evaluates it on the execution holding the subscription (`DefaultCorrelationHandler.java:98-101`), so at a catch inside a looping Sub-Process the `loopCounter` of the enclosing instance matches nothing, in CIB and the kernel alike; at a looping Receive Task the two differ (CIB-LIM-0039). A modeled key is refused under `apiCriteria` (`message.correlation.modeled`, CIB-LIM-0002). CIB selects among an instance's subscriptions where the kernel addresses one occurrence (CIB-LIM-0038). CIB's variable query compares a plain Integer only with Integer-typed variables, so the runner maps a criterion to the Java type CIB stores for its value (`QueryVariableValue.java:58-66`).
 
 ### CIB-EXT-0026 — a continuation failure after an effect result fails the job
 

@@ -12,10 +12,14 @@ public section
 
 namespace Kernel.Feature.Subscriptions
 
-/-- The open item `data` fires and its firing, or why the delivery is refused. Only one receiver of a broadcast may carry
-variables; a targeted Signal needs `occurrenceTargeted`. -/
+/-- The open item `data` fires and its firing, or why the delivery is refused. A Message carries variables only under
+`DeliveryVariables.installs` (CIB-EXT-0025) and a Signal only to a receiver of a broadcast; a targeted Signal needs
+`occurrenceTargeted`. -/
 def delivered (ctx : Ctx) (data : DeliveryInput) (state : State) : Except Failure (OpenItem × Fired) :=
-  if !data.variables.isEmpty && !data.trigger.fromBroadcast then .error (.rejected "delivery-variables-not-admitted") else
+  let carries := match data.trigger with
+    | .message _ => ctx.program.options.deliveryVariables == .installs
+    | .signal _ reach => reach == .broadcast
+  if !data.variables.isEmpty && !carries then .error (.rejected "delivery-variables-not-admitted") else
   match data.trigger with
   | .message _ =>
     match item? ctx state data.occurrence (·.channel) with

@@ -11,6 +11,7 @@ import * as Propagation from "./feature/propagation.js";
 import * as Scopes from "./feature/scopes.js";
 import * as Subscriptions from "./feature/subscriptions.js";
 import * as Starts from "./feature/subscriptions/starts.js";
+import * as Correlation from "./feature/subscriptions/correlation.js";
 import * as Delivery from "./feature/subscriptions/delivery.js";
 import { WriteRule } from "./state.js";
 
@@ -60,7 +61,7 @@ export const hooks: Hooks = {
   handlerCompleted: Compensation.handlerCompleted,
   evaluate: Data.evaluate,
   catches: Subscriptions.catches,
-  correlates: Subscriptions.correlates,
+  correlates: Correlation.correlates,
   startsFired: Starts.startsFired,
   delivered: Delivery.delivered,
   eventStart: Scopes.eventStart,

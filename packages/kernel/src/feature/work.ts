@@ -14,6 +14,7 @@
 import {
   ErrorPathOutputs,
   MappingDialect,
+  MessageCorrelation,
   MultiInstanceCounters,
   ResultValues,
   OutputContext,
@@ -81,6 +82,7 @@ import {
   admitValues, ctxEvaluateMappings, ctxEvaluateMappingsWith, ctxOutputReads, deliveryTriggerChannel, evalContext, hold, inValueDomain,
   messageTriggerChannel, ownVariables, type Ctx,
 } from "../hooks.js";
+import { criteriaHold } from "../state/criteria.js";
 import * as Call from "./work/call.js";
 import * as Submission from "./work/submission.js";
 
@@ -559,12 +561,14 @@ export function resolveIncident(_ctx: Ctx, item: OpenItem, action: CommandAction
 }
 
 /**
- * A delivery completes a Receive Task only on the channel it waits on; the Message carries no payload here. The wait is
- * uncorrelated, since admission refuses a Receive Task correlation (`work.receive.correlation`), so a delivery naming a
- * criterion is refused as a Message subscription refuses one it does not bind (`subscriptions.ts` `admitFiring`).
+ * A delivery completes a Receive Task only on the channel it waits on; the Message carries no payload here. The wait
+ * models no key, since admission refuses a Receive Task correlation (`work.receive.correlation`), so a criterion is an API
+ * criterion: `unsupported` under `ModeledKey`, which does not select one, and checked in the task's own scope under
+ * `ApiCriteria` (`criteriaHold`), as a Message subscription checks it. The delivery's own variables are the completion's
+ * writes; `Hooks.delivered` admits them only under `DeliveryVariables.Installs`.
  */
 export function triggerActivity(
-  _ctx: Ctx,
+  ctx: Ctx,
   _header: Header,
   _payload: ActivityPayload,
   item: OpenItem,
@@ -585,9 +589,18 @@ export function triggerActivity(
       if (!optionalChannelEquals(deliveryTriggerChannel(fired.delivery.trigger), channel)) {
         return failed(FailureTag.Rejected, "message-channel-mismatch");
       }
-      if (fired.delivery.correlation.length > 0) return failed(FailureTag.Rejected, "message-correlation-mismatch");
-      if (fired.delivery.payload !== null) return failed(FailureTag.Rejected, "unexpected-message-payload");
-      return committed(signal(state, completeSignal(item.occurrence, leaveOutgoing, [], WriteRule.Outward)));
+      const delivery = fired.delivery;
+      const accepted = ctx.program.options.messageCorrelation === MessageCorrelation.ModeledKey
+        ? (delivery.correlation.length === 0
+          ? committed(true)
+          : failed<boolean>(FailureTag.Unsupported, "profile-message-correlation-api-criteria")) // dynamic-only: a delivery's criteria are its caller's
+        : criteriaHold(state, ownScope(state, item.occurrence, item.scope), delivery.correlation);
+      if (!accepted.ok) return failedWith(accepted.failure);
+      if (!accepted.value) return failed(FailureTag.Rejected, "message-correlation-mismatch");
+      if (delivery.payload !== null) return failed(FailureTag.Rejected, "unexpected-message-payload");
+      const installed = admitValues(delivery.variables.map(([, value]) => value));
+      if (!installed.ok) return failedWith(installed.failure);
+      return committed(signal(state, completeSignal(item.occurrence, leaveOutgoing, delivery.variables, WriteRule.Outward)));
     }
   }
   return assertNever(fired);

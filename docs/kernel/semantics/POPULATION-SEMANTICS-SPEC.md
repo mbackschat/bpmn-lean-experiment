@@ -66,14 +66,12 @@ Adopted kernel owner document (W0 extraction, 2026-11-09). The kernel modules it
 | [CIB-LIM-0029](../../CIB-BPMN-RELATION-REGISTER.md#cib-lim-0029--cib-commits-every-receiver-of-one-stimulus-together-the-kernel-each-receiver-on-its-own) | Limitation: the kernel commits each receiver of one stimulus on its own; CIB commits them together, so a failing receiver there rolls back the others. |
 | [CIB-LIM-0030](../../CIB-BPMN-RELATION-REGISTER.md#cib-lim-0030--the-kernel-finishes-a-throwers-step-before-other-instances-receive-its-signal) | Limitation: the kernel delivers a thrown Signal to other instances after the thrower's step; CIB before the thrower leaves, so a rethrow there can miss a catch the thrower's continuation arms. |
 | [CIB-EXT-0044](../../CIB-BPMN-RELATION-REGISTER.md#cib-ext-0044--cib-evaluates-a-root-conditional-start-over-the-variables-a-request-submits) | Extension: root Conditional starts evaluated over submitted variables, by a start input or a population's `evaluateConditions`. |
-| [CIB-EXT-0025](../../CIB-BPMN-RELATION-REGISTER.md#cib-ext-0025--message-correlation-by-api-criteria-and-delivered-variables) | CIB's API criteria and delivered variables; selected by `messageCorrelation = apiCriteria` and `deliveryVariables = installs`, both refused at admission until PC-MESSAGE-08 admits them. `CriterionTarget` already carries the local-variable, business-key and process-instance targets. |
+| [CIB-EXT-0025](../../CIB-BPMN-RELATION-REGISTER.md#cib-ext-0025--message-correlation-by-api-criteria-and-delivered-variables) | CIB's API criteria and delivered variables; selects `messageCorrelation = apiCriteria` and `deliveryVariables = installs`, whose criteria each waiting receiver checks against its own state ([subscriptions](SUBSCRIPTIONS-SEMANTICS-SPEC.md#messages)). |
 
 ## Restrictions
 
 | Refusal code | Refused | Reason or owning row |
 |---|---|---|
-| `profile.messageCorrelation.apiCriteria` | correlation by caller-supplied criteria | PC-MESSAGE-08 ([CIB-EXT-0025](../../CIB-BPMN-RELATION-REGISTER.md#cib-ext-0025--message-correlation-by-api-criteria-and-delivered-variables)) |
-| `profile.deliveryVariables.installs` | a delivery that installs its variables | PC-MESSAGE-08 |
 | `message.correlation.keys` | more than one correlation key on a catch | compound criteria, PC-MESSAGE-08 |
 | `message.correlation.value` | a criterion bound to anything but a variable read | the key domain above |
 | `message.correlation.channel` | a correlated catch without Message, Interface and Operation | the publication addresses an Operation channel |
@@ -91,7 +89,7 @@ Superseded first-profile restrictions: the correlation profile admitted one Coll
 
 | Row | Decision owed or not yet implemented |
 |---|---|
-| PC-MESSAGE-08 | Approved typed criteria over Process and local values, compound criteria, null and absence (`CorrelationMatch` already separates a present null from absence), concurrent same-definition instances; atomic delivery and payload commit. The population side is routed (engine-wide name address, business key, modes, `criteria-duplicate`); criterion targets other than a modeled key and delivered variables wait for `apiCriteria` and `installs`. |
+| PC-MESSAGE-08 | Approved typed criteria over Process and local values, compound criteria, null and absence (`CorrelationMatch` already separates a present null from absence), concurrent same-definition instances; atomic delivery and payload commit. The population side is routed (engine-wide name address, business key, modes, `criteria-duplicate`), and each receiver checks every criterion target and installs delivered variables under `apiCriteria` and `installs`. |
 | PC-MESSAGE-02 | Multiple distinct root Message starts and Message/None mixtures with payload, exact selected-start identity and definition-version resolution; content-bound start recovery. A root Message start writes its payload by the catch rule; publications reach root Message starts by channel or name with definition and version selection, the derived start identity and the command ledger. CIB-compared population witnesses wait for the runner's population mode. |
 | PC-TIMER-04 | Root Timer start schedules for duration, date and cycle bound to an exact definition version and start; no duplicate start after recovery. Occurrences of every schedule `Timer.resolve` resolves fire through `timerStart` with currency and the occurrence ledger; CIB-compared population witnesses wait for the runner's population mode. The engine-published start capability and version-pinned schedule ownership are fixed by the Timer start account ([TSTART scheduling][tstart-schedule]). |
 | PC-SIGNAL-02 | Signal root starts and catches; broadcast creates each eligible start instance. A `broadcast` and every committed intent reach the waiting catches and the current deployments' root Signal starts; CIB-compared population witnesses wait for the runner's population mode. |

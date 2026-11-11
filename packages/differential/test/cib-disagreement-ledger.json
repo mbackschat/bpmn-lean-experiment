@@ -1188,62 +1188,27 @@
     ]
   },
   {
-    "evidence": "scenarios/open-rows/message-correlation-criteria/business-key.cibseven-evidence.json",
+    "evidence": "scenarios/open-rows/message-correlation-criteria/ambiguous-same-instance.cibseven-evidence.json",
     "owners": [
-      "PC-MESSAGE-08",
-      "CIB-EXT-0025"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/message-correlation-criteria/compound-partial-mismatch.cibseven-evidence.json",
-    "owners": [
-      "PC-MESSAGE-08",
-      "CIB-EXT-0025"
+      "CIB-LIM-0038"
     ]
   },
   {
     "evidence": "scenarios/open-rows/message-correlation-criteria/modeled-key-api-criterion.cibseven-evidence.json",
     "owners": [
-      "CIB-LIM-0013",
-      "CIB-LIM-0002",
-      "PC-MESSAGE-08"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/message-correlation-criteria/null-versus-absent.cibseven-evidence.json",
-    "owners": [
-      "PC-MESSAGE-08",
-      "CIB-EXT-0025"
+      "CIB-LIM-0002"
     ]
   },
   {
     "evidence": "scenarios/open-rows/message-correlation-criteria/payload-with-matching-criterion.cibseven-evidence.json",
     "owners": [
-      "PC-MESSAGE-08",
-      "CIB-EXT-0025",
       "CIB-LIM-0013"
     ]
   },
   {
     "evidence": "scenarios/open-rows/message-correlation-criteria/payload-with-mismatching-criterion.cibseven-evidence.json",
     "owners": [
-      "PC-MESSAGE-08",
-      "CIB-EXT-0025",
       "CIB-LIM-0013"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/message-correlation-criteria/type-mismatch.cibseven-evidence.json",
-    "owners": [
-      "PC-MESSAGE-08",
-      "CIB-EXT-0025"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/message-correlation-criteria/unique-compound.cibseven-evidence.json",
-    "owners": [
-      "PC-MESSAGE-08",
-      "CIB-EXT-0025"
     ]
   },
   {
@@ -1352,34 +1317,6 @@
     "evidence": "scenarios/open-rows/message-start-compositions/shipment-payload-string.cibseven-evidence.json",
     "owners": [
       "CIB-LIM-0013"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/message-start-population/criteria-ambiguous-two-instances.population-cibseven-evidence.json",
-    "owners": [
-      "PC-MESSAGE-08",
-      "CIB-EXT-0025"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/message-start-population/criteria-select-one-of-two-instances.population-cibseven-evidence.json",
-    "owners": [
-      "PC-MESSAGE-08",
-      "CIB-EXT-0025"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/message-start-population/delivery-variables-installed.population-cibseven-evidence.json",
-    "owners": [
-      "PC-MESSAGE-08",
-      "CIB-EXT-0025"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/message-start-population/publish-waiting-catch-wins-over-start.population-cibseven-evidence.json",
-    "owners": [
-      "PC-MESSAGE-08",
-      "CIB-EXT-0025"
     ]
   },
   {
@@ -1889,19 +1826,34 @@
     ]
   },
   {
-    "evidence": "scenarios/open-rows/receive-task-payload-correlation/called-delivery.cibseven-evidence.json",
+    "evidence": "scenarios/open-rows/receive-task-payload-correlation/items-parallel-local-correlation.cibseven-evidence.json",
     "owners": [
-      "CIB-EXT-0025",
-      "PC-HUM-03",
-      "PC-MESSAGE-08"
+      "CIB-LIM-0039",
+      "CIB-EXT-0025"
     ]
   },
   {
-    "evidence": "scenarios/open-rows/receive-task-payload-correlation/embedded-delivery.cibseven-evidence.json",
+    "evidence": "scenarios/open-rows/receive-task-payload-correlation/order-branches-correlated-delivery.cibseven-evidence.json",
     "owners": [
-      "CIB-EXT-0025",
-      "PC-HUM-03",
-      "PC-MESSAGE-08"
+      "CIB-LIM-0038"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/receive-task-payload-correlation/order-repetition-previous-occurrence.cibseven-evidence.json",
+    "owners": [
+      "CIB-LIM-0038"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/receive-task-payload-correlation/order-wrong-correlation.cibseven-evidence.json",
+    "owners": [
+      "CIB-LIM-0038"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/receive-task-payload-correlation/order-wrong-owner-and-activation.cibseven-evidence.json",
+    "owners": [
+      "CIB-LIM-0038"
     ]
   },
   {

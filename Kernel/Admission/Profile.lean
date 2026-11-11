@@ -31,8 +31,6 @@ def multiInstance (loops : Bool) (selected : ProfileOptions) : Option String :=
   else none
 
 def options (abnormalScope loops : Bool) (selected : ProfileOptions) : Option String :=
-  (if selected.messageCorrelation == .apiCriteria then some "profile.messageCorrelation.apiCriteria" else none) <|>
-  (if selected.deliveryVariables == .installs then some "profile.deliveryVariables.installs" else none) <|>
   (if selected.compensationOrder == .reverseCreation then some "profile.compensationOrder.reverseCreation" else none) <|>
   compensationHandlerFailure selected.compensationHandlerFailure <|>
   (if selected.callBindingTime == .invocation then some "profile.callBindingTime.invocation" else none) <|>
