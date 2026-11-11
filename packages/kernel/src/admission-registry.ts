@@ -266,12 +266,12 @@ const messages: Picks<MessageTrigger> = {
 };
 
 /**
- * The Signals admission reads where it admits them: a catch Event's (`caught`), an Event Sub-Process start's and a root
- * start's (`triggered`). A Signal boundary is refused (`boundary.signal`).
+ * The Signals admission reads where it admits them: a boundary's and a catch Event's (`caught`), an Event Sub-Process
+ * start's and a root start's (`triggered`).
  */
 function signals(options: ProfileOptions): Picks<SignalTrigger> {
   return {
-    attached: () => null,
+    attached: (boundary) => Subscriptions.caught(options, Subscriptions.unread, boundary.subscription).signal,
     received: () => null,
     handled: (start) => Starts.triggered(options, Subscriptions.unread, true, start.trigger).signal,
     caught: (subscription) => Subscriptions.caught(options, Subscriptions.unread, subscription).signal,

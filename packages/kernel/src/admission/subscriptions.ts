@@ -1,10 +1,10 @@
 /**
  * Admission of catch Events, boundaries and Event Sub-Process starts, transcribed from
  * `Kernel/Admission/Subscriptions.lean`. A refusal carries a stable code. `admission/subscriptions/starts.ts` dispatches a
- * start Event's trigger and hands an Event Sub-Process start's Signal to `eventSubProcessSignal`.
+ * start Event's trigger.
  *
  * Admitted: Timers with a literal `il/timer.ts#classify` admits, Messages with a literal name and no
- * correlation, a correlated Message only on a catch Event, a Signal catch with a resolvable address, and, on boundaries, the triggers that
+ * correlation, a correlated Message only on a catch Event, a Signal subscription with a resolvable address, and, on boundaries, the triggers that
  * `feature/propagation.ts` delivers (an interrupting Error, Escalation, Compensation, and Cancel on a Transaction).
  */
 import {
@@ -463,7 +463,7 @@ function boundary(options: ProfileOptions, reading: Reading, host: Host, seen: D
     case TriggerTag.Message:
       return message(options, reading, false, trigger.payload);
     case TriggerTag.Signal:
-      return "boundary.signal";
+      return signalAddress(options, reading, false, trigger.payload.signalRef, trigger.payload.name);
     case TriggerTag.Condition:
       return conditionRefusal(options, reading, trigger.payload);
     case TriggerTag.Error: {
@@ -628,12 +628,4 @@ export function signalNames(options: ProfileOptions, sites: readonly Site<Signal
     earlier.start === site.start && eventScopeEquals(earlier.scope, site.scope) && sameSignalName(earlier.trigger, site.trigger))
     ? "signal.duplicateName"
     : null;
-}
-
-/**
- * The Signal of an Event Sub-Process start, which `start` (`admission/subscriptions/starts.ts`) hands here: refused, as
- * every Signal subscription is.
- */
-export function eventSubProcessSignal(_trigger: SignalTrigger): string | null {
-  return "start.signal";
 }

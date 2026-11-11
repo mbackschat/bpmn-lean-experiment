@@ -5,11 +5,10 @@ public import Kernel.IL.Timer
 
 /-! # Admission of catch Events, boundaries and Event Sub-Process starts. A refusal carries a stable code.
 
-`Kernel.Admission.Subscriptions.Starts` dispatches a start Event's trigger and hands an Event Sub-Process start's Signal
-to `eventSubProcessSignal`.
+`Kernel.Admission.Subscriptions.Starts` dispatches a start Event's trigger.
 
 Admitted: Timers with a literal `Kernel.Timer.classify` admits, Messages with a literal name and no
-correlation, a correlated Message only on a catch Event, a Signal catch with a resolvable address, and, on boundaries, the triggers that
+correlation, a correlated Message only on a catch Event, a Signal subscription with a resolvable address, and, on boundaries, the triggers that
 `Kernel.Feature.Propagation` delivers (an interrupting Error, Escalation, Compensation, and Cancel on a Transaction).
 -/
 
@@ -299,7 +298,7 @@ def boundary (options : ProfileOptions) (reading : Reading) (host : Host) (seen 
     match boundary.subscription.trigger with
     | .timer trigger => check (timerAt options reading false trigger)
     | .message trigger => check (message options reading false trigger)
-    | .signal _ => .error "boundary.signal"
+    | .signal trigger => check (signalAddress options reading false trigger.signalRef trigger.name)
     | .condition trigger => check (conditionRefusal options reading trigger)
     | .error trigger => do
       let seen ← check ((if boundary.interrupting then none else some "boundary.error.nonInterrupting") <|>
@@ -387,9 +386,5 @@ def signalNames (options : ProfileOptions) (sites : List (Site SignalTrigger)) :
       earlier.scope == site.scope && earlier.start == site.start && sameSignalName earlier.trigger site.trigger then
     some "signal.duplicateName"
   else none
-
-/-- The Signal of an Event Sub-Process start, which `start` (`Kernel.Admission.Subscriptions.Starts`) hands here:
-refused, as every Signal subscription is. -/
-def eventSubProcessSignal (_ : SignalTrigger) : Option String := some "start.signal"
 
 end Kernel.Admission.Subscriptions

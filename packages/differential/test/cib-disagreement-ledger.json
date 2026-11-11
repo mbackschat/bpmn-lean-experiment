@@ -1917,66 +1917,6 @@
     ]
   },
   {
-    "evidence": "scenarios/open-rows/signal-subscriptions/bodies-ping-isolation.cibseven-evidence.json",
-    "owners": [
-      "PC-SIGNAL-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/signal-subscriptions/call-child-completes-first.cibseven-evidence.json",
-    "owners": [
-      "PC-SIGNAL-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/signal-subscriptions/call-quit-while-child-open.cibseven-evidence.json",
-    "owners": [
-      "PC-SIGNAL-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/signal-subscriptions/emitter-region-cancelled-by-its-own-throw.cibseven-evidence.json",
-    "owners": [
-      "PC-SIGNAL-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/signal-subscriptions/event-subprocess-alert-then-completion.cibseven-evidence.json",
-    "owners": [
-      "PC-SIGNAL-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/signal-subscriptions/event-subprocess-modes.cibseven-evidence.json",
-    "owners": [
-      "PC-SIGNAL-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/signal-subscriptions/region-delivery-and-throw-in-turn.cibseven-evidence.json",
-    "owners": [
-      "PC-SIGNAL-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/signal-subscriptions/task-cancel-first.cibseven-evidence.json",
-    "owners": [
-      "PC-SIGNAL-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/signal-subscriptions/task-note-repeated-then-cancel.cibseven-evidence.json",
-    "owners": [
-      "PC-SIGNAL-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/signal-subscriptions/task-wrong-signal-name.cibseven-evidence.json",
-    "owners": [
-      "PC-SIGNAL-03"
-    ]
-  },
-  {
     "evidence": "scenarios/open-rows/structured-value-bounds/completion-over-depth-after-valid-entry.cibseven-evidence.json",
     "owners": [
       "CIB-LIM-0014"

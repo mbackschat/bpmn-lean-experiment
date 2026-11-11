@@ -78,12 +78,12 @@ const handler = (id: string, trigger: Json, parent: string | null = null): Json 
 const twoHandlers = (program: Json): Json => append(program, handler("H1", named), handler("H2", sameName));
 
 /**
- * `T` becomes a Sub-Process with a Message boundary `B`, a Task `C` its implicit start begins and a Message Event
- * Sub-Process `H` of `B`'s name; `env` adds to its envelope.
+ * `T` becomes a Sub-Process with a boundary `B` on `attached`, a Task `C` its implicit start begins and an Event
+ * Sub-Process `H` started by `started`, by default Messages of one name; `env` adds to its envelope.
  */
-const hostAndHandler = (env: Json = {}) => (program: Json): Json =>
-  append(task(scope("T", "embedded", {}, { boundaries: [boundary("B", named)], ...env }))(program),
-    activity("C", "manual", { incoming: [], outgoing: [] }, "T"), handler("H", sameName, "T"));
+const hostAndHandler = (env: Json = {}, attached: Json = named, started: Json = sameName) => (program: Json): Json =>
+  append(task(scope("T", "embedded", {}, { boundaries: [boundary("B", attached)], ...env }))(program),
+    activity("C", "manual", { incoming: [], outgoing: [] }, "T"), handler("H", started, "T"));
 
 /** `T` becomes an Event-Based Gateway whose arm `E` catches `first` and, unless `second` is null, whose arm `E2` catches it. */
 const arms = (first: Json, second: Json | null) => (program: Json): Json => {
@@ -452,12 +452,30 @@ export const rows: readonly Row[] = [
     mutate: signalAddresses(catchAndThrow(signal(), "Sig2", text("S"))),
     control: catchAndThrow(signal(), "Sig2", text("S")),
   },
+  {
+    code: "signal.duplicateName",
+    description: "two Signal boundaries of one host on one Signal, where names address Signals",
+    mutate: signalAddresses(task(activity("T", "manual", { boundaries: [boundary("B", signal()), boundary("B2", signal())] }))),
+    control: task(activity("T", "manual", { boundaries: [boundary("B", signal()), boundary("B2", signal())] })),
+  },
+  {
+    code: "signal.duplicateName",
+    description: "a Signal boundary of a Sub-Process and a Signal Event Sub-Process inside it, beside a Multi-Instance Sub-Process's, where names address Signals",
+    mutate: signalAddresses(hostAndHandler({}, signal(), signal())),
+    control: (program) => addressesLooping(signalAddresses(
+      hostAndHandler({ multiInstance: loop({ outputDataItem: null, inputDataItemName: "item" }) }, signal(), signal())))(program),
+  },
   { code: "event.catch.error", description: "a catch Error", mutate: catching(errorTrigger()) },
   { code: "event.catch.escalation", description: "a catch Escalation", mutate: catching(escalationTrigger()) },
   { code: "event.catch.compensation", description: "a catch Compensation", mutate: catching(compensationTrigger) },
   { code: "event.catch.cancel", description: "a catch Cancel", mutate: catching(cancelTrigger) },
   // Boundaries.
-  { code: "boundary.signal", description: "a Signal boundary", mutate: bounded(signal()) },
+  {
+    code: "signal.unspecified",
+    description: "a Signal boundary without a signalRef",
+    mutate: bounded(signalWith({ signalRef: null })),
+    control: bounded(signal(), { interrupting: false }),
+  },
   // Conditional Events: catches, boundaries and Event Sub-Process starts are admitted with their predicate.
   {
     code: "event.condition.filter",
@@ -484,7 +502,12 @@ export const rows: readonly Row[] = [
     control: catching(condition()),
   },
   // Triggered starts; a root start's own refusals are `admission-refusals-starts.test.ts`'.
-  { code: "start.signal", description: "an Event Sub-Process Signal start", mutate: nested(signal()) },
+  {
+    code: "signal.unspecified",
+    description: "an Event Sub-Process Signal start without a signalRef",
+    mutate: nested(signalWith({ signalRef: null })),
+    control: nested(signal()),
+  },
   {
     code: "start.error",
     description: "a process Error start",

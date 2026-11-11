@@ -5,8 +5,7 @@ public import Kernel.Admission.Subscriptions
 /-! # Admission of triggered start Events. A refusal carries a stable code.
 
 A root start Event, which a start input names or its trigger fires, and an Event Sub-Process start. The one dispatch on
-a start's trigger lives here (`triggered`); an Event Sub-Process start's Signal is `Kernel.Admission.Subscriptions`'
-`eventSubProcessSignal`.
+a start's trigger lives here (`triggered`).
 -/
 
 public section
@@ -37,8 +36,7 @@ def triggered (options : ProfileOptions) (reading : Reading) (nested : Bool) (tr
   | .timer trigger => refusing (timerAt options reading (!nested) trigger)
   | .message trigger => refusing (message options reading (!nested) trigger)
   | .signal trigger =>
-    { refusal := if nested then eventSubProcessSignal trigger
-        else signalAddress options reading true trigger.signalRef trigger.name
+    { refusal := signalAddress options reading (!nested) trigger.signalRef trigger.name
       signal := some trigger }
   | .condition trigger =>
     if nested then refusing (conditionRefusal options reading trigger)

@@ -151,10 +151,10 @@ def messages : Picks MessageTrigger :=
   { attached := (·.subscription.trigger.message?), received := (·.receive?), handled := (·.trigger.message?),
     caught := (·.trigger.message?), started := (·.trigger.message?) }
 
-/-- The Signals admission reads where it admits them: a catch Event's (`caught`), an Event Sub-Process start's and a root
-start's (`triggered`). A Signal boundary is refused (`boundary.signal`). -/
+/-- The Signals admission reads where it admits them: a boundary's and a catch Event's (`caught`), an Event Sub-Process
+start's and a root start's (`triggered`). -/
 def signals (options : ProfileOptions) : Picks SignalTrigger :=
-  { attached := fun _ => none
+  { attached := fun boundary => (Admission.Subscriptions.caught options {} boundary.subscription).signal
     handled := fun start => (Admission.Subscriptions.triggered options {} true start.trigger).signal
     caught := fun subscription => (Admission.Subscriptions.caught options {} subscription).signal
     started := fun start => (Admission.Subscriptions.triggered options {} false start.trigger).signal }

@@ -1,8 +1,7 @@
 /**
  * Admission of triggered start Events, transcribed from `Kernel/Admission/Subscriptions/Starts.lean`. A refusal carries a
  * stable code. A root start Event, which a start input names or its trigger fires, and an Event Sub-Process start. The
- * one dispatch on a start's trigger lives here (`triggered`); an Event Sub-Process start's Signal is
- * `admission/subscriptions.ts`' `eventSubProcessSignal`.
+ * one dispatch on a start's trigger lives here (`triggered`).
  */
 import {
   ConditionalStart,
@@ -24,7 +23,6 @@ import {
   definitions,
   errorTrigger,
   escalationTrigger,
-  eventSubProcessSignal,
   message,
   sameData,
   signalAddress,
@@ -69,9 +67,7 @@ export function triggered(options: ProfileOptions, reading: Reading, nested: boo
       return refusing(message(options, reading, !nested, trigger.payload));
     case TriggerTag.Signal:
       return {
-        refusal: nested
-          ? eventSubProcessSignal(trigger.payload)
-          : signalAddress(options, reading, true, trigger.payload.signalRef, trigger.payload.name),
+        refusal: signalAddress(options, reading, !nested, trigger.payload.signalRef, trigger.payload.name),
         signal: trigger.payload,
         predicate: null,
       };
