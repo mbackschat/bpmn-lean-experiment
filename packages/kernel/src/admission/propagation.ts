@@ -7,12 +7,14 @@ import {
 /**
  * What a throw's admission asks of its site, which the registry fills from the other admissions at that site: a Signal
  * address's refusal (`admission/subscriptions.ts#signalAddress`, the one rule catches, starts and throws share), an
- * Events-level expression's refused as the given code, and its mappings' refusal.
+ * Events-level expression's refused as the given code, its mappings' refusal, and a delegate token's
+ * (`admission/work.ts#handlerKey`, CIB-LIM-0017).
  */
 export interface ThrowSite {
   readonly signalAddress: (signalRef: QName | null, name: ValueSource | null) => string | null;
   readonly eventsExpression: (refusal: string, expression: Expression) => string | null;
   readonly mappings: (list: readonly Mapping[]) => string | null;
+  readonly handlerKey: (token: string | null) => string | null;
 }
 
 /** A CIB business key expression: a String literal, else read at the Events level. */
@@ -48,15 +50,16 @@ function signalThrow(options: ProfileOptions, site: ThrowSite, record: SignalThr
  * A Message throw (PC-MESSAGE-09). BPMN 2.0.2 Tables 10.88 and 10.89 send a Message and name no transport, so the
  * standards profile refuses it bound, by a CIB handler attribute, or unbound, where passing on would drop the send;
  * `MessageThrowForms.CibForms` runs both of CIB's forms (CIB-EXT-0039, CIB-INT-0027). Its Data Input Associations are
- * refused under every profile: CIB never executes them.
+ * refused under every profile: CIB never executes them. CIB resolves a bound throw's delegate token as a Service Task's,
+ * so a declared name equal to it is refused as one (CIB-LIM-0017).
  */
-function messageThrow(options: ProfileOptions, record: MessageThrow): string | null {
+function messageThrow(options: ProfileOptions, site: ThrowSite, record: MessageThrow): string | null {
   if (record.payload.length > 0) return "throw.message.payload";
   switch (options.messageThrowForms) {
     case MessageThrowForms.Refused:
       return record.binding === null ? "throw.message.unbound" : "throw.message.bound";
     case MessageThrowForms.CibForms:
-      return null;
+      return site.handlerKey(record.handlerKey);
   }
   return assertNever(options.messageThrowForms);
 }
@@ -78,7 +81,7 @@ export function throwRecord(options: ProfileOptions, site: ThrowSite, inTransact
         ? "throw.error.message"
         : null;
     case ThrowTag.Message:
-      return messageThrow(options, thrown.payload);
+      return messageThrow(options, site, thrown.payload);
     case ThrowTag.Signal:
       return signalThrow(options, site, thrown.payload);
     case ThrowTag.Compensation:

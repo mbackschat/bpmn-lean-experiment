@@ -226,8 +226,12 @@ export interface Boundary {
 
 export interface EffectBinding { readonly protocol: string; readonly operation: string; }
 
-/** `binding = null` is an unbound pass-through (PC-MESSAGE-09). */
-export interface MessageThrow { readonly binding: EffectBinding | null; readonly payload: readonly Mapping[]; }
+/** `binding = null` is an unbound pass-through (PC-MESSAGE-09); `handlerKey` as `ServiceWork.handlerKey`. */
+export interface MessageThrow {
+  readonly binding: EffectBinding | null;
+  readonly handlerKey: string | null;
+  readonly payload: readonly Mapping[];
+}
 
 /**
  * `signalRef` and `name` as `SignalTrigger`'s; `propagateAll` is the position among `payload` at which

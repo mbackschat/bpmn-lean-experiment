@@ -147,9 +147,10 @@ structure EffectBinding where
   operation : String
   deriving DecidableEq, Repr
 
-/-- `binding = none` is an unbound pass-through (PC-MESSAGE-09). -/
+/-- `binding = none` is an unbound pass-through (PC-MESSAGE-09); `handlerKey` as `ServiceWork.handlerKey`. -/
 structure MessageThrow where
   binding : Option EffectBinding := none
+  handlerKey : Option String := none
   payload : List Mapping := []
   deriving Repr
 

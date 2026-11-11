@@ -70,7 +70,8 @@ def throwSite (program : Program) (header : Header) : Admission.Propagation.Thro
   let reading := subscriptionReading program (some header.id)
   { signalAddress := Admission.Subscriptions.signalAddress program.options reading false
     eventsExpression := Admission.Subscriptions.eventsExpression program.options reading
-    mappings := Admission.Data.mappings program.options.evaluator (site program (some header.id)) }
+    mappings := Admission.Data.mappings program.options.evaluator (site program (some header.id))
+    handlerKey := Admission.Work.handlerKey program }
 
 /-- What an element throws, if it is a throw Event. -/
 def thrown (element : Element) : Option (Header × Admission.Propagation.Reading) :=

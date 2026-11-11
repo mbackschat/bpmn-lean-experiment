@@ -152,7 +152,7 @@ function declaredNames(program: Program): string[] {
  * CIB resolves a delegate token against the variables before its beans (`JuelExpressionManager.java:144-150`), so a
  * declared name equal to it shadows the handler and the job fails (CIB-LIM-0017).
  */
-function handlerKey(program: Program, token: string | null): string | null {
+export function handlerKey(program: Program, token: string | null): string | null {
   return token !== null && declaredNames(program).includes(token) ? "work.handlerKeyName" : null;
 }
 

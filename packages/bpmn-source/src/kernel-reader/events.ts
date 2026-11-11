@@ -1,7 +1,7 @@
 import { asElement } from "../moddle-graph.js";
 import type { ElementRecord } from "../moddle-graph.js";
 import { fixed, headerOf } from "./build.js";
-import { declaredImplementation, effectBinding } from "./binding.js";
+import { declaredImplementation, effectBinding, handlerKey } from "./binding.js";
 import { conditionExpression, eventInputs, eventOutputs, valueSource, variableCopies } from "./data.js";
 import { FlowElementKind, ReadRefusal, ReadRefusalCode, list, optionalId, reference, requireId, targetNamespaceOf, text } from "./model.js";
 import type { Built, ModelNode, ReadContext } from "./model.js";
@@ -225,13 +225,14 @@ function messageThrow(ctx: ReadContext, event: ElementRecord, definition: Elemen
   ];
   for (const [present, code, evidence] of refusals) if (present) throw new ReadRefusal(code, id, evidence);
   const binding = declared === null ? null : effectBinding(ctx, definition);
+  const key = declared === null ? null : handlerKey(ctx, definition);
   if (reference(definition, "messageRef", "bpmn:Message") !== null) {
     ctx.noteNotCarried({ element: optionalId(event), fact: "messageRef" });
   }
   if (reference(definition, "operationRef", "bpmn:Operation") !== null) {
     ctx.noteNotCarried({ element: optionalId(event), fact: "operationRef" });
   }
-  return { binding, payload: eventInputs(ctx, event) };
+  return { binding, handlerKey: key, payload: eventInputs(ctx, event) };
 }
 
 /**

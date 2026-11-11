@@ -224,8 +224,9 @@ test("throws carry their message, binding and Signal propagation", async () => {
   const record = (id: string): Json => element(p, id).event.payload.role.throw.record;
   assert.deepEqual(record("Err"), { error: { payload: { code: "c1", message: { literal: { value: "failed" } } } } });
   assert.deepEqual(record("ErrX").error.payload.message, { expression: { body: { variable: { name: "why" } } } });
-  assert.deepEqual(record("Msg"), { message: { payload: { binding: null, payload: [] } } });
+  assert.deepEqual(record("Msg"), { message: { payload: { binding: null, handlerKey: null, payload: [] } } });
   assert.deepEqual(record("MsgD").message.payload.binding, { protocol: "##WebService", operation: "${sender}" });
+  assert.equal(record("MsgD").message.payload.handlerKey, "sender");
   assert.deepEqual(record("Sig"), { signal: { payload: {
     signalRef: { namespace: "urn:t", localName: "S" },
     name: { literal: { value: "s" } },

@@ -26,7 +26,7 @@ const signalThrow = (over: Json): Json => ({
 });
 
 /** A Message throw bound to `binding`, or unbound, with `payload` as its Data Input Associations. */
-const messageThrow = (binding: Json | null, payload: Json[] = []): Json => ({ message: { payload: { binding, payload } } });
+const messageThrow = (binding: Json | null, payload: Json[] = []): Json => ({ message: { payload: { binding, handlerKey: null, payload } } });
 const binding: Json = { protocol: "urn:p", operation: "urn:send" };
 /** The profile selection that runs CIB's Message throw forms (CIB-EXT-0039, CIB-INT-0027). */
 const cibForms: Json = { messageThrowForms: "cibForms" };

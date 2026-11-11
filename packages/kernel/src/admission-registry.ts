@@ -83,6 +83,7 @@ function throwSite(program: Program, header: Header): Propagation.ThrowSite {
     signalAddress: (signalRef, name) => Subscriptions.signalAddress(program.options, reading, false, signalRef, name),
     eventsExpression: (refusal, expression) => Subscriptions.eventsExpression(program.options, reading, refusal, expression),
     mappings: (list) => Data.mappings(program.options.evaluator, site(program, header.id), list),
+    handlerKey: (token) => Work.handlerKey(program, token),
   };
 }
 

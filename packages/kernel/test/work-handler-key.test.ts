@@ -11,8 +11,8 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
-  activity, append, base, callWork, definitionRef, loop, mapping, refusalOf, refusalTests, serviceWork, task, userWork,
-  variable,
+  activity, append, base, callWork, definitionRef, end, loop, mapping, refusalOf, refusalTests, replace, serviceWork, task, userWork,
+  variable, withOptions,
 } from "./admission-refusal-support.ts";
 import type { Json, Row } from "./admission-refusal-support.ts";
 import { grades, resource, ruleProgram } from "./decision-support.ts";
@@ -49,7 +49,22 @@ const declarations: ReadonlyArray<readonly [string, (name: string) => (program: 
   ["a decision result variable", (name) => () => ruleProgram({ resultVariable: name }, [resource([grades("d", "unique")])])],
 ];
 
+/**
+ * `E` a Message End bound through the delegate token `token` under CIB's forms (CIB-EXT-0039), which CIB resolves as a
+ * Service Task's; `T` declares `name` as a form field id.
+ */
+const messageEnd = (name: string) => (program: Json): Json => withOptions(replace(
+  user(() => ({}), (field) => ({ formFields: [[field, "string"]] }))(name)(program), "E",
+  end("E", { message: { payload: { binding: { protocol: "urn:p", operation: "urn:send" }, handlerKey: token, payload: [] } } })),
+{ messageThrowForms: "cibForms" });
+
 const rows: Row[] = [
+  {
+    code: "work.handlerKeyName",
+    description: "a form field id named like the delegate token a Message throw binds",
+    mutate: messageEnd(token),
+    control: messageEnd("note"),
+  },
   ...declarations.map(([description, declare]) => ({
     code: "work.handlerKeyName",
     description: `${description} named like a delegate token another task binds`,

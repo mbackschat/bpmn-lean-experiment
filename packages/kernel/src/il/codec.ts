@@ -248,7 +248,7 @@ const effectBinding = struct<EffectBinding>("EffectBinding", { protocol: string,
 
 const throwRecord = inductive<Throw>("Throw", {
   [ThrowTag.None]: {},
-  [ThrowTag.Message]: { payload: struct("MessageThrow", { binding: option(effectBinding), payload: list(mapping) }) },
+  [ThrowTag.Message]: { payload: struct("MessageThrow", { binding: option(effectBinding), handlerKey: option(string), payload: list(mapping) }) },
   [ThrowTag.Signal]: {
     payload: struct("SignalThrow", {
       signalRef: option(qName),

@@ -19,8 +19,8 @@ import {
 import type { Json } from "./admission-refusal-support.ts";
 
 const cib = { messageThrowForms: "cibForms", technicalFailure: "incident" };
-const bound: Json = { message: { payload: { binding: { protocol: "urn:p", operation: "urn:send" }, payload: [] } } };
-const unbound: Json = { message: { payload: { binding: null, payload: [] } } };
+const bound: Json = { message: { payload: { binding: { protocol: "urn:p", operation: "urn:send" }, handlerKey: null, payload: [] } } };
+const unbound: Json = { message: { payload: { binding: null, handlerKey: null, payload: [] } } };
 
 /** An Intermediate throw Event of `record`. */
 const throwing = (id: string, record: Json, parent: string | null = null): Json => ({

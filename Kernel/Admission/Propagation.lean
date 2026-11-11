@@ -10,11 +10,13 @@ namespace Kernel.Admission.Propagation
 
 /-- What a throw's admission asks of its site, which the registry fills from the other admissions at that site: a
 Signal address's refusal (`Kernel.Admission.Subscriptions.signalAddress`, the one rule catches, starts and throws
-share), an Events-level expression's refused as the given code, and its mappings' refusal. -/
+share), an Events-level expression's refused as the given code, its mappings' refusal, and a delegate token's
+(`Kernel.Admission.Work.handlerKey`, CIB-LIM-0017). -/
 structure ThrowSite where
   signalAddress : Option QName → Option ValueSource → Option String := fun _ _ => none
   eventsExpression : String → Expression → Option String := fun _ _ => none
   mappings : List Mapping → Option String := fun _ => none
+  handlerKey : Option String → Option String := fun _ => none
 
 /-- A CIB business key expression: a String literal, else read at the Events level. -/
 def businessKey (site : ThrowSite) : Expression → Option String
@@ -42,13 +44,14 @@ def signalThrow (options : ProfileOptions) (site : ThrowSite) (record : SignalTh
 /-- A Message throw (PC-MESSAGE-09). BPMN 2.0.2 Tables 10.88 and 10.89 send a Message and name no transport, so the
 standards profile refuses it bound, by a CIB handler attribute, or unbound, where passing on would drop the send;
 `MessageThrowForms.cibForms` runs both of CIB's forms (CIB-EXT-0039, CIB-INT-0027). Its Data Input Associations are
-refused under every profile: CIB never executes them. -/
-def messageThrow (options : ProfileOptions) (record : MessageThrow) : Option String :=
+refused under every profile: CIB never executes them. CIB resolves a bound throw's delegate token as a Service
+Task's, so a declared name equal to it is refused as one (CIB-LIM-0017). -/
+def messageThrow (options : ProfileOptions) (site : ThrowSite) (record : MessageThrow) : Option String :=
   if !record.payload.isEmpty then some "throw.message.payload"
   else match options.messageThrowForms, record.binding with
     | .refused, some _ => some "throw.message.bound"
     | .refused, none => some "throw.message.unbound"
-    | .cibForms, _ => none
+    | .cibForms, _ => site.handlerKey record.handlerKey
 
 /-- `inTransaction` says whether the throw's parent is a Transaction: a Cancel End is used only within a Transaction
 Sub-Process (BPMN 2.0.2 §10.3.5, §10.5.5 Cancel Event; `BpmnParse#parseEndEvents` refuses it elsewhere) (PC-TX-02). -/
@@ -61,7 +64,7 @@ def throwRecord (options : ProfileOptions) (site : ThrowSite) (inTransaction : B
     | none => none
   | .escalation _ => none
   | .terminate => none
-  | .message record => messageThrow options record
+  | .message record => messageThrow options site record
   | .signal record => signalThrow options site record
   | .compensation record =>
     if record.activity.isSome then some "throw.compensation.activity"
