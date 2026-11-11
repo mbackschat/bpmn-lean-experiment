@@ -67,8 +67,11 @@ function kernelStep(step: unknown): unknown {
   const { resolution, ...rest } = members(step);
   const answer = members(resolution);
   switch (answer["kind"]) {
-    case "committed":
-      return { ...rest, outcome: "committed", resolution: answer };
+    case "committed": {
+      // Receiver outcomes are kernel-only (population contract §8); the instances a cascade starts compare in processStates.
+      const { cascade: _kernelOnly, ...delivered } = answer;
+      return { ...rest, outcome: "committed", resolution: delivered };
+    }
     case "fanOut":
       return { ...rest, outcome: "committed", resolution: { ...answer, entries: fanOutEntries(answer["entries"]) } };
     case "noMatch":

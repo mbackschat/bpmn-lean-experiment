@@ -219,7 +219,8 @@ function sameTarget(left: CriterionTarget, right: CriterionTarget): boolean {
  * executions-only, start its sole start candidate. The delivery or start takes the command's logical time, so the step it
  * causes evaluates `now` and arms Timers from it. Zero is `noMatch` and several are `ambiguous`, either leaving every
  * instance unchanged; candidate order never picks a winner. Criteria naming one target twice are
- * `rejected criteria-duplicate`, a selector naming no registered deployment `rejected definition-not-deployed`.
+ * `rejected criteria-duplicate`, a selector naming no registered deployment `rejected definition-not-deployed`. A
+ * delivery also answers its receiver's root instance, whose committed step's intents cascade next.
  */
 export function publish(
   hooks: Hooks,
@@ -227,18 +228,20 @@ export function publish(
   instances: readonly Instance[],
   atMs: number,
   publication: Publication,
-): Refusable<readonly [readonly Instance[], Resolution]> {
+): Refusable<readonly [readonly Instance[], Resolution, string | null]> {
+  const answer = (resolution: Resolution): Refusable<readonly [readonly Instance[], Resolution, string | null]> =>
+    ({ ok: true, value: [instances, resolution, null] });
   const targets = publication.criteria.map((criterion) => criterion.target);
   const duplicate = targets.some((target, index) => targets.slice(0, index).some((earlier) => sameTarget(earlier, target)));
-  if (duplicate) return { ok: true, value: [instances, { tag: ResolutionTag.Rejected, code: "criteria-duplicate" }] };
+  if (duplicate) return answer({ tag: ResolutionTag.Rejected, code: "criteria-duplicate" });
   const scope = selected(registry, publication.definition);
-  if (scope === undefined) return { ok: true, value: [instances, { tag: ResolutionTag.Rejected, code: "definition-not-deployed" }] };
+  if (scope === undefined) return answer({ tag: ResolutionTag.Rejected, code: "definition-not-deployed" });
   const reached = publication.mode === PublishMode.StartOnly ? [] : instances.flatMap((member, index) =>
     scope !== null && scope.deploymentId !== member.deployment.deploymentId ? []
       : receivers(hooks, member.deployment.program, member.state, publication)
         .map(([target, channel]) => [index, target, channel] as const));
   const sole = reached[0];
-  if (reached.length > 1) return { ok: true, value: [instances, { tag: ResolutionTag.Ambiguous }] };
+  if (reached.length > 1) return answer({ tag: ResolutionTag.Ambiguous });
   if (sole !== undefined) {
     const [index, target, channel] = sole;
     const delivery: Input = {
@@ -251,14 +254,16 @@ export function publish(
     const member = instances[index];
     if (member === undefined) return { ok: false, error: "candidate-without-instance" };
     const stepped = step(hooks, member.deployment.program, member.state, delivery);
-    if (!stepped.ok) return { ok: true, value: [instances, { tag: ResolutionTag.Failed, target, failure: stepped.failure }] };
+    if (!stepped.ok) return answer({ tag: ResolutionTag.Failed, target, failure: stepped.failure });
     const updated = instances.map((candidate, position) => (position === index ? { ...member, state: stepped.value } : candidate));
-    return { ok: true, value: [updated, { tag: ResolutionTag.Committed, target }] };
+    return { ok: true, value: [updated, { tag: ResolutionTag.Committed, target, cascade: [] }, stepped.value.instanceId] };
   }
-  if (publication.mode === PublishMode.ExecutionsOnly) return { ok: true, value: [instances, { tag: ResolutionTag.NoMatch }] };
+  if (publication.mode === PublishMode.ExecutionsOnly) return answer({ tag: ResolutionTag.NoMatch });
   const starts = startCandidates(registry, scope, publication.message);
   const only = starts[0];
-  if (only === undefined) return { ok: true, value: [instances, { tag: ResolutionTag.NoMatch }] };
-  if (starts.length > 1) return { ok: true, value: [instances, { tag: ResolutionTag.Ambiguous }] };
-  return startFor(hooks, instances, publication, atMs, ...only);
+  if (only === undefined) return answer({ tag: ResolutionTag.NoMatch });
+  if (starts.length > 1) return answer({ tag: ResolutionTag.Ambiguous });
+  const started = startFor(hooks, instances, publication, atMs, ...only);
+  if (!started.ok) return started;
+  return { ok: true, value: [...started.value, null] };
 }

@@ -1,0 +1,94 @@
+{
+  "kind": "populationScenario",
+  "id": "signal-broadcast-population-emitter-first-cascade",
+  "profile": "cibseven-2.2.0",
+  "definitions": [
+    {
+      "definitionRef": "cascade-emitter",
+      "bpmn": {
+        "id": "signal-broadcast-population-cascade-emitter",
+        "relativePath": "scenarios/open-rows/signal-broadcast-population/cascade-emitter.bpmn",
+        "sha256": "fac430d24fbbea4a22569c2815db5298fa0e7d0bd568a32daaa2dc804054e377",
+        "sourceOverlay": null
+      }
+    },
+    {
+      "definitionRef": "cascade-relay",
+      "bpmn": {
+        "id": "signal-broadcast-population-cascade-relay",
+        "relativePath": "scenarios/open-rows/signal-broadcast-population/cascade-relay.bpmn",
+        "sha256": "156af4472f3acabaa8b2d4af8751fc24c47369acac54155667ed811a4c261ccc",
+        "sourceOverlay": null
+      }
+    }
+  ],
+  "steps": [
+    {
+      "kind": "instance",
+      "definitionRef": "cascade-relay",
+      "instanceId": "Relay_1",
+      "at": 0,
+      "stimulus": {
+        "kind": "start",
+        "commandId": "s01-start-relay-1",
+        "instanceId": "Relay_1",
+        "variables": []
+      }
+    },
+    {
+      "kind": "instance",
+      "definitionRef": "cascade-emitter",
+      "instanceId": "Emitter_1",
+      "at": 0,
+      "stimulus": {
+        "kind": "start",
+        "commandId": "s02-start-emitter-1",
+        "instanceId": "Emitter_1",
+        "variables": []
+      }
+    },
+    {
+      "kind": "instance",
+      "definitionRef": "cascade-emitter",
+      "instanceId": "Emitter_1",
+      "at": 10,
+      "stimulus": {
+        "kind": "command",
+        "commandId": "s03-complete-Dispatch-1",
+        "occurrence": {
+          "processInstanceId": "Emitter_1",
+          "elementId": "Dispatch",
+          "activation": 1
+        },
+        "action": {
+          "kind": "completeUserTask",
+          "values": []
+        }
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.5.2",
+      "BPMN 2.0.2 Clause 10.5.4",
+      "BPMN 2.0.2 Clause 10.5.5",
+      "BPMN 2.0.2 Clause 13.2",
+      "BPMN 2.0.2 Clause 13.5.1",
+      "BPMN 2.0.2 Clause 13.5.2",
+      "BPMN 2.0.2 Table 10.84",
+      "BPMN 2.0.2 Table 10.89",
+      "BPMN 2.0.2 Table 10.100",
+      "BPMN 2.0.2 Clause 10.5.3",
+      "BPMN 2.0.2 Table 10.88"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/cmd/SignalEventReceivedCmd.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/deployer/BpmnDeployer.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ThrowSignalEventActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/event/SignalEventHandler.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/persistence/entity/EventSubscriptionManager.java"
+    ]
+  }
+}

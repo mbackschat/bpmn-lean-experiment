@@ -235,8 +235,13 @@ def fanOutEntryJson : Population.FanOutEntry → Json
   | .failed target failure =>
     Json.mkObj ([("kind", Json.str "failed"), ("target", receiverJson target)] ++ failureFields failure)
 
+/-- A committed delivery's `cascade` member, left out when the cascade reached no receiver. -/
+def cascadeField (entries : List Population.FanOutEntry) : List (String × Json) :=
+  if entries.isEmpty then [] else [("cascade", Json.arr (entries.map fanOutEntryJson).toArray)]
+
 def resolutionJson : Population.Resolution → Json
-  | .committed target => Json.mkObj [("kind", "committed"), ("target", referenceJson target)]
+  | .committed target cascade =>
+    Json.mkObj ([("kind", Json.str "committed"), ("target", referenceJson target)] ++ cascadeField cascade)
   | .failed target failure =>
     Json.mkObj ([("kind", Json.str "failed"), ("target", referenceJson target)] ++ failureFields failure)
   | .fanOut entries => Json.mkObj [("kind", "fanOut"), ("entries", Json.arr (entries.map fanOutEntryJson).toArray)]
@@ -266,6 +271,9 @@ def populationResultJson (observe : Program → State → Json) (scenarioId : St
         ("at", toJson stepped.atMs), ("resolution", resolutionJson stepped.resolution)]).toArray),
     ("processStates", Json.arr (result.instances.map fun member =>
       observe member.deployment.program member.state).toArray)]
-  Json.mkObj (inputFailures ++ fields)
+  let inputCascades := if result.inputCascades.isEmpty then [] else
+    [("inputCascades", Json.arr (result.inputCascades.map fun (commandId, entries) =>
+      Json.mkObj [("commandId", Json.str commandId), ("entries", Json.arr (entries.map fanOutEntryJson).toArray)]).toArray)]
+  Json.mkObj (inputFailures ++ inputCascades ++ fields)
 
 end Kernel.Run

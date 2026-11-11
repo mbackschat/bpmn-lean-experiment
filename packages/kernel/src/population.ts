@@ -12,7 +12,8 @@
  * `rejected command-content-mismatch` (population contract §7). Timer-start occurrences fire once each while their
  * deployment is current (`timerStart`), Conditional root starts are evaluated over submitted variables, each start that
  * holds starting its own instance (`evaluateConditions`), and Signals are broadcast to every receiver, each its own unit
- * of commitment, the intents a committed start leaves cascading depth-first (`broadcast`).
+ * of commitment, the intents every committed step leaves cascading depth-first after it (`broadcast`), an instance
+ * input's into `inputCascades`.
  *
  * A refused deployment, an instance input that does not commit and a delivery a target refuses are results, never
  * harness errors; a candidate whose key cannot be evaluated is no match.
@@ -30,6 +31,7 @@ import {
   type Command,
   type Deployment,
   type DeploymentResult,
+  type FanOutEntry,
   type Instance,
   type LedgerEntry,
   type Refusable,
@@ -41,7 +43,7 @@ import {
   deploy,
 } from "./population/deploy.js";
 import { evaluateConditions } from "./population/conditions.js";
-import { broadcast, cascadeStarted } from "./population/signals.js";
+import { broadcast, cascadeBound, cascadeCommitted, cascadeOf, fanningEntries } from "./population/signals.js";
 import { publish } from "./population/messages.js";
 import { timerStart } from "./population/timers.js";
 
@@ -80,6 +82,7 @@ interface Progress {
   readonly ledger: readonly LedgerEntry[];
   readonly occurrences: readonly TimerOccurrence[];
   readonly inputFailures: readonly (readonly [string, Failure])[];
+  readonly inputCascades: readonly (readonly [string, readonly FanOutEntry[]])[];
 }
 
 /** The deploy ordinals of the refused deployments, which no copy may come from. */
@@ -112,7 +115,9 @@ function route(
     case CommandTag.Publish: {
       const published = publish(hooks, progress.registry, progress.instances, atMs, issued.publication);
       if (!published.ok) return published;
-      const settled = cascadeStarted(hooks, progress.registry, issued.publication.commandId, atMs, ...published.value);
+      const [delivered, deliveredResolution, deliveredInstance] = published.value;
+      const settled = cascadeCommitted(hooks, progress.registry, issued.publication.commandId, atMs, delivered, deliveredResolution,
+        deliveredInstance);
       if (!settled.ok) return settled;
       const [instances, resolution] = settled.value;
       return { ok: true, value: [instances, progress.occurrences, resolution] };
@@ -121,7 +126,7 @@ function route(
       const fired = timerStart(hooks, progress.registry, progress.instances, progress.occurrences, atMs, issued.timerStart);
       if (!fired.ok) return fired;
       const [started, occurrences, startedResolution] = fired.value;
-      const settled = cascadeStarted(hooks, progress.registry, issued.timerStart.commandId, atMs, started, startedResolution);
+      const settled = cascadeCommitted(hooks, progress.registry, issued.timerStart.commandId, atMs, started, startedResolution, null);
       if (!settled.ok) return settled;
       const [instances, resolution] = settled.value;
       return { ok: true, value: [instances, occurrences, resolution] };
@@ -168,7 +173,12 @@ function apply(hooks: Hooks, admission: (program: Program) => string | null, pro
       const stepped = step(hooks, deployment.program, before, stimulus.input);
       if (!stepped.ok) return { ok: true, value: failed(stepped.failure) };
       const others = progress.instances.filter((member) => member.state.instanceId !== stimulus.instanceId);
-      return { ok: true, value: { ...progress, instances: [...others, { deployment, state: stepped.value }] } };
+      const fanned = cascadeOf(hooks, progress.registry, stimulus.commandId, stepped.value.logicalTimeMs, cascadeBound,
+        [...others, { deployment, state: stepped.value }], stimulus.instanceId);
+      if (!fanned.ok) return fanned;
+      const entries = fanningEntries(fanned.value);
+      const inputCascades = entries.length === 0 ? progress.inputCascades : [...progress.inputCascades, [stimulus.commandId, entries] as const];
+      return { ok: true, value: { ...progress, instances: fanned.value.instances, inputCascades } };
     }
     case StimulusTag.Command: {
       const commandId = commandIdOf(stimulus.command);
@@ -202,7 +212,8 @@ function apply(hooks: Hooks, admission: (program: Program) => string | null, pro
 
 /** Fold the stimuli in order; `admission` is the admission registry a deployment runs. */
 export function runStimuli(hooks: Hooks, admission: (program: Program) => string | null, stimuli: readonly Stimulus[]): Refusable<Result> {
-  let progress: Progress = { registry: [], deployments: [], instances: [], steps: [], ledger: [], occurrences: [], inputFailures: [] };
+  let progress: Progress = { registry: [], deployments: [], instances: [], steps: [], ledger: [], occurrences: [], inputFailures: [],
+    inputCascades: [] };
   for (const stimulus of stimuli) {
     const next = apply(hooks, admission, progress, stimulus);
     if (!next.ok) return next;
@@ -216,6 +227,7 @@ export function runStimuli(hooks: Hooks, admission: (program: Program) => string
       deployments: progress.deployments,
       steps: progress.steps,
       inputFailures: progress.inputFailures,
+      inputCascades: progress.inputCascades,
       instances: mergeSort(progress.instances, (left, right) => compareStrings(left.state.instanceId, right.state.instanceId) <= 0),
     },
   };

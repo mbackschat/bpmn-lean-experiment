@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             id="Definitions_CascadeRelay" targetNamespace="urn:bpmn-lean:scenarios:signal-broadcast-population:cascade-relay">
+  <signal id="Signal_SignalOne" name="signal-one" />
+  <signal id="Signal_SignalTwo" name="signal-two" />
+  <process id="Process_CascadeRelay" name="Answer signal one with signal two" isExecutable="true">
+    <startEvent id="StartRelay" name="Relay opened" />
+    <intermediateCatchEvent id="CatchRelaySignalOne" name="Signal one">
+      <signalEventDefinition id="CatchRelaySignalOne_Signal" signalRef="Signal_SignalOne" />
+    </intermediateCatchEvent>
+    <intermediateThrowEvent id="ThrowRelaySignalTwo" name="Signal two">
+      <signalEventDefinition id="ThrowRelaySignalTwo_Signal" signalRef="Signal_SignalTwo" />
+    </intermediateThrowEvent>
+    <userTask id="Acknowledge" name="Acknowledge the relay" />
+    <endEvent id="RelayAcknowledged" name="Relay acknowledged" />
+    <sequenceFlow id="Flow_Opened" sourceRef="StartRelay" targetRef="CatchRelaySignalOne" />
+    <sequenceFlow id="Flow_Heard" sourceRef="CatchRelaySignalOne" targetRef="ThrowRelaySignalTwo" />
+    <sequenceFlow id="Flow_Answered" sourceRef="ThrowRelaySignalTwo" targetRef="Acknowledge" />
+    <sequenceFlow id="Flow_Acknowledged" sourceRef="Acknowledge" targetRef="RelayAcknowledged" />
+  </process>
+</definitions>

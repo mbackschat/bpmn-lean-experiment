@@ -17,7 +17,8 @@ publications routed with exact cardinality to a waiting subscription, else to a 
 [specification](../docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md)), Timer-start occurrences fired once each
 while their deployment is current (`timerStart`), Conditional root starts evaluated over submitted variables, each
 start that holds starting its own instance (`evaluateConditions`), and Signals broadcast to every receiver, each its
-own unit of commitment, the intents a committed start leaves cascading depth-first (`broadcast`). Every command is
+own unit of commitment, the intents every committed step leaves cascading depth-first after it (`broadcast`), an
+instance input's into `inputCascades`. Every command is
 answered once: the ledger keeps each command's result under the digest of its canonical wire form, so the same command
 again answers its recorded result and changes nothing, and the same command identifier with other content is
 `rejected command-content-mismatch` (population contract §7).
@@ -40,6 +41,7 @@ structure Progress where
   ledger : List LedgerEntry := []
   occurrences : List TimerOccurrence := []
   inputFailures : List (String × Failure) := []
+  inputCascades : List (String × List FanOutEntry) := []
 
 /-- The deploy ordinals of the refused deployments, which no copy may come from. -/
 def Progress.refused (progress : Progress) : List Nat :=
@@ -57,13 +59,14 @@ def Progress.deploymentFor (progress : Progress) (instanceId definitionRef : Str
 def route (hooks : Hooks) (progress : Progress) (atMs : Nat) :
     Command → Except String (List Instance × List TimerOccurrence × Resolution)
   | .publish publication => do
-    let (instances, resolution) ← publish hooks progress.registry progress.instances atMs publication
-    let (instances, resolution) ← cascadeStarted hooks progress.registry publication.commandId atMs instances resolution
+    let (instances, resolution, delivered) ← publish hooks progress.registry progress.instances atMs publication
+    let (instances, resolution) ←
+      cascadeCommitted hooks progress.registry publication.commandId atMs instances delivered resolution
     pure (instances, progress.occurrences, resolution)
   | .timerStart fired => do
     let (instances, occurrences, resolution) ←
       timerStart hooks progress.registry progress.instances progress.occurrences atMs fired
-    let (instances, resolution) ← cascadeStarted hooks progress.registry fired.commandId atMs instances resolution
+    let (instances, resolution) ← cascadeCommitted hooks progress.registry fired.commandId atMs instances none resolution
     pure (instances, occurrences, resolution)
   | .evaluateConditions evaluation => do
     let (instances, resolution) ← evaluateConditions hooks progress.registry progress.instances atMs evaluation
@@ -92,9 +95,12 @@ def apply (hooks : Hooks) (admission : Program → Option String) (progress : Pr
       let before := (progress.instances.find? (·.state.instanceId == instanceId)).map (·.state)
       match Step.step hooks deployment.program before input with
       | .error failure => .ok (failed failure)
-      | .ok state =>
+      | .ok state => do
         let others := progress.instances.filter (·.state.instanceId != instanceId)
-        .ok { progress with instances := others ++ [{ deployment, state }] }
+        let fanning ← cascadeOf hooks progress.registry commandId state.logicalTimeMs cascadeBound
+          (others ++ [{ deployment, state }]) instanceId
+        let cascaded := if fanning.entries.isEmpty then [] else [(commandId, fanning.entries)]
+        pure { progress with instances := fanning.instances, inputCascades := progress.inputCascades ++ cascaded }
   | .command issued atMs digest => do
     let commandId := issued.commandId
     let answered (resolution : Resolution) : StepResult :=
@@ -119,6 +125,7 @@ def runStimuli (hooks : Hooks) (admission : Program → Option String) (stimuli 
   pure { deployments := progress.deployments
          steps := progress.steps
          inputFailures := progress.inputFailures
+         inputCascades := progress.inputCascades
          instances := progress.instances.mergeSort fun left right =>
            decide (left.state.instanceId ≤ right.state.instanceId) }
 

@@ -317,10 +317,15 @@ function fanOutEntryJson(entry: FanOutEntry): JsonValue {
   return assertNever(entry);
 }
 
+/** A committed delivery's `cascade` member, left out when the cascade reached no receiver. */
+function cascadeField(entries: readonly FanOutEntry[]): Readonly<Record<string, JsonValue>> {
+  return entries.length === 0 ? {} : { cascade: entries.map(fanOutEntryJson) };
+}
+
 function resolutionJson(resolution: Resolution): JsonValue {
   switch (resolution.tag) {
     case ResolutionTag.Committed:
-      return { kind: "committed", target: referenceJson(resolution.target) };
+      return { kind: "committed", target: referenceJson(resolution.target), ...cascadeField(resolution.cascade) };
     case ResolutionTag.Failed:
       return { kind: "failed", target: referenceJson(resolution.target), ...failureFields(resolution.failure) };
     case ResolutionTag.FanOut:
@@ -356,8 +361,12 @@ export function populationResultJson(
   const inputFailures = population.inputFailures.length === 0 ? {} : {
     inputFailures: population.inputFailures.map(([commandId, failure]) => ({ commandId, ...failureFields(failure) })),
   };
+  const inputCascades = population.inputCascades.length === 0 ? {} : {
+    inputCascades: population.inputCascades.map(([commandId, entries]) => ({ commandId, entries: entries.map(fanOutEntryJson) })),
+  };
   return {
     ...inputFailures,
+    ...inputCascades,
     kind: "enginePopulationResult",
     scenarioId,
     deployments: population.deployments.map(deploymentResultJson),

@@ -50,6 +50,15 @@ test("a kernel population result agrees with CIB's once projected onto CIB's obs
   assert.equal(comparePopulationResults(cib, kernel, 7), null);
 });
 
+test("a delivery's cascade and an instance input's are kernel-only receiver outcomes CIB's evidence never records", () => {
+  const cascaded = {
+    ...kernel,
+    steps: [{ ...kernel.steps[0]!, resolution: { kind: "committed", target, cascade: [{ kind: "delivered", target }] } }, ...kernel.steps.slice(1)],
+    inputCascades: [{ commandId: "throw", entries: [{ kind: "delivered", target }] }],
+  };
+  assert.equal(comparePopulationResults(cib, cascaded, 7), null);
+});
+
 test("every member CIB observes still separates the targets after the projection", () => {
   const disagreeing: ReadonlyArray<readonly [string, typeof cib]> = [
     ["deployment outcome", { ...cib, deployments: [cib.deployments[0]!, { ...cib.deployments[1]!, outcome: { kind: "deployed" } }] }],

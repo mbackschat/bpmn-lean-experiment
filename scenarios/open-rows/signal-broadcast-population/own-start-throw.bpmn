@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             id="Definitions_OwnStartThrow" targetNamespace="urn:bpmn-lean:scenarios:signal-broadcast-population:own-start-throw">
+  <signal id="Signal_SyncRequested" name="sync-requested" />
+  <process id="Process_SelfRelay" name="Prepare a sync that any shift may request" isExecutable="true">
+    <startEvent id="StartSyncByHand" name="Sync started by hand" />
+    <startEvent id="StartSyncOnSignal" name="Sync requested">
+      <signalEventDefinition id="StartSyncOnSignal_Signal" signalRef="Signal_SyncRequested" />
+    </startEvent>
+    <userTask id="Prepare" name="Prepare the sync" />
+    <intermediateThrowEvent id="ThrowSyncRequested" name="Request the sync">
+      <signalEventDefinition id="ThrowSyncRequested_Signal" signalRef="Signal_SyncRequested" />
+    </intermediateThrowEvent>
+    <userTask id="Finish" name="Finish the sync" />
+    <endEvent id="SyncFinished" name="Sync finished" />
+    <sequenceFlow id="Flow_ByHand" sourceRef="StartSyncByHand" targetRef="Prepare" />
+    <sequenceFlow id="Flow_OnSignal" sourceRef="StartSyncOnSignal" targetRef="Prepare" />
+    <sequenceFlow id="Flow_Prepared" sourceRef="Prepare" targetRef="ThrowSyncRequested" />
+    <sequenceFlow id="Flow_Requested" sourceRef="ThrowSyncRequested" targetRef="Finish" />
+    <sequenceFlow id="Flow_Finished" sourceRef="Finish" targetRef="SyncFinished" />
+  </process>
+</definitions>

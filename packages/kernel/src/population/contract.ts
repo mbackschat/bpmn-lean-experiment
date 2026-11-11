@@ -180,7 +180,8 @@ export enum ResolutionTag {
 
 /** `failed`: the sole candidate refused the delivery; nothing changed. */
 export type Resolution =
-  | { readonly tag: ResolutionTag.Committed; readonly target: OccurrenceRef }
+  /** Delivered to its sole receiver; `cascade` is the fan-out of the intents that step left, delivered after it. */
+  | { readonly tag: ResolutionTag.Committed; readonly target: OccurrenceRef; readonly cascade: readonly FanOutEntry[] }
   | { readonly tag: ResolutionTag.Failed; readonly target: OccurrenceRef; readonly failure: Failure }
   | { readonly tag: ResolutionTag.FanOut; readonly entries: readonly FanOutEntry[] }
   | { readonly tag: ResolutionTag.NoMatch }
@@ -274,6 +275,8 @@ export interface Result {
   readonly instances: readonly Instance[];
   /** The instance inputs that did not commit, with their failures. */
   readonly inputFailures: readonly (readonly [string, Failure])[];
+  /** The committed instance inputs whose intents reached a receiver, with the fan-out of those intents. */
+  readonly inputCascades: readonly (readonly [string, readonly FanOutEntry[]])[];
 }
 
 /**

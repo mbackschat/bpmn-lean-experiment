@@ -4,7 +4,7 @@
  * leaves, which cascades depth-first (PC-SIGNAL-04, population contract §5, §6,
  * [specification](../../../../docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md)).
  */
-import { SignalPayload, compareStrings, elementStart, mergeSort, programChildren, programPublicId, type Program } from "../il/types.js";
+import { SignalPayload, assertNever, compareStrings, elementStart, mergeSort, programChildren, programPublicId, type Program } from "../il/types.js";
 import type { Hooks } from "../hooks.js";
 import {
   DeliveryTriggerTag,
@@ -336,24 +336,61 @@ export function cascade(
 }
 
 /**
- * A single start's resolution followed by the cascade of the intents its instance's start step left, for the commands
- * that start at most one instance (`publish`, `timerStart`); every other resolution as it is.
+ * The cascade of the intents the last committed step of the instance `instanceId` left, which may reach `budget`
+ * receivers, in the cascade `commandId` began.
  */
-export function cascadeStarted(
+export function cascadeOf(
+  hooks: Hooks,
+  registry: readonly Deployment[],
+  commandId: string,
+  atMs: number,
+  budget: number,
+  instances: readonly Instance[],
+  instanceId: string,
+): Refusable<Fanning> {
+  const member = instances.find((candidate) => candidate.state.instanceId === instanceId);
+  if (member === undefined) return { ok: false, error: "cascade-without-instance" };
+  return cascade(hooks, registry, commandId, atMs, fanningOf(instances, budget), member.state, member.deployment.program);
+}
+
+/**
+ * A command's resolution followed by the cascade of the intents its one committed step left, after that step: a
+ * delivery's (`delivered` names its root instance) into `committed`'s `cascade`, a single start's into its `fanOut`, for
+ * the commands that deliver or start at most once (`publish`, `timerStart`); every other resolution as it is. A start's
+ * cascade may reach `cascadeBound - 1` receivers, since its `started` entry is itself one the bound counts, and a
+ * delivery's target is not.
+ */
+export function cascadeCommitted(
   hooks: Hooks,
   registry: readonly Deployment[],
   commandId: string,
   atMs: number,
   instances: readonly Instance[],
   resolution: Resolution,
+  delivered: string | null,
 ): Refusable<readonly [readonly Instance[], Resolution]> {
-  const only = resolution.tag === ResolutionTag.FanOut && resolution.entries.length === 1 ? resolution.entries[0] : undefined;
-  if (only === undefined || only.tag !== FanOutEntryTag.Started) return { ok: true, value: [instances, resolution] };
-  const member = instances.find((candidate) => candidate.state.instanceId === only.instanceId);
-  if (member === undefined) return { ok: false, error: "started-without-instance" };
-  const settled = cascade(hooks, registry, commandId, atMs, fanningOf(instances, cascadeBound - 1), member.state, member.deployment.program);
-  if (!settled.ok) return settled;
-  return { ok: true, value: [settled.value.instances, { tag: ResolutionTag.FanOut, entries: [only, ...fanningEntries(settled.value)] }] };
+  switch (resolution.tag) {
+    case ResolutionTag.Committed: {
+      if (delivered === null) return { ok: false, error: "delivery-without-instance" };
+      const settled = cascadeOf(hooks, registry, commandId, atMs, cascadeBound, instances, delivered);
+      if (!settled.ok) return settled;
+      return { ok: true, value: [settled.value.instances, { ...resolution, cascade: fanningEntries(settled.value) }] };
+    }
+    case ResolutionTag.FanOut: {
+      const only = resolution.entries.length === 1 ? resolution.entries[0] : undefined;
+      if (only === undefined || only.tag !== FanOutEntryTag.Started) return { ok: true, value: [instances, resolution] };
+      const settled = cascadeOf(hooks, registry, commandId, atMs, cascadeBound - 1, instances, only.instanceId);
+      if (!settled.ok) return settled;
+      return { ok: true, value: [settled.value.instances, { tag: ResolutionTag.FanOut, entries: [only, ...fanningEntries(settled.value)] }] };
+    }
+    case ResolutionTag.Failed:
+    case ResolutionTag.NoMatch:
+    case ResolutionTag.Ambiguous:
+    case ResolutionTag.Rejected:
+    case ResolutionTag.Unsupported:
+      return { ok: true, value: [instances, resolution] };
+  }
+  return assertNever(resolution);
 }
 
 /**

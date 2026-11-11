@@ -180,16 +180,33 @@ def cascade (hooks : Hooks) (registry : List Deployment) (commandId : String) (a
     (state : State) (program : Program) : Except String Fanning :=
   fanOut hooks registry commandId atMs pendingFuel fanning (state.outbox.map (.intent program state))
 
-/-- A single start's resolution followed by the cascade of the intents its instance's start step left, for the
-commands that start at most one instance (`publish`, `timerStart`); every other resolution as it is. -/
-def cascadeStarted (hooks : Hooks) (registry : List Deployment) (commandId : String) (atMs : Nat)
-    (instances : List Instance) : Resolution → Except String (List Instance × Resolution)
+/-- The cascade of the intents the last committed step of the instance `instanceId` left, which may reach `budget`
+receivers, in the cascade `commandId` began. -/
+def cascadeOf (hooks : Hooks) (registry : List Deployment) (commandId : String) (atMs budget : Nat)
+    (instances : List Instance) (instanceId : String) : Except String Fanning := do
+  let some member := instances.find? (·.state.instanceId == instanceId) | throw "cascade-without-instance"
+  cascade hooks registry commandId atMs { instances, budget } member.state member.deployment.program
+
+/-- A command's resolution followed by the cascade of the intents its one committed step left, after that step: a
+delivery's (`delivered` names its root instance) into `committed`'s `cascade`, a single start's into its `fanOut`, for
+the commands that deliver or start at most once (`publish`, `timerStart`); every other resolution as it is. A start's
+cascade may reach `cascadeBound - 1` receivers, since its `started` entry is itself one the bound counts, and a
+delivery's target is not. -/
+def cascadeCommitted (hooks : Hooks) (registry : List Deployment) (commandId : String) (atMs : Nat)
+    (instances : List Instance) (delivered : Option String) : Resolution → Except String (List Instance × Resolution)
+  | .committed target _ => do
+    let some instanceId := delivered | throw "delivery-without-instance"
+    let fanning ← cascadeOf hooks registry commandId atMs cascadeBound instances instanceId
+    pure (fanning.instances, .committed target fanning.entries)
   | .fanOut [.started instanceId deploymentId version startEvent] => do
-    let some member := instances.find? (·.state.instanceId == instanceId) | throw "started-without-instance"
-    let fanning ← cascade hooks registry commandId atMs { instances, budget := cascadeBound - 1 } member.state
-      member.deployment.program
+    let fanning ← cascadeOf hooks registry commandId atMs (cascadeBound - 1) instances instanceId
     pure (fanning.instances, .fanOut (.started instanceId deploymentId version startEvent :: fanning.entries))
-  | resolution => pure (instances, resolution)
+  | .fanOut entries => pure (instances, .fanOut entries)
+  | .failed target failure => pure (instances, .failed target failure)
+  | .noMatch => pure (instances, .noMatch)
+  | .ambiguous => pure (instances, .ambiguous)
+  | .rejected code => pure (instances, .rejected code)
+  | .unsupported code => pure (instances, .unsupported code)
 
 /-- Broadcast a Signal at `atMs` (PC-SIGNAL-04): every receiver of its address in the snapshot, in the command's
 `order` or the defined linearization, each its own unit of commitment, the instances it starts named after the command

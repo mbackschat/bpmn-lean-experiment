@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://bpmn-lean.local/schemas/engine-population-result.schema.json",
   "title": "BPMN Lean population result",
-  "description": "What a population run answers for a population scenario: each deployment's outcome, each command's resolution, the instance inputs that did not commit and every instance's final state.",
+  "description": "What a population run answers for a population scenario: each deployment's outcome, each command's resolution, the instance inputs that did not commit, the cascades of those that did and every instance's final state.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -39,6 +39,14 @@
       "minItems": 1,
       "items": {
         "$ref": "#/$defs/inputFailure"
+      }
+    },
+    "inputCascades": {
+      "description": "The committed instance inputs whose thrown Signals reached a receiver, in input order, each with the fan-out of its intents, delivered after its step; absent when none did, and no input has an empty entry.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/inputCascade"
       }
     },
     "processStates": {
@@ -161,6 +169,14 @@
             },
             "target": {
               "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/occurrenceId"
+            },
+            "cascade": {
+              "description": "The fan-out of the intents the delivery's step left, delivered after it; absent when it reached no receiver.",
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "$ref": "#/$defs/fanOutEntry"
+              }
             }
           }
         },
@@ -365,6 +381,26 @@
           }
         }
       ]
+    },
+    "inputCascade": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "commandId",
+        "entries"
+      ],
+      "properties": {
+        "commandId": {
+          "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/commandId"
+        },
+        "entries": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/fanOutEntry"
+          }
+        }
+      }
     },
     "inputFailure": {
       "type": "object",

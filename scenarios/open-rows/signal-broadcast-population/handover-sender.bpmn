@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_HandoverSender" targetNamespace="urn:bpmn-lean:scenarios:signal-broadcast-population:handover-sender">
+  <signal id="Signal_HandoverRequested" name="handover-requested" />
+  <process id="Process_HandoverSender" name="Ask the next shift to take a handover" isExecutable="true">
+    <startEvent id="StartHandoverPrepared" name="Handover prepared" />
+    <userTask id="PrepareHandover" name="Prepare the handover" />
+    <intermediateThrowEvent id="ThrowHandoverRequested" name="Handover requested">
+      <signalEventDefinition id="ThrowHandoverRequested_Signal" signalRef="Signal_HandoverRequested">
+        <extensionElements>
+          <camunda:in businessKey="handover-42" />
+        </extensionElements>
+      </signalEventDefinition>
+    </intermediateThrowEvent>
+    <userTask id="AwaitAcceptance" name="Await the acceptance" />
+    <endEvent id="HandoverSent" name="Handover sent" />
+    <sequenceFlow id="Flow_Prepared" sourceRef="StartHandoverPrepared" targetRef="PrepareHandover" />
+    <sequenceFlow id="Flow_Ready" sourceRef="PrepareHandover" targetRef="ThrowHandoverRequested" />
+    <sequenceFlow id="Flow_Requested" sourceRef="ThrowHandoverRequested" targetRef="AwaitAcceptance" />
+    <sequenceFlow id="Flow_Accepted" sourceRef="AwaitAcceptance" targetRef="HandoverSent" />
+  </process>
+</definitions>

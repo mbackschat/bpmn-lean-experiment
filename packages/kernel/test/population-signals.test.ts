@@ -4,7 +4,9 @@
  * Signal starts of every current deployment, or the command's explicit `order`; each receiver is its own unit of
  * commitment, a receiver withdrawn before its turn is `skipped`, and the intents a committed receiver leaves cascade
  * depth-first before the next receiver, until the cascade bound stops them. A broadcast receiver passes the standards
- * profile, where a caller's targeted Signal delivery does not (`SignalReach`).
+ * profile, where a caller's targeted Signal delivery does not (`SignalReach`). A delivered publication's and an instance
+ * input's intents cascade after their step, into `committed`'s `cascade` and `inputCascades`, each present only when
+ * non-empty.
  */
 import assert from "node:assert/strict";
 import { test } from "node:test";
@@ -12,7 +14,8 @@ import { test } from "node:test";
 import { cascadeInstanceId, runPopulation } from "@bpmn-lean/kernel";
 
 import {
-  activity, base, catchEvent, end, eventBased, flow, gateway, qName, signal, start, text, userWork, wired, withOptions,
+  activity, base, catchEvent, criterion, end, eventBased, flow, gateway, message, qName, signal, start, text, userWork, variable, wired,
+  withOptions,
 } from "./admission-refusal-support.ts";
 
 type Json = Record<string, unknown>;
@@ -44,6 +47,16 @@ const echo = (key: string): Json => {
   const role = { throw: { record: throwOf("Sig") } };
   const rethrow = { event: { header, payload: { role, placement: "intermediate", incoming: [], outgoing: [], alternativeThrows: [] } } };
   return model(key, [start("S"), catchEvent("C", signal()), rethrow], [flow("f1", "S", "C"), flow("f2", "C", "Th"), flow("f3", "Th", "C")]);
+};
+/** A none start that ends at once throwing `Sig`. */
+const thrower = (key: string): Json => model(key, [start("S"), end("E", throwOf("Sig"))], [flow("f1", "S", "E")]);
+/** Waits at `C` for `M_Order` through Operation `O`, correlated on `OrderKey = orderId`, then ends throwing `Sig`. */
+const ordered = { kind: "operationMessage", messageId: "M_Order", interfaceId: "I", interfaceOperationId: "O" };
+const orderReceiver = (key: string): Json => {
+  const order = message({ messageRef: "M_Order", name: text("Order"), interfaceRef: "I", operationRef: "O",
+    correlation: [criterion("OrderKey", variable("orderId"))] });
+  return { ...model(key, [start("S"), catchEvent("C", order), end("E", throwOf("Sig"))], [flow("f1", "S", "C"), flow("f2", "C", "E")]),
+    variables: ["orderId"] };
 };
 /** An Event-Based Gateway whose two arms both catch `Sig`: the first to fire withdraws the second. */
 const forked = (key: string): Json => model(key,
@@ -144,4 +157,23 @@ test("a cascade that never settles stops at the cascade bound, the receivers bef
     kind: "failed", target: { kind: "occurrence", occurrence: { ...occurrence("A", "C"), activation: 50001 } },
     outcome: "unsupported", code: "population-cascade-bound",
   });
+});
+
+test("an instance input's or a delivered publication's thrown Signal cascades after its step, reported only when it reached a receiver", () => {
+  const orderId = [{ name: "orderId", value: { kind: "string", value: "A" } }];
+  const result = populate([thrower("Thrower"), waiter("Orders"), orderReceiver("Receiver")], [
+    begin("d1", "X1"),
+    begin("d2", "W1"),
+    begin("d1", "X2"),
+    begin("d2", "W2"),
+    { kind: "instance", definitionRef: "d3", instanceId: "R1",
+      stimulus: { kind: "start", commandId: "start-R1", instanceId: "R1", variables: orderId } },
+    { kind: "publish", commandId: "p1", address: { channel: ordered }, mode: "any", variables: [],
+      criteria: [{ target: { kind: "processVariable", name: "OrderKey" }, expected: { kind: "string", value: "A" } }] },
+  ]);
+  // X1 throws before any catch waits, and W1, W2 and R1 throw nothing: none of them has an entry, never an empty one.
+  assert.deepEqual(result.inputCascades, [{ commandId: "start-X2", entries: [delivered("W1", "C")] }]);
+  assert.deepEqual(resolutions(result), [{ kind: "committed", target: occurrence("R1", "C"), cascade: [delivered("W2", "C")] }]);
+  const quiet = populate([thrower("Thrower")], [begin("d1", "X1")]);
+  assert.equal("inputCascades" in quiet, false);
 });

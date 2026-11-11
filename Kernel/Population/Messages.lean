@@ -99,12 +99,13 @@ among the instances of its selected deployment, or of every deployment without a
 is not executions-only, start its sole start candidate. The delivery or start takes the command's logical time, so the
 step it causes evaluates `now` and arms Timers from it. Zero is `noMatch` and several are `ambiguous`, either leaving
 every instance unchanged; candidate order never picks a winner. Criteria naming one target twice are
-`rejected criteria-duplicate`, a selector naming no registered deployment `rejected definition-not-deployed`. -/
+`rejected criteria-duplicate`, a selector naming no registered deployment `rejected definition-not-deployed`. A delivery
+also answers its receiver's root instance, whose committed step's intents cascade next. -/
 def publish (hooks : Hooks) (registry : List Deployment) (instances : List Instance) (atMs : Nat)
-    (publication : Publication) : Except String (List Instance × Resolution) := do
+    (publication : Publication) : Except String (List Instance × Resolution × Option String) := do
   let targets := publication.criteria.map (reprStr ·.target)
-  if targets.eraseDups.length != targets.length then return (instances, .rejected "criteria-duplicate")
-  let some scope := selected registry publication.definition | return (instances, .rejected "definition-not-deployed")
+  if targets.eraseDups.length != targets.length then return (instances, .rejected "criteria-duplicate", none)
+  let some scope := selected registry publication.definition | return (instances, .rejected "definition-not-deployed", none)
   let reached := if publication.mode == .startOnly then [] else
     instances.zipIdx.flatMap fun (member, index) =>
       if scope.any (·.deploymentId != member.deployment.deploymentId) then []
@@ -118,14 +119,16 @@ def publish (hooks : Hooks) (registry : List Deployment) (instances : List Insta
     | none => throw "candidate-without-instance"
     | some member =>
       match Step.step hooks member.deployment.program (some member.state) delivery with
-      | .ok state => pure (instances.set index { member with state }, .committed target)
-      | .error failure => pure (instances, .failed target failure)
-  | _ :: _ :: _ => pure (instances, .ambiguous)
+      | .ok state => pure (instances.set index { member with state }, .committed target [], some state.instanceId)
+      | .error failure => pure (instances, .failed target failure, none)
+  | _ :: _ :: _ => pure (instances, .ambiguous, none)
   | [] =>
-    if publication.mode == .executionsOnly then return (instances, .noMatch)
+    if publication.mode == .executionsOnly then return (instances, .noMatch, none)
     match startCandidates registry scope publication.message with
-    | [] => pure (instances, .noMatch)
-    | [(deployment, startEvent, channel)] => startFor hooks instances publication atMs deployment startEvent channel
-    | _ :: _ :: _ => pure (instances, .ambiguous)
+    | [] => pure (instances, .noMatch, none)
+    | [(deployment, startEvent, channel)] =>
+      let (instances, resolution) ← startFor hooks instances publication atMs deployment startEvent channel
+      pure (instances, resolution, none)
+    | _ :: _ :: _ => pure (instances, .ambiguous, none)
 
 end Kernel.Population

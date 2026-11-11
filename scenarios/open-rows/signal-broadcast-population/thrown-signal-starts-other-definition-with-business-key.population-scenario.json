@@ -1,0 +1,82 @@
+{
+  "kind": "populationScenario",
+  "id": "signal-broadcast-population-thrown-signal-starts-other-definition-with-business-key",
+  "profile": "cibseven-2.2.0",
+  "definitions": [
+    {
+      "definitionRef": "handover-relay",
+      "bpmn": {
+        "id": "signal-start-compositions-handover-relay",
+        "relativePath": "scenarios/open-rows/signal-start-compositions/handover-relay.bpmn",
+        "sha256": "537f483f0763d332196fa9116913e8ef6c51eb083d898951a955ac19e970990a",
+        "sourceOverlay": null
+      }
+    },
+    {
+      "definitionRef": "handover-sender",
+      "bpmn": {
+        "id": "signal-broadcast-population-handover-sender",
+        "relativePath": "scenarios/open-rows/signal-broadcast-population/handover-sender.bpmn",
+        "sha256": "fb10701621e8883c031030aec80f9e7c3aacc151269c80909c68ea7e152b35b4",
+        "sourceOverlay": null
+      }
+    }
+  ],
+  "steps": [
+    {
+      "kind": "instance",
+      "definitionRef": "handover-sender",
+      "instanceId": "Sender_1",
+      "at": 0,
+      "stimulus": {
+        "kind": "start",
+        "commandId": "s01-start-sender-1",
+        "instanceId": "Sender_1",
+        "variables": []
+      }
+    },
+    {
+      "kind": "instance",
+      "definitionRef": "handover-sender",
+      "instanceId": "Sender_1",
+      "at": 10,
+      "stimulus": {
+        "kind": "command",
+        "commandId": "s02-complete-PrepareHandover-1",
+        "occurrence": {
+          "processInstanceId": "Sender_1",
+          "elementId": "PrepareHandover",
+          "activation": 1
+        },
+        "action": {
+          "kind": "completeUserTask",
+          "values": []
+        }
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.5.2",
+      "BPMN 2.0.2 Clause 10.5.4",
+      "BPMN 2.0.2 Clause 10.5.5",
+      "BPMN 2.0.2 Clause 13.2",
+      "BPMN 2.0.2 Clause 13.5.1",
+      "BPMN 2.0.2 Clause 13.5.2",
+      "BPMN 2.0.2 Table 10.84",
+      "BPMN 2.0.2 Table 10.89",
+      "BPMN 2.0.2 Table 10.100",
+      "BPMN 2.0.2 Clause 10.5.3",
+      "BPMN 2.0.2 Table 10.88"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/cmd/SignalEventReceivedCmd.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/deployer/BpmnDeployer.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ThrowSignalEventActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/event/SignalEventHandler.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/persistence/entity/EventSubscriptionManager.java"
+    ]
+  }
+}

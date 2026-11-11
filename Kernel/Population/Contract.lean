@@ -111,7 +111,8 @@ inductive FanOutEntry where
   | failed (target : Receiver) (failure : Failure)
 
 inductive Resolution where
-  | committed (target : OccurrenceRef)
+  /-- Delivered to its sole receiver; `cascade` is the fan-out of the intents that step left, delivered after it. -/
+  | committed (target : OccurrenceRef) (cascade : List FanOutEntry)
   /-- The sole candidate refused the delivery; nothing changed. -/
   | failed (target : OccurrenceRef) (failure : Failure)
   | fanOut (entries : List FanOutEntry)
@@ -170,6 +171,8 @@ structure Result where
   instances : List Instance
   /-- The instance inputs that did not commit, with their failures. -/
   inputFailures : List (String × Failure)
+  /-- The committed instance inputs whose intents reached a receiver, with the fan-out of those intents. -/
+  inputCascades : List (String × List FanOutEntry)
 
 /-- The identity of the instance a command starts at `startEvent` of a deployment (population contract §4): each part
 prefixed by its UTF-8 byte length, as `State.calledInstanceId`, so a command starts at most one instance per deployment
