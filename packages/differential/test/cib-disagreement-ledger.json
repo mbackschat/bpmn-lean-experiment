@@ -575,12 +575,6 @@
     ]
   },
   {
-    "evidence": "scenarios/open-rows/conditional-catch/gateway-two-true-arms.cibseven-evidence.json",
-    "owners": [
-      "PC-CONDITION-03"
-    ]
-  },
-  {
     "evidence": "scenarios/open-rows/conditional-esp/handler-writes-bounded-chain.cibseven-evidence.json",
     "owners": [
       "CIB-LIM-0009"

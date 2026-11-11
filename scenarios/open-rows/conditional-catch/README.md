@@ -23,7 +23,7 @@ Answer-free schedules for [PC-CONDITION-03](../../../docs/PRACTICAL-CIB7-COVERAG
 | [message-wins-then-condition-changes](message-wins-then-condition-changes.scenario.json) | race | PC-CONDITION-03 | `approved` is `false` at the start; `Prepare` completes; the Message arm is delivered; `approved` is then set to `true` on `Rejected`; `Rejected` completes. |
 | [true-at-the-gateway](true-at-the-gateway.scenario.json) | race | PC-CONDITION-03 | `approved` is `true` at the start; `Prepare` completes and reaches the gateway; the Message arm is then delivered. |
 | [timer-wins-then-condition-changes](timer-wins-then-condition-changes.scenario.json) | race | PC-CONDITION-03 | `approved` is `false` at the start; `Prepare` completes; the Timer arm fires at 30,000; `approved` is then set to `true` on `Expired`; `Expired` completes. |
-| [gateway-two-true-arms](gateway-two-true-arms.scenario.json) | arms | PC-CONDITION-03 | `ready` is `true` at the start, so both arms are true when the token arrives; the schedule is the start alone. Separates the order of the gateway's Sequence Flows from the declaration order of its catch Events. CIB's pick varies between JVM runs ([#79](https://github.com/mbackschat/bpmn-lean-experiment/issues/79)). |
+| — | arms | PC-CONDITION-03 | Two true arms at the gateway (`ready` true at the start) have no retained CIB answer: CIB fires the first true arm in `ScopeImpl.eventActivities` HashSet order, which varies between JVM runs, so one retained answer is a sample a replay cannot reproduce ([#79](https://github.com/mbackschat/bpmn-lean-experiment/issues/79)). The scenario returns once PC-CONDITION-03 makes the arm choice an explicit input; `arms.bpmn` stays as the kernel's preemption-test model. |
 
 ## Notes for the target runners
 

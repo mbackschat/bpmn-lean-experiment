@@ -4,8 +4,8 @@
  * takes only its first true arm in flow order (BPMN 2.0.2 §10.5.6, Table 10.95), an interrupting boundary ends the
  * items of its host and of everything inside it, and an interrupting Event Sub-Process those of its parent scope. The
  * oracle is the occurrences each input begins (the journal), not only the waits left open, because a later
- * cancellation can hide a firing that should never have begun. The witness is
- * `scenarios/open-rows/conditional-catch/gateway-two-true-arms`; the other models are inline mutations of its shape.
+ * cancellation can hide a firing that should never have begun. The model is `scenarios/open-rows/conditional-catch/arms.bpmn`,
+ * whose two-true-arms run has no retained CIB answer (CIB's pick varies per JVM, #79); the other models mutate its shape.
  */
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
