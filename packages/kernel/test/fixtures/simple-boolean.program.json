@@ -34,7 +34,8 @@
     "effectResultValues": "outputSet", "outputContext": "submission",
     "multiInstanceCounters": "none", "multiInstanceInputFailure": "hold", "multiInstanceCount": "integer", "businessRuleTask": "refused",
     "inclusiveJoinReach": "withBoundaries", "branchSchedule": "orderInvariant",
-    "conditionalRetrigger": "edge", "malformedTimer": "refused", "messageNames": "description"
+    "conditionalRetrigger": "edge", "malformedTimer": "refused", "messageNames": "description",
+    "scopeStart": "implicit"
   },
   "elements": [
     {

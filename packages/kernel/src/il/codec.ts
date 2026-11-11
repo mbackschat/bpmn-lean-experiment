@@ -44,6 +44,7 @@ import {
   ConditionalRetrigger,
   MalformedTimer,
   MessageNames,
+  ScopeStart,
   MultiInstanceCounters,
   MultiInstanceInputFailure,
   MultiInstanceFinalBody,
@@ -457,6 +458,7 @@ const profileOptions = struct<ProfileOptions>("ProfileOptions", {
   conditionalRetrigger: members("ConditionalRetrigger", ConditionalRetrigger),
   malformedTimer: members("MalformedTimer", MalformedTimer),
   messageNames: members("MessageNames", MessageNames),
+  scopeStart: members("ScopeStart", ScopeStart),
 });
 
 const program = struct<Program>("Program", {

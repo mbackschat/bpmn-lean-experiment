@@ -258,6 +258,17 @@ export enum MessageNames {
   Addresses = "addresses",
 }
 
+/** What entering an embedded Sub-Process or Transaction without a start Event does. */
+export enum ScopeStart {
+  /** BPMN 2.0.2 §13.3.4: the Scope begins its Activities and Scopes that have no incoming flow. */
+  Implicit = "implicit",
+  /**
+   * CIB-LIM-0024: such a Scope is refused at admission, as CIB refuses deploying a Sub-Process without a start Event
+   * and fails entering such a Transaction.
+   */
+  Required = "required",
+}
+
 export interface ProfileOptions {
   readonly relations: readonly string[];
   readonly evaluator: Evaluator;
@@ -298,4 +309,5 @@ export interface ProfileOptions {
   readonly conditionalRetrigger: ConditionalRetrigger;
   readonly malformedTimer: MalformedTimer;
   readonly messageNames: MessageNames;
+  readonly scopeStart: ScopeStart;
 }

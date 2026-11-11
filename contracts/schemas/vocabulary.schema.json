@@ -349,6 +349,12 @@
             "description",
             "addresses"
           ]
+        },
+        "scopeStart": {
+          "enum": [
+            "implicit",
+            "required"
+          ]
         }
       }
     },
@@ -490,6 +496,7 @@
         "scope.localVariableWithoutInput",
         "scope.multiInstance",
         "scope.transaction.method",
+        "scope.withoutStart",
         "source.ambiguousBoolean",
         "source.containmentCardinality",
         "source.doctype",

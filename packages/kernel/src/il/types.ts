@@ -16,6 +16,7 @@ import {
   UnhandledError, ErrorCatchVariables,
   MultiInstanceBinding, ResultValues, OutputContext, MultiInstanceCounters, MultiInstanceInputFailure, MultiInstanceCount,
   multiInstanceCounterNames, BusinessRuleTask, InclusiveJoinReach, BranchSchedule, ConditionalRetrigger, MalformedTimer, MessageNames,
+  ScopeStart,
 } from "./types/options.js";
 import {
   ExpressionTag, MappingDialect, SimpleBooleanTag, ValueSourceTag, ValueTag, type Expression, type Mapping,
@@ -30,6 +31,7 @@ export {
   UnhandledError, ErrorCatchVariables,
   MultiInstanceBinding, ResultValues, OutputContext, MultiInstanceCounters, MultiInstanceInputFailure, MultiInstanceCount,
   multiInstanceCounterNames, BusinessRuleTask, InclusiveJoinReach, BranchSchedule, ConditionalRetrigger, MalformedTimer, MessageNames,
+  ScopeStart,
 };
 export {
   ExpressionTag, MappingDialect, SimpleBooleanTag, ValueSourceTag, ValueTag, type Expression, type Mapping,

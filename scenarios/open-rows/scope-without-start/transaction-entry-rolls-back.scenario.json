@@ -1,0 +1,42 @@
+{
+  "kind": "scenario",
+  "id": "scope-without-start-transaction-entry-rolls-back",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "scope-without-start-startless-transaction",
+    "relativePath": "scenarios/open-rows/scope-without-start/startless-transaction.bpmn",
+    "sha256": "4dea4c6bf3e2c2b0c59684067bc27d1341c780c616ffbcb7d0c9052e1dc0341b",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-prepare",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Prepare",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §13.3.4"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/SubProcessActivityBehavior.java"
+    ]
+  }
+}

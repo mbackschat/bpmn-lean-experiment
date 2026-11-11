@@ -741,7 +741,7 @@ The evaluator needs no change. An expression outside Simple Boolean is refused a
 | `MultiInstance.written` | aggregation, none on early completion | §13.3.7, `PMI-FINISH-01`, `PMI-EARLY-01`; CIB-LIM-0001 | `O.multiInstanceOutputs` |
 | `Compensation.advance` | dependency order, concurrent otherwise | §13.5.5; CIB uses reverse creation (PC-COMPENSATION-01 owns the entry) | `O.compensationOrder` |
 | `Compensation.failCompensation` | an uncaught handler Error fails the instance | COMPH-FAIL-01; §13.3.2 leaves it open | `O.compensationHandlerFailure` |
-| `Scopes.implicitStart` | Activities without incoming flow begin | §13.3.1, §13.3.4; CIB requires a start (`SubProcessActivityBehavior:43`), so CIB admission must refuse it; CIB profiles will also refuse a Sub-Process or Transaction without a start event (pending, [#73](https://github.com/mbackschat/bpmn-lean-experiment/issues/73)) | admission: `scope.implicitStart`, proposed |
+| `Scopes.implicitStart` | Activities without incoming flow begin | §13.3.1, §13.3.4; CIB requires a start (`SubProcessActivityBehavior:43`), so the cibseven profiles refuse a Sub-Process or Transaction without a start Event ([CIB-LIM-0024](../CIB-BPMN-RELATION-REGISTER.md#cib-lim-0024--cib-needs-a-start-event-in-a-sub-process-and-a-transaction)) | `O.scopeStart`; admission: `scope.implicitStart`, `scope.withoutStart` |
 | `State.calledInstanceId` | derived called instance identity | project identity; unclassified (E8) | none |
 | `Population.publish` | exactly one candidate | CIB-LIM-0002 account; capsule specification | `O.messageCorrelation` |
 

@@ -252,6 +252,15 @@ inductive MessageNames where
   | addresses
   deriving DecidableEq, Repr
 
+/-- What entering an embedded Sub-Process or Transaction without a start Event does. -/
+inductive ScopeStart where
+  /-- BPMN 2.0.2 §13.3.4: the Scope begins its Activities and Scopes that have no incoming flow. -/
+  | implicit
+  /-- CIB-LIM-0024: such a Scope is refused at admission, as CIB refuses deploying a Sub-Process without a start
+  Event and fails entering such a Transaction. -/
+  | required
+  deriving DecidableEq, Repr
+
 structure ProfileOptions where
   relations : List String := []
   evaluator : Evaluator := .simpleBoolean
@@ -290,6 +299,7 @@ structure ProfileOptions where
   conditionalRetrigger : ConditionalRetrigger := .edge
   malformedTimer : MalformedTimer := .refused
   messageNames : MessageNames := .description
+  scopeStart : ScopeStart := .implicit
   deriving Repr
 
 end Kernel

@@ -1,6 +1,7 @@
 /** Admission of Scopes and scope membership, transcribed from `Kernel/Admission/Scopes.lean`. A refusal carries a stable code. */
 import {
   ScopeKindTag,
+  ScopeStart,
   TransactionMethodTag,
   assertNever,
   elementActivity,
@@ -105,6 +106,22 @@ function eventSubProcessBoundary(payload: ScopePayload): string | null {
 }
 
 /**
+ * Under `ScopeStart.Required` (CIB-LIM-0024) an embedded Sub-Process or Transaction holds a start Event: CIB refuses
+ * deploying a Sub-Process without one (`BpmnParse.java:967-968`) and fails entering such a Transaction, which has no
+ * initial activity (`SubProcessActivityBehavior.java:41-43`). An Event Sub-Process always holds its triggering start.
+ */
+function withoutStart(program: Program, header: Header, payload: ScopePayload): string | null {
+  switch (program.options.scopeStart) {
+    case ScopeStart.Implicit:
+      return null;
+    case ScopeStart.Required:
+      if (eventSubProcessOf(payload) !== null) return null;
+      return programChildren(program, header.id).some((child) => elementStart(child) !== null) ? null : "scope.withoutStart";
+  }
+  return assertNever(program.options.scopeStart);
+}
+
+/**
  * A local variable is declared by an input mapping; a declared local without one has no initial value the kernel could
  * choose. An embedded Sub-Process may loop, which `admission/multi-instance.ts` admits (PC-MI-04 to PC-MI-06); a looping
  * Transaction (PC-TX) or Event Sub-Process, which BPMN 2.0.2 §10.3.5 starts by its event, is refused.
@@ -115,7 +132,8 @@ export function scope(program: Program, header: Header, payload: ScopePayload): 
     return "scope.multiInstance";
   }
   if (payload.localVariables.some((name) => !declared.includes(name))) return "scope.localVariableWithoutInput";
-  return eventSubProcessBoundary(payload) ?? transaction(payload) ?? implicitStart(program, header);
+  return eventSubProcessBoundary(payload) ?? transaction(payload) ?? withoutStart(program, header, payload) ??
+    implicitStart(program, header);
 }
 
 /**

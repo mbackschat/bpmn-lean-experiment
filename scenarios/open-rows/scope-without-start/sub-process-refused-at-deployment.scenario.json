@@ -1,0 +1,29 @@
+{
+  "kind": "scenario",
+  "id": "scope-without-start-sub-process-refused-at-deployment",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "scope-without-start-startless-sub-process",
+    "relativePath": "scenarios/open-rows/scope-without-start/startless-sub-process.bpmn",
+    "sha256": "19a5dff73a658b1178ebce14f66276e67c4ae200cfad6b1d2ca92e5c1bd81776",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §13.3.4"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/SubProcessActivityBehavior.java"
+    ]
+  }
+}

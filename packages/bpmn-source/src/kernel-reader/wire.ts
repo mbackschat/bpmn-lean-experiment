@@ -81,6 +81,7 @@ export type KernelProfileOptions = Readonly<{
   conditionalRetrigger: "edge" | "eachWrite";
   malformedTimer: "refused" | "rollsBackArming";
   messageNames: "description" | "addresses";
+  scopeStart: "implicit" | "required";
 }>;
 
 /** One portable value's allowance, which bounds a scope-chain submission (`NSD-TASK-01`). */
@@ -129,6 +130,7 @@ export function kernelProfileOptions(relations: readonly string[]): KernelProfil
     conditionalRetrigger: selects("CIB-EXT-0035") ? "eachWrite" : "edge",
     malformedTimer: selects("CIB-EXT-0036") ? "rollsBackArming" : "refused",
     messageNames: selects("CIB-LIM-0022") ? "addresses" : "description",
+    scopeStart: selects("CIB-LIM-0024") ? "required" : "implicit",
   };
 }
 

@@ -28,7 +28,7 @@ The counts below cover only entries recorded by this project, including the sepa
 | CIB interpretations of BPMN gaps or inconsistencies | 25 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
 | CIB extension records | 37 | 3 | Project profile deliberately includes behavior beyond bare BPMN execution; candidates remain unselected |
 | Configuration-specific realizations | 14 | 1 | Behavior is permitted or meaningful only under a declared CIB environment |
-| Known CIB limitations within reviewed scope | 23 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
+| Known CIB limitations within reviewed scope | 24 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
 
 The sequential User Task account has no recorded CIB deviation. That statement is bounded to its clauses, pinned environment, witnesses, and observation surface; it is not a general CIB conformance result.
 
@@ -1047,6 +1047,16 @@ BPMN lets a Message Event name the Operation that carries its Message (Table 10.
 **Evidence:** Pinned `BpmnParse.java:1259-1269`; retained `message-name-addressing/operation-*`.
 
 **Boundary:** Every Message subscription.
+
+### CIB-LIM-0024 — CIB needs a start Event in a Sub-Process and a Transaction
+
+**Status:** Profile limitation selected by the cibseven profiles (`ScopeStart.required`)
+
+BPMN 2.0.2 §13.3.4 lets a Sub-Process without a start Event begin, on entry, every Activity and Scope without incoming flow. CIB Seven `2.2.0` refuses deploying a `subProcess` without a `startEvent` ("must define a startEvent element"). It parses a `transaction` without that check, but runs it with `SubProcessActivityBehavior`, whose entry requires the initial activity that only a start Event sets, so entering such a Transaction fails and rolls the entering command back. Under the cibseven profiles the kernel refuses an embedded Sub-Process or Transaction that holds no start Event at admission (`scope.withoutStart`). Under `bpmn-2.0.2` it begins the Scope's Activities and Scopes without incoming flow, and a Gateway or Event among them stays refused (`scope.implicitStart`).
+
+**Evidence:** Pinned `BpmnParse.java:967-968` (the deployment check, `process` and `subProcess` only), `:1083-1084` (a start Event sets `INITIAL_ACTIVITY`), `:3902-3917` (`parseTransaction`), `SubProcessActivityBehavior.java:41-45` (`ensureNotNull` on the initial activity); the kernel test `packages/differential/test/scope-start-profiles.test.ts`. The witnesses `scenarios/open-rows/scope-without-start` await evidence.
+
+**Boundary:** Embedded Sub-Processes, a looping one and a compensation handler included, and Transactions. An Event Sub-Process always holds its triggering start. A process or called process without a start Event is outside this entry: the kernel admits it and rejects the start (`no-start-event`) or fails the Call (`called-process-without-none-start`), where CIB refuses the deployment.
 
 ## Extension register
 

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  id="Definitions_StartlessSubProcess"
+  targetNamespace="urn:bpmn-lean:scenarios:scope-without-start:startless-sub-process">
+  <bpmn:process id="Process_StartlessSubProcess" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Ordered" />
+    <bpmn:userTask id="UserTask_Prepare" name="Prepare the settlement" />
+    <bpmn:subProcess id="SubProcess_Settle" name="Settle the order">
+      <bpmn:userTask id="UserTask_Settle" name="Settle the payment" />
+    </bpmn:subProcess>
+    <bpmn:userTask id="UserTask_After" name="Confirm the settlement" />
+    <bpmn:endEvent id="EndEvent_Settled" />
+    <bpmn:sequenceFlow id="Flow_Start_Prepare" sourceRef="StartEvent_Ordered" targetRef="UserTask_Prepare" />
+    <bpmn:sequenceFlow id="Flow_Prepare_Settle" sourceRef="UserTask_Prepare" targetRef="SubProcess_Settle" />
+    <bpmn:sequenceFlow id="Flow_Settle_After" sourceRef="SubProcess_Settle" targetRef="UserTask_After" />
+    <bpmn:sequenceFlow id="Flow_After_End" sourceRef="UserTask_After" targetRef="EndEvent_Settled" />
+  </bpmn:process>
+</bpmn:definitions>
