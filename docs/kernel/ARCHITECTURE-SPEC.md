@@ -107,7 +107,7 @@ The host sees the kernel only through `hostRequirements(program)` (timers, concu
 | `Kernel.Step`, `Kernel.Publish`, `Kernel.Population` | dispatch over element, input and open-item kinds with the hooks record as a parameter; generic projection; population mechanisms | `IL.Types`, `State`, `Hooks` (`Population` also `Step`) |
 | `Kernel.Registry`, `Kernel.AdmissionRegistry` | fill the hooks record; assemble admission; generated from the feature directories | features; admissions |
 | `Kernel.IL.Codec` | table-driven JSON codecs | `IL.Types`, `State` |
-| `Kernel.Run` | scenario runner executable | everything above; the only importer of both registries |
+| `Kernel.Run`, `Kernel.Run.*` | scenario runner executable and its parts (`Run.Wire` reads inputs, `Run.Population` reads population scenarios and renders their results) | everything above and the runner's own parts; `Kernel.Run` is the only importer of both registries |
 | `Kernel.Laws.<F>` | the declarative rules and invariants of one feature, stated independently of `Step`'s code | `import all Kernel.Feature.<F>`, `Hooks` |
 | `Kernel.Proofs.Step` and `Kernel.Proofs.*` | composition theorems over the `Laws`; reaches `Step` through a `Laws.Step` module, never an `import all` exception | `Laws`, `Hooks`, `Step` |
 

@@ -16,7 +16,11 @@ import type { CommandResult, CorrelatedPublication, CorrelationTarget, Publicati
 import { PublicationOutcome, correlationAmbiguousCode, notCorrelatedCode } from "./host-contract.js";
 import type { HostView, JsonValue, OccurrenceId } from "./port.js";
 
-/** JSON with every object's keys sorted, so equal values compare equal as text. */
+/**
+ * JSON in which equal content has equal bytes whatever the construction order: every object's keys in code-unit order.
+ * Ingress keys, engine-api identifiers and digests, and the population harness's command digests hash it, so its
+ * output is part of their contract.
+ */
 export function canonicalJson(value: unknown): string {
   return JSON.stringify(value, (_key, member: unknown) =>
     member !== null && typeof member === "object" && !Array.isArray(member)

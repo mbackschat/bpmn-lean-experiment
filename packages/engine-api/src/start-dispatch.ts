@@ -4,10 +4,9 @@
  * lost response is recognized by the intent the chain retains in its memo.
  */
 import { stimulusFromJson } from "@bpmn-lean/kernel";
-import { workflowType } from "@bpmn-lean/temporal-host/host";
+import { canonicalJson, workflowType } from "@bpmn-lean/temporal-host/host";
 
 import {
-  canonicalJson,
   member,
   sameIdentity,
   sha256Hex,

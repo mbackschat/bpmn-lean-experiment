@@ -4,13 +4,14 @@
  */
 import {
   Scheduling,
+  canonicalJson,
   createHostClientRuntime,
   type HostConfig,
   type ProcessHost,
   type ScheduleHost,
 } from "@bpmn-lean/temporal-host/host";
 
-import { canonicalJson, requireWireString, sha256Hex, type EngineDefinitionIdentity } from "./common.js";
+import { requireWireString, sha256Hex, type EngineDefinitionIdentity } from "./common.js";
 import type { EngineServedRequirements } from "./definition.js";
 
 export type EngineHost = Readonly<{

@@ -29,7 +29,8 @@ export type Layer = typeof Layer[keyof typeof Layer];
 
 export type Module = Readonly<{ name: string; layer: Layer; family: string; file: string; imports: readonly string[] }>;
 
-/** Which layers a layer may import; a feature or admission module may also import its own family's modules. */
+/** Which layers a layer may import; a feature or admission module may also import its own family's modules, and the
+ * runner its own parts. */
 const mayImport: Readonly<Record<Layer, readonly Layer[]>> = {
   [Layer.Il]: [Layer.Il],
   [Layer.Codec]: [Layer.Il, Layer.State, Layer.Codec],
@@ -40,7 +41,7 @@ const mayImport: Readonly<Record<Layer, readonly Layer[]>> = {
   [Layer.Dispatch]: [Layer.Il, Layer.State, Layer.Hooks],
   [Layer.Registry]: [Layer.Il, Layer.State, Layer.Hooks, Layer.Feature],
   [Layer.AdmissionRegistry]: [Layer.Il, Layer.Admission],
-  [Layer.Run]: [Layer.Il, Layer.Codec, Layer.State, Layer.Hooks, Layer.Dispatch, Layer.Registry, Layer.AdmissionRegistry],
+  [Layer.Run]: [Layer.Il, Layer.Codec, Layer.State, Layer.Hooks, Layer.Dispatch, Layer.Registry, Layer.AdmissionRegistry, Layer.Run],
   [Layer.Root]: Object.values(Layer),
 };
 

@@ -6,15 +6,7 @@
  */
 import { createHash } from "node:crypto";
 
-function sortedKeys(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(sortedKeys);
-  if (value !== null && typeof value === "object") {
-    return Object.fromEntries(Object.entries(value)
-      .sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0))
-      .map(([key, entry]) => [key, sortedKeys(entry)]));
-  }
-  return value;
-}
+import { canonicalJson } from "@bpmn-lean/temporal-host/host";
 
 export function populationStepDigests(steps: readonly unknown[]): string[] {
   let clock = 0;
@@ -22,6 +14,6 @@ export function populationStepDigests(steps: readonly unknown[]): string[] {
     const record = step !== null && typeof step === "object" && !Array.isArray(step) ? step as Record<string, unknown> : {};
     const at = record["at"];
     if (typeof at === "number") clock = at;
-    return createHash("sha256").update(JSON.stringify(sortedKeys({ ...record, at: clock }))).digest("hex");
+    return createHash("sha256").update(canonicalJson({ ...record, at: clock })).digest("hex");
   });
 }

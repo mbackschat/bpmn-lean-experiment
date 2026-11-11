@@ -43,6 +43,8 @@ public import Kernel.IL.Types.Reference
 public import Kernel.Population
 public import Kernel.Publish
 public import Kernel.Registry
+public import Kernel.Run.Population
+public import Kernel.Run.Wire
 public import Kernel.State
 public import Kernel.State.Input
 public import Kernel.State.Journal

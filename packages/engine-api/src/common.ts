@@ -4,7 +4,7 @@
  */
 import { createHash } from "node:crypto";
 
-import type { JsonValue } from "@bpmn-lean/temporal-host/host";
+import { canonicalJson, type JsonValue } from "@bpmn-lean/temporal-host/host";
 
 export type { JsonValue };
 
@@ -105,22 +105,6 @@ export function snapshotProfile(profile: EngineProfile): EngineProfile {
 
 export function overlayIdentity(selection: EngineSourceOverlaySelection | null): EngineSourceOverlayIdentity | null {
   return selection === null ? null : { id: selection.id, sha256: selection.sha256 };
-}
-
-/** The value with every object's keys in code-unit order, so `JSON.stringify` no longer depends on construction order. */
-function sortedKeys(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(sortedKeys);
-  if (value !== null && typeof value === "object") {
-    return Object.fromEntries(Object.entries(value)
-      .sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0))
-      .map(([key, entry]) => [key, sortedKeys(entry)]));
-  }
-  return value;
-}
-
-/** JSON in which equal content has equal bytes whatever the construction order. */
-export function canonicalJson(value: unknown): string {
-  return JSON.stringify(sortedKeys(value));
 }
 
 export function sha256Hex(text: string | Uint8Array): string {

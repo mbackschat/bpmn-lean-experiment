@@ -21,6 +21,7 @@ export {
   type ProcessResult,
   type RunProcessArgs,
 } from "./host-contract.js";
+export { canonicalJson } from "./correlation.js";
 export { createHostClientRuntime, type HostClientOptions, type HostClientRuntime } from "./host-runtime.js";
 export type { HostView, JsonValue, OccurrenceId, Requirements, WaitView } from "./port.js";
 export type { ProcessDescription, ProcessHost, StartRequest } from "./process-port.js";
