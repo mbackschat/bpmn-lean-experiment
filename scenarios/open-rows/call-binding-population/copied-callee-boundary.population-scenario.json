@@ -1,0 +1,65 @@
+{
+  "kind": "populationScenario",
+  "id": "call-binding-population-copied-callee-boundary",
+  "profile": "bpmn-2.0.2",
+  "definitions": [
+    {
+      "definitionRef": "call-binding-population-assessment",
+      "bpmn": {
+        "id": "call-binding-population-assessment",
+        "relativePath": "scenarios/open-rows/call-binding-population/assessment.bpmn",
+        "sha256": "2a1cd5d14b21c28d5eb4c33dfc0bfaece47e861cf77357490489086f66df181c",
+        "sourceOverlay": null
+      }
+    },
+    {
+      "definitionRef": "call-binding-population-intake",
+      "bpmn": {
+        "id": "call-binding-population-intake",
+        "relativePath": "scenarios/open-rows/call-binding-population/intake.bpmn",
+        "sha256": "c4291056e80dfa623289dff077f6e8c9f739b0d882c539df9861e948a915c4ad",
+        "sourceOverlay": null
+      }
+    }
+  ],
+  "steps": [
+    {
+      "kind": "deploy",
+      "definitionRef": "call-binding-population-assessment",
+      "at": 0
+    },
+    {
+      "kind": "deploy",
+      "definitionRef": "call-binding-population-intake",
+      "at": 10
+    },
+    {
+      "kind": "instance",
+      "definitionRef": "call-binding-population-intake",
+      "instanceId": "ClaimIntake_1",
+      "at": 20,
+      "stimulus": {
+        "kind": "start",
+        "commandId": "start-claim-intake-1",
+        "instanceId": "ClaimIntake_1",
+        "variables": []
+      }
+    },
+    {
+      "kind": "instance",
+      "definitionRef": "call-binding-population-intake",
+      "instanceId": "ClaimIntake_1",
+      "at": 3600020,
+      "stimulus": {
+        "kind": "timerFire",
+        "commandId": "fire-review-overdue",
+        "logicalTimeMs": 3600020,
+        "occurrence": {
+          "processInstanceId": "call:13:ClaimIntake_1:16:Call_AssessClaim:1",
+          "elementId": "ReviewOverdue",
+          "activation": 1
+        }
+      }
+    }
+  ]
+}

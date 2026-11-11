@@ -139,10 +139,15 @@ def flowCondition (evaluator : Evaluator) (site : Site) (flow : Flow) : Option S
   | some (.literal _) => some "flow.condition.foreign"
   | some (.foreign _ _) => some "flow.condition.foreign"
 
-/-- `origin.sourceId` is what publication shows, so a program whose `Header.id` differs would publish another name;
-no program binds an element to a definition until PC-SCOPE-03. -/
-def origin (header : Header) : Option String :=
-  if header.origin.sourceId != header.id.value then some "element.origin.sourceId"
+/-- `origin.sourceId`, and each of the element's boundaries' `sourceId`, is what publication shows, so an identifier is
+the one its author wrote, or, in a copy of another deployment's process, exactly `<sourceId>@<deploymentId>` with that
+copy's deploy ordinal, as `bpmn-source`'s assembly renames it (PC-SCOPE-03). No element's origin binds a definition. -/
+def origin (program : Program) (header : Header) : Option String :=
+  let copied := ((program.processOf header).bind (·.definition.deployment)).filter (some · != program.identity.deployment)
+  let shown (id source : String) : Bool := id == source || copied.any fun deployment => id == s!"{source}@{deployment}"
+  let boundaries := (((program.element? header.id).bind (·.envelope?)).map (·.boundaries)).getD []
+  if !shown header.id.value header.origin.sourceId || boundaries.any (fun boundary => !shown boundary.id.value boundary.sourceId)
+  then some "element.origin.sourceId"
   else if header.origin.definition.isSome then some "element.origin.definition"
   else none
 

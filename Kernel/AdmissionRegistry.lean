@@ -170,7 +170,7 @@ def signalDeclarations (program : Program) : Option String :=
 /-- `throws` lists the program's Compensation throws. -/
 def element (program : Program) (throws : List Element) : Element → Option String
   | .activity header payload =>
-    Admission.Data.origin header <|> envelopeData program header payload.envelope <|>
+    Admission.Data.origin program header <|> envelopeData program header payload.envelope <|>
       (payload.work.call?.bind fun work =>
         Admission.Data.mappings program.options.evaluator (site program (some header.id)) work.inputs <|>
           Admission.Data.mappings program.options.evaluator (site program (some header.id)) work.outputs) <|>
@@ -185,7 +185,7 @@ def element (program : Program) (throws : List Element) : Element → Option Str
       boundaryData program header payload.envelope.boundaries <|>
       Admission.Scopes.nestedCompensation program throws header payload.envelope
   | .scope header payload =>
-    Admission.Data.origin header <|> envelopeData program header payload.envelope <|>
+    Admission.Data.origin program header <|> envelopeData program header payload.envelope <|>
       Admission.Scopes.scope program header payload <|>
       -- A Sub-Process instance submits no output data item, so `submits` is false (PC-MI-10).
       payload.envelope.multiInstance.bind
@@ -199,7 +199,7 @@ def element (program : Program) (throws : List Element) : Element → Option Str
       boundaryData program header payload.envelope.boundaries <|>
       Admission.Scopes.nestedCompensation program throws header payload.envelope
   | .event header payload =>
-    Admission.Data.origin header <|>
+    Admission.Data.origin program header <|>
       match payload.role with
       | .catch subscription =>
         Admission.Subscriptions.catchEvent program.options (subscriptionReading program (some header.id)) subscription <|>
@@ -211,9 +211,9 @@ def element (program : Program) (throws : List Element) : Element → Option Str
       | .linkCatch _ => Admission.Flow.link program header payload
       | .linkThrow _ => Admission.Flow.link program header payload
   | .gateway header payload =>
-    Admission.Data.origin header <|> Admission.Flow.gateway program payload
+    Admission.Data.origin program header <|> Admission.Flow.gateway program payload
   | .start header payload =>
-    Admission.Data.origin header <|> Admission.Flow.startCombination program header <|>
+    Admission.Data.origin program header <|> Admission.Flow.startCombination program header <|>
       payload.subscription.bind fun subscription =>
         Admission.Subscriptions.start program.options (subscriptionReading program (some header.id)) header.parent.isSome subscription <|>
           subscriptionData program (some header.id) subscription
@@ -244,13 +244,10 @@ def flow (program : Program) (entry : Flow) : Option String :=
   Admission.Data.flowCondition program.options.evaluator here entry <|> Admission.Flow.conditionalOutflow program entry <|>
     Admission.Flow.concurrentWrite program entry
 
-/-- A called process is bound at assembly to the one definition the program carries, so its definition names no
-binding of its own (PC-SCOPE-03). -/
+/-- A called process's deployment, version and version tag are the population's stamps, which `Population.deploy`
+validates against its registry (PC-SCOPE-03); the population has one tenant, so a tenant stays refused. -/
 def calledProcessBinding (process : CalledProcess) : Option String :=
-  let definition := process.definition
-  if definition.version.isSome || definition.versionTag.isSome || definition.deployment.isSome ||
-      definition.tenant.isSome then some "process.definition.binding"
-  else none
+  if process.definition.tenant.isSome then some "process.definition.binding" else none
 
 /-- A process not marked executable (BPMN 2.0.2 Table 10.1 `isExecutable`) has no execution meaning; pinned
 `BpmnParse:560-574` deploys none (CIB-LIM-0008) (PC-BASIC-04). -/

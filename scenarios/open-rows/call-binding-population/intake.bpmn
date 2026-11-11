@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:assessment="urn:bpmn-lean:scenarios:call-binding-population:assessment" id="Definitions_Intake" targetNamespace="urn:bpmn-lean:scenarios:call-binding-population:intake">
+  <bpmn:process id="ClaimIntake" name="Take in a claim" isExecutable="true">
+    <bpmn:startEvent id="ClaimReceived" name="Claim received" />
+    <bpmn:callActivity id="Call_AssessClaim" name="Assess the claim" calledElement="assessment:AssessClaim" />
+    <bpmn:endEvent id="ClaimClosed" name="Claim closed" />
+    <bpmn:sequenceFlow id="Flow_Received_Assess" sourceRef="ClaimReceived" targetRef="Call_AssessClaim" />
+    <bpmn:sequenceFlow id="Flow_Assess_Closed" sourceRef="Call_AssessClaim" targetRef="ClaimClosed" />
+  </bpmn:process>
+</bpmn:definitions>

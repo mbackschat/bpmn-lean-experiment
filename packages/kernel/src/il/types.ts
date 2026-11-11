@@ -831,6 +831,21 @@ export function programSiblings(program: Program, header: Header): readonly Elem
 }
 
 /**
+ * The called process `header`'s element belongs to: the one whose top level holds the element or its outermost
+ * enclosing element; `null` for an element of the root process.
+ */
+export function programProcessOf(program: Program, header: Header): CalledProcess | null {
+  let top = header.id;
+  for (let fuel = program.elements.length; fuel > 0; fuel -= 1) {
+    const element = programElement(program, top);
+    const parent = element === null ? null : elementHeader(element).parent;
+    if (parent === null) break;
+    top = parent;
+  }
+  return program.processes.find((process) => process.children.includes(top)) ?? null;
+}
+
+/**
  * The source element type of an element or boundary, which semantic publication shows. A boundary has no header; BPMN
  * has one element type for it.
  */

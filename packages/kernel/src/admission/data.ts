@@ -7,8 +7,8 @@
  * ([expression semantics](../../../../docs/kernel/semantics/EXPRESSION-SEMANTICS-SPEC.md#admission-at-core)).
  */
 import {
-  Evaluator, ExpressionTag, MappingDialect, assertNever, integerLexeme, multiInstanceCounterNames, type Envelope,
-  type Expression, type Flow, type Header, type Mapping,
+  Evaluator, ExpressionTag, MappingDialect, assertNever, elementEnvelope, integerLexeme, multiInstanceCounterNames,
+  programElement, programProcessOf, type Envelope, type Expression, type Flow, type Header, type Mapping, type Program,
 } from "../il/types.js";
 import {
   JuelBinary, JuelCallTag, JuelNodeTag, juelMethodCounts, type JuelCall, type JuelFunctionNode, type JuelNode,
@@ -226,11 +226,19 @@ export function flowCondition(evaluator: Evaluator, site: Site, flow: Flow): str
 }
 
 /**
- * `origin.sourceId` is what publication shows, so a program whose `Header.id` differs would publish another name; no
- * program binds an element to a definition until PC-SCOPE-03.
+ * `origin.sourceId`, and each of the element's boundaries' `sourceId`, is what publication shows, so an identifier is
+ * the one its author wrote, or, in a copy of another deployment's process, exactly `<sourceId>@<deploymentId>` with that
+ * copy's deploy ordinal, as `bpmn-source`'s assembly renames it (PC-SCOPE-03). No element's origin binds a definition.
  */
-export function origin(header: Header): string | null {
-  if (header.origin.sourceId !== header.id) return "element.origin.sourceId";
+export function origin(program: Program, header: Header): string | null {
+  const stamped = programProcessOf(program, header)?.definition.deployment ?? null;
+  const copied = stamped !== program.identity.deployment ? stamped : null;
+  const shown = (id: string, source: string): boolean => id === source || (copied !== null && id === `${source}@${String(copied)}`);
+  const element = programElement(program, header.id);
+  const boundaries = (element === null ? null : elementEnvelope(element))?.boundaries ?? [];
+  if (!shown(header.id, header.origin.sourceId) || boundaries.some((boundary) => !shown(boundary.id, boundary.sourceId))) {
+    return "element.origin.sourceId";
+  }
   if (header.origin.definition !== null) return "element.origin.definition";
   return null;
 }

@@ -299,7 +299,7 @@ function element(program: Program, throws: readonly Element[], entry: Element): 
       const call = workCall(payload.work);
       const loop = payload.envelope.multiInstance;
       return first(
-        () => Data.origin(header),
+        () => Data.origin(program, header),
         () => envelopeData(program, header, payload.envelope),
         () => (call === null
           ? null
@@ -320,7 +320,7 @@ function element(program: Program, throws: readonly Element[], entry: Element): 
       const payload = entry.payload;
       const subProcess = Scopes.eventSubProcessOf(payload);
       return first(
-        () => Data.origin(header),
+        () => Data.origin(program, header),
         () => envelopeData(program, header, payload.envelope),
         () => Scopes.scope(program, header, payload),
         // A Sub-Process instance submits no output data item, so `submits` is false (PC-MI-10).
@@ -338,13 +338,13 @@ function element(program: Program, throws: readonly Element[], entry: Element): 
       );
     }
     case ElementTag.Event:
-      return Data.origin(header) ?? eventRole(program, header, entry.payload);
+      return Data.origin(program, header) ?? eventRole(program, header, entry.payload);
     case ElementTag.Gateway:
-      return Data.origin(header) ?? FlowAdmission.gateway(program, entry.payload);
+      return Data.origin(program, header) ?? FlowAdmission.gateway(program, entry.payload);
     case ElementTag.Start: {
       const subscription = entry.payload.subscription;
       return first(
-        () => Data.origin(header),
+        () => Data.origin(program, header),
         () => FlowAdmission.startCombination(program, header),
         () => (subscription === null
           ? null
@@ -398,14 +398,11 @@ function flow(program: Program, entry: Flow): string | null {
 }
 
 /**
- * A called process is bound at assembly to the one definition the program carries, so its definition names no binding
- * of its own (PC-SCOPE-03).
+ * A called process's deployment, version and version tag are the population's stamps, which `Population.deploy`
+ * validates against its registry (PC-SCOPE-03); the population has one tenant, so a tenant stays refused.
  */
 function calledProcessBinding(process: CalledProcess): string | null {
-  const definition = process.definition;
-  const bound = definition.version !== null || definition.versionTag !== null || definition.deployment !== null ||
-    definition.tenant !== null;
-  return bound ? "process.definition.binding" : null;
+  return process.definition.tenant !== null ? "process.definition.binding" : null;
 }
 
 /**

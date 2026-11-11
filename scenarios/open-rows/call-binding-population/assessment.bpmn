@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="Definitions_Assessment" targetNamespace="urn:bpmn-lean:scenarios:call-binding-population:assessment">
+  <bpmn:process id="AssessClaim" name="Assess a claim" isExecutable="true">
+    <bpmn:startEvent id="AssessmentRequested" name="Assessment requested" />
+    <bpmn:userTask id="ReviewClaim" name="Review the claim" />
+    <bpmn:boundaryEvent id="ReviewOverdue" name="Review overdue" attachedToRef="ReviewClaim">
+      <bpmn:timerEventDefinition id="TimerDefinition_ReviewOverdue">
+        <bpmn:timeDuration>PT1H</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:endEvent id="AssessmentDone" name="Assessment done" />
+    <bpmn:endEvent id="AssessmentEscalated" name="Assessment escalated" />
+    <bpmn:sequenceFlow id="Flow_Requested_Review" sourceRef="AssessmentRequested" targetRef="ReviewClaim" />
+    <bpmn:sequenceFlow id="Flow_Review_Done" sourceRef="ReviewClaim" targetRef="AssessmentDone" />
+    <bpmn:sequenceFlow id="Flow_Overdue_Escalated" sourceRef="ReviewOverdue" targetRef="AssessmentEscalated" />
+  </bpmn:process>
+</bpmn:definitions>

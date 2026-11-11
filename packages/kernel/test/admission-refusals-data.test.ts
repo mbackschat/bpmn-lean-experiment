@@ -4,8 +4,8 @@
  * literal, variable or foreign condition on a gateway candidate is refused.
  */
 import {
-  activity, choice, conditionOn, foreign, juel, literalValue, bool, mapping, refusalTests, simpleBoolean, task, userWork, variable,
-  withOptions, withOrigin,
+  activity, append, boundary, callWork, choice, conditionOn, definitionRef, duration, end, flow, foreign, juel, literalValue, bool,
+  mapping, refusalTests, simpleBoolean, start, task, text, userWork, variable, withFlows, withOptions, withOrigin,
 } from "./admission-refusal-support.ts";
 import type { Json, Row } from "./admission-refusal-support.ts";
 
@@ -21,6 +21,23 @@ const one = { integer: { digits: "1" } };
 /** `${a + 1}`, admitted at Core. */
 const admittedJuel = juel(a, one, { binary: { payload: { op: "add", left: 0, right: 1 } } });
 const juelInput = (...nodes: Json[]) => underJuel(userTaskMapping(juel(...nodes)));
+
+/**
+ * `T` calls `Q`, carried as the copy of deployment 2 that assembly renamed with `suffix`: `QS → QT → QE`, where `QT`
+ * hosts a timer boundary `QB` whose source identifier is `boundarySource`.
+ */
+const callsCopy = (suffix: string, boundarySource = "QB") => (program: Json): Json => {
+  const id = (source: string): string => `${source}${suffix}`;
+  const authored = (element: Json, source: string): Json => withOrigin(element, { definition: null, sourceId: source });
+  const late = boundary(id("QB"), duration("PT1M"), { sourceId: boundarySource });
+  const called = task(activity("T", callWork({ calledElement: text("Q") })))(program);
+  return {
+    ...withFlows(append(called, authored(start(id("QS")), "QS"), authored(activity(id("QT"), "manual", { boundaries: [late] }), "QT"),
+      authored(end(id("QE")), "QE")), flow(id("q1"), id("QS"), id("QT")), flow(id("q2"), id("QT"), id("QE")),
+    flow(id("q3"), id("QB"), id("QE"))),
+    processes: [{ definition: definitionRef("Q", { deployment: 2 }), children: [id("QS"), id("QT"), id("QE")], variables: [], executable: true }],
+  };
+};
 
 export const rows: readonly Row[] = [
   {
@@ -165,6 +182,23 @@ export const rows: readonly Row[] = [
     code: "element.origin.sourceId",
     description: "an element whose source identifier differs from its header identifier",
     mutate: task(withOrigin(activity("T", "manual"), { definition: null, sourceId: "Other" })),
+  },
+  {
+    code: "element.origin.sourceId",
+    description: "a copy's element renamed with a deploy ordinal other than its process's",
+    mutate: callsCopy("@3"),
+    control: callsCopy("@2"),
+  },
+  {
+    code: "element.origin.sourceId",
+    description: "a root process element renamed as a copy's would be",
+    mutate: task(withOrigin(activity("T@2", "manual"), { definition: null, sourceId: "T" })),
+  },
+  {
+    code: "element.origin.sourceId",
+    description: "a boundary whose source identifier differs from its identifier renamed by its copy's deployment",
+    mutate: callsCopy("@2", "Other"),
+    control: callsCopy("@2"),
   },
   {
     code: "element.origin.definition",

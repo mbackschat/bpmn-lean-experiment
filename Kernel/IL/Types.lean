@@ -661,6 +661,18 @@ def siblings (program : Program) (header : Header) : List Element :=
   | none, some process => program.processChildren process
   | parent, _ => program.children parent
 
+/-- The called process `header`'s element belongs to: the one whose top level holds the element or its outermost
+enclosing element; `none` for an element of the root process. -/
+def processOf (program : Program) (header : Header) : Option CalledProcess :=
+  let rec outermost : Nat → ElementId → ElementId
+    | 0, id => id
+    | fuel + 1, id =>
+      match (program.element? id).bind (·.header.parent) with
+      | some parent => outermost fuel parent
+      | none => id
+  let top := outermost program.elements.length header.id
+  program.processes.find? (·.children.contains top)
+
 /-- The source element type of an element or boundary, which semantic publication shows. A boundary has no header; BPMN
 has one element type for it. -/
 def sourceType? (program : Program) (id : ElementId) : Option String :=

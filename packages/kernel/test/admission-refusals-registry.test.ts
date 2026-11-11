@@ -47,12 +47,6 @@ export const rows: readonly Row[] = [
   },
   {
     code: "process.definition.binding",
-    description: "a called process bound to a version",
-    mutate: calledProcess({ version: 2 }),
-    control: calledProcess(),
-  },
-  {
-    code: "process.definition.binding",
     description: "a called process bound to a tenant",
     mutate: calledProcess({ tenant: "tenant" }),
     control: calledProcess(),
@@ -82,9 +76,13 @@ refusalTests("registry", rows);
 
 /** A program refused at every level: a profile option, a called-process binding, a flow condition and an element. */
 function refusedEverywhere(): Json {
-  const program = calledProcess({ version: 2 })(conditionOn(task(activity("T", sendWork()))(base()), "f2", foreign()));
+  const program = calledProcess({ tenant: "tenant" })(conditionOn(task(activity("T", sendWork()))(base()), "f2", foreign()));
   return withOptions(program, { messageCorrelation: "apiCriteria" });
 }
+
+test("registry: a called process's population stamps are admitted, since the population validates them", () => {
+  assert.equal(refusalOf(calledProcess({ deployment: 1, version: 2, versionTag: "stable" })(base())), null);
+});
 
 test("registry: profile options are refused before called processes, flows and elements", () => {
   assert.equal(refusalOf(refusedEverywhere()), "profile.messageCorrelation.apiCriteria");
