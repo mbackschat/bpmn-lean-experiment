@@ -4,7 +4,7 @@
 
 Adopted kernel owner document (W0 extraction, 2026-11-09). The kernel modules it cites are the executable authority; where they differ, the difference is a defect of one of them.
 
-`Kernel.Population` ([Lean](../../../Kernel/Population.lean)) owns the mechanisms that span process instances: which instance, definition or start an input reaches. It never changes an instance itself; every input reaches an instance through `Kernel.Step.step`, and a scenario is one ordered list of stimuli mixing instance inputs and population stimuli. It dispatches on no guarded type of its own; it asks `Hooks.correlates` and `Hooks.selectStart` (owned by `Kernel.Feature.Subscriptions`, see [subscriptions](SUBSCRIPTIONS-SEMANTICS-SPEC.md)) for the facts that need one.
+`Kernel.Population` ([Lean](../../../Kernel/Population.lean)) owns the mechanisms that span process instances: which instance, definition or start an input reaches. It never changes an instance itself; every input reaches an instance through `Kernel.Step.step`, and a scenario is one ordered list of stimuli mixing instance inputs and population stimuli. It dispatches on no guarded type of its own; it asks `Hooks.correlates` and `Hooks.startsFired` (owned by `Kernel.Feature.Subscriptions`, see [subscriptions](SUBSCRIPTIONS-SEMANTICS-SPEC.md)) for the facts that need one.
 
 ## Interpretation
 
@@ -21,7 +21,7 @@ Adopted kernel owner document (W0 extraction, 2026-11-09). The kernel modules it
 
 ### Start selection
 
-- A root start input selects the start Event it names if its trigger fires it, else the one start its trigger fires, and for a none trigger the sole none start; any other input selects nothing and is rejected as `no-start-event` ([`Subscriptions.selectStart`](../../../Kernel/Feature/Subscriptions.lean)). How a start trigger is admitted and fires is stated in [subscriptions](SUBSCRIPTIONS-SEMANTICS-SPEC.md#starts).
+- A root start input selects the start Event it names if its trigger fires it, else the one start its trigger fires, and for a none trigger the sole none start; several unnamed are `start-ambiguous`, none `no-start-event` ([`Subscriptions.startsFired`](../../../Kernel/Feature/Subscriptions/Starts.lean)). How a start trigger is admitted and fires is stated in [subscriptions](SUBSCRIPTIONS-SEMANTICS-SPEC.md#starts).
 
 ## CIB relations
 
@@ -52,11 +52,11 @@ Superseded first-profile restrictions: the correlation profile admitted one Coll
 | Row | Decision owed or not yet implemented |
 |---|---|
 | PC-MESSAGE-08 | Approved typed criteria over Process and local values, compound criteria, null and absence (`CorrelationMatch` already separates a present null from absence), concurrent same-definition instances; atomic delivery and payload commit. |
-| PC-MESSAGE-02 | Multiple distinct root Message starts and Message/None mixtures with payload, exact selected-start identity and definition-version resolution; content-bound start recovery. Root start payload is refused today (`start.message.outputs`). |
+| PC-MESSAGE-02 | Multiple distinct root Message starts and Message/None mixtures with payload, exact selected-start identity and definition-version resolution; content-bound start recovery. A root Message start writes its payload by the catch rule; definition and version addressing of a start is not routed yet. |
 | PC-TIMER-04 | Root Timer start schedules for duration, date and cycle bound to an exact definition version and start; no duplicate start after recovery. The engine-published start capability and version-pinned schedule ownership are fixed by the Timer start account ([TSTART scheduling][tstart-schedule]). |
 | PC-SIGNAL-02 | Signal root starts and catches; broadcast creates each eligible start instance. Refused today (`start.signal`, `event.catch.signal`). |
 | PC-SIGNAL-04 | Complete eligible-population broadcast with a defined discovery order, delivery failure and atomicity, content-bound recovery. `State.outbox` carries `BroadcastIntent`s; the population layer has no broadcast yet. |
-| PC-CONDITION-02 | Conditional root start against submitted typed context with a finite result protocol over conditions and versions. Refused today (`start.condition`). |
+| PC-CONDITION-02 | Conditional root start against submitted typed context with a finite result protocol over conditions and versions. A single start input evaluates its named or sole true start under `conditionalStart = submittedContext` (CIB-EXT-0044); the population's evaluation over starts and versions is not routed yet. |
 | PC-SCOPE-03 | Called-definition version binding retained per instance across recovery (`InstanceData.definition`); every binding other than the assembled latest is refused (`work.call.binding`, `process.definition.binding`, `profile.callBindingTime.invocation`). |
 
 ## Sources

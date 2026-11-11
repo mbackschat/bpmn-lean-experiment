@@ -12,6 +12,9 @@ A Condition start stimulus carries the context as its start variables and names 
 | [expedited-order](expedited-order.bpmn) | The Conditional Start *Order flagged* with the condition `${expedite}` and no variable filter, leading to *Ship the order fast*. |
 | [routed-orders](routed-orders.bpmn) | Two Conditional Starts, *Large order* (`${amount >= 1000}` filtered on the variable `amount`) leading to *Review the large order* and *Urgent order* (`${urgent}` filtered on the variable `urgent`) leading to *Rush the urgent order*. |
 | [duplicate-conditions](duplicate-conditions.bpmn) | One process whose two Conditional Starts, *Large online order* and *Large phone order*, carry the one condition `${amount >= 1000}`. |
+| [layout-only-conditions](layout-only-conditions.bpmn) | As duplicate-conditions, the second condition written `${amount>=1000}`. |
+| [lexeme-differing-conditions](lexeme-differing-conditions.bpmn) | As duplicate-conditions, the second condition written `${amount >= 01000}`. |
+| [operator-differing-conditions](operator-differing-conditions.bpmn) | As duplicate-conditions, the second condition written `${amount > 1000}`. |
 
 ## Single-instance schedules
 
@@ -33,6 +36,9 @@ A Condition start stimulus carries the context as its start variables and names 
 | [routed-neither](routed-neither.scenario.json) | routed-orders | `amount` 10 and `urgent` false, naming no start. |
 | [routed-both](routed-both.scenario.json) | routed-orders | `amount` 2500 and `urgent` true, naming no start. |
 | [duplicate-conditions-start](duplicate-conditions-start.scenario.json) | duplicate-conditions | `amount` 2500, naming *Large online order*. |
+| [layout-only-conditions-start](layout-only-conditions-start.scenario.json) | layout-only-conditions | `amount` 2500, naming *Large online order*; kernel-only. |
+| [lexeme-differing-conditions-start](lexeme-differing-conditions-start.scenario.json) | lexeme-differing-conditions | `amount` 2500, naming *Large online order*; kernel-only. |
+| [operator-differing-conditions-start](operator-differing-conditions-start.scenario.json) | operator-differing-conditions | `amount` 2500, naming *Large online order*; kernel-only. |
 
 The population witnesses of this directory are held outside the repository with the M8 track: the CIB runner realizes no population scenario and the kernel's population runner refuses an inadmissible definition, so they have no comparable result yet.
 

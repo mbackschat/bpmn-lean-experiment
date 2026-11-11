@@ -139,7 +139,7 @@ test("a delivered Message payload and a Message Start's payload outside the doma
   // An in-domain payload reaches the subscription, which accepts none here.
   assert.deepEqual(run(catching, startWith(int(1)), deliver(int(1))),
     { ok: false, failure: { tag: "rejected", code: "message-payload-not-accepted" } });
-  const messageStart = wired(replace(base(), "S", start("S", message())));
+  const messageStart = wired({ ...replace(base(), "S", start("S", message(), [mapping("received", variable("payload"))])), variables: ["received"] });
   const startCarrying = (payload: Json): Json =>
     ({ kind: "start", instanceId: "I", variables: [], trigger: { kind: "message", channel: unspecified, payload } });
   assert.deepEqual(run(messageStart, startCarrying(withNodes(257))), outside);

@@ -27,6 +27,12 @@
           "kind": "map",
           "value": [
             {
+              "name": "customsNote",
+              "value": {
+                "kind": "null"
+              }
+            },
+            {
               "name": "manifest",
               "value": {
                 "kind": "string",
@@ -38,12 +44,6 @@
               "value": {
                 "kind": "integer",
                 "value": 3
-              }
-            },
-            {
-              "name": "customsNote",
-              "value": {
-                "kind": "null"
               }
             }
           ]

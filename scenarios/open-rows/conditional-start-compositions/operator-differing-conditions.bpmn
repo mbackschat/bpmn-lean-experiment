@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_OperatorDifferingConditions" targetNamespace="urn:bpmn-lean:scenarios:conditional-start-compositions:operator-differing-conditions">
+  <process id="Process_OperatorDifferingConditions" name="Review a large order from two start events whose conditions differ in their operator" isExecutable="true">
+    <startEvent id="StartLargeOrderOnline" name="Large online order">
+      <conditionalEventDefinition id="StartLargeOrderOnline_Condition">
+        <condition xsi:type="tFormalExpression">${amount >= 1000}</condition>
+      </conditionalEventDefinition>
+    </startEvent>
+    <startEvent id="StartLargeOrderByPhone" name="Large phone order">
+      <conditionalEventDefinition id="StartLargeOrderByPhone_Condition">
+        <condition xsi:type="tFormalExpression">${amount > 1000}</condition>
+      </conditionalEventDefinition>
+    </startEvent>
+    <userTask id="ReviewOnlineOrder" name="Review the online order" />
+    <userTask id="ReviewPhoneOrder" name="Review the phone order" />
+    <endEvent id="OnlineOrderReviewed" name="Online order reviewed" />
+    <endEvent id="PhoneOrderReviewed" name="Phone order reviewed" />
+    <sequenceFlow id="Flow_OnlineStarted" sourceRef="StartLargeOrderOnline" targetRef="ReviewOnlineOrder" />
+    <sequenceFlow id="Flow_PhoneStarted" sourceRef="StartLargeOrderByPhone" targetRef="ReviewPhoneOrder" />
+    <sequenceFlow id="Flow_OnlineReviewed" sourceRef="ReviewOnlineOrder" targetRef="OnlineOrderReviewed" />
+    <sequenceFlow id="Flow_PhoneReviewed" sourceRef="ReviewPhoneOrder" targetRef="PhoneOrderReviewed" />
+  </process>
+</definitions>

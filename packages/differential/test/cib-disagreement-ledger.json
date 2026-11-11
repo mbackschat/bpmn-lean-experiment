@@ -629,60 +629,6 @@
     ]
   },
   {
-    "evidence": "scenarios/open-rows/conditional-start-compositions/expedited-order-absent.cibseven-evidence.json",
-    "owners": [
-      "PC-CONDITION-02"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/conditional-start-compositions/expedited-order-false.cibseven-evidence.json",
-    "owners": [
-      "PC-CONDITION-02"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/conditional-start-compositions/expedited-order-null.cibseven-evidence.json",
-    "owners": [
-      "PC-CONDITION-02"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/conditional-start-compositions/expedited-order-true.cibseven-evidence.json",
-    "owners": [
-      "PC-CONDITION-02"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/conditional-start-compositions/large-order-absent.cibseven-evidence.json",
-    "owners": [
-      "PC-CONDITION-02"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/conditional-start-compositions/large-order-below-threshold.cibseven-evidence.json",
-    "owners": [
-      "PC-CONDITION-02"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/conditional-start-compositions/large-order-decimal-true.cibseven-evidence.json",
-    "owners": [
-      "PC-CONDITION-02"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/conditional-start-compositions/large-order-integer-true.cibseven-evidence.json",
-    "owners": [
-      "PC-CONDITION-02"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/conditional-start-compositions/large-order-text-true.cibseven-evidence.json",
-    "owners": [
-      "PC-CONDITION-02"
-    ]
-  },
-  {
     "evidence": "scenarios/open-rows/cycle-compositions/automatic-loop-beyond-bound.cibseven-evidence.json",
     "owners": [
       "CIB-LIM-0016"
@@ -1132,7 +1078,7 @@
   {
     "evidence": "scenarios/open-rows/message-start-compositions/shipment-payload-absent.cibseven-evidence.json",
     "owners": [
-      "PC-MESSAGE-02"
+      "CIB-LIM-0013"
     ]
   },
   {

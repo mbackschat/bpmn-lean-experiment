@@ -363,7 +363,7 @@ function executable(program: Program): string | null {
 /**
  * The first refusal: references, profile options, a process not marked executable, the carried DMN resources, then
  * called-process bindings, the process levels' Event Sub-Processes, flows and elements in program order, the instances
- * of each loop, then the Message names of the whole program.
+ * of each loop, the Conditional starts of each process level, then the Message names of the whole program.
  */
 export function admit(program: Program): string | null {
   const throws = program.elements.filter(compensationThrow);
@@ -378,6 +378,7 @@ export function admit(program: Program): string | null {
     () => firstOf(program.flows, (entry) => flow(program, entry)),
     () => firstOf(program.elements, (entry) => element(program, throws, entry)),
     () => firstOf(program.elements, (entry) => loopInstances(program, entry)),
+    () => Starts.startConditions(program),
     () => Subscriptions.messageNames(program.options, program.elements.flatMap((entry) => messageSites(program, entry))),
   );
 }

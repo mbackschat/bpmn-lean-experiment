@@ -25,6 +25,7 @@ The [profile artifact](profile.json) is the CIB Seven 2.2.0 compatibility profil
 | `inclusiveJoinReach` | `outgoingOnly` | `CIB-INT-0020` |
 | `branchSchedule` | `declarationDepthFirst` | `CIB-OP-0016` |
 | `conditionalRetrigger` | `eachWrite` | `CIB-EXT-0035` |
+| `conditionalStart` | `submittedContext` | `CIB-EXT-0044` |
 | `malformedTimer` | `rollsBackArming` | `CIB-EXT-0036` |
 | `messageNames` | `addresses` | `CIB-LIM-0022` |
 | `scopeStart` | `required` | `CIB-LIM-0024` |

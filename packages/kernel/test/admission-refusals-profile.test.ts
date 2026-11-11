@@ -101,12 +101,6 @@ export const rows: readonly Row[] = [
     control: option({ signalDelivery: "broadcastOnly" }),
   },
   {
-    code: "profile.conditionalStart.submittedContext",
-    description: "a conditional start evaluated in a submitted context",
-    mutate: option({ conditionalStart: "submittedContext" }),
-    control: option({ conditionalStart: "refused" }),
-  },
-  {
     code: "profile.calledElementResolution.cibKey",
     description: "a called element resolved as CIB's key text",
     mutate: option({ calledElementResolution: "cibKey" }),

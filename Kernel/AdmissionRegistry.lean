@@ -223,7 +223,7 @@ def executable (program : Program) : Option String :=
 
 /-- The first refusal: references, profile options, a process not marked executable, the carried DMN resources, then
 called-process bindings, the process levels' Event Sub-Processes, flows and elements in program order, the instances of
-each loop, then the Message names of the whole program. -/
+each loop, the Conditional starts of each process level, then the Message names of the whole program. -/
 def admit (program : Program) : Option String :=
   Admission.Flow.references program <|> Admission.Scopes.membership program <|>
     Admission.Profile.options (abnormalScope program) (loops program) program.options <|>
@@ -234,6 +234,7 @@ def admit (program : Program) : Option String :=
     program.flows.findSome? (flow program) <|>
     program.elements.findSome? (element program (program.elements.filter compensationThrow)) <|>
     program.elements.findSome? (loopInstances program) <|>
+    Admission.Subscriptions.startConditions program <|>
     Admission.Subscriptions.messageNames program.options (program.elements.flatMap (messageSites program))
 
 end Kernel.AdmissionRegistry

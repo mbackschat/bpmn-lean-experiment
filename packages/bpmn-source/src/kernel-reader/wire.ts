@@ -140,7 +140,7 @@ export function kernelProfileOptions(relations: readonly string[]): KernelProfil
     signalNames: "identifier",
     signalPayload: "none",
     signalDelivery: "broadcastOnly",
-    conditionalStart: "refused",
+    conditionalStart: selects("CIB-EXT-0044") ? "submittedContext" : "refused",
     calledElementResolution: "qualifiedName",
     messageThrowForms: "refused",
   };

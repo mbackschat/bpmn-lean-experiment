@@ -53,7 +53,7 @@ function homeScope(state: State, item: OpenItem): ScopeOccurrenceId {
  * `UelExpressionCondition.tryEvaluate` swallows `PropertyNotFoundException` (`:57-67`); a non-Boolean result, `null`
  * included (`:51`), and any other failure roll the input back.
  */
-function predicateHolds(ctx: Ctx, state: State, scope: ScopeOccurrenceId, condition: Expression): Result<boolean> {
+export function predicateHolds(ctx: Ctx, state: State, scope: ScopeOccurrenceId, condition: Expression): Result<boolean> {
   const evaluation = ctx.evaluate(evalContext(state, scope), condition);
   switch (evaluation.tag) {
     case EvaluationTag.Value:

@@ -13,7 +13,6 @@ import {
   CalledElementResolution,
   CompensationHandlerFailureTag,
   CompensationOrder,
-  ConditionalStart,
   DeliveryVariables,
   Evaluator,
   MessageCorrelation,
@@ -66,7 +65,6 @@ export function options(abnormalScope: boolean, loops: boolean, selected: Profil
   if (selected.signalNames === SignalNames.Addresses) return "profile.signalNames.addresses";
   if (selected.signalPayload === SignalPayload.Variables) return "profile.signalPayload.variables";
   if (selected.signalDelivery === SignalDelivery.OccurrenceTargeted) return "profile.signalDelivery.occurrenceTargeted";
-  if (selected.conditionalStart === ConditionalStart.SubmittedContext) return "profile.conditionalStart.submittedContext";
   if (selected.calledElementResolution === CalledElementResolution.CibKey) return "profile.calledElementResolution.cibKey";
   return selected.messageThrowForms === MessageThrowForms.CibForms ? "profile.messageThrowForms.cibForms" : null;
 }

@@ -394,15 +394,8 @@ export const rows: readonly Row[] = [
     mutate: catching(conditionWith({ condition: foreign() })),
     control: catching(condition()),
   },
-  // Triggered starts.
-  {
-    code: "start.message.outputs",
-    description: "a process Message start with an output mapping",
-    mutate: starting(named, output),
-    control: nested(named, output),
-  },
+  // Triggered starts; a root start's own refusals are `admission-refusals-starts.test.ts`'.
   { code: "start.signal", description: "a Signal start", mutate: starting(signal()) },
-  { code: "start.condition", description: "a Conditional start", mutate: starting(condition()) },
   {
     code: "start.error",
     description: "a process Error start",
