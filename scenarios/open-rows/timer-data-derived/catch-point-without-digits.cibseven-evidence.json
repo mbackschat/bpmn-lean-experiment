@@ -1,0 +1,216 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "timer-data-derived-catch-point-without-digits",
+    "sha256": "a09e1782347206655786ba75917b2adeb9fe87e1d9de075576a8239f8c56a03b"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "13a1bfc9834c109b22ff684204ea92e32d432bc1bfb62debe4907de0bec7cc27"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "delay",
+            "value": {
+              "kind": "string",
+              "value": "PT1.S"
+            }
+          },
+          {
+            "name": "route",
+            "value": {
+              "kind": "string",
+              "value": "catch"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-complete-Prepare",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "delay",
+            "value": {
+              "kind": "string",
+              "value": "PT1.S"
+            }
+          },
+          {
+            "name": "route",
+            "value": {
+              "kind": "string",
+              "value": "catch"
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "tasks": [
+          {
+            "elementId": "Prepare",
+            "name": "Prepare the deadline inputs"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-complete-Prepare",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s02-complete-Prepare",
+        "jobs": [
+          {
+            "elementId": "Catch_Delay",
+            "dueDateDeltaMs": 1000,
+            "executable": false
+          }
+        ]
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "s01-start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s02-complete-Prepare",
+        "state": "ACTIVE"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "delay",
+            "value": {
+              "kind": "string",
+              "value": "PT1.S"
+            }
+          },
+          {
+            "name": "route",
+            "value": {
+              "kind": "string",
+              "value": "catch"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Prepare",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Prepare the deadline inputs",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s02-complete-Prepare",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "delay",
+            "value": {
+              "kind": "string",
+              "value": "PT1.S"
+            }
+          },
+          {
+            "name": "route",
+            "value": {
+              "kind": "string",
+              "value": "catch"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Catch_Delay",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 1000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          }
+        ]
+      }
+    ]
+  }
+}

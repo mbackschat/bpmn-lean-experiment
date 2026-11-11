@@ -134,13 +134,8 @@
             "identityLinks": [
               {
                 "type": "candidate",
-                "userId": "bob",
+                "userId": "carol",
                 "groupId": null
-              },
-              {
-                "type": "candidate",
-                "userId": null,
-                "groupId": "triagers"
               },
               {
                 "type": "candidate",
@@ -149,7 +144,12 @@
               },
               {
                 "type": "candidate",
-                "userId": "carol",
+                "userId": null,
+                "groupId": "triagers"
+              },
+              {
+                "type": "candidate",
+                "userId": "bob",
                 "groupId": null
               },
               {
@@ -180,23 +180,23 @@
             "identityLinks": [
               {
                 "type": "candidate",
-                "userId": "carol",
-                "groupId": null
-              },
-              {
-                "type": "candidate",
                 "userId": "bob",
                 "groupId": null
               },
               {
                 "type": "candidate",
-                "userId": null,
-                "groupId": "triagers"
+                "userId": "carol",
+                "groupId": null
               },
               {
                 "type": "candidate",
                 "userId": null,
                 "groupId": "leads"
+              },
+              {
+                "type": "candidate",
+                "userId": null,
+                "groupId": "triagers"
               },
               {
                 "type": "assignee",

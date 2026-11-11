@@ -1,0 +1,439 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "message-correlation-criteria-engine-integer-criterion",
+    "sha256": "1ef92ff99e50f04dc7053974d5fe621c3c288e3050c08fe671d60f2999e7366c"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "13a1bfc9834c109b22ff684204ea92e32d432bc1bfb62debe4907de0bec7cc27"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "s02-complete-ReviewItem-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "lastPosition",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-complete-ReviewItem-2",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "lastPosition",
+            "value": {
+              "kind": "integer",
+              "value": 1
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-deliver-last-position",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "lastPosition",
+            "value": {
+              "kind": "integer",
+              "value": 1
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-complete-FulfilOrder-1",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "lastPosition",
+            "value": {
+              "kind": "integer",
+              "value": 1
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "tasks": [
+          {
+            "elementId": "ReviewItem",
+            "name": "Review the item"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-complete-ReviewItem-1",
+        "tasks": [
+          {
+            "elementId": "ReviewItem",
+            "name": "Review the item"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-complete-ReviewItem-2",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "s04-deliver-last-position",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "s05-complete-FulfilOrder-1",
+        "tasks": []
+      }
+    ],
+    "messageSubscriptions": [
+      {
+        "afterCommandId": "s01-start",
+        "subscriptions": []
+      },
+      {
+        "afterCommandId": "s02-complete-ReviewItem-1",
+        "subscriptions": []
+      },
+      {
+        "afterCommandId": "s03-complete-ReviewItem-2",
+        "subscriptions": [
+          {
+            "elementId": "AwaitConfirmation",
+            "eventName": "order-confirmed",
+            "messageId": "Message_OrderConfirmed",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-deliver-last-position",
+        "subscriptions": [
+          {
+            "elementId": "AwaitConfirmation",
+            "eventName": "order-confirmed",
+            "messageId": "Message_OrderConfirmed",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s05-complete-FulfilOrder-1",
+        "subscriptions": [
+          {
+            "elementId": "AwaitConfirmation",
+            "eventName": "order-confirmed",
+            "messageId": "Message_OrderConfirmed",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s02-complete-ReviewItem-1",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s03-complete-ReviewItem-2",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s04-deliver-last-position",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s05-complete-FulfilOrder-1",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "s01-start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s02-complete-ReviewItem-1",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s03-complete-ReviewItem-2",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s04-deliver-last-position",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s05-complete-FulfilOrder-1",
+        "state": "ACTIVE"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "rejected"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ReviewItem",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review the item",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "position",
+                  "value": {
+                    "kind": "integer",
+                    "value": 0
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s02-complete-ReviewItem-1",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "lastPosition",
+            "value": {
+              "kind": "integer",
+              "value": 0
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "ReviewItem",
+              "activation": 2
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review the item",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "position",
+                  "value": {
+                    "kind": "integer",
+                    "value": 1
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s03-complete-ReviewItem-2",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "lastPosition",
+            "value": {
+              "kind": "integer",
+              "value": 1
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "AwaitConfirmation",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_OrderConfirmed"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s04-deliver-last-position",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "lastPosition",
+            "value": {
+              "kind": "integer",
+              "value": 1
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "AwaitConfirmation",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_OrderConfirmed"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s05-complete-FulfilOrder-1",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "lastPosition",
+            "value": {
+              "kind": "integer",
+              "value": 1
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "AwaitConfirmation",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_OrderConfirmed"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          }
+        ]
+      }
+    ]
+  }
+}

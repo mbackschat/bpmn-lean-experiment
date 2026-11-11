@@ -1,0 +1,704 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "juel-core-forms-operator-forms",
+    "sha256": "e27613bf5d094bbed873e9f1cd88bbd16adcbbdc1796662dc962b0e8bf4fac5b"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "13a1bfc9834c109b22ff684204ea92e32d432bc1bfb62debe4907de0bec7cc27"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "flag",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          },
+          {
+            "name": "flags",
+            "value": {
+              "kind": "list",
+              "value": [
+                {
+                  "kind": "boolean",
+                  "value": true
+                },
+                {
+                  "kind": "boolean",
+                  "value": false
+                }
+              ]
+            }
+          },
+          {
+            "name": "mixed",
+            "value": {
+              "kind": "list",
+              "value": [
+                {
+                  "kind": "null"
+                },
+                {
+                  "kind": "string",
+                  "value": "x"
+                },
+                {
+                  "kind": "boolean",
+                  "value": true
+                }
+              ]
+            }
+          },
+          {
+            "name": "n",
+            "value": {
+              "kind": "integer",
+              "value": 3
+            }
+          },
+          {
+            "name": "names",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b",
+                "c"
+              ]
+            }
+          },
+          {
+            "name": "nothing",
+            "value": {
+              "kind": "null"
+            }
+          },
+          {
+            "name": "off",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "pairs",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "a",
+                  "value": {
+                    "kind": "string",
+                    "value": "x"
+                  }
+                },
+                {
+                  "name": "b",
+                  "value": {
+                    "kind": "boolean",
+                    "value": true
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "pairsOtherKey",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "a",
+                  "value": {
+                    "kind": "string",
+                    "value": "x"
+                  }
+                },
+                {
+                  "name": "c",
+                  "value": {
+                    "kind": "boolean",
+                    "value": true
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "pairsSame",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "a",
+                  "value": {
+                    "kind": "string",
+                    "value": "x"
+                  }
+                },
+                {
+                  "name": "b",
+                  "value": {
+                    "kind": "boolean",
+                    "value": true
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "pairsShorter",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "a",
+                  "value": {
+                    "kind": "string",
+                    "value": "x"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "price",
+            "value": {
+              "kind": "decimal",
+              "coefficient": "15",
+              "scale": 1
+            }
+          },
+          {
+            "name": "prices",
+            "value": {
+              "kind": "list",
+              "value": [
+                {
+                  "kind": "decimal",
+                  "coefficient": "15",
+                  "scale": 1
+                },
+                {
+                  "kind": "decimal",
+                  "coefficient": "25",
+                  "scale": 2
+                }
+              ]
+            }
+          },
+          {
+            "name": "same",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b",
+                "c"
+              ]
+            }
+          },
+          {
+            "name": "shorter",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b"
+              ]
+            }
+          },
+          {
+            "name": "word",
+            "value": {
+              "kind": "string",
+              "value": "abcabc"
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start",
+        "tasks": [
+          {
+            "elementId": "UserTask_Observe",
+            "name": "Observe the evaluated inputs"
+          }
+        ]
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start",
+        "state": "ACTIVE"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Run_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "flag",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          },
+          {
+            "name": "flags",
+            "value": {
+              "kind": "list",
+              "value": [
+                {
+                  "kind": "boolean",
+                  "value": true
+                },
+                {
+                  "kind": "boolean",
+                  "value": false
+                }
+              ]
+            }
+          },
+          {
+            "name": "mixed",
+            "value": {
+              "kind": "list",
+              "value": [
+                {
+                  "kind": "null"
+                },
+                {
+                  "kind": "string",
+                  "value": "x"
+                },
+                {
+                  "kind": "boolean",
+                  "value": true
+                }
+              ]
+            }
+          },
+          {
+            "name": "n",
+            "value": {
+              "kind": "integer",
+              "value": 3
+            }
+          },
+          {
+            "name": "names",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b",
+                "c"
+              ]
+            }
+          },
+          {
+            "name": "nothing",
+            "value": {
+              "kind": "null"
+            }
+          },
+          {
+            "name": "off",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "pairs",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "a",
+                  "value": {
+                    "kind": "string",
+                    "value": "x"
+                  }
+                },
+                {
+                  "name": "b",
+                  "value": {
+                    "kind": "boolean",
+                    "value": true
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "pairsOtherKey",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "a",
+                  "value": {
+                    "kind": "string",
+                    "value": "x"
+                  }
+                },
+                {
+                  "name": "c",
+                  "value": {
+                    "kind": "boolean",
+                    "value": true
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "pairsSame",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "a",
+                  "value": {
+                    "kind": "string",
+                    "value": "x"
+                  }
+                },
+                {
+                  "name": "b",
+                  "value": {
+                    "kind": "boolean",
+                    "value": true
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "pairsShorter",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "a",
+                  "value": {
+                    "kind": "string",
+                    "value": "x"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "price",
+            "value": {
+              "kind": "decimal",
+              "coefficient": "15",
+              "scale": 1
+            }
+          },
+          {
+            "name": "prices",
+            "value": {
+              "kind": "list",
+              "value": [
+                {
+                  "kind": "decimal",
+                  "coefficient": "15",
+                  "scale": 1
+                },
+                {
+                  "kind": "decimal",
+                  "coefficient": "25",
+                  "scale": 2
+                }
+              ]
+            }
+          },
+          {
+            "name": "same",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b",
+                "c"
+              ]
+            }
+          },
+          {
+            "name": "shorter",
+            "value": {
+              "kind": "stringList",
+              "value": [
+                "a",
+                "b"
+              ]
+            }
+          },
+          {
+            "name": "word",
+            "value": {
+              "kind": "string",
+              "value": "abcabc"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Run_1",
+              "elementId": "UserTask_Observe",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Observe the evaluated inputs",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "booleanGreater",
+                  "value": {
+                    "kind": "boolean",
+                    "value": true
+                  }
+                },
+                {
+                  "name": "booleanLess",
+                  "value": {
+                    "kind": "boolean",
+                    "value": true
+                  }
+                },
+                {
+                  "name": "listContainsBoolean",
+                  "value": {
+                    "kind": "boolean",
+                    "value": true
+                  }
+                },
+                {
+                  "name": "listContainsDecimal",
+                  "value": {
+                    "kind": "boolean",
+                    "value": true
+                  }
+                },
+                {
+                  "name": "listContainsNull",
+                  "value": {
+                    "kind": "boolean",
+                    "value": true
+                  }
+                },
+                {
+                  "name": "listEqualsSame",
+                  "value": {
+                    "kind": "boolean",
+                    "value": true
+                  }
+                },
+                {
+                  "name": "listEqualsShorter",
+                  "value": {
+                    "kind": "boolean",
+                    "value": false
+                  }
+                },
+                {
+                  "name": "listIndexOfAbsent",
+                  "value": {
+                    "kind": "boolean",
+                    "value": true
+                  }
+                },
+                {
+                  "name": "listIndexOfPresent",
+                  "value": {
+                    "kind": "integer",
+                    "value": 2
+                  }
+                },
+                {
+                  "name": "listLastIndexOf",
+                  "value": {
+                    "kind": "integer",
+                    "value": 0
+                  }
+                },
+                {
+                  "name": "mapContainsBoolean",
+                  "value": {
+                    "kind": "boolean",
+                    "value": true
+                  }
+                },
+                {
+                  "name": "mapEqualsOtherKey",
+                  "value": {
+                    "kind": "boolean",
+                    "value": false
+                  }
+                },
+                {
+                  "name": "mapEqualsSame",
+                  "value": {
+                    "kind": "boolean",
+                    "value": true
+                  }
+                },
+                {
+                  "name": "mapEqualsShorter",
+                  "value": {
+                    "kind": "boolean",
+                    "value": false
+                  }
+                },
+                {
+                  "name": "negatedDecimal",
+                  "value": {
+                    "kind": "boolean",
+                    "value": true
+                  }
+                },
+                {
+                  "name": "negatedIntegerResult",
+                  "value": {
+                    "kind": "boolean",
+                    "value": true
+                  }
+                },
+                {
+                  "name": "negatedLongSum",
+                  "value": {
+                    "kind": "boolean",
+                    "value": true
+                  }
+                },
+                {
+                  "name": "negatedNull",
+                  "value": {
+                    "kind": "boolean",
+                    "value": true
+                  }
+                },
+                {
+                  "name": "negatedText",
+                  "value": {
+                    "kind": "boolean",
+                    "value": true
+                  }
+                },
+                {
+                  "name": "negatedVariable",
+                  "value": {
+                    "kind": "boolean",
+                    "value": true
+                  }
+                },
+                {
+                  "name": "nullAsRemainderOperands",
+                  "value": {
+                    "kind": "integer",
+                    "value": 0
+                  }
+                },
+                {
+                  "name": "nullIndex",
+                  "value": {
+                    "kind": "null"
+                  }
+                },
+                {
+                  "name": "stringGreater",
+                  "value": {
+                    "kind": "boolean",
+                    "value": true
+                  }
+                },
+                {
+                  "name": "stringGreaterOrEqual",
+                  "value": {
+                    "kind": "boolean",
+                    "value": true
+                  }
+                },
+                {
+                  "name": "stringLessOrEqual",
+                  "value": {
+                    "kind": "boolean",
+                    "value": true
+                  }
+                },
+                {
+                  "name": "textLastIndexOf",
+                  "value": {
+                    "kind": "integer",
+                    "value": 4
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      }
+    ]
+  }
+}

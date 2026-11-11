@@ -1,0 +1,148 @@
+{
+  "kind": "cibSevenPopulationEvidence",
+  "scenario": {
+    "id": "message-start-population-start-only-with-criteria",
+    "sha256": "a3852501fd86f59f4143c60cce9eb2aae48935e08d12a1a15cb2e83fdf32c22e"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "13a1bfc9834c109b22ff684204ea92e32d432bc1bfb62debe4907de0bec7cc27"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "projection": {
+    "id": "cib-population-result"
+  },
+  "result": {
+    "deployments": [
+      {
+        "deploymentId": 1,
+        "definitionRef": "confirmation-intake",
+        "versions": [
+          {
+            "key": "Process_ConfirmationIntake",
+            "version": 1
+          }
+        ],
+        "outcome": {
+          "kind": "deployed"
+        }
+      }
+    ],
+    "steps": [
+      {
+        "commandId": "s01-publish-start-only-by-order",
+        "ordinal": 1,
+        "at": 0,
+        "outcome": "rejected"
+      },
+      {
+        "commandId": "s02-publish-start-only-by-business-key",
+        "ordinal": 2,
+        "at": 10,
+        "outcome": "committed",
+        "resolution": {
+          "kind": "fanOut",
+          "entries": [
+            {
+              "kind": "started",
+              "instanceId": "start:38:s02-publish-start-only-by-business-key:1:1:17:StartConfirmation",
+              "deploymentId": 1,
+              "version": 1,
+              "startEvent": "StartConfirmation"
+            }
+          ]
+        }
+      },
+      {
+        "commandId": "s03-publish-start-only-bare",
+        "ordinal": 3,
+        "at": 20,
+        "outcome": "committed",
+        "resolution": {
+          "kind": "fanOut",
+          "entries": [
+            {
+              "kind": "started",
+              "instanceId": "start:27:s03-publish-start-only-bare:1:1:17:StartConfirmation",
+              "deploymentId": 1,
+              "version": 1,
+              "startEvent": "StartConfirmation"
+            }
+          ]
+        }
+      }
+    ],
+    "processStates": [
+      {
+        "kind": "state",
+        "instanceId": "start:27:s03-publish-start-only-bare:1:1:17:StartConfirmation",
+        "status": "running",
+        "logicalTimeMs": 20,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "start:27:s03-publish-start-only-bare:1:1:17:StartConfirmation",
+              "elementId": "RecordConfirmation",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Record the confirmation",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "state",
+        "instanceId": "start:38:s02-publish-start-only-by-business-key:1:1:17:StartConfirmation",
+        "status": "running",
+        "logicalTimeMs": 20,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "start:38:s02-publish-start-only-by-business-key:1:1:17:StartConfirmation",
+              "elementId": "RecordConfirmation",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Record the confirmation",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      }
+    ]
+  }
+}

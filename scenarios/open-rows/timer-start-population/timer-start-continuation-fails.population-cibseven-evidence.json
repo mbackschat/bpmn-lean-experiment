@@ -1,0 +1,49 @@
+{
+  "kind": "cibSevenPopulationEvidence",
+  "scenario": {
+    "id": "timer-start-population-timer-start-continuation-fails",
+    "sha256": "4612772ac4382527fdf3ff9789dc3350c8554e39c67d7dcb544b534b984005dd"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "13a1bfc9834c109b22ff684204ea92e32d432bc1bfb62debe4907de0bec7cc27"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "projection": {
+    "id": "cib-population-result"
+  },
+  "result": {
+    "deployments": [
+      {
+        "deploymentId": 1,
+        "definitionRef": "duration-audit",
+        "versions": [
+          {
+            "key": "Process_DurationAudit",
+            "version": 1
+          }
+        ],
+        "outcome": {
+          "kind": "deployed"
+        }
+      }
+    ],
+    "steps": [
+      {
+        "commandId": "s01-fire",
+        "ordinal": 1,
+        "at": 3600000,
+        "outcome": "rolledBack"
+      }
+    ],
+    "processStates": []
+  }
+}

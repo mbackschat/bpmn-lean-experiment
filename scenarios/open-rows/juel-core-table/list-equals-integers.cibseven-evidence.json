@@ -1,0 +1,296 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "juel-core-table-list-equals-integers",
+    "sha256": "78bf2f15298c7309666989b0ae49c3b8c74269fedc32bc71baf83ac6e52029cc"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "13a1bfc9834c109b22ff684204ea92e32d432bc1bfb62debe4907de0bec7cc27"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "flag",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          },
+          {
+            "name": "fraction",
+            "value": {
+              "kind": "string",
+              "value": "1.5"
+            }
+          },
+          {
+            "name": "ints",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "k",
+                  "value": {
+                    "kind": "integer",
+                    "value": 3
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "n",
+            "value": {
+              "kind": "integer",
+              "value": 3
+            }
+          },
+          {
+            "name": "nothing",
+            "value": {
+              "kind": "null"
+            }
+          },
+          {
+            "name": "nums",
+            "value": {
+              "kind": "list",
+              "value": [
+                {
+                  "kind": "integer",
+                  "value": 3
+                }
+              ]
+            }
+          },
+          {
+            "name": "pairs",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "a",
+                  "value": {
+                    "kind": "string",
+                    "value": "x"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "price",
+            "value": {
+              "kind": "decimal",
+              "coefficient": "15",
+              "scale": 1
+            }
+          },
+          {
+            "name": "probe",
+            "value": {
+              "kind": "string",
+              "value": "list-equals-integers"
+            }
+          },
+          {
+            "name": "word",
+            "value": {
+              "kind": "string",
+              "value": "abc"
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start",
+        "tasks": [
+          {
+            "elementId": "UserTask_ListEqualsIntegers",
+            "name": "list equals integers"
+          }
+        ]
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start",
+        "state": "ACTIVE"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Probe_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "flag",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          },
+          {
+            "name": "fraction",
+            "value": {
+              "kind": "string",
+              "value": "1.5"
+            }
+          },
+          {
+            "name": "ints",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "k",
+                  "value": {
+                    "kind": "integer",
+                    "value": 3
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "n",
+            "value": {
+              "kind": "integer",
+              "value": 3
+            }
+          },
+          {
+            "name": "nothing",
+            "value": {
+              "kind": "null"
+            }
+          },
+          {
+            "name": "nums",
+            "value": {
+              "kind": "list",
+              "value": [
+                {
+                  "kind": "integer",
+                  "value": 3
+                }
+              ]
+            }
+          },
+          {
+            "name": "pairs",
+            "value": {
+              "kind": "map",
+              "value": [
+                {
+                  "name": "a",
+                  "value": {
+                    "kind": "string",
+                    "value": "x"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "price",
+            "value": {
+              "kind": "decimal",
+              "coefficient": "15",
+              "scale": 1
+            }
+          },
+          {
+            "name": "probe",
+            "value": {
+              "kind": "string",
+              "value": "list-equals-integers"
+            }
+          },
+          {
+            "name": "word",
+            "value": {
+              "kind": "string",
+              "value": "abc"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Probe_1",
+              "elementId": "UserTask_ListEqualsIntegers",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "list equals integers",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "value",
+                  "value": {
+                    "kind": "boolean",
+                    "value": true
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      }
+    ]
+  }
+}
