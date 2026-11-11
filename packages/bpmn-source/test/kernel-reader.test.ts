@@ -95,17 +95,21 @@ test("a process's camunda:versionTag is carried: a called process's in its defin
   assert.equal(((await read(xml(""))) as Extract<KernelRead, { kind: "read" }>).versionTag, null);
 });
 
-test("each process declares its Properties, Data Objects, their references and its own Data Inputs and Outputs", async () => {
+test("each process and Sub-Process declares its Properties, Data Objects, their references and a process its Data Inputs and Outputs", async () => {
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="D" targetNamespace="urn:t">
 <bpmn:process id="P" isExecutable="true"><bpmn:property id="Prop"/><bpmn:dataObject id="Obj"/>
   <bpmn:dataObjectReference id="ObjRef" dataObjectRef="Obj"/><bpmn:dataStoreReference id="Store"/>
-  <bpmn:subProcess id="Sub"><bpmn:dataObject id="Inner"/></bpmn:subProcess><bpmn:callActivity id="Call" calledElement="Q"/></bpmn:process>
+  <bpmn:subProcess id="Sub"><bpmn:property id="SubProp"/><bpmn:dataObject id="Inner"/><bpmn:dataObjectReference id="InnerRef" dataObjectRef="Inner"/>
+    <bpmn:subProcess id="Nested"><bpmn:dataObject id="Deep"/></bpmn:subProcess></bpmn:subProcess>
+  <bpmn:callActivity id="Call" calledElement="Q"/></bpmn:process>
 <bpmn:process id="Q" isExecutable="true"><bpmn:ioSpecification><bpmn:dataInput id="In"/><bpmn:dataOutput id="Out"/>
   <bpmn:inputSet><bpmn:dataInputRefs>In</bpmn:dataInputRefs></bpmn:inputSet><bpmn:outputSet><bpmn:dataOutputRefs>Out</bpmn:dataOutputRefs></bpmn:outputSet>
   </bpmn:ioSpecification><bpmn:property id="QProp"/><bpmn:task id="T"/></bpmn:process></bpmn:definitions>`;
   const p = await program(xml);
   assert.deepEqual(p.variables, ["Obj", "ObjRef", "Prop"]);
+  assert.deepEqual(element(p, "Sub").scope.payload.items, ["Inner", "InnerRef", "SubProp"]);
+  assert.deepEqual(element(p, "Nested").scope.payload.items, ["Deep"]);
   assert.deepEqual(p.processes[0].variables, ["In", "Out", "QProp"]);
 });
 

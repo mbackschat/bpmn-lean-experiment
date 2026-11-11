@@ -56,7 +56,7 @@ function lot(incoming: string, outgoing: string, entry: string, waits: boolean, 
   const inner = waits ? ["Lot_Start", "Mark", "Check", "Lot_End"] : ["Lot_Start", "Mark", "Lot_End"];
   return [
     { scope: { header: header("Lot", "subProcess"), payload: { kind: "embedded", children: inner, localVariables: ["prior"],
-      envelope: envelope([incoming], [outgoing], { inputs: [io("prior", read(entry))], multiInstance: {
+      items: [], envelope: envelope([incoming], [outgoing], { inputs: [io("prior", read(entry))], multiInstance: {
         mode: "parallel", count: { collection: { items: read("items") } }, elementVariable: "item", completionCondition,
         inputDataItem: null, outputDataItem: null, outputCollection: null, mutableCollection: "entrySnapshot",
         asyncBefore: false, asyncAfter: false, loopDataInputRef: null, inputDataItemName: null,

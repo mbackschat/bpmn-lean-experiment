@@ -33,7 +33,7 @@ def activityOrigin (program : Program) (header : Header) (payload : ActivityPayl
 
 /-- The site of an expression in `id`'s scope. -/
 def site (program : Program) (id : Option ElementId) : Admission.Data.Site :=
-  { counters := Admission.MultiInstance.countersAt program id }
+  { counters := Admission.MultiInstance.countersAt program id, scopeItems := Admission.Data.scopedItems program }
 
 def targets (mappings : List Mapping) : List String := mappings.map (·.target)
 

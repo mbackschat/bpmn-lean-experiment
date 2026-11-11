@@ -59,6 +59,7 @@ How values are carried, read, copied into Activities and Scopes and written back
 - An End and a sibling path's declared Scope entry are unordered by BPMN (§10.5.3, §13.5.6); both orders give one state, data or not ([normative basis][dtb-norm], [DTB-ADMIT-01, DTB-COMMUTE-01][dtb-rules]).
 - A variable command naming a waiting occurrence acts from that occurrence's own scope, its local or child frame when it has one, else the enclosing frame: `setVariables` writes each name outward from there, so an input-mapped local is rewritten in place, and `removeVariables` removes each name from the nearest frame on the chain that declares it; CIB's `setVariables` and `removeVariables` on the waiting activity's execution do the same (`AbstractVariableScope#setVariable`, `#removeVariable`).
 - Every refusal leaves state, frames, waits and snapshots unchanged ([NSD-REFUSE-01][nsd-rules], [CSD-REFUSE-01][csd-rules], [CSSD-REFUSE-01][cssd-rules]).
+- The items a Sub-Process, Transaction or Event Sub-Process declares (its Properties, Data Objects and Data Object references, `ScopePayload.items`) exist per occurrence (§10.4.1), which no frame carries yet: a Data Association or Multi-Instance loop reference naming one is refused (`data.scopedItem`) instead of written at the instance root, and the sites that will admit them are owned by PC-MESSAGE-03, PC-DATA-06 and PC-DATA-05 ([restrictions](#restrictions)).
 
 ### Source mapping grammar
 
@@ -115,6 +116,7 @@ The deleted implementation admitted data only in exact shapes: one Property, one
 | `expression.outsideSimpleBoolean`, `flow.condition.foreign` | a condition outside the Simple Boolean subset | PC-DATA-07, PC-DATA-08 |
 | `activity.inputMappings`, `activity.outputMappings` | mappings on work other than User and Service Tasks, except a plain Task's `camunda:outputParameter`s under `OutputContext.activityScope` (CIB-EXT-0031) | nothing would carry or submit them |
 | `element.origin.sourceId`, `element.origin.definition` | an element whose origin is not its own source element | no reviewed copy semantics |
+| `data.scopedItem` | a Data Association source or target, or a Multi-Instance loop reference, naming an item a Sub-Process, Transaction or Event Sub-Process declares | PC-MESSAGE-03 (catch, boundary, start and Receive Task outputs), PC-DATA-06 (Activity output targets), PC-DATA-05 (input sources) |
 | dynamic: `undeclared-write` | a write to a name nothing declares, under `UndeclaredWrite.refused` | §10.4.1 |
 | dynamic: `mapping-source-unavailable` | an unavailable Scope input or output (semantic failure); an unresolved parameter expression rolls back with its evaluation's code instead | PC-DATA-09; CIB-EXT-0024 |
 | dynamic: `juel.*`, `unknown-variable` | an evaluation failure (rolled back) or a value outside the kernel's domain (`unsupported`) | [expression semantics](EXPRESSION-SEMANTICS-SPEC.md#failure-semantics) |

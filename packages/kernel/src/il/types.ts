@@ -396,6 +396,11 @@ export interface ScopePayload {
   readonly kind: ScopeKind;
   readonly children: readonly ElementId[];
   readonly localVariables: readonly string[];
+  /**
+   * The item names the Scope declares, which exist per Scope occurrence (BPMN 2.0.2 §10.4.1): its Properties, Data
+   * Objects and their references. Admission refuses every reference to one (`data.scopedItem`).
+   */
+  readonly items: readonly string[];
   readonly envelope: Envelope;
 }
 

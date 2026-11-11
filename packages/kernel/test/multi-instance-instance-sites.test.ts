@@ -38,7 +38,8 @@ function subProcess(id: string, parent: string | null, mode: string, collection:
   return {
     elements: [
       { scope: { header: header(id, "subProcess", parent), payload: { kind: "embedded", children: [`${id}Start`, innerId, `${id}End`],
-        localVariables: [], envelope: envelope([flowIn], [flowOut], { multiInstance: loop(mode, collection, item) }) } } },
+        localVariables: [], items: [],
+        envelope: envelope([flowIn], [flowOut], { multiInstance: loop(mode, collection, item) }) } } },
       { start: { header: header(`${id}Start`, "startEvent", id), payload: { subscription: null, outgoing: [`${id}_in`] } } },
       ...inner,
       { event: { header: header(`${id}End`, "endEvent", id), payload: { role: { throw: { record: "none" } }, placement: "finish",

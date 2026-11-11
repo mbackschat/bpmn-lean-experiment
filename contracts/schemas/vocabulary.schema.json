@@ -416,6 +416,7 @@
         "compensation.handlerWork",
         "compensation.implicit",
         "compensation.recursive",
+        "data.scopedItem",
         "decision.blankOutput",
         "decision.duplicateId",
         "decision.expressionLanguage",

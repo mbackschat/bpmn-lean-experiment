@@ -7,8 +7,9 @@
  * ([expression semantics](../../../../docs/kernel/semantics/EXPRESSION-SEMANTICS-SPEC.md#admission-at-core)).
  */
 import {
-  Evaluator, ExpressionTag, MappingDialect, assertNever, elementEnvelope, integerLexeme, multiInstanceCounterNames,
-  programElement, programProcessOf, type Envelope, type Expression, type Flow, type Header, type Mapping, type Program,
+  Evaluator, ExpressionTag, InstanceCountTag, MappingDialect, assertNever, elementEnvelope, elementScope, integerLexeme,
+  multiInstanceCounterNames, programElement, programProcessOf, type Envelope, type Expression, type Flow, type Header,
+  type Mapping, type MultiInstance, type Program,
 } from "../il/types.js";
 import {
   JuelBinary, JuelCallTag, JuelNodeTag, juelMethodCounts, type JuelCall, type JuelFunctionNode, type JuelNode,
@@ -17,15 +18,68 @@ import {
 /**
  * What an expression's site lets it read. `counters`: the Multi-Instance counter names are variables there, inside an
  * instance under `MultiInstanceCounters.cibLocals` (CIB-INT-0018); `hidden`: instance names the site may not read,
- * which `admission/multi-instance.ts` `ownInputNames` lists for a Multi-Instance Activity's own input mappings.
+ * which `admission/multi-instance.ts` `ownInputNames` lists for a Multi-Instance Activity's own input mappings;
+ * `scopeItems`: the items a Scope declares (`scopedItems`), which no Data Association may name.
  */
 export interface Site {
   readonly counters: boolean;
   readonly hidden: readonly string[];
+  readonly scopeItems: readonly string[];
 }
 
 /** A site outside every instance. */
-export const outsideInstances: Site = { counters: false, hidden: [] };
+export const outsideInstances: Site = { counters: false, hidden: [], scopeItems: [] };
+
+/**
+ * Every item a Sub-Process, Transaction or Event Sub-Process of `program` declares. Such an item exists per Scope
+ * occurrence (BPMN 2.0.2 §10.4.1), which the kernel's variable store does not carry: a write would land at the
+ * instance root (`feature/data.ts` `write`), so a reference is refused (`data.scopedItem`).
+ */
+export function scopedItems(program: Program): string[] {
+  return program.elements.flatMap((element) => elementScope(element)?.[1].items ?? []);
+}
+
+/** The name an expression reads when it is a plain variable read. */
+function variableName(expression: Expression): string[] {
+  switch (expression.tag) {
+    case ExpressionTag.Variable:
+      return [expression.name];
+    case ExpressionTag.Juel:
+    case ExpressionTag.SimpleBoolean:
+    case ExpressionTag.Literal:
+    case ExpressionTag.Foreign:
+      return [];
+  }
+  return assertNever(expression);
+}
+
+/** A Data Association whose source or target names a Scope's item. A CIB mapping names a variable, not an item. */
+function scopedReference(site: Site, entry: Mapping): string | null {
+  const named = [entry.target, ...variableName(entry.source)];
+  const scoped = entry.dialect === MappingDialect.DataAssociation && named.some((name) => site.scopeItems.includes(name));
+  return scoped ? "data.scopedItem" : null;
+}
+
+/**
+ * A Multi-Instance loop naming a Scope's item: its input collection, the collection it counts or its output collection
+ * (BPMN 2.0.2 §10.2.8).
+ */
+function loopItems(site: Site, loop: MultiInstance): string | null {
+  const counted = ((): string[] => {
+    const count = loop.count;
+    switch (count.tag) {
+      case InstanceCountTag.Collection:
+        return variableName(count.items);
+      case InstanceCountTag.Cardinality:
+        return [];
+      case InstanceCountTag.CountAndCollection:
+        return variableName(count.items);
+    }
+    return assertNever(count);
+  })();
+  const named = [loop.loopDataInputRef, loop.outputCollection].filter((name): name is string => name !== null);
+  return [...named, ...counted].some((name) => site.scopeItems.includes(name)) ? "data.scopedItem" : null;
+}
 
 /**
  * A name CIB resolves before any variable, or holds only inside a Multi-Instance instance or a decision task: the
@@ -67,9 +121,9 @@ const juelLanguage = "urn:cibseven:expression-language:juel";
 export function loopExpression(counters: boolean, expression: Expression): string | null {
   switch (expression.tag) {
     case ExpressionTag.Juel:
-      return juelNodes(expression.nodes, { counters, hidden: [] });
+      return juelNodes(expression.nodes, { ...outsideInstances, counters });
     case ExpressionTag.Variable:
-      return juelName({ counters, hidden: [] }, expression.name);
+      return juelName({ ...outsideInstances, counters }, expression.name);
     case ExpressionTag.Literal:
       return null;
     case ExpressionTag.SimpleBoolean:
@@ -169,6 +223,8 @@ function juelCall(target: JuelCall, count: number): string | null {
  * an unreadable one is the reader's `foreign`; a Data Association never carries JUEL at Core.
  */
 export function mapping(evaluator: Evaluator, site: Site, entry: Mapping): string | null {
+  const scoped = scopedReference(site, entry);
+  if (scoped !== null) return scoped;
   const source = entry.source;
   const cib = entry.dialect !== MappingDialect.DataAssociation;
   switch (source.tag) {
@@ -198,10 +254,11 @@ export function mappings(evaluator: Evaluator, site: Site, list: readonly Mappin
 /**
  * An Activity's default flow is read by `feature/flow.ts` `ownFlows` (PC-CF-07). The asynchronous continuations are
  * admitted: `step.ts` reads them as transaction boundaries (CIB-EXT-0027). The inputs and the outputs each have their
- * site.
+ * site, and the loop its items.
  */
 export function envelope(evaluator: Evaluator, inputs: Site, outputs: Site, fields: Envelope): string | null {
-  return mappings(evaluator, inputs, fields.inputs) ?? mappings(evaluator, outputs, fields.outputs);
+  return mappings(evaluator, inputs, fields.inputs) ?? mappings(evaluator, outputs, fields.outputs) ??
+    (fields.multiInstance === null ? null : loopItems(outputs, fields.multiInstance));
 }
 
 /**

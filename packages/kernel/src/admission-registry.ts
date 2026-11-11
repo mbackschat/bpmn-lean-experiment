@@ -68,7 +68,7 @@ function activityOrigin(program: Program, header: Header, payload: ActivityPaylo
 
 /** The site of an expression in `id`'s scope. */
 function site(program: Program, id: ElementId | null): Data.Site {
-  return { counters: MultiInstance.countersAt(program, id), hidden: [] };
+  return { counters: MultiInstance.countersAt(program, id), hidden: [], scopeItems: Data.scopedItems(program) };
 }
 
 /** How a subscription in the scope of `id` reads an expression of its trigger: the Core JUEL table at that site. */

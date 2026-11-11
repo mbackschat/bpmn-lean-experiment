@@ -16,6 +16,7 @@ import {
   ReadRefusal,
   ReadRefusalCode,
   byId,
+  containerItems,
   createExtensionTracker,
   flowElementKind,
   list,
@@ -205,15 +206,13 @@ function readFlow(ctx: ReadContext, flow: ElementRecord): KernelJson {
 
 /**
  * The item names a process declares at its instance root (BPMN 2.0.2 §10.4.1): its Properties, the Data Objects and
- * Data Object references among its own flow elements, and its own Data Inputs and Outputs. A Data Store holds no
- * instance data, and a Sub-Process's Data Objects are not the process's.
+ * Data Object references among its own flow elements (`containerItems`), and its own Data Inputs and Outputs. A
+ * Sub-Process's items are its own (`ScopePayload.items`).
  */
 function declaredItems(process: ElementRecord): string[] {
   const io = asElement(process.ioSpecification) ?? {};
-  const data = list(process, "flowElements")
-    .filter((element) => element.$type === "bpmn:DataObject" || element.$type === "bpmn:DataObjectReference");
-  return [...list(process, "properties"), ...data, ...list(io, "dataInputs"), ...list(io, "dataOutputs")]
-    .map(requireId).sort(compareIds);
+  const parameters = [...list(io, "dataInputs"), ...list(io, "dataOutputs")].map(requireId);
+  return [...containerItems(process), ...parameters].sort(compareIds);
 }
 
 /**

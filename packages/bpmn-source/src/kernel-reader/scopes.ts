@@ -1,7 +1,9 @@
 import type { ElementRecord } from "../moddle-graph.js";
 import { envelopeFor, headerOf } from "./build.js";
 import { startSubscription } from "./events.js";
-import { FlowElementKind, ReadRefusal, ReadRefusalCode, list, optionalId, requireId, text } from "./model.js";
+import {
+  FlowElementKind, ReadRefusal, ReadRefusalCode, containerItems, list, optionalId, requireId, text,
+} from "./model.js";
 import type { Built, ModelNode, ReadContext } from "./model.js";
 import { inputOutputParameters } from "./data.js";
 import { readActivityData } from "./work.js";
@@ -60,6 +62,7 @@ export function readScope(ctx: ReadContext, node: ModelNode, kind: ScopeKind): B
     kind: scopeKind(ctx, node, kind),
     children: childIds(ctx, node.element),
     localVariables: inputOutputParameters(ctx, node.element).targets,
+    items: containerItems(node.element),
   };
   return {
     kind: "element",

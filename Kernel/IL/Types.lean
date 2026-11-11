@@ -310,6 +310,9 @@ structure ScopePayload where
   kind : ScopeKind
   children : List ElementId
   localVariables : List String := []
+  /-- The item names the Scope declares, which exist per Scope occurrence (BPMN 2.0.2 §10.4.1): its Properties, Data
+  Objects and their references. Admission refuses every reference to one (`data.scopedItem`). -/
+  items : List String := []
   envelope : Envelope := {}
   deriving Repr
 

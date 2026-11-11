@@ -33,7 +33,7 @@ function program(mode: string, kind: Json | string = "embedded", loop: Json = {}
     elements: [
       { start: { header: header("Start", "startEvent"), payload: { subscription: null, outgoing: ["To_S"] } } },
       { scope: { header: header("S", "subProcess"), payload: { kind, children: ["Inner", "Review", "InnerEnd"],
-        localVariables: [], envelope: envelope(["To_S"], ["To_End"], { multiInstance: {
+        localVariables: [], items: [], envelope: envelope(["To_S"], ["To_End"], { multiInstance: {
           mode, count: { collection: { items: { variable: { name: "items" } } } }, elementVariable: "item",
           completionCondition: null, inputDataItem: null, outputDataItem: null, outputCollection: null,
           mutableCollection: "entrySnapshot", asyncBefore: false, asyncAfter: false, loopDataInputRef: null,

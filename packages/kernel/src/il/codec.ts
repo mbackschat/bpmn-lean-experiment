@@ -407,7 +407,9 @@ const element = inductive<Element>("Element", {
   [ElementTag.Activity]: { header, payload: struct("ActivityPayload", { work, envelope }) },
   [ElementTag.Scope]: {
     header,
-    payload: struct("ScopePayload", { kind: scopeKind, children: list(string), localVariables: list(string), envelope }),
+    payload: struct("ScopePayload", {
+      kind: scopeKind, children: list(string), localVariables: list(string), items: list(string), envelope,
+    }),
   },
   [ElementTag.Event]: {
     header,

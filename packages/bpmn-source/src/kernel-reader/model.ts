@@ -143,6 +143,17 @@ export const text = (element: ElementRecord, key: string): string | null =>
 export const list = (element: ElementRecord, key: string): ReadonlyArray<ElementRecord> =>
   asElementArray(element[key]) ?? [];
 
+/**
+ * The item names a process or Sub-Process declares for each of its occurrences (BPMN 2.0.2 §10.4.1): its Properties
+ * and the Data Objects and Data Object references among its own flow elements. A Data Store holds no instance data,
+ * and a nested Sub-Process's items are its own.
+ */
+export function containerItems(container: ElementRecord): string[] {
+  const data = list(container, "flowElements")
+    .filter((element) => element.$type === "bpmn:DataObject" || element.$type === "bpmn:DataObjectReference");
+  return [...list(container, "properties"), ...data].map(requireId).sort(compareIds);
+}
+
 /** A resolved reference of the expected BPMN type; a reference to another type is malformed source. */
 export function reference(owner: ElementRecord, key: string, expectedType: string): ElementRecord | null {
   const target = asElement(owner[key]);

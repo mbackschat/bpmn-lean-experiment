@@ -17,10 +17,43 @@ namespace Kernel.Admission.Data
 
 /-- What an expression's site lets it read. `counters`: the Multi-Instance counter names are variables there, inside an
 instance under `MultiInstanceCounters.cibLocals` (CIB-INT-0018); `hidden`: instance names the site may not read, which
-`Kernel.Admission.MultiInstance.ownInputNames` lists for a Multi-Instance Activity's own input mappings. -/
+`Kernel.Admission.MultiInstance.ownInputNames` lists for a Multi-Instance Activity's own input mappings;
+`scopeItems`: the items a Scope declares (`scopedItems`), which no Data Association may name. -/
 structure Site where
   counters : Bool := false
   hidden : List String := []
+  scopeItems : List String := []
+
+/-- Every item a Sub-Process, Transaction or Event Sub-Process of `program` declares. Such an item exists per Scope
+occurrence (BPMN 2.0.2 §10.4.1), which the kernel's variable store does not carry: a write would land at the instance
+root (`Kernel.Feature.Data.write`), so a reference is refused (`data.scopedItem`). -/
+def scopedItems (program : Program) : List String :=
+  program.elements.flatMap fun element => ((element.scope?).map (·.2.items)).getD []
+
+/-- The name an expression reads when it is a plain variable read. -/
+def variableName : Expression → List String
+  | .variable name => [name]
+  | .juel _ => []
+  | .simpleBoolean _ => []
+  | .literal _ => []
+  | .foreign _ _ => []
+
+/-- A Data Association whose source or target names a Scope's item. A CIB mapping names a variable, not an item. -/
+def scopedReference (site : Site) (entry : Mapping) : Option String :=
+  if entry.dialect == .dataAssociation && (entry.target :: variableName entry.source).any site.scopeItems.contains then
+    some "data.scopedItem"
+  else none
+
+/-- A Multi-Instance loop naming a Scope's item: its input collection, the collection it counts or its output
+collection (BPMN 2.0.2 §10.2.8). -/
+def loopItems (site : Site) (loop : MultiInstance) : Option String :=
+  let counted := match loop.count with
+    | .collection items => variableName items
+    | .cardinality _ => []
+    | .countAndCollection _ items => variableName items
+  if (loop.loopDataInputRef.toList ++ loop.outputCollection.toList ++ counted).any site.scopeItems.contains then
+    some "data.scopedItem"
+  else none
 
 /-- A name CIB resolves before any variable, or holds only inside a Multi-Instance instance or a decision task: the
 engine objects of `VariableScopeElResolver.java:51-90`, the loop counters, which a site inside an instance admits, and
@@ -110,7 +143,7 @@ def loopExpression (counters : Bool) : Expression → Option String
 an unreadable one is the reader's `foreign`; a Data Association never carries JUEL at Core. -/
 def mapping (evaluator : Evaluator) (site : Site) (entry : Mapping) : Option String :=
   let cib := entry.dialect != .dataAssociation
-  match entry.source with
+  scopedReference site entry <|> match entry.source with
   | .foreign _ _ => if evaluator == .juel && cib then some "expression.juel.syntax" else some "mapping.expression"
   | .juel nodes =>
     if evaluator == .simpleBoolean then some "mapping.expression"
@@ -124,9 +157,10 @@ def mappings (evaluator : Evaluator) (site : Site) (list : List Mapping) : Optio
 
 /-- An Activity's default flow is read by `Kernel.Feature.Flow.ownFlows` (PC-CF-07). The asynchronous continuations are
 admitted: `Kernel.Step` reads them as transaction boundaries (CIB-EXT-0027). The inputs and the outputs each have
-their site. -/
+their site, and the loop its items. -/
 def envelope (evaluator : Evaluator) (inputs outputs : Site) (fields : Envelope) : Option String :=
-  mappings evaluator inputs fields.inputs <|> mappings evaluator outputs fields.outputs
+  mappings evaluator inputs fields.inputs <|> mappings evaluator outputs fields.outputs <|>
+    fields.multiInstance.bind (loopItems outputs)
 
 /-- A Sequence Flow condition is read by the profile's evaluator: Simple Boolean, or under `Evaluator.juel` a JUEL
 table or a plain variable read (CIB-EXT-0030). A literal or `foreign` condition is refused under both. -/

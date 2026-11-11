@@ -147,7 +147,10 @@ export const gateway = (id: string, kind: Json | string, over: Json = {}, parent
 
 /** A Scope; `kind` is `"embedded"`, a transaction or an Event Sub-Process kind. */
 export const scope = (id: string, kind: Json | string, over: Json = {}, env: Json = {}, parent: string | null = null): Json => ({
-  scope: { header: header(id, "subProcess", parent), payload: { kind, children: [], localVariables: [], envelope: envelope(env), ...over } },
+  scope: {
+    header: header(id, "subProcess", parent),
+    payload: { kind, children: [], localVariables: [], items: [], envelope: envelope(env), ...over },
+  },
 });
 export const eventSubProcess = (trigger: Json | string, interrupting: boolean): Json =>
   ({ eventSubProcess: { start: subscription(trigger), interrupting } });
