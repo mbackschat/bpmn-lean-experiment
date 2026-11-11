@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             id="Definitions_FailingConfirmationCatch" targetNamespace="urn:bpmn-lean:scenarios:message-start-population:failing-confirmation-catch">
+  <message id="Message_OrderConfirmed" name="order-confirmed" />
+  <process id="Process_ConfirmationAudit" name="Audit an order once it is confirmed" isExecutable="true">
+    <startEvent id="OrderPlaced" name="Order placed" />
+    <intermediateCatchEvent id="AwaitConfirmation" name="Await confirmation">
+      <messageEventDefinition id="AwaitConfirmation_Message" messageRef="Message_OrderConfirmed" />
+    </intermediateCatchEvent>
+    <sequenceFlow id="Flow_Placed" sourceRef="OrderPlaced" targetRef="AwaitConfirmation" />
+    <exclusiveGateway id="ChooseAudit" name="Choose the audit" default="Flow_Routine" />
+    <userTask id="AuditInDepth" name="Audit in depth" />
+    <userTask id="CheckRoutinely" name="Check routinely" />
+    <endEvent id="Audited" name="Audited" />
+    <endEvent id="Checked" name="Checked" />
+    <sequenceFlow id="Flow_ToChoice" sourceRef="AwaitConfirmation" targetRef="ChooseAudit" />
+    <sequenceFlow id="Flow_InDepth" sourceRef="ChooseAudit" targetRef="AuditInDepth">
+      <conditionExpression xsi:type="tFormalExpression">${auditLevel &gt; 1}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Routine" sourceRef="ChooseAudit" targetRef="CheckRoutinely" />
+    <sequenceFlow id="Flow_Audited" sourceRef="AuditInDepth" targetRef="Audited" />
+    <sequenceFlow id="Flow_Checked" sourceRef="CheckRoutinely" targetRef="Checked" />
+  </process>
+</definitions>

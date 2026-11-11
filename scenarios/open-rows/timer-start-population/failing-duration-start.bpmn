@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             id="Definitions_FailingDurationStart" targetNamespace="urn:bpmn-lean:scenarios:timer-start-population:failing-duration-start">
+  <process id="Process_DurationAudit" name="Audit a batch an hour after deployment" isExecutable="true">
+    <startEvent id="StartAfterDuration" name="An hour after deployment">
+      <timerEventDefinition id="StartAfterDuration_Timer">
+        <timeDuration xsi:type="tFormalExpression">PT1H</timeDuration>
+      </timerEventDefinition>
+    </startEvent>
+    <exclusiveGateway id="ChooseAudit" name="Choose the audit" default="Flow_Routine" />
+    <userTask id="AuditInDepth" name="Audit in depth" />
+    <userTask id="CheckRoutinely" name="Check routinely" />
+    <endEvent id="Audited" name="Audited" />
+    <endEvent id="Checked" name="Checked" />
+    <sequenceFlow id="Flow_ToChoice" sourceRef="StartAfterDuration" targetRef="ChooseAudit" />
+    <sequenceFlow id="Flow_InDepth" sourceRef="ChooseAudit" targetRef="AuditInDepth">
+      <conditionExpression xsi:type="tFormalExpression">${auditLevel &gt; 1}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Routine" sourceRef="ChooseAudit" targetRef="CheckRoutinely" />
+    <sequenceFlow id="Flow_Audited" sourceRef="AuditInDepth" targetRef="Audited" />
+    <sequenceFlow id="Flow_Checked" sourceRef="CheckRoutinely" targetRef="Checked" />
+  </process>
+</definitions>

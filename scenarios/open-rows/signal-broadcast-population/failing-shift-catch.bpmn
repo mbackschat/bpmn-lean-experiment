@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             id="Definitions_FailingShiftCatch" targetNamespace="urn:bpmn-lean:scenarios:signal-broadcast-population:failing-shift-catch">
+  <signal id="Signal_ShiftClosed" name="shift-closed" />
+  <process id="Process_ShiftCatchAudit" name="Audit the till when the shift closes" isExecutable="true">
+    <startEvent id="StartTillOpened" name="Till opened" />
+    <intermediateCatchEvent id="CatchShiftClosed" name="Shift closed">
+      <signalEventDefinition id="CatchShiftClosed_Signal" signalRef="Signal_ShiftClosed" />
+    </intermediateCatchEvent>
+    <sequenceFlow id="Flow_TillOpened" sourceRef="StartTillOpened" targetRef="CatchShiftClosed" />
+    <exclusiveGateway id="ChooseAudit" name="Choose the audit" default="Flow_Routine" />
+    <userTask id="AuditInDepth" name="Audit in depth" />
+    <userTask id="CheckRoutinely" name="Check routinely" />
+    <endEvent id="Audited" name="Audited" />
+    <endEvent id="Checked" name="Checked" />
+    <sequenceFlow id="Flow_ToChoice" sourceRef="CatchShiftClosed" targetRef="ChooseAudit" />
+    <sequenceFlow id="Flow_InDepth" sourceRef="ChooseAudit" targetRef="AuditInDepth">
+      <conditionExpression xsi:type="tFormalExpression">${auditLevel &gt; 1}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Routine" sourceRef="ChooseAudit" targetRef="CheckRoutinely" />
+    <sequenceFlow id="Flow_Audited" sourceRef="AuditInDepth" targetRef="Audited" />
+    <sequenceFlow id="Flow_Checked" sourceRef="CheckRoutinely" targetRef="Checked" />
+  </process>
+</definitions>

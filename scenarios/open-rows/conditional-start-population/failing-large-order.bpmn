@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             id="Definitions_FailingLargeOrder" targetNamespace="urn:bpmn-lean:scenarios:conditional-start-population:failing-large-order">
+  <process id="Process_LargeOrderAudit" name="Audit an order once its amount reaches a threshold" isExecutable="true">
+    <startEvent id="StartLargeOrder" name="Large order">
+      <conditionalEventDefinition id="StartLargeOrder_Condition">
+        <condition xsi:type="tFormalExpression">${amount &gt;= 1000}</condition>
+      </conditionalEventDefinition>
+    </startEvent>
+    <exclusiveGateway id="ChooseAudit" name="Choose the audit" default="Flow_Routine" />
+    <userTask id="AuditInDepth" name="Audit in depth" />
+    <userTask id="CheckRoutinely" name="Check routinely" />
+    <endEvent id="Audited" name="Audited" />
+    <endEvent id="Checked" name="Checked" />
+    <sequenceFlow id="Flow_ToChoice" sourceRef="StartLargeOrder" targetRef="ChooseAudit" />
+    <sequenceFlow id="Flow_InDepth" sourceRef="ChooseAudit" targetRef="AuditInDepth">
+      <conditionExpression xsi:type="tFormalExpression">${auditLevel &gt; 1}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Routine" sourceRef="ChooseAudit" targetRef="CheckRoutinely" />
+    <sequenceFlow id="Flow_Audited" sourceRef="AuditInDepth" targetRef="Audited" />
+    <sequenceFlow id="Flow_Checked" sourceRef="CheckRoutinely" targetRef="Checked" />
+  </process>
+</definitions>
