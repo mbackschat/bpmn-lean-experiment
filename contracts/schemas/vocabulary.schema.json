@@ -513,7 +513,6 @@
         "profile.multiInstanceCounters.cibLocals",
         "profile.multiInstanceCounters.none",
         "profile.multiInstanceInputFailure.hold",
-        "profile.signalDelivery.occurrenceTargeted",
         "profile.timerZone",
         "reader.conditionExpressionType",
         "reader.dataAssociationShape",

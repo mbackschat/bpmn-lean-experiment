@@ -58,9 +58,7 @@ async function program(bytes: Uint8Array, options: Record<string, unknown>): Pro
   const json = (read as Extract<typeof read, { kind: "read" }>).program as Record<string, unknown>;
   const decoded = decodeProgram({ ...json, options: { ...(json.options as Record<string, unknown>), ...options } });
   assert.ok(decoded.ok, decoded.ok ? "" : decoded.refusal);
-  // `occurrenceTargeted` is refused at admission until the input boundary rejects a targeted Signal under
-  // `broadcastOnly`; the step itself is under test here.
-  assert.equal(admit(decoded.value), options.signalDelivery === "occurrenceTargeted" ? "profile.signalDelivery.occurrenceTargeted" : null);
+  assert.equal(admit(decoded.value), null);
   return decoded.value;
 }
 
@@ -102,6 +100,16 @@ test("a name-addressed delivery never reaches a QName subscription, and does und
     [start, deliver("Catch_Shipped", named)]);
   assert.ok(names.last.ok, JSON.stringify(names.last));
   assert.deepEqual(waiting(names.state), ["Catch_Other", "Dispatch", "Notify"]);
+});
+
+test("a delivery to one Signal catch is rejected unless the profile selects occurrence-targeted delivery", async () => {
+  const qualified = { kind: "signal", signalRef: { id: "Signal_Shipped", namespace } };
+  const standards = run(await program(withPayload(""), {}), [start, deliver("Catch_Shipped", qualified)]);
+  assert.deepEqual(standards.last.ok ? null : standards.last.failure, { tag: "rejected", code: "signal-delivery-targeted" });
+  assert.deepEqual(waiting(standards.state), ["Catch_Other", "Catch_Shipped", "Dispatch"]);
+  const targeted = run(await program(withPayload(""), { signalDelivery: "occurrenceTargeted" }), [start, deliver("Catch_Shipped", qualified)]);
+  assert.ok(targeted.last.ok, JSON.stringify(targeted.last));
+  assert.deepEqual(waiting(targeted.state), ["Catch_Other", "Dispatch", "Notify"]);
 });
 
 test("a Signal delivery carrying a payload is rejected rather than dropped", async () => {

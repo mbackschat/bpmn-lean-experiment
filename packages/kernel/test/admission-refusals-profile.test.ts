@@ -83,12 +83,6 @@ export const rows: readonly Row[] = [
     control: (program) => terminatingCalledProcess(withOptions(program, completesNormally)),
   },
   {
-    code: "profile.signalDelivery.occurrenceTargeted",
-    description: "a Signal delivered to one targeted occurrence, refused until the input boundary rejects it under broadcastOnly",
-    mutate: option({ signalDelivery: "occurrenceTargeted" }),
-    control: option({ signalDelivery: "broadcastOnly" }),
-  },
-  {
     code: "profile.calledElementResolution.cibKey",
     description: "a called element resolved as CIB's key text",
     mutate: option({ calledElementResolution: "cibKey" }),

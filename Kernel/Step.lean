@@ -452,7 +452,10 @@ def step (hooks : Hooks) (program : Program) (before : Option State) (input : In
       match item? ctx state data.occurrence (·.channel) with
       | none => .error (.rejected "unknown-message-subscription")
       | some item => fireItem hooks ctx item (.message data) state
+    -- A `deliver` names one occurrence; BPMN 2.0.2 Table 10.88 only broadcasts a Signal, so a targeted one needs
+    -- `occurrenceTargeted` (CIB-EXT-0042). A throw's own-State receivers fire through `Signal.fire`, never here.
     | .signal _ =>
+      if ctx.program.options.signalDelivery == .broadcastOnly then .error (.rejected "signal-delivery-targeted") else
       match item? ctx state data.occurrence (·.signal) with
       | none => .error (.rejected "unknown-signal-subscription")
       | some item => fireItem hooks ctx item (.signal data) state

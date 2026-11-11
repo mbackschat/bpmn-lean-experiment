@@ -1553,13 +1553,13 @@ BPMN 2.0.2 §10.5.1 makes a Signal a broadcast trigger and gives a throw's Data 
 
 ### CIB-EXT-0042 — an external Signal is delivered to one targeted subscription
 
-**Status:** Optional CIB extension for `SignalDelivery.occurrenceTargeted`; selected by no profile until the cibseven profiles list it
+**Status:** Optional CIB extension for `SignalDelivery.occurrenceTargeted`; selected by the cibseven profiles
 
 BPMN 2.0.2 Table 10.88 broadcasts a Signal to every process that can receive it and names no delivery to one waiting occurrence. CIB Seven `2.2.0`'s `signalEventReceived(name, executionId)` delivers a Signal to the subscriptions of that name on one execution and fails when there is none. Under `occurrenceTargeted` a `deliver` input with a Signal trigger fires exactly the open Signal item its occurrence names when the address matches, and is rejected otherwise (`unknown-signal-subscription`); a late losing Event-Based arm is gone and rejected the same way. CIB fires every subscription of the name on the execution; the kernel's occurrence addresses one item, which agrees whenever one execution holds one subscription of the name.
 
-**Evidence:** Pinned `SignalEventReceivedCmd.java:119-131`; retained `signal-start-compositions/race-*` and `handover-*`, which agree once the profile selects this entry.
+**Evidence:** Pinned `SignalEventReceivedCmd.java:119-131`; retained `signal-start-compositions/race-*` and `handover-*`, which agree under the cibseven profiles; `signal-start-compositions/race-approved-standards` runs the standards profile, which rejects the delivery.
 
-**Boundary:** Intermediate catches and Event-Based Gateway arms; an input form, never a model attribute. A boundary and an Event Sub-Process start of one name on one execution are PC-SIGNAL-03's. Admission still refuses the option (`profile.signalDelivery.occurrenceTargeted`) until the input boundary, which also carries the population's per-receiver deliveries, rejects a targeted Signal delivery under `broadcastOnly` (`signal-delivery-targeted`).
+**Boundary:** Intermediate catches and Event-Based Gateway arms; an input form, never a model attribute. A boundary and an Event Sub-Process start of one name on one execution are PC-SIGNAL-03's. Under `broadcastOnly` `Step` rejects a `deliver` input with a Signal trigger (`signal-delivery-targeted`) before it reads the occurrence; a throw's own-State receivers fire inside the throwing step, never through that input.
 
 ### CIB-EXT-0043 — a Signal's variables install into the receiving scope
 

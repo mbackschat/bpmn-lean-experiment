@@ -17,7 +17,7 @@
  * its own: the completion pipeline disposes of it with its Activity.
  */
 import {
-  BranchSchedule, ContinuationFailure, ElementTag, EventRoleTag, assertNever, elementActivity, elementEnvelope, elementGateway,
+  BranchSchedule, ContinuationFailure, ElementTag, EventRoleTag, SignalDelivery, assertNever, elementActivity, elementEnvelope, elementGateway,
   elementHeader, programElement, programPublicId, programSourceType, programTarget, type Element, type ElementId,
   type Envelope, type FlowId, type MultiInstance, type Program,
 } from "./il/types.js";
@@ -591,6 +591,7 @@ function deliver(hooks: Hooks, ctx: Ctx, input: Extract<Input, { tag: InputTag.D
         : fireItem(hooks, ctx, item, { tag: FiredTag.Message, delivery: data }, state);
     }
     case DeliveryTriggerTag.Signal: {
+      if (ctx.program.options.signalDelivery === SignalDelivery.BroadcastOnly) return failed(FailureTag.Rejected, "signal-delivery-targeted");
       const item = itemOf(ctx, state, data.occurrence, (view) => view.signal);
       return item === null
         ? failed(FailureTag.Rejected, "unknown-signal-subscription")
