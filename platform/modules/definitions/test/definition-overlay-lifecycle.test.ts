@@ -8,7 +8,8 @@ import { join } from "node:path";
 import { test } from "node:test";
 import { DefinitionDeploymentService, DefinitionStartService, DefinitionHttpRoutes, SqliteDefinitionRepository, ConfirmedProcessInstancePublicationService, InMemoryConfirmedProcessInstanceRepository } from "@bpmn-lean/platform-definitions";
 import type { ExactArtifactStore } from "@bpmn-lean/platform-definitions";
-import type { DefinitionCompiler, DefinitionCompilationRequest, DefinitionVersionStarter, DefinitionVersionStartRequest } from "@bpmn-lean/platform-engine-gateway";
+import type { DefinitionCompiler, DefinitionVersionRegistrar, DefinitionCompilationRequest, DefinitionVersionStarter, DefinitionVersionStartRequest } from "@bpmn-lean/platform-engine-gateway";
+import { registeringEngine } from "./support/engine-registration.ts";
 
 const bytes = new TextEncoder().encode("<exact-bpmn/>");
 const overlayBytes = new TextEncoder().encode('{"exact":"overlay"}');
@@ -31,7 +32,7 @@ async function fixture() {
     put: async (request) => { writes.push(request.sha256); content.set(request.sha256, Uint8Array.from(request.bytes)); return { status: "stored" }; },
     get: async (sha256) => { const retained = content.get(sha256); return retained === undefined ? null : Uint8Array.from(retained); },
   };
-  const compiler: DefinitionCompiler = { compileDefinition: async (request) => ({
+  const compiler: DefinitionCompiler & DefinitionVersionRegistrar = { ...registeringEngine(), compileDefinition: async (request) => ({
     status: DefinitionCompilationStatus.Accepted, source: { ...source, id: request.sourceId, sha256: digest(request.bytes), byteLength: request.bytes.length }, diagnostics: [],
     definition: { processId: "Process", semanticProfile: request.semanticProfile, sourceOverlay: request.sourceOverlay === undefined || request.sourceOverlay === null ? null : { id: request.sourceOverlay.id, sha256: request.sourceOverlay.sha256 } }, startCapabilities: capabilities,
   }) };
@@ -60,7 +61,7 @@ test("captures selected overlay before compiler yield and publishes exact detach
   await withFixture(async (value) => {
     let release = () => {};
     const gate = new Promise<void>((resolve) => { release = resolve; });
-    const compiler: DefinitionCompiler = { compileDefinition: async (selected) => { await gate; return value.compiler.compileDefinition(selected); } };
+    const compiler: DefinitionCompiler & DefinitionVersionRegistrar = { ...registeringEngine(), compileDefinition: async (selected) => { await gate; return value.compiler.compileDefinition(selected); } };
     const deployment = new DefinitionDeploymentService(compiler, value.artifacts, value.repository);
     const selected = request();
     const pending = deployment.deploy(selected);
@@ -81,7 +82,7 @@ test("compiler source, profile and overlay divergence refuse before artifact or 
     (result: Extract<Awaited<ReturnType<DefinitionCompiler["compileDefinition"]>>, { status: "accepted" }>) => ({ ...result, definition: { processId: "Process", semanticProfile: "other", sourceOverlay: identity } }),
     (result: Extract<Awaited<ReturnType<DefinitionCompiler["compileDefinition"]>>, { status: "accepted" }>) => ({ ...result, definition: { processId: "Process", semanticProfile: "profile", sourceOverlay: { ...identity, sha256: "f".repeat(64) } } }),
   ]) await withFixture(async (value) => {
-    const compiler: DefinitionCompiler = { compileDefinition: async (selected) => { const accepted = await value.compiler.compileDefinition(selected); assert.equal(accepted.status, "accepted"); if (accepted.status !== "accepted") throw new Error("fixture rejection"); return perturb(accepted); } };
+    const compiler: DefinitionCompiler & DefinitionVersionRegistrar = { ...registeringEngine(), compileDefinition: async (selected) => { const accepted = await value.compiler.compileDefinition(selected); assert.equal(accepted.status, "accepted"); if (accepted.status !== "accepted") throw new Error("fixture rejection"); return perturb(accepted); } };
     await assert.rejects(new DefinitionDeploymentService(compiler, value.artifacts, value.repository).deploy(request()), /identity/u);
     assert.deepEqual(value.writes, []);
     assert.deepEqual(await value.repository.listLatest(), []);

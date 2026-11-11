@@ -43,8 +43,8 @@ export type {
 } from "./definition-capabilities.js";
 export {
   createEngineHostRuntime,
-  engineCorrelationScope,
   engineDefinitionScheduleId,
+  engineDeploymentRequestId,
   type EngineHost,
   type EngineHostRuntime,
   type EngineHostRuntimeOptions,
@@ -91,6 +91,14 @@ export {
   type EngineDefinitionMessageStartResult,
   type EngineMessageStartSelection,
 } from "./definition-message-start.js";
+export {
+  EngineDeploymentIntegrityCode,
+  EngineDeploymentStatus,
+  engineDefinitionNotDeployedCode,
+  registerEngineDeployment,
+  type EngineDeploymentRequest,
+  type EngineDeploymentResult,
+} from "./definition-deployment.js";
 export {
   EngineCorrelatedMessageStatus,
   engineCorrelationAmbiguousCode,

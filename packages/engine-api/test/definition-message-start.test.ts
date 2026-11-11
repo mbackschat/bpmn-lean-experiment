@@ -21,7 +21,7 @@ import {
   type EngineDefinitionMessageStartPreparationRequest,
 } from "@bpmn-lean/engine-api";
 
-import { limits, scenarioBytes, sha256, standardProfile, testHost, type TestHost } from "./support.ts";
+import { deployed, limits, scenarioBytes, sha256, standardProfile, testHost, type TestHost } from "./support.ts";
 
 const channel = {
   kind: "operationMessage",
@@ -34,7 +34,7 @@ async function request(host: TestHost): Promise<EngineDefinitionMessageStartPrep
   const bytes = await scenarioBytes("message-start-event/process.bpmn");
   const compiled = await compileBpmnDefinition({ bytes, sourceId: "m", profile: standardProfile, limits });
   if (compiled.status !== EngineDefinitionCompilationStatus.Accepted) throw new Error("not admitted");
-  return {
+  return deployed({
     host,
     bytes,
     sourceId: "m",
@@ -49,7 +49,7 @@ async function request(host: TestHost): Promise<EngineDefinitionMessageStartPrep
     commandId: "publication-command",
     workflowId: engineDefinitionMessageStartWorkflowId("message-instance"),
     limits,
-  };
+  });
 }
 
 test("the selected Message start runs once under its address, opening the model's User Task", async () => {

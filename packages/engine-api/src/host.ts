@@ -8,6 +8,7 @@ import {
   createHostClientRuntime,
   processInstanceWorkflowId,
   type HostConfig,
+  type PopulationHost,
   type ProcessHost,
   type ScheduleHost,
 } from "@bpmn-lean/temporal-host/host";
@@ -18,6 +19,11 @@ import type { EngineServedRequirements } from "./definition.js";
 export type EngineHost = Readonly<{
   processes: ProcessHost;
   schedules: ScheduleHost;
+  /**
+   * The deployment's population ingress, which every definition version registers with and every engine start runs
+   * under: one engine deployment, one population, named by its Task Queue.
+   */
+  population: PopulationHost;
   /** The Task Queue the deployment's Workers poll; retained by Temporal and compared on recovery. */
   taskQueue: string;
   served: EngineServedRequirements;
@@ -26,17 +32,16 @@ export type EngineHost = Readonly<{
 }>;
 
 /** Every process an engine operation starts runs under durable scheduling: the host owns timers, effects and time. */
-export function engineHostConfig(host: EngineHost): HostConfig {
+export function engineHostConfig(host: Pick<EngineHost, "effectStartToCloseMs">): HostConfig {
   return { scheduling: Scheduling.Durable, effectStartToCloseMs: host.effectStartToCloseMs, historyEventBudget: null };
 }
 
 /**
- * The correlation scope of a deployed definition version, which every instance it starts registers its correlated
- * waits under and every correlated publication to it addresses: a digest of its identity, so instances of one version,
- * source, profile and overlay share it and no other definition's instance is ever a candidate.
+ * The population registration request of a definition version: a digest of its identity, so a version, source, profile
+ * and overlay register once and a repeated registration answers as the first.
  */
-export function engineCorrelationScope(definition: EngineDefinitionIdentity): string {
-  return `bpmn-definition-sha256:${sha256Hex(canonicalJson(["definitionCorrelation", definition]))}`;
+export function engineDeploymentRequestId(definition: EngineDefinitionIdentity): string {
+  return `bpmn-definition-deployment-sha256:${sha256Hex(canonicalJson(["definitionDeployment", definition]))}`;
 }
 
 /** The Workflow ID of a semantic process instance: a digest, so no instance identifier shapes a host address. */
@@ -83,10 +88,12 @@ export function createEngineHostRuntime(options: EngineHostRuntimeOptions): Engi
     taskQueue: requireWireString(options.taskQueue, "taskQueue"),
     connectTimeoutMs: options.connectTimeoutMs,
   });
+  const config = engineHostConfig(options);
   return {
     host: {
       processes: runtime.processes,
       schedules: runtime.schedules,
+      population: runtime.population(options.taskQueue, config),
       taskQueue: options.taskQueue,
       served: { ...options.served },
       effectStartToCloseMs: options.effectStartToCloseMs,

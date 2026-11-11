@@ -19,11 +19,10 @@
  * and carries `{program, state, publication cursor}`. Durable timers do not cross Runs; the next Run re-arms them
  * from the carried state at their remaining logical delay.
  *
- * Under a correlation scope the instance registers its open correlated waits with the ingress of their address
- * (`correlation.ts`) whenever they change, one Activity at a time from the main loop, and clears them when it ends or
- * halts. That registration is a barrier: an input's Update returns only once the waits its commit opened are
- * registered, and a start's caller waits on the `settle` Update, so a publication sent after the caller saw the commit
- * finds them. The `correlationMatches` query answers which open waits a delivery would reach now.
+ * Under a population scope the instance registers its open Message and Signal waits' addresses with the population
+ * ingress whenever they change, one Activity at a time from the main loop, and clears them when it ends or halts. That
+ * registration is a barrier: an input's Update returns only once the waits its commit opened are registered, and a
+ * start's caller waits on the `settle` Update, so a population command sent after the caller saw the commit finds them.
  */
 import {
   ApplicationFailure,
@@ -54,7 +53,7 @@ import {
   type Applied,
   type Arrival,
 } from "./host-machine.js";
-import { afterRegistration, canonicalJson, correlatedWaits, registrationsDue, type ChannelWaits, type Registered } from "./correlation.js";
+import { canonicalJson } from "./canonical-json.js";
 import type { PopulationActivities, PopulationCarry, PopulationScope, UnsettledEmit } from "./population-contract.js";
 import {
   Route,
@@ -72,7 +71,6 @@ import {
   ResultKind,
   Scheduling,
   commandUpdate,
-  correlationQuery,
   deliverUpdate,
   effectResultUpdate,
   emitSettledUpdate,
@@ -161,9 +159,6 @@ async function hostProcess<P, S, I, M>(port: KernelPort<P, S, I>, populationPort
   let log = openLog(args.kind === RunKind.Continue ? args.cursor : initialCursor);
   let halt: Halt | null = null;
   let commits = 0;
-  const correlationScope = args.correlationScope;
-  /** What the ingresses hold for this chain; a continued Run carries it. */
-  let registered: readonly Registered[] = args.kind === RunKind.Continue ? args.registered : [];
   const scope: PopulationScope | null = args.population;
   const carried: PopulationCarry | null = args.kind === RunKind.Continue ? args.carry : null;
   /** The canonical addresses the population ingress holds for this chain, `null` before the first registration. */
@@ -172,22 +167,15 @@ async function hostProcess<P, S, I, M>(port: KernelPort<P, S, I>, populationPort
   let emits: UnsettledEmit[] = [...(carried?.emits ?? [])];
   let startOutcome: ReachOutcome | null = carried?.startOutcome ?? null;
   const ended = (): boolean => instance === null || instance.view.status !== running;
-  /** The registrations the instance still owes its ingresses; an ended or halted instance owes the clearing of all. */
   /** The open waits' addresses the population ingress should hold: none once the instance ended or halted. */
   const addressesDue = (): readonly WaitAddressView[] => {
     const view = instance?.view;
     return view === undefined || halt !== null || view.status !== running ? [] : view.addresses ?? [];
   };
   const populationOwed = (): boolean => scope !== null && canonicalJson(addressesDue()) !== (populationRegistered ?? canonicalJson([]));
-  const registrationsOwed = (): Registered[] => {
-    if (correlationScope === null) return [];
-    const desired: ReadonlyMap<string, ChannelWaits> = halt === null ? correlatedWaits(instance?.view ?? null) : new Map();
-    return registrationsDue(desired, registered);
-  };
   /** The registration barrier: resolves once the waits committed so far are registered, or nothing will register them. */
   const settled = async (): Promise<void> => {
-    const owed = (): boolean => registrationsOwed().length > 0 || populationOwed();
-    if (owed()) await condition(() => !owed() || halt !== null || ended());
+    if (populationOwed()) await condition(() => !populationOwed() || halt !== null || ended());
   };
   /** The emit barrier: resolves once the ingress accepted every hand-off committed so far, which it can never refuse. */
   const emitted = async (): Promise<void> => {
@@ -199,7 +187,7 @@ async function hostProcess<P, S, I, M>(port: KernelPort<P, S, I>, populationPort
   setHandler(stateQuery, () => instance === null ? null : port.encodeState(instance.state));
   setHandler(hostViewQuery, () => ({
     revision: log.cursor.revision, view: instance === null ? null : snapshotView(instance.view), halt,
-    registering: registrationsOwed().length > 0 || populationOwed(),
+    registering: populationOwed(),
   }));
   setHandler(populationSignalQuery, (question) => instance === null || halt !== null
     ? { instanceId: null, receivers: [], refusesVariables: false }
@@ -216,8 +204,6 @@ async function hostProcess<P, S, I, M>(port: KernelPort<P, S, I>, populationPort
     emits = emits.filter((emit) => emit.commandId !== commandId);
   });
   setHandler(publicationQuery, (afterRevision, limit) => readPage(log, afterRevision, limit));
-  setHandler(correlationQuery, (question) => instance === null || halt !== null ? []
-    : port.matching(program, instance.state, question.channel, question.correlation));
   setHandler(settleUpdate, async () => {
     await settled();
     await emitted();
@@ -371,20 +357,6 @@ async function hostProcess<P, S, I, M>(port: KernelPort<P, S, I>, populationPort
       emits = emits.map((held) => held.commandId === emit.commandId ? { ...held, accepted: true } : held);
     }
   };
-  /** Registers what the instance owes its ingresses, one channel at a time, each at the current publication revision. */
-  const register = async (): Promise<void> => {
-    await reportPopulation();
-    if (correlationScope === null) return;
-    for (;;) {
-      const [next] = registrationsOwed();
-      if (next === undefined) return;
-      const registration = { workflowId: workflowInfo().workflowId, revision: log.cursor.revision, waits: next.waits };
-      await scheduleActivity<void>("registerCorrelation" satisfies keyof HostActivities,
-        [{ correlationScope, channel: next.channel, registration }],
-        { startToCloseTimeout: config.effectStartToCloseMs, retry: transportRetry });
-      registered = afterRegistration(registered, next);
-    }
-  };
   const timers = new Map<string, CancellationScope>();
   const effects = new Map<string, CancellationScope>();
   const arrivals: Arrival[] = [];
@@ -446,7 +418,7 @@ async function hostProcess<P, S, I, M>(port: KernelPort<P, S, I>, populationPort
       reconcile(draining);
       reconciled = commits;
     }
-    await register();
+    await reportPopulation();
     if (reconciled !== commits) continue;
     if (draining && effects.size === 0 && arrivals.length === 0) {
       await condition(allHandlersFinished);
@@ -455,11 +427,9 @@ async function hostProcess<P, S, I, M>(port: KernelPort<P, S, I>, populationPort
           kind: RunKind.Continue,
           program: args.program,
           config,
-          correlationScope,
           population: scope,
           state: port.encodeState(instance.state),
           cursor: log.cursor,
-          registered,
           carry: { registeredAddresses: JSON.parse(populationRegistered ?? "[]") as JsonValue, deliveries, emits, startOutcome },
         });
       }
@@ -477,7 +447,7 @@ async function hostProcess<P, S, I, M>(port: KernelPort<P, S, I>, populationPort
   }
 
   for (const scope of [...timers.values(), ...effects.values()]) scope.cancel();
-  await register();
+  await reportPopulation();
   await condition(allHandlersFinished);
   if (halt !== null) return { kind: ResultKind.Halted, halt, revision: log.cursor.revision };
   return { kind: ResultKind.Ended, status: instance?.view.status ?? running, revision: log.cursor.revision };

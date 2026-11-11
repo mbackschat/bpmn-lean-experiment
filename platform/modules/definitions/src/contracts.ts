@@ -216,6 +216,22 @@ export class DefinitionStartIntegrityError extends Error {
   }
 }
 
+/**
+ * Raised after a version was stored when the engine did not register it, refusing it with `code`: the version is listed,
+ * and every start of it and publication to it is the engine's `definition-not-deployed`.
+ */
+export class DefinitionEngineRegistrationError extends Error {
+  readonly definition: DefinitionReference;
+  readonly code: string;
+
+  constructor(definition: DefinitionReference, code: string) {
+    super(`definition ${definition.processId}/${definition.version} was not registered with the engine: ${code}`);
+    this.name = "DefinitionEngineRegistrationError";
+    this.definition = { processId: definition.processId, version: definition.version };
+    this.code = code;
+  }
+}
+
 /** Raised before publication when compilation changes the captured content selection. */
 export class DefinitionDeploymentIntegrityError extends Error {
   constructor() {

@@ -2,11 +2,13 @@
 import {
   EngineDefinitionCompilationStatus,
   EngineDefinitionStartStatus,
+  EngineDeploymentStatus,
   EngineStartDescriptionStatus,
   compileBpmnDefinition,
   createEngineHostRuntime,
   describeBpmnDefinitionVersionStart,
   prepareBpmnDefinitionVersionStart,
+  registerEngineDeployment,
   serializeEngineProcessLocator,
   startBpmnDefinitionVersion,
   startPreparedBpmnDefinitionVersion,
@@ -56,7 +58,7 @@ export const DefinitionStartDescriptionStatus = EngineStartDescriptionStatus;
 export type DefinitionSourceOverlaySelection = EngineSourceOverlaySelection;
 export type DefinitionStartIntent = EngineIntent;
 export type DefinitionDiagnostic = EngineDiagnostic;
-export type { DefinitionIdentity, ProfileRelations };
+export type { DefinitionIdentity, EngineHostRuntime, ProfileRelations };
 
 /** The refusal of a definition whose profile the deployment's catalog does not hold. */
 export const unknownProfileCode = "platform.profileUnknown";
@@ -121,6 +123,27 @@ export type DefinitionVersionStartDescriptionRequest = Readonly<{
   expectedIntent: DefinitionStartIntent;
 }>;
 
+/** A stored definition version, named as Product 2 stored it, to register with the engine's population. */
+export type DefinitionVersionRegistrationRequest = Omit<DefinitionVersionStartRequest, "processInstanceId" | "initialVariables">;
+
+export const DefinitionRegistrationStatus = EngineDeploymentStatus;
+
+/** `registered`, or the engine's refusal: the population's code, or an integrity failure of the stored version. */
+export type DefinitionVersionRegistrationResult =
+  | Readonly<{ status: EngineDeploymentStatus.Registered }>
+  | Readonly<{
+      status: EngineDeploymentStatus.Refused | EngineDeploymentStatus.IntegrityFailure;
+      failure: Readonly<{ code: string; evidence: string }>;
+    }>;
+
+/**
+ * Registers a deployed definition version with the engine, which every start of the version and every publication to
+ * it needs (`definition-not-deployed` otherwise); a repeated registration answers as the first.
+ */
+export interface DefinitionVersionRegistrar {
+  registerDefinitionVersion(request: DefinitionVersionRegistrationRequest): Promise<DefinitionVersionRegistrationResult>;
+}
+
 export interface DefinitionCompiler {
   compileDefinition(request: DefinitionCompilationRequest): Promise<DefinitionCompilationResult>;
 }
@@ -137,7 +160,7 @@ export type BpmnEngineGatewayOptions = GatewayLimits & Readonly<{
   profileRelations: ProfileRelations;
 }>;
 
-export class BpmnEngineGateway implements DefinitionCompiler, DefinitionVersionStarter {
+export class BpmnEngineGateway implements DefinitionCompiler, DefinitionVersionRegistrar, DefinitionVersionStarter {
   readonly #context: GatewayContext;
 
   constructor(options: BpmnEngineGatewayOptions) {
@@ -183,6 +206,21 @@ export class BpmnEngineGateway implements DefinitionCompiler, DefinitionVersionS
           definition: undefined,
         };
     }
+  }
+
+  async registerDefinitionVersion(request: DefinitionVersionRegistrationRequest): Promise<DefinitionVersionRegistrationResult> {
+    const result = await registerEngineDeployment({
+      host: this.#context.host,
+      bytes: request.bytes,
+      sourceId: request.sourceId,
+      expectedSha256: request.expectedSha256,
+      profile: storedProfile(this.#context, request.semanticProfile),
+      sourceOverlay: request.sourceOverlay ?? null,
+      expectedProcessId: request.expectedProcessId,
+      version: request.version,
+      limits: this.#context.limits,
+    });
+    return result.status === EngineDeploymentStatus.Registered ? { status: result.status } : result;
   }
 
   async startDefinitionVersion(request: DefinitionVersionStartRequest): Promise<DefinitionStartResult> {
@@ -262,6 +300,11 @@ export type BpmnEngineGatewayRuntimeOptions = GatewayLimits & Readonly<{
   servedRequirements: EngineServedRequirements;
   /** The transport bound of one effect Activity attempt. */
   effectStartToCloseMs: number;
+  /**
+   * The engine host to run against instead of a Temporal connection opened from the options above, such as the
+   * in-process host of `@bpmn-lean/platform-engine-gateway/testing`; it must serve `temporalTaskQueue`.
+   */
+  engineHostRuntime?: EngineHostRuntime;
 }>;
 
 /** Composition-facing owner of the gateway's collaborators and their shared lazy Temporal connection. */
@@ -278,7 +321,10 @@ export class BpmnEngineGatewayRuntime {
 
   constructor(options: BpmnEngineGatewayRuntimeOptions) {
     requireNonempty(options.temporalTaskQueue, "temporalTaskQueue");
-    this.#runtime = createEngineHostRuntime({
+    if (options.engineHostRuntime !== undefined && options.engineHostRuntime.host.taskQueue !== options.temporalTaskQueue) {
+      throw new TypeError("engineHostRuntime must serve temporalTaskQueue");
+    }
+    this.#runtime = options.engineHostRuntime ?? createEngineHostRuntime({
       address: options.temporalAddress,
       namespace: options.temporalNamespace,
       taskQueue: options.temporalTaskQueue,

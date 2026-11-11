@@ -6,7 +6,7 @@
  */
 import { createHash } from "node:crypto";
 
-import { canonicalJson } from "./correlation.js";
+import { canonicalJson } from "./canonical-json.js";
 import type { EmitReference, PopulationCommandRequest } from "./population-contract.js";
 import type { JsonValue } from "./port.js";
 

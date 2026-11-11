@@ -3,43 +3,41 @@
  * pure core the Workflow uses (`applyInput`, the publication log, the host clock rule), with no Temporal server.
  *
  * It realizes only what a client observes: start verdicts under a Workflow ID used once, Update verdicts (a rejection
- * carries no revision, as a refused Update never enters history), queries, correlated publications routed by the same
- * decisions as the ingress Workflow (`correlation.ts`), and the retained description. Every chain's state is at hand,
- * so a publication asks the running chains of its scope directly and no registration is needed. It drives no timers or
- * Activities; a test that needs them uses the hosted witnesses.
+ * carries no revision, as a refused Update never enters history), queries, populations run by the same driver as the
+ * population ingress Workflow (`population-memory.ts`) over the host's own chains, and the retained description. A
+ * population runs its driver at the host clock as soon as a command or a chain's committed input gives it work, so a
+ * thrown Signal reaches its receivers before the input's caller resumes. It drives no timers or Activities; a test that
+ * needs them uses the hosted witnesses.
  */
-import {
-  deliveryStimulus,
-  delivered,
-  emptyIngress,
-  ingressKey,
-  publicationContent,
-  recorded,
-  route,
-  settle,
-  unrouted,
-  Routing,
-  type IngressState,
-} from "./correlation.js";
+import { canonicalJson } from "./canonical-json.js";
 import {
   Scheduling,
   workflowType,
   type CommandResult,
-  type CorrelatedPublication,
   type HostConfig,
   type HostSnapshot,
-  type PublicationResult,
   snapshotView,
   workflowClosed,
 } from "./host-contract.js";
 import { applyInput, assertNever, clockStimulus, hostOwnsLogicalTime } from "./host-machine.js";
 import { kernelPort } from "./kernel-port.js";
+import { populationCommandDigest, processInstanceWorkflowId } from "./population-address.js";
+import {
+  PopulationRefused,
+  type CommandAnswer,
+  type DeploymentAnswer,
+  type PopulationResult,
+  type PopulationScope,
+} from "./population-contract.js";
+import { MemoryPopulation, type PopulationChain, type PopulationChains } from "./population-memory.js";
+import { populationPort } from "./population-port.js";
+import { configurationConflict, deploymentOf, populationCapacity, populationResult, queueFullCode } from "./population.js";
 
-export { MemoryPopulation } from "./population-memory.js";
+export { MemoryPopulation, type PopulationChain, type PopulationChains } from "./population-memory.js";
 export { populationPort } from "./population-port.js";
-import { Route, type HostView, type JsonValue, type KernelPort } from "./port.js";
+import { Route, type HostView, type JsonValue, type KernelPort, type PopulationPort } from "./port.js";
 import { appendJournal, initialCursor, openLog, readPage, type PublicationLog, type PublicationPage } from "./publication.js";
-import type { ProcessDescription, ProcessHost, StartRequest } from "./process-port.js";
+import type { PopulationHost, ProcessDescription, ProcessHost, StartRequest } from "./process-port.js";
 
 /** The kernel's status name for an instance that has not ended (`Kernel.Publish.statusName`). */
 const running = "running";
@@ -47,7 +45,7 @@ const running = "running";
 interface Chain<P, S> {
   readonly program: P;
   readonly config: HostConfig;
-  readonly correlationScope: string | null;
+  readonly population: PopulationScope | null;
   readonly memo: Readonly<Record<string, JsonValue>> | null;
   instance: { readonly state: S; readonly view: HostView } | null;
   log: PublicationLog;
@@ -65,18 +63,21 @@ export interface MemoryProcessHost extends ProcessHost {
   arrive(workflowId: string, stimulus: JsonValue): Promise<CommandResult>;
   /** The chain's encoded kernel state, `null` before a committed start, as the Workflow's `state` query answers it. */
   state(workflowId: string): Promise<JsonValue>;
+  /** The population `name` over this host's chains, whose chains run under `config`. */
+  population(name: string, config: HostConfig): PopulationHost;
 }
 
 export class UnknownWorkflow extends Error {
   override readonly name = "UnknownWorkflow";
 }
 
-class MemoryHost<P, S, I> implements MemoryProcessHost {
+class MemoryHost<P, S, I, M> implements MemoryProcessHost {
   readonly #chains = new Map<string, Chain<P, S>>();
-  readonly #ingresses = new Map<string, IngressState>();
+  readonly #populations = new Map<string, { readonly config: HostConfig; readonly driver: MemoryPopulation<P, S, M> }>();
 
   constructor(
     private readonly port: KernelPort<P, S, I>,
+    private readonly populationPort: PopulationPort<P, S, M>,
     private readonly taskQueue: string,
     private readonly now: () => number,
   ) {}
@@ -87,7 +88,7 @@ class MemoryHost<P, S, I> implements MemoryProcessHost {
     const chain: Chain<P, S> = {
       program,
       config: request.config,
-      correlationScope: request.correlationScope ?? null,
+      population: request.population ?? null,
       memo: request.memo ?? null,
       instance: null,
       log: openLog(initialCursor),
@@ -95,7 +96,7 @@ class MemoryHost<P, S, I> implements MemoryProcessHost {
     this.#chains.set(request.workflowId, chain);
     const refusal = this.port.admit(program);
     if (refusal !== null) return { outcome: "unsupported", code: refusal, revision: null };
-    const started = this.#apply(chain, request.start, Route.Start);
+    const started = this.#apply(request.workflowId, chain, request.start, Route.Start);
     return started.outcome === "committed" ? started : { ...started, revision: null };
   }
 
@@ -107,34 +108,6 @@ class MemoryHost<P, S, I> implements MemoryProcessHost {
     return this.#submit(workflowId, stimulus, Route.Deliver);
   }
 
-  async publish(publication: CorrelatedPublication): Promise<PublicationResult> {
-    const key = ingressKey(publication.correlationScope, publication.channel);
-    const ingress = this.#ingresses.get(key) ?? emptyIngress;
-    const content = publicationContent(publication);
-    const known = recorded(ingress, publication.commandId, content);
-    if (known !== null) return known;
-    // The ingress Workflow's validator: a publication the kernel's codec cannot carry is the caller's fault.
-    this.port.decodeStimulus(deliveryStimulus(publication, { processInstanceId: "", elementId: "", activation: 0 }));
-    const ordinal = ingress.ordinal + 1;
-    const scanned = [...this.#chains].filter(([, chain]) => chain.correlationScope === publication.correlationScope)
-      .map(([workflowId, chain]) => ({
-        workflowId,
-        occurrences: chain.instance === null || !this.#running(chain) ? []
-          : this.port.matching(chain.program, chain.instance.state, publication.channel, publication.correlation),
-      }));
-    const routed = route(scanned);
-    let result: PublicationResult;
-    if (routed.kind === Routing.One) {
-      const chain = this.#chain(routed.target.workflowId);
-      result = delivered(ordinal, routed.target,
-        this.#apply(chain, deliveryStimulus(publication, routed.target.occurrence), Route.Deliver));
-    } else {
-      result = unrouted(ordinal, routed);
-    }
-    this.#ingresses.set(key, settle({ ...ingress, ordinal }, { commandId: publication.commandId, content, result }));
-    return result;
-  }
-
   async arrive(workflowId: string, stimulus: JsonValue): Promise<CommandResult> {
     const chain = this.#chains.get(workflowId);
     if (chain === undefined || !this.#running(chain)) return { outcome: "rejected", code: workflowClosed, revision: null };
@@ -142,13 +115,47 @@ class MemoryHost<P, S, I> implements MemoryProcessHost {
     switch (route) {
       case Route.TimerFire:
       case Route.EffectResult:
-        return this.#apply(chain, stimulus, route);
+        return this.#apply(workflowId, chain, stimulus, route);
       case Route.Start:
       case Route.Command:
       case Route.Deliver:
         throw new TypeError(`a ${route} stimulus is a client's input, not a host arrival`);
     }
     return assertNever(route);
+  }
+
+  population(name: string, config: HostConfig): PopulationHost {
+    const driver = (): MemoryPopulation<P, S, M> => {
+      const held = this.#population(name, config);
+      const conflict = configurationConflict(held.config, config);
+      if (conflict !== null) throw new PopulationRefused(conflict);
+      return held.driver;
+    };
+    return {
+      population: name,
+      registerDeployment: async (request) => {
+        const population = driver();
+        const program = this.port.decodeProgram(request.program);
+        const refusal = this.port.admit(program);
+        return population.deploy(request.deploymentRequestId, request.digest, refusal === null ? program : { refused: refusal },
+          this.now());
+      },
+      deployment: async (deploymentRequestId): Promise<DeploymentAnswer | null> =>
+        deploymentOf(driver().ingress, deploymentRequestId),
+      command: async (kind, command): Promise<CommandAnswer> => {
+        const population = driver();
+        try {
+          this.populationPort.decodeCommand(kind, command);
+        } catch (error) {
+          // The ingress's validator: a command the kernel's codec cannot read is refused before acceptance.
+          throw new PopulationRefused(`malformed-command: ${error instanceof Error ? error.message : String(error)}`);
+        }
+        const answer = population.command(command.commandId, kind, command, populationCommandDigest(kind, command), this.now());
+        if (answer === null) throw new PopulationRefused(queueFullCode);
+        return answer as unknown as CommandAnswer;
+      },
+      result: async (commandId) => populationResult(driver().ingress, commandId) as unknown as PopulationResult,
+    };
   }
 
   async observation(workflowId: string): Promise<JsonValue> {
@@ -186,13 +193,52 @@ class MemoryHost<P, S, I> implements MemoryProcessHost {
     return chain.instance !== null && chain.instance.view.status === running;
   }
 
+  /** The population `name`, made on first use with `config`, the configuration of the chains it starts. */
+  #population(name: string, config: HostConfig): { readonly config: HostConfig; readonly driver: MemoryPopulation<P, S, M> } {
+    const held = this.#populations.get(name);
+    if (held !== undefined) return held;
+    const made = {
+      config: JSON.parse(canonicalJson(config)) as HostConfig,
+      driver: new MemoryPopulation(this.populationPort, this.port.hostView, populationCapacity.receivers, this.#store(name, config),
+        processInstanceWorkflowId),
+    };
+    this.#populations.set(name, made);
+    return made;
+  }
+
+  /** The chains of population `name`, as its driver reads them; a population start makes a chain under `config`. */
+  #store(name: string, config: HostConfig): PopulationChains<P, S> {
+    return {
+      get: (workflowId) => {
+        const chain = this.#chains.get(workflowId);
+        if (chain === undefined || chain.instance === null || chain.population?.population !== name) return undefined;
+        return { deploymentId: chain.population.deploymentId, program: chain.program, state: chain.instance.state };
+      },
+      set: (workflowId, entry: PopulationChain<P, S>, commandId) => {
+        const chain = this.#chains.get(workflowId) ?? {
+          program: entry.program, config, population: { population: name, deploymentId: entry.deploymentId }, memo: null,
+          instance: null, log: openLog(initialCursor),
+        };
+        this.#chains.set(workflowId, chain);
+        this.#commit(chain, commandId, entry.state);
+      },
+    };
+  }
+
   async #submit(workflowId: string, stimulus: JsonValue, route: Route): Promise<CommandResult> {
     const chain = this.#chains.get(workflowId);
     if (chain === undefined || !this.#running(chain)) return { outcome: "rejected", code: workflowClosed, revision: null };
-    return this.#apply(chain, stimulus, route);
+    return this.#apply(workflowId, chain, stimulus, route);
   }
 
-  #apply(chain: Chain<P, S>, stimulus: JsonValue, route: Route): CommandResult {
+  #commit(chain: Chain<P, S>, commandId: string, state: S): void {
+    const view = this.port.hostView(chain.program, state);
+    chain.instance = { state, view };
+    chain.log = appendJournal(chain.log, commandId, view.journal);
+  }
+
+  /** One of the chain's own inputs; under a population, its registration and thrown Signals go to the population. */
+  #apply(workflowId: string, chain: Chain<P, S>, stimulus: JsonValue, route: Route): CommandResult {
     const clocked = chain.config.scheduling === Scheduling.Durable ? clockStimulus(stimulus, this.now()) : stimulus;
     if (clocked === null) return { outcome: "rejected", code: hostOwnsLogicalTime, revision: null };
     const { commandId, input } = this.port.decodeStimulus(clocked);
@@ -201,13 +247,19 @@ class MemoryHost<P, S, I> implements MemoryProcessHost {
     if (!applied.committed) {
       return { outcome: applied.outcome, code: applied.code, revision: applied.rejected ? null : chain.log.cursor.revision };
     }
-    chain.instance = { state: applied.state, view: applied.view };
-    chain.log = appendJournal(chain.log, commandId, applied.view.journal);
-    return { outcome: "committed", code: null, revision: chain.log.cursor.revision };
+    this.#commit(chain, commandId, applied.state);
+    const revision = chain.log.cursor.revision;
+    const scope = chain.population;
+    if (scope !== null) {
+      const population = this.#population(scope.population, chain.config).driver;
+      population.committed(workflowId, scope.deploymentId, chain.program, applied.state, commandId);
+      population.run(this.now());
+    }
+    return { outcome: "committed", code: null, revision };
   }
 }
 
 /** A `ProcessHost` bound to the TypeScript kernel. */
 export function createMemoryProcessHost(options: MemoryProcessHostOptions): MemoryProcessHost {
-  return new MemoryHost(kernelPort, options.taskQueue, options.now ?? Date.now);
+  return new MemoryHost(kernelPort, populationPort, options.taskQueue, options.now ?? Date.now);
 }

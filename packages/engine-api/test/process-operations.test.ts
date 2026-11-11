@@ -16,7 +16,7 @@ import {
   submitEngineIncidentOperation,
 } from "@bpmn-lean/engine-api";
 
-import { incidentProfile, limits, scenarioBytes, sha256, testHost, type TestHost } from "./support.ts";
+import { deployed, incidentProfile, limits, scenarioBytes, sha256, testHost, type TestHost } from "./support.ts";
 
 const occurrence = { processInstanceId: "incident-instance", elementId: "ServiceTask_Record", activation: 1 };
 const locator = engineProcessLocatorForCanonicalProcess("incident-instance");
@@ -25,7 +25,7 @@ const workflowId = decodeURIComponent(locator.slice("bpmn-process:".length));
 async function failed(): Promise<TestHost> {
   const host = testHost();
   const bytes = await scenarioBytes("service-task-effect/process.bpmn");
-  const start = await startBpmnDefinitionVersion({
+  const start = await startBpmnDefinitionVersion(await deployed({
     host,
     bytes,
     sourceId: "effect",
@@ -36,7 +36,7 @@ async function failed(): Promise<TestHost> {
     processInstanceId: "incident-instance",
     initialVariables: [],
     limits,
-  });
+  }));
   assert.equal(start.status, EngineDefinitionStartStatus.Started);
   const failure = await host.processes.arrive(workflowId,
     { kind: "effectResult", commandId: "fail", occurrence, outcome: { kind: "technicalFailure" } });

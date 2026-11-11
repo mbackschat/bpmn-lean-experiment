@@ -12,6 +12,7 @@ import type {
   DefinitionCompilationRequest,
   DefinitionCompilationResult,
   DefinitionCompiler,
+  DefinitionVersionRegistrar,
   DefinitionVersionStarter,
 } from "@bpmn-lean/platform-engine-gateway";
 import {
@@ -27,6 +28,7 @@ import type {
   ExactArtifactStore,
   NewDefinitionMetadata,
 } from "@bpmn-lean/platform-definitions";
+import { registeringEngine } from "./support/engine-registration.ts";
 
 const encoder = new TextEncoder();
 
@@ -460,7 +462,8 @@ function createFixture(
 }> {
   const compileCalls: DefinitionCompilationRequest[] = [];
   const compilationResults: DefinitionCompilationResult[] = [];
-  const compiler: DefinitionCompiler = {
+  const compiler: DefinitionCompiler & DefinitionVersionRegistrar = {
+    ...registeringEngine(),
     compileDefinition: async (request) => {
       compileCalls.push({
         ...request,

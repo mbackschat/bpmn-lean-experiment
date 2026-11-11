@@ -12,7 +12,7 @@ import {
 import { createMemoryProcessHost, type MemoryProcessHost } from "@bpmn-lean/temporal-host/memory-host";
 
 import type { EngineServedRequirements } from "./definition.js";
-import type { EngineHost } from "./host.js";
+import { engineHostConfig, type EngineHost } from "./host.js";
 
 /** A Schedule host that keeps what it was asked to do; `stored` decides what `describe` reports. */
 export interface MemoryScheduleHost extends ScheduleHost {
@@ -95,11 +95,14 @@ function memoryScheduleHost(taskQueue: string): MemoryScheduleHost {
 
 export function createMemoryEngineHost(options: MemoryEngineHostOptions = {}): MemoryEngineHost {
   const taskQueue = options.taskQueue ?? "engine-memory";
+  const processes = createMemoryProcessHost({ taskQueue, ...(options.now === undefined ? {} : { now: options.now }) });
+  const effectStartToCloseMs = 1_000;
   return {
-    processes: createMemoryProcessHost({ taskQueue, ...(options.now === undefined ? {} : { now: options.now }) }),
+    processes,
     schedules: memoryScheduleHost(taskQueue),
+    population: processes.population(taskQueue, engineHostConfig({ effectStartToCloseMs })),
     taskQueue,
     served: options.served ?? servesEverything,
-    effectStartToCloseMs: 1_000,
+    effectStartToCloseMs,
   };
 }

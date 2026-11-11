@@ -19,6 +19,7 @@ import {
 import type {
   DefinitionCompilationRequest,
   DefinitionCompiler,
+  DefinitionVersionRegistrar,
 } from "@bpmn-lean/platform-engine-gateway";
 import {
   DefinitionDeploymentService,
@@ -26,6 +27,7 @@ import {
   SqliteDefinitionRepository,
 } from "@bpmn-lean/platform-definitions";
 import type { ExactArtifactStore } from "@bpmn-lean/platform-definitions";
+import { registeringEngine } from "./support/engine-registration.ts";
 
 const profile = "bpmn-2.0.2";
 const source = new TextEncoder().encode("<exact-source/>");
@@ -157,8 +159,9 @@ test("refuses an absent or invalid required catalog before artifact or metadata 
   }
 });
 
-function acceptedCompiler(): DefinitionCompiler {
+function acceptedCompiler(): DefinitionCompiler & DefinitionVersionRegistrar {
   return {
+    ...registeringEngine(),
     async compileDefinition(request: DefinitionCompilationRequest) {
       assert.deepEqual(request.bytes, source);
       return {

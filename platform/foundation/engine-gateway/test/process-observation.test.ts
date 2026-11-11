@@ -21,6 +21,7 @@ import { engineProcessLocatorForCanonicalProcess } from "@bpmn-lean/engine-api";
 import type { MemoryEngineHost } from "@bpmn-lean/engine-api/testing";
 
 import {
+  register,
   correlationProfile,
   incidentProfile,
   limits,
@@ -35,9 +36,10 @@ import {
 async function start(host: MemoryEngineHost, path: string, processId: string, profile: string, processInstanceId: string) {
   const bytes = await scenarioBytes(path);
   const sourceSha256 = await sha256(bytes);
-  const started = await new BpmnEngineGateway({ ...limits, host, profileRelations }).startDefinitionVersion({
-    bytes, sourceId: "s", expectedSha256: sourceSha256, semanticProfile: profile, expectedProcessId: processId,
-    version: 2, processInstanceId, initialVariables: [] });
+  const gateway = new BpmnEngineGateway({ ...limits, host, profileRelations });
+  const version = { bytes, sourceId: "s", expectedSha256: sourceSha256, semanticProfile: profile, expectedProcessId: processId, version: 2 };
+  await register(gateway, version);
+  const started = await gateway.startDefinitionVersion({ ...version, processInstanceId, initialVariables: [] });
   assert.equal(started.status, DefinitionStartStatus.Started);
   return { sourceSha256, locator: new BpmnProcessWorkGateway(host).canonicalLocator(processInstanceId) };
 }
@@ -103,10 +105,13 @@ test("execution and occurrence pages read from revision 0 under Product 2's publ
 
 async function storedCorrelated(host: MemoryEngineHost) {
   const bytes = await scenarioBytes("message-key-correlation/process.bpmn");
-  const compiled = await new BpmnEngineGateway({ ...limits, host, profileRelations }).compileDefinition({
+  const gateway = new BpmnEngineGateway({ ...limits, host, profileRelations });
+  const compiled = await gateway.compileDefinition({
     bytes, sourceId: "s", semanticProfile: correlationProfile, expectedSha256: undefined });
   assert.equal(compiled.status, DefinitionCompilationStatus.Accepted);
   if (compiled.status !== DefinitionCompilationStatus.Accepted) throw new Error("not accepted");
+  await register(gateway, { bytes, sourceId: "s", expectedSha256: compiled.source.sha256, semanticProfile: correlationProfile,
+    expectedProcessId: compiled.definition.processId, version: 1 });
   return {
     bytes,
     definition: {

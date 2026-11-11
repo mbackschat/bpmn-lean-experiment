@@ -137,7 +137,7 @@ export function createPopulationActivities(): PopulationActivities {
         workflowIdConflictPolicy: "USE_EXISTING",
         workflowIdReusePolicy: "REJECT_DUPLICATE",
         args: [{
-          kind: RunKind.PopulationStart, program, config: request.config, correlationScope: null,
+          kind: RunKind.PopulationStart, program, config: request.config,
           population: { population: request.population, deploymentId: request.deploymentId }, request: request.request,
         }],
       });

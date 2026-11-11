@@ -2,6 +2,7 @@ export {
   DefinitionArtifactIntegrityError,
   DefinitionDeploymentStatus,
   DefinitionDeploymentIntegrityError,
+  DefinitionEngineRegistrationError,
   DefinitionStartIntegrityError,
   DefinitionVersionStartStatus,
 } from "./contracts.js";

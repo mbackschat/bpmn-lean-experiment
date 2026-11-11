@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { test } from "node:test";
 import { DefinitionHttpRoutes, DefinitionDeploymentService, DefinitionStartService, ConfirmedProcessInstancePublicationService, InMemoryConfirmedProcessInstanceRepository } from "@bpmn-lean/platform-definitions";
 import type { DefinitionCompilationRequest } from "@bpmn-lean/platform-engine-gateway";
+import { registeringEngine } from "./support/engine-registration.ts";
 
 const endpoint = "http://test/api/v1/definitions?sourceId=source&semanticProfile=profile";
 const source = new TextEncoder().encode("<bpmn/>");
@@ -11,7 +12,7 @@ const refuseServiceEntry = async (): Promise<never> => { assert.fail("transport 
 const repository = { allocateNext: refuseServiceEntry, listLatest: refuseServiceEntry, listVersions: refuseServiceEntry, get: refuseServiceEntry };
 const artifacts = { put: refuseServiceEntry, get: refuseServiceEntry };
 const publication = new ConfirmedProcessInstancePublicationService({ repository: new InMemoryConfirmedProcessInstanceRepository(), operate: { recordConfirmedProcessInstance: refuseServiceEntry }, work: { recordConfirmedProcessInstance: refuseServiceEntry } });
-const deployment = new DefinitionDeploymentService({ compileDefinition: refuseServiceEntry }, artifacts, repository);
+const deployment = new DefinitionDeploymentService({ ...registeringEngine(), compileDefinition: refuseServiceEntry }, artifacts, repository);
 const start = new DefinitionStartService({ prepareDefinitionVersion: refuseServiceEntry, startPreparedDefinitionVersion: refuseServiceEntry, startDefinitionVersion: refuseServiceEntry, describeDefinitionVersionStart: refuseServiceEntry }, artifacts, repository, () => { assert.fail("transport refusal must precede identity allocation"); }, publication);
 const routes = new DefinitionHttpRoutes(deployment, start, { maxSourceBytes: 64 });
 
@@ -127,7 +128,7 @@ for (const [name, bytes] of [
 for (const id of ["\uFFFD", "selected-🚀", "\uFEFFliteral", "é\u0000", "scalar-compatible"]) {
   test(`multipart forwards literal Unicode ID ${JSON.stringify(id)} and opaque file bytes unchanged`, async () => {
     const calls: DefinitionCompilationRequest[] = [];
-    const capture = new DefinitionDeploymentService({ compileDefinition: async request => {
+    const capture = new DefinitionDeploymentService({ ...registeringEngine(), compileDefinition: async request => {
       calls.push(request);
       throw new Error("compiler witness stops before storage");
     } }, artifacts, repository);
@@ -147,7 +148,7 @@ for (const filename of ["identity-does-not-come-from-filename.txt", ""]) {
     const id = "\uFEFFliteral\u0000\r\n\r\n\n🚀";
     const sourceOverlay = selectedOverlay(id);
     const calls: DefinitionCompilationRequest[] = [];
-    const capture = new DefinitionDeploymentService({ compileDefinition: async request => {
+    const capture = new DefinitionDeploymentService({ ...registeringEngine(), compileDefinition: async request => {
       calls.push(request);
       throw new Error("compiler witness stops before storage");
     } }, artifacts, repository);

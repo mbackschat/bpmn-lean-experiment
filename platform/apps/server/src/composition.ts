@@ -49,6 +49,7 @@ import {
   messageStartPublicationProcessInstanceId,
   messageStartPublicationWorkflowId,
 } from "@bpmn-lean/platform-engine-gateway";
+import type { EngineHostRuntime } from "@bpmn-lean/platform-engine-gateway";
 import {
   IncidentActionAuditOutboxService,
   IncidentActionReconciliationService,
@@ -114,6 +115,8 @@ export type PlatformServerCompositionOverrides = Readonly<{
   createSharedServer?: (
     config: ValidatedPlatformServerConfig,
   ) => Promise<PlatformServerRuntime>;
+  /** The engine host the local composition runs against instead of the configured Temporal connection. */
+  engineHostRuntime?: EngineHostRuntime;
 }>;
 
 /** Selects exactly one complete local or shared storage composition. */
@@ -124,7 +127,7 @@ export async function createPlatformServer(
   const snapshot = snapshotPlatformServerConfig(config);
   switch (snapshot.storageMode) {
     case PlatformStorageMode.Local:
-      return await (overrides.createLocalServer ?? createLocalPlatformServer)(snapshot);
+      return await (overrides.createLocalServer ?? ((local) => createLocalPlatformServer(local, overrides.engineHostRuntime)))(snapshot);
     case PlatformStorageMode.Shared:
       return await (overrides.createSharedServer ?? createSharedPlatformServer)(snapshot);
   }
@@ -133,6 +136,7 @@ export async function createPlatformServer(
 /** Creates the single-node development composition with filesystem and SQLite owners. */
 async function createLocalPlatformServer(
   snapshot: ValidatedPlatformServerConfig,
+  engineHostRuntime: EngineHostRuntime | undefined,
 ): Promise<PlatformServerRuntime> {
   await mkdir(snapshot.dataDirectory, { recursive: true });
 
@@ -144,6 +148,7 @@ async function createLocalPlatformServer(
     temporalTaskQueue: snapshot.temporalTaskQueue,
     temporalConnectTimeoutMs: snapshot.temporalConnectTimeoutMs,
     ...engineDeploymentRuntimeOptions(snapshot.engineDeployment),
+    ...(engineHostRuntime === undefined ? {} : { engineHostRuntime }),
   });
   const artifacts = new FileArtifactStore(
     join(snapshot.dataDirectory, "artifacts"),

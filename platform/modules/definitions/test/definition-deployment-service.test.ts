@@ -17,11 +17,13 @@ import type {
 import {
   createBpmnEngineGatewayRuntime,
   DefinitionCompilationStatus,
+  DefinitionRegistrationStatus,
 } from "@bpmn-lean/platform-engine-gateway";
 import type {
   DefinitionCompilationRequest,
   DefinitionCompilationResult,
   DefinitionCompiler,
+  DefinitionVersionRegistrar,
 } from "@bpmn-lean/platform-engine-gateway";
 
 import {
@@ -29,11 +31,13 @@ import {
   DefinitionSchemaResetRequiredError,
   DefinitionDeploymentService,
   DefinitionDeploymentStatus,
+  DefinitionEngineRegistrationError,
   SqliteDefinitionRepository,
 } from "@bpmn-lean/platform-definitions";
 import type {
   ExactArtifactStore,
 } from "@bpmn-lean/platform-definitions";
+import { registeringEngine } from "./support/engine-registration.ts";
 
 const encoder = new TextEncoder();
 
@@ -69,7 +73,10 @@ class MemoryArtifactStore implements ExactArtifactStore {
   }
 }
 
-class AcceptedCompiler implements DefinitionCompiler {
+class AcceptedCompiler implements DefinitionCompiler, DefinitionVersionRegistrar {
+  readonly #engine = registeringEngine();
+  readonly registered = this.#engine.registered;
+  readonly registerDefinitionVersion = this.#engine.registerDefinitionVersion;
   readonly #processId: string;
   readonly #gate: Promise<void>;
   readonly #timerStarts: ReadonlyArray<Readonly<{
@@ -340,7 +347,8 @@ test("returns exact engine rejection diagnostics and performs zero writes", asyn
       rejectedCompilation.status,
       DefinitionCompilationStatus.Rejected,
     );
-    const fixedCompiler: DefinitionCompiler = {
+    const fixedCompiler: DefinitionCompiler & DefinitionVersionRegistrar = {
+      ...registeringEngine(),
       compileDefinition: async () => rejectedCompilation,
     };
     const artifacts = new MemoryArtifactStore();
@@ -363,6 +371,40 @@ test("returns exact engine rejection diagnostics and performs zero writes", asyn
     assert.ok(result.diagnostics.length > 0);
     assert.deepEqual(artifacts.puts, []);
     assert.deepEqual(await service.listLatestDefinitions(), []);
+  });
+});
+
+test("registers each stored version with the engine under the version it was allocated", async () => {
+  await withRepository(async ({ repository }) => {
+    const compiler = new AcceptedCompiler("Process_Registered");
+    const service = new DefinitionDeploymentService(compiler, new MemoryArtifactStore(), repository);
+    await deployText(service, "r-1");
+    await deployText(service, "r-2");
+    assert.deepEqual(compiler.registered.map(({ sourceId, expectedProcessId, version, sourceOverlay }) =>
+      ({ sourceId, expectedProcessId, version, sourceOverlay })), [
+      { sourceId: "r-1", expectedProcessId: "Process_Registered", version: 1, sourceOverlay: null },
+      { sourceId: "r-2", expectedProcessId: "Process_Registered", version: 2, sourceOverlay: null },
+    ]);
+    assert.deepEqual(compiler.registered.map(({ bytes, expectedSha256 }) => [new TextDecoder().decode(bytes), expectedSha256]),
+      [["r-1", sha256(encoder.encode("r-1"))], ["r-2", sha256(encoder.encode("r-2"))]]);
+  });
+});
+
+test("a version the engine refuses to register stays stored and the deployment raises the engine's code", async () => {
+  await withRepository(async ({ repository }) => {
+    const accepted = new AcceptedCompiler("Process_Refused");
+    const refusing: DefinitionCompiler & DefinitionVersionRegistrar = {
+      compileDefinition: (request) => accepted.compileDefinition(request),
+      registerDefinitionVersion: async () => ({
+        status: DefinitionRegistrationStatus.Refused,
+        failure: { code: "deployment.messageStartName", evidence: "refused" },
+      }),
+    };
+    const service = new DefinitionDeploymentService(refusing, new MemoryArtifactStore(), repository);
+    await assert.rejects(deployText(service, "x-1"), (error: unknown) =>
+      error instanceof DefinitionEngineRegistrationError && error.code === "deployment.messageStartName" &&
+      error.definition.processId === "Process_Refused" && error.definition.version === 1);
+    assert.deepEqual(serviceKeys(await service.listLatestDefinitions()), ["Process_Refused/1"]);
   });
 });
 

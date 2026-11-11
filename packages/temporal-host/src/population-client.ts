@@ -16,13 +16,16 @@ import {
 import type { HostConfig } from "./host-contract.js";
 import { populationCommandDigest, populationCommandUpdateId, populationIngressWorkflowId } from "./population-address.js";
 import {
+  PopulationRefused,
   populationIngressWorkflowType,
   type CommandAnswer,
   type DeploymentAnswer,
   type DeploymentRequest,
   type PopulationIngressArgs,
+  type PopulationResult,
 } from "./population-contract.js";
 import type { JsonValue } from "./port.js";
+import type { PopulationHost } from "./process-port.js";
 import {
   populationBacklogQuery,
   populationCommandUpdate,
@@ -33,19 +36,6 @@ import {
 } from "./protocol.js";
 
 type Ingress = (args: PopulationIngressArgs) => Promise<void>;
-
-/** A recorded command answer, or whether the command is still queued or in flight (`pending`) or `unknown`. */
-export type PopulationResult =
-  | { readonly kind: "settled"; readonly answer: CommandAnswer }
-  | { readonly kind: "pending" | "unknown" };
-
-/** A request the ingress refused before acceptance: a full queue, a malformed request or a configuration conflict. */
-export class PopulationRefused extends Error {
-  constructor(readonly code: string) {
-    super(code);
-    this.name = "PopulationRefused";
-  }
-}
 
 async function refusing<T>(call: () => Promise<T>): Promise<T> {
   try {
@@ -59,7 +49,7 @@ async function refusing<T>(call: () => Promise<T>): Promise<T> {
   }
 }
 
-export class PopulationClient {
+export class PopulationClient implements PopulationHost {
   /**
    * `config` is the configuration of the chains the ingress starts for the population's receivers; `rolloverEvents`
    * forces the ingress to continue as new, for tests.
@@ -67,7 +57,7 @@ export class PopulationClient {
   constructor(
     private readonly client: Client,
     private readonly taskQueue: string,
-    private readonly population: string,
+    readonly population: string,
     private readonly config: HostConfig,
     private readonly rolloverEvents: number | null = null,
     private readonly pollMs = 200,

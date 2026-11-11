@@ -17,17 +17,17 @@ import {
   type EngineDefinitionIdentity,
 } from "@bpmn-lean/engine-api";
 
-import { limits, scenarioBytes, sha256, standardProfile, testHost, type TestHost } from "./support.ts";
+import { deployed, limits, scenarioBytes, sha256, standardProfile, testHost, type TestHost } from "./support.ts";
 
 const locator = engineProcessLocatorForCanonicalProcess("published");
 
 async function started(): Promise<Readonly<{ host: TestHost; definition: EngineDefinitionIdentity }>> {
   const host = testHost();
   const bytes = await scenarioBytes("user-task-preserved-notation/process.bpmn");
-  const start = await startBpmnDefinitionVersion({
+  const start = await startBpmnDefinitionVersion(await deployed({
     host, bytes, sourceId: "approval", expectedSha256: await sha256(bytes), profile: standardProfile,
     expectedProcessId: "Process_SequentialUserTask", version: 4, processInstanceId: "published", initialVariables: [], limits,
-  });
+  }));
   if (start.status !== EngineDefinitionStartStatus.Started) throw new Error("not started");
   assert.equal(start.definition.ref.version, 4);
   return { host, definition: start.definition };

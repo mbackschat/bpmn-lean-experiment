@@ -20,6 +20,9 @@
       "@bpmn-lean/platform-engine-gateway": [
         "./platform/foundation/engine-gateway/src/index.ts"
       ],
+      "@bpmn-lean/platform-engine-gateway/testing": [
+        "./platform/foundation/engine-gateway/src/testing.ts"
+      ],
       "@bpmn-lean/platform-audit": [
         "./platform/foundation/audit/src/index.ts"
       ],

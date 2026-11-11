@@ -13,7 +13,6 @@ import {
   compileBpmnDefinition,
   createBpmnDefinitionSchedule,
   deleteBpmnDefinitionSchedule,
-  engineCorrelationScope,
   engineDefinitionScheduleId,
   inspectBpmnDefinitionSchedule,
   pauseBpmnDefinitionSchedule,
@@ -21,7 +20,7 @@ import {
   type EngineDefinitionScheduleBindingRequest,
 } from "@bpmn-lean/engine-api";
 
-import { limits, pendingSchedule, scenarioBytes, sha256, standardProfile, testHost, type TestHost } from "./support.ts";
+import { deployed, limits, pendingSchedule, scenarioBytes, sha256, standardProfile, testHost, type TestHost } from "./support.ts";
 
 const due = Date.UTC(2026, 10, 9, 12, 0, 1);
 
@@ -31,7 +30,7 @@ async function request(host: TestHost): Promise<EngineDefinitionScheduleBindingR
   if (compiled.status !== EngineDefinitionCompilationStatus.Accepted) throw new Error("not admitted");
   const [start] = compiled.capabilities.starts;
   if (start?.schedule == null) throw new Error("no Timer start");
-  return {
+  return deployed({
     host,
     bytes,
     sourceId: "t",
@@ -47,7 +46,7 @@ async function request(host: TestHost): Promise<EngineDefinitionScheduleBindingR
     workflowIdBase: "timer-workflow",
     dueAtEpochMs: due,
     limits,
-  };
+  });
 }
 
 test("creation stores one Timer-triggered start at the due instant and reports it pending", async () => {
@@ -58,9 +57,8 @@ test("creation stores one Timer-triggered start at the due instant and reports i
   const [stored] = host.schedules.created;
   assert.equal(stored?.dueAtEpochMs, due);
   assert.equal(stored?.workflowIdBase, "timer-workflow");
-  const identity = { ref: { definitionKey: "Process_TimerStart", version: 1, sha256: (await request(host)).expectedSha256 },
-    profile: standardProfile.id, sourceOverlay: null };
-  assert.equal(stored?.correlationScope, engineCorrelationScope(identity), "the started instance takes its version's publications");
+  assert.deepEqual(stored?.population, { population: host.population.population, deploymentId: 1 },
+    "the started instance runs under its version's registered deployment");
   assert.deepEqual(stored?.start, {
     kind: "start",
     commandId: "timer-start:timer-instance",

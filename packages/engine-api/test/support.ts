@@ -1,7 +1,13 @@
 /** Fixtures for the engine API's tests: retained scenario models read as exact bytes, and profiles as data. */
 import { readFile } from "node:fs/promises";
 
-import type { EngineProfile, EngineServedRequirements } from "@bpmn-lean/engine-api";
+import {
+  EngineDeploymentStatus,
+  registerEngineDeployment,
+  type EngineDeploymentRequest,
+  type EngineProfile,
+  type EngineServedRequirements,
+} from "@bpmn-lean/engine-api";
 import { createMemoryEngineHost, servesEverything, type MemoryEngineHost } from "@bpmn-lean/engine-api/testing";
 
 export { pendingSchedule, servesEverything } from "@bpmn-lean/engine-api/testing";
@@ -27,4 +33,11 @@ export type TestHost = MemoryEngineHost;
 
 export function testHost(served: EngineServedRequirements = servesEverything): TestHost {
   return createMemoryEngineHost({ served, taskQueue: "engine-test", now: () => 1_000 });
+}
+
+/** `request` once the definition version it names is registered with its host's population, as Product 2 deploys. */
+export async function deployed<R extends EngineDeploymentRequest>(request: R): Promise<R> {
+  const result = await registerEngineDeployment(request);
+  if (result.status !== EngineDeploymentStatus.Registered) throw new Error(`deployment refused: ${result.failure.code}`);
+  return request;
 }

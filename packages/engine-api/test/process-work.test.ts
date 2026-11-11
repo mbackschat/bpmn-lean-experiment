@@ -16,7 +16,7 @@ import {
   startBpmnDefinitionVersion,
 } from "@bpmn-lean/engine-api";
 
-import { limits, scenarioBytes, sha256, standardProfile, testHost, type TestHost } from "./support.ts";
+import { deployed, limits, scenarioBytes, sha256, standardProfile, testHost, type TestHost } from "./support.ts";
 
 const taskId = { processInstanceId: "work-instance", elementId: "UserTask_Approve", activation: 1 };
 const locator = engineProcessLocatorForCanonicalProcess("work-instance");
@@ -24,7 +24,7 @@ const locator = engineProcessLocatorForCanonicalProcess("work-instance");
 async function started(): Promise<TestHost> {
   const host = testHost();
   const bytes = await scenarioBytes("user-task-preserved-notation/process.bpmn");
-  const start = await startBpmnDefinitionVersion({
+  const start = await startBpmnDefinitionVersion(await deployed({
     host,
     bytes,
     sourceId: "approval",
@@ -35,7 +35,7 @@ async function started(): Promise<TestHost> {
     processInstanceId: "work-instance",
     initialVariables: [{ name: "requester", value: { kind: "string", value: "ada" } }],
     limits,
-  });
+  }));
   assert.equal(start.status, EngineDefinitionStartStatus.Started);
   return host;
 }

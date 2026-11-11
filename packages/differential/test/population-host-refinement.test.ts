@@ -32,7 +32,7 @@ import {
   type State,
 } from "@bpmn-lean/kernel";
 import type { HostView, JsonValue } from "@bpmn-lean/temporal-host/host";
-import { MemoryPopulation, populationPort } from "@bpmn-lean/temporal-host/memory-host";
+import { MemoryPopulation, populationPort, type PopulationChain } from "@bpmn-lean/temporal-host/memory-host";
 
 import { populationStepDigests } from "./population-digest.ts";
 import { populationPrograms } from "./population-programs.ts";
@@ -51,8 +51,9 @@ function hosted(sources: readonly unknown[], document: PopulationScenarioDocumen
   const stimuli = stimuliOfPopulation(declared, sources.map((json, index) => deploymentSourceFromJson(json, `source ${String(index)}`)),
     steps, digests, "population");
   const commandSteps = steps.filter((json) => commandKinds.has(json["kind"] as string));
+  const chains = new Map<string, PopulationChain<Program, State>>();
   const population = new MemoryPopulation<Program, State, FanOutMachine>(populationPort,
-    (program, state) => hostViewJson(hostView(program, state)) as unknown as HostView, cascadeBound);
+    (program, state) => hostViewJson(hostView(program, state)) as unknown as HostView, cascadeBound, chains);
   const registry: Deployment[] = [];
   const refused: number[] = [];
   const deployments: JsonValue[] = [];
@@ -85,7 +86,7 @@ function hosted(sources: readonly unknown[], document: PopulationScenarioDocumen
         break;
       }
       case StimulusTag.Input: {
-        const chain = population.chains.get(stimulus.instanceId);
+        const chain = chains.get(stimulus.instanceId);
         const deployment = chain === undefined
           ? registry.filter((candidate) => candidate.definitionRef === stimulus.definitionRef).at(-1)
           : definitionOf.get(stimulus.instanceId);
@@ -99,6 +100,7 @@ function hosted(sources: readonly unknown[], document: PopulationScenarioDocumen
           break;
         }
         definitionOf.set(stimulus.instanceId, deployment);
+        chains.set(stimulus.instanceId, { deploymentId: deployment.deploymentId, program: deployment.program, state: stepped.value });
         population.committed(stimulus.instanceId, deployment.deploymentId, deployment.program, stepped.value, stimulus.commandId);
         population.run(stepped.value.logicalTimeMs);
         const cascade = population.ingress.ledger.find((entry) =>
@@ -119,13 +121,13 @@ function hosted(sources: readonly unknown[], document: PopulationScenarioDocumen
         // A Message delivery names its chain, which holds the target's instance; nothing else names one.
         const target = (rest["resolution"] as Json)["target"] as Json | undefined;
         assert.equal(chain !== null, target !== undefined && (rest["resolution"] as Json)["kind"] !== "fanOut");
-        if (typeof chain === "string") assert.ok(population.chains.has(chain), `${String(json["commandId"])}: chain ${chain}`);
+        if (typeof chain === "string") assert.ok(chains.has(chain), `${String(json["commandId"])}: chain ${chain}`);
         results.push({ ...rest, at: atMs } as JsonValue);
         break;
       }
     }
   }
-  const processStates = [...population.chains.entries()].sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0))
+  const processStates = [...chains.entries()].sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0))
     .map(([, chain]) => observationJson(chain.program, chain.state) as JsonValue);
   return {
     ...(inputFailures.length === 0 ? {} : { inputFailures }),

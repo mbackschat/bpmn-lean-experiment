@@ -1,10 +1,17 @@
 /**
- * The process operations a client of the host uses, as a port: `ProcessClient` realizes it over Temporal and the
- * memory host in process. It imports nothing from the Temporal SDK, so its users type-check without the SDK.
+ * The process and population operations a client of the host uses, as ports: `ProcessClient` and `PopulationClient`
+ * realize them over Temporal and the memory host in process. It imports nothing from the Temporal SDK, so its users
+ * type-check without the SDK.
  */
-import type { CommandResult, CorrelatedPublication, HostConfig, HostSnapshot, PublicationResult } from "./host-contract.js";
+import type { CommandResult, HostConfig, HostSnapshot } from "./host-contract.js";
 import type { PublicationPage } from "./publication.js";
-import type { PopulationScope } from "./population-contract.js";
+import type {
+  CommandAnswer,
+  DeploymentAnswer,
+  DeploymentRequest,
+  PopulationResult,
+  PopulationScope,
+} from "./population-contract.js";
 import type { JsonValue } from "./port.js";
 
 export interface StartRequest {
@@ -14,11 +21,9 @@ export interface StartRequest {
   /** The start stimulus, in the scenario contract's form. */
   readonly start: JsonValue;
   /**
-   * The caller's opaque name of the deployed definition the instance runs; correlated publications to it reach the
-   * instance's open correlated waits. Absent, only an addressed delivery reaches them.
+   * The population the instance registers its Message and Signal waits with, and the deployment it runs; its
+   * population's commands reach them. Absent, only an addressed delivery reaches them.
    */
-  readonly correlationScope?: string;
-  /** The population the instance registers its Message and Signal waits with, and the deployment it runs. */
   readonly population?: PopulationScope;
   /** Caller-owned facts about the start, returned verbatim by `describe`; the host never reads them. */
   readonly memo?: Readonly<Record<string, JsonValue>>;
@@ -37,11 +42,25 @@ export interface ProcessHost {
   start(request: StartRequest): Promise<CommandResult>;
   command(workflowId: string, stimulus: JsonValue): Promise<CommandResult>;
   deliver(workflowId: string, stimulus: JsonValue): Promise<CommandResult>;
-  /** Delivers a correlated publication to the one open correlated wait of its scope that matches it now. */
-  publish(publication: CorrelatedPublication): Promise<PublicationResult>;
   observation(workflowId: string): Promise<JsonValue>;
   hostView(workflowId: string): Promise<HostSnapshot>;
   publication(workflowId: string, afterRevision: number, limit?: number): Promise<PublicationPage>;
   /** `null` when Temporal retains no chain under the Workflow ID. */
   describe(workflowId: string): Promise<ProcessDescription | null>;
+}
+
+/**
+ * One population's ingress as its caller uses it, under the chain configuration the caller gave: a caller with another
+ * configuration than the running ingress's is refused (`PopulationRefused`, `host.population.configurationConflict`),
+ * as is a command the full queue cannot take.
+ */
+export interface PopulationHost {
+  readonly population: string;
+  /** Registers a deployment; the same request identifier answers as before, with another digest it is refused. */
+  registerDeployment(request: Omit<DeploymentRequest, "config">): Promise<DeploymentAnswer>;
+  /** The answer a deployment request received, `null` when it was never registered. */
+  deployment(deploymentRequestId: string): Promise<DeploymentAnswer | null>;
+  /** Submits a command in the population scenario contract's form, `kind` its step kind; its answer once it settled. */
+  command(kind: string, command: JsonValue & { readonly commandId: string }): Promise<CommandAnswer>;
+  result(commandId: string): Promise<PopulationResult>;
 }

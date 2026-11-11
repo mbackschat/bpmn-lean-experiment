@@ -15,6 +15,7 @@ import {
   engineCorrelationAmbiguousCode,
   engineNotCorrelatedCode,
   engineProcessLocatorForCanonicalProcess,
+  engineDefinitionNotDeployedCode,
   publishEngineCorrelatedMessage,
   startBpmnDefinitionVersion,
   EngineDefinitionCompilationStatus,
@@ -22,7 +23,7 @@ import {
   type EngineProfile,
 } from "@bpmn-lean/engine-api";
 
-import { limits, scenarioBytes, servesEverything, sha256, testHost, type TestHost } from "./support.ts";
+import { deployed, limits, scenarioBytes, servesEverything, sha256, testHost, type TestHost } from "./support.ts";
 
 const profile: EngineProfile = { id: "test-correlation", relations: ["CIB-AGR-0001", "CIB-OP-0001", "CIB-LIM-0002"] };
 const channel = {
@@ -48,10 +49,10 @@ async function waiting(references: readonly string[], host: TestHost = testHost(
   const bytes = await scenarioBytes("message-key-correlation/process.bpmn");
   for (const [index, reference] of references.entries()) {
     const instance = `settlement-${String(index)}`;
-    const started = await startBpmnDefinitionVersion({
+    const started = await startBpmnDefinitionVersion(await deployed({
       host, bytes, sourceId: "settlement", expectedSha256: await sha256(bytes), profile,
       expectedProcessId: "Process_SettlementCorrelation", version: 1, processInstanceId: instance, initialVariables: [], limits,
-    });
+    }));
     assert.equal(started.status, EngineDefinitionStartStatus.Started);
     const initialized = await host.processes.deliver(workflowIdOf(instance), {
       kind: "deliver", commandId: `initialize-${instance}`,
@@ -78,7 +79,7 @@ test("a publication is delivered to the one instance whose correlation key match
     status: EngineCorrelatedMessageStatus.Rejected,
     ingressOrdinal: 2,
     target: null,
-    failure: { code: engineNotCorrelatedCode, evidence: "No open correlated wait of the definition matches the publication." },
+    failure: { code: engineNotCorrelatedCode, evidence: "No open wait of the definition matches the publication." },
   });
   assert.equal(engineNotCorrelatedCode, "message.notCorrelated");
 });
@@ -95,8 +96,16 @@ test("a repeated command identifier with other content is an identity conflict",
   const host = await waiting(["settlement-42"]);
   const first = await publish(host, "publication-1", "settlement-42");
   assert.equal(first.status, EngineCorrelatedMessageStatus.Delivered);
-  assert.deepEqual(await publish(host, "publication-1", "settlement-42"), first);
+  // A repeat answers the recorded resolution under the population's next ordinal (population contract §7).
+  assert.deepEqual(await publish(host, "publication-1", "settlement-42"), { ...first, ingressOrdinal: 2 });
   assert.deepEqual(await publish(host, "publication-1", "settlement-7"), { status: EngineCorrelatedMessageStatus.IdentityConflict });
+});
+
+test("a publication to a definition version no registration holds is refused before it reaches any process", async () => {
+  assert.deepEqual(await publish(testHost(), "publication-1", "settlement-42"), {
+    status: EngineCorrelatedMessageStatus.Refused,
+    failure: { code: engineDefinitionNotDeployedCode, evidence: "No population registration holds the definition version." },
+  });
 });
 
 test("a deployment that serves no Messages refuses the publication before it reaches any process", async () => {

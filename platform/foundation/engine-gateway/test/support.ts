@@ -2,7 +2,14 @@
 import { readFile } from "node:fs/promises";
 
 import { createMemoryEngineHost, type MemoryEngineHost } from "@bpmn-lean/engine-api/testing";
-import { gatewayContext, type GatewayContext, type ProfileRelations } from "@bpmn-lean/platform-engine-gateway";
+import {
+  DefinitionRegistrationStatus,
+  gatewayContext,
+  type DefinitionVersionRegistrar,
+  type DefinitionVersionRegistrationRequest,
+  type GatewayContext,
+  type ProfileRelations,
+} from "@bpmn-lean/platform-engine-gateway";
 
 export const limits = { maxSourceBytes: 1_048_576, parserDeadlineMs: 1_000 } as const;
 
@@ -38,4 +45,10 @@ export function testHost(): MemoryEngineHost {
 
 export function testContext(host: MemoryEngineHost): GatewayContext {
   return gatewayContext(limits, host, profileRelations);
+}
+
+/** Registers a stored definition version with the engine, as Product 2 does when it deploys the version. */
+export async function register(registrar: DefinitionVersionRegistrar, request: DefinitionVersionRegistrationRequest): Promise<void> {
+  const result = await registrar.registerDefinitionVersion(request);
+  if (result.status !== DefinitionRegistrationStatus.Registered) throw new Error(`registration refused: ${result.failure.code}`);
 }

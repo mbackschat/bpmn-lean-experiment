@@ -24,13 +24,16 @@ import {
 } from "@bpmn-lean/platform-engine-gateway";
 import type { MemoryEngineHost } from "@bpmn-lean/engine-api/testing";
 
-import { limits, profileRelations, scenarioBytes, sha256, standardProfile, testContext, testHost } from "./support.ts";
+import { limits, profileRelations, register, scenarioBytes, sha256, standardProfile, testContext, testHost } from "./support.ts";
 
 async function stored(host: MemoryEngineHost, path: string) {
   const bytes = await scenarioBytes(path);
-  const compiled = await new BpmnEngineGateway({ ...limits, host, profileRelations }).compileDefinition({
+  const gateway = new BpmnEngineGateway({ ...limits, host, profileRelations });
+  const compiled = await gateway.compileDefinition({
     bytes, sourceId: "stored", semanticProfile: standardProfile, expectedSha256: await sha256(bytes) });
   if (compiled.status !== DefinitionCompilationStatus.Accepted) throw new Error("not accepted");
+  await register(gateway, { bytes, sourceId: "stored", expectedSha256: compiled.source.sha256, semanticProfile: standardProfile,
+    expectedProcessId: compiled.definition.processId, version: 1 });
   return {
     bytes,
     definition: {

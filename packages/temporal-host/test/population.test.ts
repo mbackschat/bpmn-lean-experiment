@@ -11,8 +11,10 @@ import { test } from "node:test";
 import { kernelProfileOptions, readKernelProgram } from "@bpmn-lean/bpmn-source";
 import {
   FailureTag, FanOutEntryTag, ReceiverTag, SignalAddressTag, cascadeBound, fanOutBegin, PendingTag, timerInstanceId, type FanOutEntry,
+  type Program, type State,
 } from "@bpmn-lean/kernel";
 
+import type { PopulationChain } from "../src/population-memory.ts";
 import type { CommandView, JsonValue, PopulationPort, Wire } from "../src/port.ts";
 
 const population = await import(new URL("../dist/population.js", import.meta.url).href) as typeof import("../src/population.ts");
@@ -182,18 +184,20 @@ test("a population start whose instance identity a directly started chain holds 
   const instanceId = timerInstanceId(1, startEvent, 1_000);
   const firing = { commandId: "fire", deploymentId: 1, startEvent, dueMs: 1_000 };
   const fresh = () => {
-    const memory = new MemoryPopulation(binding.populationPort, kernelPort.hostView, populationCapacity.receivers);
+    const chains = new Map<string, PopulationChain<Program, State>>();
+    const memory = new MemoryPopulation(binding.populationPort, kernelPort.hostView, populationCapacity.receivers, chains);
     memory.deploy("d", "digest", program, 0);
-    return memory;
+    return { memory, chains };
   };
-  const started = fresh().command("fire", "timerStart", firing, "f", 1_000) as { resolution: { entries: { kind: string }[] } };
+  const started = fresh().memory.command("fire", "timerStart", firing, "f", 1_000) as { resolution: { entries: { kind: string }[] } };
   assert.equal(started.resolution.entries[0]?.kind, "started", "without the direct chain the occurrence starts its instance");
 
-  const memory = fresh();
+  const { memory, chains } = fresh();
   const direct = kernelPort.step(program, null, kernelPort.decodeStimulus({
     kind: "start", commandId: "direct", instanceId, startEvent, trigger: { kind: "timer", logicalTimeMs: 1_000 }, variables: [],
   }).input);
   if (!direct.committed) throw new Error(`the direct start did not commit: ${direct.code}`);
+  chains.set(instanceId, { deploymentId: 1, program, state: direct.state });
   memory.committed(instanceId, 1, program, direct.state, "direct");
   const answer = memory.command("fire", "timerStart", firing, "f", 1_000) as { resolution: JsonValue };
   assert.deepEqual(answer.resolution, {
@@ -201,5 +205,5 @@ test("a population start whose instance identity a directly started chain holds 
     entries: [{ kind: "failed", target: { kind: "start", deploymentId: 1, startEvent }, outcome: "rejected",
       code: population.instanceIdentityInUseCode }],
   });
-  assert.equal(memory.chains.get(instanceId)?.state, direct.state, "the direct chain is untouched");
+  assert.equal(chains.get(instanceId)?.state, direct.state, "the direct chain is untouched");
 });

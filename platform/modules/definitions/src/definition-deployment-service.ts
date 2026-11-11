@@ -1,9 +1,11 @@
 import { createHash } from "node:crypto";
 import {
   DefinitionCompilationStatus,
+  DefinitionRegistrationStatus,
 } from "@bpmn-lean/platform-engine-gateway";
 import type {
   DefinitionCompiler,
+  DefinitionVersionRegistrar,
 } from "@bpmn-lean/platform-engine-gateway";
 import type {
   HumanTaskCatalogProjectionBinding,
@@ -14,6 +16,7 @@ import type { HumanTaskCatalogV1 } from "@bpmn-lean/platform-contracts";
 import {
   DefinitionArtifactIntegrityError,
   DefinitionDeploymentStatus,
+  DefinitionEngineRegistrationError,
   DefinitionDeploymentIntegrityError,
 } from "./contracts.js";
 import type {
@@ -43,15 +46,18 @@ type HumanTaskCatalogProjector = Readonly<{
   ): HumanTaskCatalogProjectionResult | Promise<HumanTaskCatalogProjectionResult>;
 }>;
 
-/** Admission and accepted-only persistence for one exact BPMN definition source. */
+/**
+ * Admission and accepted-only persistence for one exact BPMN definition source, then its registration with the engine,
+ * in version order, which every start of the version and publication to it needs.
+ */
 export class DefinitionDeploymentService {
-  readonly #compiler: DefinitionCompiler;
+  readonly #compiler: DefinitionCompiler & DefinitionVersionRegistrar;
   readonly #artifacts: ExactArtifactStore;
   readonly #repository: DefinitionRepository;
   readonly #catalogProjector: HumanTaskCatalogProjector | null;
 
   constructor(
-    compiler: DefinitionCompiler,
+    compiler: DefinitionCompiler & DefinitionVersionRegistrar,
     artifacts: ExactArtifactStore,
     repository: DefinitionRepository,
     catalogProjector: HumanTaskCatalogProjector | null = null,
@@ -125,6 +131,18 @@ export class DefinitionDeploymentService {
           },
           catalog.catalog,
         );
+        const registration = await this.#compiler.registerDefinitionVersion({
+          bytes: Uint8Array.from(sourceBytes),
+          sourceId,
+          expectedSha256: source.sha256,
+          semanticProfile: acceptedSemanticProfile,
+          expectedProcessId: processId,
+          version: definition.version,
+          sourceOverlay: sourceOverlay === null ? null : { ...sourceOverlay, bytes: Uint8Array.from(sourceOverlay.bytes) },
+        });
+        if (registration.status !== DefinitionRegistrationStatus.Registered) {
+          throw new DefinitionEngineRegistrationError(definition, registration.failure.code);
+        }
         return {
           status: DefinitionDeploymentStatus.Deployed,
           source,

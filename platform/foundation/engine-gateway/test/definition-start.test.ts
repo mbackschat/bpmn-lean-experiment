@@ -13,7 +13,7 @@ import {
   type DefinitionVersionStartRequest,
 } from "@bpmn-lean/platform-engine-gateway";
 
-import { limits, profileRelations, scenarioBytes, sha256, standardProfile, testHost } from "./support.ts";
+import { limits, profileRelations, register, scenarioBytes, sha256, standardProfile, testHost } from "./support.ts";
 
 const processInstanceId = "work-instance";
 const taskId = { processInstanceId, elementId: "UserTask_Approve", activation: 1 };
@@ -35,6 +35,7 @@ async function request(): Promise<DefinitionVersionStartRequest> {
 test("a prepared start yields a serialized locator, starts once, and recovery finds it matching", async () => {
   const host = testHost();
   const gateway = new BpmnEngineGateway({ ...limits, host, profileRelations });
+  await register(gateway, await request());
   const prepared = await gateway.prepareDefinitionVersion(await request());
   assert.equal(prepared.status, DefinitionStartStatus.Admitted);
   if (prepared.status !== DefinitionStartStatus.Admitted) return;
@@ -51,6 +52,7 @@ test("a prepared start yields a serialized locator, starts once, and recovery fi
 test("the started process's Work shows its task, reads its detail and completes it", async () => {
   const host = testHost();
   const gateway = new BpmnEngineGateway({ ...limits, host, profileRelations });
+  await register(gateway, await request());
   assert.equal((await gateway.startDefinitionVersion(await request())).status, DefinitionStartStatus.Started);
   const work = new BpmnProcessWorkGateway(host);
   const locator = work.canonicalLocator(processInstanceId);

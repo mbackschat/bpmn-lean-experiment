@@ -17,7 +17,8 @@ import {
 } from "./common.js";
 import type { CompiledDefinition } from "./definition.js";
 import { engineHostRefusal } from "./definition.js";
-import { engineCorrelationScope, engineHostConfig, type EngineHost } from "./host.js";
+import { engineDeploymentScope } from "./definition-deployment.js";
+import { engineHostConfig, type EngineHost } from "./host.js";
 
 export type PreparedStart = Readonly<{
   compiled: CompiledDefinition;
@@ -105,17 +106,20 @@ export type StartDispatch =
   | Readonly<{ kind: StartDispatchKind.Rejected | StartDispatchKind.IntegrityFailure; failure: EngineFailure }>;
 
 /**
- * Starts the prepared chain. A Workflow ID already taken by a chain with the same intent is this start, retried; with
- * another intent it is a different start holding the address. A start the kernel did not commit is rejected with the
- * kernel's code.
+ * Starts the prepared chain under the deployment its definition version registered, so the population's commands reach
+ * its waits; an unregistered version is `definition-not-deployed`. A Workflow ID already taken by a chain with the same
+ * intent is this start, retried; with another intent it is a different start holding the address. A start the kernel
+ * did not commit is rejected with the kernel's code.
  */
 export async function dispatchStart(host: EngineHost, prepared: PreparedStart): Promise<StartDispatch> {
+  const population = await engineDeploymentScope(host, prepared.compiled.compilation.definition);
+  if ("code" in population) return { kind: StartDispatchKind.Rejected, failure: population };
   const result = await host.processes.start({
     workflowId: prepared.workflowId,
     program: prepared.compiled.program,
     config: engineHostConfig(host),
     start: prepared.stimulus,
-    correlationScope: engineCorrelationScope(prepared.compiled.compilation.definition),
+    population,
     memo: startMemo(prepared) as unknown as Readonly<Record<string, JsonValue>>,
   });
   if (result.outcome === "committed") return { kind: StartDispatchKind.Started };

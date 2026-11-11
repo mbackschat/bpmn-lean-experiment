@@ -8,6 +8,7 @@
  */
 import type { JsonValue } from "./port.js";
 import { workflowType, type HostConfig } from "./host-contract.js";
+import type { PopulationScope } from "./population-contract.js";
 
 /** A missed occurrence is taken late only within this window; later than that, the Schedule reports it missed. */
 export const scheduleCatchupWindowMs = 60_000;
@@ -22,8 +23,8 @@ export interface OneShotScheduleRequest {
   readonly config: HostConfig;
   /** The start stimulus, in the scenario contract's form. */
   readonly start: JsonValue;
-  /** The started instance's correlation scope (`StartRequest.correlationScope`). */
-  readonly correlationScope: string;
+  /** The started instance's population and deployment (`StartRequest.population`). */
+  readonly population: PopulationScope;
   /** Compared verbatim by `assessSchedule`; the caller's fingerprint of everything above. */
   readonly memo: Readonly<Record<string, JsonValue>>;
 }

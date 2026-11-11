@@ -12,6 +12,7 @@ import {
 } from "@bpmn-lean/platform-engine-gateway";
 import type {
   DefinitionCompiler,
+  DefinitionVersionRegistrar,
   DefinitionStartDescriptionResult,
   DefinitionVersionStarter,
 } from "@bpmn-lean/platform-engine-gateway";
@@ -28,6 +29,7 @@ import type {
   ExactArtifactStore,
   NewDefinitionMetadata,
 } from "@bpmn-lean/platform-definitions";
+import { registeringEngine } from "./support/engine-registration.ts";
 
 const bytes = new TextEncoder().encode("<exact-process/>");
 const storedDefinition = {
@@ -361,7 +363,8 @@ function createFixture(
       throw new Error("legacy direct start must not be used");
     },
   };
-  const compiler: DefinitionCompiler = {
+  const compiler: DefinitionCompiler & DefinitionVersionRegistrar = {
+    ...registeringEngine(),
     compileDefinition: async () => ({
       status: DefinitionCompilationStatus.Accepted,
       source: { ...storedDefinition.source },

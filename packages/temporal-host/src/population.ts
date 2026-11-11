@@ -11,7 +11,7 @@
  * population layer through `PopulationPort`; the driver only routes the receivers it is given to the chains and
  * deployments that hold them.
  */
-import { canonicalJson } from "./correlation.js";
+import { canonicalJson } from "./canonical-json.js";
 import type { HostConfig } from "./host-contract.js";
 import type { CommandView, JsonValue, OccurrenceId, PopulationPort, WaitAddressView, ReachOutcome, ResolutionParts, SelectorView, Wire } from "./port.js";
 

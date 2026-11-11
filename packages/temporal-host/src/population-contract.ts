@@ -73,6 +73,19 @@ export type PopulationCommandOutcome =
 
 export type { Action, Answer, ChainRegistration, CommandAnswer, DeploymentAnswer, EmitReference, IngressState };
 
+/** A recorded command answer, or whether the command is still queued or in flight (`pending`) or `unknown`. */
+export type PopulationResult =
+  | { readonly kind: "settled"; readonly answer: CommandAnswer }
+  | { readonly kind: "pending" | "unknown" };
+
+/** A request the ingress refused before acceptance: a full queue, a malformed request or a configuration conflict. */
+export class PopulationRefused extends Error {
+  constructor(readonly code: string) {
+    super(code);
+    this.name = "PopulationRefused";
+  }
+}
+
 /** One delivery to a chain; `deliveryId` is its Update ID and its key in the chain's delivery ledger. */
 export interface PopulationDelivery {
   readonly deliveryId: string;

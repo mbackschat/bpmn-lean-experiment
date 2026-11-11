@@ -27,7 +27,8 @@ import {
 } from "./common.js";
 import type { EngineStartCapability, EngineTimerSchedule } from "./definition-capabilities.js";
 import { atVersion, compileProgram, type CompiledDefinition } from "./definition.js";
-import { engineCorrelationScope, engineHostConfig, type EngineHost } from "./host.js";
+import { engineDeploymentScope } from "./definition-deployment.js";
+import { engineHostConfig, type EngineHost } from "./host.js";
 import { engineProcessLocatorForWorkflowId, type EngineProcessLocator } from "./process-locator.js";
 import { prepareStart, startMemo, type PreparedStart } from "./start-dispatch.js";
 
@@ -90,6 +91,8 @@ export async function createBpmnDefinitionSchedule(
 ): Promise<EngineDefinitionScheduleResult> {
   const prepared = await prepare(snapshot(request), request.host);
   if ("status" in prepared) return prepared;
+  const population = await engineDeploymentScope(request.host, prepared.start.compiled.compilation.definition);
+  if ("code" in population) return { status: EngineDefinitionScheduleStatus.Rejected, failure: population };
   const created = await request.host.schedules.create({
     scheduleId: prepared.expected.scheduleId,
     dueAtEpochMs: prepared.expected.dueAtEpochMs,
@@ -97,7 +100,7 @@ export async function createBpmnDefinitionSchedule(
     program: prepared.start.compiled.program,
     config: engineHostConfig(request.host),
     start: prepared.start.stimulus,
-    correlationScope: engineCorrelationScope(prepared.start.compiled.compilation.definition),
+    population,
     memo: prepared.expected.memo,
   });
   switch (created) {

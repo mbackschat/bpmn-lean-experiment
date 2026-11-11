@@ -13,6 +13,7 @@ import {
   decodeResolvedBpmnDiagramPresentation,
   DefinitionDeployStatus,
 } from "@bpmn-lean/platform-contracts";
+import { createMemoryEngineHostRuntime } from "@bpmn-lean/platform-engine-gateway/testing";
 import {
   createPlatformServer,
 } from "@bpmn-lean/platform-server";
@@ -178,11 +179,11 @@ test("serves a generated presentation while retaining exact admitted M3 source",
   const port = await allocatePort();
   const origin = `http://127.0.0.1:${port}`;
   const sourceBytes = await readFile(metadataSourcePath);
-  const runtime = await createPlatformServer(platformConfig(
-    origin,
-    port,
-    dataDirectory,
-  ));
+  // Deploying registers the version with the engine, so this composition runs on the in-process engine host.
+  const runtime = await createPlatformServer(
+    platformConfig(origin, port, dataDirectory),
+    { engineHostRuntime: createMemoryEngineHostRuntime({ taskQueue: "bpmn-semantic" }) },
+  );
   try {
     assert.equal(await runtime.listen(), origin);
     const deploy = await fetch(
