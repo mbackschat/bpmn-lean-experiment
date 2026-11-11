@@ -18,17 +18,17 @@ This presumption guides investigation; it does not replace evidence or authorize
 
 ## Current dashboard
 
-The counts below cover only entries recorded by this project, including the separately counted open candidates. Selection and qualification follow each entry's status. Zero does not mean that the complete CIB Seven engine has been proven free of deviations.
+The counts below cover only entries recorded by this project, including the separately counted open candidates, and only live entries: a withdrawn or superseded entry keeps its heading for navigation and is not counted. Selection and qualification follow each entry's status. Zero does not mean that the complete CIB Seven engine has been proven free of deviations.
 
 | Lane | Recorded entries | Open candidates | Meaning |
 |---|---:|---:|---|
-| Normative agreement records | 19 | 2 | A bounded BPMN requirement and pinned CIB observation agree; candidates remain unapproved |
+| Normative agreement records | 23 | 0 | A bounded BPMN requirement and pinned CIB observation agree; candidates remain unapproved |
 | Permitted operational details | 18 | 0 | CIB or the oracle adapter chooses host mechanics without changing required BPMN observations |
 | Confirmed normative deviations | 0 | 9 | Clear BPMN requirement and pinned CIB evidence establish incompatible behavior |
-| CIB interpretations of BPMN gaps or inconsistencies | 25 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
-| CIB extension records | 38 | 3 | Project profile deliberately includes behavior beyond bare BPMN execution; candidates remain unselected |
-| Configuration-specific realizations | 14 | 1 | Behavior is permitted or meaningful only under a declared CIB environment |
-| Known CIB limitations within reviewed scope | 24 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
+| CIB interpretations of BPMN gaps or inconsistencies | 34 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
+| CIB extension records | 43 | 2 | Project profile deliberately includes behavior beyond bare BPMN execution; candidates remain unselected |
+| Configuration-specific realizations | 13 | 0 | Behavior is permitted or meaningful only under a declared CIB environment |
+| Known CIB limitations within reviewed scope | 36 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
 
 The sequential User Task account has no recorded CIB deviation. That statement is bounded to its clauses, pinned environment, witnesses, and observation surface; it is not a general CIB conformance result.
 
