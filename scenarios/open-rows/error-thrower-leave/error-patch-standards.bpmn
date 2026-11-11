@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  id="Definitions_ErrorPatchStandards"
+  targetNamespace="urn:bpmn-lean:scenarios:error-thrower-leave:error-patch-standards">
+  <bpmn:error id="Error_PackFailed" name="Pack failed" errorCode="PACK_FAILED" />
+  <bpmn:process id="Process_ErrorPatchStandards" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_ParcelReceived" />
+    <bpmn:serviceTask id="Label" name="Label parcel" implementation="urn:bpmn-lean:effect:probe-v1"
+      camunda:delegateExpression="${bpmnLeanEffectHandler}" />
+    <bpmn:boundaryEvent id="Boundary_Label_PackFailed" attachedToRef="Label" cancelActivity="true">
+      <bpmn:errorEventDefinition id="ErrorEventDefinition_Label_PackFailed" errorRef="Error_PackFailed" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Observe" name="Observe the failure" />
+    <bpmn:endEvent id="EndEvent_Labelled" />
+    <bpmn:endEvent id="EndEvent_Observed" />
+    <bpmn:sequenceFlow id="Flow_Start_Label" sourceRef="StartEvent_ParcelReceived" targetRef="Label" />
+    <bpmn:sequenceFlow id="Flow_Label_End" sourceRef="Label" targetRef="EndEvent_Labelled" />
+    <bpmn:sequenceFlow id="Flow_PackFailed_Observe" sourceRef="Boundary_Label_PackFailed" targetRef="Observe" />
+    <bpmn:sequenceFlow id="Flow_Observe_End" sourceRef="Observe" targetRef="EndEvent_Observed" />
+  </bpmn:process>
+</bpmn:definitions>

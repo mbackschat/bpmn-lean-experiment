@@ -1,0 +1,76 @@
+{
+  "kind": "scenario",
+  "id": "error-thrower-leave-error-patch-refused-standards",
+  "profile": "bpmn-2.0.2",
+  "bpmn": {
+    "id": "error-thrower-leave-error-patch-standards",
+    "relativePath": "scenarios/open-rows/error-thrower-leave/error-patch-standards.bpmn",
+    "sha256": "d56e148ed93511177c9be6555dedc6e283e222f4e0ac943040edfe450ff40932",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start-process",
+      "instanceId": "Instance_1",
+      "variables": []
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "fail-label-with-patch",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Label",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "businessFailure",
+        "code": "PACK_FAILED",
+        "outputs": [
+          {
+            "name": "result",
+            "value": {
+              "kind": "string",
+              "value": "rejected"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "fail-label",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Label",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "businessFailure",
+        "code": "PACK_FAILED",
+        "outputs": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-observe",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Observe",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 §13.5.3"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}
