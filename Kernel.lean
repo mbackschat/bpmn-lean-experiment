@@ -38,6 +38,7 @@ public import Kernel.IL.Types.Decision
 public import Kernel.IL.Types.Expression
 public import Kernel.IL.Types.Juel
 public import Kernel.IL.Types.Lexical
+public import Kernel.IL.Types.MultiInstance
 public import Kernel.IL.Types.Options
 public import Kernel.IL.Types.Reference
 public import Kernel.Population
