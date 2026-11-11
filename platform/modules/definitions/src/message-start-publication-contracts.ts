@@ -83,6 +83,7 @@ export type MessageStartPublicationHostRequest = Readonly<{
   sourceOverlay?: DefinitionSourceOverlaySelection | null;
   definition: Readonly<{
     processId: string;
+    version: number;
     source: Readonly<{
       id: string;
       sha256: string;
@@ -118,20 +119,24 @@ export type MessageStartPublicationDescriptionResult = Readonly<{
   status: "matching" | "missing" | "divergent" | "unavailable";
 }>;
 
-/** Closed, handle-free Product 1 host capability consumed by the publication lifecycle. */
+/**
+ * Closed, handle-free Product 1 host capability consumed by the publication lifecycle. Its members are properties, not
+ * methods, so their parameters are checked contravariantly: a host requiring a field this request lacks fails to type
+ * instead of reading `undefined`.
+ */
 export interface MessageStartPublicationHost {
-  prepare(
+  readonly prepare: (
     request: MessageStartPublicationHostRequest,
-  ): Promise<MessageStartPublicationPreparationResult>;
-  start(
+  ) => Promise<MessageStartPublicationPreparationResult>;
+  readonly start: (
     request: MessageStartPublicationHostRequest & Readonly<{
       expectedIntent: MessageStartPublicationIntent;
     }>,
-  ): Promise<MessageStartPublicationHostStartResult>;
-  describe(request: Readonly<{
+  ) => Promise<MessageStartPublicationHostStartResult>;
+  readonly describe: (request: Readonly<{
     workflowId: string;
     expectedIntent: MessageStartPublicationIntent;
-  }>): Promise<MessageStartPublicationDescriptionResult>;
+  }>) => Promise<MessageStartPublicationDescriptionResult>;
 }
 
 export type MessageStartPublicationServiceDependencies = Readonly<{

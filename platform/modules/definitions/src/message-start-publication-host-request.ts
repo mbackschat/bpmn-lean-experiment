@@ -23,6 +23,7 @@ export function messageStartPublicationHostRequest(
     sourceOverlay: sourceOverlay === null ? null : { ...sourceOverlay, bytes: Uint8Array.from(sourceOverlay.bytes) },
     definition: {
       processId: definition.processId,
+      version: definition.version,
       source: {
         id: definition.source.id,
         sha256: definition.source.sha256,

@@ -12,6 +12,7 @@ import {
 import {
   decodeResolvedBpmnDiagramPresentation,
   DefinitionDeployStatus,
+  messageStartPublicationPath,
 } from "@bpmn-lean/platform-contracts";
 import { createMemoryEngineHostRuntime } from "@bpmn-lean/platform-engine-gateway/testing";
 import {
@@ -22,6 +23,7 @@ import {
   WorkAuditOutboxService,
 } from "@bpmn-lean/platform-work";
 
+const messageStartSourcePath = new URL("../../../../scenarios/message-start-event/process.bpmn", import.meta.url);
 const metadataSourcePath = new URL(
   "../../../../scenarios/user-task-assignment-form-metadata/process.bpmn",
   import.meta.url,
@@ -218,6 +220,45 @@ test("serves a generated presentation while retaining exact admitted M3 source",
       { signal: AbortSignal.timeout(2_000) },
     );
     assert.deepEqual(Buffer.from(await sourceResponse.arrayBuffer()), sourceBytes);
+  } finally {
+    await runtime.close();
+    await rm(dataDirectory, { recursive: true, force: true });
+  }
+});
+
+test("publishes a Message start to a deployed version on the in-process engine host", async () => {
+  const dataDirectory = await mkdtemp(join(tmpdir(), "bpmn-lean-message-start-"));
+  const port = await allocatePort();
+  const origin = `http://127.0.0.1:${port}`;
+  const runtime = await createPlatformServer(
+    platformConfig(origin, port, dataDirectory),
+    { engineHostRuntime: createMemoryEngineHostRuntime({ taskQueue: "bpmn-semantic" }) },
+  );
+  try {
+    assert.equal(await runtime.listen(), origin);
+    const deploy = await fetch(
+      `${origin}/api/v1/definitions?sourceId=message-start.bpmn&semanticProfile=cibseven-2.2.0`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/bpmn+xml" },
+        body: await readFile(messageStartSourcePath),
+        signal: AbortSignal.timeout(2_000),
+      },
+    );
+    assert.equal(deploy.status, 201);
+    const { definition } = await deploy.json() as Readonly<{
+      definition: Readonly<{ processId: string; version: number; startCapabilities: Readonly<{ messageStarts: readonly unknown[] }> }>;
+    }>;
+    const publication = await fetch(`${origin}${messageStartPublicationPath("publication-1")}`, {
+      method: "PUT",
+      headers: { accept: "application/json", "content-type": "application/json" },
+      body: JSON.stringify({
+        definition: { processId: definition.processId, version: definition.version },
+        messageStart: definition.startCapabilities.messageStarts[0],
+      }),
+      signal: AbortSignal.timeout(2_000),
+    });
+    assert.equal(publication.status, 201, await publication.clone().text());
   } finally {
     await runtime.close();
     await rm(dataDirectory, { recursive: true, force: true });
