@@ -242,9 +242,9 @@ export function handlerCompleted(ctx: Ctx, run: ScopeOccurrenceId, occurrence: O
 }
 
 /**
- * `Signal.compensationFailed`: an Error the effect at `origin` reported left the handler context `handler` uncaught.
- * The handler's public occurrence is the raising Activity itself or, for a Sub-Process handler, its occurrence in that
- * context.
+ * `Signal.compensationFailed`: an Error raised at `origin`, an effect's reported Error or an Error End Event inside a
+ * handler Sub-Process, left the handler context `handler` uncaught (COMPH-FAIL-01). The handler's public occurrence is
+ * the raising Activity itself or, for a Sub-Process handler, its occurrence in that context.
  */
 export function failCompensation(
   _ctx: Ctx,
@@ -260,8 +260,6 @@ export function failCompensation(
   if (run === undefined) return failed(FailureTag.SemanticFailure, "compensation-handler-without-run");
   const element = context.element;
   if (element === null) return failed(FailureTag.SemanticFailure, "compensation-handler-without-element");
-  // Dynamic-only: a handler's Error End Event names no effect, the shape COMPH-FAIL-01 leaves open.
-  if (origin.host === null) return failed(FailureTag.Unsupported, "compensation-handler-error-without-effect");
   let handlerActivation = origin.activation;
   if (origin.element !== element) {
     const started = state.occurrences.find((candidate) => candidate.scope === handler && candidate.element === element);

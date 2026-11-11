@@ -148,9 +148,9 @@ def handlerCompleted (ctx : Ctx) (run : ScopeOccurrenceId) (occurrence : Occurre
     else candidate
   advance ctx run (store left { compensation with runs })
 
-/-- `Signal.compensationFailed`: an Error the effect at `origin` reported left the handler context `handler`
-uncaught. The handler's public occurrence is the raising Activity itself or, for a Sub-Process handler, its occurrence
-in that context. -/
+/-- `Signal.compensationFailed`: an Error raised at `origin`, an effect's reported Error or an Error End Event inside a
+handler Sub-Process, left the handler context `handler` uncaught (COMPH-FAIL-01). The handler's public occurrence is the
+raising Activity itself or, for a Sub-Process handler, its occurrence in that context. -/
 def failCompensation (_ : Ctx) (handler : ScopeOccurrenceId) (code : String) (message : Option String)
     (origin : Origin) (state : State) : Outcome := do
   let context ← match state.scopes.find? (·.id == handler) with
@@ -162,8 +162,6 @@ def failCompensation (_ : Ctx) (handler : ScopeOccurrenceId) (code : String) (me
   let element ← match context.element with
     | some element => .ok element
     | none => .error (.semanticFailure "compensation-handler-without-element")
-  -- Dynamic-only: a handler's Error End Event names no effect, the shape COMPH-FAIL-01 leaves open.
-  if origin.host.isNone then .error (.unsupported "compensation-handler-error-without-effect") else
   let handlerActivation ←
     if origin.element == element then .ok origin.activation
     else match state.occurrences.find? (fun candidate => candidate.scope == handler && candidate.element == element) with

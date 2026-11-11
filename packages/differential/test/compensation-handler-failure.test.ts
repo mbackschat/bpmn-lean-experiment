@@ -1,10 +1,7 @@
 /**
  * COMPH-FAIL-01 (compensation semantics): an Error a handler's effect reports and nothing inside the handler catches
- * fails the process instance, and the failure names the run's trigger, the handler and the raising effect. The search
- * reaches the handler's scope occurrence with the raising Service Task still its host (`Propagation.hostLeaves`), which
- * `Compensation.failCompensation` needs to tell an effect's Error from a handler's Error End Event; a search that drops
- * the host refuses the run as `compensation-handler-error-without-effect` instead. The witness is
- * `scenarios/transaction-cancellation/handler-failed`, whose handler `Task_Release` reports `release-failed`.
+ * fails the process instance, and the failure names the run's trigger, the handler and the raising effect. The witness
+ * is `scenarios/transaction-cancellation/handler-failed`, whose handler `Task_Release` reports `release-failed`.
  */
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
