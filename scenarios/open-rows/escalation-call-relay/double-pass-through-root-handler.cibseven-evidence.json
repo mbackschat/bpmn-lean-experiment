@@ -1,0 +1,312 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "escalation-call-relay-double-pass-through-root-handler",
+    "sha256": "292b0077fe4add1b82e82f202ef07ab99a377124089b10707f9bfc847d6dcd4a"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "02e78815bc7f172a42efd402423bb2a1054b85c6db3ce1f88647923a0a879640"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "claim",
+            "value": {
+              "kind": "string",
+              "value": "CLM-1"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-complete-draft",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "claim",
+            "value": {
+              "kind": "string",
+              "value": "CLM-1"
+            }
+          },
+          {
+            "name": "relayedStatus",
+            "value": {
+              "kind": "string",
+              "value": "draft"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-complete-revise",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "claim",
+            "value": {
+              "kind": "string",
+              "value": "CLM-1"
+            }
+          },
+          {
+            "name": "relayedStatus",
+            "value": {
+              "kind": "string",
+              "value": "revised"
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "tasks": [
+          {
+            "elementId": "Draft",
+            "name": "Draft the examination"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-complete-draft",
+        "tasks": [
+          {
+            "elementId": "Revise",
+            "name": "Revise the examination"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-complete-revise",
+        "tasks": [
+          {
+            "elementId": "Inspect",
+            "name": "Inspect the raised claim"
+          }
+        ]
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s02-complete-draft",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s03-complete-revise",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "s01-start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s02-complete-draft",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s03-complete-revise",
+        "state": "ACTIVE"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "claim",
+            "value": {
+              "kind": "string",
+              "value": "CLM-1"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:6:Review:1",
+              "elementId": "Draft",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_DoublePassExamine",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Draft the examination",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s02-complete-draft",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "claim",
+            "value": {
+              "kind": "string",
+              "value": "CLM-1"
+            }
+          },
+          {
+            "name": "relayedStatus",
+            "value": {
+              "kind": "string",
+              "value": "draft"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:6:Review:1",
+              "elementId": "Revise",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_DoublePassExamine",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Revise the examination",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s03-complete-revise",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "claim",
+            "value": {
+              "kind": "string",
+              "value": "CLM-1"
+            }
+          },
+          {
+            "name": "relayedStatus",
+            "value": {
+              "kind": "string",
+              "value": "revised"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Inspect",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Inspect the raised claim",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      }
+    ]
+  }
+}

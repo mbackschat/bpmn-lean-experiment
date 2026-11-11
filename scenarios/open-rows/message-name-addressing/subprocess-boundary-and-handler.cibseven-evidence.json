@@ -1,0 +1,41 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "message-name-addressing-subprocess-boundary-and-handler",
+    "sha256": "6b218ec2dd0859748eede0471e4b9dfcfd9bab624fc7b97bf3636be0815e9f3f"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "02e78815bc7f172a42efd402423bb2a1054b85c6db3ce1f88647923a0a879640"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "producerObservations": {
+    "stateQueries": [],
+    "taskQueries": [],
+    "timerJobs": [],
+    "historicProcessStates": []
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "unsupported"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "unsupported"
+      }
+    ]
+  }
+}
