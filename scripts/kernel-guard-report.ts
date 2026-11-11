@@ -30,9 +30,13 @@ function parseCommits(output: string): Commit[] {
   });
 }
 
-/** Commits after the epoch on HEAD; HEAD itself is always read, so the rule never runs over nothing. */
+/**
+ * The commits after the epoch on HEAD that touch the kernel, with only their kernel files: guard 18 and the reports read
+ * nothing else, and the full file lists of retained-evidence commits outgrow the history read's buffer. HEAD itself is
+ * read when no commit touches the kernel, so the rule never runs over nothing.
+ */
 export function branchCommits(root: string = repositoryRoot, epoch: string = commitRuleEpoch): Commit[] {
-  const commits = parseCommits(commitsOutput(root, [`${epoch}..HEAD`]));
+  const commits = parseCommits(commitsOutput(root, [`${epoch}..HEAD`, "--", "Kernel", "packages/kernel/src"]));
   return commits.length > 0 ? commits : parseCommits(commitsOutput(root, ["-1", "HEAD"]));
 }
 

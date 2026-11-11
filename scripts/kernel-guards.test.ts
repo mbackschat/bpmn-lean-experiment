@@ -5,6 +5,7 @@
  * 2026-11-08): its fixtures do not exist yet.
  */
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -515,6 +516,32 @@ for (const [name, guard] of [
 
 test("the tree stays within the guard 18 site budgets and the commit-scope rule", () => {
   assert.deepEqual([...fanOutFindings(tsMatchSiteCounts(tree)), ...commitScopeFindings(branchCommits())], []);
+});
+
+// Two retained-evidence commits of about 1,100 files each overflowed the 1 MiB buffer of the history read (2026-11-11,
+// `spawnSync git ENOBUFS`): a commit that touches no kernel file must not grow what guard 18 reads.
+test("guard 18 reads only kernel paths, so a large commit outside the kernel never overflows its history read", () => {
+  const root = mkdtempSync(path.join(tmpdir(), "kernel-guard-history-"));
+  roots.push(root);
+  const git = (...args: string[]) => execFileSync("git", args, { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
+  git("init", "-q");
+  git("config", "user.email", "guard@example.invalid");
+  git("config", "user.name", "guard");
+  writeFileSync(path.join(root, "README.md"), "fixture\n");
+  git("add", ".");
+  git("commit", "-q", "-m", "chore: epoch");
+  const epoch = git("rev-parse", "HEAD").trim();
+  mkdirSync(path.join(root, "evidence"));
+  for (let i = 0; i < 16_000; i += 1) writeFileSync(path.join(root, "evidence", `retained-evidence-of-a-long-scenario-name-${String(i).padStart(5, "0")}.json`), "");
+  git("add", ".");
+  git("commit", "-q", "-m", "chore(evidence): retained evidence");
+  mkdirSync(path.join(root, "Kernel"));
+  writeFileSync(path.join(root, "Kernel", "Flow.lean"), "-- fixture\n");
+  git("add", ".");
+  git("commit", "-q", "-m", "feat(kernel): one module");
+  assert.deepEqual(branchCommits(root, epoch).map((commit) => [commit.subject, commit.files]), [
+    ["feat(kernel): one module", ["Kernel/Flow.lean"]],
+  ]);
 });
 
 test("guard 21 reports its state and does not fail until the row fixtures exist", (t) => {
