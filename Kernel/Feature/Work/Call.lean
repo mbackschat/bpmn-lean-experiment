@@ -51,7 +51,7 @@ def invoke (ctx : Ctx) (header : Header) (payload : ActivityPayload) (work : Cal
       if payload.subscription.isNone then some start else none with
   | none => .error (.semanticFailure "called-process-without-none-start")
   | some start =>
-    let (state, root) := state.enterCalled occurrence inputs process.definition
+    let (state, root) := state.enterCalled ctx.program occurrence inputs process.definition
     let state :=
       if payload.envelope.boundaries.isEmpty || payload.envelope.multiInstance.isSome then state
       else state.signal (.arm occurrence.id header.id occurrence.scope)

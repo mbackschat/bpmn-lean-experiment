@@ -13,8 +13,8 @@
  * (guard 17).
  */
 import {
-  VariableEvent, assertNever, definitionRefEquals, programChildren, programProcessChildren, utf8ByteSize, type DefinitionRef, type Element,
-  type ElementId, type FlowId, type Program, type Value,
+  VariableEvent, assertNever, definitionRefEquals, programChildren, programProcessChildren, programPublicId, utf8ByteSize,
+  type DefinitionRef, type Element, type ElementId, type FlowId, type Program, type Value,
 } from "./il/types.js";
 import {
   type Binding, type ConditionalWaitDetail, type EffectDetail, type IncidentDetail, InputTag, type MessageChannel,
@@ -698,17 +698,20 @@ export function calledInstanceId(caller: string, call: ElementId, activation: nu
 
 /**
  * Enter the called process instance of the Call occurrence `call`, with the given variables: a scope occurrence that
- * is the called instance's root, recording the definition the Call bound for this instance.
+ * is the called instance's root, recording the definition the Call bound for this instance. The instance is named by the
+ * Call's authored identifier (`programPublicId`), so a Call in another deployment's process that a program carries as a
+ * renamed copy names its instance as that process's own deployment does (PC-SCOPE-03).
  */
 export function enterCalled(
   state: State,
+  program: Program,
   call: Occurrence,
   variables: readonly Binding[],
   definition: DefinitionRef,
 ): readonly [State, ScopeOccurrenceId] {
   const caller = instanceOf(state, call.scope);
   const [entered, id] = enterScope(state, call.element, call.scope, variables, call.id);
-  const calledInstance = calledInstanceId(caller, call.element, call.activation);
+  const calledInstance = calledInstanceId(caller, programPublicId(program, call.element), call.activation);
   return [
     {
       ...entered,

@@ -23,6 +23,10 @@
  *
  * The check is generic over the cohort and grows by no per-model case; a witness it does not cover is one the reader
  * refuses, the kernel refuses to deploy, or a population schedule (several instances), each counted below.
+ *
+ * A population schedule runs the same check over all its documents at once (R-CALL-1): one renaming spans every
+ * document, so a deployment's program assembles renamed copies of the other deployments' processes, and the result must
+ * still show only the identifiers the documents' authors wrote, called instances' included.
  */
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
@@ -31,11 +35,13 @@ import path from "node:path";
 import { test } from "node:test";
 
 import { ComparisonKind, DifferentialTarget, compareTargetResults } from "@bpmn-lean/differential";
-import { runScenario } from "@bpmn-lean/kernel";
+import { runPopulation, runScenario } from "@bpmn-lean/kernel";
 
 import { differentialDiscoveryRoots } from "../../../scripts/pipeline-budget.ts";
+import { populationStepDigests } from "./population-digest.ts";
+import { populationPrograms } from "./population-programs.ts";
 import { readSourceFor } from "./scenario-discovery.ts";
-import type { ScenarioDocument } from "./scenario-discovery.ts";
+import type { PopulationScenarioDocument, ScenarioDocument } from "./scenario-discovery.ts";
 import { projectRoot } from "./pipeline-target-support.ts";
 
 type Json = any;
@@ -97,12 +103,12 @@ function* elements(nodes: readonly XmlNode[], parent: string | null = null): Gen
   }
 }
 
-/** Old identifier to new, reversing the lexical order of the renamed identifiers. */
-function renaming(tree: readonly XmlNode[]): Map<string, string> {
-  const ids = [...elements(tree)]
+/** Old identifier to new over every document of `trees`, reversing the lexical order of the renamed identifiers. */
+function renaming(trees: readonly (readonly XmlNode[])[]): Map<string, string> {
+  const ids = [...new Set(trees.flatMap((tree) => [...elements(tree)]
     .filter(([element, parent]) => parent !== null && containers.has(parent) && (flowNodes.has(element.local) || element.local === "sequenceFlow"))
     .map(([element]) => attribute(element, "id"))
-    .filter((id): id is string => id !== undefined)
+    .filter((id): id is string => id !== undefined)))]
     .sort();
   const width = String(ids.length).length;
   return new Map(ids.map((id, index) => [id, `renamed_${String(ids.length - 1 - index).padStart(width, "0")}`]));
@@ -167,14 +173,25 @@ function permute(nodes: readonly XmlNode[]): void {
   }
 }
 
+/** The variant sources of the documents `xmls` and the one identifier map applied to all of them. */
+export function variants(xmls: readonly string[]): { xmls: string[]; names: ReadonlyMap<string, string> } {
+  const trees = xmls.map((xml) => {
+    const tree = parse(xml);
+    assert.equal(serialize(tree), xml, "the tokenizer round-trips the source");
+    return tree;
+  });
+  const names = renaming(trees);
+  for (const tree of trees) {
+    rename(tree, names);
+    permute(tree);
+  }
+  return { xmls: trees.map(serialize), names };
+}
+
 /** The variant source and the identifier map it applied. */
 export function variant(xml: string): { xml: string; names: ReadonlyMap<string, string> } {
-  const tree = parse(xml);
-  assert.equal(serialize(tree), xml, "the tokenizer round-trips the source");
-  const names = renaming(tree);
-  rename(tree, names);
-  permute(tree);
-  return { xml: serialize(tree), names };
+  const { xmls: [changed], names } = variants([xml]);
+  return { xml: changed!, names };
 }
 
 /** The source with the flow nodes and the Sequence Flows of every container in reverse declaration order. */
@@ -266,6 +283,67 @@ async function renamedDisagreement(scenarioPath: string, scenario: ScenarioDocum
     [{ target: DifferentialTarget.Kernel, result: scopesSorted(actual) }]);
   return comparison.kind === ComparisonKind.Disagreement ? JSON.stringify(comparison.disagreement) : null;
 }
+
+/** `json` with every `scopes` and `openWaits` list in one order, which a renaming permutes (see `scopesSorted`). */
+function listsSorted(json: Json, field = ""): Json {
+  if (Array.isArray(json)) {
+    const items = json.map((item) => listsSorted(item));
+    return field === "scopes" || field === "openWaits"
+      ? items.sort((left, right) => (JSON.stringify(left) < JSON.stringify(right) ? -1 : 1)) : items;
+  }
+  if (json !== null && typeof json === "object") {
+    return Object.fromEntries(Object.entries(json).map(([key, value]) => [key, listsSorted(value, key)]));
+  }
+  return json;
+}
+
+/**
+ * The difference between a population's run over `xmls`, one source per declared definition, and over their renamed
+ * and permuted variants, mapped back with each variant's digest; null when they agree.
+ */
+async function renamedPopulationDisagreement(scenarioPath: string, document: PopulationScenarioDocument,
+  xmls: readonly string[]): Promise<string | null> {
+  const encoder = new TextEncoder();
+  const run = async (sources: readonly string[], schedule: PopulationScenarioDocument): Promise<Json> => {
+    const bytes = new Map(document.definitions.map((definition, index) => [definition.definitionRef, encoder.encode(sources[index]!)]));
+    const bound = { ...schedule, definitions: schedule.definitions.map((definition) =>
+      ({ ...definition, bpmn: boundTo(definition.bpmn, bytes.get(definition.definitionRef)!) })) };
+    const programs = await populationPrograms(scenarioPath, bound, bytes);
+    return JSON.parse(JSON.stringify(runPopulation(programs, bound, populationStepDigests(bound.steps))));
+  };
+  const expected = listsSorted(await run(xmls, document));
+  const changed = variants(xmls);
+  const back = new Map([...changed.names].map(([old, renamed]) => [renamed, old]));
+  xmls.forEach((xml, index) => back.set(sha256(encoder.encode(changed.xmls[index]!)), sha256(encoder.encode(xml))));
+  const schedule = mapStrings(document, changed.names, (field) => elementFields.has(field)) as PopulationScenarioDocument;
+  const actual = listsSorted(mapStrings(await run(changed.xmls, schedule), back, () => true));
+  if (JSON.stringify(actual) === JSON.stringify(expected)) return null;
+  return `expected ${JSON.stringify(expected)}, renamed ${JSON.stringify(actual)}`;
+}
+
+test("renaming and permuting every document of an admitted population and their declaration-reversed twins changes nothing the kernel observes beyond the renaming", async () => {
+  const files = (await Promise.all(differentialDiscoveryRoots.map(scenarioFiles))).flat().sort();
+  const counts = { covered: 0, readerRefused: 0 };
+  const findings: string[] = [];
+  for (const scenarioPath of files) {
+    const document = JSON.parse(await readFile(path.join(projectRoot, scenarioPath), "utf8")) as PopulationScenarioDocument | { kind: string };
+    if (document.kind !== "populationScenario") continue;
+    const population = document as PopulationScenarioDocument;
+    const reads = await Promise.all(population.definitions.map((definition) => readSourceFor(scenarioPath, definition.bpmn, population.profile)));
+    if (reads.some((read) => read.kind !== "read")) {
+      counts.readerRefused += 1;
+      continue;
+    }
+    counts.covered += 1;
+    const xmls = await Promise.all(population.definitions.map((definition) => readFile(path.join(projectRoot, definition.bpmn.relativePath), "utf8")));
+    for (const [twin, sources] of [["retained", xmls], ["declaration-reversed", xmls.map(declarationReversed)]] as const) {
+      const finding = await renamedPopulationDisagreement(scenarioPath, population, sources);
+      if (finding !== null) findings.push(`${scenarioPath} (${twin}): ${finding}`);
+    }
+  }
+  assert.deepEqual(findings, [], JSON.stringify(counts));
+  assert.ok(counts.covered > counts.readerRefused, JSON.stringify(counts));
+});
 
 test("renaming and permuting every admitted witness and its declaration-reversed twin changes nothing the kernel observes beyond the renaming", async () => {
   const files = (await Promise.all(differentialDiscoveryRoots.map(scenarioFiles))).flat().sort();

@@ -33,11 +33,14 @@ export function deploymentOrder(definitionRefs: readonly string[], steps: readon
  * The deployment sources `runPopulation` and `kernelRun --population` take, one per deployment in deploy order: the
  * program assembled for it over the population's accepted reads, or `{"refused": code}` for a source the reader
  * refused. A `deploy` step naming no declared definition has none, since the kernels refuse it before they need one.
+ * `bytes` replaces a definition's retained source, by its `definitionRef`, which its `sha256` must then bind.
  */
-export async function populationPrograms(scenarioPath: string, document: PopulationScenarioDocument): Promise<KernelJson[]> {
+export async function populationPrograms(scenarioPath: string, document: PopulationScenarioDocument,
+  bytes: ReadonlyMap<string, Uint8Array> = new Map()): Promise<KernelJson[]> {
   const reads = new Map<string, KernelRead>();
   for (const definition of document.definitions) {
-    reads.set(definition.definitionRef, await readSourceFor(scenarioPath, definition.bpmn, document.profile));
+    reads.set(definition.definitionRef,
+      await readSourceFor(scenarioPath, definition.bpmn, document.profile, bytes.get(definition.definitionRef)));
   }
   const order = deploymentOrder(document.definitions.map((definition) => definition.definitionRef), document.steps);
   const accepted: AssemblyDeployment[] = order.flatMap((definitionRef, index) => {

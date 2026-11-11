@@ -97,7 +97,7 @@ export function invoke(ctx: Ctx, header: Header, payload: ActivityPayload, work:
   if (!inputs.ok) return inputs;
   const start = children.map(elementStart).find((entry) => entry !== null && entry[1].subscription === null) ?? null;
   if (start === null) return failed(FailureTag.SemanticFailure, "called-process-without-none-start");
-  const [entered, root] = enterCalled(state, occurrence, inputs.value, process.value.definition);
+  const [entered, root] = enterCalled(state, ctx.program, occurrence, inputs.value, process.value.definition);
   const hosted = payload.envelope.boundaries.length === 0 || payload.envelope.multiInstance !== null
     ? entered
     : signal(entered, { tag: SignalTag.Arm, host: occurrence.id, element: header.id, scope: occurrence.scope });
