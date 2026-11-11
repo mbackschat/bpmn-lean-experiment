@@ -2,7 +2,7 @@
 
 ## Status
 
-Living map of what the kernel implements per row of the [Practical CIB7 Coverage target](../PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list), its open proof lanes and its assurance and adoption state. Measured 2026-11-09 on the W0 kernel, the pilot rows PC-MI-02, PC-ERROR-01 and PC-AUTO-02 on 2026-11-10, the M6 rows on 2026-11-11; it changes only at a milestone or track closure, or at a stop. It replaces the deleted implementation, assurance-and-adoption, Temporal hosting and Temporal test evidence maps ([assurance and adoption map](https://github.com/mbackschat/bpmn-lean-experiment/blob/404a39d7/docs/ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md), [Temporal hosting map](https://github.com/mbackschat/bpmn-lean-experiment/blob/404a39d7/docs/TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md), [Temporal test evidence map](https://github.com/mbackschat/bpmn-lean-experiment/blob/404a39d7/docs/TEMPORAL-TEST-EVIDENCE-MAP.md), [router](https://github.com/mbackschat/bpmn-lean-experiment/blob/404a39d7/docs/IMPLEMENTATION-MAP.md)), whose claims rested on the deleted stack and are not carried over. Row states are the coverage target's; required meaning is the [kernel semantics documents](semantics/)'.
+Living map of what the kernel implements per row of the [Practical CIB7 Coverage target](../PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list), its open proof lanes and its assurance and adoption state. Measured 2026-11-09 on the W0 kernel, the pilot rows PC-MI-02, PC-ERROR-01 and PC-AUTO-02 on 2026-11-10, the M6 and M8 rows on 2026-11-11; it changes only at a milestone or track closure, or at a stop. It replaces the deleted implementation, assurance-and-adoption, Temporal hosting and Temporal test evidence maps ([assurance and adoption map](https://github.com/mbackschat/bpmn-lean-experiment/blob/404a39d7/docs/ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md), [Temporal hosting map](https://github.com/mbackschat/bpmn-lean-experiment/blob/404a39d7/docs/TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md), [Temporal test evidence map](https://github.com/mbackschat/bpmn-lean-experiment/blob/404a39d7/docs/TEMPORAL-TEST-EVIDENCE-MAP.md), [router](https://github.com/mbackschat/bpmn-lean-experiment/blob/404a39d7/docs/IMPLEMENTATION-MAP.md)), whose claims rested on the deleted stack and are not carried over. Row states are the coverage target's; required meaning is the [kernel semantics documents](semantics/)'.
 
 ## Row status
 
@@ -44,7 +44,7 @@ The kernel column reads: `accepted`, the row is `done` and the listed kernel sce
 | PC-AUTO-08 | accepted | [`business-rule-routing`](../../scenarios/open-rows/business-rule-routing/README.md) | — |
 | PC-SCOPE-01 | slice | [`embedded-subprocess-completion`](../../scenarios/embedded-subprocess-completion/README.md); [`concurrent-scope-data`](../../scenarios/concurrent-scope-data/README.md) (does not complete: `undeclared-output` rejections); [`nested-embedded-scope-control`](../../scenarios/nested-embedded-scope-control/README.md); [`nested-embedded-scope-data`](../../scenarios/nested-embedded-scope-data/README.md); [`scope-host-split`](../../scenarios/scope-host-split/README.md) | — |
 | PC-SCOPE-02 | slice | [`embedded-subprocess-completion`](../../scenarios/embedded-subprocess-completion/README.md); [`concurrent-embedded-activations`](../../scenarios/concurrent-embedded-activations/README.md); [`concurrent-scope-data`](../../scenarios/concurrent-scope-data/README.md) (does not complete: `undeclared-output` rejections); [`scope-reentry`](../../scenarios/scope-reentry/README.md) | concurrency |
-| PC-SCOPE-03 | slice | [`called-process-call-activity`](../../scenarios/called-process-call-activity/README.md) | — |
+| PC-SCOPE-03 | accepted | [`called-process-call-activity`](../../scenarios/called-process-call-activity/README.md); [`call-binding-versions`](../../scenarios/open-rows/call-binding-versions/README.md); [`call-binding-time`](../../scenarios/open-rows/call-binding-time/README.md); [`call-binding-population`](../../scenarios/open-rows/call-binding-population/README.md); [`population-deployments`](../../scenarios/open-rows/population-deployments/README.md) | — |
 | PC-SCOPE-04 | accepted | [`call-variable-mapping`](../../scenarios/call-variable-mapping/README.md); [`call-activity-data-boundaries`](../../scenarios/call-activity-data-boundaries/README.md) | — |
 | PC-SCOPE-05 | accepted | [`repeated-nested-concurrent-calls`](../../scenarios/repeated-nested-concurrent-calls/README.md); [`call-activity-data-boundaries`](../../scenarios/call-activity-data-boundaries/README.md) | concurrency |
 | PC-SCOPE-06 | accepted | [`call-activity-data-boundaries`](../../scenarios/call-activity-data-boundaries/README.md); [`call-exceptional-return`](../../scenarios/open-rows/call-exceptional-return/README.md); [`call-raised-outputs`](../../scenarios/open-rows/call-raised-outputs/README.md); [`escalation-busy-called-root`](../../scenarios/open-rows/escalation-busy-called-root/README.md) | — |
@@ -64,26 +64,26 @@ The kernel column reads: `accepted`, the row is `done` and the listed kernel sce
 | PC-TIMER-01 | accepted | [`intermediate-catch-timer`](../../scenarios/intermediate-catch-timer/README.md); [`intermediate-catch-timer-alarm-debounce`](../../scenarios/intermediate-catch-timer-alarm-debounce/README.md); [`timer-duration-forms`](../../scenarios/open-rows/timer-duration-forms/README.md); [`timer-date-forms`](../../scenarios/open-rows/timer-date-forms/README.md) | — |
 | PC-TIMER-02 | accepted | [`timer-recurrence`](../../scenarios/open-rows/timer-recurrence/README.md); [`timer-data-derived`](../../scenarios/open-rows/timer-data-derived/README.md) (cycles) | — |
 | PC-TIMER-03 | absent | — | — |
-| PC-TIMER-04 | slice | [`timer-start-event`](../../scenarios/timer-start-event/README.md) | — |
+| PC-TIMER-04 | accepted | [`timer-start-event`](../../scenarios/timer-start-event/README.md); [`timer-start-forms`](../../scenarios/open-rows/timer-start-forms/README.md); [`timer-start-population`](../../scenarios/open-rows/timer-start-population/README.md) | — |
 | PC-TIMER-05 | accepted | [`timer-catch-cycles`](../../scenarios/open-rows/timer-catch-cycles/README.md) | — |
 | PC-TIMER-06 | accepted | [`activity-boundary-timer`](../../scenarios/activity-boundary-timer/README.md); [`non-interrupting-boundary-timer`](../../scenarios/non-interrupting-boundary-timer/README.md); [`subprocess-boundary-timer`](../../scenarios/subprocess-boundary-timer/README.md); [`timer-user-task-composition`](../../scenarios/timer-user-task-composition/README.md); [`repeatable-event-subscriptions`](../../scenarios/repeatable-event-subscriptions/README.md) (refused: `profile.abnormalScopeEnd.withoutOutflow`); [`timer-boundary-hosts`](../../scenarios/open-rows/timer-boundary-hosts/README.md) | cancellation |
 | PC-TIMER-07 | accepted | [`timer-event-subprocess`](../../scenarios/open-rows/timer-event-subprocess/README.md) | concurrency, cancellation |
 | PC-TIMER-08 | absent | — | cancellation |
 | PC-MESSAGE-01 | absent | — | — |
-| PC-MESSAGE-02 | slice | [`message-start-event`](../../scenarios/message-start-event/README.md) | — |
+| PC-MESSAGE-02 | accepted | [`message-start-event`](../../scenarios/message-start-event/README.md); [`message-start-compositions`](../../scenarios/open-rows/message-start-compositions/README.md); [`message-start-population`](../../scenarios/open-rows/message-start-population/README.md) | — |
 | PC-MESSAGE-03 | slice | [`intermediate-catch-message`](../../scenarios/intermediate-catch-message/README.md); [`message-payload-catch`](../../scenarios/message-payload-catch/README.md); [`portable-business-message-payload`](../../scenarios/portable-business-message-payload/README.md) | — |
 | PC-MESSAGE-04 | accepted | [`activity-boundary-message`](../../scenarios/activity-boundary-message/README.md); [`message-boundary-interrupting`](../../scenarios/open-rows/message-boundary-interrupting/README.md) | cancellation |
 | PC-MESSAGE-05 | accepted | [`repeatable-event-subscriptions`](../../scenarios/repeatable-event-subscriptions/README.md); [`message-boundary-repeated`](../../scenarios/open-rows/message-boundary-repeated/README.md) | — |
 | PC-MESSAGE-06 | absent | — | cancellation |
 | PC-MESSAGE-07 | accepted | [`message-esp-repeatable`](../../scenarios/open-rows/message-esp-repeatable/README.md) | concurrency |
-| PC-MESSAGE-08 | slice | [`message-key-correlation`](../../scenarios/message-key-correlation/README.md) | — |
+| PC-MESSAGE-08 | accepted | [`message-key-correlation`](../../scenarios/message-key-correlation/README.md); [`message-correlation-criteria`](../../scenarios/open-rows/message-correlation-criteria/README.md); [`message-start-population`](../../scenarios/open-rows/message-start-population/README.md) | — |
 | PC-MESSAGE-09 | absent | — | — |
 | PC-SIGNAL-01 | absent | — | — |
-| PC-SIGNAL-02 | absent | — | — |
+| PC-SIGNAL-02 | accepted | [`signal-start-compositions`](../../scenarios/open-rows/signal-start-compositions/README.md); [`signal-broadcast-population`](../../scenarios/open-rows/signal-broadcast-population/README.md) | — |
 | PC-SIGNAL-03 | absent | — | cancellation |
-| PC-SIGNAL-04 | absent | — | concurrency |
+| PC-SIGNAL-04 | accepted | [`signal-start-compositions`](../../scenarios/open-rows/signal-start-compositions/README.md); [`signal-broadcast-population`](../../scenarios/open-rows/signal-broadcast-population/README.md) | concurrency |
 | PC-CONDITION-01 | accepted | [`conditional-evaluation`](../../scenarios/open-rows/conditional-evaluation/README.md) (`portable-*`) | — |
-| PC-CONDITION-02 | absent | — | — |
+| PC-CONDITION-02 | accepted | [`conditional-start-compositions`](../../scenarios/open-rows/conditional-start-compositions/README.md); [`conditional-start-population`](../../scenarios/open-rows/conditional-start-population/README.md) | — |
 | PC-CONDITION-03 | absent | — | — |
 | PC-CONDITION-04 | absent | — | cancellation |
 | PC-CONDITION-05 | accepted | [`conditional-esp`](../../scenarios/open-rows/conditional-esp/README.md) | cancellation |
@@ -154,7 +154,7 @@ What the kernel executes but the hosted engine does not yet host is refused by t
 
 ## Open proof lanes
 
-The kernel has no `Kernel.Laws` or `Kernel.Proofs` module (2026-11-09); Lean is the executable specification every scenario checks. The four lanes the 2026-10-14 assurance rule made `proved` are deliberately open until the coverage rows close, when the proof wave proves `Step` sound against the `Laws` ([Lean assurance lane](ARCHITECTURE-SPEC.md#lean-assurance-lane), [owner decision](ARCHITECTURE-SPEC.md#owner-decisions-on-the-path)). The row table names the lanes each row depends on.
+The kernel states its rules declaratively in [`Kernel.Laws.State`](../../Kernel/Laws/State.lean), [`Population`](../../Kernel/Laws/Population.lean), [`Flow`](../../Kernel/Laws/Flow.lean), [`MultiInstance`](../../Kernel/Laws/MultiInstance.lean), [`Correlation`](../../Kernel/Laws/Correlation.lean), [`Subscriptions`](../../Kernel/Laws/Subscriptions.lean) and [`Starts`](../../Kernel/Laws/Starts.lean), proved only on witness states; no `Kernel.Proofs` module or theorem relates `Step` to them (2026-11-11); Lean is the executable specification every scenario checks. The four lanes the 2026-10-14 assurance rule made `proved` are deliberately open until the coverage rows close, when the proof wave proves `Step` sound against the `Laws` ([Lean assurance lane](ARCHITECTURE-SPEC.md#lean-assurance-lane), [owner decision](ARCHITECTURE-SPEC.md#owner-decisions-on-the-path)). The row table names the lanes each row depends on.
 
 | Lane | Covers | Reopen trigger |
 |---|---|---|

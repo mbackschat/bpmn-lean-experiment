@@ -168,14 +168,12 @@ Superseded first-profile restrictions: the boundary, catch and start profiles ea
 | Row | Decision owed or not yet implemented |
 |---|---|
 | PC-TIMER-03 | Acceptance of data-derived values; the clock after a rolled-back firing ([CIB-OP-0017][r-op-0017]). |
-| PC-TIMER-04 | Root Timer start schedules bound to an exact definition version (see [population](POPULATION-SEMANTICS-SPEC.md)); the engine-published Timer start capability ([TST scheduling][tst-schedule]). |
 | PC-TIMER-08 | Timer lifetimes across Transaction owners, which consume the PC-TX contracts. |
 | PC-MESSAGE-01 | Expression names on different Messages of one event scope, refused as `message.expressionNames` also where CIB deploys them; a nameless Receive Task under `messageNames = addresses` (work admission). |
 | PC-MESSAGE-03 | Payload catches in branches and nested work; the runner does not yet deliver payloads, so no CIB evidence. |
 | PC-MESSAGE-06 | Interrupting Message Event Sub-Processes (refused). |
-| PC-SIGNAL-01 to PC-SIGNAL-04 | Every Signal trigger. |
+| PC-SIGNAL-01, PC-SIGNAL-03 | Signal throws; Signal boundaries and Event Sub-Process starts. |
 | PC-CONDITION-03, PC-CONDITION-04 | Event-Based Gateway arms true at once, which CIB picks in a per-JVM arbitrary order ([#79](https://github.com/mbackschat/bpmn-lean-experiment/issues/79)); a completion's writes read by its own boundaries ([CIB-DEV-0005][r-dev-0005]); Event Sub-Process starts of one scope with one condition, which CIB refuses at deployment. |
-| PC-CONDITION-02 | Root Conditional starts (`start.condition`). |
 
 ## Sources
 
@@ -273,6 +271,5 @@ Superseded first-profile restrictions: the boundary, catch and start profiles ea
 [tst-account]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/TIMER-START-EVENT-SPEC.md#selected-account-and-rejected-alternatives
 [tst-source]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/TIMER-START-EVENT-SPEC.md#exact-source-profile
 [tst-rules]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/TIMER-START-EVENT-SPEC.md#stable-semantic-rules
-[tst-schedule]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/TIMER-START-EVENT-SPEC.md#definition-scheduling-boundary
 [tst-scope]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/TIMER-START-EVENT-SPEC.md#required-optional-and-excluded
 [tst-cib]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/TIMER-START-EVENT-SPEC.md#cib-relationship

@@ -179,7 +179,6 @@ Rejected commands: `unknown-user-task`, `unknown-effect`, `unknown-incident`, `u
 | PC-AUTO-03 | incidents in Multi-Instance Sub-Process bodies (`scope.multiInstance`) |
 | PC-AUTO-04 | Message-addressed Send Task with recipient and correlation (`SendWork`) |
 | PC-AUTO-05, PC-AUTO-06 | Script binding per the owner decision |
-| PC-SCOPE-03 (M8) | the population witnesses of each CIB-EXT-0045 selector |
 
 ## Sources
 
