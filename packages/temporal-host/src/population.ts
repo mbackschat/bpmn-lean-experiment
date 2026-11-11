@@ -617,6 +617,10 @@ export function answer<P, S, M>(port: PopulationPort<P, S, M>, state: IngressSta
       if (candidates.length > 1) return resolve(port, state, { kind: "ambiguous" });
       const [only] = candidates;
       if (only === undefined) return resolve(port, state, { kind: "noMatch" });
+      const summary = registered(state, only.deploymentId)?.summary;
+      if (summary === undefined || summary === null) throw new TypeError(`deployment ${String(only.deploymentId)} is not registered`);
+      const refusal = port.startRefusal(summary, current.command);
+      if (refusal !== null) return resolve(port, state, refusal);
       const instanceId = port.startedInstanceId(commandIdOfFlight(current), only.deploymentId, only.startEvent);
       return withPhase(state, { kind: "rootStart", deploymentId: only.deploymentId, startEvent: only.startEvent, instanceId,
         request: port.messageStart(current.command, instanceId, only.startEvent, only.channel), consumes: null });

@@ -280,6 +280,11 @@ export interface PopulationPort<P, S, M> {
    * `null`: the receiver scan reads refused criteria as no match.
    */
   readonly publicationRefusal: (registry: readonly Wire[], command: Wire) => ResolutionParts | null;
+  /**
+   * A publication's refusal when `startCriteriaRefusal` refuses its criteria under the reading of `summary`, the
+   * deployment of its sole start candidate, decided where it falls through to that start, else `null`.
+   */
+  readonly startRefusal: (summary: Wire, command: Wire) => ResolutionParts | null;
   readonly timerStartCheck: (registry: readonly Wire[], deploymentId: number, startEvent: string, dueMs: number, atMs: number,
     consumed: boolean) => string | null;
   readonly startedInstanceId: (commandId: string, deploymentId: number, startEvent: string) => string;

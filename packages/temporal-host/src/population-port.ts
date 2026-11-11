@@ -50,6 +50,7 @@ import {
   signalAddressToJson,
   signalReceiversOf,
   signalStartReceivers,
+  startCriteriaRefusal,
   startedInstanceId,
   step,
   timerInstanceId,
@@ -258,6 +259,20 @@ function startRequest(request: StartRequest): Wire {
   return toWire(request);
 }
 
+/** A publication's criteria refusal as resolution parts; the kernel's criteria refusals only reject or refuse as
+ * unsupported, as `publish` relies on too. */
+function refusalParts(refusal: Failure | null): ResolutionParts | null {
+  if (refusal === null) return null;
+  switch (refusal.tag) {
+    case FailureTag.Rejected: return { kind: "rejected", code: refusal.code };
+    case FailureTag.Unsupported: return { kind: "unsupported", code: refusal.code };
+    case FailureTag.RolledBack:
+    case FailureTag.SemanticFailure:
+      throw new TypeError(`criteria refusal ${refusal.code} is not command-level`);
+  }
+  return assertNever(refusal.tag);
+}
+
 export const populationPort: PopulationPort<Program, State, FanOutMachine> = {
   decodeCommand: (kind, json) => {
     let command: Command | null;
@@ -288,17 +303,12 @@ export const populationPort: PopulationPort<Program, State, FanOutMachine> = {
     const issued = decode<Command>(command);
     if (issued.tag !== CommandTag.Publish) throw new TypeError("not a publication");
     const readings = registry.map((wire) => decode<DeploymentSummary>(wire).messageCorrelation);
-    const refusal = criteriaRefusal(readings, issued.publication.mode === PublishMode.StartOnly, issued.publication.criteria);
-    if (refusal === null) return null;
-    switch (refusal.tag) {
-      case FailureTag.Rejected: return { kind: "rejected", code: refusal.code };
-      case FailureTag.Unsupported: return { kind: "unsupported", code: refusal.code };
-      // `criteriaRefusal` only rejects or refuses as unsupported, as `publish` relies on too.
-      case FailureTag.RolledBack:
-      case FailureTag.SemanticFailure:
-        throw new TypeError(`criteria refusal ${refusal.code} is not command-level`);
-    }
-    return assertNever(refusal.tag);
+    return refusalParts(criteriaRefusal(readings, issued.publication.mode === PublishMode.StartOnly, issued.publication.criteria));
+  },
+  startRefusal: (summary, command) => {
+    const issued = decode<Command>(command);
+    if (issued.tag !== CommandTag.Publish) throw new TypeError("not a publication");
+    return refusalParts(startCriteriaRefusal(decode<DeploymentSummary>(summary).messageCorrelation, issued.publication.criteria));
   },
   timerStartCheck: (registry, deploymentId, startEvent, dueMs, atMs, consumed) =>
     timerStartCheck(registry.map((wire) => decode<DeploymentSummary>(wire)), deploymentId, startEvent, dueMs, atMs, consumed),
