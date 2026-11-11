@@ -204,9 +204,11 @@ CIB stores an undated cycle's start formatted `yyyy-MM-dd'T'HH:mm:ss` (`TimerEnt
 
 The kernel's successor is the fired deadline plus one period whatever the firing's `at` (no drift, PC-TIMER-02). CIB computes the follow-up from the clock at the firing (`TimerEntity.java:199-205`, `CycleBusinessCalendar.java:53-58`): the first grid point after it, so occurrences missed while the job was late are skipped and the skipped steps use up the count.
 
+At a root Timer start the same computation decides which occurrences CIB starts. The kernel names every due instant of the schedule as its own occurrence ([CIB-INT-0029](#cib-int-0029--a-timer-start-counts-from-its-deployment-and-fires-each-occurrence-once-while-the-deployment-is-current)) and leaves which missed ones a host fires to the host's catch-up policy (`TSTART-SCHEDULE-01`); a host that fires the overdue occurrence and then only the first due instant after that firing's time reproduces CIB.
+
 **Evidence:** The cited source. The runner fires every job at its due date, so no retained witness observes a late firing.
 
-**Boundary:** Cycle firings with `at` after the deadline; recorded so the observation boundary is explicit.
+**Boundary:** Cycle firings with `at` after the deadline, at catches, boundaries, Event Sub-Process starts and root Timer starts; recorded so the observation boundary is explicit.
 
 ### CIB-DEV-0009 — `PnW` is not seven days per week
 
@@ -788,7 +790,7 @@ BPMN Table 10.101 lets `timeCycle` stand on any Timer Event but states nothing a
 
 **Evidence:** Pinned `TimerDeclarationImpl.java:96-106`, `BpmnParse.java:3417-3421`, `:3488-3492`, `:3567-3571`; retained `timer-recurrence/cycle-on-catch`, `cron-on-catch`, `cycle-on-interrupting-boundary`, `timer-catch-cycles/*`.
 
-**Boundary:** Normal-flow catches, Event-Based Gateway arms, interrupting boundaries and interrupting Event Sub-Process starts, ISO and Cron cycles alike. Root Timer starts stay refused (`timer.cycleNotAttached`, PC-TIMER-04).
+**Boundary:** Normal-flow catches, Event-Based Gateway arms, interrupting boundaries and interrupting Event Sub-Process starts, ISO and Cron cycles alike. A root Timer start's cycle is population semantics instead, each due instant its own occurrence ([CIB-INT-0029](#cib-int-0029--a-timer-start-counts-from-its-deployment-and-fires-each-occurrence-once-while-the-deployment-is-current), PC-TIMER-04).
 
 ### CIB-INT-0028 — a Signal is addressed by its name
 
@@ -804,9 +806,9 @@ BPMN 2.0.2 Table 10.100 lets an event reference its Signal by `signalRef`, a QNa
 
 **Status:** Recorded bounded interpretation from the pinned source; selected by every profile
 
-BPMN 2.0.2 lets a Timer start a Process at a date, after a duration or by a cycle (Table 10.84, Table 10.101) but names no reference instant for a duration or an undated cycle on a top-level Start Event, and has no deployments. CIB Seven `2.2.0` computes a Timer-start job's due date from the deployment instant, anchors an undated cycle there, deletes every Timer-start job of a key it redeploys and runs the job at the clock of its firing. The kernel makes the origin and the due instants population semantics: a duration and an undated cycle count from the deployment's logical deploy time, a date is absolute, also before the deployment, and a Cron expression matches strictly after the origin. A `timerStart` names an occurrence by its due instant and commits only when that instant is one of the schedule's (`timer-occurrence-unknown`), the firing time is not before it (`timer-not-due`), the deployment is still current for its key (`timer-start-superseded`) and the occurrence is unconsumed (`timer-start-occurrence-consumed`). The started instance takes the firing time and the identity `timer:<len>:<deploymentId>:<len>:<startEvent>:<dueMs>`, so one occurrence never starts two instances. CIB agrees on the origin and on every due instant of an on-time firing; after a late cycle firing it skips the missed grid points (CIB-DEV-0008).
+BPMN 2.0.2 lets a Timer start a Process at a date, after a duration or by a cycle (Table 10.84, Table 10.101) but names no reference instant for a duration or an undated cycle on a top-level Start Event, and has no deployments. CIB Seven `2.2.0` computes a Timer-start job's due date from the deployment instant, anchors an undated cycle there, deletes every Timer-start job of a key it redeploys and runs the job at the clock of its firing. The kernel makes the origin and the due instants population semantics: a duration and an undated cycle count from the deployment's logical deploy time, a date is absolute, also before the deployment, and a Cron expression matches strictly after the origin. A `timerStart` names an occurrence by its due instant and commits only when that instant is one of the schedule's (`timer-occurrence-unknown`), the firing time is not before it (`timer-not-due`), the deployment is still current for its key (`timer-start-superseded`) and the occurrence is unconsumed (`timer-start-occurrence-consumed`). The started instance takes the firing time and the identity `timer:<len>:<deploymentId>:<len>:<startEvent>:<dueMs>`, so one occurrence never starts two instances. A single-instance scenario is the degenerate population, deployed at 0 and fired on time, so a Timer start there commits only at one of its due instants. CIB agrees on the origin and on every due instant of an on-time firing; after a late cycle firing it skips the missed grid points (CIB-DEV-0008).
 
-**Evidence:** Pinned `bpmn/deployer/BpmnDeployer.java:144-146`, `:232-258`, `jobexecutor/TimerDeclarationImpl.java:109-153`, `:170-190`, `jobexecutor/TimerStartEventJobHandler.java:38-63`, `persistence/entity/TimerEntity.java:178-183`; kernel witnesses in `packages/kernel/test/population-timers.test.ts`.
+**Evidence:** Pinned `bpmn/deployer/BpmnDeployer.java:144-146`, `:232-258`, `jobexecutor/TimerDeclarationImpl.java:109-153`, `:170-190`, `jobexecutor/TimerStartEventJobHandler.java:38-63`, `persistence/entity/TimerEntity.java:178-183`; retained `timer-start-event` and `timer-start-forms/duration-start-before-deadline`, where CIB rejects a start at 0 of a Timer due later, as the kernel does; kernel witnesses in `packages/kernel/test/population-timers.test.ts`.
 
 **Boundary:** Root Timer starts whose schedule `Timer.resolve` offers a host. Schedule identity, catch-up of missed occurrences and overlap stay host and product policy (`TSTART-SCHEDULE-01`).
 

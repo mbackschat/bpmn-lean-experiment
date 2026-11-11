@@ -37,6 +37,7 @@ import {
   type QName,
   type SignalTrigger,
   type Subscription,
+  type TimerSchedule,
   type TimerTrigger,
   type ValueSource,
 } from "../il/types.js";
@@ -114,14 +115,28 @@ export function conditionRefusal(options: ProfileOptions, reading: Reading, trig
   return eventsExpression(options, reading, "event.condition.foreign", trigger.condition);
 }
 
+/** The code of a Timer kind, whatever its value or dialect. */
+export function familyCode(schedule: TimerSchedule): string {
+  switch (schedule.tag) {
+    case TimerScheduleTag.Duration:
+      return "timer.duration";
+    case TimerScheduleTag.Date:
+      return "timer.date";
+    case TimerScheduleTag.Cycle:
+      return "timer.cycle";
+  }
+  return assertNever(schedule);
+}
+
 /**
  * A Timer literal as `il/timer.ts#classify` reads it: outside the subset is refused everywhere, malformed unless
  * `admitMalformed` (`ProfileOptions.malformedTimer = rollsBackArming`), where arming it rolls back. A cycle is admitted
  * at every subscription site, one that fires once taking only its first occurrence (I1). A root start (`rootStart`) is
- * armed by its host from `resolve`, so it takes only what that offers, and a cycle there is PC-TIMER-04's.
+ * armed by its host from `resolve` at deployment, where no input can roll back, so it takes exactly what that offers
+ * (PC-TIMER-04, CIB-INT-0029); anything else keeps its lexeme's code, else its kind's.
  */
 export function timer(admitMalformed: boolean, rootStart: boolean, trigger: TimerTrigger): string | null {
-  const lexeme = (kind: TimerKind, code: TimerCode, value: ValueSource): string | null => {
+  const lexeme = (admitMalformed: boolean, kind: TimerKind, code: TimerCode, value: ValueSource): string | null => {
     const text = valueSourceLiteral(value);
     if (text === null) return timerRefusal(code);
     const classified = classify(kind, text);
@@ -136,23 +151,25 @@ export function timer(admitMalformed: boolean, rootStart: boolean, trigger: Time
     return assertNever(classified);
   };
   const schedule = trigger.schedule;
-  switch (schedule.tag) {
-    case TimerScheduleTag.Duration:
-      if (rootStart) return resolve(schedule).ok ? null : "timer.duration";
-      return lexeme(TimerKind.Duration, TimerCode.Duration, schedule.value);
-    case TimerScheduleTag.Date:
-      return rootStart ? "timer.date" : lexeme(TimerKind.Date, TimerCode.Date, schedule.value);
-    case TimerScheduleTag.Cycle:
-      if (rootStart) return "timer.cycleNotAttached";
-      switch (schedule.dialect) {
-        case CycleDialect.Cron:
-          return lexeme(TimerKind.Cycle, TimerCode.Cron, schedule.value);
-        case CycleDialect.Iso8601:
-          return lexeme(TimerKind.Cycle, TimerCode.Cycle, schedule.value);
-      }
-      return assertNever(schedule.dialect);
-  }
-  return assertNever(schedule);
+  const literal = (admitMalformed: boolean): string | null => {
+    switch (schedule.tag) {
+      case TimerScheduleTag.Duration:
+        return lexeme(admitMalformed, TimerKind.Duration, TimerCode.Duration, schedule.value);
+      case TimerScheduleTag.Date:
+        return lexeme(admitMalformed, TimerKind.Date, TimerCode.Date, schedule.value);
+      case TimerScheduleTag.Cycle:
+        switch (schedule.dialect) {
+          case CycleDialect.Cron:
+            return lexeme(admitMalformed, TimerKind.Cycle, TimerCode.Cron, schedule.value);
+          case CycleDialect.Iso8601:
+            return lexeme(admitMalformed, TimerKind.Cycle, TimerCode.Cycle, schedule.value);
+        }
+        return assertNever(schedule.dialect);
+    }
+    return assertNever(schedule);
+  };
+  if (!rootStart) return literal(admitMalformed);
+  return resolve(schedule).ok ? null : (literal(false) ?? familyCode(schedule));
 }
 
 /**
@@ -161,7 +178,7 @@ export function timer(admitMalformed: boolean, rootStart: boolean, trigger: Time
  */
 export function timerAt(options: ProfileOptions, reading: Reading, rootStart: boolean, trigger: TimerTrigger): string | null {
   const schedule = trigger.schedule;
-  const code = schedule.tag === TimerScheduleTag.Duration ? "timer.duration" : schedule.tag === TimerScheduleTag.Date ? "timer.date" : "timer.cycle";
+  const code = familyCode(schedule);
   const admitMalformed = options.malformedTimer === MalformedTimer.RollsBackArming;
   switch (schedule.value.tag) {
     case ValueSourceTag.Expression:

@@ -80,11 +80,12 @@ function refusedStarts(trigger: Json, refusal: string): Json {
   return capabilitiesJson(definitionCapabilities(decoded.value)) as Json;
 }
 
-test("a Timer start offers the instant of a literal date and the text of a literal Cron expression", () => {
-  assert.deepEqual(refusedStarts(date("2026-11-09T10:00:00Z"), "timer.date").starts,
-    [{ startEventId: "S", timer: { instantMs: Date.parse("2026-11-09T10:00:00Z") } }]);
-  assert.deepEqual(refusedStarts(cycle("0 0 12 * * ?", "cron"), "timer.cycleNotAttached").starts,
-    [{ startEventId: "S", timer: { cron: "0 0 12 * * ?" } }]);
+test("a Timer start offers the instant of a literal date, the period of a cycle and the text of a literal Cron expression", () => {
+  const offered = (trigger: Json): Json =>
+    (capabilitiesJson(definitionCapabilities(admitted(replace(base(), "S", start("S", trigger))))) as Json).starts as Json;
+  assert.deepEqual(offered(date("2026-11-09T10:00:00Z")), [{ startEventId: "S", timer: { instantMs: Date.parse("2026-11-09T10:00:00Z") } }]);
+  assert.deepEqual(offered(cycle("R3/PT1H")), [{ startEventId: "S", timer: { cycle: { periodMs: 3_600_000, repetitions: 3 } } }]);
+  assert.deepEqual(offered(cycle("0 0 12 * * ?", "cron")), [{ startEventId: "S", timer: { cron: "0 0 12 * * ?" } }]);
 });
 
 test("a Timer start whose schedule is an expression is not offered", () => {

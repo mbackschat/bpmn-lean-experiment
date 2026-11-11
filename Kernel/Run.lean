@@ -156,11 +156,16 @@ def commandJson (commandId outcome : String) (code : Option String) : Json :=
 def snapshot (program : Program) (state : Option State) : List Json :=
   state.toList.map (observationJson program)
 
-/-- The trace after deployment and the scenario outcome. -/
-def execute (program : Program) : Option State → List (String × Input) → List Json × String
+/-- A stimulus's step, or its refusal before the step when one is given. -/
+def stepChecked (program : Program) (state : Option State) (input : Input) : Option String → Except Failure State
+  | some code => .error (.rejected code)
+  | none => Step.step Registry.hooks program state input
+
+/-- The trace after deployment and the scenario outcome; a stimulus's refusal, when given, rejects it before the step. -/
+def execute (program : Program) : Option State → List ((String × Input) × Option String) → List Json × String
   | _, [] => ([], "committed")
-  | state, (commandId, input) :: rest =>
-    match Step.step Registry.hooks program state input with
+  | state, ((commandId, input), refusal) :: rest =>
+    match stepChecked program state input refusal with
     | .ok next =>
       let (trace, outcome) := execute program (some next) rest
       (commandJson commandId "committed" none :: snapshot program (some next) ++ trace, outcome)
@@ -178,7 +183,7 @@ def deploymentJson (outcome : String) (code : Option String) : Json :=
   let fields : List (String × Json) := [("kind", "deployment"), ("outcome", Json.str outcome)]
   Json.mkObj (fields ++ code.toList.map fun code => ("code", Json.str code))
 
-def result (program : Program) (stimuli : List (String × Input)) : Json :=
+def result (program : Program) (stimuli : List ((String × Input) × Option String)) : Json :=
   let semantic (outcome : String) := Json.mkObj [("kind", "semantic"), ("outcome", Json.str outcome)]
   match AdmissionRegistry.admit program with
   | some code =>
@@ -187,13 +192,16 @@ def result (program : Program) (stimuli : List (String × Input)) : Json :=
     let (trace, outcome) := execute program none stimuli
     Json.mkObj [("outcome", semantic outcome), ("trace", Json.arr (deploymentJson "committed" none :: trace).toArray)]
 
-def stimuliFromJson (json : Json) : Except String (List (String × Input)) := do
-  (← json.getObjValAs? (Array Json) "stimuli").toList.mapM Codec.stimulusFromJson
+/-- The stimuli with the refusal of each single-instance Timer start that is not on time (`Population.onTimeRefusal`). -/
+def checkedStimuliFromJson (program : Program) (json : Json) : Except String (List ((String × Input) × Option String)) := do
+  (← json.getObjValAs? (Array Json) "stimuli").toList.mapM fun stimulus => do
+    let (commandId, input, firing) ← Codec.firingStimulusFromJson stimulus
+    pure ((commandId, input), firing.bind fun firing => Population.onTimeRefusal program firing.startEvent firing.dueMs)
 
 def run (programPath scenarioPath : String) : IO Json := do
   let program ← orFail programPath (Codec.programFromJson (← readJson programPath))
   if let some code := AdmissionRegistry.admit program then IO.eprintln s!"admission refused: {code}"
-  let stimuli ← orFail scenarioPath (stimuliFromJson (← readJson scenarioPath))
+  let stimuli ← orFail scenarioPath (checkedStimuliFromJson program (← readJson scenarioPath))
   pure (result program stimuli)
 
 /-! ## Host-view mode -/
@@ -259,10 +267,10 @@ def hostViewJson (view : Host.View) : Json :=
     (view.failure.map fun failure => ("failure", failureViewJson failure)).toList ++ broadcastsJson view.broadcasts)
 
 /-- Every committed input's host view. -/
-def hostViews (program : Program) : Option State → List (String × Input) → List Host.View
+def hostViews (program : Program) : Option State → List ((String × Input) × Option String) → List Host.View
   | _, [] => []
-  | state, (_, input) :: rest =>
-    match Step.step Registry.hooks program state input with
+  | state, ((_, input), refusal) :: rest =>
+    match stepChecked program state input refusal with
     | .ok next => Host.hostView program next :: hostViews program (some next) rest
     | .error (.rejected _) => hostViews program state rest
     | .error _ => []
@@ -299,7 +307,7 @@ def capabilitiesJson (capabilities : Host.Capabilities) : Json :=
 
 def runHostView (programPath scenarioPath : String) : IO Json := do
   let program ← orFail programPath (Codec.programFromJson (← readJson programPath))
-  let stimuli ← orFail scenarioPath (stimuliFromJson (← readJson scenarioPath))
+  let stimuli ← orFail scenarioPath (checkedStimuliFromJson program (← readJson scenarioPath))
   let views := if (AdmissionRegistry.admit program).isSome then [] else hostViews program none stimuli
   pure (Json.mkObj [("result", result program stimuli),
     ("hostRequirements", requirementsJson (Host.hostRequirements program)),

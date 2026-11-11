@@ -148,8 +148,15 @@ def effectOutcomeFromJson (json : Json) : Except String EffectOutcome := do
   | "technicalFailure" => fields json ["kind"]; pure .technicalFailure
   | other => throw s!"unknown effect outcome kind {other}"
 
-/-- One scenario stimulus: its command identifier and the kernel input. -/
-def decodeStimulus (json : Json) : Except String (String × Input) := do
+/-- The firing a start stimulus states when its trigger is a Timer: the start it names, if any, and the due instant its
+trigger's logical time gives. A single-instance run checks it before the step (`Population.onTimeRefusal`). -/
+structure TimerFiring where
+  startEvent : Option ElementId
+  dueMs : Nat
+  deriving Repr
+
+/-- One scenario stimulus: its command identifier, the kernel input and the Timer firing it states. -/
+def decodeStimulus (json : Json) : Except String (String × Input × Option TimerFiring) := do
   let kind ← kindOf json
   let common := ["kind", "commandId"]
   match kind with
@@ -163,35 +170,42 @@ def decodeStimulus (json : Json) : Except String (String × Input) := do
   -- `at`, the input's logical time in milliseconds, is optional; absent or null leaves the clock unchanged.
   let atMs ← (optionalField json "at").mapM fun value => Lean.fromJson? (α := Nat) value
   let occurrence : Unit → Except String OccurrenceRef := fun _ => do occurrenceFromJson (← json.getObjVal? "occurrence")
-  let input : Input ← match kind with
+  let (input, firing) : Input × Option TimerFiring ← match kind with
     | "start" =>
       let trigger ← (optionalField json "trigger").mapM startTriggerFromJson
-      pure (.start { instanceId := ← json.getObjValAs? String "instanceId"
-                     startEvent := (← optionalString json "startEvent").map (⟨·⟩)
+      let startEvent := (← optionalString json "startEvent").map (⟨·⟩)
+      let firing := trigger.bind fun
+        | .timer dueMs => some { startEvent, dueMs }
+        | .none | .message .. | .signal .. | .condition => none
+      pure (.start { instanceId := ← json.getObjValAs? String "instanceId", startEvent
                      variables := ← bindingsAt json "variables", trigger := trigger.getD .none
-                     businessKey := ← optionalString json "businessKey", atMs })
+                     businessKey := ← optionalString json "businessKey", atMs }, firing)
     | "command" =>
       pure (.command { occurrence := ← occurrence (), action := ← commandActionFromJson (← json.getObjVal? "action")
-                       atMs })
+                       atMs }, none)
     | "deliver" =>
       let entries ← ((optionalField json "correlation").getD (Json.arr #[])).getArr?
       pure (.deliver { occurrence := ← occurrence (), trigger := ← deliveryTriggerFromJson (← json.getObjVal? "trigger")
                        correlation := ← entries.toList.mapM correlationFromJson
                        payload := ← (optionalField json "payload").mapM valueAt
                        variables := ← if (optionalField json "variables").isSome then bindingsAt json "variables" else pure []
-                       atMs })
+                       atMs }, none)
     | "timerFire" =>
       pure (.timerFire { occurrence := ← occurrence (), logicalTimeMs := ← json.getObjValAs? Nat "logicalTimeMs"
-                         atMs })
+                         atMs }, none)
     | "effectResult" =>
       pure (.effectResult { occurrence := ← occurrence ()
-                            outcome := ← effectOutcomeFromJson (← json.getObjVal? "outcome"), atMs })
+                            outcome := ← effectOutcomeFromJson (← json.getObjVal? "outcome"), atMs }, none)
     | other => throw s!"unknown stimulus kind {other}"
-  pure (commandId, input)
+  pure (commandId, input, firing)
+
+/-- One scenario stimulus with the Timer firing it states, every refusal carrying its strict-decoding code. -/
+def firingStimulusFromJson (json : Json) : Except String (String × Input × Option TimerFiring) :=
+  (decodeStimulus json).mapError coded
 
 /-- One scenario stimulus, every refusal carrying its strict-decoding code. -/
 def stimulusFromJson (json : Json) : Except String (String × Input) :=
-  (decodeStimulus json).mapError coded
+  (firingStimulusFromJson json).map fun (commandId, input, _) => (commandId, input)
 
 /-- The refusal or failure code a failure carries. -/
 def failureCode : Failure → String

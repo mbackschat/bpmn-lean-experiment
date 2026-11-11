@@ -47,7 +47,7 @@ import {
   type SignalAddress,
   type StartTrigger,
 } from "../../state.js";
-import { assertNever, compareStrings, type Value } from "../types.js";
+import { assertNever, compareStrings, type ElementId, type Value } from "../types.js";
 
 /** A string field read through `getObjValAs?`, which reads an absent key as `null`. */
 function stringField(json: unknown, key: string): Decoded<string> {
@@ -337,23 +337,28 @@ function effectOutcomeFromJson(json: unknown): EffectOutcome {
   throw new Refusal(`unknown effect outcome kind ${kind}`);
 }
 
-function inputFromJson(json: unknown, kind: string, atMs: number | null): Input {
+/**
+ * The firing a start stimulus states when its trigger is a Timer: the start it names, if any, and the due instant its
+ * trigger's logical time gives. A single-instance run checks it before the step (`onTimeRefusal`).
+ */
+export type TimerFiring = Readonly<{ startEvent: ElementId | null; dueMs: number }>;
+
+function inputFromJson(json: unknown, kind: string, atMs: number | null): readonly [Input, TimerFiring | null] {
   const occurrence = (): OccurrenceRef => get(occurrenceFromJson(present(json, "occurrence")));
   switch (kind) {
     case "start": {
       const rawTrigger = optionalField(json, "trigger");
-      const trigger = rawTrigger === undefined ? noStartTrigger : startTriggerFromJson(rawTrigger);
-      const instanceId = get(stringField(json, "instanceId"));
+      const trigger = rawTrigger === undefined ? null : startTriggerFromJson(rawTrigger);
       const startEvent = optionalString(json, "startEvent");
+      const firing = trigger?.tag === StartTriggerTag.Timer ? { startEvent, dueMs: trigger.logicalTimeMs } : null;
+      const instanceId = get(stringField(json, "instanceId"));
       const variables = bindingsAt(json, "variables");
-      return {
-        tag: InputTag.Start,
-        payload: { instanceId, startEvent, variables, trigger, businessKey: optionalString(json, "businessKey"), atMs },
-      };
+      const payload = { instanceId, startEvent, variables, trigger: trigger ?? noStartTrigger, businessKey: optionalString(json, "businessKey"), atMs };
+      return [{ tag: InputTag.Start, payload }, firing];
     }
     case "command": {
       const ref = occurrence();
-      return { tag: InputTag.Command, payload: { occurrence: ref, action: commandActionFromJson(present(json, "action")), atMs } };
+      return [{ tag: InputTag.Command, payload: { occurrence: ref, action: commandActionFromJson(present(json, "action")), atMs } }, null];
     }
     case "deliver": {
       const rawCorrelation = optionalField(json, "correlation");
@@ -364,18 +369,16 @@ function inputFromJson(json: unknown, kind: string, atMs: number | null): Input 
       const correlation = entries.map(correlationFromJson);
       const payload = optionalField(json, "payload");
       const variables = optionalField(json, "variables") === undefined ? [] : bindingsAt(json, "variables");
-      return {
-        tag: InputTag.Deliver,
-        payload: { occurrence: ref, trigger, correlation, payload: payload === undefined ? null : valueAt(payload), variables, atMs },
-      };
+      const delivery = { occurrence: ref, trigger, correlation, payload: payload === undefined ? null : valueAt(payload), variables, atMs };
+      return [{ tag: InputTag.Deliver, payload: delivery }, null];
     }
     case "timerFire": {
       const ref = occurrence();
-      return { tag: InputTag.TimerFire, payload: { occurrence: ref, logicalTimeMs: get(nat.decode(objValD(json, "logicalTimeMs"))), atMs } };
+      return [{ tag: InputTag.TimerFire, payload: { occurrence: ref, logicalTimeMs: get(nat.decode(objValD(json, "logicalTimeMs"))), atMs } }, null];
     }
     case "effectResult": {
       const ref = occurrence();
-      return { tag: InputTag.EffectResult, payload: { occurrence: ref, outcome: effectOutcomeFromJson(present(json, "outcome")), atMs } };
+      return [{ tag: InputTag.EffectResult, payload: { occurrence: ref, outcome: effectOutcomeFromJson(present(json, "outcome")), atMs } }, null];
     }
   }
   throw new Refusal(`unknown stimulus kind ${kind}`);
@@ -389,9 +392,8 @@ const stimulusForms: Readonly<Record<string, readonly [readonly string[], readon
   effectResult: [["occurrence", "outcome"], ["at"]],
 };
 
-/** One scenario stimulus: its command identifier and the kernel input, every refusal carrying its strict-decoding
- * code. */
-export function stimulusFromJson(json: unknown): Decoded<readonly [string, Input]> {
+/** One scenario stimulus with the Timer firing it states, every refusal carrying its strict-decoding code. */
+export function firingStimulusFromJson(json: unknown): Decoded<readonly [string, Input, TimerFiring | null]> {
   const decoded = decoding(() => {
     const kind = get(kindOf(json));
     const form = Object.hasOwn(stimulusForms, kind) ? stimulusForms[kind] : undefined;
@@ -400,9 +402,16 @@ export function stimulusFromJson(json: unknown): Decoded<readonly [string, Input
     // `at`, the input's logical time in milliseconds, is optional; absent leaves the clock unchanged.
     const at = optionalField(json, "at");
     const atMs = at === undefined ? null : get(nat.decode(at));
-    return [commandId, inputFromJson(json, kind, atMs)] as const;
+    const [input, firing] = inputFromJson(json, kind, atMs);
+    return [commandId, input, firing] as const;
   });
   return decoded.ok ? decoded : refuseDecoding(coded(decoded.refusal));
+}
+
+/** One scenario stimulus: its command identifier and the kernel input, every refusal carrying its strict-decoding
+ * code. */
+export function stimulusFromJson(json: unknown): Decoded<readonly [string, Input]> {
+  return mapDecoded(firingStimulusFromJson(json), ([commandId, input]) => [commandId, input] as const);
 }
 
 /** The refusal or failure code a failure carries. */

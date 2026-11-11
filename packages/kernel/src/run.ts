@@ -20,16 +20,18 @@
  */
 import { assertNever, compareStrings, mergeSort, type DefinitionRef, type Program } from "./il/types.js";
 import { bindingsToJson, decodeProgram, encodeExpression, type JsonValue } from "./il/codec.js";
-import { channelToJson, failureCode, failureName, signalAddressToJson } from "./il/codec/stimulus.js";
+import { channelToJson, failureCode, failureName, firingStimulusFromJson, signalAddressToJson } from "./il/codec/stimulus.js";
 import {
   CauseTag,
   FailureTag,
   type Cause,
   type EffectDetail,
+  type Input,
   type InstanceFailure,
   type OccurrenceKey,
   type BroadcastIntent,
   type OccurrenceRef,
+  type Outcome,
   type State,
   type Transition,
   type UserTaskDetail,
@@ -49,9 +51,10 @@ import {
 } from "./host.js";
 import { ResolvedTag, type Resolved } from "./il/timer.js";
 import { runStimuli as runInstances } from "./population.js";
+import { onTimeRefusal } from "./population/timers.js";
 import { hooks } from "./registry.js";
 import { admit } from "./admission-registry.js";
-import { arrayField, field, referenceJson, requiredString, stimulusOf, type ScenarioStimulus } from "./run/wire.js";
+import { arrayField, field, referenceJson, requiredString, type ScenarioStimulus } from "./run/wire.js";
 import {
   definitionRefFromJson, deploymentSourceFromJson, populationResultJson, stimuliOfPopulation, type Declared,
 } from "./run/population.js";
@@ -228,12 +231,20 @@ function snapshot(program: Program, state: State | null): JsonValue[] {
   return state === null ? [] : [observationJson(program, state)];
 }
 
-/** The trace after deployment and the scenario outcome. */
-function execute(program: Program, stimuli: readonly ScenarioStimulus[]): readonly [JsonValue[], string] {
+/** A scenario stimulus with the refusal it meets before its step, `null` for none. */
+type CheckedStimulus = readonly [ScenarioStimulus, string | null];
+
+/** A stimulus's step, or its refusal before the step when one is given. */
+function stepChecked(program: Program, state: State | null, input: Input, refusal: string | null): Outcome {
+  return refusal === null ? step(hooks, program, state, input) : { ok: false, failure: { tag: FailureTag.Rejected, code: refusal } };
+}
+
+/** The trace after deployment and the scenario outcome; a stimulus's refusal, when given, rejects it before the step. */
+function execute(program: Program, stimuli: readonly CheckedStimulus[]): readonly [JsonValue[], string] {
   const trace: JsonValue[] = [];
   let state: State | null = null;
-  for (const [index, [commandId, input]] of stimuli.entries()) {
-    const outcome = step(hooks, program, state, input);
+  for (const [index, [[commandId, input], refusal]] of stimuli.entries()) {
+    const outcome = stepChecked(program, state, input, refusal);
     if (outcome.ok) {
       trace.push(commandJson(commandId, "committed", null), ...snapshot(program, outcome.value));
       state = outcome.value;
@@ -259,7 +270,7 @@ export function unsupportedDeploymentResult(code: string): JsonValue {
   return { outcome: semantic("unsupported"), trace: [deploymentJson("unsupported", code)] };
 }
 
-function result(program: Program, stimuli: readonly ScenarioStimulus[]): JsonValue {
+function result(program: Program, stimuli: readonly CheckedStimulus[]): JsonValue {
   const code = admit(program);
   if (code !== null) return unsupportedDeploymentResult(code);
   const [trace, outcome] = execute(program, stimuli);
@@ -267,8 +278,14 @@ function result(program: Program, stimuli: readonly ScenarioStimulus[]): JsonVal
 }
 
 
-function stimuliFromJson(json: unknown, where: string): readonly ScenarioStimulus[] {
-  return arrayField(json, "stimuli", where).map((item) => stimulusOf(item, where));
+/** The stimuli with the refusal of each single-instance Timer start that is not on time (`onTimeRefusal`). */
+function stimuliFromJson(program: Program, json: unknown, where: string): readonly CheckedStimulus[] {
+  return arrayField(json, "stimuli", where).map((item) => {
+    const decoded = firingStimulusFromJson(item);
+    if (!decoded.ok) throw new Error(`${where}: ${decoded.refusal}`);
+    const [commandId, input, firing] = decoded.value;
+    return [[commandId, input], firing === null ? null : onTimeRefusal(program, firing.startEvent, firing.dueMs)] as const;
+  });
 }
 
 function programFromJson(programJson: unknown, where: string): Program {
@@ -280,7 +297,7 @@ function programFromJson(programJson: unknown, where: string): Program {
 /** `kernelRun <program.json> <scenario.json>`. */
 export function runScenario(programJson: unknown, scenarioJson: unknown): unknown {
   const program = programFromJson(programJson, "program");
-  return result(program, stimuliFromJson(scenarioJson, "scenario"));
+  return result(program, stimuliFromJson(program, scenarioJson, "scenario"));
 }
 
 // Host-view mode
@@ -357,11 +374,11 @@ export function hostViewJson(view: View): JsonValue {
 }
 
 /** Every committed input's host view, up to the first input that neither commits nor is rejected. */
-function hostViews(program: Program, stimuli: readonly ScenarioStimulus[]): readonly View[] {
+function hostViews(program: Program, stimuli: readonly CheckedStimulus[]): readonly View[] {
   const views: View[] = [];
   let state: State | null = null;
-  for (const [, input] of stimuli) {
-    const outcome = step(hooks, program, state, input);
+  for (const [[, input], refusal] of stimuli) {
+    const outcome = stepChecked(program, state, input, refusal);
     if (outcome.ok) {
       views.push(hostView(program, outcome.value));
       state = outcome.value;
@@ -420,7 +437,7 @@ export function capabilitiesJson(capabilities: Capabilities): JsonValue {
 /** `kernelRun --host-view <program.json> <scenario.json>`. */
 export function runHostView(programJson: unknown, scenarioJson: unknown): unknown {
   const program = programFromJson(programJson, "program");
-  const stimuli = stimuliFromJson(scenarioJson, "scenario");
+  const stimuli = stimuliFromJson(program, scenarioJson, "scenario");
   const views = admit(program) !== null ? [] : hostViews(program, stimuli);
   return {
     result: result(program, stimuli),

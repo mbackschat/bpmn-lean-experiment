@@ -1757,24 +1757,6 @@
     ]
   },
   {
-    "evidence": "scenarios/open-rows/timer-start-forms/cycle-start-fires.cibseven-evidence.json",
-    "owners": [
-      "PC-TIMER-04"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/timer-start-forms/date-start-fires.cibseven-evidence.json",
-    "owners": [
-      "PC-TIMER-04"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/timer-start-forms/duration-start-before-deadline.cibseven-evidence.json",
-    "owners": [
-      "PC-TIMER-04"
-    ]
-  },
-  {
     "evidence": "scenarios/open-rows/transaction-cancel-mixed/cancel-with-effect-unanswered.cibseven-evidence.json",
     "owners": [
       "PC-TX-02"
@@ -1907,12 +1889,6 @@
     "evidence": "scenarios/sequential-multi-instance/natural.cibseven-evidence.json",
     "owners": [
       "CIB-INT-0014"
-    ]
-  },
-  {
-    "evidence": "scenarios/timer-start-event/cibseven-evidence.json",
-    "owners": [
-      "PC-TIMER-04"
     ]
   },
   {

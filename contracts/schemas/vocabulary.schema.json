@@ -579,7 +579,6 @@
         "throw.signal.payload",
         "timer.cron",
         "timer.cycle",
-        "timer.cycleNotAttached",
         "timer.date",
         "timer.duration",
         "work.call.ambiguous",

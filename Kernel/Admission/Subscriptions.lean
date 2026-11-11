@@ -55,12 +55,19 @@ def timerRefusal : Timer.Code → String
   | .cycle => "timer.cycle"
   | .cron => "timer.cron"
 
+/-- The code of a Timer kind, whatever its value or dialect. -/
+def familyCode : TimerSchedule → String
+  | .duration _ => "timer.duration"
+  | .date _ => "timer.date"
+  | .cycle _ _ => "timer.cycle"
+
 /-- A Timer literal as `Kernel.Timer.classify` reads it: outside the subset is refused everywhere, malformed unless
 `admitMalformed` (`ProfileOptions.malformedTimer = rollsBackArming`), where arming it rolls back. A cycle is admitted at
 every subscription site, one that fires once taking only its first occurrence (I1). A root start (`rootStart`) is armed
-by its host from `Timer.resolve`, so it takes only what that offers, and a cycle there is PC-TIMER-04's. -/
+by its host from `Timer.resolve` at deployment, where no input can roll back, so it takes exactly what that offers
+(PC-TIMER-04, CIB-INT-0029); anything else keeps its lexeme's code, else its kind's. -/
 def timer (admitMalformed rootStart : Bool) (trigger : TimerTrigger) : Option String :=
-  let lexeme (kind : Timer.Kind) (code : Timer.Code) (value : ValueSource) : Option String :=
+  let lexeme (admitMalformed : Bool) (kind : Timer.Kind) (code : Timer.Code) (value : ValueSource) : Option String :=
     match value with
     | .expression _ => some (timerRefusal code)
     | .literal text =>
@@ -68,27 +75,25 @@ def timer (admitMalformed rootStart : Bool) (trigger : TimerTrigger) : Option St
       | .admitted _ => none
       | .outside code => some (timerRefusal code)
       | .malformed code => if admitMalformed then none else some (timerRefusal code)
-  match trigger.schedule, rootStart with
-  | .cycle _ _, true => some "timer.cycleNotAttached"
-  | .date _, true => some "timer.date"
-  | .duration _, true =>
+  let literal (admitMalformed : Bool) : Option String :=
+    match trigger.schedule with
+    | .duration value => lexeme admitMalformed .duration .duration value
+    | .date value => lexeme admitMalformed .date .date value
+    | .cycle value .iso8601 => lexeme admitMalformed .cycle .cycle value
+    | .cycle value .cron => lexeme admitMalformed .cycle .cron value
+  if !rootStart then literal admitMalformed
+  else
     match Timer.resolve trigger.schedule with
     | .ok _ => none
-    | .error _ => some "timer.duration"
-  | .duration value, false => lexeme .duration .duration value
-  | .date value, false => lexeme .date .date value
-  | .cycle value .iso8601, false => lexeme .cycle .cycle value
-  | .cycle value .cron, false => lexeme .cycle .cron value
+    | .error _ => literal false <|> some (familyCode trigger.schedule)
 
 /-- A Timer at a subscription site: a value given by an expression is read at the Events level and classified when it
 is armed (PC-TIMER-03); a literal is classified now (`timer`). A root start's expression is PC-TIMER-04's. -/
 def timerAt (options : ProfileOptions) (reading : Reading) (rootStart : Bool) (trigger : TimerTrigger) : Option String :=
-  let (value, code) : ValueSource × String := match trigger.schedule with
-    | .duration value => (value, "timer.duration")
-    | .date value => (value, "timer.date")
-    | .cycle value _ => (value, "timer.cycle")
+  let value : ValueSource := match trigger.schedule with
+    | .duration value | .date value | .cycle value _ => value
   match value, rootStart with
-  | .expression body, false => eventsExpression options reading code body
+  | .expression body, false => eventsExpression options reading (familyCode trigger.schedule) body
   | .expression _, true => timer (options.malformedTimer == .rollsBackArming) rootStart trigger
   | .literal _, _ => timer (options.malformedTimer == .rollsBackArming) rootStart trigger
 

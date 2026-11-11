@@ -1,16 +1,16 @@
 /**
  * Refusal tests of `admission/subscriptions/starts.ts` for root start Events: a Message start writes its payload, a
- * Signal start is addressed by its Signal, and a Conditional start is admitted only where the profile evaluates it over
- * submitted variables (CIB-EXT-0044), never with `camunda:variableEvents` and never twice with one predicate in one
- * process (CIB-LIM-0027). Predicates compare structurally, so a different literal lexeme or JUEL node keeps two starts
- * apart.
+ * Signal start is addressed by its Signal, a Timer start takes exactly the schedules its host resolves (PC-TIMER-04),
+ * and a Conditional start is admitted only where the profile evaluates it over submitted variables (CIB-EXT-0044),
+ * never with `camunda:variableEvents` and never twice with one predicate in one process (CIB-LIM-0027). Predicates
+ * compare structurally, so a different literal lexeme or JUEL node keeps two starts apart.
  */
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
-  append, base, computed, condition, flow, juel, mapping, message, qName, refusalOf, refusalTests, replace, signal, start, text, variable,
-  withFlows, withOptions,
+  append, base, computed, condition, cycle, date, duration, flow, juel, mapping, message, qName, refusalOf, refusalTests, replace, signal,
+  start, text, variable, withFlows, withOptions,
 } from "./admission-refusal-support.ts";
 import type { Json } from "./admission-refusal-support.ts";
 
@@ -30,6 +30,14 @@ const submitted = (placed: (program: Json) => Json) => (program: Json): Json =>
 const addressed = (placed: (program: Json) => Json) => (program: Json): Json =>
   placed(withOptions(program, { signalNames: "addresses", evaluator: "juel" }));
 
+/** A Timer whose `kind` value is the expression `${when}`, with `over` completing its schedule. */
+const timerExpression = (kind: string, over: Json = {}): Json =>
+  ({ timer: { payload: { schedule: { [kind]: { value: computed(variable("when")), ...over } } } } });
+
+/** The profile selection under which arming a malformed Timer rolls back (CIB-EXT-0036). */
+const rollingBack = (placed: (program: Json) => Json) => (program: Json): Json =>
+  placed(withOptions(program, { malformedTimer: "rollsBackArming" }));
+
 /** A Conditional trigger with `over` replacing its predicate or filters. */
 const conditionWith = (over: Json): Json => {
   const plain = condition() as { condition: { payload: Json } };
@@ -47,6 +55,49 @@ const twoConditions = (first: Json, second: Json) => (program: Json): Json =>
   secondStart(second)(starting(first)(withOptions(program, { conditionalStart: "submittedContext", evaluator: "juel" })));
 
 refusalTests("starts", [
+  // Timers: a root start is armed from `Timer.resolve` at deployment, where no input can roll back.
+  {
+    code: "timer.duration",
+    description: "a root start Timer whose duration counts calendar months",
+    mutate: starting(duration("P1M")),
+    control: starting(duration("P30D")),
+  },
+  {
+    code: "timer.duration",
+    description: "a root start Timer whose duration does not parse, even where arming may roll back",
+    mutate: rollingBack(starting(duration("PT"))),
+    control: rollingBack(starting(duration("PT1M"))),
+  },
+  {
+    code: "timer.duration",
+    description: "a root start Timer whose duration is an expression",
+    mutate: starting(timerExpression("duration")),
+    control: starting(duration("PT1M")),
+  },
+  {
+    code: "timer.date",
+    description: "a root start Timer whose date is an expression",
+    mutate: starting(timerExpression("date")),
+    control: starting(date("2030-01-01T00:00:00Z")),
+  },
+  {
+    code: "timer.cycle",
+    description: "a root start Timer repeating from a stated start date",
+    mutate: starting(cycle("R2/2030-01-01T00:00:00Z/PT1M")),
+    control: starting(cycle("R2/PT1M")),
+  },
+  {
+    code: "timer.cycle",
+    description: "a root start Timer whose cycle is an expression",
+    mutate: starting(timerExpression("cycle", { dialect: "iso8601" })),
+    control: starting(cycle("R/PT1M")),
+  },
+  {
+    code: "timer.cron",
+    description: "a root start Timer given as a cron expression outside the subset",
+    mutate: starting(cycle("0 0 12 L * ?", "cron")),
+    control: starting(cycle("0 0 12 * * ?", "cron")),
+  },
   {
     code: "start.condition",
     description: "a Conditional root start under the standards reading",

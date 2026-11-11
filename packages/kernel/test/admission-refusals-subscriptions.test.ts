@@ -246,12 +246,6 @@ export const rows: readonly Row[] = [
     control: bounded(cycle("R2/PT1M"), { interrupting: false }),
   },
   {
-    code: "timer.cycleNotAttached",
-    description: "a root start Timer that repeats",
-    mutate: starting(cycle("R/PT1M")),
-    control: starting(duration("PT1M")),
-  },
-  {
     code: "timer.cron",
     description: "a repeating boundary Timer given as a cron expression outside the subset",
     mutate: bounded(cycle("0 0 12 L * ?", "cron"), { interrupting: false }),
