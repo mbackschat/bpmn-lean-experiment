@@ -4,6 +4,7 @@ import { createHash } from "node:crypto";
 import type { PublicWorkTask } from "@bpmn-lean/platform-contracts";
 import {
   DefinitionCompilationStatus,
+  DefinitionRegistrationStatus,
   DefinitionScheduleHostPhase,
   DefinitionStartDescriptionStatus,
   DefinitionStartStatus,
@@ -97,6 +98,24 @@ export function createCrossReplicaEngineRuntime(
         },
         startCapabilities: capabilities(),
       }),
+      // A deploy registers the version with the engine's population before it answers (DefinitionDeploymentService).
+      registerDefinitionVersion: async (request: Readonly<{
+        bytes: Uint8Array;
+        sourceId: string;
+        expectedSha256: string;
+        semanticProfile: string;
+        expectedProcessId: string;
+        version: number;
+        sourceOverlay: null;
+      }>) => {
+        source("register", request);
+        assert.equal(request.expectedSha256, evidence.sourceSha256);
+        assert.equal(request.expectedProcessId, sharedDefinitionProcessId);
+        assert.equal(request.semanticProfile, sharedDefinitionProfile);
+        assert.equal(request.version, 1);
+        assert.equal(request.sourceOverlay, null);
+        return { status: DefinitionRegistrationStatus.Registered };
+      },
       prepareDefinitionVersion: async (request: Readonly<{
         bytes: Uint8Array;
         sourceId: string;

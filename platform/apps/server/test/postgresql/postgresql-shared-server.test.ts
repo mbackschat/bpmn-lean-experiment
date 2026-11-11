@@ -224,6 +224,7 @@ if (connectionString === undefined) {
       assert.deepEqual(new Set(evidence.sourceDigests), new Set([evidence.sourceSha256]));
       assert.deepEqual(new Set(evidence.operations), new Set([
         "first:compile",
+        "first:register",
         "first:message-prepare",
         "first:schedule-create",
         "first:schedule-occurrences",
