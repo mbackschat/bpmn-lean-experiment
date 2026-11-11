@@ -13,6 +13,7 @@ import { PostgresqlDefinitionRepository, PostgresqlConfirmedProcessInstanceRepos
 import { PostgresqlWorkRepository, PostgresqlWorkSnapshotReader } from "@bpmn-lean/platform-work";
 import { PostgresqlProcessInstanceRepository, PostgresqlIncidentSnapshotReader } from "@bpmn-lean/platform-operate";
 import type { DefinitionVersionStarter } from "@bpmn-lean/platform-engine-gateway";
+import { SHARED_PLATFORM_SCHEMA_EPOCH } from "@bpmn-lean/platform-server";
 
 const baseConnectionString = process.env.BPMN_TEST_POSTGRES_URL;
 const migrationDirectories = ["foundation/artifact-store", "modules/definitions", "modules/operate", "modules/work", "foundation/audit", "foundation/recovery-runtime"].map((owner) => fileURLToPath(new URL(`../../../../${owner}/migrations`, import.meta.url)));
@@ -107,9 +108,13 @@ if (baseConnectionString === undefined) {
       await runtime.query({ text: "UPDATE bpmn_platform.work_snapshot_generation_items SET expected_public_instance_json = $1", values: [oldInstanceJson] });
     }
     const applied = await runPostgresqlMigrations({ connectionString, migrationDirectories });
-    assert.equal(applied.appliedNames.length, 14);
+    // The upgrade applies the whole configured catalog after the epoch-12 prefix and reaches the epoch the shared
+    // runtime requires, wherever later migrations move it.
+    const catalog = (await Promise.all(migrationDirectories.map(async (directory) => await readdir(directory))))
+      .flat().filter((name) => name.endsWith(".sql")).map((name) => name.slice(0, -".sql".length)).toSorted();
+    assert.deepEqual(applied.appliedNames, catalog);
     assert.match(applied.appliedNames[12] ?? "", /^0013_definitions-source-overlay__/u);
-    assert.deepEqual((await runtime.query({ text: "SELECT epoch FROM bpmn_platform_meta.schema_epoch" })).rows, [{ epoch: 15 }]);
+    assert.deepEqual((await runtime.query({ text: "SELECT epoch FROM bpmn_platform_meta.schema_epoch" })).rows, [{ epoch: SHARED_PLATFORM_SCHEMA_EPOCH }]);
     assert.equal((await definitions.get(definition))?.sourceOverlay, null);
     assert.equal((await confirmed.get("reserved-🚀\u0000"))?.instance.definition.sourceOverlay, null);
     for (const [processInstanceId, prior] of priorSnapshots) {
