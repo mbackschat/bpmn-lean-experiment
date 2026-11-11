@@ -4,8 +4,8 @@
  * CIB's forms and carries no Data Input Associations, and a Signal throw carries `camunda:in` copies and a business key only where a Signal carries variables.
  */
 import {
-  append, computed, end, flow, literalValue, mapping, qName, refusalTests, replace, scope, start, task, text, variable, withFlows,
-  withOptions,
+  append, boundary, computed, duration, end, flow, literalValue, mapping, qName, refusalTests, replace, scope, start, task, text, variable,
+  withFlows, withOptions,
 } from "./admission-refusal-support.ts";
 import type { Json, Row } from "./admission-refusal-support.ts";
 
@@ -13,10 +13,12 @@ import type { Json, Row } from "./admission-refusal-support.ts";
 const throwing = (record: Json | string) => (program: Json): Json => replace(program, "E", end("E", record));
 
 const errorThrow = (message: Json | null): Json => ({ error: { payload: { code: "Failure", message } } });
-/** `T` becomes a Transaction whose start `XS` reaches a Cancel End `X`. */
-const cancelledTransaction = (program: Json): Json =>
-  withFlows(append(task(scope("T", { transaction: { payload: { method: "compensate" } } }))(program),
+/** `T` becomes a Transaction whose start `XS` reaches a Cancel End `X`, with the boundaries `envelope` names. */
+const cancelling = (envelope: Json) => (program: Json): Json =>
+  withFlows(append(task(scope("T", { transaction: { payload: { method: "compensate" } } }, {}, envelope))(program),
     start("XS", null, [], "T"), end("X", "cancel", "T")), flow("fx", "XS", "X"));
+/** A Transaction whose Cancel End its Cancel boundary `XB` catches. */
+const cancelledTransaction = cancelling({ boundaries: [boundary("XB", "cancel")] });
 
 /** A Signal throw with `over` replacing its fields. */
 const signalThrow = (over: Json): Json => ({
@@ -131,6 +133,13 @@ export const rows: readonly Row[] = [
     code: "throw.cancel.outsideTransaction",
     description: "a Cancel End outside a Transaction",
     mutate: throwing("cancel"),
+    control: cancelledTransaction,
+  },
+  {
+    // BPMN 2.0.2 §10.3.5: the Cancel boundary directs the flow after the cancellation; CIB rolls back (CIB-LIM-0043).
+    code: "throw.cancel.uncaught",
+    description: "a Cancel End whose Transaction has no Cancel boundary",
+    mutate: cancelling({ boundaries: [boundary("XB", duration("PT1S"))] }),
     control: cancelledTransaction,
   },
 ];

@@ -129,7 +129,7 @@ The boundary, Message start, Timer start and payload accounts select no CIB rela
 | `message.nameExpression` | a Message name expression under `messageNames = description`, or outside the Events JUEL level | PC-MESSAGE-01 ([CIB-INT-0024][r-int-0024]) |
 | `start.messageNameExpression` | a root Message start whose name is an expression | CIB refuses it at deployment |
 | `boundary.error.nonInterrupting`, `start.error.nonInterrupting` | a non-interrupting Error boundary or Error Event Sub-Process | stated in [propagation](PROPAGATION-SEMANTICS-SPEC.md); PC-ERROR-02 |
-| `boundary.cancel.host`, `boundary.cancel.nonInterrupting` | a Cancel boundary off a Transaction, or non-interrupting | stated in [compensation](COMPENSATION-SEMANTICS-SPEC.md); PC-TX-02 |
+| `boundary.cancel.host`, `boundary.cancel.nonInterrupting`, `boundary.cancel.duplicate` | a Cancel boundary off a Transaction, non-interrupting, or second on one Transaction | stated in [compensation](COMPENSATION-SEMANTICS-SPEC.md); PC-TX-02 |
 | `message.correlation` | a modeled correlation key on a boundary or start | CIB executes no modeled key ([CIB-LIM-0002](../../CIB-BPMN-RELATION-REGISTER.md#cib-lim-0002-modeled-bpmn-key-and-context-correlation-is-not-executed); see [population](POPULATION-SEMANTICS-SPEC.md)) |
 | `message.correlation.modeled` | under `messageCorrelation = apiCriteria`, a correlated catch | CIB executes no modeled key ([CIB-LIM-0002](../../CIB-BPMN-RELATION-REGISTER.md#cib-lim-0002-modeled-bpmn-key-and-context-correlation-is-not-executed)); PC-MESSAGE-08 |
 | `scope.eventSubProcess.interruptingMessage` | an interrupting Message Event Sub-Process | PC-MESSAGE-06 (see [scopes](SCOPES-SEMANTICS-SPEC.md)) |

@@ -185,8 +185,10 @@ def unhandledError (ctx : Ctx) (code : String) (message : Option String) (origin
 /-- The search found no catcher: it ended at `handler`, the scope occurrence of a compensation handler, which an Error
 fails, or it passed its instance's root. Either way a raising Activity leaves first (`hostLeaves`). An Escalation that
 passed the root changes nothing but its thrower's leave (§10.5.1: "execution continues at the location of throwing";
-CIB-INT-0021). What an Escalation at a compensation handler or a Cancel at either means is not selected. Dynamic-only:
-whether a raised event finds a catcher depends on where its thrower runs. -/
+CIB-INT-0021). What an Escalation at a compensation handler means is not selected; dynamic-only: whether a raised event
+finds a catcher depends on where its thrower runs. A Cancel always finds one: admission admits a Cancel End only directly
+in a Transaction with a Cancel boundary (`throw.cancel.outsideTransaction`, `throw.cancel.uncaught`), which the search
+reaches first. -/
 def exhausted (hooks : PropagationHooks) (ctx : Ctx) (raised : Raised) (origin : Origin)
     (handler : Option ScopeOccurrenceId) (state : State) : Outcome := do
   let state ← hostLeaves hooks ctx origin state
@@ -195,8 +197,7 @@ def exhausted (hooks : PropagationHooks) (ctx : Ctx) (raised : Raised) (origin :
   | .error code message, none => unhandledError ctx code message origin state
   | .escalation _, some _ => .error (.unsupported "compensation-handler-escalation") -- dynamic-only: what a handler raises
   | .escalation _, none => .ok (throwerLeaves ctx origin state)
-  | .cancel, some _ => .error (.unsupported "compensation-handler-cancel") -- dynamic-only: what a handler raises
-  | .cancel, none => .error (.unsupported "raise-cancel") -- dynamic-only: where its thrower runs
+  | .cancel, _ => .error (.semanticFailure "cancel-uncaught")
 
 /-- The search decided at a catcher whose event scope is `scope`: write its code and message variables from there
 outward, at once, then let a raising Activity leave (`hostLeaves`). CIB sets the variables on the execution of the

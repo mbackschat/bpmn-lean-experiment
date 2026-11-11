@@ -2485,22 +2485,13 @@
   {
     "evidence": "scenarios/open-rows/transaction-cancel-refusals/cancel-end-without-boundary.cibseven-evidence.json",
     "owners": [
-      "PC-TX-02",
-      "PC-TX-03"
+      "CIB-LIM-0043"
     ]
   },
   {
     "evidence": "scenarios/open-rows/transaction-cancel-refusals/non-interrupting-cancel-boundary.cibseven-evidence.json",
     "owners": [
-      "PC-TX-02",
-      "PC-TX-03"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/transaction-cancel-refusals/two-cancel-boundaries.cibseven-evidence.json",
-    "owners": [
-      "PC-TX-02",
-      "PC-TX-03"
+      "CIB-LIM-0043"
     ]
   },
   {

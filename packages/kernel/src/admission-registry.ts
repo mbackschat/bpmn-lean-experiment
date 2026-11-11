@@ -133,9 +133,12 @@ function first(...checks: readonly (() => string | null)[]): string | null {
   return null;
 }
 
-/** Whether an element sits directly in a Transaction. */
-function inTransaction(program: Program, header: Header): boolean {
-  return header.parent !== null && Scopes.transactionElement(program, header.parent);
+/** Where an element sits for a Cancel End: directly in a Transaction with or without a Cancel boundary, or not. */
+function cancelSite(program: Program, header: Header): Propagation.CancelSite {
+  const parent = header.parent === null ? null : programElement(program, header.parent);
+  const scope = parent === null ? null : elementScope(parent);
+  if (scope === null || !Scopes.isTransaction(scope[1])) return Propagation.CancelSite.Outside;
+  return scope[1].envelope.boundaries.some(Subscriptions.cancels) ? Propagation.CancelSite.Caught : Propagation.CancelSite.Uncaught;
 }
 
 /** What an element throws, if it is a throw Event. */
@@ -157,7 +160,7 @@ function eventRole(program: Program, header: Header, payload: EventPayload): str
     case EventRoleTag.Throw:
       // A Multiple throw Event (BPMN 2.0.2 §10.5.1); pinned CIB keeps one definition (CIB-LIM-0008) (PC-BASIC-04).
       if (payload.alternativeThrows.length > 0) return "event.multipleDefinitions";
-      return Propagation.throwRecord(program.options, throwSite(program, header), inTransaction(program, header), role.record);
+      return Propagation.throwRecord(program.options, throwSite(program, header), cancelSite(program, header), role.record);
     case EventRoleTag.LinkCatch:
     case EventRoleTag.LinkThrow:
       return FlowAdmission.link(program, header, payload);

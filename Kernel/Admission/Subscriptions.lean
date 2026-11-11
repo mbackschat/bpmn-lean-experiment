@@ -190,6 +190,8 @@ or the Event Sub-Processes of a scope; `none` is an Escalation catch-all. -/
 structure Declared where
   errorCodes : List String := []
   escalations : List (Option String) := []
+  /-- Whether the host already has a Cancel boundary. -/
+  cancel : Bool := false
 
 /-- At most one Escalation handler of one kind in one place may match any code: among the boundaries of a host, or among
 the Event Sub-Processes of a scope, a second one of the same code, a catch-all beside any other, or two catch-alls are
@@ -286,7 +288,8 @@ structure Host where
 
 /-- `host` says what the boundary hangs on (`Host`). An Error boundary always interrupts (BPMN 2.0.2
 Table 10.90) (PC-ERROR-01); a Cancel boundary always interrupts and hangs only on a Transaction (Table 10.90, §10.3.5;
-`BpmnParse#parseBoundaryCancelEventDefinition`) (PC-TX-02). `seen` holds the host's earlier Error boundary codes
+`BpmnParse#parseBoundaryCancelEventDefinition`) (PC-TX-02), at most one per Transaction (CIB refuses a second,
+`BpmnParse.java:1776-1779`). `seen` holds the host's earlier Error boundary codes
 (`errorDeclared`) and Escalation boundary codes (`escalationDeclared`). -/
 def boundary (options : ProfileOptions) (reading : Reading) (host : Host) (seen : Declared)
     (boundary : Boundary) : Except String Declared :=
@@ -314,10 +317,24 @@ def boundary (options : ProfileOptions) (reading : Reading) (host : Host) (seen 
       let escalations ← escalationDeclared "boundary.escalation.duplicate" seen.escalations trigger.code
       .ok { seen with escalations }
     | .compensation => .ok seen
-    | .cancel =>
-      check (if !host.transaction then some "boundary.cancel.host"
-        else if boundary.interrupting then none
-        else some "boundary.cancel.nonInterrupting")
+    | .cancel => do
+      let seen ← check (if !host.transaction then some "boundary.cancel.host"
+        else if !boundary.interrupting then some "boundary.cancel.nonInterrupting"
+        else if seen.cancel then some "boundary.cancel.duplicate"
+        else none)
+      .ok { seen with cancel := true }
+
+/-- Whether a boundary catches Cancel. -/
+def cancels (boundary : Boundary) : Bool :=
+  match boundary.subscription.trigger with
+  | .cancel => true
+  | .timer _ => false
+  | .message _ => false
+  | .signal _ => false
+  | .condition _ => false
+  | .error _ => false
+  | .escalation _ => false
+  | .compensation => false
 
 def boundaries (options : ProfileOptions) (reading : Reading) (host : Host) (list : List Boundary) :
     Option String :=

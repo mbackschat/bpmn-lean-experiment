@@ -65,17 +65,41 @@ function messageThrow(options: ProfileOptions, site: ThrowSite, record: MessageT
 }
 
 /**
- * `inTransaction` says whether the throw's parent is a Transaction: a Cancel End is used only within a Transaction
- * Sub-Process (BPMN 2.0.2 §10.3.5, §10.5.5 Cancel Event; `BpmnParse#parseEndEvents` refuses it elsewhere) (PC-TX-02).
+ * Where a throw sits for a Cancel End: not directly in a Transaction, or directly in one with or without a Cancel
+ * boundary.
  */
-export function throwRecord(options: ProfileOptions, site: ThrowSite, inTransaction: boolean, thrown: Throw): string | null {
+export enum CancelSite {
+  Outside = "outside",
+  Uncaught = "uncaught",
+  Caught = "caught",
+}
+
+function cancelRecord(cancelSite: CancelSite): string | null {
+  switch (cancelSite) {
+    case CancelSite.Outside:
+      return "throw.cancel.outsideTransaction";
+    case CancelSite.Uncaught:
+      return "throw.cancel.uncaught";
+    case CancelSite.Caught:
+      return null;
+  }
+  return assertNever(cancelSite);
+}
+
+/**
+ * `cancelSite` says where the throw sits: a Cancel End is used only within a Transaction Sub-Process (BPMN 2.0.2
+ * §10.3.5, §10.5.5 Cancel Event; `BpmnParse#parseEndEvents` refuses it elsewhere), whose Cancel boundary directs the flow
+ * after the cancellation (§10.3.5); CIB deploys one without the boundary and rolls back the command that reaches it
+ * (CIB-LIM-0043) (PC-TX-02).
+ */
+export function throwRecord(options: ProfileOptions, site: ThrowSite, cancelSite: CancelSite, thrown: Throw): string | null {
   switch (thrown.tag) {
     case ThrowTag.None:
     case ThrowTag.Escalation:
     case ThrowTag.Terminate:
       return null;
     case ThrowTag.Cancel:
-      return inTransaction ? null : "throw.cancel.outsideTransaction";
+      return cancelRecord(cancelSite);
     case ThrowTag.Error:
       return thrown.payload.message !== null && thrown.payload.message.tag === ValueSourceTag.Expression
         ? "throw.error.message"

@@ -316,8 +316,10 @@ function unhandledError(ctx: Ctx, code: string, message: string | null, origin: 
  * The search found no catcher: it ended at `handler`, the scope occurrence of a compensation handler, which an Error
  * fails, or it passed its instance's root. Either way a raising Activity leaves first (`hostLeaves`). An Escalation that
  * passed the root changes nothing but its thrower's leave (§10.5.1: "execution continues at the location of throwing";
- * CIB-INT-0021). What an Escalation at a compensation handler or a Cancel at either means is not selected.
- * Dynamic-only: whether a raised event finds a catcher depends on where its thrower runs.
+ * CIB-INT-0021). What an Escalation at a compensation handler means is not selected; dynamic-only: whether a raised
+ * event finds a catcher depends on where its thrower runs. A Cancel always finds one: admission admits a Cancel End only
+ * directly in a Transaction with a Cancel boundary (`throw.cancel.outsideTransaction`, `throw.cancel.uncaught`), which
+ * the search reaches first.
  */
 function exhausted(hooks: PropagationHooks, ctx: Ctx, raised: Raised, origin: Origin, handler: ScopeOccurrenceId | null,
   start: State): Outcome {
@@ -334,9 +336,7 @@ function exhausted(hooks: PropagationHooks, ctx: Ctx, raised: Raised, origin: Or
         ? committed(throwerLeaves(ctx, origin, state))
         : failed(FailureTag.Unsupported, "compensation-handler-escalation"); // dynamic-only: what a handler raises
     case RaisedTag.Cancel:
-      return handler === null
-        ? failed(FailureTag.Unsupported, "raise-cancel") // dynamic-only: where its thrower runs
-        : failed(FailureTag.Unsupported, "compensation-handler-cancel"); // dynamic-only: what a handler raises
+      return failed(FailureTag.SemanticFailure, "cancel-uncaught");
   }
   return assertNever(raised);
 }

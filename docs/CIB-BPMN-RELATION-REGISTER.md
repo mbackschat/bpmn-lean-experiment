@@ -28,7 +28,7 @@ The counts below cover only entries recorded by this project, including the sepa
 | CIB interpretations of BPMN gaps or inconsistencies | 35 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
 | CIB extension records | 43 | 2 | Project profile deliberately includes behavior beyond bare BPMN execution; candidates remain unselected |
 | Configuration-specific realizations | 13 | 0 | Behavior is permitted or meaningful only under a declared CIB environment |
-| Known CIB limitations within reviewed scope | 37 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
+| Known CIB limitations within reviewed scope | 38 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
 
 The sequential User Task account has no recorded CIB deviation. That statement is bounded to its clauses, pinned environment, witnesses, and observation surface; it is not a general CIB conformance result.
 
@@ -1293,6 +1293,16 @@ BPMN 2.0.2 gives a data value no Java type, and the kernel's Integer is one kind
 **Evidence:** Pinned `QueryVariableValue.java:58-66`, `MultiInstanceActivityBehavior.java:77`; retained `message-correlation-criteria/engine-integer-criterion`, whose criterion on `lastPosition`, mapped from `${loopCounter}`, CIB rejects where the kernel delivers; `integer-beyond-int-range`, which agrees; and `receive-task-payload-correlation/items-parallel-local-correlation`.
 
 **Boundary:** Integer criteria on a variable CIB stores as `Integer` (an engine counter, or an expression result derived from one) under the cibseven profiles; this entry owns those witnesses in the ledger.
+
+### CIB-LIM-0043 — CIB deploys Cancel forms BPMN does not define and fails or strands them
+
+**Status:** Known CIB limitation within reviewed scope; selected by no profile, since the kernel refuses both forms at admission under every profile; not a deviation
+
+BPMN 2.0.2 §10.3.5 lets a Cancel End Event cancel its Transaction, whose Cancel boundary then "will direct the flow after the Transaction has been rolled back and all compensation has been completed", and attaches the Cancel Intermediate Event only to a Transaction's boundary, where the kernel's §10.5.5 reading admits only an interrupting one. CIB Seven `2.2.0` deploys a Cancel End Event whose Transaction has no Cancel boundary and rolls back the command that reaches it, at the explicit `ensureNotNull` of the boundary it looks for; and it deploys a non-interrupting Cancel boundary, after whose path the instance stays running with no wait. The kernel refuses the first as `throw.cancel.uncaught` and the second as `boundary.cancel.nonInterrupting`, and a second Cancel boundary on one Transaction as `boundary.cancel.duplicate`, which CIB refuses too ([compensation semantics](kernel/semantics/COMPENSATION-SEMANTICS-SPEC.md#i13--cancel-over-mixed-work-an-uncaught-cancel-and-the-cancel-boundary-forms-pc-tx-02)).
+
+**Evidence:** Pinned `bpmn/behavior/CancelEndEventActivityBehavior.java:39-53` (the `ensureNotNull` at `:41-42`) and `bpmn/parser/BpmnParse.java:1776-1779` (a second Cancel boundary refused); the retained answers of [cancel-end-without-boundary, non-interrupting-cancel-boundary and two-cancel-boundaries](../scenarios/open-rows/transaction-cancel-refusals/README.md) (profile `cibseven-2.2.0`); the retained rollback carries no cause, so the `ensureNotNull` site is the source reading.
+
+**Boundary:** A Cancel End Event in a Transaction without a Cancel boundary, and a non-interrupting Cancel boundary; this entry owns `cancel-end-without-boundary` and `non-interrupting-cancel-boundary` in the ledger.
 
 ## Extension register
 

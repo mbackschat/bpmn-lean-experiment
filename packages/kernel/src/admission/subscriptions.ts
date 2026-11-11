@@ -322,7 +322,8 @@ export function escalationTrigger(variables: ErrorCatchVariables, trigger: Escal
  * The codes of the raised-event catchers one place declared before the one being admitted: the boundaries of a host, or
  * the Event Sub-Processes of a scope; `null` is an Escalation catch-all.
  */
-type Declared = { readonly errorCodes: Set<string>; readonly escalations: Array<string | null> };
+/** `cancels` lists the host's Cancel boundaries so far. */
+type Declared = { readonly errorCodes: Set<string>; readonly escalations: Array<string | null>; readonly cancels: Boundary[] };
 
 /**
  * At most one Escalation handler of one kind in one place may match any code: among the boundaries of a host, or among
@@ -385,12 +386,12 @@ function eventSubProcessAfter(seen: Declared, start: Subscription, interrupting:
 }
 
 export function eventSubProcess(start: Subscription, interrupting: boolean): string | null {
-  return eventSubProcessAfter({ errorCodes: new Set<string>(), escalations: [] }, start, interrupting);
+  return eventSubProcessAfter({ errorCodes: new Set<string>(), escalations: [], cancels: [] }, start, interrupting);
 }
 
 /** The Event Sub-Processes one scope declares, as their starts in document order, taken together. */
 export function eventSubProcessDeclarations(starts: readonly (readonly [Subscription, boolean])[]): string | null {
-  const seen: Declared = { errorCodes: new Set<string>(), escalations: [] };
+  const seen: Declared = { errorCodes: new Set<string>(), escalations: [], cancels: [] };
   for (const [start, interrupting] of starts) {
     const refused = eventSubProcessAfter(seen, start, interrupting);
     if (refused !== null) return refused;
@@ -452,7 +453,8 @@ export interface Host {
 /**
  * `host` says what the boundary hangs on (`Host`). An Error boundary always interrupts (BPMN 2.0.2
  * Table 10.90) (PC-ERROR-01); a Cancel boundary always interrupts and hangs only on a Transaction (Table 10.90, §10.3.5;
- * `BpmnParse#parseBoundaryCancelEventDefinition`) (PC-TX-02). `seen` holds the host's earlier Error boundary codes
+ * `BpmnParse#parseBoundaryCancelEventDefinition`) (PC-TX-02), at most one per Transaction (CIB refuses a second,
+ * `BpmnParse.java:1776-1779`). `seen` holds the host's earlier Error boundary codes
  * (`errorDeclared`) and Escalation boundary codes, `null` for a catch-all (`escalationDeclared`).
  */
 function boundary(options: ProfileOptions, reading: Reading, host: Host, seen: Declared, attached: Boundary): string | null {
@@ -481,13 +483,34 @@ function boundary(options: ProfileOptions, reading: Reading, host: Host, seen: D
       return null;
     case TriggerTag.Cancel:
       if (!host.transaction) return "boundary.cancel.host";
-      return attached.interrupting ? null : "boundary.cancel.nonInterrupting";
+      if (!attached.interrupting) return "boundary.cancel.nonInterrupting";
+      if (seen.cancels.length > 0) return "boundary.cancel.duplicate";
+      seen.cancels.push(attached);
+      return null;
+  }
+  return assertNever(trigger);
+}
+
+/** Whether a boundary catches Cancel. */
+export function cancels(attached: Boundary): boolean {
+  const trigger = attached.subscription.trigger;
+  switch (trigger.tag) {
+    case TriggerTag.Cancel:
+      return true;
+    case TriggerTag.Timer:
+    case TriggerTag.Message:
+    case TriggerTag.Signal:
+    case TriggerTag.Condition:
+    case TriggerTag.Error:
+    case TriggerTag.Escalation:
+    case TriggerTag.Compensation:
+      return false;
   }
   return assertNever(trigger);
 }
 
 export function boundaries(options: ProfileOptions, reading: Reading, host: Host, list: readonly Boundary[]): string | null {
-  const seen: Declared = { errorCodes: new Set<string>(), escalations: [] };
+  const seen: Declared = { errorCodes: new Set<string>(), escalations: [], cancels: [] };
   for (const attached of list) {
     const refused = boundary(options, reading, host, seen, attached);
     if (refused !== null) return refused;

@@ -53,9 +53,18 @@ def messageThrow (options : ProfileOptions) (site : ThrowSite) (record : Message
     | .refused, none => some "throw.message.unbound"
     | .cibForms, _ => site.handlerKey record.handlerKey
 
-/-- `inTransaction` says whether the throw's parent is a Transaction: a Cancel End is used only within a Transaction
-Sub-Process (BPMN 2.0.2 §10.3.5, §10.5.5 Cancel Event; `BpmnParse#parseEndEvents` refuses it elsewhere) (PC-TX-02). -/
-def throwRecord (options : ProfileOptions) (site : ThrowSite) (inTransaction : Bool) : Throw → Option String
+/-- Where a throw sits for a Cancel End: not directly in a Transaction, or directly in one with or without a Cancel
+boundary. -/
+inductive CancelSite where
+  | outside
+  | uncaught
+  | caught
+
+/-- `cancelSite` says where the throw sits: a Cancel End is used only within a Transaction Sub-Process (BPMN 2.0.2
+§10.3.5, §10.5.5 Cancel Event; `BpmnParse#parseEndEvents` refuses it elsewhere), whose Cancel boundary directs the flow
+after the cancellation (§10.3.5); CIB deploys one without the boundary and rolls back the command that reaches it
+(CIB-LIM-0043) (PC-TX-02). -/
+def throwRecord (options : ProfileOptions) (site : ThrowSite) (cancelSite : CancelSite) : Throw → Option String
   | .none => none
   | .error record =>
     match record.message with
@@ -70,6 +79,10 @@ def throwRecord (options : ProfileOptions) (site : ThrowSite) (inTransaction : B
     if record.activity.isSome then some "throw.compensation.activity"
     else if !record.waitForCompletion then some "throw.compensation.asynchronous"
     else none
-  | .cancel => if inTransaction then none else some "throw.cancel.outsideTransaction"
+  | .cancel =>
+    match cancelSite with
+    | .outside => some "throw.cancel.outsideTransaction"
+    | .uncaught => some "throw.cancel.uncaught"
+    | .caught => none
 
 end Kernel.Admission.Propagation

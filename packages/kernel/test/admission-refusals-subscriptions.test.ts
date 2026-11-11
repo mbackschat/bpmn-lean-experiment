@@ -697,6 +697,15 @@ export const rows: readonly Row[] = [
     mutate: onTransaction({ interrupting: false }),
     control: onTransaction(),
   },
+  {
+    // PC-TX-02: one Transaction has at most one Cancel boundary; CIB refuses a second (`BpmnParse.java:1776-1779`).
+    code: "boundary.cancel.duplicate",
+    description: "a second Cancel boundary on one Transaction",
+    mutate: task(scope("T", { transaction: { payload: { method: "compensate" } } }, {},
+      { boundaries: [boundary("B", cancelTrigger), boundary("B2", cancelTrigger)] })),
+    control: task(scope("T", { transaction: { payload: { method: "compensate" } } }, {},
+      { boundaries: [boundary("B", cancelTrigger), boundary("B2", duration("PT1S"))] })),
+  },
 ];
 
 refusalTests("subscriptions", rows);

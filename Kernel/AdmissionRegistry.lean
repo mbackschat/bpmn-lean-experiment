@@ -61,9 +61,14 @@ def envelopeData (program : Program) (header : Header) (envelope : Envelope) : O
 def outputTargets (program : Program) (header : Header) (outputs : List Mapping) : Option String :=
   Admission.MultiInstance.counterTarget (Admission.MultiInstance.countersAt program (some header.id)) (targets outputs)
 
-/-- Whether an element sits directly in a Transaction. -/
-def inTransaction (program : Program) (header : Header) : Bool :=
-  header.parent.any (Admission.Scopes.transactionElement program)
+/-- Where an element sits for a Cancel End: directly in a Transaction with or without a Cancel boundary, or not. -/
+def cancelSite (program : Program) (header : Header) : Admission.Propagation.CancelSite :=
+  match header.parent.bind fun parent => (program.element? parent).bind (·.scope?) with
+  | some (_, payload) =>
+    if !Admission.Scopes.isTransaction payload then .outside
+    else if payload.envelope.boundaries.any Admission.Subscriptions.cancels then .caught
+    else .uncaught
+  | none => .outside
 
 /-- How a throw Event in `header`'s place reads its trigger's expressions and its mappings. -/
 def throwSite (program : Program) (header : Header) : Admission.Propagation.ThrowSite :=
@@ -205,7 +210,7 @@ def element (program : Program) (throws : List Element) : Element → Option Str
       -- A Multiple throw Event (BPMN 2.0.2 §10.5.1); pinned CIB keeps one definition (CIB-LIM-0008) (PC-BASIC-04).
       | .throw record =>
         (if payload.alternativeThrows.isEmpty then none else some "event.multipleDefinitions") <|>
-          Admission.Propagation.throwRecord program.options (throwSite program header) (inTransaction program header) record
+          Admission.Propagation.throwRecord program.options (throwSite program header) (cancelSite program header) record
       | .linkCatch _ => Admission.Flow.link program header payload
       | .linkThrow _ => Admission.Flow.link program header payload
   | .gateway header payload =>
