@@ -5,8 +5,7 @@
  * Guard 21 has two halves. {@link rowFixtureFindings} needs no build and runs in the fast suite; the decoders of
  * {@link shapeSufficiencyFindings} are parameters because a TypeScript decode needs the built kernel and a Lean decode
  * `kernelRun --decode`, so `packages/differential/test/row-fixtures.integration-test.ts` runs them in the oracle's lane.
- * By root direction (2026-11-08) a missing fixture is reported, not failed, since `docs/kernel/ROW-TRACEABILITY-MAP.md`
- * names fixtures the repository does not hold; a fixture that exists must decode.
+ * The fixtures are generated (`scripts/row-fixtures.ts`).
  */
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
@@ -174,7 +173,10 @@ function encodedNames(json: unknown, names: Set<string> = new Set()): Set<string
 /**
  * The traced IL members a row fixture's JSON does not carry. A member counts as carried when its name is a key or a
  * string anywhere in the fixture, so the check is by name, not by type: it stops a generic program standing in for a
- * row, and the strict decoders stop a name the codec does not know.
+ * row, and the strict decoders stop a name the codec does not know. It proves no more. `Type.member` is not checked
+ * against `Type`, since the encoding carries no type tags and a typed check would walk the IL schema; a generic member
+ * name (`id`, `name`, `kind`, `mode`, `code`, `incoming`) is carried by almost any program, and an element identifier
+ * that happens to equal a member name counts as that member.
  */
 export function missingTracedFields(fixtureText: string, ilFields: ReadonlyArray<string>): string[] {
   const names = encodedNames(JSON.parse(fixtureText));

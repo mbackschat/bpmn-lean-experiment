@@ -1,0 +1,203 @@
+{
+  "identity": {
+    "processId": "Process_ActivityDataInputReview",
+    "namespace": "https://bpmn-lean.org/scenarios/activity-data-input-review",
+    "sourceSha256": "d495a656950873515d17b25f4dd8a45bd4edcaceea85a30695b3d217d37e779d",
+    "profile": "bpmn-2.0.2",
+    "deployment": null
+  },
+  "options": {
+    "relations": [
+      "CIB-AGR-0001",
+      "CIB-AGR-0002",
+      "CIB-AGR-0003",
+      "CIB-AGR-0004",
+      "CIB-AGR-0006",
+      "CIB-AGR-0007",
+      "CIB-AGR-0021",
+      "CIB-CFG-0001",
+      "CIB-CFG-0013",
+      "CIB-CFG-0014",
+      "CIB-DEV-0001",
+      "CIB-DEV-0002",
+      "CIB-EXT-0011",
+      "CIB-INT-0001",
+      "CIB-INT-0008",
+      "CIB-INT-0012",
+      "CIB-INT-0015",
+      "CIB-INT-0016",
+      "CIB-INT-0025",
+      "CIB-INT-0026",
+      "CIB-INT-0029",
+      "CIB-INT-0030",
+      "CIB-INT-0031",
+      "CIB-INT-0032",
+      "CIB-LIM-0002",
+      "CIB-LIM-0003",
+      "CIB-OP-0001"
+    ],
+    "evaluator": "simpleBoolean",
+    "submission": "outputSet",
+    "scopeChainSubmissionBytes": null,
+    "undeclaredWrite": "refused",
+    "errorPathOutputs": "none",
+    "raisedCallOutputs": "none",
+    "technicalFailure": "hostFailure",
+    "incidentProcessCancellation": false,
+    "continuationFailure": "rolledBack",
+    "conditionOrder": "afterOutputs",
+    "messageCorrelation": "modeledKey",
+    "deliveryVariables": "mappedOnly",
+    "multiInstanceFinalBody": "conditionEveryCompletion",
+    "multiInstanceOutputs": "aggregates",
+    "compensationOrder": "dependency",
+    "compensationHandlerFailure": "failsInstance",
+    "abnormalScopeEnd": "withoutOutflow",
+    "unhandledError": "failsInstance",
+    "errorCatchVariables": "refused",
+    "callBindingTime": "programAssembly",
+    "timerZone": null,
+    "multiInstanceBinding": "dataAssociations",
+    "effectResultValues": "outputSet",
+    "outputContext": "submission",
+    "multiInstanceCounters": "none",
+    "multiInstanceInputFailure": "hold",
+    "multiInstanceCount": "integer",
+    "businessRuleTask": "refused",
+    "inclusiveJoinReach": "withBoundaries",
+    "branchSchedule": "orderInvariant",
+    "conditionalRetrigger": "edge",
+    "malformedTimer": "refused",
+    "messageNames": "description",
+    "scopeStart": "implicit",
+    "signalNames": "identifier",
+    "signalPayload": "none",
+    "signalDelivery": "broadcastOnly",
+    "conditionalStart": "refused",
+    "calledElementResolution": "qualifiedName",
+    "messageThrowForms": "refused"
+  },
+  "elements": [
+    {
+      "start": {
+        "header": {
+          "id": "StartEvent_Review",
+          "origin": {
+            "definition": null,
+            "sourceId": "StartEvent_Review"
+          },
+          "sourceType": "startEvent",
+          "parent": null
+        },
+        "payload": {
+          "subscription": null,
+          "outgoing": [
+            "Flow_Start_Review"
+          ]
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "UserTask_Review",
+          "origin": {
+            "definition": null,
+            "sourceId": "UserTask_Review"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Review invoice",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Start_Review"
+            ],
+            "outgoing": [
+              "Flow_Review_Completed"
+            ],
+            "inputs": [
+              {
+                "target": "DataInput_ReviewContext",
+                "source": {
+                  "variable": {
+                    "name": "Property_ReviewContext"
+                  }
+                },
+                "dialect": "dataAssociation"
+              }
+            ],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "EndEvent_Completed",
+          "origin": {
+            "definition": null,
+            "sourceId": "EndEvent_Completed"
+          },
+          "sourceType": "endEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Review_Completed"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    }
+  ],
+  "flows": [
+    {
+      "id": "Flow_Start_Review",
+      "source": "StartEvent_Review",
+      "target": "UserTask_Review",
+      "condition": null
+    },
+    {
+      "id": "Flow_Review_Completed",
+      "source": "UserTask_Review",
+      "target": "EndEvent_Completed",
+      "condition": null
+    }
+  ],
+  "variables": [
+    "Property_ReviewContext"
+  ],
+  "processes": [],
+  "executable": true,
+  "decisionResources": []
+}

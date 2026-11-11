@@ -1,0 +1,191 @@
+{
+  "identity": {
+    "processId": "ReviewDamage",
+    "namespace": "urn:bpmn-lean:scenarios:call-binding-population:review",
+    "sourceSha256": "ff3eccd836de2d17499c0a26353010a0748891e6e0c7017d693018afc78c046e",
+    "profile": "bpmn-2.0.2",
+    "deployment": null
+  },
+  "options": {
+    "relations": [
+      "CIB-AGR-0001",
+      "CIB-AGR-0002",
+      "CIB-AGR-0003",
+      "CIB-AGR-0004",
+      "CIB-AGR-0006",
+      "CIB-AGR-0007",
+      "CIB-AGR-0021",
+      "CIB-CFG-0001",
+      "CIB-CFG-0013",
+      "CIB-CFG-0014",
+      "CIB-DEV-0001",
+      "CIB-DEV-0002",
+      "CIB-EXT-0011",
+      "CIB-INT-0001",
+      "CIB-INT-0008",
+      "CIB-INT-0012",
+      "CIB-INT-0015",
+      "CIB-INT-0016",
+      "CIB-INT-0025",
+      "CIB-INT-0026",
+      "CIB-INT-0029",
+      "CIB-INT-0030",
+      "CIB-INT-0031",
+      "CIB-INT-0032",
+      "CIB-LIM-0002",
+      "CIB-LIM-0003",
+      "CIB-OP-0001"
+    ],
+    "evaluator": "simpleBoolean",
+    "submission": "outputSet",
+    "scopeChainSubmissionBytes": null,
+    "undeclaredWrite": "refused",
+    "errorPathOutputs": "none",
+    "raisedCallOutputs": "none",
+    "technicalFailure": "hostFailure",
+    "incidentProcessCancellation": false,
+    "continuationFailure": "rolledBack",
+    "conditionOrder": "afterOutputs",
+    "messageCorrelation": "modeledKey",
+    "deliveryVariables": "mappedOnly",
+    "multiInstanceFinalBody": "conditionEveryCompletion",
+    "multiInstanceOutputs": "aggregates",
+    "compensationOrder": "dependency",
+    "compensationHandlerFailure": "failsInstance",
+    "abnormalScopeEnd": "withoutOutflow",
+    "unhandledError": "failsInstance",
+    "errorCatchVariables": "refused",
+    "callBindingTime": "programAssembly",
+    "timerZone": null,
+    "multiInstanceBinding": "dataAssociations",
+    "effectResultValues": "outputSet",
+    "outputContext": "submission",
+    "multiInstanceCounters": "none",
+    "multiInstanceInputFailure": "hold",
+    "multiInstanceCount": "integer",
+    "businessRuleTask": "refused",
+    "inclusiveJoinReach": "withBoundaries",
+    "branchSchedule": "orderInvariant",
+    "conditionalRetrigger": "edge",
+    "malformedTimer": "refused",
+    "messageNames": "description",
+    "scopeStart": "implicit",
+    "signalNames": "identifier",
+    "signalPayload": "none",
+    "signalDelivery": "broadcastOnly",
+    "conditionalStart": "refused",
+    "calledElementResolution": "qualifiedName",
+    "messageThrowForms": "refused"
+  },
+  "elements": [
+    {
+      "start": {
+        "header": {
+          "id": "ReviewRequested",
+          "origin": {
+            "definition": null,
+            "sourceId": "ReviewRequested"
+          },
+          "sourceType": "startEvent",
+          "parent": null
+        },
+        "payload": {
+          "subscription": null,
+          "outgoing": [
+            "Flow_Requested_Visit"
+          ]
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "VisitSite",
+          "origin": {
+            "definition": null,
+            "sourceId": "VisitSite"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Visit the site",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Requested_Visit"
+            ],
+            "outgoing": [
+              "Flow_Visit_Done"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "ReviewDone",
+          "origin": {
+            "definition": null,
+            "sourceId": "ReviewDone"
+          },
+          "sourceType": "endEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Visit_Done"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    }
+  ],
+  "flows": [
+    {
+      "id": "Flow_Requested_Visit",
+      "source": "ReviewRequested",
+      "target": "VisitSite",
+      "condition": null
+    },
+    {
+      "id": "Flow_Visit_Done",
+      "source": "VisitSite",
+      "target": "ReviewDone",
+      "condition": null
+    }
+  ],
+  "variables": [],
+  "processes": [],
+  "executable": true,
+  "decisionResources": []
+}

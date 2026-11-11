@@ -1,0 +1,866 @@
+{
+  "identity": {
+    "processId": "Process_OnboardingMilestones",
+    "namespace": "urn:bpmn-lean:onboarding-milestones-links",
+    "sourceSha256": "70c4842b74b704ee4d5ced2cd8bf1d6e3e73b3ce3111f4465f189705a765d11e",
+    "profile": "cibseven-2.2.0-scope-chain",
+    "deployment": null
+  },
+  "options": {
+    "relations": [
+      "CIB-AGR-0001",
+      "CIB-AGR-0002",
+      "CIB-AGR-0003",
+      "CIB-AGR-0004",
+      "CIB-AGR-0006",
+      "CIB-AGR-0007",
+      "CIB-AGR-0008",
+      "CIB-AGR-0009",
+      "CIB-AGR-0010",
+      "CIB-AGR-0012",
+      "CIB-AGR-0013",
+      "CIB-AGR-0014",
+      "CIB-AGR-0015",
+      "CIB-AGR-0016",
+      "CIB-AGR-0017",
+      "CIB-AGR-0018",
+      "CIB-AGR-0019",
+      "CIB-AGR-0020",
+      "CIB-AGR-0021",
+      "CIB-AGR-0022",
+      "CIB-AGR-0023",
+      "CIB-CFG-0001",
+      "CIB-CFG-0002",
+      "CIB-CFG-0006",
+      "CIB-CFG-0007",
+      "CIB-CFG-0008",
+      "CIB-CFG-0009",
+      "CIB-CFG-0010",
+      "CIB-CFG-0011",
+      "CIB-CFG-0013",
+      "CIB-CFG-0014",
+      "CIB-DEV-0001",
+      "CIB-DEV-0002",
+      "CIB-EXT-0001",
+      "CIB-EXT-0004",
+      "CIB-EXT-0005",
+      "CIB-EXT-0006",
+      "CIB-EXT-0007",
+      "CIB-EXT-0008",
+      "CIB-EXT-0009",
+      "CIB-EXT-0010",
+      "CIB-EXT-0011",
+      "CIB-EXT-0012",
+      "CIB-EXT-0013",
+      "CIB-EXT-0014",
+      "CIB-EXT-0015",
+      "CIB-EXT-0016",
+      "CIB-EXT-0019",
+      "CIB-EXT-0020",
+      "CIB-EXT-0021",
+      "CIB-EXT-0022",
+      "CIB-EXT-0023",
+      "CIB-EXT-0025",
+      "CIB-EXT-0028",
+      "CIB-EXT-0030",
+      "CIB-EXT-0031",
+      "CIB-EXT-0032",
+      "CIB-EXT-0033",
+      "CIB-EXT-0034",
+      "CIB-EXT-0035",
+      "CIB-EXT-0036",
+      "CIB-EXT-0038",
+      "CIB-EXT-0039",
+      "CIB-EXT-0040",
+      "CIB-EXT-0041",
+      "CIB-EXT-0042",
+      "CIB-EXT-0043",
+      "CIB-EXT-0044",
+      "CIB-EXT-0045",
+      "CIB-INT-0001",
+      "CIB-INT-0003",
+      "CIB-INT-0004",
+      "CIB-INT-0005",
+      "CIB-INT-0007",
+      "CIB-INT-0008",
+      "CIB-INT-0009",
+      "CIB-INT-0011",
+      "CIB-INT-0012",
+      "CIB-INT-0013",
+      "CIB-INT-0014",
+      "CIB-INT-0015",
+      "CIB-INT-0016",
+      "CIB-INT-0017",
+      "CIB-INT-0018",
+      "CIB-INT-0019",
+      "CIB-INT-0020",
+      "CIB-INT-0023",
+      "CIB-INT-0024",
+      "CIB-INT-0025",
+      "CIB-INT-0026",
+      "CIB-INT-0027",
+      "CIB-INT-0028",
+      "CIB-INT-0029",
+      "CIB-INT-0030",
+      "CIB-INT-0031",
+      "CIB-INT-0032",
+      "CIB-LIM-0001",
+      "CIB-LIM-0002",
+      "CIB-LIM-0003",
+      "CIB-LIM-0006",
+      "CIB-LIM-0007",
+      "CIB-LIM-0008",
+      "CIB-LIM-0009",
+      "CIB-LIM-0010",
+      "CIB-LIM-0014",
+      "CIB-LIM-0015",
+      "CIB-LIM-0016",
+      "CIB-LIM-0017",
+      "CIB-LIM-0022",
+      "CIB-LIM-0024",
+      "CIB-LIM-0026",
+      "CIB-LIM-0027",
+      "CIB-LIM-0028",
+      "CIB-OP-0001",
+      "CIB-OP-0005",
+      "CIB-OP-0006",
+      "CIB-OP-0007",
+      "CIB-OP-0008",
+      "CIB-OP-0009",
+      "CIB-OP-0010",
+      "CIB-OP-0011",
+      "CIB-OP-0016",
+      "CIB-OP-0019"
+    ],
+    "evaluator": "juel",
+    "submission": "installsVariables",
+    "scopeChainSubmissionBytes": 16384,
+    "undeclaredWrite": "atInstanceRoot",
+    "errorPathOutputs": "mapped",
+    "raisedCallOutputs": "atCalledRoot",
+    "technicalFailure": "incident",
+    "incidentProcessCancellation": true,
+    "continuationFailure": "rolledBack",
+    "conditionOrder": "beforeOutputs",
+    "messageCorrelation": "apiCriteria",
+    "deliveryVariables": "installs",
+    "multiInstanceFinalBody": "modeSpecific",
+    "multiInstanceOutputs": "none",
+    "compensationOrder": "dependency",
+    "compensationHandlerFailure": "failsInstance",
+    "abnormalScopeEnd": "completesNormally",
+    "unhandledError": "endsThrowingPath",
+    "errorCatchVariables": "eventScope",
+    "callBindingTime": "programAssembly",
+    "timerZone": null,
+    "multiInstanceBinding": "loopReferences",
+    "effectResultValues": "activityLocals",
+    "outputContext": "activityScope",
+    "multiInstanceCounters": "cibLocals",
+    "multiInstanceInputFailure": "rollback",
+    "multiInstanceCount": "javaInt",
+    "businessRuleTask": "decisionTable",
+    "inclusiveJoinReach": "outgoingOnly",
+    "branchSchedule": "declarationDepthFirst",
+    "conditionalRetrigger": "eachWrite",
+    "malformedTimer": "rollsBackArming",
+    "messageNames": "addresses",
+    "scopeStart": "required",
+    "signalNames": "addresses",
+    "signalPayload": "variables",
+    "signalDelivery": "occurrenceTargeted",
+    "conditionalStart": "submittedContext",
+    "calledElementResolution": "cibKey",
+    "messageThrowForms": "cibForms"
+  },
+  "elements": [
+    {
+      "start": {
+        "header": {
+          "id": "EmployeeHired",
+          "origin": {
+            "definition": null,
+            "sourceId": "EmployeeHired"
+          },
+          "sourceType": "startEvent",
+          "parent": null
+        },
+        "payload": {
+          "subscription": null,
+          "outgoing": [
+            "Flow_Hired"
+          ]
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "ConfirmStartDate",
+          "origin": {
+            "definition": null,
+            "sourceId": "ConfirmStartDate"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Confirm start date",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Hired"
+            ],
+            "outgoing": [
+              "Flow_StartConfirmed"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "gateway": {
+        "header": {
+          "id": "StartOnboarding",
+          "origin": {
+            "definition": null,
+            "sourceId": "StartOnboarding"
+          },
+          "sourceType": "parallelGateway",
+          "parent": null
+        },
+        "payload": {
+          "kind": "parallel",
+          "incoming": [
+            "Flow_StartConfirmed"
+          ],
+          "outgoing": [
+            "Flow_ToAccount",
+            "Flow_ToWelcome"
+          ]
+        }
+      }
+    },
+    {
+      "scope": {
+        "header": {
+          "id": "SetUpAccount",
+          "origin": {
+            "definition": null,
+            "sourceId": "SetUpAccount"
+          },
+          "sourceType": "subProcess",
+          "parent": null
+        },
+        "payload": {
+          "kind": "embedded",
+          "children": [
+            "AccountSetupOpened",
+            "CreateAccount",
+            "AccountReady",
+            "ThrowAccountDone",
+            "CatchAccountDone",
+            "AccountSetupClosed"
+          ],
+          "localVariables": [
+            "account"
+          ],
+          "items": [],
+          "envelope": {
+            "incoming": [
+              "Flow_ToAccount"
+            ],
+            "outgoing": [
+              "Flow_AccountSetUp"
+            ],
+            "inputs": [
+              {
+                "target": "account",
+                "source": {
+                  "variable": {
+                    "name": "employee"
+                  }
+                },
+                "dialect": "ioParameter"
+              }
+            ],
+            "outputs": [
+              {
+                "target": "employeeAccount",
+                "source": {
+                  "variable": {
+                    "name": "account"
+                  }
+                },
+                "dialect": "ioParameter"
+              }
+            ],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "start": {
+        "header": {
+          "id": "AccountSetupOpened",
+          "origin": {
+            "definition": null,
+            "sourceId": "AccountSetupOpened"
+          },
+          "sourceType": "startEvent",
+          "parent": "SetUpAccount"
+        },
+        "payload": {
+          "subscription": null,
+          "outgoing": [
+            "Flow_AccountSetupOpened"
+          ]
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "CreateAccount",
+          "origin": {
+            "definition": null,
+            "sourceId": "CreateAccount"
+          },
+          "sourceType": "userTask",
+          "parent": "SetUpAccount"
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Create account",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_AccountSetupOpened"
+            ],
+            "outgoing": [
+              "Flow_AccountCreated"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "AccountReady",
+          "origin": {
+            "definition": null,
+            "sourceId": "AccountReady"
+          },
+          "sourceType": "intermediateThrowEvent",
+          "parent": "SetUpAccount"
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "intermediate",
+          "incoming": [
+            "Flow_AccountDoneCaught"
+          ],
+          "outgoing": [
+            "Flow_AccountReady"
+          ],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "ThrowAccountDone",
+          "origin": {
+            "definition": null,
+            "sourceId": "ThrowAccountDone"
+          },
+          "sourceType": "intermediateThrowEvent",
+          "parent": "SetUpAccount"
+        },
+        "payload": {
+          "role": {
+            "linkThrow": {
+              "name": "AccountDone"
+            }
+          },
+          "placement": "intermediate",
+          "incoming": [
+            "Flow_AccountCreated"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "CatchAccountDone",
+          "origin": {
+            "definition": null,
+            "sourceId": "CatchAccountDone"
+          },
+          "sourceType": "intermediateCatchEvent",
+          "parent": "SetUpAccount"
+        },
+        "payload": {
+          "role": {
+            "linkCatch": {
+              "name": "AccountDone"
+            }
+          },
+          "placement": "intermediate",
+          "incoming": [],
+          "outgoing": [
+            "Flow_AccountDoneCaught"
+          ],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "AccountSetupClosed",
+          "origin": {
+            "definition": null,
+            "sourceId": "AccountSetupClosed"
+          },
+          "sourceType": "endEvent",
+          "parent": "SetUpAccount"
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_AccountReady"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "WelcomeSent",
+          "origin": {
+            "definition": null,
+            "sourceId": "WelcomeSent"
+          },
+          "sourceType": "intermediateThrowEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "intermediate",
+          "incoming": [
+            "Flow_WelcomeTrackCaught"
+          ],
+          "outgoing": [
+            "Flow_WelcomeSent"
+          ],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "OrderLaptop",
+          "origin": {
+            "definition": null,
+            "sourceId": "OrderLaptop"
+          },
+          "sourceType": "serviceTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "service": {
+              "payload": {
+                "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+                "operation": "orderLaptop",
+                "handlerKey": "orderLaptop"
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_WelcomeSent"
+            ],
+            "outgoing": [
+              "Flow_LaptopOrdered"
+            ],
+            "inputs": [
+              {
+                "target": "employee",
+                "source": {
+                  "variable": {
+                    "name": "employee"
+                  }
+                },
+                "dialect": "ioParameter"
+              }
+            ],
+            "outputs": [
+              {
+                "target": "laptopOrder",
+                "source": {
+                  "variable": {
+                    "name": "order"
+                  }
+                },
+                "dialect": "ioParameter"
+              }
+            ],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": true,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "gateway": {
+        "header": {
+          "id": "OnboardingReady",
+          "origin": {
+            "definition": null,
+            "sourceId": "OnboardingReady"
+          },
+          "sourceType": "parallelGateway",
+          "parent": null
+        },
+        "payload": {
+          "kind": "parallel",
+          "incoming": [
+            "Flow_LaptopOrdered",
+            "Flow_AccountSetUp"
+          ],
+          "outgoing": [
+            "Flow_Ready"
+          ]
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "OnboardingComplete",
+          "origin": {
+            "definition": null,
+            "sourceId": "OnboardingComplete"
+          },
+          "sourceType": "intermediateThrowEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "intermediate",
+          "incoming": [
+            "Flow_AllSetCaught"
+          ],
+          "outgoing": [
+            "Flow_Complete"
+          ],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "ThrowWelcomeTrack",
+          "origin": {
+            "definition": null,
+            "sourceId": "ThrowWelcomeTrack"
+          },
+          "sourceType": "intermediateThrowEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "linkThrow": {
+              "name": "WelcomeTrack"
+            }
+          },
+          "placement": "intermediate",
+          "incoming": [
+            "Flow_ToWelcome"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "CatchWelcomeTrack",
+          "origin": {
+            "definition": null,
+            "sourceId": "CatchWelcomeTrack"
+          },
+          "sourceType": "intermediateCatchEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "linkCatch": {
+              "name": "WelcomeTrack"
+            }
+          },
+          "placement": "intermediate",
+          "incoming": [],
+          "outgoing": [
+            "Flow_WelcomeTrackCaught"
+          ],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "ThrowAllSet",
+          "origin": {
+            "definition": null,
+            "sourceId": "ThrowAllSet"
+          },
+          "sourceType": "intermediateThrowEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "linkThrow": {
+              "name": "AllSet"
+            }
+          },
+          "placement": "intermediate",
+          "incoming": [
+            "Flow_Ready"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "CatchAllSet",
+          "origin": {
+            "definition": null,
+            "sourceId": "CatchAllSet"
+          },
+          "sourceType": "intermediateCatchEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "linkCatch": {
+              "name": "AllSet"
+            }
+          },
+          "placement": "intermediate",
+          "incoming": [],
+          "outgoing": [
+            "Flow_AllSetCaught"
+          ],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "EmployeeOnboarded",
+          "origin": {
+            "definition": null,
+            "sourceId": "EmployeeOnboarded"
+          },
+          "sourceType": "endEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Complete"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    }
+  ],
+  "flows": [
+    {
+      "id": "Flow_AccountSetupOpened",
+      "source": "AccountSetupOpened",
+      "target": "CreateAccount",
+      "condition": null
+    },
+    {
+      "id": "Flow_AccountCreated",
+      "source": "CreateAccount",
+      "target": "ThrowAccountDone",
+      "condition": null
+    },
+    {
+      "id": "Flow_AccountDoneCaught",
+      "source": "CatchAccountDone",
+      "target": "AccountReady",
+      "condition": null
+    },
+    {
+      "id": "Flow_AccountReady",
+      "source": "AccountReady",
+      "target": "AccountSetupClosed",
+      "condition": null
+    },
+    {
+      "id": "Flow_Hired",
+      "source": "EmployeeHired",
+      "target": "ConfirmStartDate",
+      "condition": null
+    },
+    {
+      "id": "Flow_StartConfirmed",
+      "source": "ConfirmStartDate",
+      "target": "StartOnboarding",
+      "condition": null
+    },
+    {
+      "id": "Flow_ToAccount",
+      "source": "StartOnboarding",
+      "target": "SetUpAccount",
+      "condition": null
+    },
+    {
+      "id": "Flow_ToWelcome",
+      "source": "StartOnboarding",
+      "target": "ThrowWelcomeTrack",
+      "condition": null
+    },
+    {
+      "id": "Flow_WelcomeTrackCaught",
+      "source": "CatchWelcomeTrack",
+      "target": "WelcomeSent",
+      "condition": null
+    },
+    {
+      "id": "Flow_WelcomeSent",
+      "source": "WelcomeSent",
+      "target": "OrderLaptop",
+      "condition": null
+    },
+    {
+      "id": "Flow_LaptopOrdered",
+      "source": "OrderLaptop",
+      "target": "OnboardingReady",
+      "condition": null
+    },
+    {
+      "id": "Flow_AccountSetUp",
+      "source": "SetUpAccount",
+      "target": "OnboardingReady",
+      "condition": null
+    },
+    {
+      "id": "Flow_Ready",
+      "source": "OnboardingReady",
+      "target": "ThrowAllSet",
+      "condition": null
+    },
+    {
+      "id": "Flow_AllSetCaught",
+      "source": "CatchAllSet",
+      "target": "OnboardingComplete",
+      "condition": null
+    },
+    {
+      "id": "Flow_Complete",
+      "source": "OnboardingComplete",
+      "target": "EmployeeOnboarded",
+      "condition": null
+    }
+  ],
+  "variables": [],
+  "processes": [],
+  "executable": true,
+  "decisionResources": []
+}

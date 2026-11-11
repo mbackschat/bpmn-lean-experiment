@@ -1,0 +1,784 @@
+{
+  "identity": {
+    "processId": "Process_DispatchNotice",
+    "namespace": "urn:bpmn-lean:scenarios:escalation-uncaught",
+    "sourceSha256": "c68b489ce47854cbf1b7d892e0dc6dd9fb12c41df3814433a32043507b2a6a9b",
+    "profile": "cibseven-2.2.0",
+    "deployment": null
+  },
+  "options": {
+    "relations": [
+      "CIB-AGR-0001",
+      "CIB-AGR-0002",
+      "CIB-AGR-0003",
+      "CIB-AGR-0004",
+      "CIB-AGR-0006",
+      "CIB-AGR-0007",
+      "CIB-AGR-0008",
+      "CIB-AGR-0009",
+      "CIB-AGR-0010",
+      "CIB-AGR-0012",
+      "CIB-AGR-0013",
+      "CIB-AGR-0014",
+      "CIB-AGR-0015",
+      "CIB-AGR-0016",
+      "CIB-AGR-0017",
+      "CIB-AGR-0018",
+      "CIB-AGR-0019",
+      "CIB-AGR-0020",
+      "CIB-AGR-0021",
+      "CIB-AGR-0022",
+      "CIB-AGR-0023",
+      "CIB-CFG-0001",
+      "CIB-CFG-0002",
+      "CIB-CFG-0006",
+      "CIB-CFG-0007",
+      "CIB-CFG-0008",
+      "CIB-CFG-0009",
+      "CIB-CFG-0010",
+      "CIB-CFG-0011",
+      "CIB-CFG-0013",
+      "CIB-CFG-0014",
+      "CIB-DEV-0001",
+      "CIB-DEV-0002",
+      "CIB-EXT-0001",
+      "CIB-EXT-0004",
+      "CIB-EXT-0005",
+      "CIB-EXT-0006",
+      "CIB-EXT-0007",
+      "CIB-EXT-0008",
+      "CIB-EXT-0009",
+      "CIB-EXT-0010",
+      "CIB-EXT-0011",
+      "CIB-EXT-0012",
+      "CIB-EXT-0013",
+      "CIB-EXT-0014",
+      "CIB-EXT-0015",
+      "CIB-EXT-0016",
+      "CIB-EXT-0019",
+      "CIB-EXT-0021",
+      "CIB-EXT-0022",
+      "CIB-EXT-0023",
+      "CIB-EXT-0025",
+      "CIB-EXT-0028",
+      "CIB-EXT-0030",
+      "CIB-EXT-0031",
+      "CIB-EXT-0032",
+      "CIB-EXT-0033",
+      "CIB-EXT-0034",
+      "CIB-EXT-0035",
+      "CIB-EXT-0036",
+      "CIB-EXT-0038",
+      "CIB-EXT-0039",
+      "CIB-EXT-0040",
+      "CIB-EXT-0041",
+      "CIB-EXT-0042",
+      "CIB-EXT-0043",
+      "CIB-EXT-0044",
+      "CIB-EXT-0045",
+      "CIB-INT-0001",
+      "CIB-INT-0003",
+      "CIB-INT-0004",
+      "CIB-INT-0005",
+      "CIB-INT-0007",
+      "CIB-INT-0008",
+      "CIB-INT-0009",
+      "CIB-INT-0011",
+      "CIB-INT-0012",
+      "CIB-INT-0013",
+      "CIB-INT-0014",
+      "CIB-INT-0015",
+      "CIB-INT-0016",
+      "CIB-INT-0017",
+      "CIB-INT-0018",
+      "CIB-INT-0019",
+      "CIB-INT-0020",
+      "CIB-INT-0023",
+      "CIB-INT-0024",
+      "CIB-INT-0025",
+      "CIB-INT-0026",
+      "CIB-INT-0027",
+      "CIB-INT-0028",
+      "CIB-INT-0029",
+      "CIB-INT-0030",
+      "CIB-INT-0031",
+      "CIB-INT-0032",
+      "CIB-LIM-0001",
+      "CIB-LIM-0002",
+      "CIB-LIM-0003",
+      "CIB-LIM-0006",
+      "CIB-LIM-0007",
+      "CIB-LIM-0008",
+      "CIB-LIM-0009",
+      "CIB-LIM-0010",
+      "CIB-LIM-0014",
+      "CIB-LIM-0015",
+      "CIB-LIM-0016",
+      "CIB-LIM-0017",
+      "CIB-LIM-0022",
+      "CIB-LIM-0024",
+      "CIB-LIM-0026",
+      "CIB-LIM-0027",
+      "CIB-LIM-0028",
+      "CIB-OP-0001",
+      "CIB-OP-0005",
+      "CIB-OP-0006",
+      "CIB-OP-0007",
+      "CIB-OP-0008",
+      "CIB-OP-0009",
+      "CIB-OP-0010",
+      "CIB-OP-0011",
+      "CIB-OP-0016",
+      "CIB-OP-0019"
+    ],
+    "evaluator": "juel",
+    "submission": "installsVariables",
+    "scopeChainSubmissionBytes": null,
+    "undeclaredWrite": "atInstanceRoot",
+    "errorPathOutputs": "mapped",
+    "raisedCallOutputs": "atCalledRoot",
+    "technicalFailure": "incident",
+    "incidentProcessCancellation": true,
+    "continuationFailure": "rolledBack",
+    "conditionOrder": "beforeOutputs",
+    "messageCorrelation": "apiCriteria",
+    "deliveryVariables": "installs",
+    "multiInstanceFinalBody": "modeSpecific",
+    "multiInstanceOutputs": "none",
+    "compensationOrder": "dependency",
+    "compensationHandlerFailure": "failsInstance",
+    "abnormalScopeEnd": "completesNormally",
+    "unhandledError": "endsThrowingPath",
+    "errorCatchVariables": "eventScope",
+    "callBindingTime": "programAssembly",
+    "timerZone": null,
+    "multiInstanceBinding": "loopReferences",
+    "effectResultValues": "activityLocals",
+    "outputContext": "activityScope",
+    "multiInstanceCounters": "cibLocals",
+    "multiInstanceInputFailure": "rollback",
+    "multiInstanceCount": "javaInt",
+    "businessRuleTask": "decisionTable",
+    "inclusiveJoinReach": "outgoingOnly",
+    "branchSchedule": "declarationDepthFirst",
+    "conditionalRetrigger": "eachWrite",
+    "malformedTimer": "rollsBackArming",
+    "messageNames": "addresses",
+    "scopeStart": "required",
+    "signalNames": "addresses",
+    "signalPayload": "variables",
+    "signalDelivery": "occurrenceTargeted",
+    "conditionalStart": "submittedContext",
+    "calledElementResolution": "cibKey",
+    "messageThrowForms": "cibForms"
+  },
+  "elements": [
+    {
+      "start": {
+        "header": {
+          "id": "StartEvent_NoticeRequested",
+          "origin": {
+            "definition": null,
+            "sourceId": "StartEvent_NoticeRequested"
+          },
+          "sourceType": "startEvent",
+          "parent": null
+        },
+        "payload": {
+          "subscription": null,
+          "outgoing": [
+            "Flow_Start_Fork"
+          ]
+        }
+      }
+    },
+    {
+      "gateway": {
+        "header": {
+          "id": "Gateway_Fork",
+          "origin": {
+            "definition": null,
+            "sourceId": "Gateway_Fork"
+          },
+          "sourceType": "parallelGateway",
+          "parent": null
+        },
+        "payload": {
+          "kind": "parallel",
+          "incoming": [
+            "Flow_Start_Fork"
+          ],
+          "outgoing": [
+            "Flow_Fork_Draft",
+            "Flow_Fork_Check",
+            "Flow_Fork_Unrelated"
+          ]
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "Draft",
+          "origin": {
+            "definition": null,
+            "sourceId": "Draft"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Draft notice",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Fork_Draft"
+            ],
+            "outgoing": [
+              "Flow_Draft_Raise"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "Raise_Nobody",
+          "origin": {
+            "definition": null,
+            "sourceId": "Raise_Nobody"
+          },
+          "sourceType": "intermediateThrowEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": {
+                "escalation": {
+                  "payload": {
+                    "code": "NOBODY_LISTENS"
+                  }
+                }
+              }
+            }
+          },
+          "placement": "intermediate",
+          "incoming": [
+            "Flow_Draft_Raise"
+          ],
+          "outgoing": [
+            "Flow_Raise_Publish"
+          ],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "Publish",
+          "origin": {
+            "definition": null,
+            "sourceId": "Publish"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Publish notice",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Raise_Publish"
+            ],
+            "outgoing": [
+              "Flow_Publish_End"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "EndEvent_Published",
+          "origin": {
+            "definition": null,
+            "sourceId": "EndEvent_Published"
+          },
+          "sourceType": "endEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Publish_End"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "Check",
+          "origin": {
+            "definition": null,
+            "sourceId": "Check"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Check notice",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Fork_Check"
+            ],
+            "outgoing": [
+              "Flow_Check_EscalationEnd"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "EscalationEnd_Nobody",
+          "origin": {
+            "definition": null,
+            "sourceId": "EscalationEnd_Nobody"
+          },
+          "sourceType": "endEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": {
+                "escalation": {
+                  "payload": {
+                    "code": "NOBODY_LISTENS"
+                  }
+                }
+              }
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Check_EscalationEnd"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "scope": {
+        "header": {
+          "id": "Unrelated",
+          "origin": {
+            "definition": null,
+            "sourceId": "Unrelated"
+          },
+          "sourceType": "subProcess",
+          "parent": null
+        },
+        "payload": {
+          "kind": "embedded",
+          "children": [
+            "StartEvent_Unrelated",
+            "Wait",
+            "EndEvent_Unrelated"
+          ],
+          "localVariables": [],
+          "items": [],
+          "envelope": {
+            "incoming": [
+              "Flow_Fork_Unrelated"
+            ],
+            "outgoing": [
+              "Flow_Unrelated_End"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [
+              {
+                "id": "Boundary_Unrelated_AnyEscalation",
+                "sourceId": "Boundary_Unrelated_AnyEscalation",
+                "subscription": {
+                  "trigger": {
+                    "escalation": {
+                      "payload": {
+                        "code": null,
+                        "codeVariable": null
+                      }
+                    }
+                  },
+                  "outputs": [],
+                  "alternatives": [],
+                  "parallelMultiple": false
+                },
+                "interrupting": false,
+                "outgoing": [
+                  "Flow_AnyEscalation_Observe"
+                ]
+              }
+            ],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "start": {
+        "header": {
+          "id": "StartEvent_Unrelated",
+          "origin": {
+            "definition": null,
+            "sourceId": "StartEvent_Unrelated"
+          },
+          "sourceType": "startEvent",
+          "parent": "Unrelated"
+        },
+        "payload": {
+          "subscription": null,
+          "outgoing": [
+            "Flow_Unrelated_Start_Wait"
+          ]
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "Wait",
+          "origin": {
+            "definition": null,
+            "sourceId": "Wait"
+          },
+          "sourceType": "userTask",
+          "parent": "Unrelated"
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Wait for the unrelated region",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Unrelated_Start_Wait"
+            ],
+            "outgoing": [
+              "Flow_Unrelated_Wait_End"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "EndEvent_Unrelated",
+          "origin": {
+            "definition": null,
+            "sourceId": "EndEvent_Unrelated"
+          },
+          "sourceType": "endEvent",
+          "parent": "Unrelated"
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Unrelated_Wait_End"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "Observe",
+          "origin": {
+            "definition": null,
+            "sourceId": "Observe"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Observe the escalation",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_AnyEscalation_Observe"
+            ],
+            "outgoing": [
+              "Flow_Observe_End"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "EndEvent_UnrelatedDone",
+          "origin": {
+            "definition": null,
+            "sourceId": "EndEvent_UnrelatedDone"
+          },
+          "sourceType": "endEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Unrelated_End"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "EndEvent_Observed",
+          "origin": {
+            "definition": null,
+            "sourceId": "EndEvent_Observed"
+          },
+          "sourceType": "endEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Observe_End"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    }
+  ],
+  "flows": [
+    {
+      "id": "Flow_Unrelated_Start_Wait",
+      "source": "StartEvent_Unrelated",
+      "target": "Wait",
+      "condition": null
+    },
+    {
+      "id": "Flow_Unrelated_Wait_End",
+      "source": "Wait",
+      "target": "EndEvent_Unrelated",
+      "condition": null
+    },
+    {
+      "id": "Flow_Start_Fork",
+      "source": "StartEvent_NoticeRequested",
+      "target": "Gateway_Fork",
+      "condition": null
+    },
+    {
+      "id": "Flow_Fork_Draft",
+      "source": "Gateway_Fork",
+      "target": "Draft",
+      "condition": null
+    },
+    {
+      "id": "Flow_Fork_Check",
+      "source": "Gateway_Fork",
+      "target": "Check",
+      "condition": null
+    },
+    {
+      "id": "Flow_Fork_Unrelated",
+      "source": "Gateway_Fork",
+      "target": "Unrelated",
+      "condition": null
+    },
+    {
+      "id": "Flow_Draft_Raise",
+      "source": "Draft",
+      "target": "Raise_Nobody",
+      "condition": null
+    },
+    {
+      "id": "Flow_Raise_Publish",
+      "source": "Raise_Nobody",
+      "target": "Publish",
+      "condition": null
+    },
+    {
+      "id": "Flow_Publish_End",
+      "source": "Publish",
+      "target": "EndEvent_Published",
+      "condition": null
+    },
+    {
+      "id": "Flow_Check_EscalationEnd",
+      "source": "Check",
+      "target": "EscalationEnd_Nobody",
+      "condition": null
+    },
+    {
+      "id": "Flow_Unrelated_End",
+      "source": "Unrelated",
+      "target": "EndEvent_UnrelatedDone",
+      "condition": null
+    },
+    {
+      "id": "Flow_AnyEscalation_Observe",
+      "source": "Boundary_Unrelated_AnyEscalation",
+      "target": "Observe",
+      "condition": null
+    },
+    {
+      "id": "Flow_Observe_End",
+      "source": "Observe",
+      "target": "EndEvent_Observed",
+      "condition": null
+    }
+  ],
+  "variables": [],
+  "processes": [],
+  "executable": true,
+  "decisionResources": []
+}

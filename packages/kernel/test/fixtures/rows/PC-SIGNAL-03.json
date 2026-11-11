@@ -1,0 +1,698 @@
+{
+  "identity": {
+    "processId": "Process_MiSubProcessBoundaryAndHandler",
+    "namespace": "urn:bpmn-lean:scenarios:message-name-addressing:mi-subprocess-boundary-and-handler",
+    "sourceSha256": "651a5cae8489e27d69ea4c188857b1b81d36e8fed59ab4f3b2603c2fc1b20b65",
+    "profile": "cibseven-2.2.0",
+    "deployment": null
+  },
+  "options": {
+    "relations": [
+      "CIB-AGR-0001",
+      "CIB-AGR-0002",
+      "CIB-AGR-0003",
+      "CIB-AGR-0004",
+      "CIB-AGR-0006",
+      "CIB-AGR-0007",
+      "CIB-AGR-0008",
+      "CIB-AGR-0009",
+      "CIB-AGR-0010",
+      "CIB-AGR-0012",
+      "CIB-AGR-0013",
+      "CIB-AGR-0014",
+      "CIB-AGR-0015",
+      "CIB-AGR-0016",
+      "CIB-AGR-0017",
+      "CIB-AGR-0018",
+      "CIB-AGR-0019",
+      "CIB-AGR-0020",
+      "CIB-AGR-0021",
+      "CIB-AGR-0022",
+      "CIB-AGR-0023",
+      "CIB-CFG-0001",
+      "CIB-CFG-0002",
+      "CIB-CFG-0006",
+      "CIB-CFG-0007",
+      "CIB-CFG-0008",
+      "CIB-CFG-0009",
+      "CIB-CFG-0010",
+      "CIB-CFG-0011",
+      "CIB-CFG-0013",
+      "CIB-CFG-0014",
+      "CIB-DEV-0001",
+      "CIB-DEV-0002",
+      "CIB-EXT-0001",
+      "CIB-EXT-0004",
+      "CIB-EXT-0005",
+      "CIB-EXT-0006",
+      "CIB-EXT-0007",
+      "CIB-EXT-0008",
+      "CIB-EXT-0009",
+      "CIB-EXT-0010",
+      "CIB-EXT-0011",
+      "CIB-EXT-0012",
+      "CIB-EXT-0013",
+      "CIB-EXT-0014",
+      "CIB-EXT-0015",
+      "CIB-EXT-0016",
+      "CIB-EXT-0019",
+      "CIB-EXT-0021",
+      "CIB-EXT-0022",
+      "CIB-EXT-0023",
+      "CIB-EXT-0025",
+      "CIB-EXT-0028",
+      "CIB-EXT-0030",
+      "CIB-EXT-0031",
+      "CIB-EXT-0032",
+      "CIB-EXT-0033",
+      "CIB-EXT-0034",
+      "CIB-EXT-0035",
+      "CIB-EXT-0036",
+      "CIB-EXT-0038",
+      "CIB-EXT-0039",
+      "CIB-EXT-0040",
+      "CIB-EXT-0041",
+      "CIB-EXT-0042",
+      "CIB-EXT-0043",
+      "CIB-EXT-0044",
+      "CIB-EXT-0045",
+      "CIB-INT-0001",
+      "CIB-INT-0003",
+      "CIB-INT-0004",
+      "CIB-INT-0005",
+      "CIB-INT-0007",
+      "CIB-INT-0008",
+      "CIB-INT-0009",
+      "CIB-INT-0011",
+      "CIB-INT-0012",
+      "CIB-INT-0013",
+      "CIB-INT-0014",
+      "CIB-INT-0015",
+      "CIB-INT-0016",
+      "CIB-INT-0017",
+      "CIB-INT-0018",
+      "CIB-INT-0019",
+      "CIB-INT-0020",
+      "CIB-INT-0023",
+      "CIB-INT-0024",
+      "CIB-INT-0025",
+      "CIB-INT-0026",
+      "CIB-INT-0027",
+      "CIB-INT-0028",
+      "CIB-INT-0029",
+      "CIB-INT-0030",
+      "CIB-INT-0031",
+      "CIB-INT-0032",
+      "CIB-LIM-0001",
+      "CIB-LIM-0002",
+      "CIB-LIM-0003",
+      "CIB-LIM-0006",
+      "CIB-LIM-0007",
+      "CIB-LIM-0008",
+      "CIB-LIM-0009",
+      "CIB-LIM-0010",
+      "CIB-LIM-0014",
+      "CIB-LIM-0015",
+      "CIB-LIM-0016",
+      "CIB-LIM-0017",
+      "CIB-LIM-0022",
+      "CIB-LIM-0024",
+      "CIB-LIM-0026",
+      "CIB-LIM-0027",
+      "CIB-LIM-0028",
+      "CIB-OP-0001",
+      "CIB-OP-0005",
+      "CIB-OP-0006",
+      "CIB-OP-0007",
+      "CIB-OP-0008",
+      "CIB-OP-0009",
+      "CIB-OP-0010",
+      "CIB-OP-0011",
+      "CIB-OP-0016",
+      "CIB-OP-0019"
+    ],
+    "evaluator": "juel",
+    "submission": "installsVariables",
+    "scopeChainSubmissionBytes": null,
+    "undeclaredWrite": "atInstanceRoot",
+    "errorPathOutputs": "mapped",
+    "raisedCallOutputs": "atCalledRoot",
+    "technicalFailure": "incident",
+    "incidentProcessCancellation": true,
+    "continuationFailure": "rolledBack",
+    "conditionOrder": "beforeOutputs",
+    "messageCorrelation": "apiCriteria",
+    "deliveryVariables": "installs",
+    "multiInstanceFinalBody": "modeSpecific",
+    "multiInstanceOutputs": "none",
+    "compensationOrder": "dependency",
+    "compensationHandlerFailure": "failsInstance",
+    "abnormalScopeEnd": "completesNormally",
+    "unhandledError": "endsThrowingPath",
+    "errorCatchVariables": "eventScope",
+    "callBindingTime": "programAssembly",
+    "timerZone": null,
+    "multiInstanceBinding": "loopReferences",
+    "effectResultValues": "activityLocals",
+    "outputContext": "activityScope",
+    "multiInstanceCounters": "cibLocals",
+    "multiInstanceInputFailure": "rollback",
+    "multiInstanceCount": "javaInt",
+    "businessRuleTask": "decisionTable",
+    "inclusiveJoinReach": "outgoingOnly",
+    "branchSchedule": "declarationDepthFirst",
+    "conditionalRetrigger": "eachWrite",
+    "malformedTimer": "rollsBackArming",
+    "messageNames": "addresses",
+    "scopeStart": "required",
+    "signalNames": "addresses",
+    "signalPayload": "variables",
+    "signalDelivery": "occurrenceTargeted",
+    "conditionalStart": "submittedContext",
+    "calledElementResolution": "cibKey",
+    "messageThrowForms": "cibForms"
+  },
+  "elements": [
+    {
+      "start": {
+        "header": {
+          "id": "Start_Call",
+          "origin": {
+            "definition": null,
+            "sourceId": "Start_Call"
+          },
+          "sourceType": "startEvent",
+          "parent": null
+        },
+        "payload": {
+          "subscription": null,
+          "outgoing": [
+            "Flow_Start_Call_Region"
+          ]
+        }
+      }
+    },
+    {
+      "scope": {
+        "header": {
+          "id": "Region",
+          "origin": {
+            "definition": null,
+            "sourceId": "Region"
+          },
+          "sourceType": "subProcess",
+          "parent": null
+        },
+        "payload": {
+          "kind": "embedded",
+          "children": [
+            "Start_Region",
+            "Serve_Customer",
+            "End_Region",
+            "ESP_CallHandler"
+          ],
+          "localVariables": [],
+          "items": [],
+          "envelope": {
+            "incoming": [
+              "Flow_Start_Call_Region"
+            ],
+            "outgoing": [
+              "Flow_Region_End_Call"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [
+              {
+                "id": "Call_Boundary",
+                "sourceId": "Call_Boundary",
+                "subscription": {
+                  "trigger": {
+                    "message": {
+                      "payload": {
+                        "messageRef": "Message_CallBoundary",
+                        "name": {
+                          "literal": {
+                            "value": "customer-call"
+                          }
+                        },
+                        "correlation": [],
+                        "interfaceRef": null,
+                        "operationRef": null
+                      }
+                    }
+                  },
+                  "outputs": [],
+                  "alternatives": [],
+                  "parallelMultiple": false
+                },
+                "interrupting": true,
+                "outgoing": [
+                  "Flow_Call_Boundary_Handle_Boundary_Call"
+                ]
+              }
+            ],
+            "multiInstance": {
+              "mode": "parallel",
+              "count": {
+                "collection": {
+                  "items": {
+                    "variable": {
+                      "name": "items"
+                    }
+                  }
+                }
+              },
+              "elementVariable": "item",
+              "completionCondition": null,
+              "inputDataItem": null,
+              "outputDataItem": null,
+              "outputCollection": null,
+              "mutableCollection": "entrySnapshot",
+              "asyncBefore": false,
+              "asyncAfter": false,
+              "loopDataInputRef": null,
+              "inputDataItemName": null
+            },
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "start": {
+        "header": {
+          "id": "Start_Region",
+          "origin": {
+            "definition": null,
+            "sourceId": "Start_Region"
+          },
+          "sourceType": "startEvent",
+          "parent": "Region"
+        },
+        "payload": {
+          "subscription": null,
+          "outgoing": [
+            "Flow_Start_Region_Serve_Customer"
+          ]
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "Serve_Customer",
+          "origin": {
+            "definition": null,
+            "sourceId": "Serve_Customer"
+          },
+          "sourceType": "userTask",
+          "parent": "Region"
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Serve the customer",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Start_Region_Serve_Customer"
+            ],
+            "outgoing": [
+              "Flow_Serve_Customer_End_Region"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "End_Region",
+          "origin": {
+            "definition": null,
+            "sourceId": "End_Region"
+          },
+          "sourceType": "endEvent",
+          "parent": "Region"
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Serve_Customer_End_Region"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "scope": {
+        "header": {
+          "id": "ESP_CallHandler",
+          "origin": {
+            "definition": null,
+            "sourceId": "ESP_CallHandler"
+          },
+          "sourceType": "subProcess",
+          "parent": "Region"
+        },
+        "payload": {
+          "kind": {
+            "eventSubProcess": {
+              "start": {
+                "trigger": {
+                  "message": {
+                    "payload": {
+                      "messageRef": "Message_CallHandler",
+                      "name": {
+                        "literal": {
+                          "value": "customer-call"
+                        }
+                      },
+                      "correlation": [],
+                      "interfaceRef": null,
+                      "operationRef": null
+                    }
+                  }
+                },
+                "outputs": [],
+                "alternatives": [],
+                "parallelMultiple": false
+              },
+              "interrupting": false
+            }
+          },
+          "children": [
+            "Start_CallHandler",
+            "Handle_CallHandler",
+            "End_CallHandler"
+          ],
+          "localVariables": [],
+          "items": [],
+          "envelope": {
+            "incoming": [],
+            "outgoing": [],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "start": {
+        "header": {
+          "id": "Start_CallHandler",
+          "origin": {
+            "definition": null,
+            "sourceId": "Start_CallHandler"
+          },
+          "sourceType": "startEvent",
+          "parent": "ESP_CallHandler"
+        },
+        "payload": {
+          "subscription": {
+            "trigger": {
+              "message": {
+                "payload": {
+                  "messageRef": "Message_CallHandler",
+                  "name": {
+                    "literal": {
+                      "value": "customer-call"
+                    }
+                  },
+                  "correlation": [],
+                  "interfaceRef": null,
+                  "operationRef": null
+                }
+              }
+            },
+            "outputs": [],
+            "alternatives": [],
+            "parallelMultiple": false
+          },
+          "outgoing": [
+            "Flow_Start_CallHandler_Handle_CallHandler"
+          ]
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "Handle_CallHandler",
+          "origin": {
+            "definition": null,
+            "sourceId": "Handle_CallHandler"
+          },
+          "sourceType": "userTask",
+          "parent": "ESP_CallHandler"
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Handle the call in the region",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Start_CallHandler_Handle_CallHandler"
+            ],
+            "outgoing": [
+              "Flow_Handle_CallHandler_End_CallHandler"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "End_CallHandler",
+          "origin": {
+            "definition": null,
+            "sourceId": "End_CallHandler"
+          },
+          "sourceType": "endEvent",
+          "parent": "ESP_CallHandler"
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Handle_CallHandler_End_CallHandler"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "End_Call",
+          "origin": {
+            "definition": null,
+            "sourceId": "End_Call"
+          },
+          "sourceType": "endEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Region_End_Call"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "Handle_Boundary_Call",
+          "origin": {
+            "definition": null,
+            "sourceId": "Handle_Boundary_Call"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Handle the call on the boundary",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Call_Boundary_Handle_Boundary_Call"
+            ],
+            "outgoing": [
+              "Flow_Handle_Boundary_Call_End_Boundary_Call"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "End_Boundary_Call",
+          "origin": {
+            "definition": null,
+            "sourceId": "End_Boundary_Call"
+          },
+          "sourceType": "endEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Handle_Boundary_Call_End_Boundary_Call"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    }
+  ],
+  "flows": [
+    {
+      "id": "Flow_Start_Region_Serve_Customer",
+      "source": "Start_Region",
+      "target": "Serve_Customer",
+      "condition": null
+    },
+    {
+      "id": "Flow_Serve_Customer_End_Region",
+      "source": "Serve_Customer",
+      "target": "End_Region",
+      "condition": null
+    },
+    {
+      "id": "Flow_Start_CallHandler_Handle_CallHandler",
+      "source": "Start_CallHandler",
+      "target": "Handle_CallHandler",
+      "condition": null
+    },
+    {
+      "id": "Flow_Handle_CallHandler_End_CallHandler",
+      "source": "Handle_CallHandler",
+      "target": "End_CallHandler",
+      "condition": null
+    },
+    {
+      "id": "Flow_Start_Call_Region",
+      "source": "Start_Call",
+      "target": "Region",
+      "condition": null
+    },
+    {
+      "id": "Flow_Region_End_Call",
+      "source": "Region",
+      "target": "End_Call",
+      "condition": null
+    },
+    {
+      "id": "Flow_Call_Boundary_Handle_Boundary_Call",
+      "source": "Call_Boundary",
+      "target": "Handle_Boundary_Call",
+      "condition": null
+    },
+    {
+      "id": "Flow_Handle_Boundary_Call_End_Boundary_Call",
+      "source": "Handle_Boundary_Call",
+      "target": "End_Boundary_Call",
+      "condition": null
+    }
+  ],
+  "variables": [],
+  "processes": [],
+  "executable": true,
+  "decisionResources": []
+}

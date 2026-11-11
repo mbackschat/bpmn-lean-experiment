@@ -1,0 +1,237 @@
+{
+  "identity": {
+    "processId": "Process_ConfiguredTask",
+    "namespace": "urn:bpmn-lean:configured-task",
+    "sourceSha256": "0e50a82a24ac4f2a61e1ddafcc2cf4d2e71b7beffcfb6c06bd5120ce100934ba",
+    "profile": "bpmn-2.0.2",
+    "deployment": null
+  },
+  "options": {
+    "relations": [
+      "CIB-AGR-0001",
+      "CIB-AGR-0002",
+      "CIB-AGR-0003",
+      "CIB-AGR-0004",
+      "CIB-AGR-0006",
+      "CIB-AGR-0007",
+      "CIB-AGR-0021",
+      "CIB-CFG-0001",
+      "CIB-CFG-0013",
+      "CIB-CFG-0014",
+      "CIB-DEV-0001",
+      "CIB-DEV-0002",
+      "CIB-EXT-0011",
+      "CIB-INT-0001",
+      "CIB-INT-0008",
+      "CIB-INT-0012",
+      "CIB-INT-0015",
+      "CIB-INT-0016",
+      "CIB-INT-0025",
+      "CIB-INT-0026",
+      "CIB-INT-0029",
+      "CIB-INT-0030",
+      "CIB-INT-0031",
+      "CIB-INT-0032",
+      "CIB-LIM-0002",
+      "CIB-LIM-0003",
+      "CIB-OP-0001"
+    ],
+    "evaluator": "simpleBoolean",
+    "submission": "outputSet",
+    "scopeChainSubmissionBytes": null,
+    "undeclaredWrite": "refused",
+    "errorPathOutputs": "none",
+    "raisedCallOutputs": "none",
+    "technicalFailure": "hostFailure",
+    "incidentProcessCancellation": false,
+    "continuationFailure": "rolledBack",
+    "conditionOrder": "afterOutputs",
+    "messageCorrelation": "modeledKey",
+    "deliveryVariables": "mappedOnly",
+    "multiInstanceFinalBody": "conditionEveryCompletion",
+    "multiInstanceOutputs": "aggregates",
+    "compensationOrder": "dependency",
+    "compensationHandlerFailure": "failsInstance",
+    "abnormalScopeEnd": "withoutOutflow",
+    "unhandledError": "failsInstance",
+    "errorCatchVariables": "refused",
+    "callBindingTime": "programAssembly",
+    "timerZone": null,
+    "multiInstanceBinding": "dataAssociations",
+    "effectResultValues": "outputSet",
+    "outputContext": "submission",
+    "multiInstanceCounters": "none",
+    "multiInstanceInputFailure": "hold",
+    "multiInstanceCount": "integer",
+    "businessRuleTask": "refused",
+    "inclusiveJoinReach": "withBoundaries",
+    "branchSchedule": "orderInvariant",
+    "conditionalRetrigger": "edge",
+    "malformedTimer": "refused",
+    "messageNames": "description",
+    "scopeStart": "implicit",
+    "signalNames": "identifier",
+    "signalPayload": "none",
+    "signalDelivery": "broadcastOnly",
+    "conditionalStart": "refused",
+    "calledElementResolution": "qualifiedName",
+    "messageThrowForms": "refused"
+  },
+  "elements": [
+    {
+      "start": {
+        "header": {
+          "id": "StartEvent_1",
+          "origin": {
+            "definition": null,
+            "sourceId": "StartEvent_1"
+          },
+          "sourceType": "startEvent",
+          "parent": null
+        },
+        "payload": {
+          "subscription": null,
+          "outgoing": [
+            "Flow_StartToConfigured"
+          ]
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "ConfiguredTask_Probe",
+          "origin": {
+            "definition": null,
+            "sourceId": "ConfiguredTask_Probe"
+          },
+          "sourceType": "task",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "service": {
+              "payload": {
+                "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+                "operation": "urn:bpmn-lean:effect-operation:probe-v1",
+                "handlerKey": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_StartToConfigured"
+            ],
+            "outgoing": [
+              "Flow_ConfiguredToUser"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "UserTask_Review",
+          "origin": {
+            "definition": null,
+            "sourceId": "UserTask_Review"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Review",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_ConfiguredToUser"
+            ],
+            "outgoing": [
+              "Flow_UserToEnd"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "EndEvent_1",
+          "origin": {
+            "definition": null,
+            "sourceId": "EndEvent_1"
+          },
+          "sourceType": "endEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_UserToEnd"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    }
+  ],
+  "flows": [
+    {
+      "id": "Flow_StartToConfigured",
+      "source": "StartEvent_1",
+      "target": "ConfiguredTask_Probe",
+      "condition": null
+    },
+    {
+      "id": "Flow_ConfiguredToUser",
+      "source": "ConfiguredTask_Probe",
+      "target": "UserTask_Review",
+      "condition": null
+    },
+    {
+      "id": "Flow_UserToEnd",
+      "source": "UserTask_Review",
+      "target": "EndEvent_1",
+      "condition": null
+    }
+  ],
+  "variables": [],
+  "processes": [],
+  "executable": true,
+  "decisionResources": []
+}

@@ -1,0 +1,1829 @@
+{
+  "identity": {
+    "processId": "Process_ReviewBatches",
+    "namespace": "urn:bpmn-lean:scenarios:escalation-multi-instance:batches",
+    "sourceSha256": "6148b18f7af87419f2cc4f033520de03a8bbd7a24b6041d2c6aa570b8bee7432",
+    "profile": "cibseven-2.2.0",
+    "deployment": null
+  },
+  "options": {
+    "relations": [
+      "CIB-AGR-0001",
+      "CIB-AGR-0002",
+      "CIB-AGR-0003",
+      "CIB-AGR-0004",
+      "CIB-AGR-0006",
+      "CIB-AGR-0007",
+      "CIB-AGR-0008",
+      "CIB-AGR-0009",
+      "CIB-AGR-0010",
+      "CIB-AGR-0012",
+      "CIB-AGR-0013",
+      "CIB-AGR-0014",
+      "CIB-AGR-0015",
+      "CIB-AGR-0016",
+      "CIB-AGR-0017",
+      "CIB-AGR-0018",
+      "CIB-AGR-0019",
+      "CIB-AGR-0020",
+      "CIB-AGR-0021",
+      "CIB-AGR-0022",
+      "CIB-AGR-0023",
+      "CIB-CFG-0001",
+      "CIB-CFG-0002",
+      "CIB-CFG-0006",
+      "CIB-CFG-0007",
+      "CIB-CFG-0008",
+      "CIB-CFG-0009",
+      "CIB-CFG-0010",
+      "CIB-CFG-0011",
+      "CIB-CFG-0013",
+      "CIB-CFG-0014",
+      "CIB-DEV-0001",
+      "CIB-DEV-0002",
+      "CIB-EXT-0001",
+      "CIB-EXT-0004",
+      "CIB-EXT-0005",
+      "CIB-EXT-0006",
+      "CIB-EXT-0007",
+      "CIB-EXT-0008",
+      "CIB-EXT-0009",
+      "CIB-EXT-0010",
+      "CIB-EXT-0011",
+      "CIB-EXT-0012",
+      "CIB-EXT-0013",
+      "CIB-EXT-0014",
+      "CIB-EXT-0015",
+      "CIB-EXT-0016",
+      "CIB-EXT-0019",
+      "CIB-EXT-0021",
+      "CIB-EXT-0022",
+      "CIB-EXT-0023",
+      "CIB-EXT-0025",
+      "CIB-EXT-0028",
+      "CIB-EXT-0030",
+      "CIB-EXT-0031",
+      "CIB-EXT-0032",
+      "CIB-EXT-0033",
+      "CIB-EXT-0034",
+      "CIB-EXT-0035",
+      "CIB-EXT-0036",
+      "CIB-EXT-0038",
+      "CIB-EXT-0039",
+      "CIB-EXT-0040",
+      "CIB-EXT-0041",
+      "CIB-EXT-0042",
+      "CIB-EXT-0043",
+      "CIB-EXT-0044",
+      "CIB-EXT-0045",
+      "CIB-INT-0001",
+      "CIB-INT-0003",
+      "CIB-INT-0004",
+      "CIB-INT-0005",
+      "CIB-INT-0007",
+      "CIB-INT-0008",
+      "CIB-INT-0009",
+      "CIB-INT-0011",
+      "CIB-INT-0012",
+      "CIB-INT-0013",
+      "CIB-INT-0014",
+      "CIB-INT-0015",
+      "CIB-INT-0016",
+      "CIB-INT-0017",
+      "CIB-INT-0018",
+      "CIB-INT-0019",
+      "CIB-INT-0020",
+      "CIB-INT-0023",
+      "CIB-INT-0024",
+      "CIB-INT-0025",
+      "CIB-INT-0026",
+      "CIB-INT-0027",
+      "CIB-INT-0028",
+      "CIB-INT-0029",
+      "CIB-INT-0030",
+      "CIB-INT-0031",
+      "CIB-INT-0032",
+      "CIB-LIM-0001",
+      "CIB-LIM-0002",
+      "CIB-LIM-0003",
+      "CIB-LIM-0006",
+      "CIB-LIM-0007",
+      "CIB-LIM-0008",
+      "CIB-LIM-0009",
+      "CIB-LIM-0010",
+      "CIB-LIM-0014",
+      "CIB-LIM-0015",
+      "CIB-LIM-0016",
+      "CIB-LIM-0017",
+      "CIB-LIM-0022",
+      "CIB-LIM-0024",
+      "CIB-LIM-0026",
+      "CIB-LIM-0027",
+      "CIB-LIM-0028",
+      "CIB-OP-0001",
+      "CIB-OP-0005",
+      "CIB-OP-0006",
+      "CIB-OP-0007",
+      "CIB-OP-0008",
+      "CIB-OP-0009",
+      "CIB-OP-0010",
+      "CIB-OP-0011",
+      "CIB-OP-0016",
+      "CIB-OP-0019"
+    ],
+    "evaluator": "juel",
+    "submission": "installsVariables",
+    "scopeChainSubmissionBytes": null,
+    "undeclaredWrite": "atInstanceRoot",
+    "errorPathOutputs": "mapped",
+    "raisedCallOutputs": "atCalledRoot",
+    "technicalFailure": "incident",
+    "incidentProcessCancellation": true,
+    "continuationFailure": "rolledBack",
+    "conditionOrder": "beforeOutputs",
+    "messageCorrelation": "apiCriteria",
+    "deliveryVariables": "installs",
+    "multiInstanceFinalBody": "modeSpecific",
+    "multiInstanceOutputs": "none",
+    "compensationOrder": "dependency",
+    "compensationHandlerFailure": "failsInstance",
+    "abnormalScopeEnd": "completesNormally",
+    "unhandledError": "endsThrowingPath",
+    "errorCatchVariables": "eventScope",
+    "callBindingTime": "programAssembly",
+    "timerZone": null,
+    "multiInstanceBinding": "loopReferences",
+    "effectResultValues": "activityLocals",
+    "outputContext": "activityScope",
+    "multiInstanceCounters": "cibLocals",
+    "multiInstanceInputFailure": "rollback",
+    "multiInstanceCount": "javaInt",
+    "businessRuleTask": "decisionTable",
+    "inclusiveJoinReach": "outgoingOnly",
+    "branchSchedule": "declarationDepthFirst",
+    "conditionalRetrigger": "eachWrite",
+    "malformedTimer": "rollsBackArming",
+    "messageNames": "addresses",
+    "scopeStart": "required",
+    "signalNames": "addresses",
+    "signalPayload": "variables",
+    "signalDelivery": "occurrenceTargeted",
+    "conditionalStart": "submittedContext",
+    "calledElementResolution": "cibKey",
+    "messageThrowForms": "cibForms"
+  },
+  "elements": [
+    {
+      "start": {
+        "header": {
+          "id": "StartEvent_BatchesReceived",
+          "origin": {
+            "definition": null,
+            "sourceId": "StartEvent_BatchesReceived"
+          },
+          "sourceType": "startEvent",
+          "parent": null
+        },
+        "payload": {
+          "subscription": null,
+          "outgoing": [
+            "Flow_Start_Fork"
+          ]
+        }
+      }
+    },
+    {
+      "gateway": {
+        "header": {
+          "id": "Gateway_Fork",
+          "origin": {
+            "definition": null,
+            "sourceId": "Gateway_Fork"
+          },
+          "sourceType": "parallelGateway",
+          "parent": null
+        },
+        "payload": {
+          "kind": "parallel",
+          "incoming": [
+            "Flow_Start_Fork"
+          ],
+          "outgoing": [
+            "Flow_Fork_Parallel",
+            "Flow_Fork_Sequential",
+            "Flow_Fork_Approve",
+            "Flow_Fork_Campaign"
+          ]
+        }
+      }
+    },
+    {
+      "scope": {
+        "header": {
+          "id": "ReviewParallelBatch",
+          "origin": {
+            "definition": null,
+            "sourceId": "ReviewParallelBatch"
+          },
+          "sourceType": "subProcess",
+          "parent": null
+        },
+        "payload": {
+          "kind": "embedded",
+          "children": [
+            "StartEvent_ParallelBatch",
+            "Check",
+            "Raise_Overdue",
+            "FinishCheck",
+            "EndEvent_ParallelBatch"
+          ],
+          "localVariables": [],
+          "items": [],
+          "envelope": {
+            "incoming": [
+              "Flow_Fork_Parallel"
+            ],
+            "outgoing": [
+              "Flow_Parallel_End"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [
+              {
+                "id": "Boundary_ReviewParallelBatch_Overdue",
+                "sourceId": "Boundary_ReviewParallelBatch_Overdue",
+                "subscription": {
+                  "trigger": {
+                    "escalation": {
+                      "payload": {
+                        "code": "OVERDUE",
+                        "codeVariable": null
+                      }
+                    }
+                  },
+                  "outputs": [],
+                  "alternatives": [],
+                  "parallelMultiple": false
+                },
+                "interrupting": true,
+                "outgoing": [
+                  "Flow_Overdue_Reschedule"
+                ]
+              }
+            ],
+            "multiInstance": {
+              "mode": "parallel",
+              "count": {
+                "cardinality": {
+                  "count": {
+                    "juel": {
+                      "nodes": [
+                        {
+                          "text": {
+                            "value": "2"
+                          }
+                        }
+                      ]
+                    }
+                  }
+                }
+              },
+              "elementVariable": null,
+              "completionCondition": null,
+              "inputDataItem": null,
+              "outputDataItem": null,
+              "outputCollection": null,
+              "mutableCollection": "entrySnapshot",
+              "asyncBefore": false,
+              "asyncAfter": false,
+              "loopDataInputRef": null,
+              "inputDataItemName": null
+            },
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "start": {
+        "header": {
+          "id": "StartEvent_ParallelBatch",
+          "origin": {
+            "definition": null,
+            "sourceId": "StartEvent_ParallelBatch"
+          },
+          "sourceType": "startEvent",
+          "parent": "ReviewParallelBatch"
+        },
+        "payload": {
+          "subscription": null,
+          "outgoing": [
+            "Flow_ParallelBatch_Start_Check"
+          ]
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "Check",
+          "origin": {
+            "definition": null,
+            "sourceId": "Check"
+          },
+          "sourceType": "userTask",
+          "parent": "ReviewParallelBatch"
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Check the batch",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_ParallelBatch_Start_Check"
+            ],
+            "outgoing": [
+              "Flow_ParallelBatch_Check_Raise"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "Raise_Overdue",
+          "origin": {
+            "definition": null,
+            "sourceId": "Raise_Overdue"
+          },
+          "sourceType": "intermediateThrowEvent",
+          "parent": "ReviewParallelBatch"
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": {
+                "escalation": {
+                  "payload": {
+                    "code": "OVERDUE"
+                  }
+                }
+              }
+            }
+          },
+          "placement": "intermediate",
+          "incoming": [
+            "Flow_ParallelBatch_Check_Raise"
+          ],
+          "outgoing": [
+            "Flow_ParallelBatch_Raise_Finish"
+          ],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "FinishCheck",
+          "origin": {
+            "definition": null,
+            "sourceId": "FinishCheck"
+          },
+          "sourceType": "userTask",
+          "parent": "ReviewParallelBatch"
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Finish the check",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_ParallelBatch_Raise_Finish"
+            ],
+            "outgoing": [
+              "Flow_ParallelBatch_Finish_End"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "EndEvent_ParallelBatch",
+          "origin": {
+            "definition": null,
+            "sourceId": "EndEvent_ParallelBatch"
+          },
+          "sourceType": "endEvent",
+          "parent": "ReviewParallelBatch"
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_ParallelBatch_Finish_End"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "RescheduleBatch",
+          "origin": {
+            "definition": null,
+            "sourceId": "RescheduleBatch"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Reschedule the parallel batches",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Overdue_Reschedule"
+            ],
+            "outgoing": [
+              "Flow_Reschedule_End"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "EndEvent_ParallelBatchesReviewed",
+          "origin": {
+            "definition": null,
+            "sourceId": "EndEvent_ParallelBatchesReviewed"
+          },
+          "sourceType": "endEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Parallel_End"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "EndEvent_ParallelBatchesRescheduled",
+          "origin": {
+            "definition": null,
+            "sourceId": "EndEvent_ParallelBatchesRescheduled"
+          },
+          "sourceType": "endEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Reschedule_End"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "scope": {
+        "header": {
+          "id": "ReviewSequentialBatch",
+          "origin": {
+            "definition": null,
+            "sourceId": "ReviewSequentialBatch"
+          },
+          "sourceType": "subProcess",
+          "parent": null
+        },
+        "payload": {
+          "kind": "embedded",
+          "children": [
+            "StartEvent_SequentialBatch",
+            "Verify",
+            "Raise_Late",
+            "FinishVerify",
+            "EndEvent_SequentialBatch"
+          ],
+          "localVariables": [],
+          "items": [],
+          "envelope": {
+            "incoming": [
+              "Flow_Fork_Sequential"
+            ],
+            "outgoing": [
+              "Flow_Sequential_End"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [
+              {
+                "id": "Boundary_ReviewSequentialBatch_Late",
+                "sourceId": "Boundary_ReviewSequentialBatch_Late",
+                "subscription": {
+                  "trigger": {
+                    "escalation": {
+                      "payload": {
+                        "code": "LATE",
+                        "codeVariable": null
+                      }
+                    }
+                  },
+                  "outputs": [],
+                  "alternatives": [],
+                  "parallelMultiple": false
+                },
+                "interrupting": false,
+                "outgoing": [
+                  "Flow_Late_Triage"
+                ]
+              }
+            ],
+            "multiInstance": {
+              "mode": "sequential",
+              "count": {
+                "cardinality": {
+                  "count": {
+                    "juel": {
+                      "nodes": [
+                        {
+                          "text": {
+                            "value": "2"
+                          }
+                        }
+                      ]
+                    }
+                  }
+                }
+              },
+              "elementVariable": null,
+              "completionCondition": null,
+              "inputDataItem": null,
+              "outputDataItem": null,
+              "outputCollection": null,
+              "mutableCollection": "entrySnapshot",
+              "asyncBefore": false,
+              "asyncAfter": false,
+              "loopDataInputRef": null,
+              "inputDataItemName": null
+            },
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "start": {
+        "header": {
+          "id": "StartEvent_SequentialBatch",
+          "origin": {
+            "definition": null,
+            "sourceId": "StartEvent_SequentialBatch"
+          },
+          "sourceType": "startEvent",
+          "parent": "ReviewSequentialBatch"
+        },
+        "payload": {
+          "subscription": null,
+          "outgoing": [
+            "Flow_SequentialBatch_Start_Verify"
+          ]
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "Verify",
+          "origin": {
+            "definition": null,
+            "sourceId": "Verify"
+          },
+          "sourceType": "userTask",
+          "parent": "ReviewSequentialBatch"
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Verify the batch",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_SequentialBatch_Start_Verify"
+            ],
+            "outgoing": [
+              "Flow_SequentialBatch_Verify_Raise"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "Raise_Late",
+          "origin": {
+            "definition": null,
+            "sourceId": "Raise_Late"
+          },
+          "sourceType": "intermediateThrowEvent",
+          "parent": "ReviewSequentialBatch"
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": {
+                "escalation": {
+                  "payload": {
+                    "code": "LATE"
+                  }
+                }
+              }
+            }
+          },
+          "placement": "intermediate",
+          "incoming": [
+            "Flow_SequentialBatch_Verify_Raise"
+          ],
+          "outgoing": [
+            "Flow_SequentialBatch_Raise_Finish"
+          ],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "FinishVerify",
+          "origin": {
+            "definition": null,
+            "sourceId": "FinishVerify"
+          },
+          "sourceType": "userTask",
+          "parent": "ReviewSequentialBatch"
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Finish the verification",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_SequentialBatch_Raise_Finish"
+            ],
+            "outgoing": [
+              "Flow_SequentialBatch_Finish_End"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "EndEvent_SequentialBatch",
+          "origin": {
+            "definition": null,
+            "sourceId": "EndEvent_SequentialBatch"
+          },
+          "sourceType": "endEvent",
+          "parent": "ReviewSequentialBatch"
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_SequentialBatch_Finish_End"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "TriageBatch",
+          "origin": {
+            "definition": null,
+            "sourceId": "TriageBatch"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Triage the sequential batches",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Late_Triage"
+            ],
+            "outgoing": [
+              "Flow_Triage_End"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "EndEvent_SequentialBatchesReviewed",
+          "origin": {
+            "definition": null,
+            "sourceId": "EndEvent_SequentialBatchesReviewed"
+          },
+          "sourceType": "endEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Sequential_End"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "EndEvent_SequentialBatchesTriaged",
+          "origin": {
+            "definition": null,
+            "sourceId": "EndEvent_SequentialBatchesTriaged"
+          },
+          "sourceType": "endEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Triage_End"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "Approve",
+          "origin": {
+            "definition": null,
+            "sourceId": "Approve"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Approve a batch",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Fork_Approve"
+            ],
+            "outgoing": [
+              "Flow_Approve_End"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [
+              {
+                "id": "Boundary_Approve_Help",
+                "sourceId": "Boundary_Approve_Help",
+                "subscription": {
+                  "trigger": {
+                    "escalation": {
+                      "payload": {
+                        "code": "HELP",
+                        "codeVariable": null
+                      }
+                    }
+                  },
+                  "outputs": [],
+                  "alternatives": [],
+                  "parallelMultiple": false
+                },
+                "interrupting": false,
+                "outgoing": [
+                  "Flow_Help_Assist"
+                ]
+              }
+            ],
+            "multiInstance": {
+              "mode": "parallel",
+              "count": {
+                "cardinality": {
+                  "count": {
+                    "juel": {
+                      "nodes": [
+                        {
+                          "text": {
+                            "value": "2"
+                          }
+                        }
+                      ]
+                    }
+                  }
+                }
+              },
+              "elementVariable": null,
+              "completionCondition": null,
+              "inputDataItem": null,
+              "outputDataItem": null,
+              "outputCollection": null,
+              "mutableCollection": "entrySnapshot",
+              "asyncBefore": false,
+              "asyncAfter": false,
+              "loopDataInputRef": null,
+              "inputDataItemName": null
+            },
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "Assist",
+          "origin": {
+            "definition": null,
+            "sourceId": "Assist"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Assist the approvers",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Help_Assist"
+            ],
+            "outgoing": [
+              "Flow_Assist_End"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "EndEvent_Approved",
+          "origin": {
+            "definition": null,
+            "sourceId": "EndEvent_Approved"
+          },
+          "sourceType": "endEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Approve_End"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "EndEvent_Assisted",
+          "origin": {
+            "definition": null,
+            "sourceId": "EndEvent_Assisted"
+          },
+          "sourceType": "endEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Assist_End"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "scope": {
+        "header": {
+          "id": "Campaign",
+          "origin": {
+            "definition": null,
+            "sourceId": "Campaign"
+          },
+          "sourceType": "subProcess",
+          "parent": null
+        },
+        "payload": {
+          "kind": "embedded",
+          "children": [
+            "StartEvent_Campaign",
+            "Wave",
+            "EndEvent_Campaign",
+            "Handler_Campaign_Stalled"
+          ],
+          "localVariables": [],
+          "items": [],
+          "envelope": {
+            "incoming": [
+              "Flow_Fork_Campaign"
+            ],
+            "outgoing": [
+              "Flow_Campaign_End"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "start": {
+        "header": {
+          "id": "StartEvent_Campaign",
+          "origin": {
+            "definition": null,
+            "sourceId": "StartEvent_Campaign"
+          },
+          "sourceType": "startEvent",
+          "parent": "Campaign"
+        },
+        "payload": {
+          "subscription": null,
+          "outgoing": [
+            "Flow_Campaign_Start_Wave"
+          ]
+        }
+      }
+    },
+    {
+      "scope": {
+        "header": {
+          "id": "Wave",
+          "origin": {
+            "definition": null,
+            "sourceId": "Wave"
+          },
+          "sourceType": "subProcess",
+          "parent": "Campaign"
+        },
+        "payload": {
+          "kind": "embedded",
+          "children": [
+            "StartEvent_Wave",
+            "Step",
+            "Raise_Stalled",
+            "FinishStep",
+            "EndEvent_Wave"
+          ],
+          "localVariables": [],
+          "items": [],
+          "envelope": {
+            "incoming": [
+              "Flow_Campaign_Start_Wave"
+            ],
+            "outgoing": [
+              "Flow_Campaign_Wave_End"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": {
+              "mode": "parallel",
+              "count": {
+                "cardinality": {
+                  "count": {
+                    "juel": {
+                      "nodes": [
+                        {
+                          "text": {
+                            "value": "2"
+                          }
+                        }
+                      ]
+                    }
+                  }
+                }
+              },
+              "elementVariable": null,
+              "completionCondition": null,
+              "inputDataItem": null,
+              "outputDataItem": null,
+              "outputCollection": null,
+              "mutableCollection": "entrySnapshot",
+              "asyncBefore": false,
+              "asyncAfter": false,
+              "loopDataInputRef": null,
+              "inputDataItemName": null
+            },
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "start": {
+        "header": {
+          "id": "StartEvent_Wave",
+          "origin": {
+            "definition": null,
+            "sourceId": "StartEvent_Wave"
+          },
+          "sourceType": "startEvent",
+          "parent": "Wave"
+        },
+        "payload": {
+          "subscription": null,
+          "outgoing": [
+            "Flow_Wave_Start_Step"
+          ]
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "Step",
+          "origin": {
+            "definition": null,
+            "sourceId": "Step"
+          },
+          "sourceType": "userTask",
+          "parent": "Wave"
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Take a step",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Wave_Start_Step"
+            ],
+            "outgoing": [
+              "Flow_Wave_Step_Raise"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "Raise_Stalled",
+          "origin": {
+            "definition": null,
+            "sourceId": "Raise_Stalled"
+          },
+          "sourceType": "intermediateThrowEvent",
+          "parent": "Wave"
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": {
+                "escalation": {
+                  "payload": {
+                    "code": "STALLED"
+                  }
+                }
+              }
+            }
+          },
+          "placement": "intermediate",
+          "incoming": [
+            "Flow_Wave_Step_Raise"
+          ],
+          "outgoing": [
+            "Flow_Wave_Raise_Finish"
+          ],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "FinishStep",
+          "origin": {
+            "definition": null,
+            "sourceId": "FinishStep"
+          },
+          "sourceType": "userTask",
+          "parent": "Wave"
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Finish the step",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Wave_Raise_Finish"
+            ],
+            "outgoing": [
+              "Flow_Wave_Finish_End"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "EndEvent_Wave",
+          "origin": {
+            "definition": null,
+            "sourceId": "EndEvent_Wave"
+          },
+          "sourceType": "endEvent",
+          "parent": "Wave"
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Wave_Finish_End"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "EndEvent_Campaign",
+          "origin": {
+            "definition": null,
+            "sourceId": "EndEvent_Campaign"
+          },
+          "sourceType": "endEvent",
+          "parent": "Campaign"
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Campaign_Wave_End"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "scope": {
+        "header": {
+          "id": "Handler_Campaign_Stalled",
+          "origin": {
+            "definition": null,
+            "sourceId": "Handler_Campaign_Stalled"
+          },
+          "sourceType": "subProcess",
+          "parent": "Campaign"
+        },
+        "payload": {
+          "kind": {
+            "eventSubProcess": {
+              "start": {
+                "trigger": {
+                  "escalation": {
+                    "payload": {
+                      "code": "STALLED",
+                      "codeVariable": null
+                    }
+                  }
+                },
+                "outputs": [],
+                "alternatives": [],
+                "parallelMultiple": false
+              },
+              "interrupting": false
+            }
+          },
+          "children": [
+            "Start_Campaign_Stalled",
+            "Replan",
+            "End_Campaign_Stalled"
+          ],
+          "localVariables": [],
+          "items": [],
+          "envelope": {
+            "incoming": [],
+            "outgoing": [],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "start": {
+        "header": {
+          "id": "Start_Campaign_Stalled",
+          "origin": {
+            "definition": null,
+            "sourceId": "Start_Campaign_Stalled"
+          },
+          "sourceType": "startEvent",
+          "parent": "Handler_Campaign_Stalled"
+        },
+        "payload": {
+          "subscription": {
+            "trigger": {
+              "escalation": {
+                "payload": {
+                  "code": "STALLED",
+                  "codeVariable": null
+                }
+              }
+            },
+            "outputs": [],
+            "alternatives": [],
+            "parallelMultiple": false
+          },
+          "outgoing": [
+            "Flow_Campaign_Stalled_Replan"
+          ]
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "Replan",
+          "origin": {
+            "definition": null,
+            "sourceId": "Replan"
+          },
+          "sourceType": "userTask",
+          "parent": "Handler_Campaign_Stalled"
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Replan the campaign",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Campaign_Stalled_Replan"
+            ],
+            "outgoing": [
+              "Flow_Campaign_Stalled_End"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "End_Campaign_Stalled",
+          "origin": {
+            "definition": null,
+            "sourceId": "End_Campaign_Stalled"
+          },
+          "sourceType": "endEvent",
+          "parent": "Handler_Campaign_Stalled"
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Campaign_Stalled_End"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "EndEvent_CampaignDone",
+          "origin": {
+            "definition": null,
+            "sourceId": "EndEvent_CampaignDone"
+          },
+          "sourceType": "endEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Campaign_End"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    }
+  ],
+  "flows": [
+    {
+      "id": "Flow_ParallelBatch_Start_Check",
+      "source": "StartEvent_ParallelBatch",
+      "target": "Check",
+      "condition": null
+    },
+    {
+      "id": "Flow_ParallelBatch_Check_Raise",
+      "source": "Check",
+      "target": "Raise_Overdue",
+      "condition": null
+    },
+    {
+      "id": "Flow_ParallelBatch_Raise_Finish",
+      "source": "Raise_Overdue",
+      "target": "FinishCheck",
+      "condition": null
+    },
+    {
+      "id": "Flow_ParallelBatch_Finish_End",
+      "source": "FinishCheck",
+      "target": "EndEvent_ParallelBatch",
+      "condition": null
+    },
+    {
+      "id": "Flow_SequentialBatch_Start_Verify",
+      "source": "StartEvent_SequentialBatch",
+      "target": "Verify",
+      "condition": null
+    },
+    {
+      "id": "Flow_SequentialBatch_Verify_Raise",
+      "source": "Verify",
+      "target": "Raise_Late",
+      "condition": null
+    },
+    {
+      "id": "Flow_SequentialBatch_Raise_Finish",
+      "source": "Raise_Late",
+      "target": "FinishVerify",
+      "condition": null
+    },
+    {
+      "id": "Flow_SequentialBatch_Finish_End",
+      "source": "FinishVerify",
+      "target": "EndEvent_SequentialBatch",
+      "condition": null
+    },
+    {
+      "id": "Flow_Wave_Start_Step",
+      "source": "StartEvent_Wave",
+      "target": "Step",
+      "condition": null
+    },
+    {
+      "id": "Flow_Wave_Step_Raise",
+      "source": "Step",
+      "target": "Raise_Stalled",
+      "condition": null
+    },
+    {
+      "id": "Flow_Wave_Raise_Finish",
+      "source": "Raise_Stalled",
+      "target": "FinishStep",
+      "condition": null
+    },
+    {
+      "id": "Flow_Wave_Finish_End",
+      "source": "FinishStep",
+      "target": "EndEvent_Wave",
+      "condition": null
+    },
+    {
+      "id": "Flow_Campaign_Start_Wave",
+      "source": "StartEvent_Campaign",
+      "target": "Wave",
+      "condition": null
+    },
+    {
+      "id": "Flow_Campaign_Wave_End",
+      "source": "Wave",
+      "target": "EndEvent_Campaign",
+      "condition": null
+    },
+    {
+      "id": "Flow_Campaign_Stalled_Replan",
+      "source": "Start_Campaign_Stalled",
+      "target": "Replan",
+      "condition": null
+    },
+    {
+      "id": "Flow_Campaign_Stalled_End",
+      "source": "Replan",
+      "target": "End_Campaign_Stalled",
+      "condition": null
+    },
+    {
+      "id": "Flow_Start_Fork",
+      "source": "StartEvent_BatchesReceived",
+      "target": "Gateway_Fork",
+      "condition": null
+    },
+    {
+      "id": "Flow_Fork_Parallel",
+      "source": "Gateway_Fork",
+      "target": "ReviewParallelBatch",
+      "condition": null
+    },
+    {
+      "id": "Flow_Fork_Sequential",
+      "source": "Gateway_Fork",
+      "target": "ReviewSequentialBatch",
+      "condition": null
+    },
+    {
+      "id": "Flow_Fork_Approve",
+      "source": "Gateway_Fork",
+      "target": "Approve",
+      "condition": null
+    },
+    {
+      "id": "Flow_Fork_Campaign",
+      "source": "Gateway_Fork",
+      "target": "Campaign",
+      "condition": null
+    },
+    {
+      "id": "Flow_Parallel_End",
+      "source": "ReviewParallelBatch",
+      "target": "EndEvent_ParallelBatchesReviewed",
+      "condition": null
+    },
+    {
+      "id": "Flow_Overdue_Reschedule",
+      "source": "Boundary_ReviewParallelBatch_Overdue",
+      "target": "RescheduleBatch",
+      "condition": null
+    },
+    {
+      "id": "Flow_Reschedule_End",
+      "source": "RescheduleBatch",
+      "target": "EndEvent_ParallelBatchesRescheduled",
+      "condition": null
+    },
+    {
+      "id": "Flow_Sequential_End",
+      "source": "ReviewSequentialBatch",
+      "target": "EndEvent_SequentialBatchesReviewed",
+      "condition": null
+    },
+    {
+      "id": "Flow_Late_Triage",
+      "source": "Boundary_ReviewSequentialBatch_Late",
+      "target": "TriageBatch",
+      "condition": null
+    },
+    {
+      "id": "Flow_Triage_End",
+      "source": "TriageBatch",
+      "target": "EndEvent_SequentialBatchesTriaged",
+      "condition": null
+    },
+    {
+      "id": "Flow_Approve_End",
+      "source": "Approve",
+      "target": "EndEvent_Approved",
+      "condition": null
+    },
+    {
+      "id": "Flow_Help_Assist",
+      "source": "Boundary_Approve_Help",
+      "target": "Assist",
+      "condition": null
+    },
+    {
+      "id": "Flow_Assist_End",
+      "source": "Assist",
+      "target": "EndEvent_Assisted",
+      "condition": null
+    },
+    {
+      "id": "Flow_Campaign_End",
+      "source": "Campaign",
+      "target": "EndEvent_CampaignDone",
+      "condition": null
+    }
+  ],
+  "variables": [],
+  "processes": [],
+  "executable": true,
+  "decisionResources": []
+}

@@ -1,0 +1,988 @@
+{
+  "identity": {
+    "processId": "Process_AccountOpening",
+    "namespace": "urn:bpmn-lean:account-opening",
+    "sourceSha256": "d8b65bf011e7b3798a7013b3ce92285ecac45353db5fa5af620a70316f8fbc78",
+    "profile": "cibseven-2.2.0-scope-chain",
+    "deployment": null
+  },
+  "options": {
+    "relations": [
+      "CIB-AGR-0001",
+      "CIB-AGR-0002",
+      "CIB-AGR-0003",
+      "CIB-AGR-0004",
+      "CIB-AGR-0006",
+      "CIB-AGR-0007",
+      "CIB-AGR-0008",
+      "CIB-AGR-0009",
+      "CIB-AGR-0010",
+      "CIB-AGR-0012",
+      "CIB-AGR-0013",
+      "CIB-AGR-0014",
+      "CIB-AGR-0015",
+      "CIB-AGR-0016",
+      "CIB-AGR-0017",
+      "CIB-AGR-0018",
+      "CIB-AGR-0019",
+      "CIB-AGR-0020",
+      "CIB-AGR-0021",
+      "CIB-AGR-0022",
+      "CIB-AGR-0023",
+      "CIB-CFG-0001",
+      "CIB-CFG-0002",
+      "CIB-CFG-0006",
+      "CIB-CFG-0007",
+      "CIB-CFG-0008",
+      "CIB-CFG-0009",
+      "CIB-CFG-0010",
+      "CIB-CFG-0011",
+      "CIB-CFG-0013",
+      "CIB-CFG-0014",
+      "CIB-DEV-0001",
+      "CIB-DEV-0002",
+      "CIB-EXT-0001",
+      "CIB-EXT-0004",
+      "CIB-EXT-0005",
+      "CIB-EXT-0006",
+      "CIB-EXT-0007",
+      "CIB-EXT-0008",
+      "CIB-EXT-0009",
+      "CIB-EXT-0010",
+      "CIB-EXT-0011",
+      "CIB-EXT-0012",
+      "CIB-EXT-0013",
+      "CIB-EXT-0014",
+      "CIB-EXT-0015",
+      "CIB-EXT-0016",
+      "CIB-EXT-0019",
+      "CIB-EXT-0020",
+      "CIB-EXT-0021",
+      "CIB-EXT-0022",
+      "CIB-EXT-0023",
+      "CIB-EXT-0025",
+      "CIB-EXT-0028",
+      "CIB-EXT-0030",
+      "CIB-EXT-0031",
+      "CIB-EXT-0032",
+      "CIB-EXT-0033",
+      "CIB-EXT-0034",
+      "CIB-EXT-0035",
+      "CIB-EXT-0036",
+      "CIB-EXT-0038",
+      "CIB-EXT-0039",
+      "CIB-EXT-0040",
+      "CIB-EXT-0041",
+      "CIB-EXT-0042",
+      "CIB-EXT-0043",
+      "CIB-EXT-0044",
+      "CIB-EXT-0045",
+      "CIB-INT-0001",
+      "CIB-INT-0003",
+      "CIB-INT-0004",
+      "CIB-INT-0005",
+      "CIB-INT-0007",
+      "CIB-INT-0008",
+      "CIB-INT-0009",
+      "CIB-INT-0011",
+      "CIB-INT-0012",
+      "CIB-INT-0013",
+      "CIB-INT-0014",
+      "CIB-INT-0015",
+      "CIB-INT-0016",
+      "CIB-INT-0017",
+      "CIB-INT-0018",
+      "CIB-INT-0019",
+      "CIB-INT-0020",
+      "CIB-INT-0023",
+      "CIB-INT-0024",
+      "CIB-INT-0025",
+      "CIB-INT-0026",
+      "CIB-INT-0027",
+      "CIB-INT-0028",
+      "CIB-INT-0029",
+      "CIB-INT-0030",
+      "CIB-INT-0031",
+      "CIB-INT-0032",
+      "CIB-LIM-0001",
+      "CIB-LIM-0002",
+      "CIB-LIM-0003",
+      "CIB-LIM-0006",
+      "CIB-LIM-0007",
+      "CIB-LIM-0008",
+      "CIB-LIM-0009",
+      "CIB-LIM-0010",
+      "CIB-LIM-0014",
+      "CIB-LIM-0015",
+      "CIB-LIM-0016",
+      "CIB-LIM-0017",
+      "CIB-LIM-0022",
+      "CIB-LIM-0024",
+      "CIB-LIM-0026",
+      "CIB-LIM-0027",
+      "CIB-LIM-0028",
+      "CIB-OP-0001",
+      "CIB-OP-0005",
+      "CIB-OP-0006",
+      "CIB-OP-0007",
+      "CIB-OP-0008",
+      "CIB-OP-0009",
+      "CIB-OP-0010",
+      "CIB-OP-0011",
+      "CIB-OP-0016",
+      "CIB-OP-0019"
+    ],
+    "evaluator": "juel",
+    "submission": "installsVariables",
+    "scopeChainSubmissionBytes": 16384,
+    "undeclaredWrite": "atInstanceRoot",
+    "errorPathOutputs": "mapped",
+    "raisedCallOutputs": "atCalledRoot",
+    "technicalFailure": "incident",
+    "incidentProcessCancellation": true,
+    "continuationFailure": "rolledBack",
+    "conditionOrder": "beforeOutputs",
+    "messageCorrelation": "apiCriteria",
+    "deliveryVariables": "installs",
+    "multiInstanceFinalBody": "modeSpecific",
+    "multiInstanceOutputs": "none",
+    "compensationOrder": "dependency",
+    "compensationHandlerFailure": "failsInstance",
+    "abnormalScopeEnd": "completesNormally",
+    "unhandledError": "endsThrowingPath",
+    "errorCatchVariables": "eventScope",
+    "callBindingTime": "programAssembly",
+    "timerZone": null,
+    "multiInstanceBinding": "loopReferences",
+    "effectResultValues": "activityLocals",
+    "outputContext": "activityScope",
+    "multiInstanceCounters": "cibLocals",
+    "multiInstanceInputFailure": "rollback",
+    "multiInstanceCount": "javaInt",
+    "businessRuleTask": "decisionTable",
+    "inclusiveJoinReach": "outgoingOnly",
+    "branchSchedule": "declarationDepthFirst",
+    "conditionalRetrigger": "eachWrite",
+    "malformedTimer": "rollsBackArming",
+    "messageNames": "addresses",
+    "scopeStart": "required",
+    "signalNames": "addresses",
+    "signalPayload": "variables",
+    "signalDelivery": "occurrenceTargeted",
+    "conditionalStart": "submittedContext",
+    "calledElementResolution": "cibKey",
+    "messageThrowForms": "cibForms"
+  },
+  "elements": [
+    {
+      "start": {
+        "header": {
+          "id": "ApplicationReceived",
+          "origin": {
+            "definition": null,
+            "sourceId": "ApplicationReceived"
+          },
+          "sourceType": "startEvent",
+          "parent": null
+        },
+        "payload": {
+          "subscription": null,
+          "outgoing": [
+            "Flow_Received"
+          ]
+        }
+      }
+    },
+    {
+      "scope": {
+        "header": {
+          "id": "AssessApplicant",
+          "origin": {
+            "definition": null,
+            "sourceId": "AssessApplicant"
+          },
+          "sourceType": "subProcess",
+          "parent": null
+        },
+        "payload": {
+          "kind": "embedded",
+          "children": [
+            "AssessmentOpened",
+            "AssessApplicantTask",
+            "AssessmentClosed"
+          ],
+          "localVariables": [
+            "riskRating",
+            "residency",
+            "channel"
+          ],
+          "items": [],
+          "envelope": {
+            "incoming": [
+              "Flow_Received"
+            ],
+            "outgoing": [
+              "Flow_ApplicantAssessed"
+            ],
+            "inputs": [
+              {
+                "target": "riskRating",
+                "source": {
+                  "literal": {
+                    "value": {
+                      "kind": "string",
+                      "value": "unrated"
+                    }
+                  }
+                },
+                "dialect": "ioParameter"
+              },
+              {
+                "target": "residency",
+                "source": {
+                  "literal": {
+                    "value": {
+                      "kind": "string",
+                      "value": "unknown"
+                    }
+                  }
+                },
+                "dialect": "ioParameter"
+              },
+              {
+                "target": "channel",
+                "source": {
+                  "literal": {
+                    "value": {
+                      "kind": "string",
+                      "value": "unknown"
+                    }
+                  }
+                },
+                "dialect": "ioParameter"
+              }
+            ],
+            "outputs": [
+              {
+                "target": "riskRating",
+                "source": {
+                  "variable": {
+                    "name": "riskRating"
+                  }
+                },
+                "dialect": "ioParameter"
+              },
+              {
+                "target": "residency",
+                "source": {
+                  "variable": {
+                    "name": "residency"
+                  }
+                },
+                "dialect": "ioParameter"
+              },
+              {
+                "target": "channel",
+                "source": {
+                  "variable": {
+                    "name": "channel"
+                  }
+                },
+                "dialect": "ioParameter"
+              }
+            ],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "start": {
+        "header": {
+          "id": "AssessmentOpened",
+          "origin": {
+            "definition": null,
+            "sourceId": "AssessmentOpened"
+          },
+          "sourceType": "startEvent",
+          "parent": "AssessApplicant"
+        },
+        "payload": {
+          "subscription": null,
+          "outgoing": [
+            "Flow_AssessmentOpened"
+          ]
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "AssessApplicantTask",
+          "origin": {
+            "definition": null,
+            "sourceId": "AssessApplicantTask"
+          },
+          "sourceType": "userTask",
+          "parent": "AssessApplicant"
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Assess applicant",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_AssessmentOpened"
+            ],
+            "outgoing": [
+              "Flow_Assessed"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "AssessmentClosed",
+          "origin": {
+            "definition": null,
+            "sourceId": "AssessmentClosed"
+          },
+          "sourceType": "endEvent",
+          "parent": "AssessApplicant"
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Assessed"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "gateway": {
+        "header": {
+          "id": "RequiredChecks",
+          "origin": {
+            "definition": null,
+            "sourceId": "RequiredChecks"
+          },
+          "sourceType": "inclusiveGateway",
+          "parent": null
+        },
+        "payload": {
+          "kind": {
+            "inclusive": {
+              "candidates": [
+                "Flow_DueDiligence",
+                "Flow_TaxResidency",
+                "Flow_IdentityDocument"
+              ],
+              "default": "Flow_Standard"
+            }
+          },
+          "incoming": [
+            "Flow_ApplicantAssessed"
+          ],
+          "outgoing": [
+            "Flow_DueDiligence",
+            "Flow_TaxResidency",
+            "Flow_IdentityDocument",
+            "Flow_Standard"
+          ]
+        }
+      }
+    },
+    {
+      "scope": {
+        "header": {
+          "id": "EnhancedDueDiligence",
+          "origin": {
+            "definition": null,
+            "sourceId": "EnhancedDueDiligence"
+          },
+          "sourceType": "subProcess",
+          "parent": null
+        },
+        "payload": {
+          "kind": "embedded",
+          "children": [
+            "DueDiligenceOpened",
+            "VerifySourceOfFunds",
+            "DueDiligenceClosed"
+          ],
+          "localVariables": [],
+          "items": [],
+          "envelope": {
+            "incoming": [
+              "Flow_DueDiligence"
+            ],
+            "outgoing": [
+              "Flow_DueDiligenceDone"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "start": {
+        "header": {
+          "id": "DueDiligenceOpened",
+          "origin": {
+            "definition": null,
+            "sourceId": "DueDiligenceOpened"
+          },
+          "sourceType": "startEvent",
+          "parent": "EnhancedDueDiligence"
+        },
+        "payload": {
+          "subscription": null,
+          "outgoing": [
+            "Flow_DueDiligenceOpened"
+          ]
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "VerifySourceOfFunds",
+          "origin": {
+            "definition": null,
+            "sourceId": "VerifySourceOfFunds"
+          },
+          "sourceType": "userTask",
+          "parent": "EnhancedDueDiligence"
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Verify source of funds",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_DueDiligenceOpened"
+            ],
+            "outgoing": [
+              "Flow_FundsVerified"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "DueDiligenceClosed",
+          "origin": {
+            "definition": null,
+            "sourceId": "DueDiligenceClosed"
+          },
+          "sourceType": "endEvent",
+          "parent": "EnhancedDueDiligence"
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_FundsVerified"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "CollectTaxResidencyForm",
+          "origin": {
+            "definition": null,
+            "sourceId": "CollectTaxResidencyForm"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Collect tax residency form",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_TaxResidency"
+            ],
+            "outgoing": [
+              "Flow_TaxResidencyDone"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "VerifyIdentityDocument",
+          "origin": {
+            "definition": null,
+            "sourceId": "VerifyIdentityDocument"
+          },
+          "sourceType": "serviceTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "service": {
+              "payload": {
+                "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+                "operation": "verifyIdentityDocument",
+                "handlerKey": "verifyIdentityDocument"
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_IdentityDocument"
+            ],
+            "outgoing": [
+              "Flow_IdentityDocumentDone"
+            ],
+            "inputs": [
+              {
+                "target": "applicant",
+                "source": {
+                  "variable": {
+                    "name": "application"
+                  }
+                },
+                "dialect": "ioParameter"
+              }
+            ],
+            "outputs": [
+              {
+                "target": "identityCheck",
+                "source": {
+                  "variable": {
+                    "name": "identityCheck"
+                  }
+                },
+                "dialect": "ioParameter"
+              }
+            ],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": true,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "StandardVerification",
+          "origin": {
+            "definition": null,
+            "sourceId": "StandardVerification"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Standard verification",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Standard"
+            ],
+            "outgoing": [
+              "Flow_StandardDone"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "gateway": {
+        "header": {
+          "id": "ChecksComplete",
+          "origin": {
+            "definition": null,
+            "sourceId": "ChecksComplete"
+          },
+          "sourceType": "inclusiveGateway",
+          "parent": null
+        },
+        "payload": {
+          "kind": {
+            "inclusive": {
+              "candidates": [],
+              "default": null
+            }
+          },
+          "incoming": [
+            "Flow_DueDiligenceDone",
+            "Flow_TaxResidencyDone",
+            "Flow_IdentityDocumentDone",
+            "Flow_StandardDone"
+          ],
+          "outgoing": [
+            "Flow_ChecksComplete"
+          ]
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "OpenAccount",
+          "origin": {
+            "definition": null,
+            "sourceId": "OpenAccount"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Open account",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_ChecksComplete"
+            ],
+            "outgoing": [
+              "Flow_AccountOpened"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "AccountOpened",
+          "origin": {
+            "definition": null,
+            "sourceId": "AccountOpened"
+          },
+          "sourceType": "endEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_AccountOpened"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    }
+  ],
+  "flows": [
+    {
+      "id": "Flow_AssessmentOpened",
+      "source": "AssessmentOpened",
+      "target": "AssessApplicantTask",
+      "condition": null
+    },
+    {
+      "id": "Flow_Assessed",
+      "source": "AssessApplicantTask",
+      "target": "AssessmentClosed",
+      "condition": null
+    },
+    {
+      "id": "Flow_DueDiligenceOpened",
+      "source": "DueDiligenceOpened",
+      "target": "VerifySourceOfFunds",
+      "condition": null
+    },
+    {
+      "id": "Flow_FundsVerified",
+      "source": "VerifySourceOfFunds",
+      "target": "DueDiligenceClosed",
+      "condition": null
+    },
+    {
+      "id": "Flow_Received",
+      "source": "ApplicationReceived",
+      "target": "AssessApplicant",
+      "condition": null
+    },
+    {
+      "id": "Flow_ApplicantAssessed",
+      "source": "AssessApplicant",
+      "target": "RequiredChecks",
+      "condition": null
+    },
+    {
+      "id": "Flow_DueDiligence",
+      "source": "RequiredChecks",
+      "target": "EnhancedDueDiligence",
+      "condition": {
+        "juel": {
+          "nodes": [
+            {
+              "identifier": {
+                "name": "riskRating"
+              }
+            },
+            {
+              "stringLiteral": {
+                "value": "high"
+              }
+            },
+            {
+              "binary": {
+                "payload": {
+                  "op": "eq",
+                  "left": 0,
+                  "right": 1
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "Flow_TaxResidency",
+      "source": "RequiredChecks",
+      "target": "CollectTaxResidencyForm",
+      "condition": {
+        "juel": {
+          "nodes": [
+            {
+              "identifier": {
+                "name": "residency"
+              }
+            },
+            {
+              "stringLiteral": {
+                "value": "foreign"
+              }
+            },
+            {
+              "binary": {
+                "payload": {
+                  "op": "eq",
+                  "left": 0,
+                  "right": 1
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "Flow_IdentityDocument",
+      "source": "RequiredChecks",
+      "target": "VerifyIdentityDocument",
+      "condition": {
+        "juel": {
+          "nodes": [
+            {
+              "identifier": {
+                "name": "channel"
+              }
+            },
+            {
+              "stringLiteral": {
+                "value": "online"
+              }
+            },
+            {
+              "binary": {
+                "payload": {
+                  "op": "eq",
+                  "left": 0,
+                  "right": 1
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "Flow_Standard",
+      "source": "RequiredChecks",
+      "target": "StandardVerification",
+      "condition": null
+    },
+    {
+      "id": "Flow_DueDiligenceDone",
+      "source": "EnhancedDueDiligence",
+      "target": "ChecksComplete",
+      "condition": null
+    },
+    {
+      "id": "Flow_TaxResidencyDone",
+      "source": "CollectTaxResidencyForm",
+      "target": "ChecksComplete",
+      "condition": null
+    },
+    {
+      "id": "Flow_IdentityDocumentDone",
+      "source": "VerifyIdentityDocument",
+      "target": "ChecksComplete",
+      "condition": null
+    },
+    {
+      "id": "Flow_StandardDone",
+      "source": "StandardVerification",
+      "target": "ChecksComplete",
+      "condition": null
+    },
+    {
+      "id": "Flow_ChecksComplete",
+      "source": "ChecksComplete",
+      "target": "OpenAccount",
+      "condition": null
+    },
+    {
+      "id": "Flow_AccountOpened",
+      "source": "OpenAccount",
+      "target": "AccountOpened",
+      "condition": null
+    }
+  ],
+  "variables": [],
+  "processes": [],
+  "executable": true,
+  "decisionResources": []
+}

@@ -1,0 +1,256 @@
+{
+  "identity": {
+    "processId": "Process_ShipmentManifestIntake",
+    "namespace": "https://bpmn-lean.org/scenarios/shipment-manifest-intake",
+    "sourceSha256": "47aa6df25976ca893a218083b5553b922334d4466aae98bbb4aaf8ab54b6f64d",
+    "profile": "bpmn-2.0.2",
+    "deployment": null
+  },
+  "options": {
+    "relations": [
+      "CIB-AGR-0001",
+      "CIB-AGR-0002",
+      "CIB-AGR-0003",
+      "CIB-AGR-0004",
+      "CIB-AGR-0006",
+      "CIB-AGR-0007",
+      "CIB-AGR-0021",
+      "CIB-CFG-0001",
+      "CIB-CFG-0013",
+      "CIB-CFG-0014",
+      "CIB-DEV-0001",
+      "CIB-DEV-0002",
+      "CIB-EXT-0011",
+      "CIB-INT-0001",
+      "CIB-INT-0008",
+      "CIB-INT-0012",
+      "CIB-INT-0015",
+      "CIB-INT-0016",
+      "CIB-INT-0025",
+      "CIB-INT-0026",
+      "CIB-INT-0029",
+      "CIB-INT-0030",
+      "CIB-INT-0031",
+      "CIB-INT-0032",
+      "CIB-LIM-0002",
+      "CIB-LIM-0003",
+      "CIB-OP-0001"
+    ],
+    "evaluator": "simpleBoolean",
+    "submission": "outputSet",
+    "scopeChainSubmissionBytes": null,
+    "undeclaredWrite": "refused",
+    "errorPathOutputs": "none",
+    "raisedCallOutputs": "none",
+    "technicalFailure": "hostFailure",
+    "incidentProcessCancellation": false,
+    "continuationFailure": "rolledBack",
+    "conditionOrder": "afterOutputs",
+    "messageCorrelation": "modeledKey",
+    "deliveryVariables": "mappedOnly",
+    "multiInstanceFinalBody": "conditionEveryCompletion",
+    "multiInstanceOutputs": "aggregates",
+    "compensationOrder": "dependency",
+    "compensationHandlerFailure": "failsInstance",
+    "abnormalScopeEnd": "withoutOutflow",
+    "unhandledError": "failsInstance",
+    "errorCatchVariables": "refused",
+    "callBindingTime": "programAssembly",
+    "timerZone": null,
+    "multiInstanceBinding": "dataAssociations",
+    "effectResultValues": "outputSet",
+    "outputContext": "submission",
+    "multiInstanceCounters": "none",
+    "multiInstanceInputFailure": "hold",
+    "multiInstanceCount": "integer",
+    "businessRuleTask": "refused",
+    "inclusiveJoinReach": "withBoundaries",
+    "branchSchedule": "orderInvariant",
+    "conditionalRetrigger": "edge",
+    "malformedTimer": "refused",
+    "messageNames": "description",
+    "scopeStart": "implicit",
+    "signalNames": "identifier",
+    "signalPayload": "none",
+    "signalDelivery": "broadcastOnly",
+    "conditionalStart": "refused",
+    "calledElementResolution": "qualifiedName",
+    "messageThrowForms": "refused"
+  },
+  "elements": [
+    {
+      "start": {
+        "header": {
+          "id": "StartEvent_ShipmentBooked",
+          "origin": {
+            "definition": null,
+            "sourceId": "StartEvent_ShipmentBooked"
+          },
+          "sourceType": "startEvent",
+          "parent": null
+        },
+        "payload": {
+          "subscription": null,
+          "outgoing": [
+            "Flow_Booked_Manifest"
+          ]
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "MessageCatch_ManifestReceived",
+          "origin": {
+            "definition": null,
+            "sourceId": "MessageCatch_ManifestReceived"
+          },
+          "sourceType": "intermediateCatchEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "catch": {
+              "subscription": {
+                "trigger": {
+                  "message": {
+                    "payload": {
+                      "messageRef": "Message_ManifestReceived",
+                      "name": {
+                        "literal": {
+                          "value": "Manifest received"
+                        }
+                      },
+                      "correlation": [],
+                      "interfaceRef": "Interface_Carrier",
+                      "operationRef": "Operation_SubmitManifest"
+                    }
+                  }
+                },
+                "outputs": [
+                  {
+                    "target": "Property_ShipmentManifest",
+                    "source": {
+                      "variable": {
+                        "name": "Received manifest"
+                      }
+                    },
+                    "dialect": "dataAssociation"
+                  }
+                ],
+                "alternatives": [],
+                "parallelMultiple": false
+              }
+            }
+          },
+          "placement": "intermediate",
+          "incoming": [
+            "Flow_Booked_Manifest"
+          ],
+          "outgoing": [
+            "Flow_Manifest_Review"
+          ],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "UserTask_ReviewManifest",
+          "origin": {
+            "definition": null,
+            "sourceId": "UserTask_ReviewManifest"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Review manifest",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Manifest_Review"
+            ],
+            "outgoing": [
+              "Flow_Review_Accepted"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "EndEvent_ManifestAccepted",
+          "origin": {
+            "definition": null,
+            "sourceId": "EndEvent_ManifestAccepted"
+          },
+          "sourceType": "endEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Review_Accepted"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    }
+  ],
+  "flows": [
+    {
+      "id": "Flow_Booked_Manifest",
+      "source": "StartEvent_ShipmentBooked",
+      "target": "MessageCatch_ManifestReceived",
+      "condition": null
+    },
+    {
+      "id": "Flow_Manifest_Review",
+      "source": "MessageCatch_ManifestReceived",
+      "target": "UserTask_ReviewManifest",
+      "condition": null
+    },
+    {
+      "id": "Flow_Review_Accepted",
+      "source": "UserTask_ReviewManifest",
+      "target": "EndEvent_ManifestAccepted",
+      "condition": null
+    }
+  ],
+  "variables": [
+    "Property_ShipmentManifest"
+  ],
+  "processes": [],
+  "executable": true,
+  "decisionResources": []
+}

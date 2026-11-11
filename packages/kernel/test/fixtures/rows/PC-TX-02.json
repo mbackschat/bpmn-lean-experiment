@@ -1,0 +1,611 @@
+{
+  "identity": {
+    "processId": "Process_Withdrawal",
+    "namespace": "https://bpmn-lean.org/transaction-withdrawal",
+    "sourceSha256": "9cbf9d029ef1246b55b3429160fafaac4786dd1b99e41a827c8fcf41414632ee",
+    "profile": "bpmn-2.0.2",
+    "deployment": null
+  },
+  "options": {
+    "relations": [
+      "CIB-AGR-0001",
+      "CIB-AGR-0002",
+      "CIB-AGR-0003",
+      "CIB-AGR-0004",
+      "CIB-AGR-0006",
+      "CIB-AGR-0007",
+      "CIB-AGR-0021",
+      "CIB-CFG-0001",
+      "CIB-CFG-0013",
+      "CIB-CFG-0014",
+      "CIB-DEV-0001",
+      "CIB-DEV-0002",
+      "CIB-EXT-0011",
+      "CIB-INT-0001",
+      "CIB-INT-0008",
+      "CIB-INT-0012",
+      "CIB-INT-0015",
+      "CIB-INT-0016",
+      "CIB-INT-0025",
+      "CIB-INT-0026",
+      "CIB-INT-0029",
+      "CIB-INT-0030",
+      "CIB-INT-0031",
+      "CIB-INT-0032",
+      "CIB-LIM-0002",
+      "CIB-LIM-0003",
+      "CIB-OP-0001"
+    ],
+    "evaluator": "simpleBoolean",
+    "submission": "outputSet",
+    "scopeChainSubmissionBytes": null,
+    "undeclaredWrite": "refused",
+    "errorPathOutputs": "none",
+    "raisedCallOutputs": "none",
+    "technicalFailure": "hostFailure",
+    "incidentProcessCancellation": false,
+    "continuationFailure": "rolledBack",
+    "conditionOrder": "afterOutputs",
+    "messageCorrelation": "modeledKey",
+    "deliveryVariables": "mappedOnly",
+    "multiInstanceFinalBody": "conditionEveryCompletion",
+    "multiInstanceOutputs": "aggregates",
+    "compensationOrder": "dependency",
+    "compensationHandlerFailure": "failsInstance",
+    "abnormalScopeEnd": "withoutOutflow",
+    "unhandledError": "failsInstance",
+    "errorCatchVariables": "refused",
+    "callBindingTime": "programAssembly",
+    "timerZone": null,
+    "multiInstanceBinding": "dataAssociations",
+    "effectResultValues": "outputSet",
+    "outputContext": "submission",
+    "multiInstanceCounters": "none",
+    "multiInstanceInputFailure": "hold",
+    "multiInstanceCount": "integer",
+    "businessRuleTask": "refused",
+    "inclusiveJoinReach": "withBoundaries",
+    "branchSchedule": "orderInvariant",
+    "conditionalRetrigger": "edge",
+    "malformedTimer": "refused",
+    "messageNames": "description",
+    "scopeStart": "implicit",
+    "signalNames": "identifier",
+    "signalPayload": "none",
+    "signalDelivery": "broadcastOnly",
+    "conditionalStart": "refused",
+    "calledElementResolution": "qualifiedName",
+    "messageThrowForms": "refused"
+  },
+  "elements": [
+    {
+      "start": {
+        "header": {
+          "id": "Start_Request",
+          "origin": {
+            "definition": null,
+            "sourceId": "Start_Request"
+          },
+          "sourceType": "startEvent",
+          "parent": null
+        },
+        "payload": {
+          "subscription": null,
+          "outgoing": [
+            "Flow_Start"
+          ]
+        }
+      }
+    },
+    {
+      "scope": {
+        "header": {
+          "id": "Transaction_Reservation",
+          "origin": {
+            "definition": null,
+            "sourceId": "Transaction_Reservation"
+          },
+          "sourceType": "transaction",
+          "parent": null
+        },
+        "payload": {
+          "kind": {
+            "transaction": {
+              "payload": {
+                "method": "compensate"
+              }
+            }
+          },
+          "children": [
+            "Start_Reservation",
+            "Split_Work",
+            "Task_Reserve",
+            "Task_Prepare",
+            "Task_Withdraw",
+            "End_Prepared",
+            "End_Cancel",
+            "Task_Release"
+          ],
+          "localVariables": [],
+          "items": [],
+          "envelope": {
+            "incoming": [
+              "Flow_Start"
+            ],
+            "outgoing": [
+              "Flow_Normal"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [
+              {
+                "id": "Boundary_Cancel",
+                "sourceId": "Boundary_Cancel",
+                "subscription": {
+                  "trigger": "cancel",
+                  "outputs": [],
+                  "alternatives": [],
+                  "parallelMultiple": false
+                },
+                "interrupting": true,
+                "outgoing": [
+                  "Flow_Boundary"
+                ]
+              }
+            ],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "start": {
+        "header": {
+          "id": "Start_Reservation",
+          "origin": {
+            "definition": null,
+            "sourceId": "Start_Reservation"
+          },
+          "sourceType": "startEvent",
+          "parent": "Transaction_Reservation"
+        },
+        "payload": {
+          "subscription": null,
+          "outgoing": [
+            "Flow_ChildStart"
+          ]
+        }
+      }
+    },
+    {
+      "gateway": {
+        "header": {
+          "id": "Split_Work",
+          "origin": {
+            "definition": null,
+            "sourceId": "Split_Work"
+          },
+          "sourceType": "parallelGateway",
+          "parent": "Transaction_Reservation"
+        },
+        "payload": {
+          "kind": "parallel",
+          "incoming": [
+            "Flow_ChildStart"
+          ],
+          "outgoing": [
+            "Flow_Reserve",
+            "Flow_Withdraw"
+          ]
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "Task_Reserve",
+          "origin": {
+            "definition": null,
+            "sourceId": "Task_Reserve"
+          },
+          "sourceType": "userTask",
+          "parent": "Transaction_Reservation"
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Reserve resource",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Reserve"
+            ],
+            "outgoing": [
+              "Flow_Prepare"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [
+              {
+                "id": "Boundary_Release",
+                "sourceId": "Boundary_Release",
+                "subscription": {
+                  "trigger": "compensation",
+                  "outputs": [],
+                  "alternatives": [],
+                  "parallelMultiple": false
+                },
+                "interrupting": false,
+                "outgoing": []
+              }
+            ],
+            "multiInstance": null,
+            "compensationHandler": "Task_Release",
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "Task_Prepare",
+          "origin": {
+            "definition": null,
+            "sourceId": "Task_Prepare"
+          },
+          "sourceType": "userTask",
+          "parent": "Transaction_Reservation"
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Prepare reservation",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Prepare"
+            ],
+            "outgoing": [
+              "Flow_Prepared"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "Task_Withdraw",
+          "origin": {
+            "definition": null,
+            "sourceId": "Task_Withdraw"
+          },
+          "sourceType": "userTask",
+          "parent": "Transaction_Reservation"
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Approve withdrawal",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Withdraw"
+            ],
+            "outgoing": [
+              "Flow_Cancel"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "End_Prepared",
+          "origin": {
+            "definition": null,
+            "sourceId": "End_Prepared"
+          },
+          "sourceType": "endEvent",
+          "parent": "Transaction_Reservation"
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Prepared"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "End_Cancel",
+          "origin": {
+            "definition": null,
+            "sourceId": "End_Cancel"
+          },
+          "sourceType": "endEvent",
+          "parent": "Transaction_Reservation"
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "cancel"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Cancel"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "Task_Acknowledge",
+          "origin": {
+            "definition": null,
+            "sourceId": "Task_Acknowledge"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Acknowledge withdrawal",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Boundary"
+            ],
+            "outgoing": [
+              "Flow_Done"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "End_Normal",
+          "origin": {
+            "definition": null,
+            "sourceId": "End_Normal"
+          },
+          "sourceType": "endEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Normal"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "End_Withdrawal",
+          "origin": {
+            "definition": null,
+            "sourceId": "End_Withdrawal"
+          },
+          "sourceType": "endEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Done"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "Task_Release",
+          "origin": {
+            "definition": null,
+            "sourceId": "Task_Release"
+          },
+          "sourceType": "serviceTask",
+          "parent": "Transaction_Reservation"
+        },
+        "payload": {
+          "work": {
+            "service": {
+              "payload": {
+                "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+                "operation": "urn:bpmn-lean:effect-operation:compensation-single-effect-v1",
+                "handlerKey": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [],
+            "outgoing": [],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    }
+  ],
+  "flows": [
+    {
+      "id": "Flow_ChildStart",
+      "source": "Start_Reservation",
+      "target": "Split_Work",
+      "condition": null
+    },
+    {
+      "id": "Flow_Reserve",
+      "source": "Split_Work",
+      "target": "Task_Reserve",
+      "condition": null
+    },
+    {
+      "id": "Flow_Prepare",
+      "source": "Task_Reserve",
+      "target": "Task_Prepare",
+      "condition": null
+    },
+    {
+      "id": "Flow_Prepared",
+      "source": "Task_Prepare",
+      "target": "End_Prepared",
+      "condition": null
+    },
+    {
+      "id": "Flow_Withdraw",
+      "source": "Split_Work",
+      "target": "Task_Withdraw",
+      "condition": null
+    },
+    {
+      "id": "Flow_Cancel",
+      "source": "Task_Withdraw",
+      "target": "End_Cancel",
+      "condition": null
+    },
+    {
+      "id": "Flow_Start",
+      "source": "Start_Request",
+      "target": "Transaction_Reservation",
+      "condition": null
+    },
+    {
+      "id": "Flow_Normal",
+      "source": "Transaction_Reservation",
+      "target": "End_Normal",
+      "condition": null
+    },
+    {
+      "id": "Flow_Boundary",
+      "source": "Boundary_Cancel",
+      "target": "Task_Acknowledge",
+      "condition": null
+    },
+    {
+      "id": "Flow_Done",
+      "source": "Task_Acknowledge",
+      "target": "End_Withdrawal",
+      "condition": null
+    }
+  ],
+  "variables": [],
+  "processes": [],
+  "executable": true,
+  "decisionResources": []
+}

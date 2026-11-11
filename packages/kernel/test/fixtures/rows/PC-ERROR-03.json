@@ -1,0 +1,784 @@
+{
+  "identity": {
+    "processId": "Process_DispatchBatches",
+    "namespace": "urn:bpmn-lean:scenarios:error-multi-instance",
+    "sourceSha256": "a3989454b9b51b51e032ffdabeaa8f223f87a8de98ba2487f65b1b5870b72d4c",
+    "profile": "cibseven-2.2.0",
+    "deployment": null
+  },
+  "options": {
+    "relations": [
+      "CIB-AGR-0001",
+      "CIB-AGR-0002",
+      "CIB-AGR-0003",
+      "CIB-AGR-0004",
+      "CIB-AGR-0006",
+      "CIB-AGR-0007",
+      "CIB-AGR-0008",
+      "CIB-AGR-0009",
+      "CIB-AGR-0010",
+      "CIB-AGR-0012",
+      "CIB-AGR-0013",
+      "CIB-AGR-0014",
+      "CIB-AGR-0015",
+      "CIB-AGR-0016",
+      "CIB-AGR-0017",
+      "CIB-AGR-0018",
+      "CIB-AGR-0019",
+      "CIB-AGR-0020",
+      "CIB-AGR-0021",
+      "CIB-AGR-0022",
+      "CIB-AGR-0023",
+      "CIB-CFG-0001",
+      "CIB-CFG-0002",
+      "CIB-CFG-0006",
+      "CIB-CFG-0007",
+      "CIB-CFG-0008",
+      "CIB-CFG-0009",
+      "CIB-CFG-0010",
+      "CIB-CFG-0011",
+      "CIB-CFG-0013",
+      "CIB-CFG-0014",
+      "CIB-DEV-0001",
+      "CIB-DEV-0002",
+      "CIB-EXT-0001",
+      "CIB-EXT-0004",
+      "CIB-EXT-0005",
+      "CIB-EXT-0006",
+      "CIB-EXT-0007",
+      "CIB-EXT-0008",
+      "CIB-EXT-0009",
+      "CIB-EXT-0010",
+      "CIB-EXT-0011",
+      "CIB-EXT-0012",
+      "CIB-EXT-0013",
+      "CIB-EXT-0014",
+      "CIB-EXT-0015",
+      "CIB-EXT-0016",
+      "CIB-EXT-0019",
+      "CIB-EXT-0021",
+      "CIB-EXT-0022",
+      "CIB-EXT-0023",
+      "CIB-EXT-0025",
+      "CIB-EXT-0028",
+      "CIB-EXT-0030",
+      "CIB-EXT-0031",
+      "CIB-EXT-0032",
+      "CIB-EXT-0033",
+      "CIB-EXT-0034",
+      "CIB-EXT-0035",
+      "CIB-EXT-0036",
+      "CIB-EXT-0038",
+      "CIB-EXT-0039",
+      "CIB-EXT-0040",
+      "CIB-EXT-0041",
+      "CIB-EXT-0042",
+      "CIB-EXT-0043",
+      "CIB-EXT-0044",
+      "CIB-EXT-0045",
+      "CIB-INT-0001",
+      "CIB-INT-0003",
+      "CIB-INT-0004",
+      "CIB-INT-0005",
+      "CIB-INT-0007",
+      "CIB-INT-0008",
+      "CIB-INT-0009",
+      "CIB-INT-0011",
+      "CIB-INT-0012",
+      "CIB-INT-0013",
+      "CIB-INT-0014",
+      "CIB-INT-0015",
+      "CIB-INT-0016",
+      "CIB-INT-0017",
+      "CIB-INT-0018",
+      "CIB-INT-0019",
+      "CIB-INT-0020",
+      "CIB-INT-0023",
+      "CIB-INT-0024",
+      "CIB-INT-0025",
+      "CIB-INT-0026",
+      "CIB-INT-0027",
+      "CIB-INT-0028",
+      "CIB-INT-0029",
+      "CIB-INT-0030",
+      "CIB-INT-0031",
+      "CIB-INT-0032",
+      "CIB-LIM-0001",
+      "CIB-LIM-0002",
+      "CIB-LIM-0003",
+      "CIB-LIM-0006",
+      "CIB-LIM-0007",
+      "CIB-LIM-0008",
+      "CIB-LIM-0009",
+      "CIB-LIM-0010",
+      "CIB-LIM-0014",
+      "CIB-LIM-0015",
+      "CIB-LIM-0016",
+      "CIB-LIM-0017",
+      "CIB-LIM-0022",
+      "CIB-LIM-0024",
+      "CIB-LIM-0026",
+      "CIB-LIM-0027",
+      "CIB-LIM-0028",
+      "CIB-OP-0001",
+      "CIB-OP-0005",
+      "CIB-OP-0006",
+      "CIB-OP-0007",
+      "CIB-OP-0008",
+      "CIB-OP-0009",
+      "CIB-OP-0010",
+      "CIB-OP-0011",
+      "CIB-OP-0016",
+      "CIB-OP-0019"
+    ],
+    "evaluator": "juel",
+    "submission": "installsVariables",
+    "scopeChainSubmissionBytes": null,
+    "undeclaredWrite": "atInstanceRoot",
+    "errorPathOutputs": "mapped",
+    "raisedCallOutputs": "atCalledRoot",
+    "technicalFailure": "incident",
+    "incidentProcessCancellation": true,
+    "continuationFailure": "rolledBack",
+    "conditionOrder": "beforeOutputs",
+    "messageCorrelation": "apiCriteria",
+    "deliveryVariables": "installs",
+    "multiInstanceFinalBody": "modeSpecific",
+    "multiInstanceOutputs": "none",
+    "compensationOrder": "dependency",
+    "compensationHandlerFailure": "failsInstance",
+    "abnormalScopeEnd": "completesNormally",
+    "unhandledError": "endsThrowingPath",
+    "errorCatchVariables": "eventScope",
+    "callBindingTime": "programAssembly",
+    "timerZone": null,
+    "multiInstanceBinding": "loopReferences",
+    "effectResultValues": "activityLocals",
+    "outputContext": "activityScope",
+    "multiInstanceCounters": "cibLocals",
+    "multiInstanceInputFailure": "rollback",
+    "multiInstanceCount": "javaInt",
+    "businessRuleTask": "decisionTable",
+    "inclusiveJoinReach": "outgoingOnly",
+    "branchSchedule": "declarationDepthFirst",
+    "conditionalRetrigger": "eachWrite",
+    "malformedTimer": "rollsBackArming",
+    "messageNames": "addresses",
+    "scopeStart": "required",
+    "signalNames": "addresses",
+    "signalPayload": "variables",
+    "signalDelivery": "occurrenceTargeted",
+    "conditionalStart": "submittedContext",
+    "calledElementResolution": "cibKey",
+    "messageThrowForms": "cibForms"
+  },
+  "elements": [
+    {
+      "start": {
+        "header": {
+          "id": "StartEvent_BatchesReady",
+          "origin": {
+            "definition": null,
+            "sourceId": "StartEvent_BatchesReady"
+          },
+          "sourceType": "startEvent",
+          "parent": null
+        },
+        "payload": {
+          "subscription": null,
+          "outgoing": [
+            "Flow_Start_Fork"
+          ]
+        }
+      }
+    },
+    {
+      "gateway": {
+        "header": {
+          "id": "Gateway_Fork",
+          "origin": {
+            "definition": null,
+            "sourceId": "Gateway_Fork"
+          },
+          "sourceType": "parallelGateway",
+          "parent": null
+        },
+        "payload": {
+          "kind": "parallel",
+          "incoming": [
+            "Flow_Start_Fork"
+          ],
+          "outgoing": [
+            "Flow_Fork_Notify",
+            "Flow_Fork_Review"
+          ]
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "NotifyEach",
+          "origin": {
+            "definition": null,
+            "sourceId": "NotifyEach"
+          },
+          "sourceType": "serviceTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "service": {
+              "payload": {
+                "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+                "operation": "urn:bpmn-lean:effect-operation:probe-v1",
+                "handlerKey": "bpmnLeanEffectHandler"
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Fork_Notify"
+            ],
+            "outgoing": [
+              "Flow_Notify_End"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [
+              {
+                "id": "Boundary_NotifyEach_Failed",
+                "sourceId": "Boundary_NotifyEach_Failed",
+                "subscription": {
+                  "trigger": {
+                    "error": {
+                      "payload": {
+                        "code": "NOTIFY_FAILED",
+                        "codeVariable": null,
+                        "messageVariable": null
+                      }
+                    }
+                  },
+                  "outputs": [],
+                  "alternatives": [],
+                  "parallelMultiple": false
+                },
+                "interrupting": true,
+                "outgoing": [
+                  "Flow_NotifyFailed_Resolve"
+                ]
+              }
+            ],
+            "multiInstance": {
+              "mode": "sequential",
+              "count": {
+                "cardinality": {
+                  "count": {
+                    "juel": {
+                      "nodes": [
+                        {
+                          "text": {
+                            "value": "3"
+                          }
+                        }
+                      ]
+                    }
+                  }
+                }
+              },
+              "elementVariable": null,
+              "completionCondition": null,
+              "inputDataItem": null,
+              "outputDataItem": null,
+              "outputCollection": null,
+              "mutableCollection": "entrySnapshot",
+              "asyncBefore": false,
+              "asyncAfter": false,
+              "loopDataInputRef": null,
+              "inputDataItemName": null
+            },
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "ResolveNotify",
+          "origin": {
+            "definition": null,
+            "sourceId": "ResolveNotify"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Resolve failed notification",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_NotifyFailed_Resolve"
+            ],
+            "outgoing": [
+              "Flow_ResolveNotify_End"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "EndEvent_Notified",
+          "origin": {
+            "definition": null,
+            "sourceId": "EndEvent_Notified"
+          },
+          "sourceType": "endEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Notify_End"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "EndEvent_NotifyResolved",
+          "origin": {
+            "definition": null,
+            "sourceId": "EndEvent_NotifyResolved"
+          },
+          "sourceType": "endEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_ResolveNotify_End"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "ReviewEach",
+          "origin": {
+            "definition": null,
+            "sourceId": "ReviewEach"
+          },
+          "sourceType": "callActivity",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "call": {
+              "payload": {
+                "calledElement": {
+                  "literal": {
+                    "value": "Process_ReviewBatch"
+                  }
+                },
+                "calledQName": {
+                  "namespace": "urn:bpmn-lean:scenarios:error-multi-instance",
+                  "localName": "Process_ReviewBatch"
+                },
+                "binding": "latest",
+                "tenant": null,
+                "businessKey": null,
+                "inputs": [],
+                "outputs": [],
+                "propagateAllInputs": false,
+                "propagateAllOutputs": false
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Fork_Review"
+            ],
+            "outgoing": [
+              "Flow_Review_End"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [
+              {
+                "id": "Boundary_ReviewEach_Rejected",
+                "sourceId": "Boundary_ReviewEach_Rejected",
+                "subscription": {
+                  "trigger": {
+                    "error": {
+                      "payload": {
+                        "code": "REVIEW_REJECTED",
+                        "codeVariable": null,
+                        "messageVariable": null
+                      }
+                    }
+                  },
+                  "outputs": [],
+                  "alternatives": [],
+                  "parallelMultiple": false
+                },
+                "interrupting": true,
+                "outgoing": [
+                  "Flow_ReviewRejected_Resolve"
+                ]
+              }
+            ],
+            "multiInstance": {
+              "mode": "parallel",
+              "count": {
+                "cardinality": {
+                  "count": {
+                    "juel": {
+                      "nodes": [
+                        {
+                          "text": {
+                            "value": "2"
+                          }
+                        }
+                      ]
+                    }
+                  }
+                }
+              },
+              "elementVariable": null,
+              "completionCondition": null,
+              "inputDataItem": null,
+              "outputDataItem": null,
+              "outputCollection": null,
+              "mutableCollection": "entrySnapshot",
+              "asyncBefore": false,
+              "asyncAfter": false,
+              "loopDataInputRef": null,
+              "inputDataItemName": null
+            },
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "ResolveReview",
+          "origin": {
+            "definition": null,
+            "sourceId": "ResolveReview"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Resolve rejected review",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_ReviewRejected_Resolve"
+            ],
+            "outgoing": [
+              "Flow_ResolveReview_End"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "EndEvent_Reviewed",
+          "origin": {
+            "definition": null,
+            "sourceId": "EndEvent_Reviewed"
+          },
+          "sourceType": "endEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Review_End"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "EndEvent_ReviewResolved",
+          "origin": {
+            "definition": null,
+            "sourceId": "EndEvent_ReviewResolved"
+          },
+          "sourceType": "endEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_ResolveReview_End"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "start": {
+        "header": {
+          "id": "StartEvent_BatchReceived",
+          "origin": {
+            "definition": null,
+            "sourceId": "StartEvent_BatchReceived"
+          },
+          "sourceType": "startEvent",
+          "parent": null
+        },
+        "payload": {
+          "subscription": null,
+          "outgoing": [
+            "Flow_Batch_Start_Assess"
+          ]
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "Assess",
+          "origin": {
+            "definition": null,
+            "sourceId": "Assess"
+          },
+          "sourceType": "serviceTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "service": {
+              "payload": {
+                "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+                "operation": "urn:bpmn-lean:effect-operation:probe-v1",
+                "handlerKey": "bpmnLeanEffectHandler"
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Batch_Start_Assess"
+            ],
+            "outgoing": [
+              "Flow_Batch_Assess_End"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": true,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "EndEvent_BatchAssessed",
+          "origin": {
+            "definition": null,
+            "sourceId": "EndEvent_BatchAssessed"
+          },
+          "sourceType": "endEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Batch_Assess_End"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    }
+  ],
+  "flows": [
+    {
+      "id": "Flow_Start_Fork",
+      "source": "StartEvent_BatchesReady",
+      "target": "Gateway_Fork",
+      "condition": null
+    },
+    {
+      "id": "Flow_Fork_Notify",
+      "source": "Gateway_Fork",
+      "target": "NotifyEach",
+      "condition": null
+    },
+    {
+      "id": "Flow_Fork_Review",
+      "source": "Gateway_Fork",
+      "target": "ReviewEach",
+      "condition": null
+    },
+    {
+      "id": "Flow_Notify_End",
+      "source": "NotifyEach",
+      "target": "EndEvent_Notified",
+      "condition": null
+    },
+    {
+      "id": "Flow_NotifyFailed_Resolve",
+      "source": "Boundary_NotifyEach_Failed",
+      "target": "ResolveNotify",
+      "condition": null
+    },
+    {
+      "id": "Flow_ResolveNotify_End",
+      "source": "ResolveNotify",
+      "target": "EndEvent_NotifyResolved",
+      "condition": null
+    },
+    {
+      "id": "Flow_Review_End",
+      "source": "ReviewEach",
+      "target": "EndEvent_Reviewed",
+      "condition": null
+    },
+    {
+      "id": "Flow_ReviewRejected_Resolve",
+      "source": "Boundary_ReviewEach_Rejected",
+      "target": "ResolveReview",
+      "condition": null
+    },
+    {
+      "id": "Flow_ResolveReview_End",
+      "source": "ResolveReview",
+      "target": "EndEvent_ReviewResolved",
+      "condition": null
+    },
+    {
+      "id": "Flow_Batch_Start_Assess",
+      "source": "StartEvent_BatchReceived",
+      "target": "Assess",
+      "condition": null
+    },
+    {
+      "id": "Flow_Batch_Assess_End",
+      "source": "Assess",
+      "target": "EndEvent_BatchAssessed",
+      "condition": null
+    }
+  ],
+  "variables": [],
+  "processes": [
+    {
+      "definition": {
+        "key": "Process_ReviewBatch",
+        "namespace": "urn:bpmn-lean:scenarios:error-multi-instance",
+        "version": null,
+        "versionTag": null,
+        "deployment": null,
+        "tenant": null,
+        "sourceSha256": null
+      },
+      "children": [
+        "StartEvent_BatchReceived",
+        "Assess",
+        "EndEvent_BatchAssessed"
+      ],
+      "variables": [],
+      "executable": true
+    }
+  ],
+  "executable": true,
+  "decisionResources": []
+}

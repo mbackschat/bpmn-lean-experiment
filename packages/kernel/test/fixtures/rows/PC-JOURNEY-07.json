@@ -1,0 +1,1073 @@
+{
+  "identity": {
+    "processId": "Process_Booking",
+    "namespace": "urn:bpmn-lean:scenarios:transaction-paths",
+    "sourceSha256": "d7e9d6c8432fbb1d77ad3669920ae5eeead438b8b4d92f4f7c5f2701561ba309",
+    "profile": "cibseven-2.2.0",
+    "deployment": null
+  },
+  "options": {
+    "relations": [
+      "CIB-AGR-0001",
+      "CIB-AGR-0002",
+      "CIB-AGR-0003",
+      "CIB-AGR-0004",
+      "CIB-AGR-0006",
+      "CIB-AGR-0007",
+      "CIB-AGR-0008",
+      "CIB-AGR-0009",
+      "CIB-AGR-0010",
+      "CIB-AGR-0012",
+      "CIB-AGR-0013",
+      "CIB-AGR-0014",
+      "CIB-AGR-0015",
+      "CIB-AGR-0016",
+      "CIB-AGR-0017",
+      "CIB-AGR-0018",
+      "CIB-AGR-0019",
+      "CIB-AGR-0020",
+      "CIB-AGR-0021",
+      "CIB-AGR-0022",
+      "CIB-AGR-0023",
+      "CIB-CFG-0001",
+      "CIB-CFG-0002",
+      "CIB-CFG-0006",
+      "CIB-CFG-0007",
+      "CIB-CFG-0008",
+      "CIB-CFG-0009",
+      "CIB-CFG-0010",
+      "CIB-CFG-0011",
+      "CIB-CFG-0013",
+      "CIB-CFG-0014",
+      "CIB-DEV-0001",
+      "CIB-DEV-0002",
+      "CIB-EXT-0001",
+      "CIB-EXT-0004",
+      "CIB-EXT-0005",
+      "CIB-EXT-0006",
+      "CIB-EXT-0007",
+      "CIB-EXT-0008",
+      "CIB-EXT-0009",
+      "CIB-EXT-0010",
+      "CIB-EXT-0011",
+      "CIB-EXT-0012",
+      "CIB-EXT-0013",
+      "CIB-EXT-0014",
+      "CIB-EXT-0015",
+      "CIB-EXT-0016",
+      "CIB-EXT-0019",
+      "CIB-EXT-0021",
+      "CIB-EXT-0022",
+      "CIB-EXT-0023",
+      "CIB-EXT-0025",
+      "CIB-EXT-0028",
+      "CIB-EXT-0030",
+      "CIB-EXT-0031",
+      "CIB-EXT-0032",
+      "CIB-EXT-0033",
+      "CIB-EXT-0034",
+      "CIB-EXT-0035",
+      "CIB-EXT-0036",
+      "CIB-EXT-0038",
+      "CIB-EXT-0039",
+      "CIB-EXT-0040",
+      "CIB-EXT-0041",
+      "CIB-EXT-0042",
+      "CIB-EXT-0043",
+      "CIB-EXT-0044",
+      "CIB-EXT-0045",
+      "CIB-INT-0001",
+      "CIB-INT-0003",
+      "CIB-INT-0004",
+      "CIB-INT-0005",
+      "CIB-INT-0007",
+      "CIB-INT-0008",
+      "CIB-INT-0009",
+      "CIB-INT-0011",
+      "CIB-INT-0012",
+      "CIB-INT-0013",
+      "CIB-INT-0014",
+      "CIB-INT-0015",
+      "CIB-INT-0016",
+      "CIB-INT-0017",
+      "CIB-INT-0018",
+      "CIB-INT-0019",
+      "CIB-INT-0020",
+      "CIB-INT-0023",
+      "CIB-INT-0024",
+      "CIB-INT-0025",
+      "CIB-INT-0026",
+      "CIB-INT-0027",
+      "CIB-INT-0028",
+      "CIB-INT-0029",
+      "CIB-INT-0030",
+      "CIB-INT-0031",
+      "CIB-INT-0032",
+      "CIB-LIM-0001",
+      "CIB-LIM-0002",
+      "CIB-LIM-0003",
+      "CIB-LIM-0006",
+      "CIB-LIM-0007",
+      "CIB-LIM-0008",
+      "CIB-LIM-0009",
+      "CIB-LIM-0010",
+      "CIB-LIM-0014",
+      "CIB-LIM-0015",
+      "CIB-LIM-0016",
+      "CIB-LIM-0017",
+      "CIB-LIM-0022",
+      "CIB-LIM-0024",
+      "CIB-LIM-0026",
+      "CIB-LIM-0027",
+      "CIB-LIM-0028",
+      "CIB-OP-0001",
+      "CIB-OP-0005",
+      "CIB-OP-0006",
+      "CIB-OP-0007",
+      "CIB-OP-0008",
+      "CIB-OP-0009",
+      "CIB-OP-0010",
+      "CIB-OP-0011",
+      "CIB-OP-0016",
+      "CIB-OP-0019"
+    ],
+    "evaluator": "juel",
+    "submission": "installsVariables",
+    "scopeChainSubmissionBytes": null,
+    "undeclaredWrite": "atInstanceRoot",
+    "errorPathOutputs": "mapped",
+    "raisedCallOutputs": "atCalledRoot",
+    "technicalFailure": "incident",
+    "incidentProcessCancellation": true,
+    "continuationFailure": "rolledBack",
+    "conditionOrder": "beforeOutputs",
+    "messageCorrelation": "apiCriteria",
+    "deliveryVariables": "installs",
+    "multiInstanceFinalBody": "modeSpecific",
+    "multiInstanceOutputs": "none",
+    "compensationOrder": "dependency",
+    "compensationHandlerFailure": "failsInstance",
+    "abnormalScopeEnd": "completesNormally",
+    "unhandledError": "endsThrowingPath",
+    "errorCatchVariables": "eventScope",
+    "callBindingTime": "programAssembly",
+    "timerZone": null,
+    "multiInstanceBinding": "loopReferences",
+    "effectResultValues": "activityLocals",
+    "outputContext": "activityScope",
+    "multiInstanceCounters": "cibLocals",
+    "multiInstanceInputFailure": "rollback",
+    "multiInstanceCount": "javaInt",
+    "businessRuleTask": "decisionTable",
+    "inclusiveJoinReach": "outgoingOnly",
+    "branchSchedule": "declarationDepthFirst",
+    "conditionalRetrigger": "eachWrite",
+    "malformedTimer": "rollsBackArming",
+    "messageNames": "addresses",
+    "scopeStart": "required",
+    "signalNames": "addresses",
+    "signalPayload": "variables",
+    "signalDelivery": "occurrenceTargeted",
+    "conditionalStart": "submittedContext",
+    "calledElementResolution": "cibKey",
+    "messageThrowForms": "cibForms"
+  },
+  "elements": [
+    {
+      "start": {
+        "header": {
+          "id": "StartEvent_Start",
+          "origin": {
+            "definition": null,
+            "sourceId": "StartEvent_Start"
+          },
+          "sourceType": "startEvent",
+          "parent": null
+        },
+        "payload": {
+          "subscription": null,
+          "outgoing": [
+            "Flow_Start_Transaction"
+          ]
+        }
+      }
+    },
+    {
+      "scope": {
+        "header": {
+          "id": "Transaction_Booking",
+          "origin": {
+            "definition": null,
+            "sourceId": "Transaction_Booking"
+          },
+          "sourceType": "transaction",
+          "parent": null
+        },
+        "payload": {
+          "kind": {
+            "transaction": {
+              "payload": {
+                "method": "compensate"
+              }
+            }
+          },
+          "children": [
+            "StartEvent_Booking",
+            "UserTask_Flight",
+            "UserTask_Hotel",
+            "Gateway_Outcome",
+            "EndEvent_Cancel",
+            "EndEvent_Error",
+            "EndEvent_Ok",
+            "UserTask_UndoFlight",
+            "UserTask_UndoHotel"
+          ],
+          "localVariables": [],
+          "items": [],
+          "envelope": {
+            "incoming": [
+              "Flow_Start_Transaction"
+            ],
+            "outgoing": [
+              "Flow_Transaction_Confirm"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [
+              {
+                "id": "Boundary_Cancel",
+                "sourceId": "Boundary_Cancel",
+                "subscription": {
+                  "trigger": "cancel",
+                  "outputs": [],
+                  "alternatives": [],
+                  "parallelMultiple": false
+                },
+                "interrupting": true,
+                "outgoing": [
+                  "Flow_Cancel_Cancelled"
+                ]
+              },
+              {
+                "id": "Boundary_Error",
+                "sourceId": "Boundary_Error",
+                "subscription": {
+                  "trigger": {
+                    "error": {
+                      "payload": {
+                        "code": "BOOKING_FAILED",
+                        "codeVariable": null,
+                        "messageVariable": null
+                      }
+                    }
+                  },
+                  "outputs": [],
+                  "alternatives": [],
+                  "parallelMultiple": false
+                },
+                "interrupting": true,
+                "outgoing": [
+                  "Flow_Error_Handled"
+                ]
+              }
+            ],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "start": {
+        "header": {
+          "id": "StartEvent_Booking",
+          "origin": {
+            "definition": null,
+            "sourceId": "StartEvent_Booking"
+          },
+          "sourceType": "startEvent",
+          "parent": "Transaction_Booking"
+        },
+        "payload": {
+          "subscription": null,
+          "outgoing": [
+            "Flow_Booking_Flight"
+          ]
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "UserTask_Flight",
+          "origin": {
+            "definition": null,
+            "sourceId": "UserTask_Flight"
+          },
+          "sourceType": "userTask",
+          "parent": "Transaction_Booking"
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Book the flight",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Booking_Flight"
+            ],
+            "outgoing": [
+              "Flow_Flight_Hotel"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [
+              {
+                "id": "Boundary_CompensateFlight",
+                "sourceId": "Boundary_CompensateFlight",
+                "subscription": {
+                  "trigger": "compensation",
+                  "outputs": [],
+                  "alternatives": [],
+                  "parallelMultiple": false
+                },
+                "interrupting": false,
+                "outgoing": []
+              }
+            ],
+            "multiInstance": null,
+            "compensationHandler": "UserTask_UndoFlight",
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "UserTask_Hotel",
+          "origin": {
+            "definition": null,
+            "sourceId": "UserTask_Hotel"
+          },
+          "sourceType": "userTask",
+          "parent": "Transaction_Booking"
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Book the hotel",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Flight_Hotel"
+            ],
+            "outgoing": [
+              "Flow_Hotel_Outcome"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [
+              {
+                "id": "Boundary_CompensateHotel",
+                "sourceId": "Boundary_CompensateHotel",
+                "subscription": {
+                  "trigger": "compensation",
+                  "outputs": [],
+                  "alternatives": [],
+                  "parallelMultiple": false
+                },
+                "interrupting": false,
+                "outgoing": []
+              }
+            ],
+            "multiInstance": null,
+            "compensationHandler": "UserTask_UndoHotel",
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "gateway": {
+        "header": {
+          "id": "Gateway_Outcome",
+          "origin": {
+            "definition": null,
+            "sourceId": "Gateway_Outcome"
+          },
+          "sourceType": "exclusiveGateway",
+          "parent": "Transaction_Booking"
+        },
+        "payload": {
+          "kind": {
+            "exclusive": {
+              "candidates": [
+                "Flow_Outcome_Cancel",
+                "Flow_Outcome_Error"
+              ],
+              "default": "Flow_Outcome_Ok"
+            }
+          },
+          "incoming": [
+            "Flow_Hotel_Outcome"
+          ],
+          "outgoing": [
+            "Flow_Outcome_Cancel",
+            "Flow_Outcome_Error",
+            "Flow_Outcome_Ok"
+          ]
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "EndEvent_Cancel",
+          "origin": {
+            "definition": null,
+            "sourceId": "EndEvent_Cancel"
+          },
+          "sourceType": "endEvent",
+          "parent": "Transaction_Booking"
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "cancel"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Outcome_Cancel"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "EndEvent_Error",
+          "origin": {
+            "definition": null,
+            "sourceId": "EndEvent_Error"
+          },
+          "sourceType": "endEvent",
+          "parent": "Transaction_Booking"
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": {
+                "error": {
+                  "payload": {
+                    "code": "BOOKING_FAILED",
+                    "message": null
+                  }
+                }
+              }
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Outcome_Error"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "EndEvent_Ok",
+          "origin": {
+            "definition": null,
+            "sourceId": "EndEvent_Ok"
+          },
+          "sourceType": "endEvent",
+          "parent": "Transaction_Booking"
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Outcome_Ok"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "UserTask_Confirm",
+          "origin": {
+            "definition": null,
+            "sourceId": "UserTask_Confirm"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Confirm the booking",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Transaction_Confirm"
+            ],
+            "outgoing": [
+              "Flow_Confirm_Throw"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "IntermediateThrow_Outer",
+          "origin": {
+            "definition": null,
+            "sourceId": "IntermediateThrow_Outer"
+          },
+          "sourceType": "intermediateThrowEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": {
+                "compensation": {
+                  "payload": {
+                    "activity": null,
+                    "waitForCompletion": true
+                  }
+                }
+              }
+            }
+          },
+          "placement": "intermediate",
+          "incoming": [
+            "Flow_Confirm_Throw"
+          ],
+          "outgoing": [
+            "Flow_Throw_After"
+          ],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "UserTask_After",
+          "origin": {
+            "definition": null,
+            "sourceId": "UserTask_After"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Continue",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Throw_After"
+            ],
+            "outgoing": [
+              "Flow_After_End"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "EndEvent_Done",
+          "origin": {
+            "definition": null,
+            "sourceId": "EndEvent_Done"
+          },
+          "sourceType": "endEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_After_End"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "UserTask_Cancelled",
+          "origin": {
+            "definition": null,
+            "sourceId": "UserTask_Cancelled"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Handle the cancellation",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Cancel_Cancelled"
+            ],
+            "outgoing": [
+              "Flow_Cancelled_End"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "EndEvent_Cancelled",
+          "origin": {
+            "definition": null,
+            "sourceId": "EndEvent_Cancelled"
+          },
+          "sourceType": "endEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Cancelled_End"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "UserTask_ErrorHandled",
+          "origin": {
+            "definition": null,
+            "sourceId": "UserTask_ErrorHandled"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Handle the booking error",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Error_Handled"
+            ],
+            "outgoing": [
+              "Flow_ErrorHandled_End"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "EndEvent_ErrorHandled",
+          "origin": {
+            "definition": null,
+            "sourceId": "EndEvent_ErrorHandled"
+          },
+          "sourceType": "endEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_ErrorHandled_End"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "UserTask_UndoFlight",
+          "origin": {
+            "definition": null,
+            "sourceId": "UserTask_UndoFlight"
+          },
+          "sourceType": "userTask",
+          "parent": "Transaction_Booking"
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Undo the flight",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [],
+            "outgoing": [],
+            "inputs": [
+              {
+                "target": "seenFlight",
+                "source": {
+                  "variable": {
+                    "name": "flight"
+                  }
+                },
+                "dialect": "ioParameter"
+              }
+            ],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "UserTask_UndoHotel",
+          "origin": {
+            "definition": null,
+            "sourceId": "UserTask_UndoHotel"
+          },
+          "sourceType": "userTask",
+          "parent": "Transaction_Booking"
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Undo the hotel",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [],
+            "outgoing": [],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    }
+  ],
+  "flows": [
+    {
+      "id": "Flow_Start_Transaction",
+      "source": "StartEvent_Start",
+      "target": "Transaction_Booking",
+      "condition": null
+    },
+    {
+      "id": "Flow_Booking_Flight",
+      "source": "StartEvent_Booking",
+      "target": "UserTask_Flight",
+      "condition": null
+    },
+    {
+      "id": "Flow_Flight_Hotel",
+      "source": "UserTask_Flight",
+      "target": "UserTask_Hotel",
+      "condition": null
+    },
+    {
+      "id": "Flow_Hotel_Outcome",
+      "source": "UserTask_Hotel",
+      "target": "Gateway_Outcome",
+      "condition": null
+    },
+    {
+      "id": "Flow_Outcome_Cancel",
+      "source": "Gateway_Outcome",
+      "target": "EndEvent_Cancel",
+      "condition": {
+        "juel": {
+          "nodes": [
+            {
+              "identifier": {
+                "name": "outcome"
+              }
+            },
+            {
+              "stringLiteral": {
+                "value": "cancel"
+              }
+            },
+            {
+              "binary": {
+                "payload": {
+                  "op": "eq",
+                  "left": 0,
+                  "right": 1
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "Flow_Outcome_Error",
+      "source": "Gateway_Outcome",
+      "target": "EndEvent_Error",
+      "condition": {
+        "juel": {
+          "nodes": [
+            {
+              "identifier": {
+                "name": "outcome"
+              }
+            },
+            {
+              "stringLiteral": {
+                "value": "error"
+              }
+            },
+            {
+              "binary": {
+                "payload": {
+                  "op": "eq",
+                  "left": 0,
+                  "right": 1
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "Flow_Outcome_Ok",
+      "source": "Gateway_Outcome",
+      "target": "EndEvent_Ok",
+      "condition": null
+    },
+    {
+      "id": "Flow_Transaction_Confirm",
+      "source": "Transaction_Booking",
+      "target": "UserTask_Confirm",
+      "condition": null
+    },
+    {
+      "id": "Flow_Confirm_Throw",
+      "source": "UserTask_Confirm",
+      "target": "IntermediateThrow_Outer",
+      "condition": null
+    },
+    {
+      "id": "Flow_Throw_After",
+      "source": "IntermediateThrow_Outer",
+      "target": "UserTask_After",
+      "condition": null
+    },
+    {
+      "id": "Flow_After_End",
+      "source": "UserTask_After",
+      "target": "EndEvent_Done",
+      "condition": null
+    },
+    {
+      "id": "Flow_Cancel_Cancelled",
+      "source": "Boundary_Cancel",
+      "target": "UserTask_Cancelled",
+      "condition": null
+    },
+    {
+      "id": "Flow_Cancelled_End",
+      "source": "UserTask_Cancelled",
+      "target": "EndEvent_Cancelled",
+      "condition": null
+    },
+    {
+      "id": "Flow_Error_Handled",
+      "source": "Boundary_Error",
+      "target": "UserTask_ErrorHandled",
+      "condition": null
+    },
+    {
+      "id": "Flow_ErrorHandled_End",
+      "source": "UserTask_ErrorHandled",
+      "target": "EndEvent_ErrorHandled",
+      "condition": null
+    }
+  ],
+  "variables": [],
+  "processes": [],
+  "executable": true,
+  "decisionResources": []
+}

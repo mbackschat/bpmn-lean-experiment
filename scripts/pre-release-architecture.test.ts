@@ -90,8 +90,9 @@ function retiredSourceFindings(
 ): string[] {
   return source.split("\n").flatMap((line, index) => {
     // The kernel IL's Terminate End Event throw is BPMN's own name, not the retired operation; the reader writes it,
-    // assembly copies it and the generated vocabulary lists it.
-    const hasRetiredWireLiteral = !kernelTerminateFiles.has(relativePath) && new RegExp(
+    // assembly copies it, the generated vocabulary lists it and the generated row fixtures of guard 21 carry it.
+    const kernelTerminate = kernelTerminateFiles.has(relativePath) || relativePath.startsWith("packages/kernel/test/fixtures/rows/");
+    const hasRetiredWireLiteral = !kernelTerminate && new RegExp(
       `(["'])${retiredOperationName}\\1`,
       "u",
     ).test(line);

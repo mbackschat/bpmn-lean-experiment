@@ -1,0 +1,894 @@
+{
+  "identity": {
+    "processId": "Process_MiParallelEsp",
+    "namespace": "urn:bpmn-lean:scenarios:compensation-event-subprocess-multi-instance:parallel-esp",
+    "sourceSha256": "16610dbd74980e7fe886a629e89d68207cc99a65d188fb094d73e6cce779643f",
+    "profile": "cibseven-2.2.0",
+    "deployment": null
+  },
+  "options": {
+    "relations": [
+      "CIB-AGR-0001",
+      "CIB-AGR-0002",
+      "CIB-AGR-0003",
+      "CIB-AGR-0004",
+      "CIB-AGR-0006",
+      "CIB-AGR-0007",
+      "CIB-AGR-0008",
+      "CIB-AGR-0009",
+      "CIB-AGR-0010",
+      "CIB-AGR-0012",
+      "CIB-AGR-0013",
+      "CIB-AGR-0014",
+      "CIB-AGR-0015",
+      "CIB-AGR-0016",
+      "CIB-AGR-0017",
+      "CIB-AGR-0018",
+      "CIB-AGR-0019",
+      "CIB-AGR-0020",
+      "CIB-AGR-0021",
+      "CIB-AGR-0022",
+      "CIB-AGR-0023",
+      "CIB-CFG-0001",
+      "CIB-CFG-0002",
+      "CIB-CFG-0006",
+      "CIB-CFG-0007",
+      "CIB-CFG-0008",
+      "CIB-CFG-0009",
+      "CIB-CFG-0010",
+      "CIB-CFG-0011",
+      "CIB-CFG-0013",
+      "CIB-CFG-0014",
+      "CIB-DEV-0001",
+      "CIB-DEV-0002",
+      "CIB-EXT-0001",
+      "CIB-EXT-0004",
+      "CIB-EXT-0005",
+      "CIB-EXT-0006",
+      "CIB-EXT-0007",
+      "CIB-EXT-0008",
+      "CIB-EXT-0009",
+      "CIB-EXT-0010",
+      "CIB-EXT-0011",
+      "CIB-EXT-0012",
+      "CIB-EXT-0013",
+      "CIB-EXT-0014",
+      "CIB-EXT-0015",
+      "CIB-EXT-0016",
+      "CIB-EXT-0019",
+      "CIB-EXT-0021",
+      "CIB-EXT-0022",
+      "CIB-EXT-0023",
+      "CIB-EXT-0025",
+      "CIB-EXT-0028",
+      "CIB-EXT-0030",
+      "CIB-EXT-0031",
+      "CIB-EXT-0032",
+      "CIB-EXT-0033",
+      "CIB-EXT-0034",
+      "CIB-EXT-0035",
+      "CIB-EXT-0036",
+      "CIB-EXT-0038",
+      "CIB-EXT-0039",
+      "CIB-EXT-0040",
+      "CIB-EXT-0041",
+      "CIB-EXT-0042",
+      "CIB-EXT-0043",
+      "CIB-EXT-0044",
+      "CIB-EXT-0045",
+      "CIB-INT-0001",
+      "CIB-INT-0003",
+      "CIB-INT-0004",
+      "CIB-INT-0005",
+      "CIB-INT-0007",
+      "CIB-INT-0008",
+      "CIB-INT-0009",
+      "CIB-INT-0011",
+      "CIB-INT-0012",
+      "CIB-INT-0013",
+      "CIB-INT-0014",
+      "CIB-INT-0015",
+      "CIB-INT-0016",
+      "CIB-INT-0017",
+      "CIB-INT-0018",
+      "CIB-INT-0019",
+      "CIB-INT-0020",
+      "CIB-INT-0023",
+      "CIB-INT-0024",
+      "CIB-INT-0025",
+      "CIB-INT-0026",
+      "CIB-INT-0027",
+      "CIB-INT-0028",
+      "CIB-INT-0029",
+      "CIB-INT-0030",
+      "CIB-INT-0031",
+      "CIB-INT-0032",
+      "CIB-LIM-0001",
+      "CIB-LIM-0002",
+      "CIB-LIM-0003",
+      "CIB-LIM-0006",
+      "CIB-LIM-0007",
+      "CIB-LIM-0008",
+      "CIB-LIM-0009",
+      "CIB-LIM-0010",
+      "CIB-LIM-0014",
+      "CIB-LIM-0015",
+      "CIB-LIM-0016",
+      "CIB-LIM-0017",
+      "CIB-LIM-0022",
+      "CIB-LIM-0024",
+      "CIB-LIM-0026",
+      "CIB-LIM-0027",
+      "CIB-LIM-0028",
+      "CIB-OP-0001",
+      "CIB-OP-0005",
+      "CIB-OP-0006",
+      "CIB-OP-0007",
+      "CIB-OP-0008",
+      "CIB-OP-0009",
+      "CIB-OP-0010",
+      "CIB-OP-0011",
+      "CIB-OP-0016",
+      "CIB-OP-0019"
+    ],
+    "evaluator": "juel",
+    "submission": "installsVariables",
+    "scopeChainSubmissionBytes": null,
+    "undeclaredWrite": "atInstanceRoot",
+    "errorPathOutputs": "mapped",
+    "raisedCallOutputs": "atCalledRoot",
+    "technicalFailure": "incident",
+    "incidentProcessCancellation": true,
+    "continuationFailure": "rolledBack",
+    "conditionOrder": "beforeOutputs",
+    "messageCorrelation": "apiCriteria",
+    "deliveryVariables": "installs",
+    "multiInstanceFinalBody": "modeSpecific",
+    "multiInstanceOutputs": "none",
+    "compensationOrder": "dependency",
+    "compensationHandlerFailure": "failsInstance",
+    "abnormalScopeEnd": "completesNormally",
+    "unhandledError": "endsThrowingPath",
+    "errorCatchVariables": "eventScope",
+    "callBindingTime": "programAssembly",
+    "timerZone": null,
+    "multiInstanceBinding": "loopReferences",
+    "effectResultValues": "activityLocals",
+    "outputContext": "activityScope",
+    "multiInstanceCounters": "cibLocals",
+    "multiInstanceInputFailure": "rollback",
+    "multiInstanceCount": "javaInt",
+    "businessRuleTask": "decisionTable",
+    "inclusiveJoinReach": "outgoingOnly",
+    "branchSchedule": "declarationDepthFirst",
+    "conditionalRetrigger": "eachWrite",
+    "malformedTimer": "rollsBackArming",
+    "messageNames": "addresses",
+    "scopeStart": "required",
+    "signalNames": "addresses",
+    "signalPayload": "variables",
+    "signalDelivery": "occurrenceTargeted",
+    "conditionalStart": "submittedContext",
+    "calledElementResolution": "cibKey",
+    "messageThrowForms": "cibForms"
+  },
+  "elements": [
+    {
+      "start": {
+        "header": {
+          "id": "StartEvent_Start",
+          "origin": {
+            "definition": null,
+            "sourceId": "StartEvent_Start"
+          },
+          "sourceType": "startEvent",
+          "parent": null
+        },
+        "payload": {
+          "subscription": null,
+          "outgoing": [
+            "Flow_Start_Visits"
+          ]
+        }
+      }
+    },
+    {
+      "scope": {
+        "header": {
+          "id": "SubProcess_Visits",
+          "origin": {
+            "definition": null,
+            "sourceId": "SubProcess_Visits"
+          },
+          "sourceType": "subProcess",
+          "parent": null
+        },
+        "payload": {
+          "kind": "embedded",
+          "children": [
+            "StartEvent_Visit",
+            "UserTask_Visit",
+            "EndEvent_Visit",
+            "UserTask_UndoVisit",
+            "EventSubProcess_Visit"
+          ],
+          "localVariables": [],
+          "items": [],
+          "envelope": {
+            "incoming": [
+              "Flow_Start_Visits"
+            ],
+            "outgoing": [
+              "Flow_Visits_Pause"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": {
+              "mode": "parallel",
+              "count": {
+                "collection": {
+                  "items": {
+                    "variable": {
+                      "name": "items"
+                    }
+                  }
+                }
+              },
+              "elementVariable": "stop",
+              "completionCondition": null,
+              "inputDataItem": null,
+              "outputDataItem": null,
+              "outputCollection": null,
+              "mutableCollection": "entrySnapshot",
+              "asyncBefore": false,
+              "asyncAfter": false,
+              "loopDataInputRef": null,
+              "inputDataItemName": null
+            },
+            "compensationHandler": "EventSubProcess_Visit",
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "start": {
+        "header": {
+          "id": "StartEvent_Visit",
+          "origin": {
+            "definition": null,
+            "sourceId": "StartEvent_Visit"
+          },
+          "sourceType": "startEvent",
+          "parent": "SubProcess_Visits"
+        },
+        "payload": {
+          "subscription": null,
+          "outgoing": [
+            "Flow_Visit_Work"
+          ]
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "UserTask_Visit",
+          "origin": {
+            "definition": null,
+            "sourceId": "UserTask_Visit"
+          },
+          "sourceType": "userTask",
+          "parent": "SubProcess_Visits"
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Work at the stop",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Visit_Work"
+            ],
+            "outgoing": [
+              "Flow_Visit_End"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [
+              {
+                "id": "Boundary_CompensateVisit",
+                "sourceId": "Boundary_CompensateVisit",
+                "subscription": {
+                  "trigger": "compensation",
+                  "outputs": [],
+                  "alternatives": [],
+                  "parallelMultiple": false
+                },
+                "interrupting": false,
+                "outgoing": []
+              }
+            ],
+            "multiInstance": null,
+            "compensationHandler": "UserTask_UndoVisit",
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "EndEvent_Visit",
+          "origin": {
+            "definition": null,
+            "sourceId": "EndEvent_Visit"
+          },
+          "sourceType": "endEvent",
+          "parent": "SubProcess_Visits"
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Visit_End"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "UserTask_Pause",
+          "origin": {
+            "definition": null,
+            "sourceId": "UserTask_Pause"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Pause before compensating",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Visits_Pause"
+            ],
+            "outgoing": [
+              "Flow_Pause_Throw"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "IntermediateThrow_All",
+          "origin": {
+            "definition": null,
+            "sourceId": "IntermediateThrow_All"
+          },
+          "sourceType": "intermediateThrowEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": {
+                "compensation": {
+                  "payload": {
+                    "activity": null,
+                    "waitForCompletion": true
+                  }
+                }
+              }
+            }
+          },
+          "placement": "intermediate",
+          "incoming": [
+            "Flow_Pause_Throw"
+          ],
+          "outgoing": [
+            "Flow_Throw_After"
+          ],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "UserTask_After",
+          "origin": {
+            "definition": null,
+            "sourceId": "UserTask_After"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Continue",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Throw_After"
+            ],
+            "outgoing": [
+              "Flow_After_End"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "EndEvent_Done",
+          "origin": {
+            "definition": null,
+            "sourceId": "EndEvent_Done"
+          },
+          "sourceType": "endEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_After_End"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "scope": {
+        "header": {
+          "id": "EventSubProcess_Visit",
+          "origin": {
+            "definition": null,
+            "sourceId": "EventSubProcess_Visit"
+          },
+          "sourceType": "subProcess",
+          "parent": "SubProcess_Visits"
+        },
+        "payload": {
+          "kind": {
+            "eventSubProcess": {
+              "start": {
+                "trigger": "compensation",
+                "outputs": [],
+                "alternatives": [],
+                "parallelMultiple": false
+              },
+              "interrupting": false
+            }
+          },
+          "children": [
+            "StartEvent_EspVisit",
+            "UserTask_UndoVisitParent",
+            "Gateway_Rethrow",
+            "IntermediateThrow_FromEsp",
+            "EndEvent_EspStop",
+            "EndEvent_EspRethrown"
+          ],
+          "localVariables": [],
+          "items": [],
+          "envelope": {
+            "incoming": [],
+            "outgoing": [],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "start": {
+        "header": {
+          "id": "StartEvent_EspVisit",
+          "origin": {
+            "definition": null,
+            "sourceId": "StartEvent_EspVisit"
+          },
+          "sourceType": "startEvent",
+          "parent": "EventSubProcess_Visit"
+        },
+        "payload": {
+          "subscription": {
+            "trigger": "compensation",
+            "outputs": [],
+            "alternatives": [],
+            "parallelMultiple": false
+          },
+          "outgoing": [
+            "Flow_Esp_Undo"
+          ]
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "UserTask_UndoVisitParent",
+          "origin": {
+            "definition": null,
+            "sourceId": "UserTask_UndoVisitParent"
+          },
+          "sourceType": "userTask",
+          "parent": "EventSubProcess_Visit"
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Undo the stop",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Esp_Undo"
+            ],
+            "outgoing": [
+              "Flow_Undo_Route"
+            ],
+            "inputs": [
+              {
+                "target": "seenParent",
+                "source": {
+                  "variable": {
+                    "name": "stop"
+                  }
+                },
+                "dialect": "ioParameter"
+              }
+            ],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "gateway": {
+        "header": {
+          "id": "Gateway_Rethrow",
+          "origin": {
+            "definition": null,
+            "sourceId": "Gateway_Rethrow"
+          },
+          "sourceType": "exclusiveGateway",
+          "parent": "EventSubProcess_Visit"
+        },
+        "payload": {
+          "kind": {
+            "exclusive": {
+              "candidates": [
+                "Flow_Rethrow_Throw"
+              ],
+              "default": "Flow_Rethrow_Stop"
+            }
+          },
+          "incoming": [
+            "Flow_Undo_Route"
+          ],
+          "outgoing": [
+            "Flow_Rethrow_Throw",
+            "Flow_Rethrow_Stop"
+          ]
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "IntermediateThrow_FromEsp",
+          "origin": {
+            "definition": null,
+            "sourceId": "IntermediateThrow_FromEsp"
+          },
+          "sourceType": "intermediateThrowEvent",
+          "parent": "EventSubProcess_Visit"
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": {
+                "compensation": {
+                  "payload": {
+                    "activity": null,
+                    "waitForCompletion": true
+                  }
+                }
+              }
+            }
+          },
+          "placement": "intermediate",
+          "incoming": [
+            "Flow_Rethrow_Throw"
+          ],
+          "outgoing": [
+            "Flow_FromEsp_End"
+          ],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "EndEvent_EspStop",
+          "origin": {
+            "definition": null,
+            "sourceId": "EndEvent_EspStop"
+          },
+          "sourceType": "endEvent",
+          "parent": "EventSubProcess_Visit"
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Rethrow_Stop"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "EndEvent_EspRethrown",
+          "origin": {
+            "definition": null,
+            "sourceId": "EndEvent_EspRethrown"
+          },
+          "sourceType": "endEvent",
+          "parent": "EventSubProcess_Visit"
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_FromEsp_End"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "UserTask_UndoVisit",
+          "origin": {
+            "definition": null,
+            "sourceId": "UserTask_UndoVisit"
+          },
+          "sourceType": "userTask",
+          "parent": "SubProcess_Visits"
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Undo the work",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [],
+            "outgoing": [],
+            "inputs": [
+              {
+                "target": "seenStop",
+                "source": {
+                  "variable": {
+                    "name": "stop"
+                  }
+                },
+                "dialect": "ioParameter"
+              }
+            ],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    }
+  ],
+  "flows": [
+    {
+      "id": "Flow_Start_Visits",
+      "source": "StartEvent_Start",
+      "target": "SubProcess_Visits",
+      "condition": null
+    },
+    {
+      "id": "Flow_Visit_Work",
+      "source": "StartEvent_Visit",
+      "target": "UserTask_Visit",
+      "condition": null
+    },
+    {
+      "id": "Flow_Visit_End",
+      "source": "UserTask_Visit",
+      "target": "EndEvent_Visit",
+      "condition": null
+    },
+    {
+      "id": "Flow_Esp_Undo",
+      "source": "StartEvent_EspVisit",
+      "target": "UserTask_UndoVisitParent",
+      "condition": null
+    },
+    {
+      "id": "Flow_Undo_Route",
+      "source": "UserTask_UndoVisitParent",
+      "target": "Gateway_Rethrow",
+      "condition": null
+    },
+    {
+      "id": "Flow_Rethrow_Throw",
+      "source": "Gateway_Rethrow",
+      "target": "IntermediateThrow_FromEsp",
+      "condition": {
+        "variable": {
+          "name": "rethrow"
+        }
+      }
+    },
+    {
+      "id": "Flow_Rethrow_Stop",
+      "source": "Gateway_Rethrow",
+      "target": "EndEvent_EspStop",
+      "condition": null
+    },
+    {
+      "id": "Flow_FromEsp_End",
+      "source": "IntermediateThrow_FromEsp",
+      "target": "EndEvent_EspRethrown",
+      "condition": null
+    },
+    {
+      "id": "Flow_Visits_Pause",
+      "source": "SubProcess_Visits",
+      "target": "UserTask_Pause",
+      "condition": null
+    },
+    {
+      "id": "Flow_Pause_Throw",
+      "source": "UserTask_Pause",
+      "target": "IntermediateThrow_All",
+      "condition": null
+    },
+    {
+      "id": "Flow_Throw_After",
+      "source": "IntermediateThrow_All",
+      "target": "UserTask_After",
+      "condition": null
+    },
+    {
+      "id": "Flow_After_End",
+      "source": "UserTask_After",
+      "target": "EndEvent_Done",
+      "condition": null
+    }
+  ],
+  "variables": [],
+  "processes": [],
+  "executable": true,
+  "decisionResources": []
+}

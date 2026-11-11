@@ -1,0 +1,1850 @@
+{
+  "identity": {
+    "processId": "Process_RepeatableHandlers",
+    "namespace": "urn:bpmn-lean:scenarios:message-esp-repeatable",
+    "sourceSha256": "a7a86ca8f685442072f68fe2449b36884764ee9e09cf872a17e7e6afc0030b71",
+    "profile": "cibseven-2.2.0",
+    "deployment": null
+  },
+  "options": {
+    "relations": [
+      "CIB-AGR-0001",
+      "CIB-AGR-0002",
+      "CIB-AGR-0003",
+      "CIB-AGR-0004",
+      "CIB-AGR-0006",
+      "CIB-AGR-0007",
+      "CIB-AGR-0008",
+      "CIB-AGR-0009",
+      "CIB-AGR-0010",
+      "CIB-AGR-0012",
+      "CIB-AGR-0013",
+      "CIB-AGR-0014",
+      "CIB-AGR-0015",
+      "CIB-AGR-0016",
+      "CIB-AGR-0017",
+      "CIB-AGR-0018",
+      "CIB-AGR-0019",
+      "CIB-AGR-0020",
+      "CIB-AGR-0021",
+      "CIB-AGR-0022",
+      "CIB-AGR-0023",
+      "CIB-CFG-0001",
+      "CIB-CFG-0002",
+      "CIB-CFG-0006",
+      "CIB-CFG-0007",
+      "CIB-CFG-0008",
+      "CIB-CFG-0009",
+      "CIB-CFG-0010",
+      "CIB-CFG-0011",
+      "CIB-CFG-0013",
+      "CIB-CFG-0014",
+      "CIB-DEV-0001",
+      "CIB-DEV-0002",
+      "CIB-EXT-0001",
+      "CIB-EXT-0004",
+      "CIB-EXT-0005",
+      "CIB-EXT-0006",
+      "CIB-EXT-0007",
+      "CIB-EXT-0008",
+      "CIB-EXT-0009",
+      "CIB-EXT-0010",
+      "CIB-EXT-0011",
+      "CIB-EXT-0012",
+      "CIB-EXT-0013",
+      "CIB-EXT-0014",
+      "CIB-EXT-0015",
+      "CIB-EXT-0016",
+      "CIB-EXT-0019",
+      "CIB-EXT-0021",
+      "CIB-EXT-0022",
+      "CIB-EXT-0023",
+      "CIB-EXT-0025",
+      "CIB-EXT-0028",
+      "CIB-EXT-0030",
+      "CIB-EXT-0031",
+      "CIB-EXT-0032",
+      "CIB-EXT-0033",
+      "CIB-EXT-0034",
+      "CIB-EXT-0035",
+      "CIB-EXT-0036",
+      "CIB-EXT-0038",
+      "CIB-EXT-0039",
+      "CIB-EXT-0040",
+      "CIB-EXT-0041",
+      "CIB-EXT-0042",
+      "CIB-EXT-0043",
+      "CIB-EXT-0044",
+      "CIB-EXT-0045",
+      "CIB-INT-0001",
+      "CIB-INT-0003",
+      "CIB-INT-0004",
+      "CIB-INT-0005",
+      "CIB-INT-0007",
+      "CIB-INT-0008",
+      "CIB-INT-0009",
+      "CIB-INT-0011",
+      "CIB-INT-0012",
+      "CIB-INT-0013",
+      "CIB-INT-0014",
+      "CIB-INT-0015",
+      "CIB-INT-0016",
+      "CIB-INT-0017",
+      "CIB-INT-0018",
+      "CIB-INT-0019",
+      "CIB-INT-0020",
+      "CIB-INT-0023",
+      "CIB-INT-0024",
+      "CIB-INT-0025",
+      "CIB-INT-0026",
+      "CIB-INT-0027",
+      "CIB-INT-0028",
+      "CIB-INT-0029",
+      "CIB-INT-0030",
+      "CIB-INT-0031",
+      "CIB-INT-0032",
+      "CIB-LIM-0001",
+      "CIB-LIM-0002",
+      "CIB-LIM-0003",
+      "CIB-LIM-0006",
+      "CIB-LIM-0007",
+      "CIB-LIM-0008",
+      "CIB-LIM-0009",
+      "CIB-LIM-0010",
+      "CIB-LIM-0014",
+      "CIB-LIM-0015",
+      "CIB-LIM-0016",
+      "CIB-LIM-0017",
+      "CIB-LIM-0022",
+      "CIB-LIM-0024",
+      "CIB-LIM-0026",
+      "CIB-LIM-0027",
+      "CIB-LIM-0028",
+      "CIB-OP-0001",
+      "CIB-OP-0005",
+      "CIB-OP-0006",
+      "CIB-OP-0007",
+      "CIB-OP-0008",
+      "CIB-OP-0009",
+      "CIB-OP-0010",
+      "CIB-OP-0011",
+      "CIB-OP-0016",
+      "CIB-OP-0019"
+    ],
+    "evaluator": "juel",
+    "submission": "installsVariables",
+    "scopeChainSubmissionBytes": null,
+    "undeclaredWrite": "atInstanceRoot",
+    "errorPathOutputs": "mapped",
+    "raisedCallOutputs": "atCalledRoot",
+    "technicalFailure": "incident",
+    "incidentProcessCancellation": true,
+    "continuationFailure": "rolledBack",
+    "conditionOrder": "beforeOutputs",
+    "messageCorrelation": "apiCriteria",
+    "deliveryVariables": "installs",
+    "multiInstanceFinalBody": "modeSpecific",
+    "multiInstanceOutputs": "none",
+    "compensationOrder": "dependency",
+    "compensationHandlerFailure": "failsInstance",
+    "abnormalScopeEnd": "completesNormally",
+    "unhandledError": "endsThrowingPath",
+    "errorCatchVariables": "eventScope",
+    "callBindingTime": "programAssembly",
+    "timerZone": null,
+    "multiInstanceBinding": "loopReferences",
+    "effectResultValues": "activityLocals",
+    "outputContext": "activityScope",
+    "multiInstanceCounters": "cibLocals",
+    "multiInstanceInputFailure": "rollback",
+    "multiInstanceCount": "javaInt",
+    "businessRuleTask": "decisionTable",
+    "inclusiveJoinReach": "outgoingOnly",
+    "branchSchedule": "declarationDepthFirst",
+    "conditionalRetrigger": "eachWrite",
+    "malformedTimer": "rollsBackArming",
+    "messageNames": "addresses",
+    "scopeStart": "required",
+    "signalNames": "addresses",
+    "signalPayload": "variables",
+    "signalDelivery": "occurrenceTargeted",
+    "conditionalStart": "submittedContext",
+    "calledElementResolution": "cibKey",
+    "messageThrowForms": "cibForms"
+  },
+  "elements": [
+    {
+      "start": {
+        "header": {
+          "id": "Start_Handlers",
+          "origin": {
+            "definition": null,
+            "sourceId": "Start_Handlers"
+          },
+          "sourceType": "startEvent",
+          "parent": null
+        },
+        "payload": {
+          "subscription": null,
+          "outgoing": [
+            "Flow_Start_Handlers_Fork_Handlers"
+          ]
+        }
+      }
+    },
+    {
+      "gateway": {
+        "header": {
+          "id": "Fork_Handlers",
+          "origin": {
+            "definition": null,
+            "sourceId": "Fork_Handlers"
+          },
+          "sourceType": "parallelGateway",
+          "parent": null
+        },
+        "payload": {
+          "kind": "parallel",
+          "incoming": [
+            "Flow_Start_Handlers_Fork_Handlers"
+          ],
+          "outgoing": [
+            "Flow_Fork_Handlers_Work",
+            "Flow_Fork_Handlers_Region",
+            "Flow_Fork_Handlers_Bodies_Par",
+            "Flow_Fork_Handlers_Bodies_Seq"
+          ]
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "Work",
+          "origin": {
+            "definition": null,
+            "sourceId": "Work"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Prepare the shipment",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Fork_Handlers_Work"
+            ],
+            "outgoing": [
+              "Flow_Work_Finish"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "Finish",
+          "origin": {
+            "definition": null,
+            "sourceId": "Finish"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Release the shipment",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Work_Finish"
+            ],
+            "outgoing": [
+              "Flow_Finish_End_Handlers"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "End_Handlers",
+          "origin": {
+            "definition": null,
+            "sourceId": "End_Handlers"
+          },
+          "sourceType": "endEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Finish_End_Handlers"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "scope": {
+        "header": {
+          "id": "Region",
+          "origin": {
+            "definition": null,
+            "sourceId": "Region"
+          },
+          "sourceType": "subProcess",
+          "parent": null
+        },
+        "payload": {
+          "kind": "embedded",
+          "children": [
+            "Start_Inner",
+            "Inner",
+            "End_Inner",
+            "ESP_RegionNotice"
+          ],
+          "localVariables": [],
+          "items": [],
+          "envelope": {
+            "incoming": [
+              "Flow_Fork_Handlers_Region"
+            ],
+            "outgoing": [
+              "Flow_Region_End_Region_Outer"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "start": {
+        "header": {
+          "id": "Start_Inner",
+          "origin": {
+            "definition": null,
+            "sourceId": "Start_Inner"
+          },
+          "sourceType": "startEvent",
+          "parent": "Region"
+        },
+        "payload": {
+          "subscription": null,
+          "outgoing": [
+            "Flow_Start_Inner_Inner"
+          ]
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "Inner",
+          "origin": {
+            "definition": null,
+            "sourceId": "Inner"
+          },
+          "sourceType": "userTask",
+          "parent": "Region"
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Inspect the lot",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Start_Inner_Inner"
+            ],
+            "outgoing": [
+              "Flow_Inner_End_Inner"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "End_Inner",
+          "origin": {
+            "definition": null,
+            "sourceId": "End_Inner"
+          },
+          "sourceType": "endEvent",
+          "parent": "Region"
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Inner_End_Inner"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "scope": {
+        "header": {
+          "id": "ESP_RegionNotice",
+          "origin": {
+            "definition": null,
+            "sourceId": "ESP_RegionNotice"
+          },
+          "sourceType": "subProcess",
+          "parent": "Region"
+        },
+        "payload": {
+          "kind": {
+            "eventSubProcess": {
+              "start": {
+                "trigger": {
+                  "message": {
+                    "payload": {
+                      "messageRef": "Message_RegionNotice",
+                      "name": {
+                        "literal": {
+                          "value": "regionNotice"
+                        }
+                      },
+                      "correlation": [],
+                      "interfaceRef": null,
+                      "operationRef": null
+                    }
+                  }
+                },
+                "outputs": [],
+                "alternatives": [],
+                "parallelMultiple": false
+              },
+              "interrupting": false
+            }
+          },
+          "children": [
+            "Start_RegionNotice",
+            "Handle_RegionNotice",
+            "End_RegionNotice"
+          ],
+          "localVariables": [],
+          "items": [],
+          "envelope": {
+            "incoming": [],
+            "outgoing": [],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "start": {
+        "header": {
+          "id": "Start_RegionNotice",
+          "origin": {
+            "definition": null,
+            "sourceId": "Start_RegionNotice"
+          },
+          "sourceType": "startEvent",
+          "parent": "ESP_RegionNotice"
+        },
+        "payload": {
+          "subscription": {
+            "trigger": {
+              "message": {
+                "payload": {
+                  "messageRef": "Message_RegionNotice",
+                  "name": {
+                    "literal": {
+                      "value": "regionNotice"
+                    }
+                  },
+                  "correlation": [],
+                  "interfaceRef": null,
+                  "operationRef": null
+                }
+              }
+            },
+            "outputs": [],
+            "alternatives": [],
+            "parallelMultiple": false
+          },
+          "outgoing": [
+            "Flow_Start_RegionNotice_Handle_RegionNotice"
+          ]
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "Handle_RegionNotice",
+          "origin": {
+            "definition": null,
+            "sourceId": "Handle_RegionNotice"
+          },
+          "sourceType": "userTask",
+          "parent": "ESP_RegionNotice"
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Handle the region notice",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Start_RegionNotice_Handle_RegionNotice"
+            ],
+            "outgoing": [
+              "Flow_Handle_RegionNotice_End_RegionNotice"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "End_RegionNotice",
+          "origin": {
+            "definition": null,
+            "sourceId": "End_RegionNotice"
+          },
+          "sourceType": "endEvent",
+          "parent": "ESP_RegionNotice"
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Handle_RegionNotice_End_RegionNotice"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "End_Region_Outer",
+          "origin": {
+            "definition": null,
+            "sourceId": "End_Region_Outer"
+          },
+          "sourceType": "endEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Region_End_Region_Outer"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "scope": {
+        "header": {
+          "id": "Bodies_Par",
+          "origin": {
+            "definition": null,
+            "sourceId": "Bodies_Par"
+          },
+          "sourceType": "subProcess",
+          "parent": null
+        },
+        "payload": {
+          "kind": "embedded",
+          "children": [
+            "Start_Par",
+            "Inner_Par",
+            "End_Inner_Par",
+            "ESP_ParNotice"
+          ],
+          "localVariables": [],
+          "items": [],
+          "envelope": {
+            "incoming": [
+              "Flow_Fork_Handlers_Bodies_Par"
+            ],
+            "outgoing": [
+              "Flow_Bodies_Par_End_Par_Outer"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": {
+              "mode": "parallel",
+              "count": {
+                "collection": {
+                  "items": {
+                    "variable": {
+                      "name": "items"
+                    }
+                  }
+                }
+              },
+              "elementVariable": "item",
+              "completionCondition": null,
+              "inputDataItem": null,
+              "outputDataItem": null,
+              "outputCollection": null,
+              "mutableCollection": "entrySnapshot",
+              "asyncBefore": false,
+              "asyncAfter": false,
+              "loopDataInputRef": null,
+              "inputDataItemName": null
+            },
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "start": {
+        "header": {
+          "id": "Start_Par",
+          "origin": {
+            "definition": null,
+            "sourceId": "Start_Par"
+          },
+          "sourceType": "startEvent",
+          "parent": "Bodies_Par"
+        },
+        "payload": {
+          "subscription": null,
+          "outgoing": [
+            "Flow_Start_Par_Inner_Par"
+          ]
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "Inner_Par",
+          "origin": {
+            "definition": null,
+            "sourceId": "Inner_Par"
+          },
+          "sourceType": "userTask",
+          "parent": "Bodies_Par"
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Inspect one par lot",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Start_Par_Inner_Par"
+            ],
+            "outgoing": [
+              "Flow_Inner_Par_End_Inner_Par"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "End_Inner_Par",
+          "origin": {
+            "definition": null,
+            "sourceId": "End_Inner_Par"
+          },
+          "sourceType": "endEvent",
+          "parent": "Bodies_Par"
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Inner_Par_End_Inner_Par"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "scope": {
+        "header": {
+          "id": "ESP_ParNotice",
+          "origin": {
+            "definition": null,
+            "sourceId": "ESP_ParNotice"
+          },
+          "sourceType": "subProcess",
+          "parent": "Bodies_Par"
+        },
+        "payload": {
+          "kind": {
+            "eventSubProcess": {
+              "start": {
+                "trigger": {
+                  "message": {
+                    "payload": {
+                      "messageRef": "Message_ParNotice",
+                      "name": {
+                        "literal": {
+                          "value": "parNotice"
+                        }
+                      },
+                      "correlation": [],
+                      "interfaceRef": null,
+                      "operationRef": null
+                    }
+                  }
+                },
+                "outputs": [],
+                "alternatives": [],
+                "parallelMultiple": false
+              },
+              "interrupting": false
+            }
+          },
+          "children": [
+            "Start_ParNotice",
+            "Handle_ParNotice",
+            "End_ParNotice"
+          ],
+          "localVariables": [],
+          "items": [],
+          "envelope": {
+            "incoming": [],
+            "outgoing": [],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "start": {
+        "header": {
+          "id": "Start_ParNotice",
+          "origin": {
+            "definition": null,
+            "sourceId": "Start_ParNotice"
+          },
+          "sourceType": "startEvent",
+          "parent": "ESP_ParNotice"
+        },
+        "payload": {
+          "subscription": {
+            "trigger": {
+              "message": {
+                "payload": {
+                  "messageRef": "Message_ParNotice",
+                  "name": {
+                    "literal": {
+                      "value": "parNotice"
+                    }
+                  },
+                  "correlation": [],
+                  "interfaceRef": null,
+                  "operationRef": null
+                }
+              }
+            },
+            "outputs": [],
+            "alternatives": [],
+            "parallelMultiple": false
+          },
+          "outgoing": [
+            "Flow_Start_ParNotice_Handle_ParNotice"
+          ]
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "Handle_ParNotice",
+          "origin": {
+            "definition": null,
+            "sourceId": "Handle_ParNotice"
+          },
+          "sourceType": "userTask",
+          "parent": "ESP_ParNotice"
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Handle the par notice",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Start_ParNotice_Handle_ParNotice"
+            ],
+            "outgoing": [
+              "Flow_Handle_ParNotice_End_ParNotice"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "End_ParNotice",
+          "origin": {
+            "definition": null,
+            "sourceId": "End_ParNotice"
+          },
+          "sourceType": "endEvent",
+          "parent": "ESP_ParNotice"
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Handle_ParNotice_End_ParNotice"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "End_Par_Outer",
+          "origin": {
+            "definition": null,
+            "sourceId": "End_Par_Outer"
+          },
+          "sourceType": "endEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Bodies_Par_End_Par_Outer"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "scope": {
+        "header": {
+          "id": "Bodies_Seq",
+          "origin": {
+            "definition": null,
+            "sourceId": "Bodies_Seq"
+          },
+          "sourceType": "subProcess",
+          "parent": null
+        },
+        "payload": {
+          "kind": "embedded",
+          "children": [
+            "Start_Seq",
+            "Inner_Seq",
+            "End_Inner_Seq",
+            "ESP_SeqNotice"
+          ],
+          "localVariables": [],
+          "items": [],
+          "envelope": {
+            "incoming": [
+              "Flow_Fork_Handlers_Bodies_Seq"
+            ],
+            "outgoing": [
+              "Flow_Bodies_Seq_End_Seq_Outer"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": {
+              "mode": "sequential",
+              "count": {
+                "collection": {
+                  "items": {
+                    "variable": {
+                      "name": "items"
+                    }
+                  }
+                }
+              },
+              "elementVariable": "item",
+              "completionCondition": null,
+              "inputDataItem": null,
+              "outputDataItem": null,
+              "outputCollection": null,
+              "mutableCollection": "entrySnapshot",
+              "asyncBefore": false,
+              "asyncAfter": false,
+              "loopDataInputRef": null,
+              "inputDataItemName": null
+            },
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "start": {
+        "header": {
+          "id": "Start_Seq",
+          "origin": {
+            "definition": null,
+            "sourceId": "Start_Seq"
+          },
+          "sourceType": "startEvent",
+          "parent": "Bodies_Seq"
+        },
+        "payload": {
+          "subscription": null,
+          "outgoing": [
+            "Flow_Start_Seq_Inner_Seq"
+          ]
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "Inner_Seq",
+          "origin": {
+            "definition": null,
+            "sourceId": "Inner_Seq"
+          },
+          "sourceType": "userTask",
+          "parent": "Bodies_Seq"
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Inspect one seq lot",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Start_Seq_Inner_Seq"
+            ],
+            "outgoing": [
+              "Flow_Inner_Seq_End_Inner_Seq"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "End_Inner_Seq",
+          "origin": {
+            "definition": null,
+            "sourceId": "End_Inner_Seq"
+          },
+          "sourceType": "endEvent",
+          "parent": "Bodies_Seq"
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Inner_Seq_End_Inner_Seq"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "scope": {
+        "header": {
+          "id": "ESP_SeqNotice",
+          "origin": {
+            "definition": null,
+            "sourceId": "ESP_SeqNotice"
+          },
+          "sourceType": "subProcess",
+          "parent": "Bodies_Seq"
+        },
+        "payload": {
+          "kind": {
+            "eventSubProcess": {
+              "start": {
+                "trigger": {
+                  "message": {
+                    "payload": {
+                      "messageRef": "Message_SeqNotice",
+                      "name": {
+                        "literal": {
+                          "value": "seqNotice"
+                        }
+                      },
+                      "correlation": [],
+                      "interfaceRef": null,
+                      "operationRef": null
+                    }
+                  }
+                },
+                "outputs": [],
+                "alternatives": [],
+                "parallelMultiple": false
+              },
+              "interrupting": false
+            }
+          },
+          "children": [
+            "Start_SeqNotice",
+            "Handle_SeqNotice",
+            "End_SeqNotice"
+          ],
+          "localVariables": [],
+          "items": [],
+          "envelope": {
+            "incoming": [],
+            "outgoing": [],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "start": {
+        "header": {
+          "id": "Start_SeqNotice",
+          "origin": {
+            "definition": null,
+            "sourceId": "Start_SeqNotice"
+          },
+          "sourceType": "startEvent",
+          "parent": "ESP_SeqNotice"
+        },
+        "payload": {
+          "subscription": {
+            "trigger": {
+              "message": {
+                "payload": {
+                  "messageRef": "Message_SeqNotice",
+                  "name": {
+                    "literal": {
+                      "value": "seqNotice"
+                    }
+                  },
+                  "correlation": [],
+                  "interfaceRef": null,
+                  "operationRef": null
+                }
+              }
+            },
+            "outputs": [],
+            "alternatives": [],
+            "parallelMultiple": false
+          },
+          "outgoing": [
+            "Flow_Start_SeqNotice_Handle_SeqNotice"
+          ]
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "Handle_SeqNotice",
+          "origin": {
+            "definition": null,
+            "sourceId": "Handle_SeqNotice"
+          },
+          "sourceType": "userTask",
+          "parent": "ESP_SeqNotice"
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Handle the seq notice",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Start_SeqNotice_Handle_SeqNotice"
+            ],
+            "outgoing": [
+              "Flow_Handle_SeqNotice_End_SeqNotice"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "End_SeqNotice",
+          "origin": {
+            "definition": null,
+            "sourceId": "End_SeqNotice"
+          },
+          "sourceType": "endEvent",
+          "parent": "ESP_SeqNotice"
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Handle_SeqNotice_End_SeqNotice"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "End_Seq_Outer",
+          "origin": {
+            "definition": null,
+            "sourceId": "End_Seq_Outer"
+          },
+          "sourceType": "endEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Bodies_Seq_End_Seq_Outer"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "scope": {
+        "header": {
+          "id": "ESP_Notice",
+          "origin": {
+            "definition": null,
+            "sourceId": "ESP_Notice"
+          },
+          "sourceType": "subProcess",
+          "parent": null
+        },
+        "payload": {
+          "kind": {
+            "eventSubProcess": {
+              "start": {
+                "trigger": {
+                  "message": {
+                    "payload": {
+                      "messageRef": "Message_Notice",
+                      "name": {
+                        "literal": {
+                          "value": "notice"
+                        }
+                      },
+                      "correlation": [],
+                      "interfaceRef": null,
+                      "operationRef": null
+                    }
+                  }
+                },
+                "outputs": [],
+                "alternatives": [],
+                "parallelMultiple": false
+              },
+              "interrupting": false
+            }
+          },
+          "children": [
+            "Start_Notice",
+            "Handle_Notice",
+            "Await_Ack",
+            "Ack_Deadline",
+            "Ack_Late",
+            "End_Notice",
+            "End_Ack_Late"
+          ],
+          "localVariables": [],
+          "items": [],
+          "envelope": {
+            "incoming": [],
+            "outgoing": [],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "start": {
+        "header": {
+          "id": "Start_Notice",
+          "origin": {
+            "definition": null,
+            "sourceId": "Start_Notice"
+          },
+          "sourceType": "startEvent",
+          "parent": "ESP_Notice"
+        },
+        "payload": {
+          "subscription": {
+            "trigger": {
+              "message": {
+                "payload": {
+                  "messageRef": "Message_Notice",
+                  "name": {
+                    "literal": {
+                      "value": "notice"
+                    }
+                  },
+                  "correlation": [],
+                  "interfaceRef": null,
+                  "operationRef": null
+                }
+              }
+            },
+            "outputs": [],
+            "alternatives": [],
+            "parallelMultiple": false
+          },
+          "outgoing": [
+            "Flow_Start_Notice_Handle_Notice"
+          ]
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "Handle_Notice",
+          "origin": {
+            "definition": null,
+            "sourceId": "Handle_Notice"
+          },
+          "sourceType": "userTask",
+          "parent": "ESP_Notice"
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Handle the notice",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Start_Notice_Handle_Notice"
+            ],
+            "outgoing": [
+              "Flow_Handle_Notice_Await_Ack"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "Await_Ack",
+          "origin": {
+            "definition": null,
+            "sourceId": "Await_Ack"
+          },
+          "sourceType": "receiveTask",
+          "parent": "ESP_Notice"
+        },
+        "payload": {
+          "work": {
+            "receive": {
+              "payload": {
+                "message": {
+                  "messageRef": "Message_Ack",
+                  "name": {
+                    "literal": {
+                      "value": "ack"
+                    }
+                  },
+                  "correlation": [],
+                  "interfaceRef": null,
+                  "operationRef": null
+                },
+                "instantiate": false
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Handle_Notice_Await_Ack"
+            ],
+            "outgoing": [
+              "Flow_Await_Ack_End_Notice"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [
+              {
+                "id": "Ack_Deadline",
+                "sourceId": "Ack_Deadline",
+                "subscription": {
+                  "trigger": {
+                    "timer": {
+                      "payload": {
+                        "schedule": {
+                          "duration": {
+                            "value": {
+                              "literal": {
+                                "value": "PT30S"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "outputs": [],
+                  "alternatives": [],
+                  "parallelMultiple": false
+                },
+                "interrupting": true,
+                "outgoing": [
+                  "Flow_Ack_Deadline_Ack_Late"
+                ]
+              }
+            ],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "Ack_Late",
+          "origin": {
+            "definition": null,
+            "sourceId": "Ack_Late"
+          },
+          "sourceType": "userTask",
+          "parent": "ESP_Notice"
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Chase the acknowledgement",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Ack_Deadline_Ack_Late"
+            ],
+            "outgoing": [
+              "Flow_Ack_Late_End_Ack_Late"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "End_Notice",
+          "origin": {
+            "definition": null,
+            "sourceId": "End_Notice"
+          },
+          "sourceType": "endEvent",
+          "parent": "ESP_Notice"
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Await_Ack_End_Notice"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "End_Ack_Late",
+          "origin": {
+            "definition": null,
+            "sourceId": "End_Ack_Late"
+          },
+          "sourceType": "endEvent",
+          "parent": "ESP_Notice"
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Ack_Late_End_Ack_Late"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    }
+  ],
+  "flows": [
+    {
+      "id": "Flow_Start_Handlers_Fork_Handlers",
+      "source": "Start_Handlers",
+      "target": "Fork_Handlers",
+      "condition": null
+    },
+    {
+      "id": "Flow_Fork_Handlers_Work",
+      "source": "Fork_Handlers",
+      "target": "Work",
+      "condition": null
+    },
+    {
+      "id": "Flow_Work_Finish",
+      "source": "Work",
+      "target": "Finish",
+      "condition": null
+    },
+    {
+      "id": "Flow_Finish_End_Handlers",
+      "source": "Finish",
+      "target": "End_Handlers",
+      "condition": null
+    },
+    {
+      "id": "Flow_Start_Inner_Inner",
+      "source": "Start_Inner",
+      "target": "Inner",
+      "condition": null
+    },
+    {
+      "id": "Flow_Inner_End_Inner",
+      "source": "Inner",
+      "target": "End_Inner",
+      "condition": null
+    },
+    {
+      "id": "Flow_Start_RegionNotice_Handle_RegionNotice",
+      "source": "Start_RegionNotice",
+      "target": "Handle_RegionNotice",
+      "condition": null
+    },
+    {
+      "id": "Flow_Handle_RegionNotice_End_RegionNotice",
+      "source": "Handle_RegionNotice",
+      "target": "End_RegionNotice",
+      "condition": null
+    },
+    {
+      "id": "Flow_Fork_Handlers_Region",
+      "source": "Fork_Handlers",
+      "target": "Region",
+      "condition": null
+    },
+    {
+      "id": "Flow_Region_End_Region_Outer",
+      "source": "Region",
+      "target": "End_Region_Outer",
+      "condition": null
+    },
+    {
+      "id": "Flow_Start_Par_Inner_Par",
+      "source": "Start_Par",
+      "target": "Inner_Par",
+      "condition": null
+    },
+    {
+      "id": "Flow_Inner_Par_End_Inner_Par",
+      "source": "Inner_Par",
+      "target": "End_Inner_Par",
+      "condition": null
+    },
+    {
+      "id": "Flow_Start_ParNotice_Handle_ParNotice",
+      "source": "Start_ParNotice",
+      "target": "Handle_ParNotice",
+      "condition": null
+    },
+    {
+      "id": "Flow_Handle_ParNotice_End_ParNotice",
+      "source": "Handle_ParNotice",
+      "target": "End_ParNotice",
+      "condition": null
+    },
+    {
+      "id": "Flow_Fork_Handlers_Bodies_Par",
+      "source": "Fork_Handlers",
+      "target": "Bodies_Par",
+      "condition": null
+    },
+    {
+      "id": "Flow_Bodies_Par_End_Par_Outer",
+      "source": "Bodies_Par",
+      "target": "End_Par_Outer",
+      "condition": null
+    },
+    {
+      "id": "Flow_Start_Seq_Inner_Seq",
+      "source": "Start_Seq",
+      "target": "Inner_Seq",
+      "condition": null
+    },
+    {
+      "id": "Flow_Inner_Seq_End_Inner_Seq",
+      "source": "Inner_Seq",
+      "target": "End_Inner_Seq",
+      "condition": null
+    },
+    {
+      "id": "Flow_Start_SeqNotice_Handle_SeqNotice",
+      "source": "Start_SeqNotice",
+      "target": "Handle_SeqNotice",
+      "condition": null
+    },
+    {
+      "id": "Flow_Handle_SeqNotice_End_SeqNotice",
+      "source": "Handle_SeqNotice",
+      "target": "End_SeqNotice",
+      "condition": null
+    },
+    {
+      "id": "Flow_Fork_Handlers_Bodies_Seq",
+      "source": "Fork_Handlers",
+      "target": "Bodies_Seq",
+      "condition": null
+    },
+    {
+      "id": "Flow_Bodies_Seq_End_Seq_Outer",
+      "source": "Bodies_Seq",
+      "target": "End_Seq_Outer",
+      "condition": null
+    },
+    {
+      "id": "Flow_Start_Notice_Handle_Notice",
+      "source": "Start_Notice",
+      "target": "Handle_Notice",
+      "condition": null
+    },
+    {
+      "id": "Flow_Handle_Notice_Await_Ack",
+      "source": "Handle_Notice",
+      "target": "Await_Ack",
+      "condition": null
+    },
+    {
+      "id": "Flow_Await_Ack_End_Notice",
+      "source": "Await_Ack",
+      "target": "End_Notice",
+      "condition": null
+    },
+    {
+      "id": "Flow_Ack_Deadline_Ack_Late",
+      "source": "Ack_Deadline",
+      "target": "Ack_Late",
+      "condition": null
+    },
+    {
+      "id": "Flow_Ack_Late_End_Ack_Late",
+      "source": "Ack_Late",
+      "target": "End_Ack_Late",
+      "condition": null
+    }
+  ],
+  "variables": [],
+  "processes": [],
+  "executable": true,
+  "decisionResources": []
+}

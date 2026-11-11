@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_RowBasic03" targetNamespace="urn:bpmn-lean:row-fixtures:PC-BASIC-03">
+  <message id="Message_Approval" name="approval" />
+  <signal id="Signal_Release" name="release" />
+  <process id="Process_RowBasic03" name="Semantic names a renaming of identifiers keeps" isExecutable="true">
+    <startEvent id="Start" />
+    <intermediateCatchEvent id="ApprovalArrives" name="Approval arrives">
+      <messageEventDefinition id="ApprovalArrives_Message" messageRef="Message_Approval" />
+    </intermediateCatchEvent>
+    <intermediateCatchEvent id="ReleaseHeard" name="Release heard">
+      <signalEventDefinition id="ReleaseHeard_Signal" signalRef="Signal_Release" />
+    </intermediateCatchEvent>
+    <intermediateThrowEvent id="GoToCheck" name="Go to the check">
+      <linkEventDefinition id="GoToCheck_Link" name="check" />
+    </intermediateThrowEvent>
+    <intermediateCatchEvent id="CheckReached" name="Check reached">
+      <linkEventDefinition id="CheckReached_Link" name="check" />
+    </intermediateCatchEvent>
+    <serviceTask id="Check" name="Check the order" implementation="urn:bpmn-lean:effect:probe-v1"
+                 camunda:delegateExpression="${bpmnLeanEffectHandler}" camunda:asyncBefore="true" />
+    <endEvent id="End" />
+    <sequenceFlow id="Flow_Start_Approval" sourceRef="Start" targetRef="ApprovalArrives" />
+    <sequenceFlow id="Flow_Approval_Release" sourceRef="ApprovalArrives" targetRef="ReleaseHeard" />
+    <sequenceFlow id="Flow_Release_Go" sourceRef="ReleaseHeard" targetRef="GoToCheck" />
+    <sequenceFlow id="Flow_Reached_Check" sourceRef="CheckReached" targetRef="Check" />
+    <sequenceFlow id="Flow_Check_End" sourceRef="Check" targetRef="End" />
+  </process>
+</definitions>

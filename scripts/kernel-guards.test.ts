@@ -1,8 +1,8 @@
 /**
  * Guard 23 of docs/kernel/ARCHITECTURE-SPEC.md#guardrails-against-degradation: every guard is held against a clean
  * self-contained tree, a seeded violation and an empty input, so none can pass by matching nothing. The "tree passes"
- * tests read the real repository and are the guards themselves. Guard 21 only reports for now (root direction,
- * 2026-11-08): its fixtures do not exist yet.
+ * tests read the real repository and are the guards themselves. Guard 21's decoders need the built kernels and run in
+ * packages/differential/test/row-fixtures.integration-test.ts; its fast half runs here.
  */
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
@@ -587,12 +587,8 @@ test("guard 18 reads only kernel paths, so a large commit outside the kernel nev
   ]);
 });
 
-// Root direction (2026-11-08): the missing row fixtures are reported, not failed; the decoders run in
-// packages/differential/test/row-fixtures.integration-test.ts.
-test("guard 21 reports the rows whose fixture is missing or does not carry its traced members", (t) => {
-  assert.ok(coverageRows(tree.root).length > 0, "the coverage target must list rows");
-  const pending = rowFixtureFindings(tree.root);
-  t.diagnostic(`guard 21 pending: ${pending.length} findings, e.g. ${pending[0] ?? "none"}`);
+test("the tree passes guard 21: every row has a fixture that carries its traced members", () => {
+  assert.deepEqual(rowFixtureFindings(tree.root), []);
 });
 
 test("the reports print without blocking", (t) => {

@@ -1,0 +1,1489 @@
+{
+  "identity": {
+    "processId": "Process_Campaign",
+    "namespace": "urn:bpmn-lean:scenarios:region-interruption-subtree",
+    "sourceSha256": "1c17cd70d6d0f6469fbb3de1e241c9649da963c011a4dd7410b8b97888fe095f",
+    "profile": "cibseven-2.2.0",
+    "deployment": null
+  },
+  "options": {
+    "relations": [
+      "CIB-AGR-0001",
+      "CIB-AGR-0002",
+      "CIB-AGR-0003",
+      "CIB-AGR-0004",
+      "CIB-AGR-0006",
+      "CIB-AGR-0007",
+      "CIB-AGR-0008",
+      "CIB-AGR-0009",
+      "CIB-AGR-0010",
+      "CIB-AGR-0012",
+      "CIB-AGR-0013",
+      "CIB-AGR-0014",
+      "CIB-AGR-0015",
+      "CIB-AGR-0016",
+      "CIB-AGR-0017",
+      "CIB-AGR-0018",
+      "CIB-AGR-0019",
+      "CIB-AGR-0020",
+      "CIB-AGR-0021",
+      "CIB-AGR-0022",
+      "CIB-AGR-0023",
+      "CIB-CFG-0001",
+      "CIB-CFG-0002",
+      "CIB-CFG-0006",
+      "CIB-CFG-0007",
+      "CIB-CFG-0008",
+      "CIB-CFG-0009",
+      "CIB-CFG-0010",
+      "CIB-CFG-0011",
+      "CIB-CFG-0013",
+      "CIB-CFG-0014",
+      "CIB-DEV-0001",
+      "CIB-DEV-0002",
+      "CIB-EXT-0001",
+      "CIB-EXT-0004",
+      "CIB-EXT-0005",
+      "CIB-EXT-0006",
+      "CIB-EXT-0007",
+      "CIB-EXT-0008",
+      "CIB-EXT-0009",
+      "CIB-EXT-0010",
+      "CIB-EXT-0011",
+      "CIB-EXT-0012",
+      "CIB-EXT-0013",
+      "CIB-EXT-0014",
+      "CIB-EXT-0015",
+      "CIB-EXT-0016",
+      "CIB-EXT-0019",
+      "CIB-EXT-0021",
+      "CIB-EXT-0022",
+      "CIB-EXT-0023",
+      "CIB-EXT-0025",
+      "CIB-EXT-0028",
+      "CIB-EXT-0030",
+      "CIB-EXT-0031",
+      "CIB-EXT-0032",
+      "CIB-EXT-0033",
+      "CIB-EXT-0034",
+      "CIB-EXT-0035",
+      "CIB-EXT-0036",
+      "CIB-EXT-0038",
+      "CIB-EXT-0039",
+      "CIB-EXT-0040",
+      "CIB-EXT-0041",
+      "CIB-EXT-0042",
+      "CIB-EXT-0043",
+      "CIB-EXT-0044",
+      "CIB-EXT-0045",
+      "CIB-INT-0001",
+      "CIB-INT-0003",
+      "CIB-INT-0004",
+      "CIB-INT-0005",
+      "CIB-INT-0007",
+      "CIB-INT-0008",
+      "CIB-INT-0009",
+      "CIB-INT-0011",
+      "CIB-INT-0012",
+      "CIB-INT-0013",
+      "CIB-INT-0014",
+      "CIB-INT-0015",
+      "CIB-INT-0016",
+      "CIB-INT-0017",
+      "CIB-INT-0018",
+      "CIB-INT-0019",
+      "CIB-INT-0020",
+      "CIB-INT-0023",
+      "CIB-INT-0024",
+      "CIB-INT-0025",
+      "CIB-INT-0026",
+      "CIB-INT-0027",
+      "CIB-INT-0028",
+      "CIB-INT-0029",
+      "CIB-INT-0030",
+      "CIB-INT-0031",
+      "CIB-INT-0032",
+      "CIB-LIM-0001",
+      "CIB-LIM-0002",
+      "CIB-LIM-0003",
+      "CIB-LIM-0006",
+      "CIB-LIM-0007",
+      "CIB-LIM-0008",
+      "CIB-LIM-0009",
+      "CIB-LIM-0010",
+      "CIB-LIM-0014",
+      "CIB-LIM-0015",
+      "CIB-LIM-0016",
+      "CIB-LIM-0017",
+      "CIB-LIM-0022",
+      "CIB-LIM-0024",
+      "CIB-LIM-0026",
+      "CIB-LIM-0027",
+      "CIB-LIM-0028",
+      "CIB-OP-0001",
+      "CIB-OP-0005",
+      "CIB-OP-0006",
+      "CIB-OP-0007",
+      "CIB-OP-0008",
+      "CIB-OP-0009",
+      "CIB-OP-0010",
+      "CIB-OP-0011",
+      "CIB-OP-0016",
+      "CIB-OP-0019"
+    ],
+    "evaluator": "juel",
+    "submission": "installsVariables",
+    "scopeChainSubmissionBytes": null,
+    "undeclaredWrite": "atInstanceRoot",
+    "errorPathOutputs": "mapped",
+    "raisedCallOutputs": "atCalledRoot",
+    "technicalFailure": "incident",
+    "incidentProcessCancellation": true,
+    "continuationFailure": "rolledBack",
+    "conditionOrder": "beforeOutputs",
+    "messageCorrelation": "apiCriteria",
+    "deliveryVariables": "installs",
+    "multiInstanceFinalBody": "modeSpecific",
+    "multiInstanceOutputs": "none",
+    "compensationOrder": "dependency",
+    "compensationHandlerFailure": "failsInstance",
+    "abnormalScopeEnd": "completesNormally",
+    "unhandledError": "endsThrowingPath",
+    "errorCatchVariables": "eventScope",
+    "callBindingTime": "programAssembly",
+    "timerZone": null,
+    "multiInstanceBinding": "loopReferences",
+    "effectResultValues": "activityLocals",
+    "outputContext": "activityScope",
+    "multiInstanceCounters": "cibLocals",
+    "multiInstanceInputFailure": "rollback",
+    "multiInstanceCount": "javaInt",
+    "businessRuleTask": "decisionTable",
+    "inclusiveJoinReach": "outgoingOnly",
+    "branchSchedule": "declarationDepthFirst",
+    "conditionalRetrigger": "eachWrite",
+    "malformedTimer": "rollsBackArming",
+    "messageNames": "addresses",
+    "scopeStart": "required",
+    "signalNames": "addresses",
+    "signalPayload": "variables",
+    "signalDelivery": "occurrenceTargeted",
+    "conditionalStart": "submittedContext",
+    "calledElementResolution": "cibKey",
+    "messageThrowForms": "cibForms"
+  },
+  "elements": [
+    {
+      "start": {
+        "header": {
+          "id": "StartEvent_Launched",
+          "origin": {
+            "definition": null,
+            "sourceId": "StartEvent_Launched"
+          },
+          "sourceType": "startEvent",
+          "parent": null
+        },
+        "payload": {
+          "subscription": null,
+          "outgoing": [
+            "Flow_Start_Fork"
+          ]
+        }
+      }
+    },
+    {
+      "gateway": {
+        "header": {
+          "id": "Gateway_Fork",
+          "origin": {
+            "definition": null,
+            "sourceId": "Gateway_Fork"
+          },
+          "sourceType": "parallelGateway",
+          "parent": null
+        },
+        "payload": {
+          "kind": "parallel",
+          "incoming": [
+            "Flow_Start_Fork"
+          ],
+          "outgoing": [
+            "Flow_Fork_North",
+            "Flow_Fork_South",
+            "Flow_Fork_Outside"
+          ]
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "UserTask_IntakeNorth",
+          "origin": {
+            "definition": null,
+            "sourceId": "UserTask_IntakeNorth"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Open the north region",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Fork_North"
+            ],
+            "outgoing": [
+              "Flow_North_Merge"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "UserTask_IntakeSouth",
+          "origin": {
+            "definition": null,
+            "sourceId": "UserTask_IntakeSouth"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Open the south region",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Fork_South"
+            ],
+            "outgoing": [
+              "Flow_South_Merge"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "UserTask_Outside",
+          "origin": {
+            "definition": null,
+            "sourceId": "UserTask_Outside"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Run the unrelated audit",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Fork_Outside"
+            ],
+            "outgoing": [
+              "Flow_Outside_End"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "EndEvent_Outside",
+          "origin": {
+            "definition": null,
+            "sourceId": "EndEvent_Outside"
+          },
+          "sourceType": "endEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Outside_End"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "gateway": {
+        "header": {
+          "id": "Gateway_Merge",
+          "origin": {
+            "definition": null,
+            "sourceId": "Gateway_Merge"
+          },
+          "sourceType": "exclusiveGateway",
+          "parent": null
+        },
+        "payload": {
+          "kind": {
+            "exclusive": {
+              "candidates": [
+                "Flow_Merge_Region"
+              ],
+              "default": null
+            }
+          },
+          "incoming": [
+            "Flow_North_Merge",
+            "Flow_South_Merge"
+          ],
+          "outgoing": [
+            "Flow_Merge_Region"
+          ]
+        }
+      }
+    },
+    {
+      "scope": {
+        "header": {
+          "id": "SubProcess_Region",
+          "origin": {
+            "definition": null,
+            "sourceId": "SubProcess_Region"
+          },
+          "sourceType": "subProcess",
+          "parent": null
+        },
+        "payload": {
+          "kind": "embedded",
+          "children": [
+            "StartEvent_Region",
+            "Gateway_RegionFork",
+            "UserTask_Draft",
+            "ServiceTask_Publish",
+            "EndEvent_Published",
+            "ReceiveTask_Quote",
+            "EndEvent_Quoted",
+            "SubProcess_Inner",
+            "EndEvent_InnerDone"
+          ],
+          "localVariables": [
+            "scratch"
+          ],
+          "items": [],
+          "envelope": {
+            "incoming": [
+              "Flow_Merge_Region"
+            ],
+            "outgoing": [
+              "Flow_Region_After"
+            ],
+            "inputs": [
+              {
+                "target": "scratch",
+                "source": {
+                  "literal": {
+                    "value": {
+                      "kind": "string",
+                      "value": "none"
+                    }
+                  }
+                },
+                "dialect": "ioParameter"
+              }
+            ],
+            "outputs": [],
+            "boundaries": [
+              {
+                "id": "Boundary_Region_Abort",
+                "sourceId": "Boundary_Region_Abort",
+                "subscription": {
+                  "trigger": {
+                    "message": {
+                      "payload": {
+                        "messageRef": "Message_Abort",
+                        "name": {
+                          "literal": {
+                            "value": "abortRegion"
+                          }
+                        },
+                        "correlation": [],
+                        "interfaceRef": null,
+                        "operationRef": null
+                      }
+                    }
+                  },
+                  "outputs": [],
+                  "alternatives": [],
+                  "parallelMultiple": false
+                },
+                "interrupting": true,
+                "outgoing": [
+                  "Flow_Abort_Record"
+                ]
+              }
+            ],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "start": {
+        "header": {
+          "id": "StartEvent_Region",
+          "origin": {
+            "definition": null,
+            "sourceId": "StartEvent_Region"
+          },
+          "sourceType": "startEvent",
+          "parent": "SubProcess_Region"
+        },
+        "payload": {
+          "subscription": null,
+          "outgoing": [
+            "Flow_Region_Start_Fork"
+          ]
+        }
+      }
+    },
+    {
+      "gateway": {
+        "header": {
+          "id": "Gateway_RegionFork",
+          "origin": {
+            "definition": null,
+            "sourceId": "Gateway_RegionFork"
+          },
+          "sourceType": "parallelGateway",
+          "parent": "SubProcess_Region"
+        },
+        "payload": {
+          "kind": "parallel",
+          "incoming": [
+            "Flow_Region_Start_Fork"
+          ],
+          "outgoing": [
+            "Flow_Region_Fork_Draft",
+            "Flow_Region_Fork_Inner",
+            "Flow_Region_Fork_Quote"
+          ]
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "UserTask_Draft",
+          "origin": {
+            "definition": null,
+            "sourceId": "UserTask_Draft"
+          },
+          "sourceType": "userTask",
+          "parent": "SubProcess_Region"
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Draft the offer",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Region_Fork_Draft"
+            ],
+            "outgoing": [
+              "Flow_Region_Draft_Publish"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "ServiceTask_Publish",
+          "origin": {
+            "definition": null,
+            "sourceId": "ServiceTask_Publish"
+          },
+          "sourceType": "serviceTask",
+          "parent": "SubProcess_Region"
+        },
+        "payload": {
+          "work": {
+            "service": {
+              "payload": {
+                "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+                "operation": "urn:bpmn-lean:effect-operation:probe-v1",
+                "handlerKey": "bpmnLeanEffectHandler"
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Region_Draft_Publish"
+            ],
+            "outgoing": [
+              "Flow_Region_Publish_End"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": true,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "EndEvent_Published",
+          "origin": {
+            "definition": null,
+            "sourceId": "EndEvent_Published"
+          },
+          "sourceType": "endEvent",
+          "parent": "SubProcess_Region"
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Region_Publish_End"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "ReceiveTask_Quote",
+          "origin": {
+            "definition": null,
+            "sourceId": "ReceiveTask_Quote"
+          },
+          "sourceType": "receiveTask",
+          "parent": "SubProcess_Region"
+        },
+        "payload": {
+          "work": {
+            "receive": {
+              "payload": {
+                "message": {
+                  "messageRef": "Message_Quote",
+                  "name": {
+                    "literal": {
+                      "value": "quoteReceived"
+                    }
+                  },
+                  "correlation": [],
+                  "interfaceRef": null,
+                  "operationRef": null
+                },
+                "instantiate": false
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Region_Fork_Quote"
+            ],
+            "outgoing": [
+              "Flow_Region_Quote_End"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "EndEvent_Quoted",
+          "origin": {
+            "definition": null,
+            "sourceId": "EndEvent_Quoted"
+          },
+          "sourceType": "endEvent",
+          "parent": "SubProcess_Region"
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Region_Quote_End"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "scope": {
+        "header": {
+          "id": "SubProcess_Inner",
+          "origin": {
+            "definition": null,
+            "sourceId": "SubProcess_Inner"
+          },
+          "sourceType": "subProcess",
+          "parent": "SubProcess_Region"
+        },
+        "payload": {
+          "kind": "embedded",
+          "children": [
+            "StartEvent_Inner",
+            "UserTask_Review",
+            "CallActivity_Approve",
+            "Boundary_Approve_Timeout",
+            "UserTask_Escalate",
+            "EndEvent_Approved",
+            "EndEvent_Escalated"
+          ],
+          "localVariables": [],
+          "items": [],
+          "envelope": {
+            "incoming": [
+              "Flow_Region_Fork_Inner"
+            ],
+            "outgoing": [
+              "Flow_Region_Inner_End"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "start": {
+        "header": {
+          "id": "StartEvent_Inner",
+          "origin": {
+            "definition": null,
+            "sourceId": "StartEvent_Inner"
+          },
+          "sourceType": "startEvent",
+          "parent": "SubProcess_Inner"
+        },
+        "payload": {
+          "subscription": null,
+          "outgoing": [
+            "Flow_Inner_Start_Review"
+          ]
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "UserTask_Review",
+          "origin": {
+            "definition": null,
+            "sourceId": "UserTask_Review"
+          },
+          "sourceType": "userTask",
+          "parent": "SubProcess_Inner"
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Review the offer",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Inner_Start_Review"
+            ],
+            "outgoing": [
+              "Flow_Inner_Review_Approve"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "CallActivity_Approve",
+          "origin": {
+            "definition": null,
+            "sourceId": "CallActivity_Approve"
+          },
+          "sourceType": "callActivity",
+          "parent": "SubProcess_Inner"
+        },
+        "payload": {
+          "work": {
+            "call": {
+              "payload": {
+                "calledElement": {
+                  "literal": {
+                    "value": "Process_Approve"
+                  }
+                },
+                "calledQName": {
+                  "namespace": "urn:bpmn-lean:scenarios:region-interruption-subtree",
+                  "localName": "Process_Approve"
+                },
+                "binding": "latest",
+                "tenant": null,
+                "businessKey": null,
+                "inputs": [
+                  {
+                    "target": "memo",
+                    "source": {
+                      "variable": {
+                        "name": "scratch"
+                      }
+                    },
+                    "dialect": "callVariable"
+                  }
+                ],
+                "outputs": [
+                  {
+                    "target": "approval",
+                    "source": {
+                      "variable": {
+                        "name": "verdict"
+                      }
+                    },
+                    "dialect": "callVariable"
+                  }
+                ],
+                "propagateAllInputs": false,
+                "propagateAllOutputs": false
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Inner_Review_Approve"
+            ],
+            "outgoing": [
+              "Flow_Inner_Approve_End"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [
+              {
+                "id": "Boundary_Approve_Timeout",
+                "sourceId": "Boundary_Approve_Timeout",
+                "subscription": {
+                  "trigger": {
+                    "timer": {
+                      "payload": {
+                        "schedule": {
+                          "duration": {
+                            "value": {
+                              "literal": {
+                                "value": "PT30S"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "outputs": [],
+                  "alternatives": [],
+                  "parallelMultiple": false
+                },
+                "interrupting": true,
+                "outgoing": [
+                  "Flow_Inner_Timeout_Escalate"
+                ]
+              }
+            ],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "UserTask_Escalate",
+          "origin": {
+            "definition": null,
+            "sourceId": "UserTask_Escalate"
+          },
+          "sourceType": "userTask",
+          "parent": "SubProcess_Inner"
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Escalate the approval",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Inner_Timeout_Escalate"
+            ],
+            "outgoing": [
+              "Flow_Inner_Escalate_End"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "EndEvent_Approved",
+          "origin": {
+            "definition": null,
+            "sourceId": "EndEvent_Approved"
+          },
+          "sourceType": "endEvent",
+          "parent": "SubProcess_Inner"
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Inner_Approve_End"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "EndEvent_Escalated",
+          "origin": {
+            "definition": null,
+            "sourceId": "EndEvent_Escalated"
+          },
+          "sourceType": "endEvent",
+          "parent": "SubProcess_Inner"
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Inner_Escalate_End"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "EndEvent_InnerDone",
+          "origin": {
+            "definition": null,
+            "sourceId": "EndEvent_InnerDone"
+          },
+          "sourceType": "endEvent",
+          "parent": "SubProcess_Region"
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Region_Inner_End"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "UserTask_AfterRegion",
+          "origin": {
+            "definition": null,
+            "sourceId": "UserTask_AfterRegion"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Close the region",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Region_After"
+            ],
+            "outgoing": [
+              "Flow_After_End"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "UserTask_Aborted",
+          "origin": {
+            "definition": null,
+            "sourceId": "UserTask_Aborted"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Record the aborted region",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Abort_Record"
+            ],
+            "outgoing": [
+              "Flow_Aborted_End"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "EndEvent_Closed",
+          "origin": {
+            "definition": null,
+            "sourceId": "EndEvent_Closed"
+          },
+          "sourceType": "endEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_After_End"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "EndEvent_Aborted",
+          "origin": {
+            "definition": null,
+            "sourceId": "EndEvent_Aborted"
+          },
+          "sourceType": "endEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Aborted_End"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "start": {
+        "header": {
+          "id": "StartEvent_Approve",
+          "origin": {
+            "definition": null,
+            "sourceId": "StartEvent_Approve"
+          },
+          "sourceType": "startEvent",
+          "parent": null
+        },
+        "payload": {
+          "subscription": null,
+          "outgoing": [
+            "Flow_Approve_Start_Sign"
+          ]
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "UserTask_Sign",
+          "origin": {
+            "definition": null,
+            "sourceId": "UserTask_Sign"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Sign the approval",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Approve_Start_Sign"
+            ],
+            "outgoing": [
+              "Flow_Approve_Sign_End"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "EndEvent_Signed",
+          "origin": {
+            "definition": null,
+            "sourceId": "EndEvent_Signed"
+          },
+          "sourceType": "endEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Approve_Sign_End"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    }
+  ],
+  "flows": [
+    {
+      "id": "Flow_Inner_Start_Review",
+      "source": "StartEvent_Inner",
+      "target": "UserTask_Review",
+      "condition": null
+    },
+    {
+      "id": "Flow_Inner_Review_Approve",
+      "source": "UserTask_Review",
+      "target": "CallActivity_Approve",
+      "condition": null
+    },
+    {
+      "id": "Flow_Inner_Approve_End",
+      "source": "CallActivity_Approve",
+      "target": "EndEvent_Approved",
+      "condition": null
+    },
+    {
+      "id": "Flow_Inner_Timeout_Escalate",
+      "source": "Boundary_Approve_Timeout",
+      "target": "UserTask_Escalate",
+      "condition": null
+    },
+    {
+      "id": "Flow_Inner_Escalate_End",
+      "source": "UserTask_Escalate",
+      "target": "EndEvent_Escalated",
+      "condition": null
+    },
+    {
+      "id": "Flow_Region_Start_Fork",
+      "source": "StartEvent_Region",
+      "target": "Gateway_RegionFork",
+      "condition": null
+    },
+    {
+      "id": "Flow_Region_Fork_Draft",
+      "source": "Gateway_RegionFork",
+      "target": "UserTask_Draft",
+      "condition": null
+    },
+    {
+      "id": "Flow_Region_Fork_Inner",
+      "source": "Gateway_RegionFork",
+      "target": "SubProcess_Inner",
+      "condition": null
+    },
+    {
+      "id": "Flow_Region_Fork_Quote",
+      "source": "Gateway_RegionFork",
+      "target": "ReceiveTask_Quote",
+      "condition": null
+    },
+    {
+      "id": "Flow_Region_Draft_Publish",
+      "source": "UserTask_Draft",
+      "target": "ServiceTask_Publish",
+      "condition": null
+    },
+    {
+      "id": "Flow_Region_Publish_End",
+      "source": "ServiceTask_Publish",
+      "target": "EndEvent_Published",
+      "condition": null
+    },
+    {
+      "id": "Flow_Region_Inner_End",
+      "source": "SubProcess_Inner",
+      "target": "EndEvent_InnerDone",
+      "condition": null
+    },
+    {
+      "id": "Flow_Region_Quote_End",
+      "source": "ReceiveTask_Quote",
+      "target": "EndEvent_Quoted",
+      "condition": null
+    },
+    {
+      "id": "Flow_Start_Fork",
+      "source": "StartEvent_Launched",
+      "target": "Gateway_Fork",
+      "condition": null
+    },
+    {
+      "id": "Flow_Fork_North",
+      "source": "Gateway_Fork",
+      "target": "UserTask_IntakeNorth",
+      "condition": null
+    },
+    {
+      "id": "Flow_Fork_South",
+      "source": "Gateway_Fork",
+      "target": "UserTask_IntakeSouth",
+      "condition": null
+    },
+    {
+      "id": "Flow_Fork_Outside",
+      "source": "Gateway_Fork",
+      "target": "UserTask_Outside",
+      "condition": null
+    },
+    {
+      "id": "Flow_Outside_End",
+      "source": "UserTask_Outside",
+      "target": "EndEvent_Outside",
+      "condition": null
+    },
+    {
+      "id": "Flow_North_Merge",
+      "source": "UserTask_IntakeNorth",
+      "target": "Gateway_Merge",
+      "condition": null
+    },
+    {
+      "id": "Flow_South_Merge",
+      "source": "UserTask_IntakeSouth",
+      "target": "Gateway_Merge",
+      "condition": null
+    },
+    {
+      "id": "Flow_Merge_Region",
+      "source": "Gateway_Merge",
+      "target": "SubProcess_Region",
+      "condition": null
+    },
+    {
+      "id": "Flow_Region_After",
+      "source": "SubProcess_Region",
+      "target": "UserTask_AfterRegion",
+      "condition": null
+    },
+    {
+      "id": "Flow_Abort_Record",
+      "source": "Boundary_Region_Abort",
+      "target": "UserTask_Aborted",
+      "condition": null
+    },
+    {
+      "id": "Flow_After_End",
+      "source": "UserTask_AfterRegion",
+      "target": "EndEvent_Closed",
+      "condition": null
+    },
+    {
+      "id": "Flow_Aborted_End",
+      "source": "UserTask_Aborted",
+      "target": "EndEvent_Aborted",
+      "condition": null
+    },
+    {
+      "id": "Flow_Approve_Start_Sign",
+      "source": "StartEvent_Approve",
+      "target": "UserTask_Sign",
+      "condition": null
+    },
+    {
+      "id": "Flow_Approve_Sign_End",
+      "source": "UserTask_Sign",
+      "target": "EndEvent_Signed",
+      "condition": null
+    }
+  ],
+  "variables": [],
+  "processes": [
+    {
+      "definition": {
+        "key": "Process_Approve",
+        "namespace": "urn:bpmn-lean:scenarios:region-interruption-subtree",
+        "version": null,
+        "versionTag": null,
+        "deployment": null,
+        "tenant": null,
+        "sourceSha256": null
+      },
+      "children": [
+        "StartEvent_Approve",
+        "UserTask_Sign",
+        "EndEvent_Signed"
+      ],
+      "variables": [],
+      "executable": true
+    }
+  ],
+  "executable": true,
+  "decisionResources": []
+}

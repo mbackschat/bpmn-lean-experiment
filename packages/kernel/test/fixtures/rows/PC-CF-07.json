@@ -1,0 +1,287 @@
+{
+  "identity": {
+    "processId": "Invoice",
+    "namespace": "urn:invoice",
+    "sourceSha256": "401a62e88bb93fe0d0f5bd32628800b269cc601bca9e6bcad601075aa9a80ec7",
+    "profile": "bpmn-2.0.2",
+    "deployment": null
+  },
+  "options": {
+    "relations": [
+      "CIB-AGR-0001",
+      "CIB-AGR-0002",
+      "CIB-AGR-0003",
+      "CIB-AGR-0004",
+      "CIB-AGR-0006",
+      "CIB-AGR-0007",
+      "CIB-AGR-0021",
+      "CIB-CFG-0001",
+      "CIB-CFG-0013",
+      "CIB-CFG-0014",
+      "CIB-DEV-0001",
+      "CIB-DEV-0002",
+      "CIB-EXT-0011",
+      "CIB-INT-0001",
+      "CIB-INT-0008",
+      "CIB-INT-0012",
+      "CIB-INT-0015",
+      "CIB-INT-0016",
+      "CIB-INT-0025",
+      "CIB-INT-0026",
+      "CIB-INT-0029",
+      "CIB-INT-0030",
+      "CIB-INT-0031",
+      "CIB-INT-0032",
+      "CIB-LIM-0002",
+      "CIB-LIM-0003",
+      "CIB-OP-0001"
+    ],
+    "evaluator": "simpleBoolean",
+    "submission": "outputSet",
+    "scopeChainSubmissionBytes": null,
+    "undeclaredWrite": "refused",
+    "errorPathOutputs": "none",
+    "raisedCallOutputs": "none",
+    "technicalFailure": "hostFailure",
+    "incidentProcessCancellation": false,
+    "continuationFailure": "rolledBack",
+    "conditionOrder": "afterOutputs",
+    "messageCorrelation": "modeledKey",
+    "deliveryVariables": "mappedOnly",
+    "multiInstanceFinalBody": "conditionEveryCompletion",
+    "multiInstanceOutputs": "aggregates",
+    "compensationOrder": "dependency",
+    "compensationHandlerFailure": "failsInstance",
+    "abnormalScopeEnd": "withoutOutflow",
+    "unhandledError": "failsInstance",
+    "errorCatchVariables": "refused",
+    "callBindingTime": "programAssembly",
+    "timerZone": null,
+    "multiInstanceBinding": "dataAssociations",
+    "effectResultValues": "outputSet",
+    "outputContext": "submission",
+    "multiInstanceCounters": "none",
+    "multiInstanceInputFailure": "hold",
+    "multiInstanceCount": "integer",
+    "businessRuleTask": "refused",
+    "inclusiveJoinReach": "withBoundaries",
+    "branchSchedule": "orderInvariant",
+    "conditionalRetrigger": "edge",
+    "malformedTimer": "refused",
+    "messageNames": "description",
+    "scopeStart": "implicit",
+    "signalNames": "identifier",
+    "signalPayload": "none",
+    "signalDelivery": "broadcastOnly",
+    "conditionalStart": "refused",
+    "calledElementResolution": "qualifiedName",
+    "messageThrowForms": "refused"
+  },
+  "elements": [
+    {
+      "start": {
+        "header": {
+          "id": "start",
+          "origin": {
+            "definition": null,
+            "sourceId": "start"
+          },
+          "sourceType": "startEvent",
+          "parent": null
+        },
+        "payload": {
+          "subscription": null,
+          "outgoing": [
+            "begin"
+          ]
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "end",
+          "origin": {
+            "definition": null,
+            "sourceId": "end"
+          },
+          "sourceType": "endEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "finish"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "assess",
+          "origin": {
+            "definition": null,
+            "sourceId": "assess"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "assess",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "begin"
+            ],
+            "outgoing": [
+              "handoff"
+            ],
+            "inputs": [
+              {
+                "target": "assess_in",
+                "source": {
+                  "variable": {
+                    "name": "summary"
+                  }
+                },
+                "dialect": "dataAssociation"
+              }
+            ],
+            "outputs": [
+              {
+                "target": "decision",
+                "source": {
+                  "variable": {
+                    "name": "assess_out"
+                  }
+                },
+                "dialect": "dataAssociation"
+              }
+            ],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "archive",
+          "origin": {
+            "definition": null,
+            "sourceId": "archive"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "archive",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "handoff"
+            ],
+            "outgoing": [
+              "finish"
+            ],
+            "inputs": [
+              {
+                "target": "archive_in",
+                "source": {
+                  "variable": {
+                    "name": "decision"
+                  }
+                },
+                "dialect": "dataAssociation"
+              }
+            ],
+            "outputs": [
+              {
+                "target": "receipt",
+                "source": {
+                  "variable": {
+                    "name": "archive_out"
+                  }
+                },
+                "dialect": "dataAssociation"
+              }
+            ],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    }
+  ],
+  "flows": [
+    {
+      "id": "begin",
+      "source": "start",
+      "target": "assess",
+      "condition": null
+    },
+    {
+      "id": "handoff",
+      "source": "assess",
+      "target": "archive",
+      "condition": null
+    },
+    {
+      "id": "finish",
+      "source": "archive",
+      "target": "end",
+      "condition": null
+    }
+  ],
+  "variables": [
+    "decision",
+    "receipt",
+    "summary"
+  ],
+  "processes": [],
+  "executable": true,
+  "decisionResources": []
+}

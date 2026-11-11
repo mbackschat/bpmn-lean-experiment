@@ -1,0 +1,372 @@
+{
+  "identity": {
+    "processId": "CallerProcess",
+    "namespace": "urn:bpmn-lean:test:call-activity",
+    "sourceSha256": "91a23ad65daa240600b2433e3cdd907cf71c33051b8ffad4f5449c541cd0df73",
+    "profile": "bpmn-2.0.2",
+    "deployment": null
+  },
+  "options": {
+    "relations": [
+      "CIB-AGR-0001",
+      "CIB-AGR-0002",
+      "CIB-AGR-0003",
+      "CIB-AGR-0004",
+      "CIB-AGR-0006",
+      "CIB-AGR-0007",
+      "CIB-AGR-0021",
+      "CIB-CFG-0001",
+      "CIB-CFG-0013",
+      "CIB-CFG-0014",
+      "CIB-DEV-0001",
+      "CIB-DEV-0002",
+      "CIB-EXT-0011",
+      "CIB-INT-0001",
+      "CIB-INT-0008",
+      "CIB-INT-0012",
+      "CIB-INT-0015",
+      "CIB-INT-0016",
+      "CIB-INT-0025",
+      "CIB-INT-0026",
+      "CIB-INT-0029",
+      "CIB-INT-0030",
+      "CIB-INT-0031",
+      "CIB-INT-0032",
+      "CIB-LIM-0002",
+      "CIB-LIM-0003",
+      "CIB-OP-0001"
+    ],
+    "evaluator": "simpleBoolean",
+    "submission": "outputSet",
+    "scopeChainSubmissionBytes": null,
+    "undeclaredWrite": "refused",
+    "errorPathOutputs": "none",
+    "raisedCallOutputs": "none",
+    "technicalFailure": "hostFailure",
+    "incidentProcessCancellation": false,
+    "continuationFailure": "rolledBack",
+    "conditionOrder": "afterOutputs",
+    "messageCorrelation": "modeledKey",
+    "deliveryVariables": "mappedOnly",
+    "multiInstanceFinalBody": "conditionEveryCompletion",
+    "multiInstanceOutputs": "aggregates",
+    "compensationOrder": "dependency",
+    "compensationHandlerFailure": "failsInstance",
+    "abnormalScopeEnd": "withoutOutflow",
+    "unhandledError": "failsInstance",
+    "errorCatchVariables": "refused",
+    "callBindingTime": "programAssembly",
+    "timerZone": null,
+    "multiInstanceBinding": "dataAssociations",
+    "effectResultValues": "outputSet",
+    "outputContext": "submission",
+    "multiInstanceCounters": "none",
+    "multiInstanceInputFailure": "hold",
+    "multiInstanceCount": "integer",
+    "businessRuleTask": "refused",
+    "inclusiveJoinReach": "withBoundaries",
+    "branchSchedule": "orderInvariant",
+    "conditionalRetrigger": "edge",
+    "malformedTimer": "refused",
+    "messageNames": "description",
+    "scopeStart": "implicit",
+    "signalNames": "identifier",
+    "signalPayload": "none",
+    "signalDelivery": "broadcastOnly",
+    "conditionalStart": "refused",
+    "calledElementResolution": "qualifiedName",
+    "messageThrowForms": "refused"
+  },
+  "elements": [
+    {
+      "start": {
+        "header": {
+          "id": "CallerStart",
+          "origin": {
+            "definition": null,
+            "sourceId": "CallerStart"
+          },
+          "sourceType": "startEvent",
+          "parent": null
+        },
+        "payload": {
+          "subscription": null,
+          "outgoing": [
+            "Flow_Caller_Start_Call"
+          ]
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "Call_CalledProcess",
+          "origin": {
+            "definition": null,
+            "sourceId": "Call_CalledProcess"
+          },
+          "sourceType": "callActivity",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "call": {
+              "payload": {
+                "calledElement": {
+                  "literal": {
+                    "value": "tns:CalledProcess"
+                  }
+                },
+                "calledQName": {
+                  "namespace": "urn:bpmn-lean:test:call-activity",
+                  "localName": "CalledProcess"
+                },
+                "binding": "latest",
+                "tenant": null,
+                "businessKey": null,
+                "inputs": [],
+                "outputs": [],
+                "propagateAllInputs": false,
+                "propagateAllOutputs": false
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Caller_Start_Call"
+            ],
+            "outgoing": [
+              "Flow_Caller_Call_Task"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "CallerTask",
+          "origin": {
+            "definition": null,
+            "sourceId": "CallerTask"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Caller task",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Caller_Call_Task"
+            ],
+            "outgoing": [
+              "Flow_Caller_Task_End"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "CallerEnd",
+          "origin": {
+            "definition": null,
+            "sourceId": "CallerEnd"
+          },
+          "sourceType": "endEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Caller_Task_End"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "start": {
+        "header": {
+          "id": "CalledStart",
+          "origin": {
+            "definition": null,
+            "sourceId": "CalledStart"
+          },
+          "sourceType": "startEvent",
+          "parent": null
+        },
+        "payload": {
+          "subscription": null,
+          "outgoing": [
+            "Flow_Called_Start_Task"
+          ]
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "CalledTask",
+          "origin": {
+            "definition": null,
+            "sourceId": "CalledTask"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Called task",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Called_Start_Task"
+            ],
+            "outgoing": [
+              "Flow_Called_Task_End"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "CalledEnd",
+          "origin": {
+            "definition": null,
+            "sourceId": "CalledEnd"
+          },
+          "sourceType": "endEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Called_Task_End"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    }
+  ],
+  "flows": [
+    {
+      "id": "Flow_Caller_Start_Call",
+      "source": "CallerStart",
+      "target": "Call_CalledProcess",
+      "condition": null
+    },
+    {
+      "id": "Flow_Caller_Call_Task",
+      "source": "Call_CalledProcess",
+      "target": "CallerTask",
+      "condition": null
+    },
+    {
+      "id": "Flow_Caller_Task_End",
+      "source": "CallerTask",
+      "target": "CallerEnd",
+      "condition": null
+    },
+    {
+      "id": "Flow_Called_Start_Task",
+      "source": "CalledStart",
+      "target": "CalledTask",
+      "condition": null
+    },
+    {
+      "id": "Flow_Called_Task_End",
+      "source": "CalledTask",
+      "target": "CalledEnd",
+      "condition": null
+    }
+  ],
+  "variables": [],
+  "processes": [
+    {
+      "definition": {
+        "key": "CalledProcess",
+        "namespace": "urn:bpmn-lean:test:call-activity",
+        "version": null,
+        "versionTag": null,
+        "deployment": null,
+        "tenant": null,
+        "sourceSha256": null
+      },
+      "children": [
+        "CalledStart",
+        "CalledTask",
+        "CalledEnd"
+      ],
+      "variables": [],
+      "executable": true
+    }
+  ],
+  "executable": true,
+  "decisionResources": []
+}

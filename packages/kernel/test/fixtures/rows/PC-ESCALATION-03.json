@@ -1,0 +1,756 @@
+{
+  "identity": {
+    "processId": "Process_DoublePassIntake",
+    "namespace": "urn:bpmn-lean:scenarios:escalation-call-relay:double-pass-claim",
+    "sourceSha256": "0742fd6e44f52c7e350b8f75b5210c6cb8da4038af99d575f1a7bfe97db56155",
+    "profile": "cibseven-2.2.0",
+    "deployment": null
+  },
+  "options": {
+    "relations": [
+      "CIB-AGR-0001",
+      "CIB-AGR-0002",
+      "CIB-AGR-0003",
+      "CIB-AGR-0004",
+      "CIB-AGR-0006",
+      "CIB-AGR-0007",
+      "CIB-AGR-0008",
+      "CIB-AGR-0009",
+      "CIB-AGR-0010",
+      "CIB-AGR-0012",
+      "CIB-AGR-0013",
+      "CIB-AGR-0014",
+      "CIB-AGR-0015",
+      "CIB-AGR-0016",
+      "CIB-AGR-0017",
+      "CIB-AGR-0018",
+      "CIB-AGR-0019",
+      "CIB-AGR-0020",
+      "CIB-AGR-0021",
+      "CIB-AGR-0022",
+      "CIB-AGR-0023",
+      "CIB-CFG-0001",
+      "CIB-CFG-0002",
+      "CIB-CFG-0006",
+      "CIB-CFG-0007",
+      "CIB-CFG-0008",
+      "CIB-CFG-0009",
+      "CIB-CFG-0010",
+      "CIB-CFG-0011",
+      "CIB-CFG-0013",
+      "CIB-CFG-0014",
+      "CIB-DEV-0001",
+      "CIB-DEV-0002",
+      "CIB-EXT-0001",
+      "CIB-EXT-0004",
+      "CIB-EXT-0005",
+      "CIB-EXT-0006",
+      "CIB-EXT-0007",
+      "CIB-EXT-0008",
+      "CIB-EXT-0009",
+      "CIB-EXT-0010",
+      "CIB-EXT-0011",
+      "CIB-EXT-0012",
+      "CIB-EXT-0013",
+      "CIB-EXT-0014",
+      "CIB-EXT-0015",
+      "CIB-EXT-0016",
+      "CIB-EXT-0019",
+      "CIB-EXT-0021",
+      "CIB-EXT-0022",
+      "CIB-EXT-0023",
+      "CIB-EXT-0025",
+      "CIB-EXT-0028",
+      "CIB-EXT-0030",
+      "CIB-EXT-0031",
+      "CIB-EXT-0032",
+      "CIB-EXT-0033",
+      "CIB-EXT-0034",
+      "CIB-EXT-0035",
+      "CIB-EXT-0036",
+      "CIB-EXT-0038",
+      "CIB-EXT-0039",
+      "CIB-EXT-0040",
+      "CIB-EXT-0041",
+      "CIB-EXT-0042",
+      "CIB-EXT-0043",
+      "CIB-EXT-0044",
+      "CIB-EXT-0045",
+      "CIB-INT-0001",
+      "CIB-INT-0003",
+      "CIB-INT-0004",
+      "CIB-INT-0005",
+      "CIB-INT-0007",
+      "CIB-INT-0008",
+      "CIB-INT-0009",
+      "CIB-INT-0011",
+      "CIB-INT-0012",
+      "CIB-INT-0013",
+      "CIB-INT-0014",
+      "CIB-INT-0015",
+      "CIB-INT-0016",
+      "CIB-INT-0017",
+      "CIB-INT-0018",
+      "CIB-INT-0019",
+      "CIB-INT-0020",
+      "CIB-INT-0023",
+      "CIB-INT-0024",
+      "CIB-INT-0025",
+      "CIB-INT-0026",
+      "CIB-INT-0027",
+      "CIB-INT-0028",
+      "CIB-INT-0029",
+      "CIB-INT-0030",
+      "CIB-INT-0031",
+      "CIB-INT-0032",
+      "CIB-LIM-0001",
+      "CIB-LIM-0002",
+      "CIB-LIM-0003",
+      "CIB-LIM-0006",
+      "CIB-LIM-0007",
+      "CIB-LIM-0008",
+      "CIB-LIM-0009",
+      "CIB-LIM-0010",
+      "CIB-LIM-0014",
+      "CIB-LIM-0015",
+      "CIB-LIM-0016",
+      "CIB-LIM-0017",
+      "CIB-LIM-0022",
+      "CIB-LIM-0024",
+      "CIB-LIM-0026",
+      "CIB-LIM-0027",
+      "CIB-LIM-0028",
+      "CIB-OP-0001",
+      "CIB-OP-0005",
+      "CIB-OP-0006",
+      "CIB-OP-0007",
+      "CIB-OP-0008",
+      "CIB-OP-0009",
+      "CIB-OP-0010",
+      "CIB-OP-0011",
+      "CIB-OP-0016",
+      "CIB-OP-0019"
+    ],
+    "evaluator": "juel",
+    "submission": "installsVariables",
+    "scopeChainSubmissionBytes": null,
+    "undeclaredWrite": "atInstanceRoot",
+    "errorPathOutputs": "mapped",
+    "raisedCallOutputs": "atCalledRoot",
+    "technicalFailure": "incident",
+    "incidentProcessCancellation": true,
+    "continuationFailure": "rolledBack",
+    "conditionOrder": "beforeOutputs",
+    "messageCorrelation": "apiCriteria",
+    "deliveryVariables": "installs",
+    "multiInstanceFinalBody": "modeSpecific",
+    "multiInstanceOutputs": "none",
+    "compensationOrder": "dependency",
+    "compensationHandlerFailure": "failsInstance",
+    "abnormalScopeEnd": "completesNormally",
+    "unhandledError": "endsThrowingPath",
+    "errorCatchVariables": "eventScope",
+    "callBindingTime": "programAssembly",
+    "timerZone": null,
+    "multiInstanceBinding": "loopReferences",
+    "effectResultValues": "activityLocals",
+    "outputContext": "activityScope",
+    "multiInstanceCounters": "cibLocals",
+    "multiInstanceInputFailure": "rollback",
+    "multiInstanceCount": "javaInt",
+    "businessRuleTask": "decisionTable",
+    "inclusiveJoinReach": "outgoingOnly",
+    "branchSchedule": "declarationDepthFirst",
+    "conditionalRetrigger": "eachWrite",
+    "malformedTimer": "rollsBackArming",
+    "messageNames": "addresses",
+    "scopeStart": "required",
+    "signalNames": "addresses",
+    "signalPayload": "variables",
+    "signalDelivery": "occurrenceTargeted",
+    "conditionalStart": "submittedContext",
+    "calledElementResolution": "cibKey",
+    "messageThrowForms": "cibForms"
+  },
+  "elements": [
+    {
+      "start": {
+        "header": {
+          "id": "StartEvent_ClaimReceived",
+          "origin": {
+            "definition": null,
+            "sourceId": "StartEvent_ClaimReceived"
+          },
+          "sourceType": "startEvent",
+          "parent": null
+        },
+        "payload": {
+          "subscription": null,
+          "outgoing": [
+            "Flow_Start_Review"
+          ]
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "Review",
+          "origin": {
+            "definition": null,
+            "sourceId": "Review"
+          },
+          "sourceType": "callActivity",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "call": {
+              "payload": {
+                "calledElement": {
+                  "literal": {
+                    "value": "Process_DoublePassExamine"
+                  }
+                },
+                "calledQName": {
+                  "namespace": "urn:bpmn-lean:scenarios:escalation-call-relay:double-pass-claim",
+                  "localName": "Process_DoublePassExamine"
+                },
+                "binding": "latest",
+                "tenant": null,
+                "businessKey": null,
+                "inputs": [
+                  {
+                    "target": "dossier",
+                    "source": {
+                      "variable": {
+                        "name": "claim"
+                      }
+                    },
+                    "dialect": "callVariable"
+                  }
+                ],
+                "outputs": [
+                  {
+                    "target": "relayedStatus",
+                    "source": {
+                      "variable": {
+                        "name": "status"
+                      }
+                    },
+                    "dialect": "callVariable"
+                  }
+                ],
+                "propagateAllInputs": false,
+                "propagateAllOutputs": false
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Start_Review"
+            ],
+            "outgoing": [
+              "Flow_Review_End"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [
+              {
+                "id": "Boundary_Review_Raise",
+                "sourceId": "Boundary_Review_Raise",
+                "subscription": {
+                  "trigger": {
+                    "escalation": {
+                      "payload": {
+                        "code": "RAISE",
+                        "codeVariable": null
+                      }
+                    }
+                  },
+                  "outputs": [],
+                  "alternatives": [],
+                  "parallelMultiple": false
+                },
+                "interrupting": true,
+                "outgoing": [
+                  "Flow_Raise_Inspect"
+                ]
+              }
+            ],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "Inspect",
+          "origin": {
+            "definition": null,
+            "sourceId": "Inspect"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Inspect the raised claim",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Raise_Inspect"
+            ],
+            "outgoing": [
+              "Flow_Inspect_End"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "EndEvent_Reviewed",
+          "origin": {
+            "definition": null,
+            "sourceId": "EndEvent_Reviewed"
+          },
+          "sourceType": "endEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Review_End"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "EndEvent_Inspected",
+          "origin": {
+            "definition": null,
+            "sourceId": "EndEvent_Inspected"
+          },
+          "sourceType": "endEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Inspect_End"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "start": {
+        "header": {
+          "id": "StartEvent_ExamineRequested",
+          "origin": {
+            "definition": null,
+            "sourceId": "StartEvent_ExamineRequested"
+          },
+          "sourceType": "startEvent",
+          "parent": null
+        },
+        "payload": {
+          "subscription": null,
+          "outgoing": [
+            "Flow_Examine_Start_Draft"
+          ]
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "Draft",
+          "origin": {
+            "definition": null,
+            "sourceId": "Draft"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Draft the examination",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Examine_Start_Draft"
+            ],
+            "outgoing": [
+              "Flow_Examine_Draft_Raise"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "Raise_Draft",
+          "origin": {
+            "definition": null,
+            "sourceId": "Raise_Draft"
+          },
+          "sourceType": "intermediateThrowEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": {
+                "escalation": {
+                  "payload": {
+                    "code": "RAISE"
+                  }
+                }
+              }
+            }
+          },
+          "placement": "intermediate",
+          "incoming": [
+            "Flow_Examine_Draft_Raise"
+          ],
+          "outgoing": [
+            "Flow_Examine_Raise_End"
+          ],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "EndEvent_ExamineDone",
+          "origin": {
+            "definition": null,
+            "sourceId": "EndEvent_ExamineDone"
+          },
+          "sourceType": "endEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Examine_Raise_End"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "scope": {
+        "header": {
+          "id": "Handler_Examine_Raise",
+          "origin": {
+            "definition": null,
+            "sourceId": "Handler_Examine_Raise"
+          },
+          "sourceType": "subProcess",
+          "parent": null
+        },
+        "payload": {
+          "kind": {
+            "eventSubProcess": {
+              "start": {
+                "trigger": {
+                  "escalation": {
+                    "payload": {
+                      "code": "RAISE",
+                      "codeVariable": null
+                    }
+                  }
+                },
+                "outputs": [],
+                "alternatives": [],
+                "parallelMultiple": false
+              },
+              "interrupting": true
+            }
+          },
+          "children": [
+            "Start_Examine_Raise",
+            "Revise",
+            "Relay_Raise"
+          ],
+          "localVariables": [],
+          "items": [],
+          "envelope": {
+            "incoming": [],
+            "outgoing": [],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "start": {
+        "header": {
+          "id": "Start_Examine_Raise",
+          "origin": {
+            "definition": null,
+            "sourceId": "Start_Examine_Raise"
+          },
+          "sourceType": "startEvent",
+          "parent": "Handler_Examine_Raise"
+        },
+        "payload": {
+          "subscription": {
+            "trigger": {
+              "escalation": {
+                "payload": {
+                  "code": "RAISE",
+                  "codeVariable": null
+                }
+              }
+            },
+            "outputs": [],
+            "alternatives": [],
+            "parallelMultiple": false
+          },
+          "outgoing": [
+            "Flow_Handler_Start_Revise"
+          ]
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "Revise",
+          "origin": {
+            "definition": null,
+            "sourceId": "Revise"
+          },
+          "sourceType": "userTask",
+          "parent": "Handler_Examine_Raise"
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Revise the examination",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Handler_Start_Revise"
+            ],
+            "outgoing": [
+              "Flow_Handler_Revise_Relay"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "Relay_Raise",
+          "origin": {
+            "definition": null,
+            "sourceId": "Relay_Raise"
+          },
+          "sourceType": "endEvent",
+          "parent": "Handler_Examine_Raise"
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": {
+                "escalation": {
+                  "payload": {
+                    "code": "RAISE"
+                  }
+                }
+              }
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Handler_Revise_Relay"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    }
+  ],
+  "flows": [
+    {
+      "id": "Flow_Start_Review",
+      "source": "StartEvent_ClaimReceived",
+      "target": "Review",
+      "condition": null
+    },
+    {
+      "id": "Flow_Review_End",
+      "source": "Review",
+      "target": "EndEvent_Reviewed",
+      "condition": null
+    },
+    {
+      "id": "Flow_Raise_Inspect",
+      "source": "Boundary_Review_Raise",
+      "target": "Inspect",
+      "condition": null
+    },
+    {
+      "id": "Flow_Inspect_End",
+      "source": "Inspect",
+      "target": "EndEvent_Inspected",
+      "condition": null
+    },
+    {
+      "id": "Flow_Examine_Start_Draft",
+      "source": "StartEvent_ExamineRequested",
+      "target": "Draft",
+      "condition": null
+    },
+    {
+      "id": "Flow_Examine_Draft_Raise",
+      "source": "Draft",
+      "target": "Raise_Draft",
+      "condition": null
+    },
+    {
+      "id": "Flow_Examine_Raise_End",
+      "source": "Raise_Draft",
+      "target": "EndEvent_ExamineDone",
+      "condition": null
+    },
+    {
+      "id": "Flow_Handler_Start_Revise",
+      "source": "Start_Examine_Raise",
+      "target": "Revise",
+      "condition": null
+    },
+    {
+      "id": "Flow_Handler_Revise_Relay",
+      "source": "Revise",
+      "target": "Relay_Raise",
+      "condition": null
+    }
+  ],
+  "variables": [],
+  "processes": [
+    {
+      "definition": {
+        "key": "Process_DoublePassExamine",
+        "namespace": "urn:bpmn-lean:scenarios:escalation-call-relay:double-pass-claim",
+        "version": null,
+        "versionTag": null,
+        "deployment": null,
+        "tenant": null,
+        "sourceSha256": null
+      },
+      "children": [
+        "StartEvent_ExamineRequested",
+        "Draft",
+        "Raise_Draft",
+        "EndEvent_ExamineDone",
+        "Handler_Examine_Raise"
+      ],
+      "variables": [],
+      "executable": true
+    }
+  ],
+  "executable": true,
+  "decisionResources": []
+}

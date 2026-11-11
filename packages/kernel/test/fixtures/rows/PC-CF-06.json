@@ -1,0 +1,308 @@
+{
+  "identity": {
+    "processId": "Process_CyclicControlFlow",
+    "namespace": "urn:bpmn-lean:test",
+    "sourceSha256": "e17c85a07022f6438ec934598284031ec74ff145091c23eb237bdb8dabf8c216",
+    "profile": "bpmn-2.0.2",
+    "deployment": null
+  },
+  "options": {
+    "relations": [
+      "CIB-AGR-0001",
+      "CIB-AGR-0002",
+      "CIB-AGR-0003",
+      "CIB-AGR-0004",
+      "CIB-AGR-0006",
+      "CIB-AGR-0007",
+      "CIB-AGR-0021",
+      "CIB-CFG-0001",
+      "CIB-CFG-0013",
+      "CIB-CFG-0014",
+      "CIB-DEV-0001",
+      "CIB-DEV-0002",
+      "CIB-EXT-0011",
+      "CIB-INT-0001",
+      "CIB-INT-0008",
+      "CIB-INT-0012",
+      "CIB-INT-0015",
+      "CIB-INT-0016",
+      "CIB-INT-0025",
+      "CIB-INT-0026",
+      "CIB-INT-0029",
+      "CIB-INT-0030",
+      "CIB-INT-0031",
+      "CIB-INT-0032",
+      "CIB-LIM-0002",
+      "CIB-LIM-0003",
+      "CIB-OP-0001"
+    ],
+    "evaluator": "simpleBoolean",
+    "submission": "outputSet",
+    "scopeChainSubmissionBytes": null,
+    "undeclaredWrite": "refused",
+    "errorPathOutputs": "none",
+    "raisedCallOutputs": "none",
+    "technicalFailure": "hostFailure",
+    "incidentProcessCancellation": false,
+    "continuationFailure": "rolledBack",
+    "conditionOrder": "afterOutputs",
+    "messageCorrelation": "modeledKey",
+    "deliveryVariables": "mappedOnly",
+    "multiInstanceFinalBody": "conditionEveryCompletion",
+    "multiInstanceOutputs": "aggregates",
+    "compensationOrder": "dependency",
+    "compensationHandlerFailure": "failsInstance",
+    "abnormalScopeEnd": "withoutOutflow",
+    "unhandledError": "failsInstance",
+    "errorCatchVariables": "refused",
+    "callBindingTime": "programAssembly",
+    "timerZone": null,
+    "multiInstanceBinding": "dataAssociations",
+    "effectResultValues": "outputSet",
+    "outputContext": "submission",
+    "multiInstanceCounters": "none",
+    "multiInstanceInputFailure": "hold",
+    "multiInstanceCount": "integer",
+    "businessRuleTask": "refused",
+    "inclusiveJoinReach": "withBoundaries",
+    "branchSchedule": "orderInvariant",
+    "conditionalRetrigger": "edge",
+    "malformedTimer": "refused",
+    "messageNames": "description",
+    "scopeStart": "implicit",
+    "signalNames": "identifier",
+    "signalPayload": "none",
+    "signalDelivery": "broadcastOnly",
+    "conditionalStart": "refused",
+    "calledElementResolution": "qualifiedName",
+    "messageThrowForms": "refused"
+  },
+  "elements": [
+    {
+      "start": {
+        "header": {
+          "id": "Start",
+          "origin": {
+            "definition": null,
+            "sourceId": "Start"
+          },
+          "sourceType": "startEvent",
+          "parent": null
+        },
+        "payload": {
+          "subscription": null,
+          "outgoing": [
+            "Flow_Start"
+          ]
+        }
+      }
+    },
+    {
+      "gateway": {
+        "header": {
+          "id": "Merge",
+          "origin": {
+            "definition": null,
+            "sourceId": "Merge"
+          },
+          "sourceType": "exclusiveGateway",
+          "parent": null
+        },
+        "payload": {
+          "kind": {
+            "exclusive": {
+              "candidates": [
+                "Flow_Merge_Review"
+              ],
+              "default": null
+            }
+          },
+          "incoming": [
+            "Flow_Start",
+            "Flow_Repeat",
+            "Flow_Rework"
+          ],
+          "outgoing": [
+            "Flow_Merge_Review"
+          ]
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "Review",
+          "origin": {
+            "definition": null,
+            "sourceId": "Review"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Review request",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Merge_Review"
+            ],
+            "outgoing": [
+              "Flow_Review_Choice"
+            ],
+            "inputs": [],
+            "outputs": [
+              {
+                "target": "route",
+                "source": {
+                  "variable": {
+                    "name": "Review_route"
+                  }
+                },
+                "dialect": "dataAssociation"
+              }
+            ],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "gateway": {
+        "header": {
+          "id": "Choice",
+          "origin": {
+            "definition": null,
+            "sourceId": "Choice"
+          },
+          "sourceType": "exclusiveGateway",
+          "parent": null
+        },
+        "payload": {
+          "kind": {
+            "exclusive": {
+              "candidates": [
+                "Flow_Repeat",
+                "Flow_Rework"
+              ],
+              "default": "Flow_Exit"
+            }
+          },
+          "incoming": [
+            "Flow_Review_Choice"
+          ],
+          "outgoing": [
+            "Flow_Repeat",
+            "Flow_Rework",
+            "Flow_Exit"
+          ]
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "End",
+          "origin": {
+            "definition": null,
+            "sourceId": "End"
+          },
+          "sourceType": "endEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Exit"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    }
+  ],
+  "flows": [
+    {
+      "id": "Flow_Start",
+      "source": "Start",
+      "target": "Merge",
+      "condition": null
+    },
+    {
+      "id": "Flow_Merge_Review",
+      "source": "Merge",
+      "target": "Review",
+      "condition": null
+    },
+    {
+      "id": "Flow_Review_Choice",
+      "source": "Review",
+      "target": "Choice",
+      "condition": null
+    },
+    {
+      "id": "Flow_Repeat",
+      "source": "Choice",
+      "target": "Merge",
+      "condition": {
+        "simpleBoolean": {
+          "body": {
+            "stringEquals": {
+              "name": "route",
+              "value": "repeat"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "Flow_Rework",
+      "source": "Choice",
+      "target": "Merge",
+      "condition": {
+        "simpleBoolean": {
+          "body": {
+            "stringEquals": {
+              "name": "route",
+              "value": "rework"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "Flow_Exit",
+      "source": "Choice",
+      "target": "End",
+      "condition": null
+    }
+  ],
+  "variables": [
+    "route"
+  ],
+  "processes": [],
+  "executable": true,
+  "decisionResources": []
+}

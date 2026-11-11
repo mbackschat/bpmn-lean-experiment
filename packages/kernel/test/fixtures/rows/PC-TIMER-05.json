@@ -1,0 +1,768 @@
+{
+  "identity": {
+    "processId": "Process_ReviewLoop",
+    "namespace": "urn:bpmn-lean:scenarios:timer-catch-cycles",
+    "sourceSha256": "bab58016dfe9023861e38761297c38e3d0dc720c5ae5f540c68288f6c7420076",
+    "profile": "cibseven-2.2.0",
+    "deployment": null
+  },
+  "options": {
+    "relations": [
+      "CIB-AGR-0001",
+      "CIB-AGR-0002",
+      "CIB-AGR-0003",
+      "CIB-AGR-0004",
+      "CIB-AGR-0006",
+      "CIB-AGR-0007",
+      "CIB-AGR-0008",
+      "CIB-AGR-0009",
+      "CIB-AGR-0010",
+      "CIB-AGR-0012",
+      "CIB-AGR-0013",
+      "CIB-AGR-0014",
+      "CIB-AGR-0015",
+      "CIB-AGR-0016",
+      "CIB-AGR-0017",
+      "CIB-AGR-0018",
+      "CIB-AGR-0019",
+      "CIB-AGR-0020",
+      "CIB-AGR-0021",
+      "CIB-AGR-0022",
+      "CIB-AGR-0023",
+      "CIB-CFG-0001",
+      "CIB-CFG-0002",
+      "CIB-CFG-0006",
+      "CIB-CFG-0007",
+      "CIB-CFG-0008",
+      "CIB-CFG-0009",
+      "CIB-CFG-0010",
+      "CIB-CFG-0011",
+      "CIB-CFG-0013",
+      "CIB-CFG-0014",
+      "CIB-DEV-0001",
+      "CIB-DEV-0002",
+      "CIB-EXT-0001",
+      "CIB-EXT-0004",
+      "CIB-EXT-0005",
+      "CIB-EXT-0006",
+      "CIB-EXT-0007",
+      "CIB-EXT-0008",
+      "CIB-EXT-0009",
+      "CIB-EXT-0010",
+      "CIB-EXT-0011",
+      "CIB-EXT-0012",
+      "CIB-EXT-0013",
+      "CIB-EXT-0014",
+      "CIB-EXT-0015",
+      "CIB-EXT-0016",
+      "CIB-EXT-0019",
+      "CIB-EXT-0021",
+      "CIB-EXT-0022",
+      "CIB-EXT-0023",
+      "CIB-EXT-0025",
+      "CIB-EXT-0028",
+      "CIB-EXT-0030",
+      "CIB-EXT-0031",
+      "CIB-EXT-0032",
+      "CIB-EXT-0033",
+      "CIB-EXT-0034",
+      "CIB-EXT-0035",
+      "CIB-EXT-0036",
+      "CIB-EXT-0038",
+      "CIB-EXT-0039",
+      "CIB-EXT-0040",
+      "CIB-EXT-0041",
+      "CIB-EXT-0042",
+      "CIB-EXT-0043",
+      "CIB-EXT-0044",
+      "CIB-EXT-0045",
+      "CIB-INT-0001",
+      "CIB-INT-0003",
+      "CIB-INT-0004",
+      "CIB-INT-0005",
+      "CIB-INT-0007",
+      "CIB-INT-0008",
+      "CIB-INT-0009",
+      "CIB-INT-0011",
+      "CIB-INT-0012",
+      "CIB-INT-0013",
+      "CIB-INT-0014",
+      "CIB-INT-0015",
+      "CIB-INT-0016",
+      "CIB-INT-0017",
+      "CIB-INT-0018",
+      "CIB-INT-0019",
+      "CIB-INT-0020",
+      "CIB-INT-0023",
+      "CIB-INT-0024",
+      "CIB-INT-0025",
+      "CIB-INT-0026",
+      "CIB-INT-0027",
+      "CIB-INT-0028",
+      "CIB-INT-0029",
+      "CIB-INT-0030",
+      "CIB-INT-0031",
+      "CIB-INT-0032",
+      "CIB-LIM-0001",
+      "CIB-LIM-0002",
+      "CIB-LIM-0003",
+      "CIB-LIM-0006",
+      "CIB-LIM-0007",
+      "CIB-LIM-0008",
+      "CIB-LIM-0009",
+      "CIB-LIM-0010",
+      "CIB-LIM-0014",
+      "CIB-LIM-0015",
+      "CIB-LIM-0016",
+      "CIB-LIM-0017",
+      "CIB-LIM-0022",
+      "CIB-LIM-0024",
+      "CIB-LIM-0026",
+      "CIB-LIM-0027",
+      "CIB-LIM-0028",
+      "CIB-OP-0001",
+      "CIB-OP-0005",
+      "CIB-OP-0006",
+      "CIB-OP-0007",
+      "CIB-OP-0008",
+      "CIB-OP-0009",
+      "CIB-OP-0010",
+      "CIB-OP-0011",
+      "CIB-OP-0016",
+      "CIB-OP-0019"
+    ],
+    "evaluator": "juel",
+    "submission": "installsVariables",
+    "scopeChainSubmissionBytes": null,
+    "undeclaredWrite": "atInstanceRoot",
+    "errorPathOutputs": "mapped",
+    "raisedCallOutputs": "atCalledRoot",
+    "technicalFailure": "incident",
+    "incidentProcessCancellation": true,
+    "continuationFailure": "rolledBack",
+    "conditionOrder": "beforeOutputs",
+    "messageCorrelation": "apiCriteria",
+    "deliveryVariables": "installs",
+    "multiInstanceFinalBody": "modeSpecific",
+    "multiInstanceOutputs": "none",
+    "compensationOrder": "dependency",
+    "compensationHandlerFailure": "failsInstance",
+    "abnormalScopeEnd": "completesNormally",
+    "unhandledError": "endsThrowingPath",
+    "errorCatchVariables": "eventScope",
+    "callBindingTime": "programAssembly",
+    "timerZone": null,
+    "multiInstanceBinding": "loopReferences",
+    "effectResultValues": "activityLocals",
+    "outputContext": "activityScope",
+    "multiInstanceCounters": "cibLocals",
+    "multiInstanceInputFailure": "rollback",
+    "multiInstanceCount": "javaInt",
+    "businessRuleTask": "decisionTable",
+    "inclusiveJoinReach": "outgoingOnly",
+    "branchSchedule": "declarationDepthFirst",
+    "conditionalRetrigger": "eachWrite",
+    "malformedTimer": "rollsBackArming",
+    "messageNames": "addresses",
+    "scopeStart": "required",
+    "signalNames": "addresses",
+    "signalPayload": "variables",
+    "signalDelivery": "occurrenceTargeted",
+    "conditionalStart": "submittedContext",
+    "calledElementResolution": "cibKey",
+    "messageThrowForms": "cibForms"
+  },
+  "elements": [
+    {
+      "start": {
+        "header": {
+          "id": "Start_Loop",
+          "origin": {
+            "definition": null,
+            "sourceId": "Start_Loop"
+          },
+          "sourceType": "startEvent",
+          "parent": null
+        },
+        "payload": {
+          "subscription": null,
+          "outgoing": [
+            "Flow_Start_Loop_Fork_Loop"
+          ]
+        }
+      }
+    },
+    {
+      "gateway": {
+        "header": {
+          "id": "Fork_Loop",
+          "origin": {
+            "definition": null,
+            "sourceId": "Fork_Loop"
+          },
+          "sourceType": "parallelGateway",
+          "parent": null
+        },
+        "payload": {
+          "kind": "parallel",
+          "incoming": [
+            "Flow_Start_Loop_Fork_Loop"
+          ],
+          "outgoing": [
+            "Flow_Fork_Loop_Merge_Loop",
+            "Flow_Fork_Loop_Catch_Branch"
+          ]
+        }
+      }
+    },
+    {
+      "gateway": {
+        "header": {
+          "id": "Merge_Loop",
+          "origin": {
+            "definition": null,
+            "sourceId": "Merge_Loop"
+          },
+          "sourceType": "exclusiveGateway",
+          "parent": null
+        },
+        "payload": {
+          "kind": {
+            "exclusive": {
+              "candidates": [
+                "Flow_Merge_Loop_Draft"
+              ],
+              "default": null
+            }
+          },
+          "incoming": [
+            "Flow_Fork_Loop_Merge_Loop",
+            "Flow_Gateway_Again_Merge_Loop"
+          ],
+          "outgoing": [
+            "Flow_Merge_Loop_Draft"
+          ]
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "Draft",
+          "origin": {
+            "definition": null,
+            "sourceId": "Draft"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Draft the report",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Merge_Loop_Draft"
+            ],
+            "outgoing": [
+              "Flow_Draft_Catch_Wait"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "Catch_Wait",
+          "origin": {
+            "definition": null,
+            "sourceId": "Catch_Wait"
+          },
+          "sourceType": "intermediateCatchEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "catch": {
+              "subscription": {
+                "trigger": {
+                  "timer": {
+                    "payload": {
+                      "schedule": {
+                        "duration": {
+                          "value": {
+                            "literal": {
+                              "value": "PT10S"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "outputs": [],
+                "alternatives": [],
+                "parallelMultiple": false
+              }
+            }
+          },
+          "placement": "intermediate",
+          "incoming": [
+            "Flow_Draft_Catch_Wait"
+          ],
+          "outgoing": [
+            "Flow_Catch_Wait_Review"
+          ],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "Review",
+          "origin": {
+            "definition": null,
+            "sourceId": "Review"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Review the draft",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Catch_Wait_Review"
+            ],
+            "outgoing": [
+              "Flow_Review_Catch_Cycle"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "Catch_Cycle",
+          "origin": {
+            "definition": null,
+            "sourceId": "Catch_Cycle"
+          },
+          "sourceType": "intermediateCatchEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "catch": {
+              "subscription": {
+                "trigger": {
+                  "timer": {
+                    "payload": {
+                      "schedule": {
+                        "cycle": {
+                          "value": {
+                            "literal": {
+                              "value": "R3/PT10S"
+                            }
+                          },
+                          "dialect": "iso8601"
+                        }
+                      }
+                    }
+                  }
+                },
+                "outputs": [],
+                "alternatives": [],
+                "parallelMultiple": false
+              }
+            }
+          },
+          "placement": "intermediate",
+          "incoming": [
+            "Flow_Review_Catch_Cycle"
+          ],
+          "outgoing": [
+            "Flow_Catch_Cycle_Approve"
+          ],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "Approve",
+          "origin": {
+            "definition": null,
+            "sourceId": "Approve"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Approve or send back",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Catch_Cycle_Approve"
+            ],
+            "outgoing": [
+              "Flow_Approve_Gateway_Again"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "gateway": {
+        "header": {
+          "id": "Gateway_Again",
+          "origin": {
+            "definition": null,
+            "sourceId": "Gateway_Again"
+          },
+          "sourceType": "exclusiveGateway",
+          "parent": null
+        },
+        "payload": {
+          "kind": {
+            "exclusive": {
+              "candidates": [
+                "Flow_Gateway_Again_Merge_Loop"
+              ],
+              "default": "Flow_Gateway_Again_End_Loop"
+            }
+          },
+          "incoming": [
+            "Flow_Approve_Gateway_Again"
+          ],
+          "outgoing": [
+            "Flow_Gateway_Again_Merge_Loop",
+            "Flow_Gateway_Again_End_Loop"
+          ]
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "End_Loop",
+          "origin": {
+            "definition": null,
+            "sourceId": "End_Loop"
+          },
+          "sourceType": "endEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Gateway_Again_End_Loop"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "Catch_Branch",
+          "origin": {
+            "definition": null,
+            "sourceId": "Catch_Branch"
+          },
+          "sourceType": "intermediateCatchEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "catch": {
+              "subscription": {
+                "trigger": {
+                  "timer": {
+                    "payload": {
+                      "schedule": {
+                        "duration": {
+                          "value": {
+                            "literal": {
+                              "value": "PT25S"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "outputs": [],
+                "alternatives": [],
+                "parallelMultiple": false
+              }
+            }
+          },
+          "placement": "intermediate",
+          "incoming": [
+            "Flow_Fork_Loop_Catch_Branch"
+          ],
+          "outgoing": [
+            "Flow_Catch_Branch_Await_Docs"
+          ],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "Await_Docs",
+          "origin": {
+            "definition": null,
+            "sourceId": "Await_Docs"
+          },
+          "sourceType": "receiveTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "receive": {
+              "payload": {
+                "message": {
+                  "messageRef": "Message_Docs",
+                  "name": {
+                    "literal": {
+                      "value": "documents"
+                    }
+                  },
+                  "correlation": [],
+                  "interfaceRef": null,
+                  "operationRef": null
+                },
+                "instantiate": false
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Catch_Branch_Await_Docs"
+            ],
+            "outgoing": [
+              "Flow_Await_Docs_End_Branch"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "End_Branch",
+          "origin": {
+            "definition": null,
+            "sourceId": "End_Branch"
+          },
+          "sourceType": "endEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Await_Docs_End_Branch"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    }
+  ],
+  "flows": [
+    {
+      "id": "Flow_Start_Loop_Fork_Loop",
+      "source": "Start_Loop",
+      "target": "Fork_Loop",
+      "condition": null
+    },
+    {
+      "id": "Flow_Fork_Loop_Merge_Loop",
+      "source": "Fork_Loop",
+      "target": "Merge_Loop",
+      "condition": null
+    },
+    {
+      "id": "Flow_Merge_Loop_Draft",
+      "source": "Merge_Loop",
+      "target": "Draft",
+      "condition": null
+    },
+    {
+      "id": "Flow_Draft_Catch_Wait",
+      "source": "Draft",
+      "target": "Catch_Wait",
+      "condition": null
+    },
+    {
+      "id": "Flow_Catch_Wait_Review",
+      "source": "Catch_Wait",
+      "target": "Review",
+      "condition": null
+    },
+    {
+      "id": "Flow_Review_Catch_Cycle",
+      "source": "Review",
+      "target": "Catch_Cycle",
+      "condition": null
+    },
+    {
+      "id": "Flow_Catch_Cycle_Approve",
+      "source": "Catch_Cycle",
+      "target": "Approve",
+      "condition": null
+    },
+    {
+      "id": "Flow_Approve_Gateway_Again",
+      "source": "Approve",
+      "target": "Gateway_Again",
+      "condition": null
+    },
+    {
+      "id": "Flow_Gateway_Again_Merge_Loop",
+      "source": "Gateway_Again",
+      "target": "Merge_Loop",
+      "condition": {
+        "juel": {
+          "nodes": [
+            {
+              "identifier": {
+                "name": "again"
+              }
+            },
+            {
+              "bool": {
+                "value": true
+              }
+            },
+            {
+              "binary": {
+                "payload": {
+                  "op": "eq",
+                  "left": 0,
+                  "right": 1
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "Flow_Gateway_Again_End_Loop",
+      "source": "Gateway_Again",
+      "target": "End_Loop",
+      "condition": null
+    },
+    {
+      "id": "Flow_Fork_Loop_Catch_Branch",
+      "source": "Fork_Loop",
+      "target": "Catch_Branch",
+      "condition": null
+    },
+    {
+      "id": "Flow_Catch_Branch_Await_Docs",
+      "source": "Catch_Branch",
+      "target": "Await_Docs",
+      "condition": null
+    },
+    {
+      "id": "Flow_Await_Docs_End_Branch",
+      "source": "Await_Docs",
+      "target": "End_Branch",
+      "condition": null
+    }
+  ],
+  "variables": [],
+  "processes": [],
+  "executable": true,
+  "decisionResources": []
+}

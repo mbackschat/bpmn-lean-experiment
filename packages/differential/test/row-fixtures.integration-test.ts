@@ -1,7 +1,8 @@
 /**
  * Guard 21's decoders (docs/kernel/ARCHITECTURE-SPEC.md#guardrails-against-degradation): every row fixture the
- * traceability map names decodes strictly in the built TypeScript kernel and in `kernelRun --decode`. The fast half,
- * which needs no build, is `rowFixtureFindings` in scripts/kernel-guards.test.ts.
+ * traceability map decodes strictly in the built TypeScript kernel and in `kernelRun --decode`, and is exactly what
+ * `scripts/row-fixtures.ts` generates. The fast half, which needs no build, is `rowFixtureFindings` in
+ * scripts/kernel-guards.test.ts.
  */
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -13,6 +14,7 @@ import { test } from "node:test";
 import { decodeProgram, parseStrict } from "@bpmn-lean/kernel";
 
 import { existingRowFixtures, shapeSufficiencyFindings, type RowDecoders } from "../../../scripts/kernel-guards-refusal.ts";
+import { generateRowFixtures, rowFixtureDirectory, rowFixtureDrift } from "../../../scripts/row-fixtures.ts";
 import { decodeLeanPrograms } from "./kernel-targets.ts";
 import { projectRoot } from "./pipeline-target-support.ts";
 
@@ -83,9 +85,27 @@ test("guard 21 fails a seeded undecodable row fixture in each kernel and passes 
   }
 });
 
-test("every row fixture in the repository decodes strictly in both kernels", async (t) => {
-  const findings = shapeSufficiencyFindings(projectRoot, await decoders(existingRowFixtures(projectRoot)));
-  assert.deepEqual(findings.filter((line) => line.includes("does not decode")), []);
-  // Root direction (2026-11-08): a missing fixture or traced member is reported until every row has its fixture.
-  t.diagnostic(`guard 21 pending: ${findings.length} findings`);
+test("the tree passes guard 21: every row has a fixture that decodes strictly in both kernels", async () => {
+  assert.deepEqual(shapeSufficiencyFindings(projectRoot, await decoders(existingRowFixtures(projectRoot))), []);
+});
+
+// Guard 23 for the generator's check: a fixture edited by hand, deleted or added beside the generated ones must fail.
+test("the row fixture check fails on a stale, missing or extra fixture", async () => {
+  const directory = await mkdtemp(path.join(tmpdir(), "row-fixtures-drift-"));
+  try {
+    const expected = new Map([["PC-A-01.json", "{}\n"], ["PC-A-02.json", "[]\n"], ["PC-A-03.json", "null\n"]]);
+    for (const [name, text] of expected) await writeFile(path.join(directory, name), text);
+    await writeFile(path.join(directory, "sources.json"), "{}\n");
+    assert.deepEqual(rowFixtureDrift(expected, directory), []);
+    await writeFile(path.join(directory, "PC-A-01.json"), "{ }\n");
+    await rm(path.join(directory, "PC-A-02.json"));
+    await writeFile(path.join(directory, "PC-A-09.json"), "{}\n");
+    assert.deepEqual(rowFixtureDrift(expected, directory), ["PC-A-01.json is stale", "PC-A-02.json is missing", "PC-A-09.json is not generated"]);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("the committed row fixtures are exactly the generator's output", async () => {
+  assert.deepEqual(rowFixtureDrift(await generateRowFixtures(), path.join(projectRoot, rowFixtureDirectory)), []);
 });

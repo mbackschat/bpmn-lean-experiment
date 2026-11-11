@@ -1,0 +1,318 @@
+{
+  "identity": {
+    "processId": "Process_SettlementCorrelation",
+    "namespace": "https://bpmn-lean.org/scenarios/message-key-correlation",
+    "sourceSha256": "8d16faca66b00378d4ab02189cdd3270143076a46086b46dff68729d90dba086",
+    "profile": "bpmn-2.0.2",
+    "deployment": null
+  },
+  "options": {
+    "relations": [
+      "CIB-AGR-0001",
+      "CIB-AGR-0002",
+      "CIB-AGR-0003",
+      "CIB-AGR-0004",
+      "CIB-AGR-0006",
+      "CIB-AGR-0007",
+      "CIB-AGR-0021",
+      "CIB-CFG-0001",
+      "CIB-CFG-0013",
+      "CIB-CFG-0014",
+      "CIB-DEV-0001",
+      "CIB-DEV-0002",
+      "CIB-EXT-0011",
+      "CIB-INT-0001",
+      "CIB-INT-0008",
+      "CIB-INT-0012",
+      "CIB-INT-0015",
+      "CIB-INT-0016",
+      "CIB-INT-0025",
+      "CIB-INT-0026",
+      "CIB-INT-0029",
+      "CIB-INT-0030",
+      "CIB-INT-0031",
+      "CIB-INT-0032",
+      "CIB-LIM-0002",
+      "CIB-LIM-0003",
+      "CIB-OP-0001"
+    ],
+    "evaluator": "simpleBoolean",
+    "submission": "outputSet",
+    "scopeChainSubmissionBytes": null,
+    "undeclaredWrite": "refused",
+    "errorPathOutputs": "none",
+    "raisedCallOutputs": "none",
+    "technicalFailure": "hostFailure",
+    "incidentProcessCancellation": false,
+    "continuationFailure": "rolledBack",
+    "conditionOrder": "afterOutputs",
+    "messageCorrelation": "modeledKey",
+    "deliveryVariables": "mappedOnly",
+    "multiInstanceFinalBody": "conditionEveryCompletion",
+    "multiInstanceOutputs": "aggregates",
+    "compensationOrder": "dependency",
+    "compensationHandlerFailure": "failsInstance",
+    "abnormalScopeEnd": "withoutOutflow",
+    "unhandledError": "failsInstance",
+    "errorCatchVariables": "refused",
+    "callBindingTime": "programAssembly",
+    "timerZone": null,
+    "multiInstanceBinding": "dataAssociations",
+    "effectResultValues": "outputSet",
+    "outputContext": "submission",
+    "multiInstanceCounters": "none",
+    "multiInstanceInputFailure": "hold",
+    "multiInstanceCount": "integer",
+    "businessRuleTask": "refused",
+    "inclusiveJoinReach": "withBoundaries",
+    "branchSchedule": "orderInvariant",
+    "conditionalRetrigger": "edge",
+    "malformedTimer": "refused",
+    "messageNames": "description",
+    "scopeStart": "implicit",
+    "signalNames": "identifier",
+    "signalPayload": "none",
+    "signalDelivery": "broadcastOnly",
+    "conditionalStart": "refused",
+    "calledElementResolution": "qualifiedName",
+    "messageThrowForms": "refused"
+  },
+  "elements": [
+    {
+      "start": {
+        "header": {
+          "id": "StartEvent_PaymentInstructed",
+          "origin": {
+            "definition": null,
+            "sourceId": "StartEvent_PaymentInstructed"
+          },
+          "sourceType": "startEvent",
+          "parent": null
+        },
+        "payload": {
+          "subscription": null,
+          "outgoing": [
+            "Flow_Instructed_InitialSettlement"
+          ]
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "MessageCatch_InitialSettlement",
+          "origin": {
+            "definition": null,
+            "sourceId": "MessageCatch_InitialSettlement"
+          },
+          "sourceType": "intermediateCatchEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "catch": {
+              "subscription": {
+                "trigger": {
+                  "message": {
+                    "payload": {
+                      "messageRef": "Message_SettlementConfirmed",
+                      "name": {
+                        "literal": {
+                          "value": "Settlement confirmed"
+                        }
+                      },
+                      "correlation": [],
+                      "interfaceRef": "Interface_ClearingHouse",
+                      "operationRef": "Operation_ConfirmSettlement"
+                    }
+                  }
+                },
+                "outputs": [
+                  {
+                    "target": "Property_SettlementReference",
+                    "source": {
+                      "variable": {
+                        "name": "Initial settlement reference"
+                      }
+                    },
+                    "dialect": "dataAssociation"
+                  }
+                ],
+                "alternatives": [],
+                "parallelMultiple": false
+              }
+            }
+          },
+          "placement": "intermediate",
+          "incoming": [
+            "Flow_Instructed_InitialSettlement"
+          ],
+          "outgoing": [
+            "Flow_Initial_Correlated"
+          ],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "MessageCatch_CorrelatedSettlement",
+          "origin": {
+            "definition": null,
+            "sourceId": "MessageCatch_CorrelatedSettlement"
+          },
+          "sourceType": "intermediateCatchEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "catch": {
+              "subscription": {
+                "trigger": {
+                  "message": {
+                    "payload": {
+                      "messageRef": "Message_SettlementConfirmed",
+                      "name": {
+                        "literal": {
+                          "value": "Settlement confirmed"
+                        }
+                      },
+                      "correlation": [
+                        {
+                          "key": "CorrelationKey_SettlementReference",
+                          "value": {
+                            "variable": {
+                              "name": "Property_SettlementReference"
+                            }
+                          }
+                        }
+                      ],
+                      "interfaceRef": "Interface_ClearingHouse",
+                      "operationRef": "Operation_ConfirmSettlement"
+                    }
+                  }
+                },
+                "outputs": [],
+                "alternatives": [],
+                "parallelMultiple": false
+              }
+            }
+          },
+          "placement": "intermediate",
+          "incoming": [
+            "Flow_Initial_Correlated"
+          ],
+          "outgoing": [
+            "Flow_Correlated_Review"
+          ],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "UserTask_ReviewSettlement",
+          "origin": {
+            "definition": null,
+            "sourceId": "UserTask_ReviewSettlement"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Review settlement",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Correlated_Review"
+            ],
+            "outgoing": [
+              "Flow_Review_Recorded"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "EndEvent_SettlementRecorded",
+          "origin": {
+            "definition": null,
+            "sourceId": "EndEvent_SettlementRecorded"
+          },
+          "sourceType": "endEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Review_Recorded"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    }
+  ],
+  "flows": [
+    {
+      "id": "Flow_Instructed_InitialSettlement",
+      "source": "StartEvent_PaymentInstructed",
+      "target": "MessageCatch_InitialSettlement",
+      "condition": null
+    },
+    {
+      "id": "Flow_Initial_Correlated",
+      "source": "MessageCatch_InitialSettlement",
+      "target": "MessageCatch_CorrelatedSettlement",
+      "condition": null
+    },
+    {
+      "id": "Flow_Correlated_Review",
+      "source": "MessageCatch_CorrelatedSettlement",
+      "target": "UserTask_ReviewSettlement",
+      "condition": null
+    },
+    {
+      "id": "Flow_Review_Recorded",
+      "source": "UserTask_ReviewSettlement",
+      "target": "EndEvent_SettlementRecorded",
+      "condition": null
+    }
+  ],
+  "variables": [
+    "Property_SettlementReference"
+  ],
+  "processes": [],
+  "executable": true,
+  "decisionResources": []
+}

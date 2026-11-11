@@ -1,0 +1,550 @@
+{
+  "identity": {
+    "processId": "Process_TerminateEnd",
+    "namespace": "urn:bpmn-lean:terminate-end",
+    "sourceSha256": "dc1626de4e85d318ad99c4e0841e2b25dd1e09dadea09bc1ab84384dcf1f7e8c",
+    "profile": "cibseven-2.2.0",
+    "deployment": null
+  },
+  "options": {
+    "relations": [
+      "CIB-AGR-0001",
+      "CIB-AGR-0002",
+      "CIB-AGR-0003",
+      "CIB-AGR-0004",
+      "CIB-AGR-0006",
+      "CIB-AGR-0007",
+      "CIB-AGR-0008",
+      "CIB-AGR-0009",
+      "CIB-AGR-0010",
+      "CIB-AGR-0012",
+      "CIB-AGR-0013",
+      "CIB-AGR-0014",
+      "CIB-AGR-0015",
+      "CIB-AGR-0016",
+      "CIB-AGR-0017",
+      "CIB-AGR-0018",
+      "CIB-AGR-0019",
+      "CIB-AGR-0020",
+      "CIB-AGR-0021",
+      "CIB-AGR-0022",
+      "CIB-AGR-0023",
+      "CIB-CFG-0001",
+      "CIB-CFG-0002",
+      "CIB-CFG-0006",
+      "CIB-CFG-0007",
+      "CIB-CFG-0008",
+      "CIB-CFG-0009",
+      "CIB-CFG-0010",
+      "CIB-CFG-0011",
+      "CIB-CFG-0013",
+      "CIB-CFG-0014",
+      "CIB-DEV-0001",
+      "CIB-DEV-0002",
+      "CIB-EXT-0001",
+      "CIB-EXT-0004",
+      "CIB-EXT-0005",
+      "CIB-EXT-0006",
+      "CIB-EXT-0007",
+      "CIB-EXT-0008",
+      "CIB-EXT-0009",
+      "CIB-EXT-0010",
+      "CIB-EXT-0011",
+      "CIB-EXT-0012",
+      "CIB-EXT-0013",
+      "CIB-EXT-0014",
+      "CIB-EXT-0015",
+      "CIB-EXT-0016",
+      "CIB-EXT-0019",
+      "CIB-EXT-0021",
+      "CIB-EXT-0022",
+      "CIB-EXT-0023",
+      "CIB-EXT-0025",
+      "CIB-EXT-0028",
+      "CIB-EXT-0030",
+      "CIB-EXT-0031",
+      "CIB-EXT-0032",
+      "CIB-EXT-0033",
+      "CIB-EXT-0034",
+      "CIB-EXT-0035",
+      "CIB-EXT-0036",
+      "CIB-EXT-0038",
+      "CIB-EXT-0039",
+      "CIB-EXT-0040",
+      "CIB-EXT-0041",
+      "CIB-EXT-0042",
+      "CIB-EXT-0043",
+      "CIB-EXT-0044",
+      "CIB-EXT-0045",
+      "CIB-INT-0001",
+      "CIB-INT-0003",
+      "CIB-INT-0004",
+      "CIB-INT-0005",
+      "CIB-INT-0007",
+      "CIB-INT-0008",
+      "CIB-INT-0009",
+      "CIB-INT-0011",
+      "CIB-INT-0012",
+      "CIB-INT-0013",
+      "CIB-INT-0014",
+      "CIB-INT-0015",
+      "CIB-INT-0016",
+      "CIB-INT-0017",
+      "CIB-INT-0018",
+      "CIB-INT-0019",
+      "CIB-INT-0020",
+      "CIB-INT-0023",
+      "CIB-INT-0024",
+      "CIB-INT-0025",
+      "CIB-INT-0026",
+      "CIB-INT-0027",
+      "CIB-INT-0028",
+      "CIB-INT-0029",
+      "CIB-INT-0030",
+      "CIB-INT-0031",
+      "CIB-INT-0032",
+      "CIB-LIM-0001",
+      "CIB-LIM-0002",
+      "CIB-LIM-0003",
+      "CIB-LIM-0006",
+      "CIB-LIM-0007",
+      "CIB-LIM-0008",
+      "CIB-LIM-0009",
+      "CIB-LIM-0010",
+      "CIB-LIM-0014",
+      "CIB-LIM-0015",
+      "CIB-LIM-0016",
+      "CIB-LIM-0017",
+      "CIB-LIM-0022",
+      "CIB-LIM-0024",
+      "CIB-LIM-0026",
+      "CIB-LIM-0027",
+      "CIB-LIM-0028",
+      "CIB-OP-0001",
+      "CIB-OP-0005",
+      "CIB-OP-0006",
+      "CIB-OP-0007",
+      "CIB-OP-0008",
+      "CIB-OP-0009",
+      "CIB-OP-0010",
+      "CIB-OP-0011",
+      "CIB-OP-0016",
+      "CIB-OP-0019"
+    ],
+    "evaluator": "juel",
+    "submission": "installsVariables",
+    "scopeChainSubmissionBytes": null,
+    "undeclaredWrite": "atInstanceRoot",
+    "errorPathOutputs": "mapped",
+    "raisedCallOutputs": "atCalledRoot",
+    "technicalFailure": "incident",
+    "incidentProcessCancellation": true,
+    "continuationFailure": "rolledBack",
+    "conditionOrder": "beforeOutputs",
+    "messageCorrelation": "apiCriteria",
+    "deliveryVariables": "installs",
+    "multiInstanceFinalBody": "modeSpecific",
+    "multiInstanceOutputs": "none",
+    "compensationOrder": "dependency",
+    "compensationHandlerFailure": "failsInstance",
+    "abnormalScopeEnd": "completesNormally",
+    "unhandledError": "endsThrowingPath",
+    "errorCatchVariables": "eventScope",
+    "callBindingTime": "programAssembly",
+    "timerZone": null,
+    "multiInstanceBinding": "loopReferences",
+    "effectResultValues": "activityLocals",
+    "outputContext": "activityScope",
+    "multiInstanceCounters": "cibLocals",
+    "multiInstanceInputFailure": "rollback",
+    "multiInstanceCount": "javaInt",
+    "businessRuleTask": "decisionTable",
+    "inclusiveJoinReach": "outgoingOnly",
+    "branchSchedule": "declarationDepthFirst",
+    "conditionalRetrigger": "eachWrite",
+    "malformedTimer": "rollsBackArming",
+    "messageNames": "addresses",
+    "scopeStart": "required",
+    "signalNames": "addresses",
+    "signalPayload": "variables",
+    "signalDelivery": "occurrenceTargeted",
+    "conditionalStart": "submittedContext",
+    "calledElementResolution": "cibKey",
+    "messageThrowForms": "cibForms"
+  },
+  "elements": [
+    {
+      "start": {
+        "header": {
+          "id": "Start_Root",
+          "origin": {
+            "definition": null,
+            "sourceId": "Start_Root"
+          },
+          "sourceType": "startEvent",
+          "parent": null
+        },
+        "payload": {
+          "subscription": null,
+          "outgoing": [
+            "Flow_RootStartToScope"
+          ]
+        }
+      }
+    },
+    {
+      "scope": {
+        "header": {
+          "id": "SubProcess_Work",
+          "origin": {
+            "definition": null,
+            "sourceId": "SubProcess_Work"
+          },
+          "sourceType": "subProcess",
+          "parent": null
+        },
+        "payload": {
+          "kind": "embedded",
+          "children": [
+            "Start_Child",
+            "Gateway_ChildFork",
+            "UserTask_Trigger",
+            "UserTask_Sibling",
+            "End_Terminate",
+            "End_Sibling"
+          ],
+          "localVariables": [],
+          "items": [],
+          "envelope": {
+            "incoming": [
+              "Flow_RootStartToScope"
+            ],
+            "outgoing": [
+              "Flow_ScopeToOuter"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "start": {
+        "header": {
+          "id": "Start_Child",
+          "origin": {
+            "definition": null,
+            "sourceId": "Start_Child"
+          },
+          "sourceType": "startEvent",
+          "parent": "SubProcess_Work"
+        },
+        "payload": {
+          "subscription": null,
+          "outgoing": [
+            "Flow_ChildStartToFork"
+          ]
+        }
+      }
+    },
+    {
+      "gateway": {
+        "header": {
+          "id": "Gateway_ChildFork",
+          "origin": {
+            "definition": null,
+            "sourceId": "Gateway_ChildFork"
+          },
+          "sourceType": "parallelGateway",
+          "parent": "SubProcess_Work"
+        },
+        "payload": {
+          "kind": "parallel",
+          "incoming": [
+            "Flow_ChildStartToFork"
+          ],
+          "outgoing": [
+            "Flow_ForkToTrigger",
+            "Flow_ForkToSibling"
+          ]
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "UserTask_Trigger",
+          "origin": {
+            "definition": null,
+            "sourceId": "UserTask_Trigger"
+          },
+          "sourceType": "userTask",
+          "parent": "SubProcess_Work"
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Trigger",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_ForkToTrigger"
+            ],
+            "outgoing": [
+              "Flow_TriggerToTerminate"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "UserTask_Sibling",
+          "origin": {
+            "definition": null,
+            "sourceId": "UserTask_Sibling"
+          },
+          "sourceType": "userTask",
+          "parent": "SubProcess_Work"
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Sibling",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_ForkToSibling"
+            ],
+            "outgoing": [
+              "Flow_SiblingToEnd"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "End_Terminate",
+          "origin": {
+            "definition": null,
+            "sourceId": "End_Terminate"
+          },
+          "sourceType": "endEvent",
+          "parent": "SubProcess_Work"
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "terminate"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_TriggerToTerminate"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "End_Sibling",
+          "origin": {
+            "definition": null,
+            "sourceId": "End_Sibling"
+          },
+          "sourceType": "endEvent",
+          "parent": "SubProcess_Work"
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_SiblingToEnd"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "UserTask_Outer",
+          "origin": {
+            "definition": null,
+            "sourceId": "UserTask_Outer"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Outer",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_ScopeToOuter"
+            ],
+            "outgoing": [
+              "Flow_OuterToEnd"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "End_Root",
+          "origin": {
+            "definition": null,
+            "sourceId": "End_Root"
+          },
+          "sourceType": "endEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_OuterToEnd"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    }
+  ],
+  "flows": [
+    {
+      "id": "Flow_ChildStartToFork",
+      "source": "Start_Child",
+      "target": "Gateway_ChildFork",
+      "condition": null
+    },
+    {
+      "id": "Flow_ForkToTrigger",
+      "source": "Gateway_ChildFork",
+      "target": "UserTask_Trigger",
+      "condition": null
+    },
+    {
+      "id": "Flow_ForkToSibling",
+      "source": "Gateway_ChildFork",
+      "target": "UserTask_Sibling",
+      "condition": null
+    },
+    {
+      "id": "Flow_TriggerToTerminate",
+      "source": "UserTask_Trigger",
+      "target": "End_Terminate",
+      "condition": null
+    },
+    {
+      "id": "Flow_SiblingToEnd",
+      "source": "UserTask_Sibling",
+      "target": "End_Sibling",
+      "condition": null
+    },
+    {
+      "id": "Flow_RootStartToScope",
+      "source": "Start_Root",
+      "target": "SubProcess_Work",
+      "condition": null
+    },
+    {
+      "id": "Flow_ScopeToOuter",
+      "source": "SubProcess_Work",
+      "target": "UserTask_Outer",
+      "condition": null
+    },
+    {
+      "id": "Flow_OuterToEnd",
+      "source": "UserTask_Outer",
+      "target": "End_Root",
+      "condition": null
+    }
+  ],
+  "variables": [],
+  "processes": [],
+  "executable": true,
+  "decisionResources": []
+}

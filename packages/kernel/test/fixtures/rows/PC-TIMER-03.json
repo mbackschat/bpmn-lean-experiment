@@ -1,0 +1,1076 @@
+{
+  "identity": {
+    "processId": "Process_DerivedDeadlines",
+    "namespace": "urn:bpmn-lean:scenarios:timer-data-derived",
+    "sourceSha256": "b2d986fb6397ce5082b19754d86a39fa74ee4143a1f0810dfe5e4361c75f9ebb",
+    "profile": "cibseven-2.2.0",
+    "deployment": null
+  },
+  "options": {
+    "relations": [
+      "CIB-AGR-0001",
+      "CIB-AGR-0002",
+      "CIB-AGR-0003",
+      "CIB-AGR-0004",
+      "CIB-AGR-0006",
+      "CIB-AGR-0007",
+      "CIB-AGR-0008",
+      "CIB-AGR-0009",
+      "CIB-AGR-0010",
+      "CIB-AGR-0012",
+      "CIB-AGR-0013",
+      "CIB-AGR-0014",
+      "CIB-AGR-0015",
+      "CIB-AGR-0016",
+      "CIB-AGR-0017",
+      "CIB-AGR-0018",
+      "CIB-AGR-0019",
+      "CIB-AGR-0020",
+      "CIB-AGR-0021",
+      "CIB-AGR-0022",
+      "CIB-AGR-0023",
+      "CIB-CFG-0001",
+      "CIB-CFG-0002",
+      "CIB-CFG-0006",
+      "CIB-CFG-0007",
+      "CIB-CFG-0008",
+      "CIB-CFG-0009",
+      "CIB-CFG-0010",
+      "CIB-CFG-0011",
+      "CIB-CFG-0013",
+      "CIB-CFG-0014",
+      "CIB-DEV-0001",
+      "CIB-DEV-0002",
+      "CIB-EXT-0001",
+      "CIB-EXT-0004",
+      "CIB-EXT-0005",
+      "CIB-EXT-0006",
+      "CIB-EXT-0007",
+      "CIB-EXT-0008",
+      "CIB-EXT-0009",
+      "CIB-EXT-0010",
+      "CIB-EXT-0011",
+      "CIB-EXT-0012",
+      "CIB-EXT-0013",
+      "CIB-EXT-0014",
+      "CIB-EXT-0015",
+      "CIB-EXT-0016",
+      "CIB-EXT-0019",
+      "CIB-EXT-0021",
+      "CIB-EXT-0022",
+      "CIB-EXT-0023",
+      "CIB-EXT-0025",
+      "CIB-EXT-0028",
+      "CIB-EXT-0030",
+      "CIB-EXT-0031",
+      "CIB-EXT-0032",
+      "CIB-EXT-0033",
+      "CIB-EXT-0034",
+      "CIB-EXT-0035",
+      "CIB-EXT-0036",
+      "CIB-EXT-0038",
+      "CIB-EXT-0039",
+      "CIB-EXT-0040",
+      "CIB-EXT-0041",
+      "CIB-EXT-0042",
+      "CIB-EXT-0043",
+      "CIB-EXT-0044",
+      "CIB-EXT-0045",
+      "CIB-INT-0001",
+      "CIB-INT-0003",
+      "CIB-INT-0004",
+      "CIB-INT-0005",
+      "CIB-INT-0007",
+      "CIB-INT-0008",
+      "CIB-INT-0009",
+      "CIB-INT-0011",
+      "CIB-INT-0012",
+      "CIB-INT-0013",
+      "CIB-INT-0014",
+      "CIB-INT-0015",
+      "CIB-INT-0016",
+      "CIB-INT-0017",
+      "CIB-INT-0018",
+      "CIB-INT-0019",
+      "CIB-INT-0020",
+      "CIB-INT-0023",
+      "CIB-INT-0024",
+      "CIB-INT-0025",
+      "CIB-INT-0026",
+      "CIB-INT-0027",
+      "CIB-INT-0028",
+      "CIB-INT-0029",
+      "CIB-INT-0030",
+      "CIB-INT-0031",
+      "CIB-INT-0032",
+      "CIB-LIM-0001",
+      "CIB-LIM-0002",
+      "CIB-LIM-0003",
+      "CIB-LIM-0006",
+      "CIB-LIM-0007",
+      "CIB-LIM-0008",
+      "CIB-LIM-0009",
+      "CIB-LIM-0010",
+      "CIB-LIM-0014",
+      "CIB-LIM-0015",
+      "CIB-LIM-0016",
+      "CIB-LIM-0017",
+      "CIB-LIM-0022",
+      "CIB-LIM-0024",
+      "CIB-LIM-0026",
+      "CIB-LIM-0027",
+      "CIB-LIM-0028",
+      "CIB-OP-0001",
+      "CIB-OP-0005",
+      "CIB-OP-0006",
+      "CIB-OP-0007",
+      "CIB-OP-0008",
+      "CIB-OP-0009",
+      "CIB-OP-0010",
+      "CIB-OP-0011",
+      "CIB-OP-0016",
+      "CIB-OP-0019"
+    ],
+    "evaluator": "juel",
+    "submission": "installsVariables",
+    "scopeChainSubmissionBytes": null,
+    "undeclaredWrite": "atInstanceRoot",
+    "errorPathOutputs": "mapped",
+    "raisedCallOutputs": "atCalledRoot",
+    "technicalFailure": "incident",
+    "incidentProcessCancellation": true,
+    "continuationFailure": "rolledBack",
+    "conditionOrder": "beforeOutputs",
+    "messageCorrelation": "apiCriteria",
+    "deliveryVariables": "installs",
+    "multiInstanceFinalBody": "modeSpecific",
+    "multiInstanceOutputs": "none",
+    "compensationOrder": "dependency",
+    "compensationHandlerFailure": "failsInstance",
+    "abnormalScopeEnd": "completesNormally",
+    "unhandledError": "endsThrowingPath",
+    "errorCatchVariables": "eventScope",
+    "callBindingTime": "programAssembly",
+    "timerZone": null,
+    "multiInstanceBinding": "loopReferences",
+    "effectResultValues": "activityLocals",
+    "outputContext": "activityScope",
+    "multiInstanceCounters": "cibLocals",
+    "multiInstanceInputFailure": "rollback",
+    "multiInstanceCount": "javaInt",
+    "businessRuleTask": "decisionTable",
+    "inclusiveJoinReach": "outgoingOnly",
+    "branchSchedule": "declarationDepthFirst",
+    "conditionalRetrigger": "eachWrite",
+    "malformedTimer": "rollsBackArming",
+    "messageNames": "addresses",
+    "scopeStart": "required",
+    "signalNames": "addresses",
+    "signalPayload": "variables",
+    "signalDelivery": "occurrenceTargeted",
+    "conditionalStart": "submittedContext",
+    "calledElementResolution": "cibKey",
+    "messageThrowForms": "cibForms"
+  },
+  "elements": [
+    {
+      "start": {
+        "header": {
+          "id": "Start_Derived",
+          "origin": {
+            "definition": null,
+            "sourceId": "Start_Derived"
+          },
+          "sourceType": "startEvent",
+          "parent": null
+        },
+        "payload": {
+          "subscription": null,
+          "outgoing": [
+            "Flow_Start_Derived_Prepare"
+          ]
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "Prepare",
+          "origin": {
+            "definition": null,
+            "sourceId": "Prepare"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Prepare the deadline inputs",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Start_Derived_Prepare"
+            ],
+            "outgoing": [
+              "Flow_Prepare_Gateway_Route"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "gateway": {
+        "header": {
+          "id": "Gateway_Route",
+          "origin": {
+            "definition": null,
+            "sourceId": "Gateway_Route"
+          },
+          "sourceType": "exclusiveGateway",
+          "parent": null
+        },
+        "payload": {
+          "kind": {
+            "exclusive": {
+              "candidates": [
+                "Flow_Gateway_Route_Catch_Delay",
+                "Flow_Gateway_Route_Host_Work",
+                "Flow_Gateway_Route_Catch_Due",
+                "Flow_Gateway_Route_Host_Remind"
+              ],
+              "default": null
+            }
+          },
+          "incoming": [
+            "Flow_Prepare_Gateway_Route"
+          ],
+          "outgoing": [
+            "Flow_Gateway_Route_Catch_Delay",
+            "Flow_Gateway_Route_Host_Work",
+            "Flow_Gateway_Route_Catch_Due",
+            "Flow_Gateway_Route_Host_Remind"
+          ]
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "Catch_Delay",
+          "origin": {
+            "definition": null,
+            "sourceId": "Catch_Delay"
+          },
+          "sourceType": "intermediateCatchEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "catch": {
+              "subscription": {
+                "trigger": {
+                  "timer": {
+                    "payload": {
+                      "schedule": {
+                        "duration": {
+                          "value": {
+                            "expression": {
+                              "body": {
+                                "variable": {
+                                  "name": "delay"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "outputs": [],
+                "alternatives": [],
+                "parallelMultiple": false
+              }
+            }
+          },
+          "placement": "intermediate",
+          "incoming": [
+            "Flow_Gateway_Route_Catch_Delay"
+          ],
+          "outgoing": [
+            "Flow_Catch_Delay_Proceed_Catch"
+          ],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "Proceed_Catch",
+          "origin": {
+            "definition": null,
+            "sourceId": "Proceed_Catch"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Proceed after the delay",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Catch_Delay_Proceed_Catch"
+            ],
+            "outgoing": [
+              "Flow_Proceed_Catch_End_Catch"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "End_Catch",
+          "origin": {
+            "definition": null,
+            "sourceId": "End_Catch"
+          },
+          "sourceType": "endEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Proceed_Catch_End_Catch"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "Host_Work",
+          "origin": {
+            "definition": null,
+            "sourceId": "Host_Work"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Work against a limit",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Gateway_Route_Host_Work"
+            ],
+            "outgoing": [
+              "Flow_Host_Work_End_Work"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [
+              {
+                "id": "Limit",
+                "sourceId": "Limit",
+                "subscription": {
+                  "trigger": {
+                    "timer": {
+                      "payload": {
+                        "schedule": {
+                          "duration": {
+                            "value": {
+                              "expression": {
+                                "body": {
+                                  "variable": {
+                                    "name": "limit"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "outputs": [],
+                  "alternatives": [],
+                  "parallelMultiple": false
+                },
+                "interrupting": true,
+                "outgoing": [
+                  "Flow_Limit_Handler_Limit"
+                ]
+              }
+            ],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "Handler_Limit",
+          "origin": {
+            "definition": null,
+            "sourceId": "Handler_Limit"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Handle the limit",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Limit_Handler_Limit"
+            ],
+            "outgoing": [
+              "Flow_Handler_Limit_End_Limit"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "End_Work",
+          "origin": {
+            "definition": null,
+            "sourceId": "End_Work"
+          },
+          "sourceType": "endEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Host_Work_End_Work"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "End_Limit",
+          "origin": {
+            "definition": null,
+            "sourceId": "End_Limit"
+          },
+          "sourceType": "endEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Handler_Limit_End_Limit"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "Catch_Due",
+          "origin": {
+            "definition": null,
+            "sourceId": "Catch_Due"
+          },
+          "sourceType": "intermediateCatchEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "catch": {
+              "subscription": {
+                "trigger": {
+                  "timer": {
+                    "payload": {
+                      "schedule": {
+                        "date": {
+                          "value": {
+                            "expression": {
+                              "body": {
+                                "variable": {
+                                  "name": "due"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "outputs": [],
+                "alternatives": [],
+                "parallelMultiple": false
+              }
+            }
+          },
+          "placement": "intermediate",
+          "incoming": [
+            "Flow_Gateway_Route_Catch_Due"
+          ],
+          "outgoing": [
+            "Flow_Catch_Due_Proceed_Date"
+          ],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "Proceed_Date",
+          "origin": {
+            "definition": null,
+            "sourceId": "Proceed_Date"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Proceed after the due date",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Catch_Due_Proceed_Date"
+            ],
+            "outgoing": [
+              "Flow_Proceed_Date_End_Date"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "End_Date",
+          "origin": {
+            "definition": null,
+            "sourceId": "End_Date"
+          },
+          "sourceType": "endEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Proceed_Date_End_Date"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "Host_Remind",
+          "origin": {
+            "definition": null,
+            "sourceId": "Host_Remind"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Work with reminders",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Gateway_Route_Host_Remind"
+            ],
+            "outgoing": [
+              "Flow_Host_Remind_End_Remind"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [
+              {
+                "id": "Cadence",
+                "sourceId": "Cadence",
+                "subscription": {
+                  "trigger": {
+                    "timer": {
+                      "payload": {
+                        "schedule": {
+                          "cycle": {
+                            "value": {
+                              "expression": {
+                                "body": {
+                                  "variable": {
+                                    "name": "cadence"
+                                  }
+                                }
+                              }
+                            },
+                            "dialect": "iso8601"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "outputs": [],
+                  "alternatives": [],
+                  "parallelMultiple": false
+                },
+                "interrupting": false,
+                "outgoing": [
+                  "Flow_Cadence_Handler_Cadence"
+                ]
+              }
+            ],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "Handler_Cadence",
+          "origin": {
+            "definition": null,
+            "sourceId": "Handler_Cadence"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Respond to the reminder",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Cadence_Handler_Cadence"
+            ],
+            "outgoing": [
+              "Flow_Handler_Cadence_End_Cadence"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "End_Remind",
+          "origin": {
+            "definition": null,
+            "sourceId": "End_Remind"
+          },
+          "sourceType": "endEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Host_Remind_End_Remind"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "End_Cadence",
+          "origin": {
+            "definition": null,
+            "sourceId": "End_Cadence"
+          },
+          "sourceType": "endEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Handler_Cadence_End_Cadence"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    }
+  ],
+  "flows": [
+    {
+      "id": "Flow_Start_Derived_Prepare",
+      "source": "Start_Derived",
+      "target": "Prepare",
+      "condition": null
+    },
+    {
+      "id": "Flow_Prepare_Gateway_Route",
+      "source": "Prepare",
+      "target": "Gateway_Route",
+      "condition": null
+    },
+    {
+      "id": "Flow_Gateway_Route_Catch_Delay",
+      "source": "Gateway_Route",
+      "target": "Catch_Delay",
+      "condition": {
+        "juel": {
+          "nodes": [
+            {
+              "identifier": {
+                "name": "route"
+              }
+            },
+            {
+              "stringLiteral": {
+                "value": "catch"
+              }
+            },
+            {
+              "binary": {
+                "payload": {
+                  "op": "eq",
+                  "left": 0,
+                  "right": 1
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "Flow_Catch_Delay_Proceed_Catch",
+      "source": "Catch_Delay",
+      "target": "Proceed_Catch",
+      "condition": null
+    },
+    {
+      "id": "Flow_Proceed_Catch_End_Catch",
+      "source": "Proceed_Catch",
+      "target": "End_Catch",
+      "condition": null
+    },
+    {
+      "id": "Flow_Gateway_Route_Host_Work",
+      "source": "Gateway_Route",
+      "target": "Host_Work",
+      "condition": {
+        "juel": {
+          "nodes": [
+            {
+              "identifier": {
+                "name": "route"
+              }
+            },
+            {
+              "stringLiteral": {
+                "value": "boundary"
+              }
+            },
+            {
+              "binary": {
+                "payload": {
+                  "op": "eq",
+                  "left": 0,
+                  "right": 1
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "Flow_Host_Work_End_Work",
+      "source": "Host_Work",
+      "target": "End_Work",
+      "condition": null
+    },
+    {
+      "id": "Flow_Limit_Handler_Limit",
+      "source": "Limit",
+      "target": "Handler_Limit",
+      "condition": null
+    },
+    {
+      "id": "Flow_Handler_Limit_End_Limit",
+      "source": "Handler_Limit",
+      "target": "End_Limit",
+      "condition": null
+    },
+    {
+      "id": "Flow_Gateway_Route_Catch_Due",
+      "source": "Gateway_Route",
+      "target": "Catch_Due",
+      "condition": {
+        "juel": {
+          "nodes": [
+            {
+              "identifier": {
+                "name": "route"
+              }
+            },
+            {
+              "stringLiteral": {
+                "value": "date"
+              }
+            },
+            {
+              "binary": {
+                "payload": {
+                  "op": "eq",
+                  "left": 0,
+                  "right": 1
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "Flow_Catch_Due_Proceed_Date",
+      "source": "Catch_Due",
+      "target": "Proceed_Date",
+      "condition": null
+    },
+    {
+      "id": "Flow_Proceed_Date_End_Date",
+      "source": "Proceed_Date",
+      "target": "End_Date",
+      "condition": null
+    },
+    {
+      "id": "Flow_Gateway_Route_Host_Remind",
+      "source": "Gateway_Route",
+      "target": "Host_Remind",
+      "condition": {
+        "juel": {
+          "nodes": [
+            {
+              "identifier": {
+                "name": "route"
+              }
+            },
+            {
+              "stringLiteral": {
+                "value": "cycle"
+              }
+            },
+            {
+              "binary": {
+                "payload": {
+                  "op": "eq",
+                  "left": 0,
+                  "right": 1
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "Flow_Host_Remind_End_Remind",
+      "source": "Host_Remind",
+      "target": "End_Remind",
+      "condition": null
+    },
+    {
+      "id": "Flow_Cadence_Handler_Cadence",
+      "source": "Cadence",
+      "target": "Handler_Cadence",
+      "condition": null
+    },
+    {
+      "id": "Flow_Handler_Cadence_End_Cadence",
+      "source": "Handler_Cadence",
+      "target": "End_Cadence",
+      "condition": null
+    }
+  ],
+  "variables": [],
+  "processes": [],
+  "executable": true,
+  "decisionResources": []
+}

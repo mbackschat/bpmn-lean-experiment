@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             id="Definitions_RowTimer08" targetNamespace="urn:bpmn-lean:row-fixtures:PC-TIMER-08">
+  <process id="Process_RowTimer08" name="Timers in a Transaction's Multi-Instance bodies and around the Transaction" isExecutable="true">
+    <startEvent id="Start" />
+    <transaction id="Booking" name="Book the items">
+      <startEvent id="BookingStarted" />
+      <subProcess id="BookItems" name="Book each item">
+        <multiInstanceLoopCharacteristics isSequential="false">
+          <loopCardinality>2</loopCardinality>
+        </multiInstanceLoopCharacteristics>
+        <startEvent id="ItemStarted" />
+        <userTask id="BookItem" name="Book the item" />
+        <endEvent id="ItemBooked" />
+        <sequenceFlow id="Flow_Item_Book" sourceRef="ItemStarted" targetRef="BookItem" />
+        <sequenceFlow id="Flow_Book_Booked" sourceRef="BookItem" targetRef="ItemBooked" />
+        <subProcess id="RemindItem" name="Remind about the item" triggeredByEvent="true">
+          <startEvent id="ItemReminderDue" isInterrupting="false">
+            <timerEventDefinition id="ItemReminderDue_Timer">
+              <timeDuration xsi:type="tFormalExpression">PT10M</timeDuration>
+            </timerEventDefinition>
+          </startEvent>
+          <userTask id="SendItemReminder" name="Send the item reminder" />
+          <endEvent id="ItemReminded" />
+          <sequenceFlow id="Flow_Due_Send" sourceRef="ItemReminderDue" targetRef="SendItemReminder" />
+          <sequenceFlow id="Flow_Send_Reminded" sourceRef="SendItemReminder" targetRef="ItemReminded" />
+        </subProcess>
+      </subProcess>
+      <endEvent id="BookingDone" />
+      <sequenceFlow id="Flow_Booking_Items" sourceRef="BookingStarted" targetRef="BookItems" />
+      <sequenceFlow id="Flow_Items_Done" sourceRef="BookItems" targetRef="BookingDone" />
+    </transaction>
+    <boundaryEvent id="BookingDeadline" attachedToRef="Booking">
+      <timerEventDefinition id="BookingDeadline_Timer">
+        <timeDuration xsi:type="tFormalExpression">PT1H</timeDuration>
+      </timerEventDefinition>
+    </boundaryEvent>
+    <userTask id="Confirm" name="Confirm the booking" />
+    <userTask id="Expire" name="Expire the booking" />
+    <endEvent id="End" />
+    <endEvent id="Expired" />
+    <sequenceFlow id="Flow_Start_Booking" sourceRef="Start" targetRef="Booking" />
+    <sequenceFlow id="Flow_Booking_Confirm" sourceRef="Booking" targetRef="Confirm" />
+    <sequenceFlow id="Flow_Confirm_End" sourceRef="Confirm" targetRef="End" />
+    <sequenceFlow id="Flow_Deadline_Expire" sourceRef="BookingDeadline" targetRef="Expire" />
+    <sequenceFlow id="Flow_Expire_Expired" sourceRef="Expire" targetRef="Expired" />
+  </process>
+</definitions>

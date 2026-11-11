@@ -1,0 +1,1813 @@
+{
+  "identity": {
+    "processId": "Process_ExpressionProbes",
+    "namespace": "urn:bpmn-lean:scenarios:expression-cardinality-and-collections:expression-probes",
+    "sourceSha256": "00af21f167758bc5f997c8d55c947826457228d82e5641fb62b9f86ac11d844f",
+    "profile": "cibseven-2.2.0",
+    "deployment": null
+  },
+  "options": {
+    "relations": [
+      "CIB-AGR-0001",
+      "CIB-AGR-0002",
+      "CIB-AGR-0003",
+      "CIB-AGR-0004",
+      "CIB-AGR-0006",
+      "CIB-AGR-0007",
+      "CIB-AGR-0008",
+      "CIB-AGR-0009",
+      "CIB-AGR-0010",
+      "CIB-AGR-0012",
+      "CIB-AGR-0013",
+      "CIB-AGR-0014",
+      "CIB-AGR-0015",
+      "CIB-AGR-0016",
+      "CIB-AGR-0017",
+      "CIB-AGR-0018",
+      "CIB-AGR-0019",
+      "CIB-AGR-0020",
+      "CIB-AGR-0021",
+      "CIB-AGR-0022",
+      "CIB-AGR-0023",
+      "CIB-CFG-0001",
+      "CIB-CFG-0002",
+      "CIB-CFG-0006",
+      "CIB-CFG-0007",
+      "CIB-CFG-0008",
+      "CIB-CFG-0009",
+      "CIB-CFG-0010",
+      "CIB-CFG-0011",
+      "CIB-CFG-0013",
+      "CIB-CFG-0014",
+      "CIB-DEV-0001",
+      "CIB-DEV-0002",
+      "CIB-EXT-0001",
+      "CIB-EXT-0004",
+      "CIB-EXT-0005",
+      "CIB-EXT-0006",
+      "CIB-EXT-0007",
+      "CIB-EXT-0008",
+      "CIB-EXT-0009",
+      "CIB-EXT-0010",
+      "CIB-EXT-0011",
+      "CIB-EXT-0012",
+      "CIB-EXT-0013",
+      "CIB-EXT-0014",
+      "CIB-EXT-0015",
+      "CIB-EXT-0016",
+      "CIB-EXT-0019",
+      "CIB-EXT-0021",
+      "CIB-EXT-0022",
+      "CIB-EXT-0023",
+      "CIB-EXT-0025",
+      "CIB-EXT-0028",
+      "CIB-EXT-0030",
+      "CIB-EXT-0031",
+      "CIB-EXT-0032",
+      "CIB-EXT-0033",
+      "CIB-EXT-0034",
+      "CIB-EXT-0035",
+      "CIB-EXT-0036",
+      "CIB-EXT-0038",
+      "CIB-EXT-0039",
+      "CIB-EXT-0040",
+      "CIB-EXT-0041",
+      "CIB-EXT-0042",
+      "CIB-EXT-0043",
+      "CIB-EXT-0044",
+      "CIB-EXT-0045",
+      "CIB-INT-0001",
+      "CIB-INT-0003",
+      "CIB-INT-0004",
+      "CIB-INT-0005",
+      "CIB-INT-0007",
+      "CIB-INT-0008",
+      "CIB-INT-0009",
+      "CIB-INT-0011",
+      "CIB-INT-0012",
+      "CIB-INT-0013",
+      "CIB-INT-0014",
+      "CIB-INT-0015",
+      "CIB-INT-0016",
+      "CIB-INT-0017",
+      "CIB-INT-0018",
+      "CIB-INT-0019",
+      "CIB-INT-0020",
+      "CIB-INT-0023",
+      "CIB-INT-0024",
+      "CIB-INT-0025",
+      "CIB-INT-0026",
+      "CIB-INT-0027",
+      "CIB-INT-0028",
+      "CIB-INT-0029",
+      "CIB-INT-0030",
+      "CIB-INT-0031",
+      "CIB-INT-0032",
+      "CIB-LIM-0001",
+      "CIB-LIM-0002",
+      "CIB-LIM-0003",
+      "CIB-LIM-0006",
+      "CIB-LIM-0007",
+      "CIB-LIM-0008",
+      "CIB-LIM-0009",
+      "CIB-LIM-0010",
+      "CIB-LIM-0014",
+      "CIB-LIM-0015",
+      "CIB-LIM-0016",
+      "CIB-LIM-0017",
+      "CIB-LIM-0022",
+      "CIB-LIM-0024",
+      "CIB-LIM-0026",
+      "CIB-LIM-0027",
+      "CIB-LIM-0028",
+      "CIB-OP-0001",
+      "CIB-OP-0005",
+      "CIB-OP-0006",
+      "CIB-OP-0007",
+      "CIB-OP-0008",
+      "CIB-OP-0009",
+      "CIB-OP-0010",
+      "CIB-OP-0011",
+      "CIB-OP-0016",
+      "CIB-OP-0019"
+    ],
+    "evaluator": "juel",
+    "submission": "installsVariables",
+    "scopeChainSubmissionBytes": null,
+    "undeclaredWrite": "atInstanceRoot",
+    "errorPathOutputs": "mapped",
+    "raisedCallOutputs": "atCalledRoot",
+    "technicalFailure": "incident",
+    "incidentProcessCancellation": true,
+    "continuationFailure": "rolledBack",
+    "conditionOrder": "beforeOutputs",
+    "messageCorrelation": "apiCriteria",
+    "deliveryVariables": "installs",
+    "multiInstanceFinalBody": "modeSpecific",
+    "multiInstanceOutputs": "none",
+    "compensationOrder": "dependency",
+    "compensationHandlerFailure": "failsInstance",
+    "abnormalScopeEnd": "completesNormally",
+    "unhandledError": "endsThrowingPath",
+    "errorCatchVariables": "eventScope",
+    "callBindingTime": "programAssembly",
+    "timerZone": null,
+    "multiInstanceBinding": "loopReferences",
+    "effectResultValues": "activityLocals",
+    "outputContext": "activityScope",
+    "multiInstanceCounters": "cibLocals",
+    "multiInstanceInputFailure": "rollback",
+    "multiInstanceCount": "javaInt",
+    "businessRuleTask": "decisionTable",
+    "inclusiveJoinReach": "outgoingOnly",
+    "branchSchedule": "declarationDepthFirst",
+    "conditionalRetrigger": "eachWrite",
+    "malformedTimer": "rollsBackArming",
+    "messageNames": "addresses",
+    "scopeStart": "required",
+    "signalNames": "addresses",
+    "signalPayload": "variables",
+    "signalDelivery": "occurrenceTargeted",
+    "conditionalStart": "submittedContext",
+    "calledElementResolution": "cibKey",
+    "messageThrowForms": "cibForms"
+  },
+  "elements": [
+    {
+      "start": {
+        "header": {
+          "id": "StartEvent_Start",
+          "origin": {
+            "definition": null,
+            "sourceId": "StartEvent_Start"
+          },
+          "sourceType": "startEvent",
+          "parent": null
+        },
+        "payload": {
+          "subscription": null,
+          "outgoing": [
+            "Flow_Start_Select"
+          ]
+        }
+      }
+    },
+    {
+      "gateway": {
+        "header": {
+          "id": "Gateway_Select",
+          "origin": {
+            "definition": null,
+            "sourceId": "Gateway_Select"
+          },
+          "sourceType": "exclusiveGateway",
+          "parent": null
+        },
+        "payload": {
+          "kind": {
+            "exclusive": {
+              "candidates": [
+                "Flow_ToSizeMethod",
+                "Flow_ToStructuredCount",
+                "Flow_ToNumericTextCount",
+                "Flow_ToNonNumericTextCount",
+                "Flow_ToBooleanCount",
+                "Flow_ToNegativeComputedCount",
+                "Flow_ToFractionalComputedCount",
+                "Flow_ToNullCount",
+                "Flow_ToNestedListCollection",
+                "Flow_ToMapCollection",
+                "Flow_ToNullCollection"
+              ],
+              "default": "Flow_NoProbe"
+            }
+          },
+          "incoming": [
+            "Flow_Start_Select"
+          ],
+          "outgoing": [
+            "Flow_ToSizeMethod",
+            "Flow_ToStructuredCount",
+            "Flow_ToNumericTextCount",
+            "Flow_ToNonNumericTextCount",
+            "Flow_ToBooleanCount",
+            "Flow_ToNegativeComputedCount",
+            "Flow_ToFractionalComputedCount",
+            "Flow_ToNullCount",
+            "Flow_ToNestedListCollection",
+            "Flow_ToMapCollection",
+            "Flow_ToNullCollection",
+            "Flow_NoProbe"
+          ]
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "UserTask_SizeMethod",
+          "origin": {
+            "definition": null,
+            "sourceId": "UserTask_SizeMethod"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Review for size method",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_ToSizeMethod"
+            ],
+            "outgoing": [
+              "Flow_SizeMethod_Merge"
+            ],
+            "inputs": [
+              {
+                "target": "position",
+                "source": {
+                  "variable": {
+                    "name": "loopCounter"
+                  }
+                },
+                "dialect": "ioParameter"
+              },
+              {
+                "target": "instances",
+                "source": {
+                  "variable": {
+                    "name": "nrOfInstances"
+                  }
+                },
+                "dialect": "ioParameter"
+              }
+            ],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": {
+              "mode": "parallel",
+              "count": {
+                "cardinality": {
+                  "count": {
+                    "juel": {
+                      "nodes": [
+                        {
+                          "identifier": {
+                            "name": "items"
+                          }
+                        },
+                        {
+                          "call": {
+                            "payload": {
+                              "receiver": 0,
+                              "target": "size",
+                              "args": []
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  }
+                }
+              },
+              "elementVariable": null,
+              "completionCondition": null,
+              "inputDataItem": null,
+              "outputDataItem": null,
+              "outputCollection": null,
+              "mutableCollection": "entrySnapshot",
+              "asyncBefore": false,
+              "asyncAfter": false,
+              "loopDataInputRef": null,
+              "inputDataItemName": null
+            },
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "UserTask_StructuredCount",
+          "origin": {
+            "definition": null,
+            "sourceId": "UserTask_StructuredCount"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Review for structured count",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_ToStructuredCount"
+            ],
+            "outgoing": [
+              "Flow_StructuredCount_Merge"
+            ],
+            "inputs": [
+              {
+                "target": "position",
+                "source": {
+                  "variable": {
+                    "name": "loopCounter"
+                  }
+                },
+                "dialect": "ioParameter"
+              },
+              {
+                "target": "instances",
+                "source": {
+                  "variable": {
+                    "name": "nrOfInstances"
+                  }
+                },
+                "dialect": "ioParameter"
+              }
+            ],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": {
+              "mode": "parallel",
+              "count": {
+                "cardinality": {
+                  "count": {
+                    "juel": {
+                      "nodes": [
+                        {
+                          "identifier": {
+                            "name": "order"
+                          }
+                        },
+                        {
+                          "dot": {
+                            "base": 0,
+                            "property": "count"
+                          }
+                        }
+                      ]
+                    }
+                  }
+                }
+              },
+              "elementVariable": null,
+              "completionCondition": null,
+              "inputDataItem": null,
+              "outputDataItem": null,
+              "outputCollection": null,
+              "mutableCollection": "entrySnapshot",
+              "asyncBefore": false,
+              "asyncAfter": false,
+              "loopDataInputRef": null,
+              "inputDataItemName": null
+            },
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "UserTask_NumericTextCount",
+          "origin": {
+            "definition": null,
+            "sourceId": "UserTask_NumericTextCount"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Review for numeric text count",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_ToNumericTextCount"
+            ],
+            "outgoing": [
+              "Flow_NumericTextCount_Merge"
+            ],
+            "inputs": [
+              {
+                "target": "position",
+                "source": {
+                  "variable": {
+                    "name": "loopCounter"
+                  }
+                },
+                "dialect": "ioParameter"
+              },
+              {
+                "target": "instances",
+                "source": {
+                  "variable": {
+                    "name": "nrOfInstances"
+                  }
+                },
+                "dialect": "ioParameter"
+              }
+            ],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": {
+              "mode": "parallel",
+              "count": {
+                "cardinality": {
+                  "count": {
+                    "variable": {
+                      "name": "text"
+                    }
+                  }
+                }
+              },
+              "elementVariable": null,
+              "completionCondition": null,
+              "inputDataItem": null,
+              "outputDataItem": null,
+              "outputCollection": null,
+              "mutableCollection": "entrySnapshot",
+              "asyncBefore": false,
+              "asyncAfter": false,
+              "loopDataInputRef": null,
+              "inputDataItemName": null
+            },
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "UserTask_NonNumericTextCount",
+          "origin": {
+            "definition": null,
+            "sourceId": "UserTask_NonNumericTextCount"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Review for non numeric text count",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_ToNonNumericTextCount"
+            ],
+            "outgoing": [
+              "Flow_NonNumericTextCount_Merge"
+            ],
+            "inputs": [
+              {
+                "target": "position",
+                "source": {
+                  "variable": {
+                    "name": "loopCounter"
+                  }
+                },
+                "dialect": "ioParameter"
+              },
+              {
+                "target": "instances",
+                "source": {
+                  "variable": {
+                    "name": "nrOfInstances"
+                  }
+                },
+                "dialect": "ioParameter"
+              }
+            ],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": {
+              "mode": "parallel",
+              "count": {
+                "cardinality": {
+                  "count": {
+                    "variable": {
+                      "name": "text"
+                    }
+                  }
+                }
+              },
+              "elementVariable": null,
+              "completionCondition": null,
+              "inputDataItem": null,
+              "outputDataItem": null,
+              "outputCollection": null,
+              "mutableCollection": "entrySnapshot",
+              "asyncBefore": false,
+              "asyncAfter": false,
+              "loopDataInputRef": null,
+              "inputDataItemName": null
+            },
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "UserTask_BooleanCount",
+          "origin": {
+            "definition": null,
+            "sourceId": "UserTask_BooleanCount"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Review for boolean count",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_ToBooleanCount"
+            ],
+            "outgoing": [
+              "Flow_BooleanCount_Merge"
+            ],
+            "inputs": [
+              {
+                "target": "position",
+                "source": {
+                  "variable": {
+                    "name": "loopCounter"
+                  }
+                },
+                "dialect": "ioParameter"
+              },
+              {
+                "target": "instances",
+                "source": {
+                  "variable": {
+                    "name": "nrOfInstances"
+                  }
+                },
+                "dialect": "ioParameter"
+              }
+            ],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": {
+              "mode": "parallel",
+              "count": {
+                "cardinality": {
+                  "count": {
+                    "variable": {
+                      "name": "flag"
+                    }
+                  }
+                }
+              },
+              "elementVariable": null,
+              "completionCondition": null,
+              "inputDataItem": null,
+              "outputDataItem": null,
+              "outputCollection": null,
+              "mutableCollection": "entrySnapshot",
+              "asyncBefore": false,
+              "asyncAfter": false,
+              "loopDataInputRef": null,
+              "inputDataItemName": null
+            },
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "UserTask_NegativeComputedCount",
+          "origin": {
+            "definition": null,
+            "sourceId": "UserTask_NegativeComputedCount"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Review for negative computed count",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_ToNegativeComputedCount"
+            ],
+            "outgoing": [
+              "Flow_NegativeComputedCount_Merge"
+            ],
+            "inputs": [
+              {
+                "target": "position",
+                "source": {
+                  "variable": {
+                    "name": "loopCounter"
+                  }
+                },
+                "dialect": "ioParameter"
+              },
+              {
+                "target": "instances",
+                "source": {
+                  "variable": {
+                    "name": "nrOfInstances"
+                  }
+                },
+                "dialect": "ioParameter"
+              }
+            ],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": {
+              "mode": "parallel",
+              "count": {
+                "cardinality": {
+                  "count": {
+                    "juel": {
+                      "nodes": [
+                        {
+                          "identifier": {
+                            "name": "count"
+                          }
+                        },
+                        {
+                          "integer": {
+                            "digits": "5"
+                          }
+                        },
+                        {
+                          "binary": {
+                            "payload": {
+                              "op": "sub",
+                              "left": 0,
+                              "right": 1
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  }
+                }
+              },
+              "elementVariable": null,
+              "completionCondition": null,
+              "inputDataItem": null,
+              "outputDataItem": null,
+              "outputCollection": null,
+              "mutableCollection": "entrySnapshot",
+              "asyncBefore": false,
+              "asyncAfter": false,
+              "loopDataInputRef": null,
+              "inputDataItemName": null
+            },
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "UserTask_FractionalComputedCount",
+          "origin": {
+            "definition": null,
+            "sourceId": "UserTask_FractionalComputedCount"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Review for fractional computed count",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_ToFractionalComputedCount"
+            ],
+            "outgoing": [
+              "Flow_FractionalComputedCount_Merge"
+            ],
+            "inputs": [
+              {
+                "target": "position",
+                "source": {
+                  "variable": {
+                    "name": "loopCounter"
+                  }
+                },
+                "dialect": "ioParameter"
+              },
+              {
+                "target": "instances",
+                "source": {
+                  "variable": {
+                    "name": "nrOfInstances"
+                  }
+                },
+                "dialect": "ioParameter"
+              }
+            ],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": {
+              "mode": "parallel",
+              "count": {
+                "cardinality": {
+                  "count": {
+                    "juel": {
+                      "nodes": [
+                        {
+                          "identifier": {
+                            "name": "count"
+                          }
+                        },
+                        {
+                          "integer": {
+                            "digits": "2"
+                          }
+                        },
+                        {
+                          "binary": {
+                            "payload": {
+                              "op": "div",
+                              "left": 0,
+                              "right": 1
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  }
+                }
+              },
+              "elementVariable": null,
+              "completionCondition": null,
+              "inputDataItem": null,
+              "outputDataItem": null,
+              "outputCollection": null,
+              "mutableCollection": "entrySnapshot",
+              "asyncBefore": false,
+              "asyncAfter": false,
+              "loopDataInputRef": null,
+              "inputDataItemName": null
+            },
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "UserTask_NullCount",
+          "origin": {
+            "definition": null,
+            "sourceId": "UserTask_NullCount"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Review for null count",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_ToNullCount"
+            ],
+            "outgoing": [
+              "Flow_NullCount_Merge"
+            ],
+            "inputs": [
+              {
+                "target": "position",
+                "source": {
+                  "variable": {
+                    "name": "loopCounter"
+                  }
+                },
+                "dialect": "ioParameter"
+              },
+              {
+                "target": "instances",
+                "source": {
+                  "variable": {
+                    "name": "nrOfInstances"
+                  }
+                },
+                "dialect": "ioParameter"
+              }
+            ],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": {
+              "mode": "parallel",
+              "count": {
+                "cardinality": {
+                  "count": {
+                    "variable": {
+                      "name": "nothing"
+                    }
+                  }
+                }
+              },
+              "elementVariable": null,
+              "completionCondition": null,
+              "inputDataItem": null,
+              "outputDataItem": null,
+              "outputCollection": null,
+              "mutableCollection": "entrySnapshot",
+              "asyncBefore": false,
+              "asyncAfter": false,
+              "loopDataInputRef": null,
+              "inputDataItemName": null
+            },
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "UserTask_NestedListCollection",
+          "origin": {
+            "definition": null,
+            "sourceId": "UserTask_NestedListCollection"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Review for nested list collection",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_ToNestedListCollection"
+            ],
+            "outgoing": [
+              "Flow_NestedListCollection_Merge"
+            ],
+            "inputs": [
+              {
+                "target": "subject",
+                "source": {
+                  "variable": {
+                    "name": "item"
+                  }
+                },
+                "dialect": "ioParameter"
+              },
+              {
+                "target": "position",
+                "source": {
+                  "variable": {
+                    "name": "loopCounter"
+                  }
+                },
+                "dialect": "ioParameter"
+              },
+              {
+                "target": "instances",
+                "source": {
+                  "variable": {
+                    "name": "nrOfInstances"
+                  }
+                },
+                "dialect": "ioParameter"
+              }
+            ],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": {
+              "mode": "parallel",
+              "count": {
+                "collection": {
+                  "items": {
+                    "juel": {
+                      "nodes": [
+                        {
+                          "identifier": {
+                            "name": "order"
+                          }
+                        },
+                        {
+                          "dot": {
+                            "base": 0,
+                            "property": "groups"
+                          }
+                        },
+                        {
+                          "integer": {
+                            "digits": "1"
+                          }
+                        },
+                        {
+                          "bracket": {
+                            "base": 1,
+                            "property": 2
+                          }
+                        },
+                        {
+                          "dot": {
+                            "base": 3,
+                            "property": "members"
+                          }
+                        }
+                      ]
+                    }
+                  }
+                }
+              },
+              "elementVariable": "item",
+              "completionCondition": null,
+              "inputDataItem": null,
+              "outputDataItem": null,
+              "outputCollection": null,
+              "mutableCollection": "entrySnapshot",
+              "asyncBefore": false,
+              "asyncAfter": false,
+              "loopDataInputRef": null,
+              "inputDataItemName": null
+            },
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "UserTask_MapCollection",
+          "origin": {
+            "definition": null,
+            "sourceId": "UserTask_MapCollection"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Review for map collection",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_ToMapCollection"
+            ],
+            "outgoing": [
+              "Flow_MapCollection_Merge"
+            ],
+            "inputs": [
+              {
+                "target": "subject",
+                "source": {
+                  "variable": {
+                    "name": "item"
+                  }
+                },
+                "dialect": "ioParameter"
+              },
+              {
+                "target": "position",
+                "source": {
+                  "variable": {
+                    "name": "loopCounter"
+                  }
+                },
+                "dialect": "ioParameter"
+              },
+              {
+                "target": "instances",
+                "source": {
+                  "variable": {
+                    "name": "nrOfInstances"
+                  }
+                },
+                "dialect": "ioParameter"
+              }
+            ],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": {
+              "mode": "parallel",
+              "count": {
+                "collection": {
+                  "items": {
+                    "juel": {
+                      "nodes": [
+                        {
+                          "identifier": {
+                            "name": "order"
+                          }
+                        },
+                        {
+                          "dot": {
+                            "base": 0,
+                            "property": "customer"
+                          }
+                        }
+                      ]
+                    }
+                  }
+                }
+              },
+              "elementVariable": "item",
+              "completionCondition": null,
+              "inputDataItem": null,
+              "outputDataItem": null,
+              "outputCollection": null,
+              "mutableCollection": "entrySnapshot",
+              "asyncBefore": false,
+              "asyncAfter": false,
+              "loopDataInputRef": null,
+              "inputDataItemName": null
+            },
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "UserTask_NullCollection",
+          "origin": {
+            "definition": null,
+            "sourceId": "UserTask_NullCollection"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Review for null collection",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_ToNullCollection"
+            ],
+            "outgoing": [
+              "Flow_NullCollection_Merge"
+            ],
+            "inputs": [
+              {
+                "target": "subject",
+                "source": {
+                  "variable": {
+                    "name": "item"
+                  }
+                },
+                "dialect": "ioParameter"
+              },
+              {
+                "target": "position",
+                "source": {
+                  "variable": {
+                    "name": "loopCounter"
+                  }
+                },
+                "dialect": "ioParameter"
+              },
+              {
+                "target": "instances",
+                "source": {
+                  "variable": {
+                    "name": "nrOfInstances"
+                  }
+                },
+                "dialect": "ioParameter"
+              }
+            ],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": {
+              "mode": "parallel",
+              "count": {
+                "collection": {
+                  "items": {
+                    "variable": {
+                      "name": "nothing"
+                    }
+                  }
+                }
+              },
+              "elementVariable": "item",
+              "completionCondition": null,
+              "inputDataItem": null,
+              "outputDataItem": null,
+              "outputCollection": null,
+              "mutableCollection": "entrySnapshot",
+              "asyncBefore": false,
+              "asyncAfter": false,
+              "loopDataInputRef": null,
+              "inputDataItemName": null
+            },
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "gateway": {
+        "header": {
+          "id": "Gateway_Merge",
+          "origin": {
+            "definition": null,
+            "sourceId": "Gateway_Merge"
+          },
+          "sourceType": "exclusiveGateway",
+          "parent": null
+        },
+        "payload": {
+          "kind": {
+            "exclusive": {
+              "candidates": [
+                "Flow_Merge_Done"
+              ],
+              "default": null
+            }
+          },
+          "incoming": [
+            "Flow_NoProbe",
+            "Flow_SizeMethod_Merge",
+            "Flow_StructuredCount_Merge",
+            "Flow_NumericTextCount_Merge",
+            "Flow_NonNumericTextCount_Merge",
+            "Flow_BooleanCount_Merge",
+            "Flow_NegativeComputedCount_Merge",
+            "Flow_FractionalComputedCount_Merge",
+            "Flow_NullCount_Merge",
+            "Flow_NestedListCollection_Merge",
+            "Flow_MapCollection_Merge",
+            "Flow_NullCollection_Merge"
+          ],
+          "outgoing": [
+            "Flow_Merge_Done"
+          ]
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "EndEvent_Done",
+          "origin": {
+            "definition": null,
+            "sourceId": "EndEvent_Done"
+          },
+          "sourceType": "endEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Merge_Done"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    }
+  ],
+  "flows": [
+    {
+      "id": "Flow_Start_Select",
+      "source": "StartEvent_Start",
+      "target": "Gateway_Select",
+      "condition": null
+    },
+    {
+      "id": "Flow_ToSizeMethod",
+      "source": "Gateway_Select",
+      "target": "UserTask_SizeMethod",
+      "condition": {
+        "juel": {
+          "nodes": [
+            {
+              "identifier": {
+                "name": "probe"
+              }
+            },
+            {
+              "stringLiteral": {
+                "value": "size-method"
+              }
+            },
+            {
+              "binary": {
+                "payload": {
+                  "op": "eq",
+                  "left": 0,
+                  "right": 1
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "Flow_ToStructuredCount",
+      "source": "Gateway_Select",
+      "target": "UserTask_StructuredCount",
+      "condition": {
+        "juel": {
+          "nodes": [
+            {
+              "identifier": {
+                "name": "probe"
+              }
+            },
+            {
+              "stringLiteral": {
+                "value": "structured-count"
+              }
+            },
+            {
+              "binary": {
+                "payload": {
+                  "op": "eq",
+                  "left": 0,
+                  "right": 1
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "Flow_ToNumericTextCount",
+      "source": "Gateway_Select",
+      "target": "UserTask_NumericTextCount",
+      "condition": {
+        "juel": {
+          "nodes": [
+            {
+              "identifier": {
+                "name": "probe"
+              }
+            },
+            {
+              "stringLiteral": {
+                "value": "numeric-text-count"
+              }
+            },
+            {
+              "binary": {
+                "payload": {
+                  "op": "eq",
+                  "left": 0,
+                  "right": 1
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "Flow_ToNonNumericTextCount",
+      "source": "Gateway_Select",
+      "target": "UserTask_NonNumericTextCount",
+      "condition": {
+        "juel": {
+          "nodes": [
+            {
+              "identifier": {
+                "name": "probe"
+              }
+            },
+            {
+              "stringLiteral": {
+                "value": "non-numeric-text-count"
+              }
+            },
+            {
+              "binary": {
+                "payload": {
+                  "op": "eq",
+                  "left": 0,
+                  "right": 1
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "Flow_ToBooleanCount",
+      "source": "Gateway_Select",
+      "target": "UserTask_BooleanCount",
+      "condition": {
+        "juel": {
+          "nodes": [
+            {
+              "identifier": {
+                "name": "probe"
+              }
+            },
+            {
+              "stringLiteral": {
+                "value": "boolean-count"
+              }
+            },
+            {
+              "binary": {
+                "payload": {
+                  "op": "eq",
+                  "left": 0,
+                  "right": 1
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "Flow_ToNegativeComputedCount",
+      "source": "Gateway_Select",
+      "target": "UserTask_NegativeComputedCount",
+      "condition": {
+        "juel": {
+          "nodes": [
+            {
+              "identifier": {
+                "name": "probe"
+              }
+            },
+            {
+              "stringLiteral": {
+                "value": "negative-computed-count"
+              }
+            },
+            {
+              "binary": {
+                "payload": {
+                  "op": "eq",
+                  "left": 0,
+                  "right": 1
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "Flow_ToFractionalComputedCount",
+      "source": "Gateway_Select",
+      "target": "UserTask_FractionalComputedCount",
+      "condition": {
+        "juel": {
+          "nodes": [
+            {
+              "identifier": {
+                "name": "probe"
+              }
+            },
+            {
+              "stringLiteral": {
+                "value": "fractional-computed-count"
+              }
+            },
+            {
+              "binary": {
+                "payload": {
+                  "op": "eq",
+                  "left": 0,
+                  "right": 1
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "Flow_ToNullCount",
+      "source": "Gateway_Select",
+      "target": "UserTask_NullCount",
+      "condition": {
+        "juel": {
+          "nodes": [
+            {
+              "identifier": {
+                "name": "probe"
+              }
+            },
+            {
+              "stringLiteral": {
+                "value": "null-count"
+              }
+            },
+            {
+              "binary": {
+                "payload": {
+                  "op": "eq",
+                  "left": 0,
+                  "right": 1
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "Flow_ToNestedListCollection",
+      "source": "Gateway_Select",
+      "target": "UserTask_NestedListCollection",
+      "condition": {
+        "juel": {
+          "nodes": [
+            {
+              "identifier": {
+                "name": "probe"
+              }
+            },
+            {
+              "stringLiteral": {
+                "value": "nested-list-collection"
+              }
+            },
+            {
+              "binary": {
+                "payload": {
+                  "op": "eq",
+                  "left": 0,
+                  "right": 1
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "Flow_ToMapCollection",
+      "source": "Gateway_Select",
+      "target": "UserTask_MapCollection",
+      "condition": {
+        "juel": {
+          "nodes": [
+            {
+              "identifier": {
+                "name": "probe"
+              }
+            },
+            {
+              "stringLiteral": {
+                "value": "map-collection"
+              }
+            },
+            {
+              "binary": {
+                "payload": {
+                  "op": "eq",
+                  "left": 0,
+                  "right": 1
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "Flow_ToNullCollection",
+      "source": "Gateway_Select",
+      "target": "UserTask_NullCollection",
+      "condition": {
+        "juel": {
+          "nodes": [
+            {
+              "identifier": {
+                "name": "probe"
+              }
+            },
+            {
+              "stringLiteral": {
+                "value": "null-collection"
+              }
+            },
+            {
+              "binary": {
+                "payload": {
+                  "op": "eq",
+                  "left": 0,
+                  "right": 1
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "Flow_NoProbe",
+      "source": "Gateway_Select",
+      "target": "Gateway_Merge",
+      "condition": null
+    },
+    {
+      "id": "Flow_SizeMethod_Merge",
+      "source": "UserTask_SizeMethod",
+      "target": "Gateway_Merge",
+      "condition": null
+    },
+    {
+      "id": "Flow_StructuredCount_Merge",
+      "source": "UserTask_StructuredCount",
+      "target": "Gateway_Merge",
+      "condition": null
+    },
+    {
+      "id": "Flow_NumericTextCount_Merge",
+      "source": "UserTask_NumericTextCount",
+      "target": "Gateway_Merge",
+      "condition": null
+    },
+    {
+      "id": "Flow_NonNumericTextCount_Merge",
+      "source": "UserTask_NonNumericTextCount",
+      "target": "Gateway_Merge",
+      "condition": null
+    },
+    {
+      "id": "Flow_BooleanCount_Merge",
+      "source": "UserTask_BooleanCount",
+      "target": "Gateway_Merge",
+      "condition": null
+    },
+    {
+      "id": "Flow_NegativeComputedCount_Merge",
+      "source": "UserTask_NegativeComputedCount",
+      "target": "Gateway_Merge",
+      "condition": null
+    },
+    {
+      "id": "Flow_FractionalComputedCount_Merge",
+      "source": "UserTask_FractionalComputedCount",
+      "target": "Gateway_Merge",
+      "condition": null
+    },
+    {
+      "id": "Flow_NullCount_Merge",
+      "source": "UserTask_NullCount",
+      "target": "Gateway_Merge",
+      "condition": null
+    },
+    {
+      "id": "Flow_NestedListCollection_Merge",
+      "source": "UserTask_NestedListCollection",
+      "target": "Gateway_Merge",
+      "condition": null
+    },
+    {
+      "id": "Flow_MapCollection_Merge",
+      "source": "UserTask_MapCollection",
+      "target": "Gateway_Merge",
+      "condition": null
+    },
+    {
+      "id": "Flow_NullCollection_Merge",
+      "source": "UserTask_NullCollection",
+      "target": "Gateway_Merge",
+      "condition": null
+    },
+    {
+      "id": "Flow_Merge_Done",
+      "source": "Gateway_Merge",
+      "target": "EndEvent_Done",
+      "condition": null
+    }
+  ],
+  "variables": [],
+  "processes": [],
+  "executable": true,
+  "decisionResources": []
+}

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             id="Definitions_RowJourney01" targetNamespace="urn:bpmn-lean:row-fixtures:PC-JOURNEY-01">
+  <message id="Message_Notice" name="invoice-notice" />
+  <process id="Process_RowJourney01" name="Complete an invoice with a decision, human or automated posting, a notice and rework" isExecutable="true">
+    <startEvent id="InvoiceReceived" />
+    <userTask id="EnterInvoice" name="Enter the invoice" />
+    <businessRuleTask id="ClassifyInvoice" name="Classify the invoice" camunda:decisionRef="gradeDecision"
+                      camunda:mapDecisionResult="singleEntry" camunda:resultVariable="grade" />
+    <exclusiveGateway id="Route" default="Flow_Route_Manual" />
+    <userTask id="ApproveManually" name="Approve the invoice" />
+    <exclusiveGateway id="Reviewed" default="Flow_Reviewed_Post" />
+    <serviceTask id="PostInvoice" name="Post the invoice" implementation="urn:bpmn-lean:effect:probe-v1"
+                 camunda:delegateExpression="${bpmnLeanEffectHandler}" camunda:asyncBefore="true" />
+    <sendTask id="SendNotice" name="Send the posting notice" messageRef="Message_Notice" implementation="urn:bpmn-lean:effect:probe-v1"
+              camunda:delegateExpression="${bpmnLeanEffectHandler}" camunda:asyncBefore="true" />
+    <endEvent id="InvoiceCompleted" />
+    <sequenceFlow id="Flow_Received_Enter" sourceRef="InvoiceReceived" targetRef="EnterInvoice" />
+    <sequenceFlow id="Flow_Enter_Classify" sourceRef="EnterInvoice" targetRef="ClassifyInvoice" />
+    <sequenceFlow id="Flow_Classify_Route" sourceRef="ClassifyInvoice" targetRef="Route" />
+    <sequenceFlow id="Flow_Route_Automatic" sourceRef="Route" targetRef="PostInvoice">
+      <conditionExpression xsi:type="tFormalExpression">stringEquals(grade,"A")</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Route_Manual" sourceRef="Route" targetRef="ApproveManually" />
+    <sequenceFlow id="Flow_Approve_Reviewed" sourceRef="ApproveManually" targetRef="Reviewed" />
+    <sequenceFlow id="Flow_Reviewed_Rework" sourceRef="Reviewed" targetRef="EnterInvoice">
+      <conditionExpression xsi:type="tFormalExpression">stringEquals(review,"rework")</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Reviewed_Post" sourceRef="Reviewed" targetRef="PostInvoice" />
+    <sequenceFlow id="Flow_Post_Notice" sourceRef="PostInvoice" targetRef="SendNotice" />
+    <sequenceFlow id="Flow_Notice_Completed" sourceRef="SendNotice" targetRef="InvoiceCompleted" />
+  </process>
+</definitions>

@@ -1,0 +1,1104 @@
+{
+  "identity": {
+    "processId": "Process_DateForms",
+    "namespace": "urn:bpmn-lean:scenarios:timer-date-forms",
+    "sourceSha256": "af8a7bf4c0ff90209c07a97ae9dee7c6ae00f6149b2df4aa49f1bf952400e0a0",
+    "profile": "cibseven-2.2.0",
+    "deployment": null
+  },
+  "options": {
+    "relations": [
+      "CIB-AGR-0001",
+      "CIB-AGR-0002",
+      "CIB-AGR-0003",
+      "CIB-AGR-0004",
+      "CIB-AGR-0006",
+      "CIB-AGR-0007",
+      "CIB-AGR-0008",
+      "CIB-AGR-0009",
+      "CIB-AGR-0010",
+      "CIB-AGR-0012",
+      "CIB-AGR-0013",
+      "CIB-AGR-0014",
+      "CIB-AGR-0015",
+      "CIB-AGR-0016",
+      "CIB-AGR-0017",
+      "CIB-AGR-0018",
+      "CIB-AGR-0019",
+      "CIB-AGR-0020",
+      "CIB-AGR-0021",
+      "CIB-AGR-0022",
+      "CIB-AGR-0023",
+      "CIB-CFG-0001",
+      "CIB-CFG-0002",
+      "CIB-CFG-0006",
+      "CIB-CFG-0007",
+      "CIB-CFG-0008",
+      "CIB-CFG-0009",
+      "CIB-CFG-0010",
+      "CIB-CFG-0011",
+      "CIB-CFG-0013",
+      "CIB-CFG-0014",
+      "CIB-DEV-0001",
+      "CIB-DEV-0002",
+      "CIB-EXT-0001",
+      "CIB-EXT-0004",
+      "CIB-EXT-0005",
+      "CIB-EXT-0006",
+      "CIB-EXT-0007",
+      "CIB-EXT-0008",
+      "CIB-EXT-0009",
+      "CIB-EXT-0010",
+      "CIB-EXT-0011",
+      "CIB-EXT-0012",
+      "CIB-EXT-0013",
+      "CIB-EXT-0014",
+      "CIB-EXT-0015",
+      "CIB-EXT-0016",
+      "CIB-EXT-0019",
+      "CIB-EXT-0021",
+      "CIB-EXT-0022",
+      "CIB-EXT-0023",
+      "CIB-EXT-0025",
+      "CIB-EXT-0028",
+      "CIB-EXT-0030",
+      "CIB-EXT-0031",
+      "CIB-EXT-0032",
+      "CIB-EXT-0033",
+      "CIB-EXT-0034",
+      "CIB-EXT-0035",
+      "CIB-EXT-0036",
+      "CIB-EXT-0038",
+      "CIB-EXT-0039",
+      "CIB-EXT-0040",
+      "CIB-EXT-0041",
+      "CIB-EXT-0042",
+      "CIB-EXT-0043",
+      "CIB-EXT-0044",
+      "CIB-EXT-0045",
+      "CIB-INT-0001",
+      "CIB-INT-0003",
+      "CIB-INT-0004",
+      "CIB-INT-0005",
+      "CIB-INT-0007",
+      "CIB-INT-0008",
+      "CIB-INT-0009",
+      "CIB-INT-0011",
+      "CIB-INT-0012",
+      "CIB-INT-0013",
+      "CIB-INT-0014",
+      "CIB-INT-0015",
+      "CIB-INT-0016",
+      "CIB-INT-0017",
+      "CIB-INT-0018",
+      "CIB-INT-0019",
+      "CIB-INT-0020",
+      "CIB-INT-0023",
+      "CIB-INT-0024",
+      "CIB-INT-0025",
+      "CIB-INT-0026",
+      "CIB-INT-0027",
+      "CIB-INT-0028",
+      "CIB-INT-0029",
+      "CIB-INT-0030",
+      "CIB-INT-0031",
+      "CIB-INT-0032",
+      "CIB-LIM-0001",
+      "CIB-LIM-0002",
+      "CIB-LIM-0003",
+      "CIB-LIM-0006",
+      "CIB-LIM-0007",
+      "CIB-LIM-0008",
+      "CIB-LIM-0009",
+      "CIB-LIM-0010",
+      "CIB-LIM-0014",
+      "CIB-LIM-0015",
+      "CIB-LIM-0016",
+      "CIB-LIM-0017",
+      "CIB-LIM-0022",
+      "CIB-LIM-0024",
+      "CIB-LIM-0026",
+      "CIB-LIM-0027",
+      "CIB-LIM-0028",
+      "CIB-OP-0001",
+      "CIB-OP-0005",
+      "CIB-OP-0006",
+      "CIB-OP-0007",
+      "CIB-OP-0008",
+      "CIB-OP-0009",
+      "CIB-OP-0010",
+      "CIB-OP-0011",
+      "CIB-OP-0016",
+      "CIB-OP-0019"
+    ],
+    "evaluator": "juel",
+    "submission": "installsVariables",
+    "scopeChainSubmissionBytes": null,
+    "undeclaredWrite": "atInstanceRoot",
+    "errorPathOutputs": "mapped",
+    "raisedCallOutputs": "atCalledRoot",
+    "technicalFailure": "incident",
+    "incidentProcessCancellation": true,
+    "continuationFailure": "rolledBack",
+    "conditionOrder": "beforeOutputs",
+    "messageCorrelation": "apiCriteria",
+    "deliveryVariables": "installs",
+    "multiInstanceFinalBody": "modeSpecific",
+    "multiInstanceOutputs": "none",
+    "compensationOrder": "dependency",
+    "compensationHandlerFailure": "failsInstance",
+    "abnormalScopeEnd": "completesNormally",
+    "unhandledError": "endsThrowingPath",
+    "errorCatchVariables": "eventScope",
+    "callBindingTime": "programAssembly",
+    "timerZone": null,
+    "multiInstanceBinding": "loopReferences",
+    "effectResultValues": "activityLocals",
+    "outputContext": "activityScope",
+    "multiInstanceCounters": "cibLocals",
+    "multiInstanceInputFailure": "rollback",
+    "multiInstanceCount": "javaInt",
+    "businessRuleTask": "decisionTable",
+    "inclusiveJoinReach": "outgoingOnly",
+    "branchSchedule": "declarationDepthFirst",
+    "conditionalRetrigger": "eachWrite",
+    "malformedTimer": "rollsBackArming",
+    "messageNames": "addresses",
+    "scopeStart": "required",
+    "signalNames": "addresses",
+    "signalPayload": "variables",
+    "signalDelivery": "occurrenceTargeted",
+    "conditionalStart": "submittedContext",
+    "calledElementResolution": "cibKey",
+    "messageThrowForms": "cibForms"
+  },
+  "elements": [
+    {
+      "start": {
+        "header": {
+          "id": "Start_Dates",
+          "origin": {
+            "definition": null,
+            "sourceId": "Start_Dates"
+          },
+          "sourceType": "startEvent",
+          "parent": null
+        },
+        "payload": {
+          "subscription": null,
+          "outgoing": [
+            "Flow_Start_Dates_Gateway_Delay"
+          ]
+        }
+      }
+    },
+    {
+      "gateway": {
+        "header": {
+          "id": "Gateway_Delay",
+          "origin": {
+            "definition": null,
+            "sourceId": "Gateway_Delay"
+          },
+          "sourceType": "exclusiveGateway",
+          "parent": null
+        },
+        "payload": {
+          "kind": {
+            "exclusive": {
+              "candidates": [
+                "Flow_Gateway_Delay_Catch_Delay"
+              ],
+              "default": "Flow_Gateway_Delay_Gateway_Merge_Delay"
+            }
+          },
+          "incoming": [
+            "Flow_Start_Dates_Gateway_Delay"
+          ],
+          "outgoing": [
+            "Flow_Gateway_Delay_Catch_Delay",
+            "Flow_Gateway_Delay_Gateway_Merge_Delay"
+          ]
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "Catch_Delay",
+          "origin": {
+            "definition": null,
+            "sourceId": "Catch_Delay"
+          },
+          "sourceType": "intermediateCatchEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "catch": {
+              "subscription": {
+                "trigger": {
+                  "timer": {
+                    "payload": {
+                      "schedule": {
+                        "duration": {
+                          "value": {
+                            "literal": {
+                              "value": "PT2H"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "outputs": [],
+                "alternatives": [],
+                "parallelMultiple": false
+              }
+            }
+          },
+          "placement": "intermediate",
+          "incoming": [
+            "Flow_Gateway_Delay_Catch_Delay"
+          ],
+          "outgoing": [
+            "Flow_Catch_Delay_Gateway_Merge_Delay"
+          ],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "gateway": {
+        "header": {
+          "id": "Gateway_Merge_Delay",
+          "origin": {
+            "definition": null,
+            "sourceId": "Gateway_Merge_Delay"
+          },
+          "sourceType": "exclusiveGateway",
+          "parent": null
+        },
+        "payload": {
+          "kind": {
+            "exclusive": {
+              "candidates": [
+                "Flow_Gateway_Merge_Delay_Gateway_Pick"
+              ],
+              "default": null
+            }
+          },
+          "incoming": [
+            "Flow_Gateway_Delay_Gateway_Merge_Delay",
+            "Flow_Catch_Delay_Gateway_Merge_Delay"
+          ],
+          "outgoing": [
+            "Flow_Gateway_Merge_Delay_Gateway_Pick"
+          ]
+        }
+      }
+    },
+    {
+      "gateway": {
+        "header": {
+          "id": "Gateway_Pick",
+          "origin": {
+            "definition": null,
+            "sourceId": "Gateway_Pick"
+          },
+          "sourceType": "exclusiveGateway",
+          "parent": null
+        },
+        "payload": {
+          "kind": {
+            "exclusive": {
+              "candidates": [
+                "Flow_Gateway_Pick_Catch_Future",
+                "Flow_Gateway_Pick_Catch_Fraction",
+                "Flow_Gateway_Pick_Catch_UtcOffset",
+                "Flow_Gateway_Pick_Catch_Far",
+                "Flow_Gateway_Pick_Catch_Now",
+                "Flow_Gateway_Pick_Catch_Malformed",
+                "Flow_Gateway_Pick_Catch_Lowercase"
+              ],
+              "default": null
+            }
+          },
+          "incoming": [
+            "Flow_Gateway_Merge_Delay_Gateway_Pick"
+          ],
+          "outgoing": [
+            "Flow_Gateway_Pick_Catch_Future",
+            "Flow_Gateway_Pick_Catch_Fraction",
+            "Flow_Gateway_Pick_Catch_UtcOffset",
+            "Flow_Gateway_Pick_Catch_Far",
+            "Flow_Gateway_Pick_Catch_Now",
+            "Flow_Gateway_Pick_Catch_Malformed",
+            "Flow_Gateway_Pick_Catch_Lowercase"
+          ]
+        }
+      }
+    },
+    {
+      "gateway": {
+        "header": {
+          "id": "Gateway_Merge_Dates",
+          "origin": {
+            "definition": null,
+            "sourceId": "Gateway_Merge_Dates"
+          },
+          "sourceType": "exclusiveGateway",
+          "parent": null
+        },
+        "payload": {
+          "kind": {
+            "exclusive": {
+              "candidates": [
+                "Flow_Gateway_Merge_Dates_Proceed"
+              ],
+              "default": null
+            }
+          },
+          "incoming": [
+            "Flow_Catch_Future_Gateway_Merge_Dates",
+            "Flow_Catch_Fraction_Gateway_Merge_Dates",
+            "Flow_Catch_UtcOffset_Gateway_Merge_Dates",
+            "Flow_Catch_Far_Gateway_Merge_Dates",
+            "Flow_Catch_Now_Gateway_Merge_Dates",
+            "Flow_Catch_Malformed_Gateway_Merge_Dates",
+            "Flow_Catch_Lowercase_Gateway_Merge_Dates"
+          ],
+          "outgoing": [
+            "Flow_Gateway_Merge_Dates_Proceed"
+          ]
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "Proceed",
+          "origin": {
+            "definition": null,
+            "sourceId": "Proceed"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Proceed after the date",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Gateway_Merge_Dates_Proceed"
+            ],
+            "outgoing": [
+              "Flow_Proceed_End_Dates"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "End_Dates",
+          "origin": {
+            "definition": null,
+            "sourceId": "End_Dates"
+          },
+          "sourceType": "endEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Proceed_End_Dates"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "Catch_Future",
+          "origin": {
+            "definition": null,
+            "sourceId": "Catch_Future"
+          },
+          "sourceType": "intermediateCatchEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "catch": {
+              "subscription": {
+                "trigger": {
+                  "timer": {
+                    "payload": {
+                      "schedule": {
+                        "date": {
+                          "value": {
+                            "literal": {
+                              "value": "1970-01-01T01:00:00Z"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "outputs": [],
+                "alternatives": [],
+                "parallelMultiple": false
+              }
+            }
+          },
+          "placement": "intermediate",
+          "incoming": [
+            "Flow_Gateway_Pick_Catch_Future"
+          ],
+          "outgoing": [
+            "Flow_Catch_Future_Gateway_Merge_Dates"
+          ],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "Catch_Fraction",
+          "origin": {
+            "definition": null,
+            "sourceId": "Catch_Fraction"
+          },
+          "sourceType": "intermediateCatchEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "catch": {
+              "subscription": {
+                "trigger": {
+                  "timer": {
+                    "payload": {
+                      "schedule": {
+                        "date": {
+                          "value": {
+                            "literal": {
+                              "value": "1970-01-01T01:00:00.500Z"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "outputs": [],
+                "alternatives": [],
+                "parallelMultiple": false
+              }
+            }
+          },
+          "placement": "intermediate",
+          "incoming": [
+            "Flow_Gateway_Pick_Catch_Fraction"
+          ],
+          "outgoing": [
+            "Flow_Catch_Fraction_Gateway_Merge_Dates"
+          ],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "Catch_UtcOffset",
+          "origin": {
+            "definition": null,
+            "sourceId": "Catch_UtcOffset"
+          },
+          "sourceType": "intermediateCatchEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "catch": {
+              "subscription": {
+                "trigger": {
+                  "timer": {
+                    "payload": {
+                      "schedule": {
+                        "date": {
+                          "value": {
+                            "literal": {
+                              "value": "1970-01-01T01:00:00+00:00"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "outputs": [],
+                "alternatives": [],
+                "parallelMultiple": false
+              }
+            }
+          },
+          "placement": "intermediate",
+          "incoming": [
+            "Flow_Gateway_Pick_Catch_UtcOffset"
+          ],
+          "outgoing": [
+            "Flow_Catch_UtcOffset_Gateway_Merge_Dates"
+          ],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "Catch_Far",
+          "origin": {
+            "definition": null,
+            "sourceId": "Catch_Far"
+          },
+          "sourceType": "intermediateCatchEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "catch": {
+              "subscription": {
+                "trigger": {
+                  "timer": {
+                    "payload": {
+                      "schedule": {
+                        "date": {
+                          "value": {
+                            "literal": {
+                              "value": "2100-01-01T00:00:00Z"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "outputs": [],
+                "alternatives": [],
+                "parallelMultiple": false
+              }
+            }
+          },
+          "placement": "intermediate",
+          "incoming": [
+            "Flow_Gateway_Pick_Catch_Far"
+          ],
+          "outgoing": [
+            "Flow_Catch_Far_Gateway_Merge_Dates"
+          ],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "Catch_Now",
+          "origin": {
+            "definition": null,
+            "sourceId": "Catch_Now"
+          },
+          "sourceType": "intermediateCatchEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "catch": {
+              "subscription": {
+                "trigger": {
+                  "timer": {
+                    "payload": {
+                      "schedule": {
+                        "date": {
+                          "value": {
+                            "literal": {
+                              "value": "1970-01-01T02:00:00Z"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "outputs": [],
+                "alternatives": [],
+                "parallelMultiple": false
+              }
+            }
+          },
+          "placement": "intermediate",
+          "incoming": [
+            "Flow_Gateway_Pick_Catch_Now"
+          ],
+          "outgoing": [
+            "Flow_Catch_Now_Gateway_Merge_Dates"
+          ],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "Catch_Malformed",
+          "origin": {
+            "definition": null,
+            "sourceId": "Catch_Malformed"
+          },
+          "sourceType": "intermediateCatchEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "catch": {
+              "subscription": {
+                "trigger": {
+                  "timer": {
+                    "payload": {
+                      "schedule": {
+                        "date": {
+                          "value": {
+                            "literal": {
+                              "value": "1970-13-45T25:61:61Z"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "outputs": [],
+                "alternatives": [],
+                "parallelMultiple": false
+              }
+            }
+          },
+          "placement": "intermediate",
+          "incoming": [
+            "Flow_Gateway_Pick_Catch_Malformed"
+          ],
+          "outgoing": [
+            "Flow_Catch_Malformed_Gateway_Merge_Dates"
+          ],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "Catch_Lowercase",
+          "origin": {
+            "definition": null,
+            "sourceId": "Catch_Lowercase"
+          },
+          "sourceType": "intermediateCatchEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "catch": {
+              "subscription": {
+                "trigger": {
+                  "timer": {
+                    "payload": {
+                      "schedule": {
+                        "date": {
+                          "value": {
+                            "literal": {
+                              "value": "1970-01-01t01:00:00z"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "outputs": [],
+                "alternatives": [],
+                "parallelMultiple": false
+              }
+            }
+          },
+          "placement": "intermediate",
+          "incoming": [
+            "Flow_Gateway_Pick_Catch_Lowercase"
+          ],
+          "outgoing": [
+            "Flow_Catch_Lowercase_Gateway_Merge_Dates"
+          ],
+          "alternativeThrows": []
+        }
+      }
+    }
+  ],
+  "flows": [
+    {
+      "id": "Flow_Start_Dates_Gateway_Delay",
+      "source": "Start_Dates",
+      "target": "Gateway_Delay",
+      "condition": null
+    },
+    {
+      "id": "Flow_Gateway_Delay_Catch_Delay",
+      "source": "Gateway_Delay",
+      "target": "Catch_Delay",
+      "condition": {
+        "juel": {
+          "nodes": [
+            {
+              "identifier": {
+                "name": "delayed"
+              }
+            },
+            {
+              "bool": {
+                "value": true
+              }
+            },
+            {
+              "binary": {
+                "payload": {
+                  "op": "eq",
+                  "left": 0,
+                  "right": 1
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "Flow_Gateway_Delay_Gateway_Merge_Delay",
+      "source": "Gateway_Delay",
+      "target": "Gateway_Merge_Delay",
+      "condition": null
+    },
+    {
+      "id": "Flow_Catch_Delay_Gateway_Merge_Delay",
+      "source": "Catch_Delay",
+      "target": "Gateway_Merge_Delay",
+      "condition": null
+    },
+    {
+      "id": "Flow_Gateway_Merge_Delay_Gateway_Pick",
+      "source": "Gateway_Merge_Delay",
+      "target": "Gateway_Pick",
+      "condition": null
+    },
+    {
+      "id": "Flow_Gateway_Merge_Dates_Proceed",
+      "source": "Gateway_Merge_Dates",
+      "target": "Proceed",
+      "condition": null
+    },
+    {
+      "id": "Flow_Proceed_End_Dates",
+      "source": "Proceed",
+      "target": "End_Dates",
+      "condition": null
+    },
+    {
+      "id": "Flow_Gateway_Pick_Catch_Future",
+      "source": "Gateway_Pick",
+      "target": "Catch_Future",
+      "condition": {
+        "juel": {
+          "nodes": [
+            {
+              "identifier": {
+                "name": "form"
+              }
+            },
+            {
+              "stringLiteral": {
+                "value": "future"
+              }
+            },
+            {
+              "binary": {
+                "payload": {
+                  "op": "eq",
+                  "left": 0,
+                  "right": 1
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "Flow_Catch_Future_Gateway_Merge_Dates",
+      "source": "Catch_Future",
+      "target": "Gateway_Merge_Dates",
+      "condition": null
+    },
+    {
+      "id": "Flow_Gateway_Pick_Catch_Fraction",
+      "source": "Gateway_Pick",
+      "target": "Catch_Fraction",
+      "condition": {
+        "juel": {
+          "nodes": [
+            {
+              "identifier": {
+                "name": "form"
+              }
+            },
+            {
+              "stringLiteral": {
+                "value": "fraction"
+              }
+            },
+            {
+              "binary": {
+                "payload": {
+                  "op": "eq",
+                  "left": 0,
+                  "right": 1
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "Flow_Catch_Fraction_Gateway_Merge_Dates",
+      "source": "Catch_Fraction",
+      "target": "Gateway_Merge_Dates",
+      "condition": null
+    },
+    {
+      "id": "Flow_Gateway_Pick_Catch_UtcOffset",
+      "source": "Gateway_Pick",
+      "target": "Catch_UtcOffset",
+      "condition": {
+        "juel": {
+          "nodes": [
+            {
+              "identifier": {
+                "name": "form"
+              }
+            },
+            {
+              "stringLiteral": {
+                "value": "utc-offset"
+              }
+            },
+            {
+              "binary": {
+                "payload": {
+                  "op": "eq",
+                  "left": 0,
+                  "right": 1
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "Flow_Catch_UtcOffset_Gateway_Merge_Dates",
+      "source": "Catch_UtcOffset",
+      "target": "Gateway_Merge_Dates",
+      "condition": null
+    },
+    {
+      "id": "Flow_Gateway_Pick_Catch_Far",
+      "source": "Gateway_Pick",
+      "target": "Catch_Far",
+      "condition": {
+        "juel": {
+          "nodes": [
+            {
+              "identifier": {
+                "name": "form"
+              }
+            },
+            {
+              "stringLiteral": {
+                "value": "far"
+              }
+            },
+            {
+              "binary": {
+                "payload": {
+                  "op": "eq",
+                  "left": 0,
+                  "right": 1
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "Flow_Catch_Far_Gateway_Merge_Dates",
+      "source": "Catch_Far",
+      "target": "Gateway_Merge_Dates",
+      "condition": null
+    },
+    {
+      "id": "Flow_Gateway_Pick_Catch_Now",
+      "source": "Gateway_Pick",
+      "target": "Catch_Now",
+      "condition": {
+        "juel": {
+          "nodes": [
+            {
+              "identifier": {
+                "name": "form"
+              }
+            },
+            {
+              "stringLiteral": {
+                "value": "now"
+              }
+            },
+            {
+              "binary": {
+                "payload": {
+                  "op": "eq",
+                  "left": 0,
+                  "right": 1
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "Flow_Catch_Now_Gateway_Merge_Dates",
+      "source": "Catch_Now",
+      "target": "Gateway_Merge_Dates",
+      "condition": null
+    },
+    {
+      "id": "Flow_Gateway_Pick_Catch_Malformed",
+      "source": "Gateway_Pick",
+      "target": "Catch_Malformed",
+      "condition": {
+        "juel": {
+          "nodes": [
+            {
+              "identifier": {
+                "name": "form"
+              }
+            },
+            {
+              "stringLiteral": {
+                "value": "malformed"
+              }
+            },
+            {
+              "binary": {
+                "payload": {
+                  "op": "eq",
+                  "left": 0,
+                  "right": 1
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "Flow_Catch_Malformed_Gateway_Merge_Dates",
+      "source": "Catch_Malformed",
+      "target": "Gateway_Merge_Dates",
+      "condition": null
+    },
+    {
+      "id": "Flow_Gateway_Pick_Catch_Lowercase",
+      "source": "Gateway_Pick",
+      "target": "Catch_Lowercase",
+      "condition": {
+        "juel": {
+          "nodes": [
+            {
+              "identifier": {
+                "name": "form"
+              }
+            },
+            {
+              "stringLiteral": {
+                "value": "lowercase"
+              }
+            },
+            {
+              "binary": {
+                "payload": {
+                  "op": "eq",
+                  "left": 0,
+                  "right": 1
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "Flow_Catch_Lowercase_Gateway_Merge_Dates",
+      "source": "Catch_Lowercase",
+      "target": "Gateway_Merge_Dates",
+      "condition": null
+    }
+  ],
+  "variables": [],
+  "processes": [],
+  "executable": true,
+  "decisionResources": []
+}

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             id="Definitions_RowTerminate02" targetNamespace="urn:bpmn-lean:row-fixtures:PC-TERMINATE-02">
+  <process id="Process_RowTerminate02" name="Terminate in a called child, a Multi-Instance body and an Event Sub-Process" isExecutable="true">
+    <startEvent id="Start" />
+    <callActivity id="CallChild" name="Run the child" calledElement="Process_Child" />
+    <subProcess id="CheckItems" name="Check each item">
+      <multiInstanceLoopCharacteristics isSequential="true">
+        <loopCardinality>2</loopCardinality>
+      </multiInstanceLoopCharacteristics>
+      <startEvent id="ItemStarted" />
+      <userTask id="CheckItem" name="Check the item" />
+      <endEvent id="ItemStopped">
+        <terminateEventDefinition id="ItemStopped_Terminate" />
+      </endEvent>
+      <sequenceFlow id="Flow_Item_Check" sourceRef="ItemStarted" targetRef="CheckItem" />
+      <sequenceFlow id="Flow_Check_Stopped" sourceRef="CheckItem" targetRef="ItemStopped" />
+    </subProcess>
+    <userTask id="Close" name="Close the case" />
+    <endEvent id="End" />
+    <subProcess id="Abandon" name="Abandon the case" triggeredByEvent="true">
+      <startEvent id="AbandonDue" isInterrupting="false">
+        <timerEventDefinition id="AbandonDue_Timer">
+          <timeDuration xsi:type="tFormalExpression">PT1H</timeDuration>
+        </timerEventDefinition>
+      </startEvent>
+      <userTask id="ReviewAbandon" name="Review the abandonment" />
+      <endEvent id="Abandoned">
+        <terminateEventDefinition id="Abandoned_Terminate" />
+      </endEvent>
+      <sequenceFlow id="Flow_Due_Review" sourceRef="AbandonDue" targetRef="ReviewAbandon" />
+      <sequenceFlow id="Flow_Review_Abandoned" sourceRef="ReviewAbandon" targetRef="Abandoned" />
+    </subProcess>
+    <sequenceFlow id="Flow_Start_Call" sourceRef="Start" targetRef="CallChild" />
+    <sequenceFlow id="Flow_Call_Items" sourceRef="CallChild" targetRef="CheckItems" />
+    <sequenceFlow id="Flow_Items_Close" sourceRef="CheckItems" targetRef="Close" />
+    <sequenceFlow id="Flow_Close_End" sourceRef="Close" targetRef="End" />
+  </process>
+  <process id="Process_Child" name="Child that terminates" isExecutable="true">
+    <startEvent id="ChildStarted" />
+    <userTask id="ChildWork" name="Do the child's work" />
+    <endEvent id="ChildStopped">
+      <terminateEventDefinition id="ChildStopped_Terminate" />
+    </endEvent>
+    <sequenceFlow id="Flow_Child_Work" sourceRef="ChildStarted" targetRef="ChildWork" />
+    <sequenceFlow id="Flow_Work_Stopped" sourceRef="ChildWork" targetRef="ChildStopped" />
+  </process>
+</definitions>

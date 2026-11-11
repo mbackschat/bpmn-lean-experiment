@@ -1,0 +1,686 @@
+{
+  "identity": {
+    "processId": "Process_Compensation",
+    "namespace": "https://bpmn-lean.org/scenarios/compensation-source-checkpoint",
+    "sourceSha256": "516073af27fbe95c319918b248c2563c2505263e7542db6f3e8d981f82d8dc93",
+    "profile": "bpmn-2.0.2",
+    "deployment": null
+  },
+  "options": {
+    "relations": [
+      "CIB-AGR-0001",
+      "CIB-AGR-0002",
+      "CIB-AGR-0003",
+      "CIB-AGR-0004",
+      "CIB-AGR-0006",
+      "CIB-AGR-0007",
+      "CIB-AGR-0021",
+      "CIB-CFG-0001",
+      "CIB-CFG-0013",
+      "CIB-CFG-0014",
+      "CIB-DEV-0001",
+      "CIB-DEV-0002",
+      "CIB-EXT-0011",
+      "CIB-INT-0001",
+      "CIB-INT-0008",
+      "CIB-INT-0012",
+      "CIB-INT-0015",
+      "CIB-INT-0016",
+      "CIB-INT-0025",
+      "CIB-INT-0026",
+      "CIB-INT-0029",
+      "CIB-INT-0030",
+      "CIB-INT-0031",
+      "CIB-INT-0032",
+      "CIB-LIM-0002",
+      "CIB-LIM-0003",
+      "CIB-OP-0001"
+    ],
+    "evaluator": "simpleBoolean",
+    "submission": "outputSet",
+    "scopeChainSubmissionBytes": null,
+    "undeclaredWrite": "refused",
+    "errorPathOutputs": "none",
+    "raisedCallOutputs": "none",
+    "technicalFailure": "hostFailure",
+    "incidentProcessCancellation": false,
+    "continuationFailure": "rolledBack",
+    "conditionOrder": "afterOutputs",
+    "messageCorrelation": "modeledKey",
+    "deliveryVariables": "mappedOnly",
+    "multiInstanceFinalBody": "conditionEveryCompletion",
+    "multiInstanceOutputs": "aggregates",
+    "compensationOrder": "dependency",
+    "compensationHandlerFailure": "failsInstance",
+    "abnormalScopeEnd": "withoutOutflow",
+    "unhandledError": "failsInstance",
+    "errorCatchVariables": "refused",
+    "callBindingTime": "programAssembly",
+    "timerZone": null,
+    "multiInstanceBinding": "dataAssociations",
+    "effectResultValues": "outputSet",
+    "outputContext": "submission",
+    "multiInstanceCounters": "none",
+    "multiInstanceInputFailure": "hold",
+    "multiInstanceCount": "integer",
+    "businessRuleTask": "refused",
+    "inclusiveJoinReach": "withBoundaries",
+    "branchSchedule": "orderInvariant",
+    "conditionalRetrigger": "edge",
+    "malformedTimer": "refused",
+    "messageNames": "description",
+    "scopeStart": "implicit",
+    "signalNames": "identifier",
+    "signalPayload": "none",
+    "signalDelivery": "broadcastOnly",
+    "conditionalStart": "refused",
+    "calledElementResolution": "qualifiedName",
+    "messageThrowForms": "refused"
+  },
+  "elements": [
+    {
+      "start": {
+        "header": {
+          "id": "Start_Travel",
+          "origin": {
+            "definition": null,
+            "sourceId": "Start_Travel"
+          },
+          "sourceType": "startEvent",
+          "parent": null
+        },
+        "payload": {
+          "subscription": null,
+          "outgoing": [
+            "Flow_Start_Split"
+          ]
+        }
+      }
+    },
+    {
+      "gateway": {
+        "header": {
+          "id": "Gateway_Split",
+          "origin": {
+            "definition": null,
+            "sourceId": "Gateway_Split"
+          },
+          "sourceType": "parallelGateway",
+          "parent": null
+        },
+        "payload": {
+          "kind": "parallel",
+          "incoming": [
+            "Flow_Start_Split"
+          ],
+          "outgoing": [
+            "Flow_Split_ReserveHotel",
+            "Flow_Split_IssueInsurance"
+          ]
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "Task_ReserveHotel",
+          "origin": {
+            "definition": null,
+            "sourceId": "Task_ReserveHotel"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Confirm hotel reservation",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Split_ReserveHotel"
+            ],
+            "outgoing": [
+              "Flow_ReserveHotel_ArrangeGroundTravel"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [
+              {
+                "id": "Boundary_ReserveHotel_Compensation",
+                "sourceId": "Boundary_ReserveHotel_Compensation",
+                "subscription": {
+                  "trigger": "compensation",
+                  "outputs": [],
+                  "alternatives": [],
+                  "parallelMultiple": false
+                },
+                "interrupting": false,
+                "outgoing": []
+              }
+            ],
+            "multiInstance": null,
+            "compensationHandler": "Task_UndoReserveHotel",
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "scope": {
+        "header": {
+          "id": "SubProcess_ArrangeGroundTravel",
+          "origin": {
+            "definition": null,
+            "sourceId": "SubProcess_ArrangeGroundTravel"
+          },
+          "sourceType": "subProcess",
+          "parent": null
+        },
+        "payload": {
+          "kind": "embedded",
+          "children": [
+            "Start_ArrangeGroundTravel",
+            "Task_ArrangeGroundTravel",
+            "End_ArrangeGroundTravel",
+            "EventSubProcess_UndoGroundTravel"
+          ],
+          "localVariables": [],
+          "items": [],
+          "envelope": {
+            "incoming": [
+              "Flow_ReserveHotel_ArrangeGroundTravel"
+            ],
+            "outgoing": [
+              "Flow_ArrangeGroundTravel_Join"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": "EventSubProcess_UndoGroundTravel",
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "start": {
+        "header": {
+          "id": "Start_ArrangeGroundTravel",
+          "origin": {
+            "definition": null,
+            "sourceId": "Start_ArrangeGroundTravel"
+          },
+          "sourceType": "startEvent",
+          "parent": "SubProcess_ArrangeGroundTravel"
+        },
+        "payload": {
+          "subscription": null,
+          "outgoing": [
+            "Flow_ArrangeGroundTravel_Start_Task"
+          ]
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "Task_ArrangeGroundTravel",
+          "origin": {
+            "definition": null,
+            "sourceId": "Task_ArrangeGroundTravel"
+          },
+          "sourceType": "userTask",
+          "parent": "SubProcess_ArrangeGroundTravel"
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Confirm ground travel booking",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_ArrangeGroundTravel_Start_Task"
+            ],
+            "outgoing": [
+              "Flow_ArrangeGroundTravel_Task_End"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "End_ArrangeGroundTravel",
+          "origin": {
+            "definition": null,
+            "sourceId": "End_ArrangeGroundTravel"
+          },
+          "sourceType": "endEvent",
+          "parent": "SubProcess_ArrangeGroundTravel"
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_ArrangeGroundTravel_Task_End"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "Task_IssueInsurance",
+          "origin": {
+            "definition": null,
+            "sourceId": "Task_IssueInsurance"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Confirm travel insurance",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Split_IssueInsurance"
+            ],
+            "outgoing": [
+              "Flow_IssueInsurance_Join"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [
+              {
+                "id": "Boundary_IssueInsurance_Compensation",
+                "sourceId": "Boundary_IssueInsurance_Compensation",
+                "subscription": {
+                  "trigger": "compensation",
+                  "outputs": [],
+                  "alternatives": [],
+                  "parallelMultiple": false
+                },
+                "interrupting": false,
+                "outgoing": []
+              }
+            ],
+            "multiInstance": null,
+            "compensationHandler": "Task_UndoInsurance",
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "gateway": {
+        "header": {
+          "id": "Gateway_Join",
+          "origin": {
+            "definition": null,
+            "sourceId": "Gateway_Join"
+          },
+          "sourceType": "parallelGateway",
+          "parent": null
+        },
+        "payload": {
+          "kind": "parallel",
+          "incoming": [
+            "Flow_ArrangeGroundTravel_Join",
+            "Flow_IssueInsurance_Join"
+          ],
+          "outgoing": [
+            "Flow_Join_Compensate"
+          ]
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "Throw_Compensate",
+          "origin": {
+            "definition": null,
+            "sourceId": "Throw_Compensate"
+          },
+          "sourceType": "intermediateThrowEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": {
+                "compensation": {
+                  "payload": {
+                    "activity": null,
+                    "waitForCompletion": true
+                  }
+                }
+              }
+            }
+          },
+          "placement": "intermediate",
+          "incoming": [
+            "Flow_Join_Compensate"
+          ],
+          "outgoing": [
+            "Flow_Compensate_End"
+          ],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "End_Done",
+          "origin": {
+            "definition": null,
+            "sourceId": "End_Done"
+          },
+          "sourceType": "endEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Compensate_End"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "scope": {
+        "header": {
+          "id": "EventSubProcess_UndoGroundTravel",
+          "origin": {
+            "definition": null,
+            "sourceId": "EventSubProcess_UndoGroundTravel"
+          },
+          "sourceType": "subProcess",
+          "parent": "SubProcess_ArrangeGroundTravel"
+        },
+        "payload": {
+          "kind": {
+            "eventSubProcess": {
+              "start": {
+                "trigger": "compensation",
+                "outputs": [],
+                "alternatives": [],
+                "parallelMultiple": false
+              },
+              "interrupting": false
+            }
+          },
+          "children": [
+            "Task_UndoGroundTravel"
+          ],
+          "localVariables": [],
+          "items": [],
+          "envelope": {
+            "incoming": [],
+            "outgoing": [],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "Task_UndoGroundTravel",
+          "origin": {
+            "definition": null,
+            "sourceId": "Task_UndoGroundTravel"
+          },
+          "sourceType": "serviceTask",
+          "parent": "EventSubProcess_UndoGroundTravel"
+        },
+        "payload": {
+          "work": {
+            "service": {
+              "payload": {
+                "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+                "operation": "urn:bpmn-lean:effect-operation:compensation-single-effect-v1",
+                "handlerKey": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [],
+            "outgoing": [],
+            "inputs": [
+              {
+                "target": "DataInput_TravelDetails",
+                "source": {
+                  "variable": {
+                    "name": "Property_TravelDetails"
+                  }
+                },
+                "dialect": "dataAssociation"
+              }
+            ],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "Task_UndoInsurance",
+          "origin": {
+            "definition": null,
+            "sourceId": "Task_UndoInsurance"
+          },
+          "sourceType": "serviceTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "service": {
+              "payload": {
+                "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+                "operation": "urn:bpmn-lean:effect-operation:compensation-single-effect-v1",
+                "handlerKey": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [],
+            "outgoing": [],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "Task_UndoReserveHotel",
+          "origin": {
+            "definition": null,
+            "sourceId": "Task_UndoReserveHotel"
+          },
+          "sourceType": "serviceTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "service": {
+              "payload": {
+                "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+                "operation": "urn:bpmn-lean:effect-operation:compensation-single-effect-v1",
+                "handlerKey": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [],
+            "outgoing": [],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    }
+  ],
+  "flows": [
+    {
+      "id": "Flow_ArrangeGroundTravel_Start_Task",
+      "source": "Start_ArrangeGroundTravel",
+      "target": "Task_ArrangeGroundTravel",
+      "condition": null
+    },
+    {
+      "id": "Flow_ArrangeGroundTravel_Task_End",
+      "source": "Task_ArrangeGroundTravel",
+      "target": "End_ArrangeGroundTravel",
+      "condition": null
+    },
+    {
+      "id": "Flow_Start_Split",
+      "source": "Start_Travel",
+      "target": "Gateway_Split",
+      "condition": null
+    },
+    {
+      "id": "Flow_Split_ReserveHotel",
+      "source": "Gateway_Split",
+      "target": "Task_ReserveHotel",
+      "condition": null
+    },
+    {
+      "id": "Flow_ReserveHotel_ArrangeGroundTravel",
+      "source": "Task_ReserveHotel",
+      "target": "SubProcess_ArrangeGroundTravel",
+      "condition": null
+    },
+    {
+      "id": "Flow_ArrangeGroundTravel_Join",
+      "source": "SubProcess_ArrangeGroundTravel",
+      "target": "Gateway_Join",
+      "condition": null
+    },
+    {
+      "id": "Flow_Split_IssueInsurance",
+      "source": "Gateway_Split",
+      "target": "Task_IssueInsurance",
+      "condition": null
+    },
+    {
+      "id": "Flow_IssueInsurance_Join",
+      "source": "Task_IssueInsurance",
+      "target": "Gateway_Join",
+      "condition": null
+    },
+    {
+      "id": "Flow_Join_Compensate",
+      "source": "Gateway_Join",
+      "target": "Throw_Compensate",
+      "condition": null
+    },
+    {
+      "id": "Flow_Compensate_End",
+      "source": "Throw_Compensate",
+      "target": "End_Done",
+      "condition": null
+    }
+  ],
+  "variables": [
+    "Property_TravelDetails"
+  ],
+  "processes": [],
+  "executable": true,
+  "decisionResources": []
+}

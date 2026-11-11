@@ -1,0 +1,858 @@
+{
+  "identity": {
+    "processId": "Process_RowTimer08",
+    "namespace": "urn:bpmn-lean:row-fixtures:PC-TIMER-08",
+    "sourceSha256": "1d117e14af53296303eb2e0475d0e7fe6874212dcd3998064eb21a6054d3bec1",
+    "profile": "cibseven-2.2.0",
+    "deployment": null
+  },
+  "options": {
+    "relations": [
+      "CIB-AGR-0001",
+      "CIB-AGR-0002",
+      "CIB-AGR-0003",
+      "CIB-AGR-0004",
+      "CIB-AGR-0006",
+      "CIB-AGR-0007",
+      "CIB-AGR-0008",
+      "CIB-AGR-0009",
+      "CIB-AGR-0010",
+      "CIB-AGR-0012",
+      "CIB-AGR-0013",
+      "CIB-AGR-0014",
+      "CIB-AGR-0015",
+      "CIB-AGR-0016",
+      "CIB-AGR-0017",
+      "CIB-AGR-0018",
+      "CIB-AGR-0019",
+      "CIB-AGR-0020",
+      "CIB-AGR-0021",
+      "CIB-AGR-0022",
+      "CIB-AGR-0023",
+      "CIB-CFG-0001",
+      "CIB-CFG-0002",
+      "CIB-CFG-0006",
+      "CIB-CFG-0007",
+      "CIB-CFG-0008",
+      "CIB-CFG-0009",
+      "CIB-CFG-0010",
+      "CIB-CFG-0011",
+      "CIB-CFG-0013",
+      "CIB-CFG-0014",
+      "CIB-DEV-0001",
+      "CIB-DEV-0002",
+      "CIB-EXT-0001",
+      "CIB-EXT-0004",
+      "CIB-EXT-0005",
+      "CIB-EXT-0006",
+      "CIB-EXT-0007",
+      "CIB-EXT-0008",
+      "CIB-EXT-0009",
+      "CIB-EXT-0010",
+      "CIB-EXT-0011",
+      "CIB-EXT-0012",
+      "CIB-EXT-0013",
+      "CIB-EXT-0014",
+      "CIB-EXT-0015",
+      "CIB-EXT-0016",
+      "CIB-EXT-0019",
+      "CIB-EXT-0021",
+      "CIB-EXT-0022",
+      "CIB-EXT-0023",
+      "CIB-EXT-0025",
+      "CIB-EXT-0028",
+      "CIB-EXT-0030",
+      "CIB-EXT-0031",
+      "CIB-EXT-0032",
+      "CIB-EXT-0033",
+      "CIB-EXT-0034",
+      "CIB-EXT-0035",
+      "CIB-EXT-0036",
+      "CIB-EXT-0038",
+      "CIB-EXT-0039",
+      "CIB-EXT-0040",
+      "CIB-EXT-0041",
+      "CIB-EXT-0042",
+      "CIB-EXT-0043",
+      "CIB-EXT-0044",
+      "CIB-EXT-0045",
+      "CIB-INT-0001",
+      "CIB-INT-0003",
+      "CIB-INT-0004",
+      "CIB-INT-0005",
+      "CIB-INT-0007",
+      "CIB-INT-0008",
+      "CIB-INT-0009",
+      "CIB-INT-0011",
+      "CIB-INT-0012",
+      "CIB-INT-0013",
+      "CIB-INT-0014",
+      "CIB-INT-0015",
+      "CIB-INT-0016",
+      "CIB-INT-0017",
+      "CIB-INT-0018",
+      "CIB-INT-0019",
+      "CIB-INT-0020",
+      "CIB-INT-0023",
+      "CIB-INT-0024",
+      "CIB-INT-0025",
+      "CIB-INT-0026",
+      "CIB-INT-0027",
+      "CIB-INT-0028",
+      "CIB-INT-0029",
+      "CIB-INT-0030",
+      "CIB-INT-0031",
+      "CIB-INT-0032",
+      "CIB-LIM-0001",
+      "CIB-LIM-0002",
+      "CIB-LIM-0003",
+      "CIB-LIM-0006",
+      "CIB-LIM-0007",
+      "CIB-LIM-0008",
+      "CIB-LIM-0009",
+      "CIB-LIM-0010",
+      "CIB-LIM-0014",
+      "CIB-LIM-0015",
+      "CIB-LIM-0016",
+      "CIB-LIM-0017",
+      "CIB-LIM-0022",
+      "CIB-LIM-0024",
+      "CIB-LIM-0026",
+      "CIB-LIM-0027",
+      "CIB-LIM-0028",
+      "CIB-OP-0001",
+      "CIB-OP-0005",
+      "CIB-OP-0006",
+      "CIB-OP-0007",
+      "CIB-OP-0008",
+      "CIB-OP-0009",
+      "CIB-OP-0010",
+      "CIB-OP-0011",
+      "CIB-OP-0016",
+      "CIB-OP-0019"
+    ],
+    "evaluator": "juel",
+    "submission": "installsVariables",
+    "scopeChainSubmissionBytes": null,
+    "undeclaredWrite": "atInstanceRoot",
+    "errorPathOutputs": "mapped",
+    "raisedCallOutputs": "atCalledRoot",
+    "technicalFailure": "incident",
+    "incidentProcessCancellation": true,
+    "continuationFailure": "rolledBack",
+    "conditionOrder": "beforeOutputs",
+    "messageCorrelation": "apiCriteria",
+    "deliveryVariables": "installs",
+    "multiInstanceFinalBody": "modeSpecific",
+    "multiInstanceOutputs": "none",
+    "compensationOrder": "dependency",
+    "compensationHandlerFailure": "failsInstance",
+    "abnormalScopeEnd": "completesNormally",
+    "unhandledError": "endsThrowingPath",
+    "errorCatchVariables": "eventScope",
+    "callBindingTime": "programAssembly",
+    "timerZone": null,
+    "multiInstanceBinding": "loopReferences",
+    "effectResultValues": "activityLocals",
+    "outputContext": "activityScope",
+    "multiInstanceCounters": "cibLocals",
+    "multiInstanceInputFailure": "rollback",
+    "multiInstanceCount": "javaInt",
+    "businessRuleTask": "decisionTable",
+    "inclusiveJoinReach": "outgoingOnly",
+    "branchSchedule": "declarationDepthFirst",
+    "conditionalRetrigger": "eachWrite",
+    "malformedTimer": "rollsBackArming",
+    "messageNames": "addresses",
+    "scopeStart": "required",
+    "signalNames": "addresses",
+    "signalPayload": "variables",
+    "signalDelivery": "occurrenceTargeted",
+    "conditionalStart": "submittedContext",
+    "calledElementResolution": "cibKey",
+    "messageThrowForms": "cibForms"
+  },
+  "elements": [
+    {
+      "start": {
+        "header": {
+          "id": "Start",
+          "origin": {
+            "definition": null,
+            "sourceId": "Start"
+          },
+          "sourceType": "startEvent",
+          "parent": null
+        },
+        "payload": {
+          "subscription": null,
+          "outgoing": [
+            "Flow_Start_Booking"
+          ]
+        }
+      }
+    },
+    {
+      "scope": {
+        "header": {
+          "id": "Booking",
+          "origin": {
+            "definition": null,
+            "sourceId": "Booking"
+          },
+          "sourceType": "transaction",
+          "parent": null
+        },
+        "payload": {
+          "kind": {
+            "transaction": {
+              "payload": {
+                "method": "compensate"
+              }
+            }
+          },
+          "children": [
+            "BookingStarted",
+            "BookItems",
+            "BookingDone"
+          ],
+          "localVariables": [],
+          "items": [],
+          "envelope": {
+            "incoming": [
+              "Flow_Start_Booking"
+            ],
+            "outgoing": [
+              "Flow_Booking_Confirm"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [
+              {
+                "id": "BookingDeadline",
+                "sourceId": "BookingDeadline",
+                "subscription": {
+                  "trigger": {
+                    "timer": {
+                      "payload": {
+                        "schedule": {
+                          "duration": {
+                            "value": {
+                              "literal": {
+                                "value": "PT1H"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "outputs": [],
+                  "alternatives": [],
+                  "parallelMultiple": false
+                },
+                "interrupting": true,
+                "outgoing": [
+                  "Flow_Deadline_Expire"
+                ]
+              }
+            ],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "start": {
+        "header": {
+          "id": "BookingStarted",
+          "origin": {
+            "definition": null,
+            "sourceId": "BookingStarted"
+          },
+          "sourceType": "startEvent",
+          "parent": "Booking"
+        },
+        "payload": {
+          "subscription": null,
+          "outgoing": [
+            "Flow_Booking_Items"
+          ]
+        }
+      }
+    },
+    {
+      "scope": {
+        "header": {
+          "id": "BookItems",
+          "origin": {
+            "definition": null,
+            "sourceId": "BookItems"
+          },
+          "sourceType": "subProcess",
+          "parent": "Booking"
+        },
+        "payload": {
+          "kind": "embedded",
+          "children": [
+            "ItemStarted",
+            "BookItem",
+            "ItemBooked",
+            "RemindItem"
+          ],
+          "localVariables": [],
+          "items": [],
+          "envelope": {
+            "incoming": [
+              "Flow_Booking_Items"
+            ],
+            "outgoing": [
+              "Flow_Items_Done"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": {
+              "mode": "parallel",
+              "count": {
+                "cardinality": {
+                  "count": {
+                    "juel": {
+                      "nodes": [
+                        {
+                          "text": {
+                            "value": "2"
+                          }
+                        }
+                      ]
+                    }
+                  }
+                }
+              },
+              "elementVariable": null,
+              "completionCondition": null,
+              "inputDataItem": null,
+              "outputDataItem": null,
+              "outputCollection": null,
+              "mutableCollection": "entrySnapshot",
+              "asyncBefore": false,
+              "asyncAfter": false,
+              "loopDataInputRef": null,
+              "inputDataItemName": null
+            },
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "start": {
+        "header": {
+          "id": "ItemStarted",
+          "origin": {
+            "definition": null,
+            "sourceId": "ItemStarted"
+          },
+          "sourceType": "startEvent",
+          "parent": "BookItems"
+        },
+        "payload": {
+          "subscription": null,
+          "outgoing": [
+            "Flow_Item_Book"
+          ]
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "BookItem",
+          "origin": {
+            "definition": null,
+            "sourceId": "BookItem"
+          },
+          "sourceType": "userTask",
+          "parent": "BookItems"
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Book the item",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Item_Book"
+            ],
+            "outgoing": [
+              "Flow_Book_Booked"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "ItemBooked",
+          "origin": {
+            "definition": null,
+            "sourceId": "ItemBooked"
+          },
+          "sourceType": "endEvent",
+          "parent": "BookItems"
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Book_Booked"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "scope": {
+        "header": {
+          "id": "RemindItem",
+          "origin": {
+            "definition": null,
+            "sourceId": "RemindItem"
+          },
+          "sourceType": "subProcess",
+          "parent": "BookItems"
+        },
+        "payload": {
+          "kind": {
+            "eventSubProcess": {
+              "start": {
+                "trigger": {
+                  "timer": {
+                    "payload": {
+                      "schedule": {
+                        "duration": {
+                          "value": {
+                            "literal": {
+                              "value": "PT10M"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "outputs": [],
+                "alternatives": [],
+                "parallelMultiple": false
+              },
+              "interrupting": false
+            }
+          },
+          "children": [
+            "ItemReminderDue",
+            "SendItemReminder",
+            "ItemReminded"
+          ],
+          "localVariables": [],
+          "items": [],
+          "envelope": {
+            "incoming": [],
+            "outgoing": [],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "start": {
+        "header": {
+          "id": "ItemReminderDue",
+          "origin": {
+            "definition": null,
+            "sourceId": "ItemReminderDue"
+          },
+          "sourceType": "startEvent",
+          "parent": "RemindItem"
+        },
+        "payload": {
+          "subscription": {
+            "trigger": {
+              "timer": {
+                "payload": {
+                  "schedule": {
+                    "duration": {
+                      "value": {
+                        "literal": {
+                          "value": "PT10M"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "outputs": [],
+            "alternatives": [],
+            "parallelMultiple": false
+          },
+          "outgoing": [
+            "Flow_Due_Send"
+          ]
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "SendItemReminder",
+          "origin": {
+            "definition": null,
+            "sourceId": "SendItemReminder"
+          },
+          "sourceType": "userTask",
+          "parent": "RemindItem"
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Send the item reminder",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Due_Send"
+            ],
+            "outgoing": [
+              "Flow_Send_Reminded"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "ItemReminded",
+          "origin": {
+            "definition": null,
+            "sourceId": "ItemReminded"
+          },
+          "sourceType": "endEvent",
+          "parent": "RemindItem"
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Send_Reminded"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "BookingDone",
+          "origin": {
+            "definition": null,
+            "sourceId": "BookingDone"
+          },
+          "sourceType": "endEvent",
+          "parent": "Booking"
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Items_Done"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "Confirm",
+          "origin": {
+            "definition": null,
+            "sourceId": "Confirm"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Confirm the booking",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Booking_Confirm"
+            ],
+            "outgoing": [
+              "Flow_Confirm_End"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "Expire",
+          "origin": {
+            "definition": null,
+            "sourceId": "Expire"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Expire the booking",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Deadline_Expire"
+            ],
+            "outgoing": [
+              "Flow_Expire_Expired"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "End",
+          "origin": {
+            "definition": null,
+            "sourceId": "End"
+          },
+          "sourceType": "endEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Confirm_End"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "Expired",
+          "origin": {
+            "definition": null,
+            "sourceId": "Expired"
+          },
+          "sourceType": "endEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Expire_Expired"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    }
+  ],
+  "flows": [
+    {
+      "id": "Flow_Item_Book",
+      "source": "ItemStarted",
+      "target": "BookItem",
+      "condition": null
+    },
+    {
+      "id": "Flow_Book_Booked",
+      "source": "BookItem",
+      "target": "ItemBooked",
+      "condition": null
+    },
+    {
+      "id": "Flow_Due_Send",
+      "source": "ItemReminderDue",
+      "target": "SendItemReminder",
+      "condition": null
+    },
+    {
+      "id": "Flow_Send_Reminded",
+      "source": "SendItemReminder",
+      "target": "ItemReminded",
+      "condition": null
+    },
+    {
+      "id": "Flow_Booking_Items",
+      "source": "BookingStarted",
+      "target": "BookItems",
+      "condition": null
+    },
+    {
+      "id": "Flow_Items_Done",
+      "source": "BookItems",
+      "target": "BookingDone",
+      "condition": null
+    },
+    {
+      "id": "Flow_Start_Booking",
+      "source": "Start",
+      "target": "Booking",
+      "condition": null
+    },
+    {
+      "id": "Flow_Booking_Confirm",
+      "source": "Booking",
+      "target": "Confirm",
+      "condition": null
+    },
+    {
+      "id": "Flow_Confirm_End",
+      "source": "Confirm",
+      "target": "End",
+      "condition": null
+    },
+    {
+      "id": "Flow_Deadline_Expire",
+      "source": "BookingDeadline",
+      "target": "Expire",
+      "condition": null
+    },
+    {
+      "id": "Flow_Expire_Expired",
+      "source": "Expire",
+      "target": "Expired",
+      "condition": null
+    }
+  ],
+  "variables": [],
+  "processes": [],
+  "executable": true,
+  "decisionResources": []
+}

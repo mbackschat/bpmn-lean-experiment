@@ -1,0 +1,516 @@
+{
+  "PC-CF-02": {
+    "scenario": "scenarios/open-rows/exclusive-choice-compositions/no-default-split-no-candidate-true.scenario.json",
+    "source": "scenarios/open-rows/exclusive-choice-compositions/no-default-split.bpmn",
+    "profile": "cibseven-2.2.0"
+  },
+  "PC-CF-03": {
+    "scenario": "scenarios/embedded-subprocess-completion/a-then-b.scenario.json",
+    "source": "scenarios/embedded-subprocess-completion/process.bpmn",
+    "profile": "cibseven-2.2.0"
+  },
+  "PC-CF-04": {
+    "scenario": "scenarios/inclusive-gateway-regions/booking-extras-venue-first.scenario.json",
+    "source": "scenarios/inclusive-gateway-regions/event-booking.bpmn",
+    "profile": "cibseven-2.2.0-scope-chain"
+  },
+  "PC-CF-05": {
+    "scenario": "scenarios/event-based-gateway-message-timer/message-wins.scenario.json",
+    "source": "scenarios/event-based-gateway-message-timer/process.bpmn",
+    "profile": "bpmn-2.0.2"
+  },
+  "PC-CF-06": {
+    "scenario": "scenarios/user-task-cycle/scenario.json",
+    "source": "scenarios/user-task-cycle/process.bpmn",
+    "profile": "bpmn-2.0.2"
+  },
+  "PC-CF-07": {
+    "scenario": "scenarios/structured-process-composition/serial-null.scenario.json",
+    "source": "scenarios/structured-process-composition/serial.bpmn",
+    "profile": "bpmn-2.0.2"
+  },
+  "PC-CF-08": {
+    "scenario": null,
+    "source": "packages/kernel/test/fixtures/rows/models/PC-CF-08.bpmn",
+    "profile": "cibseven-2.2.0",
+    "note": "No scenario model composes the three gateway kinds; this one places an Event-Based race and an Inclusive split and merge on the branches of one Parallel fork and join."
+  },
+  "PC-DATA-01": {
+    "scenario": "scenarios/portable-business-message-payload/manifest-delivered.scenario.json",
+    "source": "scenarios/portable-business-message-payload/process.bpmn",
+    "profile": "bpmn-2.0.2"
+  },
+  "PC-DATA-02": {
+    "scenario": "scenarios/open-rows/call-binding-population/nested-callee-binds-at-own-deployment.population-scenario.json",
+    "source": "scenarios/open-rows/call-binding-population/review-second.bpmn",
+    "profile": "bpmn-2.0.2"
+  },
+  "PC-DATA-03": {
+    "scenario": "scenarios/open-rows/structured-value-bounds/completion-at-depth-bound.scenario.json",
+    "source": "scenarios/open-rows/structured-value-bounds/bounded-value.bpmn",
+    "profile": "cibseven-2.2.0"
+  },
+  "PC-DATA-04": {
+    "scenario": "scenarios/open-rows/scope-data-visibility/second-lifetime.scenario.json",
+    "source": "scenarios/open-rows/scope-data-visibility/repeated-lifetimes.bpmn",
+    "profile": "cibseven-2.2.0"
+  },
+  "PC-DATA-05": {
+    "scenario": "scenarios/activity-data-input-user-task/absent.scenario.json",
+    "source": "scenarios/activity-data-input-user-task/process.bpmn",
+    "profile": "bpmn-2.0.2"
+  },
+  "PC-DATA-06": {
+    "scenario": "scenarios/activity-data-output-user-task/null.scenario.json",
+    "source": "scenarios/activity-data-output-user-task/process.bpmn",
+    "profile": "bpmn-2.0.2"
+  },
+  "PC-DATA-07": {
+    "scenario": "scenarios/inclusive-gateway-regions/account-all-checks-funds-last.scenario.json",
+    "source": "scenarios/inclusive-gateway-regions/account-opening.bpmn",
+    "profile": "cibseven-2.2.0-scope-chain"
+  },
+  "PC-DATA-08": {
+    "scenario": "scenarios/open-rows/expression-cardinality-and-collections/boolean-count.scenario.json",
+    "source": "scenarios/open-rows/expression-cardinality-and-collections/expression-probes.bpmn",
+    "profile": "cibseven-2.2.0"
+  },
+  "PC-DATA-09": {
+    "scenario": "scenarios/structured-process-composition/serial-null.scenario.json",
+    "source": "scenarios/structured-process-composition/serial.bpmn",
+    "profile": "bpmn-2.0.2"
+  },
+  "PC-HUM-01": {
+    "scenario": "scenarios/user-task-discovery-completion/scenario.json",
+    "source": "scenarios/user-task-discovery-completion/process.bpmn",
+    "profile": "cibseven-2.2.0"
+  },
+  "PC-HUM-02": {
+    "scenario": "scenarios/user-task-assignment-form-metadata/scenario.json",
+    "source": "scenarios/user-task-assignment-form-metadata/process.bpmn",
+    "profile": "cibseven-2.2.0"
+  },
+  "PC-HUM-03": {
+    "scenario": "scenarios/message-addressed-receive-task/scenario.json",
+    "source": "scenarios/message-addressed-receive-task/process.bpmn",
+    "profile": "cibseven-2.2.0"
+  },
+  "PC-HUM-04": {
+    "scenario": "scenarios/pass-through-task/equipment-return.scenario.json",
+    "source": "scenarios/pass-through-task/equipment-return.bpmn",
+    "profile": "cibseven-2.2.0-scope-chain"
+  },
+  "PC-HUM-05": {
+    "scenario": "scenarios/open-rows/manual-task-split-merge/site-visit-cellar-then-roof.scenario.json",
+    "source": "scenarios/open-rows/manual-task-split-merge/site-visit.bpmn",
+    "profile": "cibseven-2.2.0"
+  },
+  "PC-HUM-06": {
+    "scenario": "scenarios/addressless-receive-task/named-delivery-first.scenario.json",
+    "source": "scenarios/addressless-receive-task/process.bpmn",
+    "profile": "cibseven-2.2.0"
+  },
+  "PC-AUTO-01": {
+    "scenario": "scenarios/configured-task/scenario.json",
+    "source": "scenarios/configured-task/process.bpmn",
+    "profile": "bpmn-2.0.2"
+  },
+  "PC-AUTO-02": {
+    "scenario": "scenarios/open-rows/error-java-class-codes/illegal-state-business-failure.scenario.json",
+    "source": "scenarios/open-rows/error-java-class-codes/illegal-state-code.bpmn",
+    "profile": "cibseven-2.2.0"
+  },
+  "PC-AUTO-03": {
+    "scenario": "scenarios/service-task-incident-cancellation/scenario.json",
+    "source": "scenarios/service-task-effect/process.bpmn",
+    "profile": "cibseven-2.2.0"
+  },
+  "PC-AUTO-04": {
+    "scenario": "scenarios/open-rows/send-task-configured-send/message-flow-only.scenario.json",
+    "source": "scenarios/open-rows/send-task-configured-send/message-flow-only.bpmn",
+    "profile": "cibseven-2.2.0"
+  },
+  "PC-AUTO-06": {
+    "scenario": "scenarios/open-rows/script-task-javascript/nested-scope-and-body.scenario.json",
+    "source": "scenarios/open-rows/script-task-javascript/scoped-scripts.bpmn",
+    "profile": "cibseven-2.2.0"
+  },
+  "PC-AUTO-08": {
+    "scenario": "scenarios/open-rows/business-rule-routing/condition-order.scenario.json",
+    "source": "scenarios/open-rows/business-rule-routing/rule-condition-order.bpmn",
+    "profile": "cibseven-2.2.0"
+  },
+  "PC-SCOPE-01": {
+    "scenario": "scenarios/nested-embedded-scope-data/claim-limits.scenario.json",
+    "source": "scenarios/nested-embedded-scope-data/expense-claim.bpmn",
+    "profile": "cibseven-2.2.0-scope-chain"
+  },
+  "PC-SCOPE-02": {
+    "scenario": "scenarios/embedded-subprocess-completion/a-then-b.scenario.json",
+    "source": "scenarios/embedded-subprocess-completion/process.bpmn",
+    "profile": "cibseven-2.2.0"
+  },
+  "PC-SCOPE-03": {
+    "scenario": "scenarios/called-process-call-activity/scenario.json",
+    "source": "scenarios/called-process-call-activity/process.bpmn",
+    "profile": "bpmn-2.0.2"
+  },
+  "PC-SCOPE-04": {
+    "scenario": "scenarios/call-activity-data-boundaries/null.scenario.json",
+    "source": "scenarios/call-activity-data-boundaries/process.bpmn",
+    "profile": "bpmn-2.0.2"
+  },
+  "PC-SCOPE-05": {
+    "scenario": "scenarios/call-activity-data-boundaries/null.scenario.json",
+    "source": "scenarios/call-activity-data-boundaries/process.bpmn",
+    "profile": "bpmn-2.0.2"
+  },
+  "PC-SCOPE-06": {
+    "scenario": "scenarios/open-rows/call-raised-outputs/ship-failed-catch-after-pass.scenario.json",
+    "source": "scenarios/open-rows/call-raised-outputs/catch-shares-out-target.bpmn",
+    "profile": "cibseven-2.2.0"
+  },
+  "PC-SCOPE-07": {
+    "scenario": "scenarios/subprocess-boundary-timer/deadline-wins.scenario.json",
+    "source": "scenarios/subprocess-boundary-timer/process.bpmn",
+    "profile": "bpmn-2.0.2"
+  },
+  "PC-MI-01": {
+    "scenario": "scenarios/sequential-multi-instance/interrupted.scenario.json",
+    "source": "scenarios/sequential-multi-instance/process.bpmn",
+    "profile": "bpmn-2.0.2"
+  },
+  "PC-MI-02": {
+    "scenario": "scenarios/open-rows/multi-instance-service-task/parallel-cardinality-reversed.scenario.json",
+    "source": "scenarios/open-rows/multi-instance-service-task/parallel-cardinality.bpmn",
+    "profile": "cibseven-2.2.0"
+  },
+  "PC-MI-03": {
+    "scenario": "scenarios/open-rows/multi-instance-expression-results/completion-counter-equals.scenario.json",
+    "source": "scenarios/open-rows/multi-instance-expression-results/completion-counter-equals.bpmn",
+    "profile": "cibseven-2.2.0"
+  },
+  "PC-MI-04": {
+    "scenario": "scenarios/open-rows/multi-instance-sub-process/parallel-cardinality-changed-after-entry.scenario.json",
+    "source": "scenarios/open-rows/multi-instance-sub-process/parallel-cardinality.bpmn",
+    "profile": "cibseven-2.2.0"
+  },
+  "PC-MI-05": {
+    "scenario": "scenarios/open-rows/multi-instance-sub-process/parallel-cardinality-changed-after-entry.scenario.json",
+    "source": "scenarios/open-rows/multi-instance-sub-process/parallel-cardinality.bpmn",
+    "profile": "cibseven-2.2.0"
+  },
+  "PC-MI-06": {
+    "scenario": "scenarios/open-rows/automation-handler-reuse/sequential-body-effects.scenario.json",
+    "source": "scenarios/open-rows/automation-handler-reuse/item-handlers.bpmn",
+    "profile": "cibseven-2.2.0"
+  },
+  "PC-MI-07": {
+    "scenario": "scenarios/open-rows/expression-cardinality-and-collections/boolean-count.scenario.json",
+    "source": "scenarios/open-rows/expression-cardinality-and-collections/expression-probes.bpmn",
+    "profile": "cibseven-2.2.0"
+  },
+  "PC-MI-08": {
+    "scenario": "scenarios/open-rows/multi-instance-user-task/parallel-output-collection-standards.scenario.json",
+    "source": "scenarios/open-rows/multi-instance-user-task/parallel-output-collection.bpmn",
+    "profile": "bpmn-2.0.2"
+  },
+  "PC-MI-09": {
+    "scenario": "scenarios/sequential-multi-instance/interrupted.scenario.json",
+    "source": "scenarios/sequential-multi-instance/process.bpmn",
+    "profile": "bpmn-2.0.2"
+  },
+  "PC-MI-10": {
+    "scenario": "scenarios/open-rows/multi-instance-user-task/parallel-output-collection-standards.scenario.json",
+    "source": "scenarios/open-rows/multi-instance-user-task/parallel-output-collection.bpmn",
+    "profile": "bpmn-2.0.2"
+  },
+  "PC-MI-11": {
+    "scenario": "scenarios/open-rows/automation-handler-reuse/sequential-body-effects.scenario.json",
+    "source": "scenarios/open-rows/automation-handler-reuse/item-handlers.bpmn",
+    "profile": "cibseven-2.2.0"
+  },
+  "PC-MI-12": {
+    "scenario": "scenarios/sequential-multi-instance/interrupted.scenario.json",
+    "source": "scenarios/sequential-multi-instance/process.bpmn",
+    "profile": "bpmn-2.0.2"
+  },
+  "PC-TIMER-01": {
+    "scenario": "scenarios/open-rows/timer-date-forms/equal-to-now-after-delay.scenario.json",
+    "source": "scenarios/open-rows/timer-date-forms/date-forms.bpmn",
+    "profile": "cibseven-2.2.0"
+  },
+  "PC-TIMER-02": {
+    "scenario": "scenarios/open-rows/timer-recurrence/count-last-fire-chain.scenario.json",
+    "source": "scenarios/open-rows/timer-recurrence/cycle-forms.bpmn",
+    "profile": "cibseven-2.2.0"
+  },
+  "PC-TIMER-03": {
+    "scenario": "scenarios/open-rows/timer-data-derived/boundary-change-after-host-entry.scenario.json",
+    "source": "scenarios/open-rows/timer-data-derived/derived-deadlines.bpmn",
+    "profile": "cibseven-2.2.0"
+  },
+  "PC-TIMER-04": {
+    "scenario": "scenarios/open-rows/timer-start-forms/cycle-start-fires.scenario.json",
+    "source": "scenarios/open-rows/timer-start-forms/cycle-start.bpmn",
+    "profile": "cibseven-2.2.0"
+  },
+  "PC-TIMER-05": {
+    "scenario": "scenarios/open-rows/timer-catch-cycles/single-round.scenario.json",
+    "source": "scenarios/open-rows/timer-catch-cycles/review-loop.bpmn",
+    "profile": "cibseven-2.2.0"
+  },
+  "PC-TIMER-06": {
+    "scenario": "scenarios/open-rows/timer-boundary-hosts/call-child-completes-first.scenario.json",
+    "source": "scenarios/open-rows/timer-boundary-hosts/boundary-hosts.bpmn",
+    "profile": "cibseven-2.2.0"
+  },
+  "PC-TIMER-07": {
+    "scenario": "scenarios/open-rows/timer-event-subprocess/cycle-handlers-overlap-past-the-ordinary-path.scenario.json",
+    "source": "scenarios/open-rows/timer-event-subprocess/timer-handlers.bpmn",
+    "profile": "cibseven-2.2.0"
+  },
+  "PC-TIMER-08": {
+    "scenario": null,
+    "source": "packages/kernel/test/fixtures/rows/models/PC-TIMER-08.bpmn",
+    "profile": "cibseven-2.2.0",
+    "note": "No scenario model nests these lifetimes; this one gives a Transaction a deadline boundary and a parallel Multi-Instance Sub-Process whose body holds a non-interrupting Timer Event Sub-Process."
+  },
+  "PC-MESSAGE-01": {
+    "scenario": "scenarios/message-start-event/scenario.json",
+    "source": "scenarios/message-start-event/process.bpmn",
+    "profile": "bpmn-2.0.2"
+  },
+  "PC-MESSAGE-02": {
+    "scenario": "scenarios/message-start-event/scenario.json",
+    "source": "scenarios/message-start-event/process.bpmn",
+    "profile": "bpmn-2.0.2"
+  },
+  "PC-MESSAGE-03": {
+    "scenario": "scenarios/intermediate-catch-message/scenario.json",
+    "source": "scenarios/intermediate-catch-message/process.bpmn",
+    "profile": "bpmn-2.0.2"
+  },
+  "PC-MESSAGE-04": {
+    "scenario": "scenarios/activity-boundary-message/message-wins.scenario.json",
+    "source": "scenarios/activity-boundary-message/process.bpmn",
+    "profile": "bpmn-2.0.2"
+  },
+  "PC-MESSAGE-05": {
+    "scenario": "scenarios/open-rows/message-boundary-repeated/user-host-reentered-after-delivery.scenario.json",
+    "source": "scenarios/open-rows/message-boundary-repeated/reentered-host.bpmn",
+    "profile": "cibseven-2.2.0"
+  },
+  "PC-MESSAGE-06": {
+    "scenario": "scenarios/open-rows/compensation-handler-form-refusals/esp-at-process-level.scenario.json",
+    "source": "scenarios/open-rows/compensation-handler-form-refusals/esp-at-process-level.bpmn",
+    "profile": "cibseven-2.2.0"
+  },
+  "PC-MESSAGE-07": {
+    "scenario": "scenarios/open-rows/message-esp-repeatable/parallel-bodies-own-listeners.scenario.json",
+    "source": "scenarios/open-rows/message-esp-repeatable/repeatable-handlers.bpmn",
+    "profile": "cibseven-2.2.0"
+  },
+  "PC-MESSAGE-08": {
+    "scenario": "scenarios/message-key-correlation/ambiguous.population-scenario.json",
+    "source": "scenarios/message-key-correlation/process.bpmn",
+    "profile": "bpmn-2.0.2"
+  },
+  "PC-MESSAGE-09": {
+    "scenario": "scenarios/open-rows/message-throw-retry/technical-failure-then-retry.scenario.json",
+    "source": "scenarios/open-rows/message-throw-retry/retry-notify.bpmn",
+    "profile": "cibseven-2.2.0"
+  },
+  "PC-SIGNAL-01": {
+    "scenario": "scenarios/open-rows/signal-broadcast-population/kernel-publication-cascade.population-scenario.json",
+    "source": "scenarios/open-rows/signal-broadcast-population/confirmation-signal-relay.bpmn",
+    "profile": "cibseven-2.2.0"
+  },
+  "PC-SIGNAL-02": {
+    "scenario": "scenarios/event-based-gateway-message-timer/message-wins.scenario.json",
+    "source": "scenarios/event-based-gateway-message-timer/process.bpmn",
+    "profile": "bpmn-2.0.2"
+  },
+  "PC-SIGNAL-03": {
+    "scenario": "scenarios/open-rows/message-name-addressing/mi-subprocess-boundary-and-handler.scenario.json",
+    "source": "scenarios/open-rows/message-name-addressing/mi-subprocess-boundary-and-handler.bpmn",
+    "profile": "cibseven-2.2.0"
+  },
+  "PC-SIGNAL-04": {
+    "scenario": "scenarios/open-rows/call-binding-population/nested-callee-binds-at-own-deployment.population-scenario.json",
+    "source": "scenarios/open-rows/call-binding-population/review-second.bpmn",
+    "profile": "bpmn-2.0.2"
+  },
+  "PC-CONDITION-01": {
+    "scenario": "scenarios/open-rows/conditional-evaluation/edge-versus-each-write-standards.scenario.json",
+    "source": "scenarios/open-rows/conditional-evaluation/edge-each-write-standards.bpmn",
+    "profile": "bpmn-2.0.2"
+  },
+  "PC-CONDITION-02": {
+    "scenario": "scenarios/open-rows/call-binding-population/nested-callee-binds-at-own-deployment.population-scenario.json",
+    "source": "scenarios/open-rows/call-binding-population/review-second.bpmn",
+    "profile": "bpmn-2.0.2"
+  },
+  "PC-CONDITION-03": {
+    "scenario": "scenarios/open-rows/conditional-catch/condition-wins.scenario.json",
+    "source": "scenarios/open-rows/conditional-catch/race.bpmn",
+    "profile": "cibseven-2.2.0"
+  },
+  "PC-CONDITION-04": {
+    "scenario": "scenarios/open-rows/conditional-evaluation/edge-versus-each-write-standards.scenario.json",
+    "source": "scenarios/open-rows/conditional-evaluation/edge-each-write-standards.bpmn",
+    "profile": "bpmn-2.0.2"
+  },
+  "PC-CONDITION-05": {
+    "scenario": "scenarios/open-rows/conditional-esp/called-instance-has-its-own-scope.scenario.json",
+    "source": "scenarios/open-rows/conditional-esp/called-handlers.bpmn",
+    "profile": "cibseven-2.2.0"
+  },
+  "PC-ERROR-01": {
+    "scenario": "scenarios/open-rows/error-null-message/error-end-without-message.scenario.json",
+    "source": "scenarios/open-rows/error-null-message/weigh-parcel.bpmn",
+    "profile": "cibseven-2.2.0"
+  },
+  "PC-ERROR-02": {
+    "scenario": "scenarios/open-rows/error-event-subprocess-recovery/process-level-recovery.scenario.json",
+    "source": "scenarios/open-rows/error-event-subprocess-recovery/process-recovery.bpmn",
+    "profile": "cibseven-2.2.0"
+  },
+  "PC-ERROR-03": {
+    "scenario": "scenarios/open-rows/error-multi-instance/parallel-second-child-fails.scenario.json",
+    "source": "scenarios/open-rows/error-multi-instance/dispatch-batches.bpmn",
+    "profile": "cibseven-2.2.0"
+  },
+  "PC-ESCALATION-01": {
+    "scenario": "scenarios/open-rows/escalation-uncaught/end-uncaught-then-ordinary-path.scenario.json",
+    "source": "scenarios/open-rows/escalation-uncaught/dispatch-notice.bpmn",
+    "profile": "cibseven-2.2.0"
+  },
+  "PC-ESCALATION-02": {
+    "scenario": "scenarios/open-rows/escalation-multi-instance/instances-throw-to-enclosing-handler.scenario.json",
+    "source": "scenarios/open-rows/escalation-multi-instance/review-batches.bpmn",
+    "profile": "cibseven-2.2.0"
+  },
+  "PC-ESCALATION-03": {
+    "scenario": "scenarios/open-rows/escalation-call-relay/double-pass-through-root-handler.scenario.json",
+    "source": "scenarios/open-rows/escalation-call-relay/double-pass-claim.bpmn",
+    "profile": "cibseven-2.2.0"
+  },
+  "PC-TERMINATE-01": {
+    "scenario": "scenarios/terminate-end-event/sibling-first.scenario.json",
+    "source": "scenarios/terminate-end-event/process.bpmn",
+    "profile": "cibseven-2.2.0"
+  },
+  "PC-TERMINATE-02": {
+    "scenario": null,
+    "source": "packages/kernel/test/fixtures/rows/models/PC-TERMINATE-02.bpmn",
+    "profile": "cibseven-2.2.0",
+    "note": "No scenario model holds the three Terminate sites together; this one terminates in a called child, in a sequential Multi-Instance body and in a non-interrupting Event Sub-Process."
+  },
+  "PC-COMPENSATION-02": {
+    "scenario": "scenarios/compensation/failure-a.scenario.json",
+    "source": "scenarios/compensation/travel-cancellation.bpmn",
+    "profile": "bpmn-2.0.2"
+  },
+  "PC-COMPENSATION-03": {
+    "scenario": "scenarios/open-rows/inclusive-join-compositions/scoped-join-counted-all-selected.scenario.json",
+    "source": "scenarios/open-rows/inclusive-join-compositions/scoped-join-counted.bpmn",
+    "profile": "cibseven-2.2.0"
+  },
+  "PC-COMPENSATION-04": {
+    "scenario": "scenarios/open-rows/region-interruption-subtree/abort-both-regions-in-turn.scenario.json",
+    "source": "scenarios/open-rows/region-interruption-subtree/campaign.bpmn",
+    "profile": "cibseven-2.2.0"
+  },
+  "PC-COMPENSATION-05": {
+    "scenario": "scenarios/open-rows/compensation-event-subprocess-multi-instance/parallel-out-of-order-consumed.scenario.json",
+    "source": "scenarios/open-rows/compensation-event-subprocess-multi-instance/parallel-esp.bpmn",
+    "profile": "cibseven-2.2.0"
+  },
+  "PC-TX-01": {
+    "scenario": "scenarios/open-rows/transaction-cancel-refusals/cancel-end-without-boundary.scenario.json",
+    "source": "scenarios/open-rows/transaction-cancel-refusals/cancel-end-without-boundary.bpmn",
+    "profile": "cibseven-2.2.0"
+  },
+  "PC-TX-02": {
+    "scenario": "scenarios/transaction-cancellation/empty.scenario.json",
+    "source": "scenarios/transaction-cancellation/reservation-withdrawal.bpmn",
+    "profile": "bpmn-2.0.2"
+  },
+  "PC-TX-03": {
+    "scenario": "scenarios/open-rows/transaction-multi-instance/parallel-all-bodies-succeed.scenario.json",
+    "source": "scenarios/open-rows/transaction-multi-instance/parallel-batch.bpmn",
+    "profile": "cibseven-2.2.0"
+  },
+  "PC-BASIC-01": {
+    "scenario": "scenarios/pass-through-implicit-split-merge/dispatch-courier-first.scenario.json",
+    "source": "scenarios/pass-through-implicit-split-merge/equipment-dispatch.bpmn",
+    "profile": "cibseven-2.2.0-scope-chain"
+  },
+  "PC-BASIC-02": {
+    "scenario": "scenarios/link-events/onboarding-account-first.scenario.json",
+    "source": "scenarios/link-events/onboarding-milestones-links.bpmn",
+    "profile": "cibseven-2.2.0-scope-chain"
+  },
+  "PC-BASIC-03": {
+    "scenario": null,
+    "source": "packages/kernel/test/fixtures/rows/models/PC-BASIC-03.bpmn",
+    "profile": "cibseven-2.2.0",
+    "note": "No scenario model carries every semantic name a renaming must keep; this one holds a named Message and Signal catch, a Link pair and a bound Service Task."
+  },
+  "PC-BASIC-04": {
+    "scenario": "scenarios/open-rows/event-race-compositions/parallel-race-message-then-payment-late-timer.scenario.json",
+    "source": "scenarios/open-rows/event-race-compositions/parallel-race.bpmn",
+    "profile": "cibseven-2.2.0"
+  },
+  "PC-DELIVERY-01": {
+    "scenario": "packages/differential/test/fixtures/mixed-invoice-rework.scenario.json",
+    "source": "packages/bpmn-source/test/fixtures/mixed-task-invoice-rework.bpmn",
+    "profile": "cibseven-2.2.0"
+  },
+  "PC-JOURNEY-01": {
+    "scenario": null,
+    "source": "packages/kernel/test/fixtures/rows/models/PC-JOURNEY-01.bpmn",
+    "profile": "cibseven-2.2.0",
+    "decisions": [
+      "scenarios/open-rows/mapping-order/decision-chained-outputs.dmn"
+    ],
+    "note": "The journey consumes PC-DELIVERY-01's human and automated branches with rework (User and Service Tasks, Exclusive gateways and a loop back to entry), a Business Rule Task's decision (DATA, PC-AUTO-07; the mapping-order DMN's gradeDecision) and a bound Send Task's notice (PC-AUTO-04). Admission refuses the Send Task (work.send), as it refuses PC-AUTO-04's own model, so this fixture holds the journey's shape and runs nothing."
+  },
+  "PC-JOURNEY-02": {
+    "scenario": "scenarios/open-rows/escalation-called-uncaught/uncaught-in-called-instance.scenario.json",
+    "source": "scenarios/open-rows/escalation-called-uncaught/slot-booking.bpmn",
+    "profile": "cibseven-2.2.0"
+  },
+  "PC-JOURNEY-03": {
+    "scenario": "scenarios/open-rows/automation-handler-reuse/sequential-body-effects.scenario.json",
+    "source": "scenarios/open-rows/automation-handler-reuse/item-handlers.bpmn",
+    "profile": "cibseven-2.2.0"
+  },
+  "PC-JOURNEY-04": {
+    "scenario": "scenarios/open-rows/automation-handler-reuse/sequential-body-effects.scenario.json",
+    "source": "scenarios/open-rows/automation-handler-reuse/item-handlers.bpmn",
+    "profile": "cibseven-2.2.0"
+  },
+  "PC-JOURNEY-05": {
+    "scenario": null,
+    "source": "packages/kernel/test/fixtures/rows/models/PC-JOURNEY-05.bpmn",
+    "profile": "cibseven-2.2.0",
+    "note": "The journey consumes a cycle Timer start (PC-TIMER-04), a repeating non-interrupting reminder boundary on the review (PC-TIMER-06), an interrupting deadline boundary (PC-TIMER-01) that raises a coded Escalation (PC-ESCALATION-01) caught by an interrupting boundary of the enclosing Sub-Process (PC-ESCALATION-02); ordinary completion leaves through that Sub-Process's end, withdrawing both timers."
+  },
+  "PC-JOURNEY-06": {
+    "scenario": "scenarios/open-rows/message-name-addressing/esp-root-name-from-start-variable.scenario.json",
+    "source": "scenarios/open-rows/message-name-addressing/esp-root-name.bpmn",
+    "profile": "cibseven-2.2.0"
+  },
+  "PC-JOURNEY-07": {
+    "scenario": "scenarios/open-rows/transaction-paths/cancel-end.scenario.json",
+    "source": "scenarios/open-rows/transaction-paths/booking.bpmn",
+    "profile": "cibseven-2.2.0"
+  },
+  "PC-QUALIFY-10": {
+    "scenario": "scenarios/open-rows/multi-instance-user-task/parallel-output-collection-standards.scenario.json",
+    "source": "scenarios/open-rows/multi-instance-user-task/parallel-output-collection.bpmn",
+    "profile": "bpmn-2.0.2"
+  }
+}

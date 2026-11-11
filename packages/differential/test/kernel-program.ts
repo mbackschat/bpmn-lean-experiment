@@ -3,7 +3,7 @@ import path from "node:path";
 
 import { kernelProfileOptions, readKernelProgram } from "@bpmn-lean/bpmn-source";
 import type { KernelJson, KernelRead, KernelSource } from "@bpmn-lean/bpmn-source";
-import { admit, decodeProgram } from "@bpmn-lean/kernel";
+import { admit, decodeProgram, encodeProgram, type JsonValue } from "@bpmn-lean/kernel";
 
 import { projectRoot, readJson } from "./pipeline-target-support.ts";
 
@@ -55,4 +55,10 @@ export function kernelAdmission(read: KernelRead): KernelAdmission {
   if (!decoded.ok) return { status: "rejected", refusal: decoded.refusal };
   const refusal = admit(decoded.value);
   return refusal === null ? { status: "accepted" } : { status: "rejected", refusal };
+}
+
+/** The kernel codec's canonical encoding of a read program (guard 21's row fixtures), or its strict-decoding refusal. */
+export function canonicalKernelProgram(program: KernelJson): Readonly<{ ok: true; value: JsonValue } | { ok: false; refusal: string }> {
+  const decoded = decodeProgram(program);
+  return decoded.ok ? { ok: true, value: encodeProgram(decoded.value) } : { ok: false, refusal: decoded.refusal };
 }

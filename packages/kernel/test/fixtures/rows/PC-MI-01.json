@@ -1,0 +1,330 @@
+{
+  "identity": {
+    "processId": "Process_SequentialMultiInstanceReview",
+    "namespace": "https://bpmn-lean.org/scenarios/sequential-multi-instance-review",
+    "sourceSha256": "982f77f7fcca2d01bd2357c11057c5fdb6aaf3b383ac351a93aa32ab1bbca3ff",
+    "profile": "bpmn-2.0.2",
+    "deployment": null
+  },
+  "options": {
+    "relations": [
+      "CIB-AGR-0001",
+      "CIB-AGR-0002",
+      "CIB-AGR-0003",
+      "CIB-AGR-0004",
+      "CIB-AGR-0006",
+      "CIB-AGR-0007",
+      "CIB-AGR-0021",
+      "CIB-CFG-0001",
+      "CIB-CFG-0013",
+      "CIB-CFG-0014",
+      "CIB-DEV-0001",
+      "CIB-DEV-0002",
+      "CIB-EXT-0011",
+      "CIB-INT-0001",
+      "CIB-INT-0008",
+      "CIB-INT-0012",
+      "CIB-INT-0015",
+      "CIB-INT-0016",
+      "CIB-INT-0025",
+      "CIB-INT-0026",
+      "CIB-INT-0029",
+      "CIB-INT-0030",
+      "CIB-INT-0031",
+      "CIB-INT-0032",
+      "CIB-LIM-0002",
+      "CIB-LIM-0003",
+      "CIB-OP-0001"
+    ],
+    "evaluator": "simpleBoolean",
+    "submission": "outputSet",
+    "scopeChainSubmissionBytes": null,
+    "undeclaredWrite": "refused",
+    "errorPathOutputs": "none",
+    "raisedCallOutputs": "none",
+    "technicalFailure": "hostFailure",
+    "incidentProcessCancellation": false,
+    "continuationFailure": "rolledBack",
+    "conditionOrder": "afterOutputs",
+    "messageCorrelation": "modeledKey",
+    "deliveryVariables": "mappedOnly",
+    "multiInstanceFinalBody": "conditionEveryCompletion",
+    "multiInstanceOutputs": "aggregates",
+    "compensationOrder": "dependency",
+    "compensationHandlerFailure": "failsInstance",
+    "abnormalScopeEnd": "withoutOutflow",
+    "unhandledError": "failsInstance",
+    "errorCatchVariables": "refused",
+    "callBindingTime": "programAssembly",
+    "timerZone": null,
+    "multiInstanceBinding": "dataAssociations",
+    "effectResultValues": "outputSet",
+    "outputContext": "submission",
+    "multiInstanceCounters": "none",
+    "multiInstanceInputFailure": "hold",
+    "multiInstanceCount": "integer",
+    "businessRuleTask": "refused",
+    "inclusiveJoinReach": "withBoundaries",
+    "branchSchedule": "orderInvariant",
+    "conditionalRetrigger": "edge",
+    "malformedTimer": "refused",
+    "messageNames": "description",
+    "scopeStart": "implicit",
+    "signalNames": "identifier",
+    "signalPayload": "none",
+    "signalDelivery": "broadcastOnly",
+    "conditionalStart": "refused",
+    "calledElementResolution": "qualifiedName",
+    "messageThrowForms": "refused"
+  },
+  "elements": [
+    {
+      "start": {
+        "header": {
+          "id": "StartEvent_Review",
+          "origin": {
+            "definition": null,
+            "sourceId": "StartEvent_Review"
+          },
+          "sourceType": "startEvent",
+          "parent": null
+        },
+        "payload": {
+          "subscription": null,
+          "outgoing": [
+            "Flow_Start_Review"
+          ]
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "UserTask_Review",
+          "origin": {
+            "definition": null,
+            "sourceId": "UserTask_Review"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Review item",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Start_Review"
+            ],
+            "outgoing": [
+              "Flow_Review_Completed"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [
+              {
+                "id": "BoundaryTimer_Review",
+                "sourceId": "BoundaryTimer_Review",
+                "subscription": {
+                  "trigger": {
+                    "timer": {
+                      "payload": {
+                        "schedule": {
+                          "duration": {
+                            "value": {
+                              "literal": {
+                                "value": "PT5S"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "outputs": [],
+                  "alternatives": [],
+                  "parallelMultiple": false
+                },
+                "interrupting": true,
+                "outgoing": [
+                  "Flow_Timer_Escalation"
+                ]
+              }
+            ],
+            "multiInstance": {
+              "mode": "sequential",
+              "count": {
+                "collection": {
+                  "items": {
+                    "variable": {
+                      "name": "DataObjectReference_InputItems"
+                    }
+                  }
+                }
+              },
+              "elementVariable": null,
+              "completionCondition": null,
+              "inputDataItem": "DataInput_CurrentItem",
+              "outputDataItem": "DataOutput_CurrentResult",
+              "outputCollection": "DataObjectReference_OutputResults",
+              "mutableCollection": "entrySnapshot",
+              "asyncBefore": false,
+              "asyncAfter": false,
+              "loopDataInputRef": "DataInput_Items",
+              "inputDataItemName": null
+            },
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "EndEvent_Completed",
+          "origin": {
+            "definition": null,
+            "sourceId": "EndEvent_Completed"
+          },
+          "sourceType": "endEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Review_Completed"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "UserTask_Escalation",
+          "origin": {
+            "definition": null,
+            "sourceId": "UserTask_Escalation"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Handle interrupted review",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Timer_Escalation"
+            ],
+            "outgoing": [
+              "Flow_Escalation_End"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "EndEvent_Interrupted",
+          "origin": {
+            "definition": null,
+            "sourceId": "EndEvent_Interrupted"
+          },
+          "sourceType": "endEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Escalation_End"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    }
+  ],
+  "flows": [
+    {
+      "id": "Flow_Start_Review",
+      "source": "StartEvent_Review",
+      "target": "UserTask_Review",
+      "condition": null
+    },
+    {
+      "id": "Flow_Review_Completed",
+      "source": "UserTask_Review",
+      "target": "EndEvent_Completed",
+      "condition": null
+    },
+    {
+      "id": "Flow_Timer_Escalation",
+      "source": "BoundaryTimer_Review",
+      "target": "UserTask_Escalation",
+      "condition": null
+    },
+    {
+      "id": "Flow_Escalation_End",
+      "source": "UserTask_Escalation",
+      "target": "EndEvent_Interrupted",
+      "condition": null
+    }
+  ],
+  "variables": [
+    "DataObjectReference_InputItems",
+    "DataObjectReference_OutputResults",
+    "DataObject_InputItems",
+    "DataObject_OutputResults"
+  ],
+  "processes": [],
+  "executable": true,
+  "decisionResources": []
+}

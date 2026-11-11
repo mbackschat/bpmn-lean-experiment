@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             id="Definitions_RowJourney05" targetNamespace="urn:bpmn-lean:row-fixtures:PC-JOURNEY-05">
+  <escalation id="Escalation_Deadline" name="Deadline passed" escalationCode="DEADLINE" />
+  <process id="Process_RowJourney05" name="A scheduled case with reminders and a deadline escalation" isExecutable="true">
+    <startEvent id="CaseScheduled" name="Every morning">
+      <timerEventDefinition id="CaseScheduled_Timer">
+        <timeCycle xsi:type="tFormalExpression">R/P1D</timeCycle>
+      </timerEventDefinition>
+    </startEvent>
+    <subProcess id="ReviewCase" name="Review the case">
+      <startEvent id="ReviewStarted" />
+      <userTask id="Review" name="Review the case" />
+      <endEvent id="Reviewed" />
+      <boundaryEvent id="ReminderDue" attachedToRef="Review" cancelActivity="false">
+        <timerEventDefinition id="ReminderDue_Timer">
+          <timeCycle xsi:type="tFormalExpression">R3/PT4H</timeCycle>
+        </timerEventDefinition>
+      </boundaryEvent>
+      <userTask id="SendReminder" name="Send a reminder" />
+      <endEvent id="Reminded" />
+      <boundaryEvent id="DeadlinePassed" attachedToRef="Review" cancelActivity="true">
+        <timerEventDefinition id="DeadlinePassed_Timer">
+          <timeDuration xsi:type="tFormalExpression">P2D</timeDuration>
+        </timerEventDefinition>
+      </boundaryEvent>
+      <endEvent id="RaiseDeadline">
+        <escalationEventDefinition id="RaiseDeadline_Escalation" escalationRef="Escalation_Deadline" />
+      </endEvent>
+      <sequenceFlow id="Flow_Started_Review" sourceRef="ReviewStarted" targetRef="Review" />
+      <sequenceFlow id="Flow_Review_Reviewed" sourceRef="Review" targetRef="Reviewed" />
+      <sequenceFlow id="Flow_Due_Send" sourceRef="ReminderDue" targetRef="SendReminder" />
+      <sequenceFlow id="Flow_Send_Reminded" sourceRef="SendReminder" targetRef="Reminded" />
+      <sequenceFlow id="Flow_Passed_Raise" sourceRef="DeadlinePassed" targetRef="RaiseDeadline" />
+    </subProcess>
+    <boundaryEvent id="DeadlineEscalated" attachedToRef="ReviewCase" cancelActivity="true">
+      <escalationEventDefinition id="DeadlineEscalated_Escalation" escalationRef="Escalation_Deadline" />
+    </boundaryEvent>
+    <userTask id="HandleOverdue" name="Handle the overdue case" />
+    <endEvent id="CaseClosed" />
+    <endEvent id="CaseEscalated" />
+    <sequenceFlow id="Flow_Scheduled_Review" sourceRef="CaseScheduled" targetRef="ReviewCase" />
+    <sequenceFlow id="Flow_Review_Closed" sourceRef="ReviewCase" targetRef="CaseClosed" />
+    <sequenceFlow id="Flow_Escalated_Handle" sourceRef="DeadlineEscalated" targetRef="HandleOverdue" />
+    <sequenceFlow id="Flow_Handle_Escalated" sourceRef="HandleOverdue" targetRef="CaseEscalated" />
+  </process>
+</definitions>

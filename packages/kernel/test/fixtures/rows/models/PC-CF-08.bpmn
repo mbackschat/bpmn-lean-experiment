@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             id="Definitions_RowCf08" targetNamespace="urn:bpmn-lean:row-fixtures:PC-CF-08">
+  <message id="Message_Approval" name="approval" />
+  <process id="Process_RowCf08" name="Gateways composed: an Event-Based and an Inclusive gateway within a Parallel one" isExecutable="true">
+    <startEvent id="Start" />
+    <parallelGateway id="Fork" />
+    <eventBasedGateway id="Race" />
+    <intermediateCatchEvent id="ApprovalArrives">
+      <messageEventDefinition id="ApprovalArrives_Message" messageRef="Message_Approval" />
+    </intermediateCatchEvent>
+    <intermediateCatchEvent id="WaitElapses">
+      <timerEventDefinition id="WaitElapses_Timer">
+        <timeDuration xsi:type="tFormalExpression">PT1H</timeDuration>
+      </timerEventDefinition>
+    </intermediateCatchEvent>
+    <exclusiveGateway id="RaceDone" />
+    <inclusiveGateway id="Select" default="Flow_Select_Standard" />
+    <userTask id="FastCheck" name="Fast check" />
+    <userTask id="StandardCheck" name="Standard check" />
+    <inclusiveGateway id="Merge" />
+    <parallelGateway id="Join" />
+    <endEvent id="End" />
+    <sequenceFlow id="Flow_Start_Fork" sourceRef="Start" targetRef="Fork" />
+    <sequenceFlow id="Flow_Fork_Race" sourceRef="Fork" targetRef="Race" />
+    <sequenceFlow id="Flow_Fork_Select" sourceRef="Fork" targetRef="Select" />
+    <sequenceFlow id="Flow_Race_Approval" sourceRef="Race" targetRef="ApprovalArrives" />
+    <sequenceFlow id="Flow_Race_Wait" sourceRef="Race" targetRef="WaitElapses" />
+    <sequenceFlow id="Flow_Approval_Done" sourceRef="ApprovalArrives" targetRef="RaceDone" />
+    <sequenceFlow id="Flow_Wait_Done" sourceRef="WaitElapses" targetRef="RaceDone" />
+    <sequenceFlow id="Flow_Done_Join" sourceRef="RaceDone" targetRef="Join" />
+    <sequenceFlow id="Flow_Select_Fast" sourceRef="Select" targetRef="FastCheck">
+      <conditionExpression xsi:type="tFormalExpression">stringEquals(route,"fast")</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Select_Standard" sourceRef="Select" targetRef="StandardCheck" />
+    <sequenceFlow id="Flow_Fast_Merge" sourceRef="FastCheck" targetRef="Merge" />
+    <sequenceFlow id="Flow_Standard_Merge" sourceRef="StandardCheck" targetRef="Merge" />
+    <sequenceFlow id="Flow_Merge_Join" sourceRef="Merge" targetRef="Join" />
+    <sequenceFlow id="Flow_Join_End" sourceRef="Join" targetRef="End" />
+  </process>
+</definitions>

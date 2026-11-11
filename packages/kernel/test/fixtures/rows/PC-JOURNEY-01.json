@@ -1,0 +1,667 @@
+{
+  "identity": {
+    "processId": "Process_RowJourney01",
+    "namespace": "urn:bpmn-lean:row-fixtures:PC-JOURNEY-01",
+    "sourceSha256": "5061d26e638050a2ef728527c2c4bf8a6abcb290dc5b95d96edd02b87a6b7a7b",
+    "profile": "cibseven-2.2.0",
+    "deployment": null
+  },
+  "options": {
+    "relations": [
+      "CIB-AGR-0001",
+      "CIB-AGR-0002",
+      "CIB-AGR-0003",
+      "CIB-AGR-0004",
+      "CIB-AGR-0006",
+      "CIB-AGR-0007",
+      "CIB-AGR-0008",
+      "CIB-AGR-0009",
+      "CIB-AGR-0010",
+      "CIB-AGR-0012",
+      "CIB-AGR-0013",
+      "CIB-AGR-0014",
+      "CIB-AGR-0015",
+      "CIB-AGR-0016",
+      "CIB-AGR-0017",
+      "CIB-AGR-0018",
+      "CIB-AGR-0019",
+      "CIB-AGR-0020",
+      "CIB-AGR-0021",
+      "CIB-AGR-0022",
+      "CIB-AGR-0023",
+      "CIB-CFG-0001",
+      "CIB-CFG-0002",
+      "CIB-CFG-0006",
+      "CIB-CFG-0007",
+      "CIB-CFG-0008",
+      "CIB-CFG-0009",
+      "CIB-CFG-0010",
+      "CIB-CFG-0011",
+      "CIB-CFG-0013",
+      "CIB-CFG-0014",
+      "CIB-DEV-0001",
+      "CIB-DEV-0002",
+      "CIB-EXT-0001",
+      "CIB-EXT-0004",
+      "CIB-EXT-0005",
+      "CIB-EXT-0006",
+      "CIB-EXT-0007",
+      "CIB-EXT-0008",
+      "CIB-EXT-0009",
+      "CIB-EXT-0010",
+      "CIB-EXT-0011",
+      "CIB-EXT-0012",
+      "CIB-EXT-0013",
+      "CIB-EXT-0014",
+      "CIB-EXT-0015",
+      "CIB-EXT-0016",
+      "CIB-EXT-0019",
+      "CIB-EXT-0021",
+      "CIB-EXT-0022",
+      "CIB-EXT-0023",
+      "CIB-EXT-0025",
+      "CIB-EXT-0028",
+      "CIB-EXT-0030",
+      "CIB-EXT-0031",
+      "CIB-EXT-0032",
+      "CIB-EXT-0033",
+      "CIB-EXT-0034",
+      "CIB-EXT-0035",
+      "CIB-EXT-0036",
+      "CIB-EXT-0038",
+      "CIB-EXT-0039",
+      "CIB-EXT-0040",
+      "CIB-EXT-0041",
+      "CIB-EXT-0042",
+      "CIB-EXT-0043",
+      "CIB-EXT-0044",
+      "CIB-EXT-0045",
+      "CIB-INT-0001",
+      "CIB-INT-0003",
+      "CIB-INT-0004",
+      "CIB-INT-0005",
+      "CIB-INT-0007",
+      "CIB-INT-0008",
+      "CIB-INT-0009",
+      "CIB-INT-0011",
+      "CIB-INT-0012",
+      "CIB-INT-0013",
+      "CIB-INT-0014",
+      "CIB-INT-0015",
+      "CIB-INT-0016",
+      "CIB-INT-0017",
+      "CIB-INT-0018",
+      "CIB-INT-0019",
+      "CIB-INT-0020",
+      "CIB-INT-0023",
+      "CIB-INT-0024",
+      "CIB-INT-0025",
+      "CIB-INT-0026",
+      "CIB-INT-0027",
+      "CIB-INT-0028",
+      "CIB-INT-0029",
+      "CIB-INT-0030",
+      "CIB-INT-0031",
+      "CIB-INT-0032",
+      "CIB-LIM-0001",
+      "CIB-LIM-0002",
+      "CIB-LIM-0003",
+      "CIB-LIM-0006",
+      "CIB-LIM-0007",
+      "CIB-LIM-0008",
+      "CIB-LIM-0009",
+      "CIB-LIM-0010",
+      "CIB-LIM-0014",
+      "CIB-LIM-0015",
+      "CIB-LIM-0016",
+      "CIB-LIM-0017",
+      "CIB-LIM-0022",
+      "CIB-LIM-0024",
+      "CIB-LIM-0026",
+      "CIB-LIM-0027",
+      "CIB-LIM-0028",
+      "CIB-OP-0001",
+      "CIB-OP-0005",
+      "CIB-OP-0006",
+      "CIB-OP-0007",
+      "CIB-OP-0008",
+      "CIB-OP-0009",
+      "CIB-OP-0010",
+      "CIB-OP-0011",
+      "CIB-OP-0016",
+      "CIB-OP-0019"
+    ],
+    "evaluator": "juel",
+    "submission": "installsVariables",
+    "scopeChainSubmissionBytes": null,
+    "undeclaredWrite": "atInstanceRoot",
+    "errorPathOutputs": "mapped",
+    "raisedCallOutputs": "atCalledRoot",
+    "technicalFailure": "incident",
+    "incidentProcessCancellation": true,
+    "continuationFailure": "rolledBack",
+    "conditionOrder": "beforeOutputs",
+    "messageCorrelation": "apiCriteria",
+    "deliveryVariables": "installs",
+    "multiInstanceFinalBody": "modeSpecific",
+    "multiInstanceOutputs": "none",
+    "compensationOrder": "dependency",
+    "compensationHandlerFailure": "failsInstance",
+    "abnormalScopeEnd": "completesNormally",
+    "unhandledError": "endsThrowingPath",
+    "errorCatchVariables": "eventScope",
+    "callBindingTime": "programAssembly",
+    "timerZone": null,
+    "multiInstanceBinding": "loopReferences",
+    "effectResultValues": "activityLocals",
+    "outputContext": "activityScope",
+    "multiInstanceCounters": "cibLocals",
+    "multiInstanceInputFailure": "rollback",
+    "multiInstanceCount": "javaInt",
+    "businessRuleTask": "decisionTable",
+    "inclusiveJoinReach": "outgoingOnly",
+    "branchSchedule": "declarationDepthFirst",
+    "conditionalRetrigger": "eachWrite",
+    "malformedTimer": "rollsBackArming",
+    "messageNames": "addresses",
+    "scopeStart": "required",
+    "signalNames": "addresses",
+    "signalPayload": "variables",
+    "signalDelivery": "occurrenceTargeted",
+    "conditionalStart": "submittedContext",
+    "calledElementResolution": "cibKey",
+    "messageThrowForms": "cibForms"
+  },
+  "elements": [
+    {
+      "start": {
+        "header": {
+          "id": "InvoiceReceived",
+          "origin": {
+            "definition": null,
+            "sourceId": "InvoiceReceived"
+          },
+          "sourceType": "startEvent",
+          "parent": null
+        },
+        "payload": {
+          "subscription": null,
+          "outgoing": [
+            "Flow_Received_Enter"
+          ]
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "EnterInvoice",
+          "origin": {
+            "definition": null,
+            "sourceId": "EnterInvoice"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Enter the invoice",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Received_Enter",
+              "Flow_Reviewed_Rework"
+            ],
+            "outgoing": [
+              "Flow_Enter_Classify"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "ClassifyInvoice",
+          "origin": {
+            "definition": null,
+            "sourceId": "ClassifyInvoice"
+          },
+          "sourceType": "businessRuleTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "rule": {
+              "payload": {
+                "decision": {
+                  "literal": {
+                    "value": "gradeDecision"
+                  }
+                },
+                "resultVariable": "grade",
+                "binding": "latest",
+                "resultMapping": "singleEntry",
+                "tenant": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Enter_Classify"
+            ],
+            "outgoing": [
+              "Flow_Classify_Route"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "gateway": {
+        "header": {
+          "id": "Route",
+          "origin": {
+            "definition": null,
+            "sourceId": "Route"
+          },
+          "sourceType": "exclusiveGateway",
+          "parent": null
+        },
+        "payload": {
+          "kind": {
+            "exclusive": {
+              "candidates": [
+                "Flow_Route_Automatic"
+              ],
+              "default": "Flow_Route_Manual"
+            }
+          },
+          "incoming": [
+            "Flow_Classify_Route"
+          ],
+          "outgoing": [
+            "Flow_Route_Automatic",
+            "Flow_Route_Manual"
+          ]
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "ApproveManually",
+          "origin": {
+            "definition": null,
+            "sourceId": "ApproveManually"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Approve the invoice",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Route_Manual"
+            ],
+            "outgoing": [
+              "Flow_Approve_Reviewed"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "gateway": {
+        "header": {
+          "id": "Reviewed",
+          "origin": {
+            "definition": null,
+            "sourceId": "Reviewed"
+          },
+          "sourceType": "exclusiveGateway",
+          "parent": null
+        },
+        "payload": {
+          "kind": {
+            "exclusive": {
+              "candidates": [
+                "Flow_Reviewed_Rework"
+              ],
+              "default": "Flow_Reviewed_Post"
+            }
+          },
+          "incoming": [
+            "Flow_Approve_Reviewed"
+          ],
+          "outgoing": [
+            "Flow_Reviewed_Rework",
+            "Flow_Reviewed_Post"
+          ]
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "PostInvoice",
+          "origin": {
+            "definition": null,
+            "sourceId": "PostInvoice"
+          },
+          "sourceType": "serviceTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "service": {
+              "payload": {
+                "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+                "operation": "urn:bpmn-lean:effect-operation:probe-v1",
+                "handlerKey": "bpmnLeanEffectHandler"
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Route_Automatic",
+              "Flow_Reviewed_Post"
+            ],
+            "outgoing": [
+              "Flow_Post_Notice"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": true,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "SendNotice",
+          "origin": {
+            "definition": null,
+            "sourceId": "SendNotice"
+          },
+          "sourceType": "sendTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "send": {
+              "payload": {
+                "binding": {
+                  "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+                  "operation": "urn:bpmn-lean:effect-operation:probe-v1"
+                },
+                "handlerKey": "bpmnLeanEffectHandler",
+                "recipient": null,
+                "correlation": [],
+                "messageRef": "Message_Notice",
+                "operationRef": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Post_Notice"
+            ],
+            "outgoing": [
+              "Flow_Notice_Completed"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": true,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "InvoiceCompleted",
+          "origin": {
+            "definition": null,
+            "sourceId": "InvoiceCompleted"
+          },
+          "sourceType": "endEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Notice_Completed"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    }
+  ],
+  "flows": [
+    {
+      "id": "Flow_Received_Enter",
+      "source": "InvoiceReceived",
+      "target": "EnterInvoice",
+      "condition": null
+    },
+    {
+      "id": "Flow_Enter_Classify",
+      "source": "EnterInvoice",
+      "target": "ClassifyInvoice",
+      "condition": null
+    },
+    {
+      "id": "Flow_Classify_Route",
+      "source": "ClassifyInvoice",
+      "target": "Route",
+      "condition": null
+    },
+    {
+      "id": "Flow_Route_Automatic",
+      "source": "Route",
+      "target": "PostInvoice",
+      "condition": {
+        "juel": {
+          "nodes": [
+            {
+              "text": {
+                "value": "stringEquals(grade,\"A\")"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "Flow_Route_Manual",
+      "source": "Route",
+      "target": "ApproveManually",
+      "condition": null
+    },
+    {
+      "id": "Flow_Approve_Reviewed",
+      "source": "ApproveManually",
+      "target": "Reviewed",
+      "condition": null
+    },
+    {
+      "id": "Flow_Reviewed_Rework",
+      "source": "Reviewed",
+      "target": "EnterInvoice",
+      "condition": {
+        "juel": {
+          "nodes": [
+            {
+              "text": {
+                "value": "stringEquals(review,\"rework\")"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "Flow_Reviewed_Post",
+      "source": "Reviewed",
+      "target": "PostInvoice",
+      "condition": null
+    },
+    {
+      "id": "Flow_Post_Notice",
+      "source": "PostInvoice",
+      "target": "SendNotice",
+      "condition": null
+    },
+    {
+      "id": "Flow_Notice_Completed",
+      "source": "SendNotice",
+      "target": "InvoiceCompleted",
+      "condition": null
+    }
+  ],
+  "variables": [],
+  "processes": [],
+  "executable": true,
+  "decisionResources": [
+    {
+      "sourceSha256": "2aec667741ec823b627b6dcc9221a38623789935f91a19cd8b652f387475b2e5",
+      "namespace": "https://www.omg.org/spec/DMN/20191111/MODEL/",
+      "expressionLanguage": null,
+      "decisions": [
+        {
+          "id": "gradeDecision",
+          "logic": {
+            "table": {
+              "value": {
+                "hitPolicy": "unique",
+                "aggregation": null,
+                "inputs": [
+                  {
+                    "expression": {
+                      "variable": {
+                        "name": "score"
+                      }
+                    },
+                    "typeRef": "integer"
+                  }
+                ],
+                "outputs": [
+                  {
+                    "name": "grade",
+                    "typeRef": "string"
+                  }
+                ],
+                "rules": [
+                  {
+                    "id": "Rule_gradeDecision_1",
+                    "inputs": [
+                      {
+                        "tests": {
+                          "value": {
+                            "negated": false,
+                            "first": {
+                              "compare": {
+                                "operator": "gt",
+                                "bound": {
+                                  "number": {
+                                    "coefficient": "60",
+                                    "scale": 0
+                                  }
+                                }
+                              }
+                            },
+                            "rest": []
+                          }
+                        }
+                      }
+                    ],
+                    "outputs": [
+                      {
+                        "literal": {
+                          "value": {
+                            "string": {
+                              "value": "high"
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "requires": []
+        }
+      ]
+    }
+  ]
+}

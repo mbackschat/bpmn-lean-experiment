@@ -1,0 +1,840 @@
+{
+  "identity": {
+    "processId": "Process_ScopedJoinCounted",
+    "namespace": "urn:bpmn-lean:scenarios:inclusive-join-compositions:scoped-join-counted",
+    "sourceSha256": "e9aef1fbf668ad03dcf6186c68c55abf1fca540082a37ec8f890082da705c753",
+    "profile": "cibseven-2.2.0",
+    "deployment": null
+  },
+  "options": {
+    "relations": [
+      "CIB-AGR-0001",
+      "CIB-AGR-0002",
+      "CIB-AGR-0003",
+      "CIB-AGR-0004",
+      "CIB-AGR-0006",
+      "CIB-AGR-0007",
+      "CIB-AGR-0008",
+      "CIB-AGR-0009",
+      "CIB-AGR-0010",
+      "CIB-AGR-0012",
+      "CIB-AGR-0013",
+      "CIB-AGR-0014",
+      "CIB-AGR-0015",
+      "CIB-AGR-0016",
+      "CIB-AGR-0017",
+      "CIB-AGR-0018",
+      "CIB-AGR-0019",
+      "CIB-AGR-0020",
+      "CIB-AGR-0021",
+      "CIB-AGR-0022",
+      "CIB-AGR-0023",
+      "CIB-CFG-0001",
+      "CIB-CFG-0002",
+      "CIB-CFG-0006",
+      "CIB-CFG-0007",
+      "CIB-CFG-0008",
+      "CIB-CFG-0009",
+      "CIB-CFG-0010",
+      "CIB-CFG-0011",
+      "CIB-CFG-0013",
+      "CIB-CFG-0014",
+      "CIB-DEV-0001",
+      "CIB-DEV-0002",
+      "CIB-EXT-0001",
+      "CIB-EXT-0004",
+      "CIB-EXT-0005",
+      "CIB-EXT-0006",
+      "CIB-EXT-0007",
+      "CIB-EXT-0008",
+      "CIB-EXT-0009",
+      "CIB-EXT-0010",
+      "CIB-EXT-0011",
+      "CIB-EXT-0012",
+      "CIB-EXT-0013",
+      "CIB-EXT-0014",
+      "CIB-EXT-0015",
+      "CIB-EXT-0016",
+      "CIB-EXT-0019",
+      "CIB-EXT-0021",
+      "CIB-EXT-0022",
+      "CIB-EXT-0023",
+      "CIB-EXT-0025",
+      "CIB-EXT-0028",
+      "CIB-EXT-0030",
+      "CIB-EXT-0031",
+      "CIB-EXT-0032",
+      "CIB-EXT-0033",
+      "CIB-EXT-0034",
+      "CIB-EXT-0035",
+      "CIB-EXT-0036",
+      "CIB-EXT-0038",
+      "CIB-EXT-0039",
+      "CIB-EXT-0040",
+      "CIB-EXT-0041",
+      "CIB-EXT-0042",
+      "CIB-EXT-0043",
+      "CIB-EXT-0044",
+      "CIB-EXT-0045",
+      "CIB-INT-0001",
+      "CIB-INT-0003",
+      "CIB-INT-0004",
+      "CIB-INT-0005",
+      "CIB-INT-0007",
+      "CIB-INT-0008",
+      "CIB-INT-0009",
+      "CIB-INT-0011",
+      "CIB-INT-0012",
+      "CIB-INT-0013",
+      "CIB-INT-0014",
+      "CIB-INT-0015",
+      "CIB-INT-0016",
+      "CIB-INT-0017",
+      "CIB-INT-0018",
+      "CIB-INT-0019",
+      "CIB-INT-0020",
+      "CIB-INT-0023",
+      "CIB-INT-0024",
+      "CIB-INT-0025",
+      "CIB-INT-0026",
+      "CIB-INT-0027",
+      "CIB-INT-0028",
+      "CIB-INT-0029",
+      "CIB-INT-0030",
+      "CIB-INT-0031",
+      "CIB-INT-0032",
+      "CIB-LIM-0001",
+      "CIB-LIM-0002",
+      "CIB-LIM-0003",
+      "CIB-LIM-0006",
+      "CIB-LIM-0007",
+      "CIB-LIM-0008",
+      "CIB-LIM-0009",
+      "CIB-LIM-0010",
+      "CIB-LIM-0014",
+      "CIB-LIM-0015",
+      "CIB-LIM-0016",
+      "CIB-LIM-0017",
+      "CIB-LIM-0022",
+      "CIB-LIM-0024",
+      "CIB-LIM-0026",
+      "CIB-LIM-0027",
+      "CIB-LIM-0028",
+      "CIB-OP-0001",
+      "CIB-OP-0005",
+      "CIB-OP-0006",
+      "CIB-OP-0007",
+      "CIB-OP-0008",
+      "CIB-OP-0009",
+      "CIB-OP-0010",
+      "CIB-OP-0011",
+      "CIB-OP-0016",
+      "CIB-OP-0019"
+    ],
+    "evaluator": "juel",
+    "submission": "installsVariables",
+    "scopeChainSubmissionBytes": null,
+    "undeclaredWrite": "atInstanceRoot",
+    "errorPathOutputs": "mapped",
+    "raisedCallOutputs": "atCalledRoot",
+    "technicalFailure": "incident",
+    "incidentProcessCancellation": true,
+    "continuationFailure": "rolledBack",
+    "conditionOrder": "beforeOutputs",
+    "messageCorrelation": "apiCriteria",
+    "deliveryVariables": "installs",
+    "multiInstanceFinalBody": "modeSpecific",
+    "multiInstanceOutputs": "none",
+    "compensationOrder": "dependency",
+    "compensationHandlerFailure": "failsInstance",
+    "abnormalScopeEnd": "completesNormally",
+    "unhandledError": "endsThrowingPath",
+    "errorCatchVariables": "eventScope",
+    "callBindingTime": "programAssembly",
+    "timerZone": null,
+    "multiInstanceBinding": "loopReferences",
+    "effectResultValues": "activityLocals",
+    "outputContext": "activityScope",
+    "multiInstanceCounters": "cibLocals",
+    "multiInstanceInputFailure": "rollback",
+    "multiInstanceCount": "javaInt",
+    "businessRuleTask": "decisionTable",
+    "inclusiveJoinReach": "outgoingOnly",
+    "branchSchedule": "declarationDepthFirst",
+    "conditionalRetrigger": "eachWrite",
+    "malformedTimer": "rollsBackArming",
+    "messageNames": "addresses",
+    "scopeStart": "required",
+    "signalNames": "addresses",
+    "signalPayload": "variables",
+    "signalDelivery": "occurrenceTargeted",
+    "conditionalStart": "submittedContext",
+    "calledElementResolution": "cibKey",
+    "messageThrowForms": "cibForms"
+  },
+  "elements": [
+    {
+      "start": {
+        "header": {
+          "id": "CaseOpened",
+          "origin": {
+            "definition": null,
+            "sourceId": "CaseOpened"
+          },
+          "sourceType": "startEvent",
+          "parent": null
+        },
+        "payload": {
+          "subscription": null,
+          "outgoing": [
+            "Flow_Opened"
+          ]
+        }
+      }
+    },
+    {
+      "gateway": {
+        "header": {
+          "id": "ChooseWork",
+          "origin": {
+            "definition": null,
+            "sourceId": "ChooseWork"
+          },
+          "sourceType": "inclusiveGateway",
+          "parent": null
+        },
+        "payload": {
+          "kind": {
+            "inclusive": {
+              "candidates": [
+                "Flow_ToScope",
+                "Flow_ToCall",
+                "Flow_ToBatch"
+              ],
+              "default": "Flow_Plain"
+            }
+          },
+          "incoming": [
+            "Flow_Opened"
+          ],
+          "outgoing": [
+            "Flow_ToScope",
+            "Flow_ToCall",
+            "Flow_ToBatch",
+            "Flow_Plain"
+          ]
+        }
+      }
+    },
+    {
+      "scope": {
+        "header": {
+          "id": "Inspect",
+          "origin": {
+            "definition": null,
+            "sourceId": "Inspect"
+          },
+          "sourceType": "subProcess",
+          "parent": null
+        },
+        "payload": {
+          "kind": "embedded",
+          "children": [
+            "InspectOpened",
+            "Measure",
+            "InspectClosed"
+          ],
+          "localVariables": [],
+          "items": [],
+          "envelope": {
+            "incoming": [
+              "Flow_ToScope"
+            ],
+            "outgoing": [
+              "Flow_ScopeDone"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "start": {
+        "header": {
+          "id": "InspectOpened",
+          "origin": {
+            "definition": null,
+            "sourceId": "InspectOpened"
+          },
+          "sourceType": "startEvent",
+          "parent": "Inspect"
+        },
+        "payload": {
+          "subscription": null,
+          "outgoing": [
+            "Flow_InspectOpened"
+          ]
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "Measure",
+          "origin": {
+            "definition": null,
+            "sourceId": "Measure"
+          },
+          "sourceType": "userTask",
+          "parent": "Inspect"
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Measure",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_InspectOpened"
+            ],
+            "outgoing": [
+              "Flow_Measured"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "InspectClosed",
+          "origin": {
+            "definition": null,
+            "sourceId": "InspectClosed"
+          },
+          "sourceType": "endEvent",
+          "parent": "Inspect"
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Measured"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "AuditCall",
+          "origin": {
+            "definition": null,
+            "sourceId": "AuditCall"
+          },
+          "sourceType": "callActivity",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "call": {
+              "payload": {
+                "calledElement": {
+                  "literal": {
+                    "value": "Process_Audit"
+                  }
+                },
+                "calledQName": {
+                  "namespace": "urn:bpmn-lean:scenarios:inclusive-join-compositions:scoped-join-counted",
+                  "localName": "Process_Audit"
+                },
+                "binding": "latest",
+                "tenant": null,
+                "businessKey": null,
+                "inputs": [],
+                "outputs": [],
+                "propagateAllInputs": false,
+                "propagateAllOutputs": false
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_ToCall"
+            ],
+            "outgoing": [
+              "Flow_CallDone"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "NotifyItem",
+          "origin": {
+            "definition": null,
+            "sourceId": "NotifyItem"
+          },
+          "sourceType": "serviceTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "service": {
+              "payload": {
+                "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
+                "operation": "urn:bpmn-lean:effect-operation:probe-v1",
+                "handlerKey": "bpmnLeanEffectHandler"
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_ToBatch"
+            ],
+            "outgoing": [
+              "Flow_BatchDone"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": {
+              "mode": "parallel",
+              "count": {
+                "cardinality": {
+                  "count": {
+                    "variable": {
+                      "name": "count"
+                    }
+                  }
+                }
+              },
+              "elementVariable": null,
+              "completionCondition": null,
+              "inputDataItem": null,
+              "outputDataItem": null,
+              "outputCollection": null,
+              "mutableCollection": "entrySnapshot",
+              "asyncBefore": true,
+              "asyncAfter": false,
+              "loopDataInputRef": null,
+              "inputDataItemName": null
+            },
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "PlainCheck",
+          "origin": {
+            "definition": null,
+            "sourceId": "PlainCheck"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Plain check",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Plain"
+            ],
+            "outgoing": [
+              "Flow_PlainDone"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "gateway": {
+        "header": {
+          "id": "WorkDone",
+          "origin": {
+            "definition": null,
+            "sourceId": "WorkDone"
+          },
+          "sourceType": "inclusiveGateway",
+          "parent": null
+        },
+        "payload": {
+          "kind": {
+            "inclusive": {
+              "candidates": [],
+              "default": null
+            }
+          },
+          "incoming": [
+            "Flow_ScopeDone",
+            "Flow_CallDone",
+            "Flow_BatchDone",
+            "Flow_PlainDone"
+          ],
+          "outgoing": [
+            "Flow_WorkDone"
+          ]
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "Decide",
+          "origin": {
+            "definition": null,
+            "sourceId": "Decide"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Decide",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_WorkDone"
+            ],
+            "outgoing": [
+              "Flow_Decided"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "CaseDecided",
+          "origin": {
+            "definition": null,
+            "sourceId": "CaseDecided"
+          },
+          "sourceType": "endEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Decided"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "start": {
+        "header": {
+          "id": "AuditOpened",
+          "origin": {
+            "definition": null,
+            "sourceId": "AuditOpened"
+          },
+          "sourceType": "startEvent",
+          "parent": null
+        },
+        "payload": {
+          "subscription": null,
+          "outgoing": [
+            "Flow_AuditOpened"
+          ]
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "Audit",
+          "origin": {
+            "definition": null,
+            "sourceId": "Audit"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Audit",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_AuditOpened"
+            ],
+            "outgoing": [
+              "Flow_Audited"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "AuditClosed",
+          "origin": {
+            "definition": null,
+            "sourceId": "AuditClosed"
+          },
+          "sourceType": "endEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Audited"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    }
+  ],
+  "flows": [
+    {
+      "id": "Flow_InspectOpened",
+      "source": "InspectOpened",
+      "target": "Measure",
+      "condition": null
+    },
+    {
+      "id": "Flow_Measured",
+      "source": "Measure",
+      "target": "InspectClosed",
+      "condition": null
+    },
+    {
+      "id": "Flow_Opened",
+      "source": "CaseOpened",
+      "target": "ChooseWork",
+      "condition": null
+    },
+    {
+      "id": "Flow_ToScope",
+      "source": "ChooseWork",
+      "target": "Inspect",
+      "condition": {
+        "variable": {
+          "name": "scoped"
+        }
+      }
+    },
+    {
+      "id": "Flow_ToCall",
+      "source": "ChooseWork",
+      "target": "AuditCall",
+      "condition": {
+        "variable": {
+          "name": "called"
+        }
+      }
+    },
+    {
+      "id": "Flow_ToBatch",
+      "source": "ChooseWork",
+      "target": "NotifyItem",
+      "condition": {
+        "variable": {
+          "name": "batched"
+        }
+      }
+    },
+    {
+      "id": "Flow_Plain",
+      "source": "ChooseWork",
+      "target": "PlainCheck",
+      "condition": null
+    },
+    {
+      "id": "Flow_ScopeDone",
+      "source": "Inspect",
+      "target": "WorkDone",
+      "condition": null
+    },
+    {
+      "id": "Flow_CallDone",
+      "source": "AuditCall",
+      "target": "WorkDone",
+      "condition": null
+    },
+    {
+      "id": "Flow_BatchDone",
+      "source": "NotifyItem",
+      "target": "WorkDone",
+      "condition": null
+    },
+    {
+      "id": "Flow_PlainDone",
+      "source": "PlainCheck",
+      "target": "WorkDone",
+      "condition": null
+    },
+    {
+      "id": "Flow_WorkDone",
+      "source": "WorkDone",
+      "target": "Decide",
+      "condition": null
+    },
+    {
+      "id": "Flow_Decided",
+      "source": "Decide",
+      "target": "CaseDecided",
+      "condition": null
+    },
+    {
+      "id": "Flow_AuditOpened",
+      "source": "AuditOpened",
+      "target": "Audit",
+      "condition": null
+    },
+    {
+      "id": "Flow_Audited",
+      "source": "Audit",
+      "target": "AuditClosed",
+      "condition": null
+    }
+  ],
+  "variables": [],
+  "processes": [
+    {
+      "definition": {
+        "key": "Process_Audit",
+        "namespace": "urn:bpmn-lean:scenarios:inclusive-join-compositions:scoped-join-counted",
+        "version": null,
+        "versionTag": null,
+        "deployment": null,
+        "tenant": null,
+        "sourceSha256": null
+      },
+      "children": [
+        "AuditOpened",
+        "Audit",
+        "AuditClosed"
+      ],
+      "variables": [],
+      "executable": true
+    }
+  ],
+  "executable": true,
+  "decisionResources": []
+}

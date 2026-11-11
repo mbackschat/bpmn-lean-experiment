@@ -1,0 +1,440 @@
+{
+  "identity": {
+    "processId": "SupplierOnboarding",
+    "namespace": "urn:bpmn-lean:test:supplier-onboarding",
+    "sourceSha256": "5a34dfb4272520cecf3c23971f295bcf44a8bc27a5513166d0c0c8cc56d828f1",
+    "profile": "bpmn-2.0.2",
+    "deployment": null
+  },
+  "options": {
+    "relations": [
+      "CIB-AGR-0001",
+      "CIB-AGR-0002",
+      "CIB-AGR-0003",
+      "CIB-AGR-0004",
+      "CIB-AGR-0006",
+      "CIB-AGR-0007",
+      "CIB-AGR-0021",
+      "CIB-CFG-0001",
+      "CIB-CFG-0013",
+      "CIB-CFG-0014",
+      "CIB-DEV-0001",
+      "CIB-DEV-0002",
+      "CIB-EXT-0011",
+      "CIB-INT-0001",
+      "CIB-INT-0008",
+      "CIB-INT-0012",
+      "CIB-INT-0015",
+      "CIB-INT-0016",
+      "CIB-INT-0025",
+      "CIB-INT-0026",
+      "CIB-INT-0029",
+      "CIB-INT-0030",
+      "CIB-INT-0031",
+      "CIB-INT-0032",
+      "CIB-LIM-0002",
+      "CIB-LIM-0003",
+      "CIB-OP-0001"
+    ],
+    "evaluator": "simpleBoolean",
+    "submission": "outputSet",
+    "scopeChainSubmissionBytes": null,
+    "undeclaredWrite": "refused",
+    "errorPathOutputs": "none",
+    "raisedCallOutputs": "none",
+    "technicalFailure": "hostFailure",
+    "incidentProcessCancellation": false,
+    "continuationFailure": "rolledBack",
+    "conditionOrder": "afterOutputs",
+    "messageCorrelation": "modeledKey",
+    "deliveryVariables": "mappedOnly",
+    "multiInstanceFinalBody": "conditionEveryCompletion",
+    "multiInstanceOutputs": "aggregates",
+    "compensationOrder": "dependency",
+    "compensationHandlerFailure": "failsInstance",
+    "abnormalScopeEnd": "withoutOutflow",
+    "unhandledError": "failsInstance",
+    "errorCatchVariables": "refused",
+    "callBindingTime": "programAssembly",
+    "timerZone": null,
+    "multiInstanceBinding": "dataAssociations",
+    "effectResultValues": "outputSet",
+    "outputContext": "submission",
+    "multiInstanceCounters": "none",
+    "multiInstanceInputFailure": "hold",
+    "multiInstanceCount": "integer",
+    "businessRuleTask": "refused",
+    "inclusiveJoinReach": "withBoundaries",
+    "branchSchedule": "orderInvariant",
+    "conditionalRetrigger": "edge",
+    "malformedTimer": "refused",
+    "messageNames": "description",
+    "scopeStart": "implicit",
+    "signalNames": "identifier",
+    "signalPayload": "none",
+    "signalDelivery": "broadcastOnly",
+    "conditionalStart": "refused",
+    "calledElementResolution": "qualifiedName",
+    "messageThrowForms": "refused"
+  },
+  "elements": [
+    {
+      "start": {
+        "header": {
+          "id": "Start_Onboarding",
+          "origin": {
+            "definition": null,
+            "sourceId": "Start_Onboarding"
+          },
+          "sourceType": "startEvent",
+          "parent": null
+        },
+        "payload": {
+          "subscription": null,
+          "outgoing": [
+            "Flow_Onboarding_Call"
+          ]
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "Call_DueDiligence",
+          "origin": {
+            "definition": null,
+            "sourceId": "Call_DueDiligence"
+          },
+          "sourceType": "callActivity",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "call": {
+              "payload": {
+                "calledElement": {
+                  "literal": {
+                    "value": "tns:SupplierDueDiligence"
+                  }
+                },
+                "calledQName": {
+                  "namespace": "urn:bpmn-lean:test:supplier-onboarding",
+                  "localName": "SupplierDueDiligence"
+                },
+                "binding": "latest",
+                "tenant": null,
+                "businessKey": null,
+                "inputs": [
+                  {
+                    "target": "Input_ProcessSummary",
+                    "source": {
+                      "variable": {
+                        "name": "Property_SupplierSummary"
+                      }
+                    },
+                    "dialect": "dataAssociation"
+                  }
+                ],
+                "outputs": [
+                  {
+                    "target": "Property_DueDiligenceDecision",
+                    "source": {
+                      "variable": {
+                        "name": "Output_ProcessDecision"
+                      }
+                    },
+                    "dialect": "dataAssociation"
+                  }
+                ],
+                "propagateAllInputs": false,
+                "propagateAllOutputs": false
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Onboarding_Call"
+            ],
+            "outgoing": [
+              "Flow_Call_FinalReview"
+            ],
+            "inputs": [],
+            "outputs": [],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "Task_FinalReview",
+          "origin": {
+            "definition": null,
+            "sourceId": "Task_FinalReview"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Confirm supplier onboarding",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_Call_FinalReview"
+            ],
+            "outgoing": [
+              "Flow_FinalReview_Complete"
+            ],
+            "inputs": [
+              {
+                "target": "Input_FinalReviewDecision",
+                "source": {
+                  "variable": {
+                    "name": "Property_DueDiligenceDecision"
+                  }
+                },
+                "dialect": "dataAssociation"
+              }
+            ],
+            "outputs": [
+              {
+                "target": "Property_OnboardingReceipt",
+                "source": {
+                  "variable": {
+                    "name": "Output_FinalReviewReceipt"
+                  }
+                },
+                "dialect": "dataAssociation"
+              }
+            ],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "End_Onboarding",
+          "origin": {
+            "definition": null,
+            "sourceId": "End_Onboarding"
+          },
+          "sourceType": "endEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_FinalReview_Complete"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    },
+    {
+      "start": {
+        "header": {
+          "id": "Start_DueDiligence",
+          "origin": {
+            "definition": null,
+            "sourceId": "Start_DueDiligence"
+          },
+          "sourceType": "startEvent",
+          "parent": null
+        },
+        "payload": {
+          "subscription": null,
+          "outgoing": [
+            "Flow_DueDiligence_Assess"
+          ]
+        }
+      }
+    },
+    {
+      "activity": {
+        "header": {
+          "id": "Task_AssessSupplier",
+          "origin": {
+            "definition": null,
+            "sourceId": "Task_AssessSupplier"
+          },
+          "sourceType": "userTask",
+          "parent": null
+        },
+        "payload": {
+          "work": {
+            "user": {
+              "payload": {
+                "name": "Assess supplier risk",
+                "assignee": null,
+                "candidateUsers": [],
+                "candidateGroups": [],
+                "formKey": null,
+                "formFields": [],
+                "dueDate": null,
+                "followUpDate": null,
+                "priority": null
+              }
+            }
+          },
+          "envelope": {
+            "incoming": [
+              "Flow_DueDiligence_Assess"
+            ],
+            "outgoing": [
+              "Flow_Assess_Return"
+            ],
+            "inputs": [
+              {
+                "target": "Input_TaskSummary",
+                "source": {
+                  "variable": {
+                    "name": "Input_ProcessSummary"
+                  }
+                },
+                "dialect": "dataAssociation"
+              }
+            ],
+            "outputs": [
+              {
+                "target": "Output_ProcessDecision",
+                "source": {
+                  "variable": {
+                    "name": "Output_TaskDecision"
+                  }
+                },
+                "dialect": "dataAssociation"
+              }
+            ],
+            "boundaries": [],
+            "multiInstance": null,
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "header": {
+          "id": "End_DueDiligence",
+          "origin": {
+            "definition": null,
+            "sourceId": "End_DueDiligence"
+          },
+          "sourceType": "endEvent",
+          "parent": null
+        },
+        "payload": {
+          "role": {
+            "throw": {
+              "record": "none"
+            }
+          },
+          "placement": "finish",
+          "incoming": [
+            "Flow_Assess_Return"
+          ],
+          "outgoing": [],
+          "alternativeThrows": []
+        }
+      }
+    }
+  ],
+  "flows": [
+    {
+      "id": "Flow_Onboarding_Call",
+      "source": "Start_Onboarding",
+      "target": "Call_DueDiligence",
+      "condition": null
+    },
+    {
+      "id": "Flow_Call_FinalReview",
+      "source": "Call_DueDiligence",
+      "target": "Task_FinalReview",
+      "condition": null
+    },
+    {
+      "id": "Flow_FinalReview_Complete",
+      "source": "Task_FinalReview",
+      "target": "End_Onboarding",
+      "condition": null
+    },
+    {
+      "id": "Flow_DueDiligence_Assess",
+      "source": "Start_DueDiligence",
+      "target": "Task_AssessSupplier",
+      "condition": null
+    },
+    {
+      "id": "Flow_Assess_Return",
+      "source": "Task_AssessSupplier",
+      "target": "End_DueDiligence",
+      "condition": null
+    }
+  ],
+  "variables": [
+    "Property_DueDiligenceDecision",
+    "Property_InternalNote",
+    "Property_OnboardingReceipt",
+    "Property_SupplierSummary"
+  ],
+  "processes": [
+    {
+      "definition": {
+        "key": "SupplierDueDiligence",
+        "namespace": "urn:bpmn-lean:test:supplier-onboarding",
+        "version": null,
+        "versionTag": null,
+        "deployment": null,
+        "tenant": null,
+        "sourceSha256": null
+      },
+      "children": [
+        "Start_DueDiligence",
+        "Task_AssessSupplier",
+        "End_DueDiligence"
+      ],
+      "variables": [
+        "Input_ProcessSummary",
+        "Output_ProcessDecision"
+      ],
+      "executable": true
+    }
+  ],
+  "executable": true,
+  "decisionResources": []
+}
