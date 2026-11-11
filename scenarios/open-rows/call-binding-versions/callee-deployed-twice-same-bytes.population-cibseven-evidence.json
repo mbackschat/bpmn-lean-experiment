@@ -1,0 +1,102 @@
+{
+  "kind": "cibSevenPopulationEvidence",
+  "scenario": {
+    "id": "call-binding-versions-callee-deployed-twice-same-bytes",
+    "sha256": "14d892eb8bfe9a50d7b0d9d106b1cc5fa94d12ee1831a7067ecc1c3a1c9b62c2"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "5e79ebcb1dd2a72a946b2d15af085065c111277f579abe75c7cb9ab4c94b1601"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "projection": {
+    "id": "cib-population-result"
+  },
+  "result": {
+    "deployments": [
+      {
+        "deploymentId": 1,
+        "definitionRef": "bound-document",
+        "versions": [
+          {
+            "key": "Process_BoundCallee",
+            "version": 1
+          },
+          {
+            "key": "Process_BoundCaller",
+            "version": 1
+          }
+        ],
+        "outcome": {
+          "kind": "deployed"
+        }
+      },
+      {
+        "deploymentId": 2,
+        "definitionRef": "bound-document",
+        "versions": [
+          {
+            "key": "Process_BoundCallee",
+            "version": 2
+          },
+          {
+            "key": "Process_BoundCaller",
+            "version": 2
+          }
+        ],
+        "outcome": {
+          "kind": "deployed"
+        }
+      }
+    ],
+    "steps": [],
+    "processStates": [
+      {
+        "kind": "state",
+        "instanceId": "Order_1",
+        "status": "running",
+        "logicalTimeMs": 20,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "call:7:Order_1:15:CallBoundCallee:1",
+              "elementId": "AssessBound",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_BoundCallee",
+              "version": 2,
+              "versionTag": null,
+              "deployment": 2,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Assess the request in this deployment",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,161 @@
+{
+  "kind": "cibSevenPopulationEvidence",
+  "scenario": {
+    "id": "conditional-start-population-routed-both-two-instances",
+    "sha256": "ed6161921143fc91fdf0fca22ee9065ce1d26d3fee51d1389649c553d3d3222c"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "5e79ebcb1dd2a72a946b2d15af085065c111277f579abe75c7cb9ab4c94b1601"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "projection": {
+    "id": "cib-population-result"
+  },
+  "result": {
+    "deployments": [
+      {
+        "deploymentId": 1,
+        "definitionRef": "routed-orders",
+        "versions": [
+          {
+            "key": "Process_RoutedOrders",
+            "version": 1
+          }
+        ],
+        "outcome": {
+          "kind": "deployed"
+        }
+      }
+    ],
+    "steps": [
+      {
+        "commandId": "s01-evaluate",
+        "ordinal": 1,
+        "at": 0,
+        "outcome": "committed",
+        "resolution": {
+          "kind": "fanOut",
+          "entries": [
+            {
+              "kind": "started",
+              "instanceId": "start:12:s01-evaluate:1:1:15:StartLargeOrder",
+              "deploymentId": 1,
+              "version": 1,
+              "startEvent": "StartLargeOrder"
+            },
+            {
+              "kind": "started",
+              "instanceId": "start:12:s01-evaluate:1:1:16:StartUrgentOrder",
+              "deploymentId": 1,
+              "version": 1,
+              "startEvent": "StartUrgentOrder"
+            }
+          ]
+        }
+      }
+    ],
+    "processStates": [
+      {
+        "kind": "state",
+        "instanceId": "start:12:s01-evaluate:1:1:15:StartLargeOrder",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "amount",
+            "value": {
+              "kind": "integer",
+              "value": 2500
+            }
+          },
+          {
+            "name": "urgent",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "start:12:s01-evaluate:1:1:15:StartLargeOrder",
+              "elementId": "ReviewLargeOrder",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review the large order",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "state",
+        "instanceId": "start:12:s01-evaluate:1:1:16:StartUrgentOrder",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "amount",
+            "value": {
+              "kind": "integer",
+              "value": 2500
+            }
+          },
+          {
+            "name": "urgent",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "start:12:s01-evaluate:1:1:16:StartUrgentOrder",
+              "elementId": "RushOrder",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Rush the urgent order",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      }
+    ]
+  }
+}

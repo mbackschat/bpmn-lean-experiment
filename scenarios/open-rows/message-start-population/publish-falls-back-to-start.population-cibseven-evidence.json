@@ -1,0 +1,142 @@
+{
+  "kind": "cibSevenPopulationEvidence",
+  "scenario": {
+    "id": "message-start-population-publish-falls-back-to-start",
+    "sha256": "cce924b08acf803984ccb81b8f38517324240589e07a0b0846754e5b976e8dfd"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "5e79ebcb1dd2a72a946b2d15af085065c111277f579abe75c7cb9ab4c94b1601"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "projection": {
+    "id": "cib-population-result"
+  },
+  "result": {
+    "deployments": [
+      {
+        "deploymentId": 1,
+        "definitionRef": "order-intake",
+        "versions": [
+          {
+            "key": "Process_OrderIntake",
+            "version": 1
+          }
+        ],
+        "outcome": {
+          "kind": "deployed"
+        }
+      }
+    ],
+    "steps": [
+      {
+        "commandId": "s01-publish-order-placed",
+        "ordinal": 1,
+        "at": 0,
+        "outcome": "committed",
+        "resolution": {
+          "kind": "fanOut",
+          "entries": [
+            {
+              "kind": "started",
+              "instanceId": "start:24:s01-publish-order-placed:1:1:16:StartOrderPlaced",
+              "deploymentId": 1,
+              "version": 1,
+              "startEvent": "StartOrderPlaced"
+            }
+          ]
+        }
+      },
+      {
+        "commandId": "s02-publish-order-amended",
+        "ordinal": 2,
+        "at": 10,
+        "outcome": "committed",
+        "resolution": {
+          "kind": "fanOut",
+          "entries": [
+            {
+              "kind": "started",
+              "instanceId": "start:25:s02-publish-order-amended:1:1:17:StartOrderAmended",
+              "deploymentId": 1,
+              "version": 1,
+              "startEvent": "StartOrderAmended"
+            }
+          ]
+        }
+      }
+    ],
+    "processStates": [
+      {
+        "kind": "state",
+        "instanceId": "start:24:s01-publish-order-placed:1:1:16:StartOrderPlaced",
+        "status": "running",
+        "logicalTimeMs": 10,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "start:24:s01-publish-order-placed:1:1:16:StartOrderPlaced",
+              "elementId": "PickOrder",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Pick the order",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "state",
+        "instanceId": "start:25:s02-publish-order-amended:1:1:17:StartOrderAmended",
+        "status": "running",
+        "logicalTimeMs": 10,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "start:25:s02-publish-order-amended:1:1:17:StartOrderAmended",
+              "elementId": "ReviseOrder",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Revise the order",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      }
+    ]
+  }
+}

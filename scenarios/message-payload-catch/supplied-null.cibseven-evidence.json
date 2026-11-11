@@ -1,0 +1,209 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "message-payload-catch-supplied-null",
+    "sha256": "8345b9371d21b10f21e33da7ae50e8debbdb8042d05bc9f522fc1ce83581ee0c"
+  },
+  "profile": {
+    "id": "bpmn-2.0.2",
+    "sha256": "c66c82c92927b4c7413fb00aee153fd0d2d7d4e32c2cf38235347b423aa6468e"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start-message-payload-catch-supplied-null",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "deliver-message-payload-catch-supplied-null",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "complete-message-payload-catch-supplied-null",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": []
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start-message-payload-catch-supplied-null",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "deliver-message-payload-catch-supplied-null",
+        "tasks": [
+          {
+            "elementId": "UserTask_ReviewSettlement",
+            "name": "Review settlement"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "complete-message-payload-catch-supplied-null",
+        "tasks": []
+      }
+    ],
+    "messageSubscriptions": [
+      {
+        "afterCommandId": "start-message-payload-catch-supplied-null",
+        "subscriptions": [
+          {
+            "elementId": "MessageCatch_SettlementConfirmed",
+            "eventName": "Settlement confirmed",
+            "messageId": "Message_SettlementConfirmed",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "deliver-message-payload-catch-supplied-null",
+        "subscriptions": []
+      },
+      {
+        "afterCommandId": "complete-message-payload-catch-supplied-null",
+        "subscriptions": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start-message-payload-catch-supplied-null",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "deliver-message-payload-catch-supplied-null",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "complete-message-payload-catch-supplied-null",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start-message-payload-catch-supplied-null",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "deliver-message-payload-catch-supplied-null",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-message-payload-catch-supplied-null",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start-message-payload-catch-supplied-null",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "MessagePayloadCatchSuppliedNull",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "MessagePayloadCatchSuppliedNull",
+              "elementId": "MessageCatch_SettlementConfirmed",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "operationMessage",
+                "interfaceId": "Interface_ClearingHouse",
+                "interfaceOperationId": "Operation_ConfirmSettlement",
+                "messageId": "Message_SettlementConfirmed"
+              },
+              "payload": true,
+              "criteria": []
+            },
+            "input": "deliver"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "deliver-message-payload-catch-supplied-null",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "MessagePayloadCatchSuppliedNull",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "MessagePayloadCatchSuppliedNull",
+              "elementId": "UserTask_ReviewSettlement",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review settlement",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "complete-message-payload-catch-supplied-null",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "MessagePayloadCatchSuppliedNull",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [],
+        "openWaits": []
+      }
+    ]
+  }
+}

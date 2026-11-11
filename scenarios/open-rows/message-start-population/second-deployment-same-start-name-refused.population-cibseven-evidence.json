@@ -1,0 +1,101 @@
+{
+  "kind": "cibSevenPopulationEvidence",
+  "scenario": {
+    "id": "message-start-population-second-deployment-same-start-name-refused",
+    "sha256": "8b86553c50085d459a94f356a9becfa1ac999c57f985068be60c56f8492122b9"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "5e79ebcb1dd2a72a946b2d15af085065c111277f579abe75c7cb9ab4c94b1601"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "projection": {
+    "id": "cib-population-result"
+  },
+  "result": {
+    "deployments": [
+      {
+        "deploymentId": 1,
+        "definitionRef": "order-intake",
+        "versions": [
+          {
+            "key": "Process_OrderIntake",
+            "version": 1
+          }
+        ],
+        "outcome": {
+          "kind": "deployed"
+        }
+      },
+      {
+        "deploymentId": 2,
+        "definitionRef": "order-intake-copy",
+        "versions": [],
+        "outcome": {
+          "kind": "deploymentRefused"
+        }
+      }
+    ],
+    "steps": [
+      {
+        "commandId": "s01-publish-order-placed",
+        "ordinal": 1,
+        "at": 20,
+        "outcome": "committed",
+        "resolution": {
+          "kind": "fanOut",
+          "entries": [
+            {
+              "kind": "started",
+              "instanceId": "start:24:s01-publish-order-placed:1:1:16:StartOrderPlaced",
+              "deploymentId": 1,
+              "version": 1,
+              "startEvent": "StartOrderPlaced"
+            }
+          ]
+        }
+      }
+    ],
+    "processStates": [
+      {
+        "kind": "state",
+        "instanceId": "start:24:s01-publish-order-placed:1:1:16:StartOrderPlaced",
+        "status": "running",
+        "logicalTimeMs": 20,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "start:24:s01-publish-order-placed:1:1:16:StartOrderPlaced",
+              "elementId": "PickOrder",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Pick the order",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,107 @@
+{
+  "kind": "cibSevenPopulationEvidence",
+  "scenario": {
+    "id": "call-binding-versions-tag-deployed-after-caller",
+    "sha256": "45c265b292d296a4f3431a26eefc7fd66b316849a7b3293b093a1719e6524625"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "5e79ebcb1dd2a72a946b2d15af085065c111277f579abe75c7cb9ab4c94b1601"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "projection": {
+    "id": "cib-population-result"
+  },
+  "result": {
+    "deployments": [
+      {
+        "deploymentId": 1,
+        "definitionRef": "callee-stable",
+        "versions": [
+          {
+            "key": "Process_Callee",
+            "version": 1
+          }
+        ],
+        "outcome": {
+          "kind": "deployed"
+        }
+      },
+      {
+        "deploymentId": 2,
+        "definitionRef": "caller",
+        "versions": [
+          {
+            "key": "Process_Caller",
+            "version": 1
+          }
+        ],
+        "outcome": {
+          "kind": "deployed"
+        }
+      },
+      {
+        "deploymentId": 3,
+        "definitionRef": "callee-beta",
+        "versions": [
+          {
+            "key": "Process_Callee",
+            "version": 2
+          }
+        ],
+        "outcome": {
+          "kind": "deployed"
+        }
+      }
+    ],
+    "steps": [],
+    "processStates": [
+      {
+        "kind": "state",
+        "instanceId": "Order_1",
+        "status": "running",
+        "logicalTimeMs": 30,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "call:7:Order_1:10:CallCallee:1",
+              "elementId": "AssessRequestThoroughly",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_Callee",
+              "version": 2,
+              "versionTag": "beta",
+              "deployment": 3,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Assess the request thoroughly",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      }
+    ]
+  }
+}

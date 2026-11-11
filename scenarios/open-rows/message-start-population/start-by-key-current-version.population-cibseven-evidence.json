@@ -1,0 +1,106 @@
+{
+  "kind": "cibSevenPopulationEvidence",
+  "scenario": {
+    "id": "message-start-population-start-by-key-current-version",
+    "sha256": "a3a9bd645eff46635b621ef58db81168176365c500cfdce0eaff9ba8198a791f"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "5e79ebcb1dd2a72a946b2d15af085065c111277f579abe75c7cb9ab4c94b1601"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "projection": {
+    "id": "cib-population-result"
+  },
+  "result": {
+    "deployments": [
+      {
+        "deploymentId": 1,
+        "definitionRef": "order-intake-v1",
+        "versions": [
+          {
+            "key": "Process_OrderIntake",
+            "version": 1
+          }
+        ],
+        "outcome": {
+          "kind": "deployed"
+        }
+      },
+      {
+        "deploymentId": 2,
+        "definitionRef": "order-intake-v2",
+        "versions": [
+          {
+            "key": "Process_OrderIntake",
+            "version": 2
+          }
+        ],
+        "outcome": {
+          "kind": "deployed"
+        }
+      }
+    ],
+    "steps": [
+      {
+        "commandId": "s01-publish-order-placed",
+        "ordinal": 1,
+        "at": 20,
+        "outcome": "committed",
+        "resolution": {
+          "kind": "fanOut",
+          "entries": [
+            {
+              "kind": "started",
+              "instanceId": "start:24:s01-publish-order-placed:1:2:16:StartOrderPlaced",
+              "deploymentId": 2,
+              "version": 2,
+              "startEvent": "StartOrderPlaced"
+            }
+          ]
+        }
+      }
+    ],
+    "processStates": [
+      {
+        "kind": "state",
+        "instanceId": "start:24:s01-publish-order-placed:1:2:16:StartOrderPlaced",
+        "status": "running",
+        "logicalTimeMs": 20,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "start:24:s01-publish-order-placed:1:2:16:StartOrderPlaced",
+              "elementId": "PickAndPackOrder",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Pick and pack the order",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      }
+    ]
+  }
+}

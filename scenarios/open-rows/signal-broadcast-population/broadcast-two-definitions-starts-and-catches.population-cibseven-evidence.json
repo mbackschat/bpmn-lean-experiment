@@ -1,0 +1,194 @@
+{
+  "kind": "cibSevenPopulationEvidence",
+  "scenario": {
+    "id": "signal-broadcast-population-broadcast-two-definitions-starts-and-catches",
+    "sha256": "7b062a1106db5d62d78a7aa2d9d8bd53c7d99c9499880d690e2447630dc89c5b"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "5e79ebcb1dd2a72a946b2d15af085065c111277f579abe75c7cb9ab4c94b1601"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "projection": {
+    "id": "cib-population-result"
+  },
+  "result": {
+    "deployments": [
+      {
+        "deploymentId": 1,
+        "definitionRef": "shift-till",
+        "versions": [
+          {
+            "key": "Process_ShiftTill",
+            "version": 1
+          }
+        ],
+        "outcome": {
+          "kind": "deployed"
+        }
+      },
+      {
+        "deploymentId": 2,
+        "definitionRef": "shift-signals",
+        "versions": [
+          {
+            "key": "Process_ShiftSignals",
+            "version": 1
+          }
+        ],
+        "outcome": {
+          "kind": "deployed"
+        }
+      }
+    ],
+    "steps": [
+      {
+        "commandId": "s03-broadcast-shift-closed",
+        "ordinal": 1,
+        "at": 10,
+        "outcome": "committed",
+        "resolution": {
+          "kind": "fanOut",
+          "entries": [
+            {
+              "kind": "started",
+              "instanceId": "start:26:s03-broadcast-shift-closed:1:2:16:StartShiftClosed",
+              "deploymentId": 2,
+              "version": 1,
+              "startEvent": "StartShiftClosed"
+            }
+          ]
+        }
+      },
+      {
+        "commandId": "s04-broadcast-shift-opened",
+        "ordinal": 2,
+        "at": 20,
+        "outcome": "committed",
+        "resolution": {
+          "kind": "fanOut",
+          "entries": [
+            {
+              "kind": "started",
+              "instanceId": "start:26:s04-broadcast-shift-opened:1:2:16:StartShiftOpened",
+              "deploymentId": 2,
+              "version": 1,
+              "startEvent": "StartShiftOpened"
+            }
+          ]
+        }
+      }
+    ],
+    "processStates": [
+      {
+        "kind": "state",
+        "instanceId": "Till_1",
+        "status": "completed",
+        "logicalTimeMs": 30,
+        "variables": [],
+        "openWaits": []
+      },
+      {
+        "kind": "state",
+        "instanceId": "Till_2",
+        "status": "running",
+        "logicalTimeMs": 30,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Till_2",
+              "elementId": "ReconcileTill",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Reconcile the till",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "state",
+        "instanceId": "start:26:s03-broadcast-shift-closed:1:2:16:StartShiftClosed",
+        "status": "running",
+        "logicalTimeMs": 30,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "start:26:s03-broadcast-shift-closed:1:2:16:StartShiftClosed",
+              "elementId": "CloseRegister",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Close the register",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "state",
+        "instanceId": "start:26:s04-broadcast-shift-opened:1:2:16:StartShiftOpened",
+        "status": "running",
+        "logicalTimeMs": 30,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "start:26:s04-broadcast-shift-opened:1:2:16:StartShiftOpened",
+              "elementId": "OpenRegister",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Open the register",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      }
+    ]
+  }
+}
