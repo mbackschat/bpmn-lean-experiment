@@ -103,20 +103,30 @@
       "kind": "publish",
       "commandId": "publish-correlation-cross-definition",
       "address": {
-        "definitionRef": "message-key-correlation-process",
-        "processId": "Process_SettlementCorrelation",
+        "definition": {
+          "deploymentId": 1
+        },
         "channel": {
           "kind": "operationMessage",
           "interfaceId": "Interface_ClearingHouse",
           "interfaceOperationId": "Operation_ConfirmSettlement",
           "messageId": "Message_SettlementConfirmed"
-        },
-        "correlationKeyId": "CorrelationKey_SettlementReference"
+        }
       },
-      "payload": {
-        "kind": "string",
-        "value": "settlement-42"
-      }
+      "criteria": [
+        {
+          "target": {
+            "kind": "processVariable",
+            "name": "CorrelationKey_SettlementReference"
+          },
+          "expected": {
+            "kind": "string",
+            "value": "settlement-42"
+          }
+        }
+      ],
+      "variables": [],
+      "mode": "executionsOnly"
     }
   ],
   "provenance": {

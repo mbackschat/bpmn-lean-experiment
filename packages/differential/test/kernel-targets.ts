@@ -26,12 +26,16 @@ export async function runLeanKernelScenario(programPath: string, scenarioPath: s
   return parseWireJson(await runKernelDriver([programPath, scenarioPath], 1), scenarioPath);
 }
 
-/** The Lean kernel's result for one population scenario file, one program per definition in scenario order. */
+/**
+ * The Lean kernel's result for one population scenario file, one program per definition in scenario order and the
+ * file of the steps' digests (`populationStepDigests`).
+ */
 export async function runLeanKernelPopulation(
+  digestsPath: string,
   programPaths: ReadonlyArray<string>,
   scenarioPath: string,
 ): Promise<unknown> {
-  return parseWireJson(await runKernelDriver(["--population", ...programPaths, scenarioPath], 1), scenarioPath);
+  return parseWireJson(await runKernelDriver(["--population", digestsPath, ...programPaths, scenarioPath], 1), scenarioPath);
 }
 
 export function writeProgram(programPath: string, program: KernelJson): Promise<void> {

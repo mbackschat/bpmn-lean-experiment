@@ -2,31 +2,33 @@
  * Population, transcribed from `Kernel/Population.lean`: mechanisms across process instances
  * ([architecture](../../../docs/kernel/ARCHITECTURE-SPEC.md#population)). Every input reaches an instance through
  * `step`; this layer only decides which instance an input goes to. A scenario is one ordered list of stimuli mixing
- * instance inputs and population stimuli. Implemented: instances of possibly different definitions, each driven by its
- * own inputs, and Message key correlation with exact-cardinality routing
- * ([specification](../../../docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md)): a
- * publication addresses one deployed definition, process, Message channel and correlation key; the candidates are the
- * open subscriptions of that definition's instances that `Hooks.correlates` accepts; exactly one is delivered to,
- * while zero or several reject the publication and change no instance. Candidate order never picks a winner.
+ * deployments, instance inputs and population commands, each at a logical time. Implemented: deployments, instances of
+ * possibly different deployments, each driven by its own inputs, and Message key correlation with exact-cardinality
+ * routing ([specification](../../../docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md)): a publication addresses one
+ * deployment and a Message channel and carries the modeled correlation criteria; the candidates are the open
+ * subscriptions of that deployment's instances that `Hooks.correlates` accepts; exactly one is delivered to, while zero
+ * or several reject the publication and change no instance. Candidate order never picks a winner. Every other command
+ * form is parsed and answered `unsupported population-not-implemented`.
  *
- * An instance input that does not commit and a delivery a target refuses are results, never harness errors. A harness
- * refusal, with a stable code, is a publication that names no deployed definition or carries an empty payload; a
- * candidate whose key cannot be evaluated is no match.
+ * A refused deployment, an instance input that does not commit and a delivery a target refuses are results, never
+ * harness errors; a candidate whose key cannot be evaluated is no match.
  */
-import { ValueTag, assertNever, compareStrings, distinctCount, mergeSort, programPublicId, type Program } from "./il/types.js";
+import { assertNever, compareStrings, distinctCount, mergeSort, programPublicId, type Program, type Value } from "./il/types.js";
 import type { Hooks } from "./hooks.js";
 import {
-  CriterionTargetTag,
   DeliveryTriggerTag,
+  FailureTag,
   InputTag,
   instanceOf,
   occurrenceOf,
+  type Binding,
   type CorrelationMatch,
   type Failure,
   type Input,
   type MessageChannel,
   type OccurrenceRef,
   type OpenItem,
+  type SignalAddress,
   type State,
 } from "./state.js";
 import { context, step } from "./step.js";
@@ -41,8 +43,8 @@ export interface Overlay {
 }
 
 /**
- * A deployed definition's identity as a publication addresses it: definitions whose local identifiers agree but whose
- * source, overlay or profile differ are distinct (specification, global command).
+ * A scenario definition's source identity: definitions whose local identifiers agree but whose source, overlay or
+ * profile differ are distinct (specification, global command).
  */
 export interface DeploymentRef {
   readonly sourceId: string;
@@ -51,79 +53,232 @@ export interface DeploymentRef {
   readonly profile: string;
 }
 
-/** Lean's derived `DecidableEq DeploymentRef`. */
-function deploymentRefEquals(left: DeploymentRef, right: DeploymentRef): boolean {
-  const overlays = left.overlay === null || right.overlay === null
-    ? left.overlay === right.overlay
-    : left.overlay.id === right.overlay.id && left.overlay.sha256 === right.overlay.sha256;
-  return left.sourceId === right.sourceId && left.sourceSha256 === right.sourceSha256 && overlays &&
-    left.profile === right.profile;
-}
-
-export interface Definition {
+/**
+ * One deploy event of a scenario definition. `deploymentId` is its deploy ordinal across the population, from 1; `key`
+ * its root process id; `versions` gives each process key it contains 1 + the number of earlier deployments containing
+ * that key.
+ */
+export interface Deployment {
+  readonly deploymentId: number;
+  readonly definitionRef: string;
   readonly ref: DeploymentRef;
+  readonly key: string;
+  readonly versions: readonly (readonly [string, number])[];
+  readonly deployedAtMs: number;
   readonly program: Program;
 }
 
-/** A correlated publication's address. */
-export interface Address {
-  readonly definition: DeploymentRef;
-  readonly processId: string;
-  readonly channel: MessageChannel;
-  readonly correlationKey: string;
+export enum DefinitionSelectorTag {
+  ProcessKey = "processKey",
+  Deployment = "deployment",
 }
 
-/** A correlated publication carrying a String payload, the profile's one key domain. */
+/** The current deployment of a process key, or one exact deployment. */
+export type DefinitionSelector =
+  | { readonly tag: DefinitionSelectorTag.ProcessKey; readonly key: string }
+  | { readonly tag: DefinitionSelectorTag.Deployment; readonly deploymentId: number };
+
+export enum MessageAddressTag {
+  Channel = "channel",
+  Name = "name",
+}
+
+export type MessageAddress =
+  | { readonly tag: MessageAddressTag.Channel; readonly channel: MessageChannel }
+  | { readonly tag: MessageAddressTag.Name; readonly name: string };
+
+export enum PublishMode {
+  Any = "any",
+  ExecutionsOnly = "executionsOnly",
+  StartOnly = "startOnly",
+}
+
+/** A Message publication; `criteria` are read as the profile's `messageCorrelation` says. */
 export interface Publication {
   readonly commandId: string;
-  readonly address: Address;
-  readonly payload: string;
+  readonly definition: DefinitionSelector | null;
+  readonly message: MessageAddress;
+  readonly criteria: readonly CorrelationMatch[];
+  readonly payload: Value | null;
+  readonly variables: readonly Binding[];
+  readonly businessKey: string | null;
+  readonly mode: PublishMode;
 }
 
-export interface Instance {
-  readonly definition: Definition;
-  readonly state: State;
+export enum ReceiverTag {
+  Occurrence = "occurrence",
+  Start = "start",
 }
+
+/** A receiver of a fan-out: a waiting occurrence, or a start Event of a deployment. */
+export type Receiver =
+  | { readonly tag: ReceiverTag.Occurrence; readonly ref: OccurrenceRef }
+  | { readonly tag: ReceiverTag.Start; readonly deploymentId: number; readonly startEvent: string };
+
+/** An API Signal broadcast; `order`, when given, is the discovery order its receivers are reached in. */
+export interface Broadcast {
+  readonly commandId: string;
+  readonly address: SignalAddress;
+  readonly variables: readonly Binding[];
+  readonly order: readonly Receiver[] | null;
+}
+
+export interface ConditionEvaluation {
+  readonly commandId: string;
+  readonly definition: DefinitionSelector | null;
+  readonly variables: readonly Binding[];
+  readonly businessKey: string | null;
+  readonly order: readonly Receiver[] | null;
+}
+
+/** A Timer-start occurrence, named by its due instant; the command's logical time is its firing time. */
+export interface TimerStart {
+  readonly commandId: string;
+  readonly deploymentId: number;
+  readonly startEvent: string;
+  readonly dueMs: number;
+}
+
+export enum CommandTag {
+  Publish = "publish",
+  Broadcast = "broadcast",
+  EvaluateConditions = "evaluateConditions",
+  TimerStart = "timerStart",
+}
+
+export type Command =
+  | { readonly tag: CommandTag.Publish; readonly publication: Publication }
+  | { readonly tag: CommandTag.Broadcast; readonly broadcast: Broadcast }
+  | { readonly tag: CommandTag.EvaluateConditions; readonly evaluation: ConditionEvaluation }
+  | { readonly tag: CommandTag.TimerStart; readonly timerStart: TimerStart };
+
+function commandIdOf(command: Command): string {
+  switch (command.tag) {
+    case CommandTag.Publish:
+      return command.publication.commandId;
+    case CommandTag.Broadcast:
+      return command.broadcast.commandId;
+    case CommandTag.EvaluateConditions:
+      return command.evaluation.commandId;
+    case CommandTag.TimerStart:
+      return command.timerStart.commandId;
+  }
+  return assertNever(command);
+}
+
+export enum FanOutEntryTag {
+  Delivered = "delivered",
+  Started = "started",
+  Skipped = "skipped",
+  Failed = "failed",
+}
+
+/** One receiver of a fan-out, each its own unit of commitment; `skipped` was gone before its turn. */
+export type FanOutEntry =
+  | { readonly tag: FanOutEntryTag.Delivered; readonly target: OccurrenceRef }
+  | {
+      readonly tag: FanOutEntryTag.Started;
+      readonly instanceId: string;
+      readonly deploymentId: number;
+      readonly version: number;
+      readonly startEvent: string;
+    }
+  | { readonly tag: FanOutEntryTag.Skipped; readonly target: OccurrenceRef }
+  | { readonly tag: FanOutEntryTag.Failed; readonly target: Receiver; readonly failure: Failure };
 
 export enum ResolutionTag {
   Committed = "committed",
   Failed = "failed",
+  FanOut = "fanOut",
   NoMatch = "noMatch",
   Ambiguous = "ambiguous",
+  Rejected = "rejected",
+  Unsupported = "unsupported",
 }
 
 /** `failed`: the sole candidate refused the delivery; nothing changed. */
 export type Resolution =
   | { readonly tag: ResolutionTag.Committed; readonly target: OccurrenceRef }
   | { readonly tag: ResolutionTag.Failed; readonly target: OccurrenceRef; readonly failure: Failure }
+  | { readonly tag: ResolutionTag.FanOut; readonly entries: readonly FanOutEntry[] }
   | { readonly tag: ResolutionTag.NoMatch }
-  | { readonly tag: ResolutionTag.Ambiguous };
+  | { readonly tag: ResolutionTag.Ambiguous }
+  | { readonly tag: ResolutionTag.Rejected; readonly code: string }
+  | { readonly tag: ResolutionTag.Unsupported; readonly code: string };
 
-/** `ingressOrdinal` numbers the publications in arrival order, from 1. */
-export interface PublicationResult {
+/** A command's result; `ordinal` numbers the commands in arrival order, from 1. */
+export interface StepResult {
   readonly commandId: string;
-  readonly ingressOrdinal: number;
+  readonly ordinal: number;
+  readonly atMs: number;
   readonly resolution: Resolution;
 }
 
-export enum StimulusTag {
-  Input = "input",
-  Publish = "publish",
+/** A command the population answered, under the digest of its canonical wire form (contract §7). */
+export interface LedgerEntry {
+  readonly commandId: string;
+  readonly digest: string;
+  readonly result: StepResult;
 }
 
-/** One population scenario stimulus, in scenario order: an input for the instance of `script`, or a publication. */
+/** A consumed Timer-start occurrence. */
+export interface TimerOccurrence {
+  readonly deploymentId: number;
+  readonly startEvent: string;
+  readonly dueMs: number;
+}
+
+export enum DeploymentOutcomeTag {
+  Deployed = "deployed",
+  Refused = "refused",
+}
+
+export type DeploymentOutcome =
+  | { readonly tag: DeploymentOutcomeTag.Deployed }
+  | { readonly tag: DeploymentOutcomeTag.Refused; readonly code: string };
+
+export interface DeploymentResult {
+  readonly deploymentId: number;
+  readonly definitionRef: string;
+  readonly versions: readonly (readonly [string, number])[];
+  readonly outcome: DeploymentOutcome;
+}
+
+export interface Instance {
+  readonly deployment: Deployment;
+  readonly state: State;
+}
+
+export enum StimulusTag {
+  Deploy = "deploy",
+  Input = "input",
+  Command = "command",
+}
+
+/**
+ * One population scenario stimulus, in scenario order: a deployment, an input for the instance of `script`, or a
+ * command with its logical time and the digest of its canonical wire form, which the harness computes.
+ */
 export type Stimulus =
+  | {
+      readonly tag: StimulusTag.Deploy;
+      readonly definitionRef: string;
+      readonly ref: DeploymentRef;
+      readonly program: Program;
+      readonly atMs: number;
+    }
   | {
       readonly tag: StimulusTag.Input;
       readonly script: number;
-      readonly definition: Definition;
+      readonly definitionRef: string;
       readonly commandId: string;
       readonly input: Input;
     }
-  | { readonly tag: StimulusTag.Publish; readonly publication: Publication };
+  | { readonly tag: StimulusTag.Command; readonly command: Command; readonly atMs: number; readonly digest: string };
 
 export interface Result {
-  readonly publications: readonly PublicationResult[];
+  readonly deployments: readonly DeploymentResult[];
+  readonly steps: readonly StepResult[];
   /** Ordered by process instance identifier, whatever order they started in. */
   readonly instances: readonly Instance[];
   /** The instance inputs that did not commit, with their failures. */
@@ -158,86 +313,140 @@ export function matching(
   return accepted.map((item) => occurrence(program, state, item));
 }
 
-/**
- * The instances at the address's definition and process, by position, with each of their correlated subscriptions that
- * accepts `correlation`.
- */
-function candidates(
-  hooks: Hooks,
-  instances: readonly Instance[],
-  address: Address,
-  correlation: readonly CorrelationMatch[],
-): readonly (readonly [number, OccurrenceRef])[] {
-  return instances.flatMap((member, index) => {
-    const program = member.definition.program;
-    if (!deploymentRefEquals(member.definition.ref, address.definition) || program.identity.processId !== address.processId) {
-      return [];
-    }
-    return matching(hooks, program, member.state, address.channel, correlation).map((ref) => [index, ref] as const);
-  });
+/** The process keys a program carries: its root and the processes it calls. */
+function processKeys(program: Program): readonly string[] {
+  return [program.identity.processId, ...program.processes.map((process) => process.definition.key)];
 }
 
-/** Route one publication: deliver to its sole candidate, or reject it leaving every instance unchanged. */
+/**
+ * Deploy `program` as `deploymentId` at `atMs`: refused with the admission's code, or numbered per process key among
+ * the deployments in `registry`. The program is deployed as given; stamping its identity and carried definitions is
+ * not done here.
+ */
+export function deploy(
+  admission: (program: Program) => string | null,
+  registry: readonly Deployment[],
+  deploymentId: number,
+  definitionRef: string,
+  ref: DeploymentRef,
+  program: Program,
+  atMs: number,
+): readonly [DeploymentResult, Deployment | null] {
+  const code = admission(program);
+  if (code !== null) {
+    return [{ deploymentId, definitionRef, versions: [], outcome: { tag: DeploymentOutcomeTag.Refused, code } }, null];
+  }
+  const versions = processKeys(program).map((key) =>
+    [key, 1 + registry.filter((earlier) => earlier.versions.some(([known]) => known === key)).length] as const);
+  const deployment: Deployment = {
+    deploymentId, definitionRef, ref, key: program.identity.processId, versions, deployedAtMs: atMs, program,
+  };
+  return [{ deploymentId, definitionRef, versions, outcome: { tag: DeploymentOutcomeTag.Deployed } }, deployment];
+}
+
+/**
+ * dynamic-only: a command form the population runner does not route yet; it is a scenario stimulus, not a program
+ * shape, so no admission refusal can stand for it.
+ */
+const notImplemented: Resolution = { tag: ResolutionTag.Unsupported, code: "population-not-implemented" };
+
+/**
+ * Route one publication: deliver to its sole candidate, or reject it leaving every instance unchanged. Only a
+ * publication to one deployment's executions on a channel, carrying criteria and nothing else, is implemented.
+ */
 function publish(
   hooks: Hooks,
-  definitions: readonly Definition[],
+  registry: readonly Deployment[],
   instances: readonly Instance[],
-  ingressOrdinal: number,
   publication: Publication,
-): Refusable<readonly [readonly Instance[], PublicationResult]> {
-  const address = publication.address;
-  const known = definitions.some((definition) =>
-    deploymentRefEquals(definition.ref, address.definition) && definition.program.identity.processId === address.processId);
-  if (!known) return { ok: false, error: "publication-unknown-definition" };
-  if (publication.payload.length === 0) return { ok: false, error: "publication-payload-empty" };
-  const correlation: readonly CorrelationMatch[] = [{
-    target: { tag: CriterionTargetTag.ProcessVariable, name: address.correlationKey },
-    expected: { tag: ValueTag.String, value: publication.payload },
-  }];
-  const result = (resolution: Resolution): PublicationResult => ({ commandId: publication.commandId, ingressOrdinal, resolution });
-  const found = candidates(hooks, instances, address, correlation);
+): Refusable<readonly [readonly Instance[], Resolution]> {
+  const selector = publication.definition;
+  const message = publication.message;
+  if (selector?.tag !== DefinitionSelectorTag.Deployment || message.tag !== MessageAddressTag.Channel ||
+    publication.payload !== null || publication.variables.length > 0 || publication.businessKey !== null ||
+    publication.mode !== PublishMode.ExecutionsOnly) {
+    return { ok: true, value: [instances, notImplemented] };
+  }
+  if (!registry.some((deployment) => deployment.deploymentId === selector.deploymentId)) {
+    return { ok: true, value: [instances, { tag: ResolutionTag.Rejected, code: "definition-not-deployed" }] };
+  }
+  const correlation = publication.criteria;
+  const found = instances.flatMap((member, index) => member.deployment.deploymentId !== selector.deploymentId ? [] :
+    matching(hooks, member.deployment.program, member.state, message.channel, correlation).map((ref) => [index, ref] as const));
   const sole = found[0];
-  if (sole === undefined) return { ok: true, value: [instances, result({ tag: ResolutionTag.NoMatch })] };
-  if (found.length > 1) return { ok: true, value: [instances, result({ tag: ResolutionTag.Ambiguous })] };
+  if (sole === undefined) return { ok: true, value: [instances, { tag: ResolutionTag.NoMatch }] };
+  if (found.length > 1) return { ok: true, value: [instances, { tag: ResolutionTag.Ambiguous }] };
   const [index, target] = sole;
   const delivery: Input = {
     tag: InputTag.Deliver,
-    payload: { occurrence: target, trigger: { tag: DeliveryTriggerTag.Message, channel: address.channel }, correlation, payload: null, variables: [], atMs: null },
+    payload: { occurrence: target, trigger: { tag: DeliveryTriggerTag.Message, channel: message.channel }, correlation, payload: null, variables: [], atMs: null },
   };
   const member = instances[index];
   if (member === undefined) return { ok: false, error: "candidate-without-instance" };
-  const stepped = step(hooks, member.definition.program, member.state, delivery);
-  if (!stepped.ok) return { ok: true, value: [instances, result({ tag: ResolutionTag.Failed, target, failure: stepped.failure })] };
+  const stepped = step(hooks, member.deployment.program, member.state, delivery);
+  if (!stepped.ok) return { ok: true, value: [instances, { tag: ResolutionTag.Failed, target, failure: stepped.failure }] };
   const updated = instances.map((candidate, position) => (position === index ? { ...member, state: stepped.value } : candidate));
-  return { ok: true, value: [updated, result({ tag: ResolutionTag.Committed, target })] };
+  return { ok: true, value: [updated, { tag: ResolutionTag.Committed, target }] };
 }
 
-/** What a run has done so far: instances by script, publication results and input failures. */
+/** What a run has done so far: deployments, instances by script, command results and their ledger, input failures. */
 interface Progress {
+  readonly registry: readonly Deployment[];
+  readonly deployments: readonly DeploymentResult[];
   readonly instances: readonly (readonly [number, Instance])[];
-  readonly publications: readonly PublicationResult[];
+  readonly steps: readonly StepResult[];
+  readonly ledger: readonly LedgerEntry[];
   readonly inputFailures: readonly (readonly [string, Failure])[];
 }
 
-/** Apply one stimulus. A publication sees the instances started so far. */
-function apply(hooks: Hooks, definitions: readonly Definition[], progress: Progress, stimulus: Stimulus): Refusable<Progress> {
+/** The deployment an instance input reaches: its instance's, or for a new instance its definition's latest. */
+function deploymentFor(progress: Progress, script: number, definitionRef: string): Deployment | null {
+  const known = progress.instances.find(([candidate]) => candidate === script)?.[1].deployment;
+  if (known !== undefined) return known;
+  return progress.registry.filter((deployment) => deployment.definitionRef === definitionRef).at(-1) ?? null;
+}
+
+function route(hooks: Hooks, progress: Progress, issued: Command): Refusable<readonly [readonly Instance[], Resolution]> {
+  const instances = progress.instances.map(([, instance]) => instance);
+  switch (issued.tag) {
+    case CommandTag.Publish:
+      return publish(hooks, progress.registry, instances, issued.publication);
+    case CommandTag.Broadcast:
+    case CommandTag.EvaluateConditions:
+    case CommandTag.TimerStart:
+      return { ok: true, value: [instances, notImplemented] };
+  }
+  return assertNever(issued);
+}
+
+/** Apply one stimulus. A command sees the instances started so far. */
+function apply(hooks: Hooks, admission: (program: Program) => string | null, progress: Progress, stimulus: Stimulus): Refusable<Progress> {
   switch (stimulus.tag) {
-    case StimulusTag.Input: {
-      const before = progress.instances.find(([script]) => script === stimulus.script)?.[1].state ?? null;
-      const stepped = step(hooks, stimulus.definition.program, before, stimulus.input);
-      if (!stepped.ok) {
-        return { ok: true, value: { ...progress, inputFailures: [...progress.inputFailures, [stimulus.commandId, stepped.failure]] } };
-      }
-      const others = progress.instances.filter(([script]) => script !== stimulus.script);
-      const instance: Instance = { definition: stimulus.definition, state: stepped.value };
-      return { ok: true, value: { ...progress, instances: [...others, [stimulus.script, instance]] } };
+    case StimulusTag.Deploy: {
+      const deploymentId = progress.deployments.length + 1;
+      const [result, deployment] = deploy(admission, progress.registry, deploymentId, stimulus.definitionRef, stimulus.ref,
+        stimulus.program, stimulus.atMs);
+      const registry = deployment === null ? progress.registry : [...progress.registry, deployment];
+      return { ok: true, value: { ...progress, registry, deployments: [...progress.deployments, result] } };
     }
-    case StimulusTag.Publish: {
-      const ordinal = progress.publications.length + 1;
+    case StimulusTag.Input: {
+      const failed = (failure: Failure): Progress =>
+        ({ ...progress, inputFailures: [...progress.inputFailures, [stimulus.commandId, failure]] });
+      const deployment = deploymentFor(progress, stimulus.script, stimulus.definitionRef);
+      if (deployment === null) return { ok: true, value: failed({ tag: FailureTag.Rejected, code: "definition-not-deployed" }) };
+      const before = progress.instances.find(([script]) => script === stimulus.script)?.[1].state ?? null;
+      const stepped = step(hooks, deployment.program, before, stimulus.input);
+      if (!stepped.ok) return { ok: true, value: failed(stepped.failure) };
+      const others = progress.instances.filter(([script]) => script !== stimulus.script);
+      return { ok: true, value: { ...progress, instances: [...others, [stimulus.script, { deployment, state: stepped.value }]] } };
+    }
+    case StimulusTag.Command: {
+      const answered = route(hooks, progress, stimulus.command);
+      if (!answered.ok) return answered;
+      const [instances, resolution] = answered.value;
+      const commandId = commandIdOf(stimulus.command);
+      const result: StepResult = { commandId, ordinal: progress.steps.length + 1, atMs: stimulus.atMs, resolution };
       const scripts = progress.instances.map(([script]) => script);
-      const published = publish(hooks, definitions, progress.instances.map(([, instance]) => instance), ordinal, stimulus.publication);
-      if (!published.ok) return published;
-      const [instances, outcome] = published.value;
       return {
         ok: true,
         value: {
@@ -246,7 +455,8 @@ function apply(hooks: Hooks, definitions: readonly Definition[], progress: Progr
             const instance = instances[index];
             return instance === undefined ? [] : [[script, instance] as const];
           }),
-          publications: [...progress.publications, outcome],
+          steps: [...progress.steps, result],
+          ledger: [...progress.ledger, { commandId, digest: stimulus.digest, result }],
         },
       };
     }
@@ -254,11 +464,11 @@ function apply(hooks: Hooks, definitions: readonly Definition[], progress: Progr
   return assertNever(stimulus);
 }
 
-/** Fold the stimuli in order. */
-export function runStimuli(hooks: Hooks, definitions: readonly Definition[], stimuli: readonly Stimulus[]): Refusable<Result> {
-  let progress: Progress = { instances: [], publications: [], inputFailures: [] };
+/** Fold the stimuli in order; `admission` is the admission registry a deployment runs. */
+export function runStimuli(hooks: Hooks, admission: (program: Program) => string | null, stimuli: readonly Stimulus[]): Refusable<Result> {
+  let progress: Progress = { registry: [], deployments: [], instances: [], steps: [], ledger: [], inputFailures: [] };
   for (const stimulus of stimuli) {
-    const next = apply(hooks, definitions, progress, stimulus);
+    const next = apply(hooks, admission, progress, stimulus);
     if (!next.ok) return next;
     progress = next.value;
   }
@@ -267,7 +477,8 @@ export function runStimuli(hooks: Hooks, definitions: readonly Definition[], sti
   return {
     ok: true,
     value: {
-      publications: progress.publications,
+      deployments: progress.deployments,
+      steps: progress.steps,
       inputFailures: progress.inputFailures,
       instances: mergeSort(progress.instances.map(([, instance]) => instance), (left, right) =>
         compareStrings(left.state.instanceId, right.state.instanceId) <= 0),

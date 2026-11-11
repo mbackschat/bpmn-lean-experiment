@@ -52,10 +52,19 @@
             "$ref": "#/$defs/instanceStep"
           },
           {
+            "$ref": "#/$defs/deploy"
+          },
+          {
             "$ref": "#/$defs/publish"
           },
           {
             "$ref": "#/$defs/broadcast"
+          },
+          {
+            "$ref": "#/$defs/evaluateConditions"
+          },
+          {
+            "$ref": "#/$defs/timerStart"
           }
         ]
       }
@@ -86,17 +95,45 @@
         },
         "stimulus": {
           "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/stimulus"
+        },
+        "at": {
+          "description": "The step's logical time; a stimulus `at` must equal it when both are given (harness refusal population-time-mismatch), and a stimulus without one takes it.",
+          "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonnegativeSafeInteger"
+        }
+      }
+    },
+    "deploy": {
+      "description": "Deploys a scenario definition at the step's logical time as the next deployment; a definition no deploy step names deploys at 0, in list order, before the first step.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "definitionRef"
+      ],
+      "properties": {
+        "kind": {
+          "const": "deploy"
+        },
+        "definitionRef": {
+          "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonEmptyString"
+        },
+        "at": {
+          "description": "The step's logical time in milliseconds; absent, the step inherits the previous step's (0 for the first). Times never decrease in step order (harness refusal population-time-backward).",
+          "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonnegativeSafeInteger"
         }
       }
     },
     "publish": {
+      "description": "A Message publication; its criteria are read as the profile's messageCorrelation option says.",
       "type": "object",
       "additionalProperties": false,
       "required": [
         "kind",
         "commandId",
         "address",
-        "payload"
+        "criteria",
+        "variables",
+        "mode"
       ],
       "properties": {
         "kind": {
@@ -108,52 +145,76 @@
         "address": {
           "type": "object",
           "additionalProperties": false,
-          "required": [
-            "definitionRef",
-            "processId",
-            "channel",
-            "correlationKeyId"
-          ],
           "properties": {
-            "definitionRef": {
-              "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonEmptyString"
-            },
-            "processId": {
-              "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonEmptyString"
+            "definition": {
+              "$ref": "#/$defs/definitionSelector"
             },
             "channel": {
               "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/messageChannel"
             },
-            "correlationKeyId": {
+            "name": {
               "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonEmptyString"
             }
+          },
+          "oneOf": [
+            {
+              "required": [
+                "channel"
+              ],
+              "properties": {
+                "channel": {
+                  "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/messageChannel"
+                }
+              }
+            },
+            {
+              "required": [
+                "name"
+              ],
+              "properties": {
+                "name": {
+                  "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonEmptyString"
+                }
+              }
+            }
+          ]
+        },
+        "criteria": {
+          "type": "array",
+          "items": {
+            "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/correlationMatch"
           }
         },
         "payload": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": [
-            "kind",
-            "value"
-          ],
-          "properties": {
-            "kind": {
-              "const": "string"
-            },
-            "value": {
-              "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonEmptyString"
-            }
-          }
+          "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/variableValue"
+        },
+        "variables": {
+          "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/bindings"
+        },
+        "businessKey": {
+          "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonEmptyString"
+        },
+        "mode": {
+          "enum": [
+            "any",
+            "executionsOnly",
+            "startOnly"
+          ]
+        },
+        "at": {
+          "description": "The step's logical time in milliseconds; absent, the step inherits the previous step's (0 for the first). Times never decrease in step order (harness refusal population-time-backward).",
+          "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonnegativeSafeInteger"
         }
       }
     },
     "broadcast": {
+      "description": "An API Signal broadcast; it carries no business key.",
       "type": "object",
       "additionalProperties": false,
       "required": [
         "kind",
         "commandId",
-        "name",
+        "address",
         "variables"
       ],
       "properties": {
@@ -163,15 +224,194 @@
         "commandId": {
           "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/commandId"
         },
-        "name": {
-          "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonEmptyString"
+        "address": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonEmptyString"
+            },
+            "signalRef": {
+              "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/signalRef"
+            }
+          },
+          "oneOf": [
+            {
+              "required": [
+                "name"
+              ],
+              "properties": {
+                "name": {
+                  "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonEmptyString"
+                }
+              }
+            },
+            {
+              "required": [
+                "signalRef"
+              ],
+              "properties": {
+                "signalRef": {
+                  "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/signalRef"
+                }
+              }
+            }
+          ]
+        },
+        "variables": {
+          "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/bindings"
+        },
+        "order": {
+          "$ref": "#/$defs/order"
+        },
+        "at": {
+          "description": "The step's logical time in milliseconds; absent, the step inherits the previous step's (0 for the first). Times never decrease in step order (harness refusal population-time-backward).",
+          "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonnegativeSafeInteger"
+        }
+      }
+    },
+    "evaluateConditions": {
+      "description": "Evaluates the Conditional start Events of one definition, or of every current deployment, against the given variables.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "commandId",
+        "variables"
+      ],
+      "properties": {
+        "kind": {
+          "const": "evaluateConditions"
+        },
+        "commandId": {
+          "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/commandId"
+        },
+        "definition": {
+          "$ref": "#/$defs/definitionSelector"
         },
         "variables": {
           "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/bindings"
         },
         "businessKey": {
           "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonEmptyString"
+        },
+        "order": {
+          "$ref": "#/$defs/order"
+        },
+        "at": {
+          "description": "The step's logical time in milliseconds; absent, the step inherits the previous step's (0 for the first). Times never decrease in step order (harness refusal population-time-backward).",
+          "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonnegativeSafeInteger"
         }
+      }
+    },
+    "timerStart": {
+      "description": "Fires one Timer-start occurrence of a deployment, named by its due instant; the step's logical time is the firing time.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "commandId",
+        "deploymentId",
+        "startEvent",
+        "dueMs"
+      ],
+      "properties": {
+        "kind": {
+          "const": "timerStart"
+        },
+        "commandId": {
+          "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/commandId"
+        },
+        "deploymentId": {
+          "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/positiveSafeInteger"
+        },
+        "startEvent": {
+          "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonEmptyString"
+        },
+        "dueMs": {
+          "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonnegativeSafeInteger"
+        },
+        "at": {
+          "description": "The step's logical time in milliseconds; absent, the step inherits the previous step's (0 for the first). Times never decrease in step order (harness refusal population-time-backward).",
+          "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonnegativeSafeInteger"
+        }
+      }
+    },
+    "definitionSelector": {
+      "description": "The current deployment of a process key, or one deployment by its deploy ordinal.",
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "processKey"
+          ],
+          "properties": {
+            "processKey": {
+              "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonEmptyString"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "deploymentId"
+          ],
+          "properties": {
+            "deploymentId": {
+              "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/positiveSafeInteger"
+            }
+          }
+        }
+      ]
+    },
+    "receiver": {
+      "description": "One receiver of a fan-out: a waiting occurrence, or a start Event of a deployment.",
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "occurrence"
+          ],
+          "properties": {
+            "kind": {
+              "const": "occurrence"
+            },
+            "occurrence": {
+              "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/occurrenceId"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "deploymentId",
+            "startEvent"
+          ],
+          "properties": {
+            "kind": {
+              "const": "start"
+            },
+            "deploymentId": {
+              "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/positiveSafeInteger"
+            },
+            "startEvent": {
+              "$ref": "https://bpmn-lean.local/schemas/scenario.schema.json#/$defs/nonEmptyString"
+            }
+          }
+        }
+      ]
+    },
+    "order": {
+      "description": "The explicit discovery order: a permutation of the receivers and starts the delivery's snapshot yields.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/receiver"
       }
     }
   }

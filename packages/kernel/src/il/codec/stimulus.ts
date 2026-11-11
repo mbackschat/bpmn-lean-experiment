@@ -311,6 +311,12 @@ function correlationFromJson(json: unknown): CorrelationMatch {
   return { target, expected: valueAt(present(json, "expected")) };
 }
 
+/** The stimulus forms a population command shares with an instance input, for the population runner. */
+export const decodeCorrelation = (json: unknown): Decoded<CorrelationMatch> => decoding(() => correlationFromJson(json));
+export const decodeSignalAddress = (json: unknown): Decoded<SignalAddress> => decoding(() => signalAddressFromJson(json));
+export const decodeStrictValue = (json: unknown): Decoded<Value> => decoding(() => valueAt(json));
+export const decodeBindings = (json: unknown, field: string): Decoded<readonly Binding[]> => decoding(() => bindingsAt(json, field));
+
 function effectOutcomeFromJson(json: unknown): EffectOutcome {
   const kind = get(kindOf(json));
   switch (kind) {

@@ -32,6 +32,7 @@ import { pipelineTestTimeoutMs } from "../../../scripts/pipeline-budget.ts";
 import { ledgerViolations, readCibDisagreementLedger } from "./cib-disagreement-ledger.ts";
 import { runLeanKernelPopulation, runLeanKernelScenario, writeProgram } from "./kernel-targets.ts";
 import { projectRoot } from "./pipeline-target-support.ts";
+import { populationStepDigests } from "./population-digest.ts";
 import { DiscoveredKind, discoverScenarios, kernelProgramFor, scenarioKernelInput } from "./scenario-discovery.ts";
 import type { CanonicalResult, DiscoveredScenario, ScenarioDocument } from "./scenario-discovery.ts";
 
@@ -76,8 +77,11 @@ test("the Lean and TypeScript kernels agree on every discovered scenario, and th
           const programPaths = programs.map((_, definition) =>
             path.join(directory, `population-${String(index)}-${String(definition)}.json`));
           await Promise.all(programs.map((program, definition) => writeProgram(programPaths[definition]!, program)));
-          const lean = await runLeanKernelPopulation(programPaths, scenarioPath);
-          const difference = compared(label(scenario), lean, wireValue(runPopulation(programs, scenario.document)));
+          const digests = populationStepDigests(scenario.document.steps);
+          const digestsPath = path.join(directory, `population-${String(index)}-digests.json`);
+          await writeFile(digestsPath, JSON.stringify(digests), "utf8");
+          const lean = await runLeanKernelPopulation(digestsPath, programPaths, scenarioPath);
+          const difference = compared(label(scenario), lean, wireValue(runPopulation(programs, scenario.document, digests)));
           if (difference !== null) kernelDisagreements.push(difference);
           break;
         }
@@ -205,6 +209,63 @@ test("the Lean and TypeScript kernels refuse the same malformed inputs with the 
         return runScenario(decoded[0], decoded[1]);
       });
       assert.deepEqual({ name, lean, typeScript }, { name, lean: expected, typeScript: expected });
+    }
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("the Lean and TypeScript kernels agree on the population contract's deployments, commands and harness refusals", async () => {
+  const program = JSON.parse(await readFile(path.join(projectRoot, "packages/kernel/test/fixtures/simple-boolean.program.json"), "utf8")) as
+    Record<string, unknown>;
+  const identity = program.identity as Record<string, unknown>;
+  const refused = { ...program, options: { ...(program.options as Record<string, unknown>), messageCorrelation: "apiCriteria" } };
+  const definition = (definitionRef: string) => ({
+    definitionRef,
+    bpmn: { id: definitionRef, relativePath: `scenarios/${definitionRef}.bpmn`, sha256: identity.sourceSha256, sourceOverlay: null },
+  });
+  const start = (instanceId: string, at?: number) =>
+    ({ kind: "start", commandId: `start-${instanceId}`, instanceId, variables: [], ...(at === undefined ? {} : { at }) });
+  const instance = (definitionRef: string, instanceId: string, at?: number, stimulusAt?: number) =>
+    ({ kind: "instance", definitionRef, instanceId, stimulus: start(instanceId, stimulusAt), ...(at === undefined ? {} : { at }) });
+  const publish = (commandId: string, at: number, definition: Record<string, unknown>) => ({
+    kind: "publish", commandId, at, address: { definition, channel: { kind: "directMessage", messageId: "M" } },
+    criteria: [{ target: { kind: "processVariable", name: "k" }, expected: { kind: "string", value: "v" } }], variables: [], mode: "executionsOnly",
+  });
+  const cases: ReadonlyArray<readonly [string, ReadonlyArray<Record<string, unknown>>, ReadonlyArray<string>, ReadonlyArray<Record<string, unknown>>]> = [
+    ["deployments and versions", [program, refused], ["a", "b"], [
+      { kind: "deploy", definitionRef: "a", at: 3 }, instance("a", "I", 4), instance("b", "J"), instance("a", "K", 5, 5),
+    ]],
+    ["commands", [program], ["a"], [
+      publish("routed", 1, { deploymentId: 1 }), publish("missing", 2, { deploymentId: 9 }), publish("by-key", 2, { processKey: "P" }),
+      { kind: "broadcast", commandId: "broadcast", address: { signalRef: { id: "S" } }, variables: [], order: [] },
+      { kind: "evaluateConditions", commandId: "conditions", variables: [], businessKey: "b" },
+      { kind: "timerStart", commandId: "timer", deploymentId: 1, startEvent: "Start", dueMs: 3, at: 7 },
+    ]],
+    ["population-time-backward", [program], ["a"], [instance("a", "I", 10), publish("early", 9, { deploymentId: 1 })]],
+    ["population-time-mismatch", [program], ["a"], [instance("a", "I", 40, 41)]],
+    ["population-unknown-definition", [program], ["a"], [{ kind: "deploy", definitionRef: "undeclared" }]],
+  ];
+  const directory = await mkdtemp(path.join(tmpdir(), "bpmn-kernel-population-"));
+  const answer = (run: () => unknown): Promise<unknown> => Promise.resolve().then(run).then(
+    (value) => wireValue(value),
+    (error: unknown) =>
+      /population-(?:time-backward|time-mismatch|unknown-definition)/u.exec(String(error))?.[0] ?? `uncoded: ${String(error)}`,
+  );
+  try {
+    for (const [name, programs, refs, steps] of cases) {
+      const scenario = { kind: "populationScenario", id: name, profile: identity.profile, definitions: refs.map(definition), steps };
+      const digests = populationStepDigests(steps);
+      const scenarioPath = path.join(directory, "scenario.json");
+      const digestsPath = path.join(directory, "digests.json");
+      const programPaths = programs.map((_, index) => path.join(directory, `program-${String(index)}.json`));
+      await writeFile(scenarioPath, JSON.stringify(scenario), "utf8");
+      await writeFile(digestsPath, JSON.stringify(digests), "utf8");
+      await Promise.all(programs.map((entry, index) => writeFile(programPaths[index]!, JSON.stringify(entry), "utf8")));
+      const lean = await answer(() => runLeanKernelPopulation(digestsPath, programPaths, scenarioPath));
+      const typeScript = await answer(() => runPopulation(programs, scenario, digests));
+      if (name.startsWith("population-")) assert.deepEqual({ name, lean, typeScript }, { name, lean: name, typeScript: name });
+      else assert.equal(compared(name, lean, typeScript), null, name);
     }
   } finally {
     await rm(directory, { recursive: true, force: true });

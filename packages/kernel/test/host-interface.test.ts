@@ -1,5 +1,6 @@
 /**
- * The host interface a platform builds on: a Timer start offers its resolved schedule, a correlated catch publishes its
+ * The host interface a platform builds on: a Timer start offers its resolved schedule, a Message start its channel and
+ * literal name, a correlated catch publishes its
  * channel, element and criteria, `matching` finds the open waits a correlated delivery reaches in one instance, and an
  * incident command names the generation it resolves.
  */
@@ -26,7 +27,9 @@ import {
   base,
   catchEvent,
   channel,
+  computed,
   criterion,
+  cycle,
   date,
   duration,
   message,
@@ -69,11 +72,33 @@ test("a Timer start offers the duration the kernel resolves from its schedule", 
   });
 });
 
-test("a Timer start whose schedule does not resolve is not offered", () => {
-  const decoded = decodeProgram(wired(replace(base(), "S", start("S", date("2026-11-09T10:00:00Z")))));
-  assert.ok(decoded.ok);
-  assert.equal(admit(decoded.value), "timer.date", "admission refuses the form first");
-  assert.deepEqual(definitionCapabilities(decoded.value).starts, []);
+/** The capabilities of the base program with its start replaced by `trigger`, which admission refuses with `refusal`. */
+function refusedStarts(trigger: Json, refusal: string): Json {
+  const decoded = decodeProgram(wired(replace(base(), "S", start("S", trigger))));
+  assert.ok(decoded.ok, decoded.ok ? "" : decoded.refusal);
+  assert.equal(admit(decoded.value), refusal, "admission refuses the form first");
+  return capabilitiesJson(definitionCapabilities(decoded.value)) as Json;
+}
+
+test("a Timer start offers the instant of a literal date and the text of a literal Cron expression", () => {
+  assert.deepEqual(refusedStarts(date("2026-11-09T10:00:00Z"), "timer.date").starts,
+    [{ startEventId: "S", timer: { instantMs: Date.parse("2026-11-09T10:00:00Z") } }]);
+  assert.deepEqual(refusedStarts(cycle("0 0 12 * * ?", "cron"), "timer.cycleNotAttached").starts,
+    [{ startEventId: "S", timer: { cron: "0 0 12 * * ?" } }]);
+});
+
+test("a Timer start whose schedule is an expression is not offered", () => {
+  const dynamic = { timer: { payload: { schedule: { duration: { value: computed(variable("delay")) } } } } };
+  assert.deepEqual(refusedStarts(dynamic, "timer.duration").starts, []);
+});
+
+test("a Message start offers its channel and its literal Message name", () => {
+  const program = admitted(replace(base(), "S", start("S", message(channel()))));
+  assert.deepEqual((capabilitiesJson(definitionCapabilities(program)) as Json).starts, [{
+    startEventId: "S",
+    channel: { kind: "operationMessage", interfaceId: "I", interfaceOperationId: "O", messageId: "M" },
+    messageName: "M",
+  }]);
 });
 
 const correlatedCatch = catchEvent("T", message({ ...channel(), correlation: [criterion("OrderKey", variable("orderId"))] }));

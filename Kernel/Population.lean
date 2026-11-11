@@ -6,16 +6,16 @@ public import Kernel.Step
 
 Mechanisms across process instances ([architecture](../docs/kernel/ARCHITECTURE-SPEC.md#population)). Every input
 reaches an instance through `Step.step`; this layer only decides which instance an input goes to. A scenario is one
-ordered list of stimuli mixing instance inputs and population stimuli. Implemented: instances of possibly different
-definitions, each driven by its own inputs, and Message key correlation with exact-cardinality routing
-([specification](../docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md)): a publication
-addresses one deployed definition, process, Message channel and correlation key; the candidates are the open
-subscriptions of that definition's instances that `Hooks.correlates` accepts; exactly one is delivered to, while zero
-or several reject the publication and change no instance. Candidate order never picks a winner.
+ordered list of stimuli mixing deployments, instance inputs and population commands, each at a logical time.
+Implemented: deployments, instances of possibly different deployments, each driven by its own inputs, and Message key
+correlation with exact-cardinality routing ([specification](../docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md)): a
+publication addresses one deployment and a Message channel and carries the modeled correlation criteria; the
+candidates are the open subscriptions of that deployment's instances that `Hooks.correlates` accepts; exactly one is
+delivered to, while zero or several reject the publication and change no instance. Candidate order never picks a
+winner. Every other command form is parsed and answered `unsupported population-not-implemented`.
 
-An instance input that does not commit and a delivery a target refuses are results, never harness errors. A harness
-refusal, with a stable code, is a publication that names no deployed definition or carries an empty payload; a
-candidate whose key cannot be evaluated is no match.
+A refused deployment, an instance input that does not commit and a delivery a target refuses are results, never
+harness errors; a candidate whose key cannot be evaluated is no match.
 -/
 
 public section
@@ -37,47 +37,142 @@ structure DeploymentRef where
   profile : String
   deriving DecidableEq, Repr
 
-structure Definition where
+/-- One deploy event of a scenario definition. `deploymentId` is its deploy ordinal across the population, from 1; `key`
+its root process id; `versions` gives each process key it contains 1 + the number of earlier deployments containing
+that key. -/
+structure Deployment where
+  deploymentId : Nat
+  definitionRef : String
   ref : DeploymentRef
+  key : String
+  versions : List (String × Nat)
+  deployedAtMs : Nat
   program : Program
 
-/-- A correlated publication's address. -/
-structure Address where
-  definition : DeploymentRef
-  processId : String
-  channel : MessageChannel
-  correlationKey : String
+/-- The current deployment of a process key, or one exact deployment. -/
+inductive DefinitionSelector where
+  | processKey (key : String)
+  | deployment (deploymentId : Nat)
 
-/-- A correlated publication carrying a String payload, the profile's one key domain. -/
+inductive MessageAddress where
+  | channel (channel : MessageChannel)
+  | name (name : String)
+
+inductive PublishMode where
+  | any
+  | executionsOnly
+  | startOnly
+  deriving DecidableEq
+
+/-- A Message publication; `criteria` are read as the profile's `messageCorrelation` says. -/
 structure Publication where
   commandId : String
-  address : Address
-  payload : String
+  definition : Option DefinitionSelector
+  message : MessageAddress
+  criteria : List CorrelationMatch
+  payload : Option Value
+  variables : List (String × Value)
+  businessKey : Option String
+  mode : PublishMode
 
-structure Instance where
-  definition : Definition
-  state : State
+/-- A receiver of a fan-out: a waiting occurrence, or a start Event of a deployment. -/
+inductive Receiver where
+  | occurrence (ref : OccurrenceRef)
+  | start (deploymentId : Nat) (startEvent : String)
+
+/-- An API Signal broadcast; `order`, when given, is the discovery order its receivers are reached in. -/
+structure Broadcast where
+  commandId : String
+  address : SignalAddress
+  variables : List (String × Value)
+  order : Option (List Receiver)
+
+structure ConditionEvaluation where
+  commandId : String
+  definition : Option DefinitionSelector
+  variables : List (String × Value)
+  businessKey : Option String
+  order : Option (List Receiver)
+
+/-- A Timer-start occurrence, named by its due instant; the command's logical time is its firing time. -/
+structure TimerStart where
+  commandId : String
+  deploymentId : Nat
+  startEvent : String
+  dueMs : Nat
+
+inductive Command where
+  | publish (publication : Publication)
+  | broadcast (broadcast : Broadcast)
+  | evaluateConditions (evaluation : ConditionEvaluation)
+  | timerStart (timerStart : TimerStart)
+
+def Command.commandId : Command → String
+  | .publish sent => sent.commandId
+  | .broadcast sent => sent.commandId
+  | .evaluateConditions sent => sent.commandId
+  | .timerStart sent => sent.commandId
+
+/-- One receiver of a fan-out, each its own unit of commitment; `skipped` was gone before its turn. -/
+inductive FanOutEntry where
+  | delivered (target : OccurrenceRef)
+  | started (instanceId : String) (deploymentId version : Nat) (startEvent : String)
+  | skipped (target : OccurrenceRef)
+  | failed (target : Receiver) (failure : Failure)
 
 inductive Resolution where
   | committed (target : OccurrenceRef)
   /-- The sole candidate refused the delivery; nothing changed. -/
   | failed (target : OccurrenceRef) (failure : Failure)
+  | fanOut (entries : List FanOutEntry)
   | noMatch
   | ambiguous
+  | rejected (code : String)
+  | unsupported (code : String)
 
-/-- `ingressOrdinal` numbers the publications in arrival order, from 1. -/
-structure PublicationResult where
+/-- A command's result; `ordinal` numbers the commands in arrival order, from 1. -/
+structure StepResult where
   commandId : String
-  ingressOrdinal : Nat
+  ordinal : Nat
+  atMs : Nat
   resolution : Resolution
 
-/-- One population scenario stimulus, in scenario order: an input for the instance of `script`, or a publication. -/
+/-- A command the population answered, under the digest of its canonical wire form (contract §7). -/
+structure LedgerEntry where
+  commandId : String
+  digest : String
+  result : StepResult
+
+/-- A consumed Timer-start occurrence. -/
+structure TimerOccurrence where
+  deploymentId : Nat
+  startEvent : String
+  dueMs : Nat
+
+inductive DeploymentOutcome where
+  | deployed
+  | refused (code : String)
+
+structure DeploymentResult where
+  deploymentId : Nat
+  definitionRef : String
+  versions : List (String × Nat)
+  outcome : DeploymentOutcome
+
+structure Instance where
+  deployment : Deployment
+  state : State
+
+/-- One population scenario stimulus, in scenario order: a deployment, an input for the instance of `script`, or a
+command with its logical time and the digest of its canonical wire form, which the harness computes. -/
 inductive Stimulus where
-  | input (script : Nat) (definition : Definition) (commandId : String) (input : Input)
-  | publish (publication : Publication)
+  | deploy (definitionRef : String) (ref : DeploymentRef) (program : Program) (atMs : Nat)
+  | input (script : Nat) (definitionRef : String) (commandId : String) (input : Input)
+  | command (command : Command) (atMs : Nat) (digest : String)
 
 structure Result where
-  publications : List PublicationResult
+  deployments : List DeploymentResult
+  steps : List StepResult
   /-- Ordered by process instance identifier, whatever order they started in. -/
   instances : List Instance
   /-- The instance inputs that did not commit, with their failures. -/
@@ -99,66 +194,112 @@ def matching (hooks : Hooks) (program : Program) (state : State) (channel : Mess
     | .error _ => false
   accepted.map (occurrence program state)
 
-/-- The instances at the address's definition and process, by position, with each of their correlated subscriptions
-that accepts `correlation`. -/
-def candidates (hooks : Hooks) (instances : List Instance) (address : Address) (correlation : List CorrelationMatch) :
-    List (Nat × OccurrenceRef) :=
-  instances.zipIdx.flatMap fun (member, index) =>
-    let program := member.definition.program
-    if member.definition.ref != address.definition || program.identity.processId != address.processId then []
-    else (matching hooks program member.state address.channel correlation).map (index, ·)
+/-- The process keys a program carries: its root and the processes it calls. -/
+def processKeys (program : Program) : List String :=
+  program.identity.processId :: program.processes.map (·.definition.key)
+
+/-- Deploy `program` as `deploymentId` at `atMs`: refused with the admission's code, or numbered per process key among
+the deployments in `registry`. The program is deployed as given; stamping its identity and carried definitions is not
+done here. -/
+def deploy (admission : Program → Option String) (registry : List Deployment) (deploymentId : Nat) (definitionRef : String)
+    (ref : DeploymentRef) (program : Program) (atMs : Nat) : DeploymentResult × Option Deployment :=
+  match admission program with
+  | some code => ({ deploymentId, definitionRef, versions := [], outcome := .refused code }, none)
+  | none =>
+    let versions := (processKeys program).map fun key =>
+      (key, 1 + (registry.filter fun earlier => earlier.versions.any (·.1 == key)).length)
+    ({ deploymentId, definitionRef, versions, outcome := .deployed },
+      some { deploymentId, definitionRef, ref, key := program.identity.processId, versions, deployedAtMs := atMs,
+             program })
+
+/-- dynamic-only: a command form the population runner does not route yet; it is a scenario stimulus, not a program
+shape, so no admission refusal can stand for it. -/
+def notImplemented : Resolution := .unsupported "population-not-implemented"
+
+/-- Whether a publication is the implemented form: to one deployment's executions on a channel, carrying criteria and
+nothing else. -/
+def Publication.routed? (publication : Publication) : Option (Nat × MessageChannel) :=
+  match publication.definition, publication.message with
+  | some (.deployment deploymentId), .channel channel =>
+    if publication.payload.isNone && publication.variables.isEmpty && publication.businessKey.isNone &&
+        publication.mode == .executionsOnly then some (deploymentId, channel)
+    else none
+  | _, _ => none
 
 /-- Route one publication: deliver to its sole candidate, or reject it leaving every instance unchanged. -/
-def publish (hooks : Hooks) (definitions : List Definition) (instances : List Instance) (ingressOrdinal : Nat)
-    (publication : Publication) : Except String (List Instance × PublicationResult) := do
-  let address := publication.address
-  unless definitions.any fun definition =>
-      definition.ref == address.definition && definition.program.identity.processId == address.processId do
-    throw "publication-unknown-definition"
-  if publication.payload.isEmpty then throw "publication-payload-empty"
-  let correlation : List CorrelationMatch :=
-    [{ target := .processVariable address.correlationKey, expected := .string publication.payload }]
-  let result (resolution : Resolution) : PublicationResult :=
-    { commandId := publication.commandId, ingressOrdinal, resolution }
-  match candidates hooks instances address correlation with
-  | [] => pure (instances, result .noMatch)
+def publish (hooks : Hooks) (registry : List Deployment) (instances : List Instance) (publication : Publication) :
+    Except String (List Instance × Resolution) := do
+  let some (deploymentId, channel) := publication.routed? | return (instances, notImplemented)
+  if !registry.any (·.deploymentId == deploymentId) then return (instances, .rejected "definition-not-deployed")
+  let correlation := publication.criteria
+  let found := instances.zipIdx.flatMap fun (member, index) =>
+    if member.deployment.deploymentId != deploymentId then []
+    else (matching hooks member.deployment.program member.state channel correlation).map (index, ·)
+  match found with
+  | [] => pure (instances, .noMatch)
   | [(index, target)] =>
-    let delivery : Input := .deliver { occurrence := target, trigger := .message address.channel, correlation }
+    let delivery : Input := .deliver { occurrence := target, trigger := .message channel, correlation }
     match instances[index]? with
     | none => throw "candidate-without-instance"
     | some member =>
-      match Step.step hooks member.definition.program (some member.state) delivery with
-      | .ok state => pure (instances.set index { member with state }, result (.committed target))
-      | .error failure => pure (instances, result (.failed target failure))
-  | _ :: _ :: _ => pure (instances, result .ambiguous)
+      match Step.step hooks member.deployment.program (some member.state) delivery with
+      | .ok state => pure (instances.set index { member with state }, .committed target)
+      | .error failure => pure (instances, .failed target failure)
+  | _ :: _ :: _ => pure (instances, .ambiguous)
 
-/-- What a run has done so far: instances by script, publication results and input failures. -/
+/-- What a run has done so far: deployments, instances by script, command results and their ledger, input
+failures. -/
 structure Progress where
+  registry : List Deployment := []
+  deployments : List DeploymentResult := []
   instances : List (Nat × Instance) := []
-  publications : List PublicationResult := []
+  steps : List StepResult := []
+  ledger : List LedgerEntry := []
   inputFailures : List (String × Failure) := []
 
-/-- Apply one stimulus. A publication sees the instances started so far. -/
-def apply (hooks : Hooks) (definitions : List Definition) (progress : Progress) : Stimulus → Except String Progress
-  | .input script definition commandId input =>
-    let before := (progress.instances.find? (·.1 == script)).map (·.2.state)
-    match Step.step hooks definition.program before input with
-    | .error failure => .ok { progress with inputFailures := progress.inputFailures ++ [(commandId, failure)] }
-    | .ok state =>
-      let others := progress.instances.filter (·.1 != script)
-      .ok { progress with instances := others ++ [(script, { definition, state })] }
-  | .publish publication => do
-    let ordinal := progress.publications.length + 1
-    let scripts := progress.instances.map (·.1)
-    let (instances, published) ← publish hooks definitions (progress.instances.map (·.2)) ordinal publication
-    pure { progress with instances := scripts.zip instances, publications := progress.publications ++ [published] }
+/-- The deployment an instance input reaches: its instance's, or for a new instance its definition's latest. -/
+def Progress.deploymentFor (progress : Progress) (script : Nat) (definitionRef : String) : Option Deployment :=
+  match progress.instances.find? (·.1 == script) with
+  | some (_, member) => some member.deployment
+  | none => (progress.registry.filter (·.definitionRef == definitionRef)).getLast?
 
-/-- Fold the stimuli in order. -/
-def runStimuli (hooks : Hooks) (definitions : List Definition) (stimuli : List Stimulus) : Except String Result := do
-  let progress ← stimuli.foldlM (apply hooks definitions) ({} : Progress)
+def route (hooks : Hooks) (progress : Progress) : Command → Except String (List Instance × Resolution)
+  | .publish publication => publish hooks progress.registry (progress.instances.map (·.2)) publication
+  | .broadcast _ | .evaluateConditions _ | .timerStart _ => pure (progress.instances.map (·.2), notImplemented)
+
+/-- Apply one stimulus. A command sees the instances started so far. -/
+def apply (hooks : Hooks) (admission : Program → Option String) (progress : Progress) : Stimulus → Except String Progress
+  | .deploy definitionRef ref program atMs =>
+    let (result, deployment) :=
+      deploy admission progress.registry (progress.deployments.length + 1) definitionRef ref program atMs
+    .ok { progress with registry := progress.registry ++ deployment.toList, deployments := progress.deployments ++ [result] }
+  | .input script definitionRef commandId input =>
+    let failed (failure : Failure) : Progress :=
+      { progress with inputFailures := progress.inputFailures ++ [(commandId, failure)] }
+    match progress.deploymentFor script definitionRef with
+    | none => .ok (failed (.rejected "definition-not-deployed"))
+    | some deployment =>
+      let before := (progress.instances.find? (·.1 == script)).map (·.2.state)
+      match Step.step hooks deployment.program before input with
+      | .error failure => .ok (failed failure)
+      | .ok state =>
+        let others := progress.instances.filter (·.1 != script)
+        .ok { progress with instances := others ++ [(script, { deployment, state })] }
+  | .command issued atMs digest => do
+    let (instances, resolution) ← route hooks progress issued
+    let result : StepResult :=
+      { commandId := issued.commandId, ordinal := progress.steps.length + 1, atMs, resolution }
+    let scripts := progress.instances.map (·.1)
+    pure { progress with instances := scripts.zip instances, steps := progress.steps ++ [result]
+                         ledger := progress.ledger ++ [{ commandId := issued.commandId, digest, result }] }
+
+/-- Fold the stimuli in order; `admission` is the admission registry a deployment runs. -/
+def runStimuli (hooks : Hooks) (admission : Program → Option String) (stimuli : List Stimulus) : Except String Result := do
+  let progress ← stimuli.foldlM (apply hooks admission) ({} : Progress)
   let ids := progress.instances.map (·.2.state.instanceId)
   unless ids.eraseDups.length == ids.length do throw "instance-id-duplicate"
-  pure { publications := progress.publications
+  pure { deployments := progress.deployments
+         steps := progress.steps
          inputFailures := progress.inputFailures
          instances := (progress.instances.map (·.2)).mergeSort fun left right =>
            decide (left.state.instanceId ≤ right.state.instanceId) }

@@ -6,7 +6,6 @@ import { Ajv2020, type ErrorObject, type ValidateFunction } from "ajv/dist/2020.
 import { parseWireJsonBytes } from "./strict-json.ts";
 
 const profileId = "bpmn-2.0.2" as const;
-const processId = "Process_SettlementCorrelation" as const;
 const initialCatchId = "MessageCatch_InitialSettlement" as const;
 const correlationKeyId = "CorrelationKey_SettlementReference" as const;
 const channel = Object.freeze({
@@ -71,19 +70,29 @@ type InstanceStep = Readonly<{
   stimulus: PopulationStimulus;
 }>;
 
+type Criterion = Readonly<{
+  target: Readonly<{ kind: string; name?: string }>;
+  expected: Readonly<{ kind: string; value?: unknown }>;
+}>;
+
 type PublishStep = Readonly<{
   kind: "publish";
   commandId: string;
   address: Readonly<{
-    definitionRef: string;
-    processId: string;
-    channel: OperationMessageChannel;
-    correlationKeyId: string;
+    definition?: Readonly<{ deploymentId?: number; processKey?: string }>;
+    channel?: OperationMessageChannel;
+    name?: string;
   }>;
-  payload: Readonly<{ kind: string; value?: unknown }>;
+  criteria: ReadonlyArray<Criterion>;
+  payload?: unknown;
+  variables: ReadonlyArray<unknown>;
+  businessKey?: string;
+  mode: string;
+  at?: number;
 }>;
 
-type BroadcastStep = Readonly<{ kind: "broadcast"; commandId: string }>;
+/** The other population steps, which the bounded Message-correlation schedule never uses. */
+type OtherStep = Readonly<{ kind: "deploy" | "broadcast" | "evaluateConditions" | "timerStart"; commandId?: string }>;
 
 export type EnginePopulationScenario = Readonly<{
   kind: "populationScenario";
@@ -93,7 +102,7 @@ export type EnginePopulationScenario = Readonly<{
     definitionRef: string;
     bpmn: EnginePopulationBpmnResource;
   }>>;
-  steps: ReadonlyArray<InstanceStep | PublishStep | BroadcastStep>;
+  steps: ReadonlyArray<InstanceStep | PublishStep | OtherStep>;
   provenance: Readonly<{
     normativeRefs: ReadonlyArray<string>;
     cibRevision: string;
@@ -147,6 +156,9 @@ function assertEqual(label: string, actual: unknown, expected: unknown): void {
   }
 }
 
+/** The arrays of correlation criteria, whose `expected` member is the criterion's value, never an answer. */
+const criteriaKeys = new Set(["correlation", "criteria"]);
+
 function assertNoAnswerKeys(value: unknown, location = "engine population scenario"): void {
   if (Array.isArray(value)) {
     value.forEach((entry, index) => assertNoAnswerKeys(entry, `${location}[${index}]`));
@@ -156,6 +168,15 @@ function assertNoAnswerKeys(value: unknown, location = "engine population scenar
     return;
   }
   for (const [key, child] of Object.entries(value)) {
+    if (criteriaKeys.has(key) && Array.isArray(child)) {
+      child.forEach((entry, index) => {
+        if (!isRecord(entry)) return;
+        for (const [member, nested] of Object.entries(entry)) {
+          if (member !== "expected") assertNoAnswerKeys({ [member]: nested }, `${location}.${key}[${index}]`);
+        }
+      });
+      continue;
+    }
     if (answerKeys.has(key)) {
       throw new Error(`engine population scenario contains answer-smuggling key ${location}.${key}`);
     }
@@ -247,8 +268,8 @@ async function verifyScenarioWithValidators(projectRoot: string, value: unknown,
   const stepsByInstance = new Map<string, Array<InstanceStep>>();
   const publishes: Array<{ readonly step: PublishStep; readonly index: number }> = [];
   scenario.steps.forEach((step, index) => {
-    if (step.kind === "broadcast") {
-      throw new Error(`engine population scenario broadcast ${step.commandId} is outside the bounded Message-correlation schedule`);
+    if (step.kind !== "publish" && step.kind !== "instance") {
+      throw new Error(`engine population scenario ${step.kind} step is outside the bounded Message-correlation schedule`);
     }
     if (step.kind === "publish") {
       publishes.push({ step, index });
@@ -286,15 +307,32 @@ async function verifyScenarioWithValidators(projectRoot: string, value: unknown,
   }
   const { step: publish } = publication;
   assertNoDuplicate("command ids", commandIds);
-  assertNonemptyStringPayload(`engine population scenario publication ${publish.commandId} payload`, publish.payload);
-  if (publish.address.processId !== processId || publish.address.correlationKeyId !== correlationKeyId) {
-    throw new Error("engine population scenario publication address is inconsistent with the bounded Process");
-  }
-  assertEqual("engine population scenario publication channel", publish.address.channel, channel);
-  if (!definitions.has(publish.address.definitionRef)) {
+  verifyPublication(publish, scenario.definitions.length);
+  return scenario;
+}
+
+/**
+ * The one publication: to the executions of one declared definition's deployment (definitions deploy in list order,
+ * so the `n`-th has deployment `n`), on the bounded channel, with the bounded correlation key's one non-empty String
+ * criterion and nothing else.
+ */
+function verifyPublication(publish: PublishStep, definitionCount: number): void {
+  const label = `engine population scenario publication ${publish.commandId}`;
+  const deploymentId = publish.address.definition?.deploymentId;
+  if (deploymentId === undefined || deploymentId > definitionCount) {
     throw new Error("engine population scenario publication definition identity is inconsistent");
   }
-  return scenario;
+  assertEqual(`${label} channel`, publish.address.channel, channel);
+  const [criterion, ...others] = publish.criteria;
+  if (criterion === undefined || others.length > 0 || criterion.target.kind !== "processVariable" ||
+    criterion.target.name !== correlationKeyId) {
+    throw new Error("engine population scenario publication address is inconsistent with the bounded Process");
+  }
+  assertNonemptyStringPayload(`${label} criterion`, criterion.expected);
+  if (publish.mode !== "executionsOnly" || publish.payload !== undefined || publish.variables.length > 0 ||
+    publish.businessKey !== undefined || publish.at !== undefined) {
+    throw new Error(`${label} carries more than the bounded correlation`);
+  }
 }
 
 function verifyStart(start: PopulationStimulus, instanceId: string): void {

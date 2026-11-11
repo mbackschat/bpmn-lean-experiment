@@ -19,6 +19,7 @@ import {
   scopeKindStart,
   triggerMessage,
   triggerTimer,
+  valueSourceLiteral,
   workCall,
   workIsService,
   workIsUser,
@@ -108,6 +109,7 @@ export function hostRequirements(program: Program): Requirements {
 export interface StartCapability {
   readonly startEventId: ElementId;
   readonly channel: MessageChannel | null;
+  readonly messageName: string | null;
   readonly timer: Resolved | null;
 }
 
@@ -152,8 +154,12 @@ export function definitionCapabilities(program: Program): Capabilities {
     if (start === null) return [];
     const trigger = start[1].subscription?.trigger ?? null;
     const message = trigger === null ? null : triggerMessage(trigger);
-    const offered = (timer: Resolved | null): StartCapability =>
-      ({ startEventId: start[0].id, channel: message === null ? null : messageTriggerChannel(message), timer });
+    const offered = (timer: Resolved | null): StartCapability => ({
+      startEventId: start[0].id,
+      channel: message === null ? null : messageTriggerChannel(message),
+      messageName: message === null || message.name === null ? null : valueSourceLiteral(message.name),
+      timer,
+    });
     const timer = trigger === null ? null : triggerTimer(trigger);
     if (timer === null) return [offered(null)];
     const resolved = resolve(timer.schedule);

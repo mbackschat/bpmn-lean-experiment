@@ -128,6 +128,7 @@ test("pins every JSON integer to the JavaScript-safe domain", async () => {
     "semantic-profile.schema.json",
     "cibseven-evidence.schema.json",
     "engine-population-scenario.schema.json",
+    "engine-population-result.schema.json",
     "semantic-publication.schema.json",
     "flow-node-occurrence-publication.schema.json",
   ]) {

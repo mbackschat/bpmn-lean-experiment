@@ -55,6 +55,7 @@ schedule (`Kernel.Timer.resolve`). -/
 structure StartCapability where
   startEventId : ElementId
   channel : Option MessageChannel := none
+  messageName : Option String := none
   timer : Option Timer.Resolved := none
   deriving Repr
 
@@ -92,8 +93,10 @@ program's every Timer start is offered. -/
 def definitionCapabilities (program : Program) : Capabilities :=
   let starts := (program.children none).filterMap (·.start?) |>.filterMap fun (header, payload) =>
     let trigger := payload.subscription.map (·.trigger)
+    let message := trigger.bind (·.message?)
     let offered (timer : Option Timer.Resolved) : StartCapability :=
-      { startEventId := header.id, channel := (trigger.bind (·.message?)).map (·.channel), timer }
+      { startEventId := header.id, channel := message.map (·.channel)
+        messageName := message.bind (·.name.bind ValueSource.literal?), timer }
     match trigger.bind (·.timer?) with
     | none => some (offered none)
     | some timer => (Timer.resolve timer.schedule).toOption.map (offered ∘ some)

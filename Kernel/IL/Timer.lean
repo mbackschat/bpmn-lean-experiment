@@ -484,16 +484,19 @@ def successor (deadlineMs : Nat) (recurrence : Repeat) : Option (Nat × Repeat) 
 
 /-! ## Host offers -/
 
-/-- A Timer schedule resolved to the delays a host arms: one duration, or a cycle's period and its repetitions
-(`none` unbounded). -/
+/-- A Timer schedule resolved to what a host arms: one duration, an absolute instant, a cycle's period and its
+repetitions (`none` unbounded), or a Cron expression. A duration, a cycle and a Cron expression count from their
+deployment's deploy time, an instant does not (population contract, M8-INT-A). -/
 inductive Resolved where
   | duration (ms : Nat)
+  | date (instantMs : Nat)
   | cycle (periodMs : Nat) (repetitions : Option Nat)
+  | cron (text : String)
   deriving Repr
 
 /-- The resolution `Kernel.Host.definitionCapabilities` offers for a Timer start: an exact literal duration (no years
-or months) or an undated ISO cycle; every other form yields its dynamic-only code, and admission refuses each at a
-root start first. -/
+or months), a literal date, an undated ISO cycle or a literal Cron expression; every other form yields its dynamic-only
+code, and admission refuses each at a root start first. -/
 def resolve : TimerSchedule → Except String Resolved
   | .duration value =>
     match (ValueSource.literal? value).map (classify .duration) with
@@ -502,11 +505,15 @@ def resolve : TimerSchedule → Except String Resolved
       | true, some ms => .ok (.duration ms)
       | _, _ => .error Code.duration.dynamic
     | _ => .error Code.duration.dynamic
-  | .date _ => .error Code.date.dynamic
+  | .date value =>
+    match (ValueSource.literal? value).map (classify .date) with
+    | some (.admitted (.date instantMs)) => .ok (.date instantMs)
+    | _ => .error Code.date.dynamic
   | .cycle value _ =>
     match (ValueSource.literal? value).map (classify .cycle) with
     | some (.admitted (.cycle periodMs count)) => .ok (.cycle periodMs count)
-    | some (.admitted (.cron _ _)) | some (.outside .cron) | some (.malformed .cron) => .error Code.cron.dynamic
+    | some (.admitted (.cron text _)) => .ok (.cron text)
+    | some (.outside .cron) | some (.malformed .cron) => .error Code.cron.dynamic
     | _ => .error Code.cycle.dynamic
 
 end Kernel.Timer

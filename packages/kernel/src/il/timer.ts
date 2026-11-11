@@ -517,20 +517,23 @@ export function successor(deadlineMs: number, recurrence: Repeat): readonly [num
 
 // Host offers
 
-export enum ResolvedTag { Duration = "duration", Cycle = "cycle" }
+export enum ResolvedTag { Duration = "duration", Date = "date", Cycle = "cycle", Cron = "cron" }
 
 /**
- * A Timer schedule resolved to the delays a host arms: one duration, or a cycle's period and its repetitions (`null`
- * unbounded).
+ * A Timer schedule resolved to what a host arms: one duration, an absolute instant, a cycle's period and its
+ * repetitions (`null` unbounded), or a Cron expression. A duration, a cycle and a Cron expression count from their
+ * deployment's deploy time, an instant does not (population contract, M8-INT-A).
  */
 export type Resolved =
   | { readonly tag: ResolvedTag.Duration; readonly ms: number }
-  | { readonly tag: ResolvedTag.Cycle; readonly periodMs: number; readonly repetitions: number | null };
+  | { readonly tag: ResolvedTag.Date; readonly instantMs: number }
+  | { readonly tag: ResolvedTag.Cycle; readonly periodMs: number; readonly repetitions: number | null }
+  | { readonly tag: ResolvedTag.Cron; readonly text: string };
 
 /**
  * The resolution `host.ts#definitionCapabilities` offers for a Timer start: an exact literal duration (no years or
- * months) or an undated ISO cycle; every other form yields its dynamic-only code, and admission refuses each at a root
- * start first.
+ * months), a literal date, an undated ISO cycle or a literal Cron expression; every other form yields its dynamic-only
+ * code, and admission refuses each at a root start first.
  */
 export function resolve(schedule: TimerSchedule): { readonly ok: true; readonly value: Resolved } | { readonly ok: false; readonly code: string } {
   switch (schedule.tag) {
@@ -544,16 +547,24 @@ export function resolve(schedule: TimerSchedule): { readonly ok: true; readonly 
       }
       return { ok: false, code: dynamicCode(TimerCode.Duration) };
     }
-    case TimerScheduleTag.Date:
+    case TimerScheduleTag.Date: {
+      const literal = valueSourceLiteral(schedule.value);
+      const classified = literal === null ? null : classify(TimerKind.Date, literal);
+      if (classified?.tag === ClassifiedTag.Admitted && classified.parsed.tag === ParsedTag.Date) {
+        return { ok: true, value: { tag: ResolvedTag.Date, instantMs: classified.parsed.instantMs } };
+      }
       return { ok: false, code: dynamicCode(TimerCode.Date) };
+    }
     case TimerScheduleTag.Cycle: {
       const literal = valueSourceLiteral(schedule.value);
       const classified = literal === null ? null : classify(TimerKind.Cycle, literal);
       if (classified?.tag === ClassifiedTag.Admitted && classified.parsed.tag === ParsedTag.Cycle) {
         return { ok: true, value: { tag: ResolvedTag.Cycle, periodMs: classified.parsed.periodMs, repetitions: classified.parsed.count } };
       }
-      const cron = classified !== null && classified.tag !== ClassifiedTag.Admitted ? classified.code === TimerCode.Cron
-        : classified?.tag === ClassifiedTag.Admitted && classified.parsed.tag === ParsedTag.Cron;
+      if (classified?.tag === ClassifiedTag.Admitted && classified.parsed.tag === ParsedTag.Cron) {
+        return { ok: true, value: { tag: ResolvedTag.Cron, text: classified.parsed.text } };
+      }
+      const cron = classified !== null && classified.tag !== ClassifiedTag.Admitted && classified.code === TimerCode.Cron;
       return { ok: false, code: dynamicCode(cron ? TimerCode.Cron : TimerCode.Cycle) };
     }
   }

@@ -23,10 +23,14 @@ element, activation, then detail kind, so the order an implementation opens them
 `kernelRun --host-view <program.json> <scenario.json>` prints `{result, hostRequirements, definitionCapabilities,
 hostViews}`, one host view per committed input.
 
-`kernelRun --population <program.json>... <population-scenario.json>` prints the engine-population result for a
+`kernelRun --population <digests.json> <program.json>... <population-scenario.json>` prints the
+[engine-population result](../contracts/schemas/engine-population-result.schema.json) for a
 [population scenario](../contracts/schemas/engine-population-scenario.schema.json), one program per scenario definition
-in the same order. The population mode lives here because this is the one module that may import both registries; a
-refused program or a population refusal is a harness error, never a result.
+in the same order and one digest of its canonical wire form per step, which the harness computes so that the kernel
+never reimplements canonical JSON or SHA-256. The population mode lives here because this is the one module that may
+import both registries. A program admission refuses is a refused deployment, a result; a malformed population
+scenario is a harness error, three of them with stable codes: `population-time-backward`, `population-time-mismatch`
+and `population-unknown-definition`.
 -/
 
 public section
@@ -296,8 +300,10 @@ def requirementsJson (requirements : Host.Requirements) : Json :=
 unbounded. -/
 def resolvedTimerJson : Timer.Resolved → Json
   | .duration ms => Json.mkObj [("durationMs", toJson ms)]
+  | .date instantMs => Json.mkObj [("instantMs", toJson instantMs)]
   | .cycle periodMs repetitions =>
     Json.mkObj [("cycle", Json.mkObj [("periodMs", toJson periodMs), ("repetitions", nullable repetitions toJson)])]
+  | .cron text => Json.mkObj [("cron", Json.str text)]
 
 def correlatedChannelJson (group : Host.CorrelatedChannel) : Json :=
   Json.mkObj [("channel", Codec.channelToJson group.channel),
@@ -309,6 +315,7 @@ def capabilitiesJson (capabilities : Host.Capabilities) : Json :=
   Json.mkObj [("starts", Json.arr (capabilities.starts.map fun start =>
       Json.mkObj ([("startEventId", Json.str start.startEventId.value)] ++
         (start.channel.map fun channel => ("channel", Codec.channelToJson channel)).toList ++
+        (start.messageName.map fun name => ("messageName", Json.str name)).toList ++
         (start.timer.map fun timer => ("timer", resolvedTimerJson timer)).toList)).toArray),
     ("correlatedChannels", Json.arr (capabilities.correlatedChannels.map correlatedChannelJson).toArray),
     ("relations", Json.arr (capabilities.relations.map Json.str).toArray)]
@@ -329,106 +336,231 @@ structure Script where
   instanceId : String
   definitionRef : String
 
-def definitionOf (definitions : List (String × Population.Definition)) (ref : String) :
-    Except String Population.Definition := do
-  let some (_, definition) := definitions.find? (·.1 == ref) | throw s!"unknown definition {ref}"
-  pure definition
+/-- A scenario definition with the program the harness compiled for it. -/
+structure Declared where
+  definitionRef : String
+  ref : Population.DeploymentRef
+  program : Program
 
-/-- A correlated publication: its address names a scenario definition by `definitionRef`. -/
-def publicationFromJson (definitions : List (String × Population.Definition)) (json : Json) :
-    Except String Population.Publication := do
-  let address ← json.getObjVal? "address"
-  let payload ← json.getObjVal? "payload"
-  let payloadKind ← payload.getObjValAs? String "kind"
-  unless payloadKind == "string" do throw s!"unknown publication payload kind {payloadKind}"
-  pure { commandId := ← json.getObjValAs? String "commandId"
-         address := { definition := (← definitionOf definitions (← address.getObjValAs? String "definitionRef")).ref
-                      processId := ← address.getObjValAs? String "processId"
-                      channel := ← Codec.channelFromJson (← address.getObjVal? "channel")
-                      correlationKey := ← address.getObjValAs? String "correlationKeyId" }
-         payload := ← payload.getObjValAs? String "value" }
+/-- A malformed population scenario: a harness refusal with its stable code (contract §2.2, §7). -/
+def harnessRefusal {α : Type} (code detail : String) : Except String α :=
+  throw s!"{code}: {detail}"
 
-/-- One population step, in scenario order, with the instances seen so far: an instance's start must name the step's
-instance, and a broadcast, which the kernel's population does not implement, refuses the scenario. -/
-def stepFromJson (definitions : List (String × Population.Definition)) (scripts : List Script) (json : Json) :
-    Except String (List Script × Population.Stimulus) := do
+def declaredOf (declared : List Declared) (definitionRef : String) : Except String Declared :=
+  match declared.find? (·.definitionRef == definitionRef) with
+  | some entry => pure entry
+  | none => harnessRefusal "population-unknown-definition" definitionRef
+
+def optional (json : Json) (key : String) : Option Json :=
+  (json.getObjVal? key).toOption
+
+/-- A command's optional business key. -/
+def businessKeyOf (json : Json) : Except String (Option String) :=
+  match optional json "businessKey" with
+  | none => pure none
+  | some _ => some <$> json.getObjValAs? String "businessKey"
+
+/-- `{processKey}` names a key's current deployment, `{deploymentId}` one deployment; absent, no definition. -/
+def selectorFromJson : Option Json → Except String (Option Population.DefinitionSelector)
+  | none => pure none
+  | some json =>
+    match optional json "processKey" with
+    | some _ => (some ∘ .processKey) <$> json.getObjValAs? String "processKey"
+    | none => (some ∘ .deployment) <$> json.getObjValAs? Nat "deploymentId"
+
+/-- A discovery order's entry: `{kind: "occurrence", occurrence}` or `{kind: "start", deploymentId, startEvent}`. -/
+def receiverFromJson (json : Json) : Except String Population.Receiver := do
   match ← json.getObjValAs? String "kind" with
-  | "instance" =>
-    let script : Script :=
-      { instanceId := ← json.getObjValAs? String "instanceId", definitionRef := ← json.getObjValAs? String "definitionRef" }
-    let stimulus ← json.getObjVal? "stimulus"
-    if (stimulus.getObjValAs? String "kind").toOption == some "start" then
-      let started ← stimulus.getObjValAs? String "instanceId"
-      unless started == script.instanceId do throw s!"step of {script.instanceId} starts {started}"
-    let (commandId, input) ← Codec.stimulusFromJson stimulus
-    let definition ← definitionOf definitions script.definitionRef
-    match scripts.findIdx? (·.instanceId == script.instanceId) with
-    | some index =>
-      unless (scripts[index]?.map (·.definitionRef)) == some script.definitionRef do
-        throw s!"instance {script.instanceId} names two definitions"
-      pure (scripts, .input index definition commandId input)
-    | none => pure (scripts ++ [script], .input scripts.length definition commandId input)
-  | "publish" => pure (scripts, .publish (← publicationFromJson definitions json))
-  | other => throw s!"unsupported population step {other}"
+  | "occurrence" => .occurrence <$> Codec.occurrenceFromJson (← json.getObjVal? "occurrence")
+  | "start" => pure (.start (← json.getObjValAs? Nat "deploymentId") (← json.getObjValAs? String "startEvent"))
+  | other => throw s!"unknown receiver kind {other}"
 
-def stepsFromJson (definitions : List (String × Population.Definition)) (steps : List Json) :
+def orderFromJson (json : Json) : Except String (Option (List Population.Receiver)) := do
+  match optional json "order" with
+  | none => pure none
+  | some _ => some <$> (← json.getObjValAs? (Array Json) "order").toList.mapM receiverFromJson
+
+def publishModeFromJson : String → Except String Population.PublishMode
+  | "any" => pure .any
+  | "executionsOnly" => pure .executionsOnly
+  | "startOnly" => pure .startOnly
+  | other => throw s!"unknown publication mode {other}"
+
+def publicationFromJson (json : Json) : Except String Population.Publication := do
+  let address ← json.getObjVal? "address"
+  let message : Population.MessageAddress ← match optional address "channel", optional address "name" with
+    | some channel, none => .channel <$> Codec.channelFromJson channel
+    | none, some _ => .name <$> address.getObjValAs? String "name"
+    | _, _ => throw "a publication names a channel or a name"
+  pure { commandId := ← json.getObjValAs? String "commandId"
+         definition := ← selectorFromJson (optional address "definition")
+         message
+         criteria := ← (← json.getObjValAs? (Array Json) "criteria").toList.mapM Codec.correlationFromJson
+         payload := ← (optional json "payload").mapM Codec.valueAt
+         variables := ← Codec.bindingsAt json "variables"
+         businessKey := ← businessKeyOf json
+         mode := ← publishModeFromJson (← json.getObjValAs? String "mode") }
+
+/-- A population command step, or `none` for another step kind. -/
+def commandFromJson (json : Json) : String → Except String (Option Population.Command)
+  | "publish" => (some ∘ .publish) <$> publicationFromJson json
+  | "broadcast" => do
+    pure (some (.broadcast { commandId := ← json.getObjValAs? String "commandId"
+                             address := ← Codec.signalAddressFromJson (← json.getObjVal? "address")
+                             variables := ← Codec.bindingsAt json "variables", order := ← orderFromJson json }))
+  | "evaluateConditions" => do
+    pure (some (.evaluateConditions { commandId := ← json.getObjValAs? String "commandId"
+                                      definition := ← selectorFromJson (optional json "definition")
+                                      variables := ← Codec.bindingsAt json "variables"
+                                      businessKey := ← businessKeyOf json
+                                      order := ← orderFromJson json }))
+  | "timerStart" => do
+    pure (some (.timerStart { commandId := ← json.getObjValAs? String "commandId"
+                              deploymentId := ← json.getObjValAs? Nat "deploymentId"
+                              startEvent := ← json.getObjValAs? String "startEvent"
+                              dueMs := ← json.getObjValAs? Nat "dueMs" }))
+  | _ => pure none
+
+/-- An instance step's input. Its stimulus keeps its own `at`, which must equal the step's when both are given; a step
+`at` the stimulus lacks becomes the input's. -/
+def instanceInput (stimulus : Json) (stepAt : Option Nat) : Except String (String × Input) :=
+  match stepAt, optional stimulus "at" with
+  | some stepAt, some own =>
+    if (own.getNat?).toOption == some stepAt then Codec.stimulusFromJson stimulus
+    else harnessRefusal "population-time-mismatch" s!"stimulus at {own.compress}, step at {stepAt}"
+  | some stepAt, none => Codec.stimulusFromJson (stimulus.setObjVal! "at" (toJson stepAt))
+  | none, _ => Codec.stimulusFromJson stimulus
+
+/-- An instance step, with the scripts seen so far: an instance's start must name the step's instance. -/
+def instanceStimulus (declared : List Declared) (scripts : List Script) (json : Json) (stepAt : Option Nat) :
+    Except String (List Script × Population.Stimulus) := do
+  let script : Script :=
+    { instanceId := ← json.getObjValAs? String "instanceId", definitionRef := ← json.getObjValAs? String "definitionRef" }
+  discard <| declaredOf declared script.definitionRef
+  let stimulus ← json.getObjVal? "stimulus"
+  if (stimulus.getObjValAs? String "kind").toOption == some "start" then
+    let started ← stimulus.getObjValAs? String "instanceId"
+    unless started == script.instanceId do throw s!"step of {script.instanceId} starts {started}"
+  let (commandId, input) ← instanceInput stimulus stepAt
+  match scripts.findIdx? (·.instanceId == script.instanceId) with
+  | some index =>
+    unless (scripts[index]?.map (·.definitionRef)) == some script.definitionRef do
+      throw s!"instance {script.instanceId} names two definitions"
+    pure (scripts, .input index script.definitionRef commandId input)
+  | none => pure (scripts ++ [script], .input scripts.length script.definitionRef commandId input)
+
+/-- The population's stimuli, in scenario order: the definitions no `deploy` step names deploy at 0 in list order,
+then every step at its logical time, which a step gives as `at` or inherits from the step before (0 for the first) and
+which never decreases. `digests` holds each step's digest of its canonical wire form, which the harness computes. -/
+def stimuliOfPopulation (declared : List Declared) (steps : List Json) (digests : List String) :
     Except String (List Population.Stimulus) := do
-  let (_, stimuli) ← steps.foldlM (init := (([] : List Script), ([] : List Population.Stimulus)))
-    fun (scripts, stimuli) json => do
-      let (scripts, stimulus) ← stepFromJson definitions scripts json
-      pure (scripts, stimuli ++ [stimulus])
+  unless digests.length == steps.length do throw s!"{steps.length} steps, {digests.length} digests"
+  let mut deployedByStep : List String := []
+  for json in steps do
+    if (← json.getObjValAs? String "kind") == "deploy" then
+      deployedByStep := deployedByStep ++ [(← declaredOf declared (← json.getObjValAs? String "definitionRef")).definitionRef]
+  let mut stimuli : List Population.Stimulus := (declared.filter fun entry => !deployedByStep.contains entry.definitionRef).map
+    fun entry => .deploy entry.definitionRef entry.ref entry.program 0
+  let mut scripts : List Script := []
+  let mut clock := 0
+  for (json, index) in steps.zipIdx do
+    let stepAt ← match optional json "at" with
+      | none => pure none
+      | some _ => some <$> json.getObjValAs? Nat "at"
+    if let some stepAt := stepAt then
+      if stepAt < clock then harnessRefusal "population-time-backward" s!"step {index} at {stepAt} after {clock}"
+      clock := stepAt
+    match ← json.getObjValAs? String "kind" with
+    | "deploy" =>
+      let entry ← declaredOf declared (← json.getObjValAs? String "definitionRef")
+      stimuli := stimuli ++ [.deploy entry.definitionRef entry.ref entry.program clock]
+    | "instance" =>
+      let (known, stimulus) ← instanceStimulus declared scripts json stepAt
+      scripts := known
+      stimuli := stimuli ++ [stimulus]
+    | kind =>
+      match ← commandFromJson json kind with
+      | some command => stimuli := stimuli ++ [.command command clock (digests.getD index "")]
+      | none => throw s!"unsupported population step {kind}"
   pure stimuli
 
+def failureFields (failure : Failure) : List (String × Json) :=
+  [("outcome", Json.str (Codec.failureName failure)), ("code", Json.str (Codec.failureCode failure))]
+
+def receiverJson : Population.Receiver → Json
+  | .occurrence ref => Json.mkObj [("kind", "occurrence"), ("occurrence", referenceJson ref)]
+  | .start deploymentId startEvent =>
+    Json.mkObj [("kind", "start"), ("deploymentId", toJson deploymentId), ("startEvent", Json.str startEvent)]
+
+def fanOutEntryJson : Population.FanOutEntry → Json
+  | .delivered target => Json.mkObj [("kind", "delivered"), ("target", referenceJson target)]
+  | .started instanceId deploymentId version startEvent =>
+    Json.mkObj [("kind", "started"), ("instanceId", Json.str instanceId), ("deploymentId", toJson deploymentId),
+      ("version", toJson version), ("startEvent", Json.str startEvent)]
+  | .skipped target => Json.mkObj [("kind", "skipped"), ("target", referenceJson target)]
+  | .failed target failure =>
+    Json.mkObj ([("kind", Json.str "failed"), ("target", receiverJson target)] ++ failureFields failure)
+
 def resolutionJson : Population.Resolution → Json
-  | .committed target => Json.mkObj [("kind", "committed"), ("target", Json.mkObj [
-      ("processInstanceId", Json.str target.processInstanceId),
-      ("subscriptionId", referenceJson target)])]
-  | .failed target failure => Json.mkObj [("kind", "failed"), ("outcome", Json.str (Codec.failureName failure)),
-      ("code", Json.str (Codec.failureCode failure)), ("subscriptionId", referenceJson target)]
-  | .noMatch => Json.mkObj [("kind", "rejectedNoMatch")]
-  | .ambiguous => Json.mkObj [("kind", "rejectedAmbiguous")]
+  | .committed target => Json.mkObj [("kind", "committed"), ("target", referenceJson target)]
+  | .failed target failure =>
+    Json.mkObj ([("kind", Json.str "failed"), ("target", referenceJson target)] ++ failureFields failure)
+  | .fanOut entries => Json.mkObj [("kind", "fanOut"), ("entries", Json.arr (entries.map fanOutEntryJson).toArray)]
+  | .noMatch => Json.mkObj [("kind", "noMatch")]
+  | .ambiguous => Json.mkObj [("kind", "ambiguous")]
+  | .rejected code => Json.mkObj [("kind", "rejected"), ("code", Json.str code)]
+  | .unsupported code => Json.mkObj [("kind", "unsupported"), ("code", Json.str code)]
+
+def deploymentResultJson (deployment : Population.DeploymentResult) : Json :=
+  let outcome := match deployment.outcome with
+    | .deployed => Json.mkObj [("kind", "deployed")]
+    | .refused code => Json.mkObj [("kind", "deploymentRefused"), ("code", Json.str code)]
+  Json.mkObj [("deploymentId", toJson deployment.deploymentId), ("definitionRef", Json.str deployment.definitionRef),
+    ("versions", Json.arr (deployment.versions.map fun (key, version) =>
+      Json.mkObj [("key", Json.str key), ("version", toJson version)]).toArray),
+    ("outcome", outcome)]
 
 def populationResultJson (scenarioId : String) (result : Population.Result) : Json :=
-  let ordinal (published : Population.PublicationResult) : List (String × Json) :=
-    [("commandId", Json.str published.commandId), ("ingressOrdinal", toJson published.ingressOrdinal)]
   let inputFailures := if result.inputFailures.isEmpty then [] else
     [("inputFailures", Json.arr (result.inputFailures.map fun (commandId, failure) =>
-      Json.mkObj [("commandId", Json.str commandId), ("outcome", Json.str (Codec.failureName failure)),
-        ("code", Json.str (Codec.failureCode failure))]).toArray)]
+      Json.mkObj ([("commandId", Json.str commandId)] ++ failureFields failure)).toArray)]
   let fields : List (String × Json) := [("kind", "enginePopulationResult"), ("scenarioId", Json.str scenarioId),
-    ("publicationResults", Json.arr (result.publications.map fun published =>
-      Json.mkObj (ordinal published ++ [("outcome", resolutionJson published.resolution)])).toArray),
+    ("deployments", Json.arr (result.deployments.map deploymentResultJson).toArray),
+    ("steps", Json.arr (result.steps.map fun stepped =>
+      Json.mkObj [("commandId", Json.str stepped.commandId), ("ordinal", toJson stepped.ordinal),
+        ("at", toJson stepped.atMs), ("resolution", resolutionJson stepped.resolution)]).toArray),
     ("processStates", Json.arr (result.instances.map fun member =>
-      observationJson member.definition.program member.state).toArray),
-    ("ingressOrdinals", Json.arr (result.publications.map fun published => Json.mkObj (ordinal published)).toArray)]
+      observationJson member.deployment.program member.state).toArray)]
   Json.mkObj (inputFailures ++ fields)
 
-def runPopulation (programPaths : List String) (scenarioPath : String) : IO Json := do
+/-- `kernelRun --population <digests.json> <program.json>... <population-scenario.json>`: one program per scenario
+definition, in order, and one digest per step. A program the admission registry refuses is a refused deployment. -/
+def runPopulation (digestsPath : String) (programPaths : List String) (scenarioPath : String) : IO Json := do
   let scenario ← readJson scenarioPath
+  let digests ← orFail digestsPath (Lean.fromJson? (α := List String) (← readJson digestsPath))
   let (scenarioId, profile, resources) ← orFail scenarioPath do
     pure (← scenario.getObjValAs? String "id", ← scenario.getObjValAs? String "profile",
       (← scenario.getObjValAs? (Array Json) "definitions").toList)
   unless resources.length == programPaths.length do
     throw (IO.userError s!"{scenarioPath}: {resources.length} definitions, {programPaths.length} programs")
-  let definitions ← (resources.zip programPaths).mapM fun (resource, programPath) => do
+  let declared ← (resources.zip programPaths).mapM fun (resource, programPath) => do
     let program ← orFail programPath (Codec.programFromJson (← readJson programPath))
-    if let some code := AdmissionRegistry.admit program then
-      throw (IO.userError s!"{programPath}: admission refused: {code}")
-    let (id, ref) ← orFail scenarioPath do
+    let (definitionRef, ref) ← orFail scenarioPath do
       pure (← resource.getObjValAs? String "definitionRef", ← definitionRefFromJson (← resource.getObjVal? "bpmn") profile)
     unless program.identity.sourceSha256 == ref.sourceSha256 && program.identity.profile == profile do
-      throw (IO.userError s!"{programPath}: program identity differs from definition {id}")
-    pure (id, ({ ref, program } : Population.Definition))
-  let stimuli ← orFail scenarioPath do stepsFromJson definitions (← scenario.getObjValAs? (Array Json) "steps").toList
-  let result ← orFail scenarioPath (Population.runStimuli Registry.hooks (definitions.map (·.2)) stimuli)
+      throw (IO.userError s!"{programPath}: program identity differs from definition {definitionRef}")
+    pure ({ definitionRef, ref, program } : Declared)
+  let stimuli ← orFail scenarioPath
+    (stimuliOfPopulation declared (← orFail scenarioPath (scenario.getObjValAs? (Array Json) "steps")).toList digests)
+  let result ← orFail scenarioPath (Population.runStimuli Registry.hooks AdmissionRegistry.admit stimuli)
   pure (populationResultJson scenarioId result)
 
 end Kernel.Run
 
 def main (args : List String) : IO UInt32 := do
   match args with
-  | "--population" :: paths@(_ :: _ :: _) =>
-    IO.println (← Kernel.Run.runPopulation paths.dropLast paths.getLast!).compress
+  | "--population" :: digestsPath :: paths@(_ :: _ :: _) =>
+    IO.println (← Kernel.Run.runPopulation digestsPath paths.dropLast paths.getLast!).compress
     pure 0
   | ["--host-view", programPath, scenarioPath] =>
     IO.println (← Kernel.Run.runHostView programPath scenarioPath).compress
@@ -439,5 +571,5 @@ def main (args : List String) : IO UInt32 := do
   | _ =>
     IO.eprintln ("usage: kernelRun <program.json> <scenario.json>\n" ++
       "       kernelRun --host-view <program.json> <scenario.json>\n" ++
-      "       kernelRun --population <program.json>... <population-scenario.json>")
+      "       kernelRun --population <digests.json> <program.json>... <population-scenario.json>")
     pure 64

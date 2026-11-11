@@ -44,11 +44,13 @@ test("constructs zero, unique, ambiguous, and definition-isolated populations wi
   const matchingCandidateCounts = Object.fromEntries(scenarios.map(({ document }) => {
     const publication = document.steps.find((step) => step.kind === "publish");
     assert.ok(publication?.kind === "publish");
+    // Definitions deploy in list order, so the publication's deployment `n` is the `n`-th definition.
+    const definitionRef = document.definitions[(publication.address.definition?.deploymentId ?? 0) - 1]?.definitionRef;
     const count = document.steps.filter((step) =>
       step.kind === "instance" &&
         step.stimulus.kind === "deliver" &&
-        step.definitionRef === publication.address.definitionRef &&
-        step.stimulus.payload?.value === publication.payload.value
+        step.definitionRef === definitionRef &&
+        step.stimulus.payload?.value === publication.criteria[0]?.expected.value
     ).length;
     return [document.id, count];
   }));
@@ -95,7 +97,7 @@ test("binds definition scope by complete source identity instead of local ids", 
 
   const undeclared = clone(crossDefinition);
   ((steps(undeclared).at(-1) as { address: Record<string, unknown> }).address)
-    .definitionRef = "message-key-correlation-undeclared";
+    .definition = { deploymentId: 3 };
   await assert.rejects(
     () => verifyEnginePopulationScenario(projectRoot, undeclared),
     /publication definition identity/u,

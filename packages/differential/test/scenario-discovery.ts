@@ -51,6 +51,7 @@ export type PopulationScenarioDocument = Readonly<{
   id: string;
   profile: string;
   definitions: ReadonlyArray<Readonly<{ bpmn: SourceDefinition }>>;
+  steps: ReadonlyArray<unknown>;
 }>;
 
 /** The canonical result shape (`contracts/schemas/canonical-result.schema.json`) as the comparator reads it. */
