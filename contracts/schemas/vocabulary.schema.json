@@ -538,7 +538,6 @@
         "process.notExecutable",
         "profile.abnormalScopeEnd.withoutOutflow",
         "profile.callBindingTime.invocation",
-        "profile.compensationHandlerFailure.propagatesFromTrigger",
         "profile.compensationHandlerFailure.selected",
         "profile.compensationOrder.allAtOnce",
         "profile.compensationReferenceScope.eventSubProcessParent",

@@ -28,11 +28,10 @@ import {
 function compensationHandlerFailure(selected: CompensationHandlerFailure): string | null {
   switch (selected.tag) {
     case CompensationHandlerFailureTag.FailsInstance:
+    case CompensationHandlerFailureTag.PropagatesFromTrigger:
       return null;
     case CompensationHandlerFailureTag.Selected:
       return "profile.compensationHandlerFailure.selected";
-    case CompensationHandlerFailureTag.PropagatesFromTrigger:
-      return "profile.compensationHandlerFailure.propagatesFromTrigger";
   }
   return assertNever(selected);
 }

@@ -43,7 +43,6 @@ A profile may select only behaviour the kernel implements ([`Kernel/Admission/Pr
 | `profile.evaluator.juel` | the JUEL evaluator | PC-DATA-07 |
 | `profile.compensationOrder.allAtOnce` | starting every compensation handler of a trigger at once | PC-COMPENSATION rows |
 | `profile.compensationHandlerFailure.selected` | a selected handler-failure code | PC-COMPENSATION rows |
-| `profile.compensationHandlerFailure.propagatesFromTrigger` | an Error leaving a handler propagating from its trigger | PC-COMPENSATION rows |
 | `profile.implicitCompensation.everySubProcess` | compensating a handler-less Sub-Process as the group of its records | PC-COMPENSATION rows, PC-TX-01 |
 | `profile.errorExitCompensation.compensatesContained` | compensating the contained work of a Sub-Process an Error leaves, for a program with a Sub-Process retaining compensable work | PC-COMPENSATION rows, PC-TX-01 |
 | `profile.multiInstanceCompensation.perInstance` | a compensation record per instance, for a program with a Multi-Instance Task or Call with a handler | PC-COMPENSATION rows |

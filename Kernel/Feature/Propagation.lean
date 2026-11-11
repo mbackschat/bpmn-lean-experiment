@@ -290,8 +290,17 @@ def passCallOutputs (hooks : PropagationHooks) (ctx : Ctx) (origin : Origin) (ca
     else hooks.callOutputs ctx occurrence state
   | .none => .ok state
 
+/-- Whether a search passes a compensation handler's context on to the trigger's scope occurrence. -/
+def propagatesFromTrigger (ctx : Ctx) : Bool :=
+  match ctx.program.options.compensationHandlerFailure with
+  | .propagatesFromTrigger => true
+  | .failsInstance => false
+  | .selected _ => false
+
 /-- Search outward from `current`; `fuel` bounds the walk by the number of scope occurrences. The search ends at the
-scope occurrence of a compensation handler, and a Multi-Instance instance contributes no boundaries. Each called root
+scope occurrence of a compensation handler (COMPH-FAIL-01), except under `propagatesFromTrigger`, where it goes on from
+that context's parent, the scope occurrence the trigger ran in, as CIB's compensating execution is a child of the throwing
+one (`CompensationUtil.java:62-75`, CIB-INT-0038). A Multi-Instance instance contributes no boundaries. Each called root
 it visits passes the Call's outputs (`passCallOutputs`) before any catcher there or further out begins,
 caught or not (CIB registers `tree/OutputVariablesPropagator.java:34-43` as a pre-visitor of both searches). -/
 def searchScopes (hooks : PropagationHooks) (ctx : Ctx) (raised : Raised) (origin : Origin) (state : State) :
@@ -303,7 +312,9 @@ def searchScopes (hooks : PropagationHooks) (ctx : Ctx) (raised : Raised) (origi
     | none => .error (.semanticFailure "raise-from-missing-scope")
     | some occurrence =>
       let role := ctx.scopeRole state occurrence.id
-      if role == .compensationHandler then exhausted hooks ctx raised origin (some occurrence.id) state else do
+      if role == .compensationHandler && !propagatesFromTrigger ctx then
+        exhausted hooks ctx raised origin (some occurrence.id) state
+      else do
       let handlers ← handlerCandidates ctx raised origin state occurrence
       let handled := best? ctx raised (·.2.1.trigger) handlers
       let attached := match occurrence.element, occurrence.parent with

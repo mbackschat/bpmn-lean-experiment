@@ -392,34 +392,6 @@
     ]
   },
   {
-    "evidence": "scenarios/open-rows/compensation-handler-failure-at-wait/error-caught-handler-fails-after-wait.cibseven-evidence.json",
-    "owners": [
-      "PC-COMPENSATION-01",
-      "PC-COMPENSATION-04"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/compensation-handler-failure-at-wait/error-uncaught-handler-fails-after-wait.cibseven-evidence.json",
-    "owners": [
-      "PC-COMPENSATION-01",
-      "PC-COMPENSATION-04"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/compensation-handler-failure-at-wait/escalation-caught-handler-fails-after-wait.cibseven-evidence.json",
-    "owners": [
-      "PC-COMPENSATION-01",
-      "PC-COMPENSATION-04"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/compensation-handler-failure-at-wait/escalation-uncaught-handler-fails-after-wait.cibseven-evidence.json",
-    "owners": [
-      "PC-COMPENSATION-01",
-      "PC-COMPENSATION-04"
-    ]
-  },
-  {
     "evidence": "scenarios/open-rows/compensation-handler-failures/both-succeed-reversed.cibseven-evidence.json",
     "owners": [
       "PC-COMPENSATION-01",
@@ -428,13 +400,6 @@
   },
   {
     "evidence": "scenarios/open-rows/compensation-handler-failures/duplicate-results.cibseven-evidence.json",
-    "owners": [
-      "PC-COMPENSATION-01",
-      "PC-COMPENSATION-04"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/compensation-handler-failures/late-failure-after-success.cibseven-evidence.json",
     "owners": [
       "PC-COMPENSATION-01",
       "PC-COMPENSATION-04"

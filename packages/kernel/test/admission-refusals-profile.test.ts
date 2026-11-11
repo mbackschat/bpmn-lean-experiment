@@ -54,12 +54,6 @@ export const rows: readonly Row[] = [
     control: option({ compensationHandlerFailure: "failsInstance" }),
   },
   {
-    code: "profile.compensationHandlerFailure.propagatesFromTrigger",
-    description: "a handler failure propagating from its trigger",
-    mutate: option({ compensationHandlerFailure: "propagatesFromTrigger" }),
-    control: option({ compensationHandlerFailure: "failsInstance" }),
-  },
-  {
     code: "profile.implicitCompensation.everySubProcess",
     description: "implicit compensation of every Sub-Process",
     mutate: option({ implicitCompensation: "everySubProcess" }),

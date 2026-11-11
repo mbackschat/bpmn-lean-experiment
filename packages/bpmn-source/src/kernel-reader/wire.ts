@@ -123,7 +123,7 @@ export function kernelProfileOptions(relations: readonly string[]): KernelProfil
     multiInstanceFinalBody: selects("CIB-INT-0009") ? "modeSpecific" : "conditionEveryCompletion",
     multiInstanceOutputs: selects("CIB-LIM-0001") ? "none" : "aggregates",
     compensationOrder: "dependency",
-    compensationHandlerFailure: "failsInstance",
+    compensationHandlerFailure: selects("CIB-INT-0038") ? "propagatesFromTrigger" : "failsInstance",
     implicitCompensation: "refused",
     errorExitCompensation: "drops",
     multiInstanceCompensation: "perSubProcessInstance",

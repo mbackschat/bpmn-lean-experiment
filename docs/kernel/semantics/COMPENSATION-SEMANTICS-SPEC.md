@@ -28,7 +28,7 @@ Adopted kernel owner document (W0 extraction, 2026-11-09). The kernel modules it
 ### Handler failure
 
 - An Error a handler's effect reports, or an Error End Event inside a handler Sub-Process throws, and nothing inside the handler catches fails the process instance: the handler and its run fail, every token, item, occurrence and handler is removed, nothing continues, and the failed state publishes the run's trigger, the handler, the raising effect or End Event, the code and the message (`COMPH-FAIL-01`; [CTH contract][cth-contract], [`Compensation.failCompensation`](../../../Kernel/Feature/Compensation.lean)). BPMN 2.0.2 §13.3.2 names the handler states but not this disposition; it is a project interpretation, not BPMN or CIB transcription ([CTH basis][cth-normative]), selected by `ProfileOptions.compensationHandlerFailure = failsInstance`. A failed instance accepts no further input and is not a host failure; transport retries are never typed BPMN errors ([TXC rules][txc-rules]).
-- Propagation never searches past a handler's context, so an event a handler leaves uncaught reaches the handler failure rule (see [propagation](PROPAGATION-SEMANTICS-SPEC.md)).
+- Under `failsInstance` propagation never searches past a handler's context, so an event a handler leaves uncaught reaches the handler failure rule; under `propagatesFromTrigger` (CIB-INT-0038, the cibseven profiles) the search goes on from the handler context's parent, the scope occurrence the trigger ran in (I11; see [propagation](PROPAGATION-SEMANTICS-SPEC.md)).
 
 ### Transaction cancellation
 
@@ -286,7 +286,7 @@ CIB's ordering, persistence and invocation algorithms stay outside the kernel ([
 | Option | Kernel reading | Alternative |
 |---|---|---|
 | `compensationOrder` | `dependency` (§13.5.5) | `allAtOnce`, CIB's start of every handler at once; refused, PC-COMPENSATION-01 |
-| `compensationHandlerFailure` | `failsInstance` (`COMPH-FAIL-01`) | `selected`, `propagatesFromTrigger`; refused, PC-COMPENSATION-01 |
+| `compensationHandlerFailure` | `failsInstance` (`COMPH-FAIL-01`) | `propagatesFromTrigger`, an Error or Escalation leaving a handler searched from the trigger's scope occurrence; selected by the cibseven profiles ([CIB-INT-0038](../../CIB-BPMN-RELATION-REGISTER.md#cib-int-0038--cib-propagates-a-compensation-handlers-error-or-escalation-from-the-compensation-trigger)); `selected`, refused, PC-COMPENSATION-01 |
 | `implicitCompensation` | `refused` (Tables 10.88 and 10.89) | `everySubProcess`, CIB's group of a handler-less Sub-Process's records; refused, PC-COMPENSATION-03 |
 | `errorExitCompensation` | `drops` (§10.3.5) | `compensatesContained` (§10.7.3); refused for a program with a Sub-Process retaining compensable work, PC-COMPENSATION-03 |
 | `multiInstanceCompensation` | `perSubProcessInstance` (§13.5.5) | `perInstance`, CIB's record per instance; refused for a program with a Multi-Instance Task or Call with a handler, PC-COMPENSATION-03 |
@@ -307,7 +307,7 @@ CIB's ordering, persistence and invocation algorithms stay outside the kernel ([
 | `compensation.implicit`, `compensation.recursive` | a compensable Activity whose records a completed Sub-Process would hand to its parent beside a Compensation throw, or to a handler that throws Compensation | BPMN21-403 open; PC-COMPENSATION-03 |
 | `boundary.cancel.host`, `boundary.cancel.nonInterrupting`, `boundary.cancel.duplicate`, `throw.cancel.outsideTransaction`, `throw.cancel.uncaught` | a Cancel boundary off a Transaction, non-interrupting or second on one Transaction; a Cancel throw outside a Transaction or in one without a Cancel boundary | §10.5.5, §10.3.5; PC-TX-02 |
 | `compensation.handlerCount` | more than one compensation handler of one Activity or Scope | PC-COMPENSATION-04 |
-| `profile.compensationOrder.allAtOnce`, `profile.compensationHandlerFailure.selected`, `profile.compensationHandlerFailure.propagatesFromTrigger`, `profile.implicitCompensation.everySubProcess`, `profile.errorExitCompensation.compensatesContained`, `profile.multiInstanceCompensation.perInstance`, `profile.compensationReferenceScope.eventSubProcessParent` | the CIB alternatives above the kernel does not run | PC-COMPENSATION-01 to -04, PC-TX-01 |
+| `profile.compensationOrder.allAtOnce`, `profile.compensationHandlerFailure.selected`, `profile.implicitCompensation.everySubProcess`, `profile.errorExitCompensation.compensatesContained`, `profile.multiInstanceCompensation.perInstance`, `profile.compensationReferenceScope.eventSubProcessParent` | the CIB alternatives above the kernel does not run | PC-COMPENSATION-01 to -04, PC-TX-01 |
 | `compensation-concurrent-trigger`, `compensation-repeated-subject`, `compensation-dependency-cycle` (dynamic-only `unsupported`) | a second run in one scope, a subject retained twice, a dependency cycle among retained subjects | PC-COMPENSATION-02, PC-COMPENSATION-03 |
 | `compensation-handler-escalation` (dynamic-only `unsupported`) | an Escalation leaving a handler | PC-COMPENSATION-04 |
 

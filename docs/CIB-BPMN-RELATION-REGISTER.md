@@ -25,7 +25,7 @@ The counts below cover only entries recorded by this project, including the sepa
 | Normative agreement records | 23 | 0 | A bounded BPMN requirement and pinned CIB observation agree; candidates remain unapproved |
 | Permitted operational details | 18 | 0 | CIB or the oracle adapter chooses host mechanics without changing required BPMN observations |
 | Confirmed normative deviations | 0 | 9 | Clear BPMN requirement and pinned CIB evidence establish incompatible behavior |
-| CIB interpretations of BPMN gaps or inconsistencies | 35 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
+| CIB interpretations of BPMN gaps or inconsistencies | 36 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
 | CIB extension records | 43 | 2 | Project profile deliberately includes behavior beyond bare BPMN execution; candidates remain unselected |
 | Configuration-specific realizations | 13 | 0 | Behavior is permitted or meaningful only under a declared CIB environment |
 | Known CIB limitations within reviewed scope | 38 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
@@ -881,6 +881,16 @@ BPMN 2.0.2 sends a thrown Signal when the throw Event is reached (§13.5.6) and 
 **Evidence:** Pinned `bpmn/behavior/ThrowSignalEventActivityBehavior.java:53-61` (each receiver's `eventReceived`, then `leave`), `interceptor/CommandInvocationContext.java:93-135` (an invocation is queued first at `:95` and deferred at `:102` while the loop at `:126` runs), the only async-capable operations `pvm/runtime/operation/PvmAtomicOperationTransitionNotifyListenerTake.java:35`, `PvmAtomicOperationTransitionCreateScope.java:42`, `PvmAtomicOperationActivityStartCreateScope.java:33` and `PvmAtomicOperationProcessStart.java:37`, and `PvmAtomicOperationTransitionDestroyScope.java:128-132` (a fork queues all its branches at once); the retained answer of `signal-broadcast-population/emitter-first-cascade` (profile `cibseven-2.2.0`), where CIB, like the kernel, leaves the emitter at *Wrap up the batch*; and the retained answer of the separating witness `signal-broadcast-population/sibling-branch-cascade` (`sibling-branch-cascade.population-cibseven-evidence.json`), where the kernel leaves the emitter at *Wrap up the batch* and CIB leaves `Emitter_1` at its catch of `signal-two` (`CatchSignalTwo`), as the source predicts.
 
 **Boundary:** Thrown Signals reaching other instances in one tenant-less population (PC-SIGNAL-04) whose receiver rethrows to a catch of the thrower: a catch on the throw's own continuation agrees, and this entry owns every witness whose catch is on a sibling branch queued before the throw.
+
+### CIB-INT-0038 — CIB propagates a compensation handler's Error or Escalation from the compensation trigger
+
+**Status:** Recorded interpretation from the pinned source and retained evidence; selected by `ProfileOptions.compensationHandlerFailure = propagatesFromTrigger` through the [cibseven-2.2.0 cumulative profile](../profiles/cibseven-2.2.0/profile.json) and the scope-chain profile; not a deviation
+
+BPMN 2.0.2 §13.3.2 names a compensation handler's states but states no disposition for a handler that fails, and §10.5.1 lets an Escalation continue at its thrower. The standards profile fails the instance on an Error a handler leaves uncaught (`failsInstance`, COMPH-FAIL-01). CIB Seven `2.2.0` runs every handler in a compensating execution it creates under the throwing one, so an Error or Escalation the handler raises propagates from there to the catchers that enclose the compensation throw, and an uncaught Error ends only the throwing path (CIB-INT-0013). Under `propagatesFromTrigger` the kernel's search passes the handler's context and goes on from its parent, the scope occurrence the trigger ran in; an event no catcher takes follows the profile's unhandled rule, and a handler that ends without completing ends its part of the run ([compensation semantics](kernel/semantics/COMPENSATION-SEMANTICS-SPEC.md#i11--an-error-escalation-or-terminate-leaving-a-handler-pc-compensation-01-pc-compensation-04)).
+
+**Evidence:** Pinned `bpmn/helper/CompensationUtil.java:62-75` (the compensating execution under the throwing one) and `BpmnExceptionHandler.java:129-137` (CIB-INT-0013's path end); the retained answers of [compensation-handler-failure-at-wait](../scenarios/open-rows/compensation-handler-failure-at-wait/README.md) (profile `cibseven-2.2.0`): the Error boundary on `SubProcess_Outer` catches the caught forms and `UserTask_Caught` runs, and the uncaught forms continue to `UserTask_After`; no rolled-back command supports it.
+
+**Boundary:** Errors and Escalations leaving a compensation handler after it waited; a synchronous handler's raise is CIB-LIM-0042's, and one whose interrupting catch fails inside CIB is CIB-LIM-0046's.
 
 ### CIB-INT-0039 — CIB runs every Transaction method as `##Compensate`
 

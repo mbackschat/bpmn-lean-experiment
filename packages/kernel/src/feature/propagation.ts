@@ -26,6 +26,7 @@
  * that finds none has no selected meaning.
  */
 import {
+  CompensationHandlerFailureTag,
   ErrorPathOutputs,
   Placement,
   RaisedCallOutputs,
@@ -483,9 +484,24 @@ function passCallOutputs(
   return assertNever(selected);
 }
 
+/** Whether a search passes a compensation handler's context on to the trigger's scope occurrence. */
+function propagatesFromTrigger(ctx: Ctx): boolean {
+  const failure = ctx.program.options.compensationHandlerFailure;
+  switch (failure.tag) {
+    case CompensationHandlerFailureTag.PropagatesFromTrigger:
+      return true;
+    case CompensationHandlerFailureTag.FailsInstance:
+    case CompensationHandlerFailureTag.Selected:
+      return false;
+  }
+  return assertNever(failure);
+}
+
 /**
  * Search outward from `start`; the fuel bounds the walk by the number of scope occurrences. The search ends at the
- * scope occurrence of a compensation handler, and a Multi-Instance instance contributes no boundaries. Each called root
+ * scope occurrence of a compensation handler (COMPH-FAIL-01), except under `PropagatesFromTrigger`, where it goes on from
+ * that context's parent, the scope occurrence the trigger ran in, as CIB's compensating execution is a child of the
+ * throwing one (`CompensationUtil.java:62-75`, CIB-INT-0038). A Multi-Instance instance contributes no boundaries. Each called root
  * it visits passes the Call's outputs (`passCallOutputs`) before any catcher there or further out begins,
  * caught or not (CIB registers `tree/OutputVariablesPropagator.java:34-43` as a pre-visitor of both searches).
  */
@@ -505,7 +521,9 @@ function searchScopes(
     const occurrence = state.scopes.find((scope) => scope.id === at);
     if (occurrence === undefined) return failed(FailureTag.SemanticFailure, "raise-from-missing-scope");
     const role = ctx.scopeRole(state, occurrence.id);
-    if (role === ScopeRole.CompensationHandler) return exhausted(hooks, ctx, raised, origin, occurrence.id, state);
+    if (role === ScopeRole.CompensationHandler && !propagatesFromTrigger(ctx)) {
+      return exhausted(hooks, ctx, raised, origin, occurrence.id, state);
+    }
     const handlers = handlerCandidates(ctx, raised, origin, state, occurrence);
     if (!handlers.ok) return failedWith(handlers.failure);
     const handled = best(ctx, raised, ([, subscription]) => subscription.trigger, handlers.value);
