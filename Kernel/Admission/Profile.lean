@@ -39,7 +39,6 @@ def options (abnormalScope loops : Bool) (selected : ProfileOptions) : Option St
   (if selected.timerZone.isSome then some "profile.timerZone" else none) <|>
   (if abnormalScope && selected.abnormalScopeEnd == .withoutOutflow then some "profile.abnormalScopeEnd.withoutOutflow" else none) <|>
   multiInstance loops selected <|>
-  (if selected.calledElementResolution == .cibKey then some "profile.calledElementResolution.cibKey" else none) <|>
   (if selected.messageThrowForms == .cibForms then some "profile.messageThrowForms.cibForms" else none)
 
 end Kernel.Admission.Profile

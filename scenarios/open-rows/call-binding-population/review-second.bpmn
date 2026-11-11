@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="Definitions_ReviewSecond" targetNamespace="urn:bpmn-lean:scenarios:call-binding-population:review">
+  <bpmn:process id="ReviewDamage" name="Review the damage" isExecutable="true">
+    <bpmn:startEvent id="ReviewRequested" name="Review requested" />
+    <bpmn:userTask id="VisitSite" name="Visit the site" />
+    <bpmn:endEvent id="ReviewDone" name="Review done" />
+    <bpmn:sequenceFlow id="Flow_Requested_Visit" sourceRef="ReviewRequested" targetRef="VisitSite" />
+    <bpmn:sequenceFlow id="Flow_Visit_Done" sourceRef="VisitSite" targetRef="ReviewDone" />
+  </bpmn:process>
+</bpmn:definitions>

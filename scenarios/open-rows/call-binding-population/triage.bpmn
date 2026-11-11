@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:review="urn:bpmn-lean:scenarios:call-binding-population:review" id="Definitions_Triage" targetNamespace="urn:bpmn-lean:scenarios:call-binding-population:triage">
+  <bpmn:process id="TriageDamage" name="Triage the damage" isExecutable="true">
+    <bpmn:startEvent id="TriageRequested" name="Triage requested" />
+    <bpmn:callActivity id="Call_ReviewDamage" name="Review the damage" calledElement="review:ReviewDamage" />
+    <bpmn:endEvent id="TriageDone" name="Triage done" />
+    <bpmn:sequenceFlow id="Flow_Requested_Review" sourceRef="TriageRequested" targetRef="Call_ReviewDamage" />
+    <bpmn:sequenceFlow id="Flow_Review_Done" sourceRef="Call_ReviewDamage" targetRef="TriageDone" />
+  </bpmn:process>
+</bpmn:definitions>

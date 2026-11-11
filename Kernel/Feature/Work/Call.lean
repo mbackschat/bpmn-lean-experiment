@@ -26,17 +26,17 @@ def copy (ctx : Ctx) (unavailable : String) (context : EvalContext) (mappings : 
   | some bindings => .ok bindings
   | none => .error (.unsupported unavailable) -- dynamic-only: whether a source is set is the run's data
 
-/-- The called process a Call names, the one its selector admits (`Program.calledProcessFor`). An expression-named
-called element, a call of the root process and a selector admitting no process or several are refused at admission
-(`work.call.calledElementExpression`, `work.call.rootProcess`, `work.call.calledProcessMissing`,
-`work.call.ambiguous`). -/
-def calledProcess (ctx : Ctx) (work : CallWork) : Except Failure CalledProcess :=
+/-- The called process the Call on `header`'s element names, the one its selector admits at its caller's deployment
+(`Program.calledProcessFor`, `Program.callerDeployment`). An expression-named called element, a call of the root process
+and a selector admitting no process or several are refused at admission (`work.call.calledElementExpression`,
+`work.call.rootProcess`, `work.call.calledProcessMissing`, `work.call.ambiguous`). -/
+def calledProcess (ctx : Ctx) (header : Header) (work : CallWork) : Except Failure CalledProcess :=
   let resolution := ctx.program.options.calledElementResolution
   match work.calledElement with
   | .expression _ => .error (.unsupported "work-call-called-element-expression")
   | .literal _ =>
     if ctx.program.callsRoot resolution work then .error (.unsupported "work-call-root-process")
-    else match ctx.program.calledProcessFor resolution ctx.program.identity.deployment work with
+    else match ctx.program.calledProcessFor resolution (ctx.program.callerDeployment header) work with
       | [process] => .ok process
       | _ => .error (.semanticFailure "call-without-called-process")
 
@@ -44,7 +44,7 @@ def calledProcess (ctx : Ctx) (work : CallWork) : Except Failure CalledProcess :
 starts (`Signal.armScope`, as `Scopes.enter` arms a Sub-Process), and begin its none start. -/
 def invoke (ctx : Ctx) (header : Header) (payload : ActivityPayload) (work : CallWork) (occurrence : Occurrence)
     (state : State) : Outcome := do
-  let process ← calledProcess ctx work
+  let process ← calledProcess ctx header work
   let children := ctx.program.processChildren process
   let inputs ← copy ctx "call-input-unavailable" (state.evalContext occurrence.scope) work.inputs
   match children.findSome? fun child => child.start?.bind fun (start, payload) =>

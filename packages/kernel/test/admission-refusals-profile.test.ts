@@ -83,12 +83,6 @@ export const rows: readonly Row[] = [
     control: (program) => terminatingCalledProcess(withOptions(program, completesNormally)),
   },
   {
-    code: "profile.calledElementResolution.cibKey",
-    description: "a called element resolved as CIB's key text",
-    mutate: option({ calledElementResolution: "cibKey" }),
-    control: option({ calledElementResolution: "qualifiedName" }),
-  },
-  {
     code: "profile.messageThrowForms.cibForms",
     description: "CIB's message throw forms",
     mutate: option({ messageThrowForms: "cibForms" }),

@@ -1,0 +1,77 @@
+{
+  "kind": "populationScenario",
+  "id": "call-binding-population-nested-callee-binds-at-own-deployment",
+  "profile": "bpmn-2.0.2",
+  "definitions": [
+    {
+      "definitionRef": "call-binding-population-review-first",
+      "bpmn": {
+        "id": "call-binding-population-review-first",
+        "relativePath": "scenarios/open-rows/call-binding-population/review-first.bpmn",
+        "sha256": "141ccdde9ac71b63e80a98e3ff18a8206f4693e63c41fde022f38ecdf31ac315",
+        "sourceOverlay": null
+      }
+    },
+    {
+      "definitionRef": "call-binding-population-triage",
+      "bpmn": {
+        "id": "call-binding-population-triage",
+        "relativePath": "scenarios/open-rows/call-binding-population/triage.bpmn",
+        "sha256": "d87219cae323663f6c52c3a2a1f3ff448c09b3945c48a3f9507e5256688d3031",
+        "sourceOverlay": null
+      }
+    },
+    {
+      "definitionRef": "call-binding-population-review-second",
+      "bpmn": {
+        "id": "call-binding-population-review-second",
+        "relativePath": "scenarios/open-rows/call-binding-population/review-second.bpmn",
+        "sha256": "ff3eccd836de2d17499c0a26353010a0748891e6e0c7017d693018afc78c046e",
+        "sourceOverlay": null
+      }
+    },
+    {
+      "definitionRef": "call-binding-population-damage-claim",
+      "bpmn": {
+        "id": "call-binding-population-damage-claim",
+        "relativePath": "scenarios/open-rows/call-binding-population/damage-claim.bpmn",
+        "sha256": "da866cef76caf61837d307b514724ea3c0d44a2e78582ada3dfb1a6e46b8d16c",
+        "sourceOverlay": null
+      }
+    }
+  ],
+  "steps": [
+    {
+      "kind": "deploy",
+      "definitionRef": "call-binding-population-review-first",
+      "at": 0
+    },
+    {
+      "kind": "deploy",
+      "definitionRef": "call-binding-population-triage",
+      "at": 10
+    },
+    {
+      "kind": "deploy",
+      "definitionRef": "call-binding-population-review-second",
+      "at": 20
+    },
+    {
+      "kind": "deploy",
+      "definitionRef": "call-binding-population-damage-claim",
+      "at": 30
+    },
+    {
+      "kind": "instance",
+      "definitionRef": "call-binding-population-damage-claim",
+      "instanceId": "DamageClaim_1",
+      "at": 40,
+      "stimulus": {
+        "kind": "start",
+        "commandId": "start-damage-claim-1",
+        "instanceId": "DamageClaim_1",
+        "variables": []
+      }
+    }
+  ]
+}

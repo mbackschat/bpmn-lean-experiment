@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:tns="urn:bpmn-lean:scenarios:call-binding-population:escalation-loop" id="Definitions_EscalationLoop" targetNamespace="urn:bpmn-lean:scenarios:call-binding-population:escalation-loop">
+  <bpmn:process id="FileComplaint" name="File a complaint" isExecutable="true">
+    <bpmn:startEvent id="ComplaintFiled" name="Complaint filed" />
+    <bpmn:callActivity id="Call_Escalate" name="Escalate" calledElement="tns:Escalate" />
+    <bpmn:endEvent id="ComplaintClosed" name="Complaint closed" />
+    <bpmn:sequenceFlow id="Flow_Filed_Escalate" sourceRef="ComplaintFiled" targetRef="Call_Escalate" />
+    <bpmn:sequenceFlow id="Flow_Escalate_Closed" sourceRef="Call_Escalate" targetRef="ComplaintClosed" />
+  </bpmn:process>
+  <bpmn:process id="Escalate" name="Escalate" isExecutable="true">
+    <bpmn:startEvent id="EscalationRequested" name="Escalation requested" />
+    <bpmn:callActivity id="Call_Appeal" name="Appeal" calledElement="tns:Appeal" />
+    <bpmn:endEvent id="EscalationDone" name="Escalation done" />
+    <bpmn:sequenceFlow id="Flow_Requested_Appeal" sourceRef="EscalationRequested" targetRef="Call_Appeal" />
+    <bpmn:sequenceFlow id="Flow_Appeal_Done" sourceRef="Call_Appeal" targetRef="EscalationDone" />
+  </bpmn:process>
+  <bpmn:process id="Appeal" name="Appeal" isExecutable="true">
+    <bpmn:startEvent id="AppealRequested" name="Appeal requested" />
+    <bpmn:callActivity id="Call_EscalateAgain" name="Escalate again" calledElement="tns:Escalate" />
+    <bpmn:endEvent id="AppealDone" name="Appeal done" />
+    <bpmn:sequenceFlow id="Flow_Requested_EscalateAgain" sourceRef="AppealRequested" targetRef="Call_EscalateAgain" />
+    <bpmn:sequenceFlow id="Flow_EscalateAgain_Done" sourceRef="Call_EscalateAgain" targetRef="AppealDone" />
+  </bpmn:process>
+</bpmn:definitions>

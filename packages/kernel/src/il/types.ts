@@ -846,6 +846,15 @@ export function programProcessOf(program: Program, header: Header): CalledProces
 }
 
 /**
+ * The deploy ordinal a Call on `header`'s element binds at: its copy's, for an element of another deployment's process
+ * the program carries, else the program's own, so a process binds the same callees in every program that carries it
+ * (PC-SCOPE-03).
+ */
+export function programCallerDeployment(program: Program, header: Header): number | null {
+  return programProcessOf(program, header)?.definition.deployment ?? program.identity.deployment;
+}
+
+/**
  * The source element type of an element or boundary, which semantic publication shows. A boundary has no header; BPMN
  * has one element type for it.
  */

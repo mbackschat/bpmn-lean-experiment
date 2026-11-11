@@ -1094,6 +1094,66 @@ BPMN 2.0.2 names no deployment and no rule that two processes' Message starts mu
 
 **Boundary:** Root Message starts of each deployment's root process in one tenant-less population; a called process's starts are never a population's start addresses.
 
+### CIB-LIM-0031 — a Call binds its callee when its caller is deployed, CIB at each invocation
+
+**Status:** Profile limitation of program-assembly binding (PC-SCOPE-03) under every profile; not a deviation
+
+BPMN 2.0.2 §10.3.6 gives a Call Activity's `calledElement` a CallableElement and names no deployment, version or binding time. CIB Seven `2.2.0` looks the callee up when the Call is reached: `latest` finds the latest version deployed by then, `deployment` the caller's own deployment's process, and `version` or `versionTag` the one definition carrying it, and a selector that names no definition or several fails the invoking command. The kernel binds when the caller is deployed: a Call on a process of deployment `d` resolves only among the carried processes of deployments up to `d`, so a process binds the same callees in every program that carries it, and a selector naming no carried process (`work.call.calledProcessMissing`) or several (`work.call.ambiguous`) refuses the deployment. A callee version or tag deployed after its caller is reached by CIB and not by the kernel; a missing or ambiguous target is refused by the kernel before any instance starts, where CIB fails only the invocation that reaches it. The binding is recorded per called instance, so recovery never re-resolves.
+
+**Evidence:** Pinned `CallableElementUtil.java:75-103`, `ProcessDefinitionManager.java:141-162`; the kernel population witnesses `call-binding-population/nested-callee-binds-at-own-deployment` (kernel version 1, CIB `latest` at invocation version 2) and `call-binding-time/*`. No retained CIB answer for a population yet: the runner has no population mode.
+
+**Boundary:** Every Call selector of both `calledElementResolution` readings; expression selectors stay CIB-LIM-0032, tenants CIB-LIM-0033 and recursion CIB-LIM-0034. `callBindingTime = invocation` stays refused (`profile.callBindingTime.invocation`).
+
+### CIB-LIM-0032 — a Call's key, version or version tag given by an expression is refused
+
+**Status:** Profile limitation of program-assembly binding; not a deviation
+
+CIB Seven `2.2.0` evaluates a `calledElement`, `calledElementVersion` or `calledElementVersionTag` expression in the calling execution at each invocation (`BaseCallableElement.java:49-57`, `:95-128`), so the callee is chosen by run-time data. Binding at deployment cannot read run-time data, so the kernel refuses a called element given by an expression (`work.call.calledElementExpression`) and, under `cibKey`, a version or tag given by one (`work.call.bindingExpression`). BPMN 2.0.2 §10.3.6 names a CallableElement statically.
+
+**Evidence:** Pinned `BaseCallableElement.java:49-57`, `:95-128`, `CallableElementUtil.java:45-50`; retained `call-binding-time/call-dynamic`, which CIB commits and the kernel refuses.
+
+**Boundary:** Call Activities under both readings; literal selectors are CIB-LIM-0031.
+
+### CIB-LIM-0033 — a Call's tenant is refused in one tenant-less population
+
+**Status:** Profile limitation; not a deviation
+
+CIB Seven `2.2.0` lets a Call name the tenant whose definitions it searches (`camunda:calledElementTenantId`, `BaseCallableElement.getDefinitionTenantId`). BPMN 2.0.2 has no tenant, and a population is one tenant-less deployment registry, so the kernel refuses a Call's tenant (`work.call.tenant`) and a carried definition bound to one (`process.definition.binding`).
+
+**Evidence:** Pinned `CallableElementUtil.java:48`, `:64`, `:84-99`, `BpmnParse.java:4030-4039`; retained `call-binding-time/call-tenant-selector`, which CIB rolls back at invocation.
+
+**Boundary:** Call Activities and carried process definitions under every profile.
+
+### CIB-LIM-0034 — a recursive Call is refused
+
+**Status:** Profile limitation of program-assembly binding; not a deviation
+
+CIB Seven `2.2.0` runs a Call whose callee leads back to the calling definition as a new instance per invocation, with no cycle check in `CallActivityBehavior` or `CallableElementUtil`. BPMN 2.0.2 §10.3.6 does not forbid recursion. The kernel binds a program's calls once, so it refuses a Call of the root process (`work.call.rootProcess`) and a Call on a carried process whose bound callee leads back to that process (`work.call.cycle`). Because a process binds only callees deployed no later than itself (CIB-LIM-0031), such a cycle arises only among the processes of one deployment.
+
+**Evidence:** Pinned `CallActivityBehavior.java`, `CallableElementUtil.java:45-103` (no cycle check); the kernel population witness `call-binding-population/carried-call-cycle`, refused by the kernel. No retained CIB answer for it yet.
+
+**Boundary:** Calls of the root process and cycles among carried processes under every profile.
+
+### CIB-LIM-0035 — a Call's Data Associations to a callee of another deployment are refused
+
+**Status:** Profile limitation; not a deviation
+
+BPMN 2.0.2 §10.3.6 makes a Call's Data Inputs and Outputs correspond to its callee's without an association between them; the kernel reads that correspondence by position only within the caller's own document, where the reader sees both. A callee of another deployment carries no correspondence the program holds, so the kernel refuses such a Call's Data Associations (`work.call.dataAcrossDeployments`). CIB Seven `2.2.0` parses no Call Data Association (CIB-LIM-0013), so it deploys the Call and ignores them.
+
+**Evidence:** Pinned `BpmnParse.java` (no `dataInputAssociation` parsing outside a Multi-Instance loop, CIB-LIM-0013); the kernel test `packages/kernel/test/admission-refusals-work.test.ts`.
+
+**Boundary:** Standard Call data whose bound callee is a copy of another deployment's process; CIB variable mappings (`camunda:in`, `camunda:out`) are unaffected.
+
+### CIB-LIM-0036 — a Business Rule Task in a copy of another deployment's process is refused
+
+**Status:** Profile limitation; not a deviation
+
+Under `BusinessRuleTask.decisionTable` (CIB-EXT-0032) a Business Rule Task names a decision among the DMN resources deployed with its own document. A deployment's program carries a copy of another deployment's called process, but not that deployment's DMN resources, so the kernel refuses a Business Rule Task in such a copy (`work.rule.acrossDeployments`). CIB Seven `2.2.0` resolves the decision when the task is reached, across deployments by key.
+
+**Evidence:** The kernel test `packages/kernel/test/admission-refusals-decision.test.ts`. No retained CIB answer yet.
+
+**Boundary:** Business Rule Tasks of carried copies; one in the deploying document's own processes is CIB-EXT-0032.
+
 ## Extension register
 
 ### CIB-LIM-0025 — CIB admits two interrupting Error Event Sub-Processes of one code in one scope
@@ -1590,6 +1650,16 @@ BPMN 2.0.2 Table 10.84 lets a Conditional Start Event's condition refer only to 
 **Evidence:** Pinned `cmd/EvaluateStartConditionCmd.java:49-83`, `runtime/DefaultConditionHandler.java:44-134`, `el/UelExpressionCondition.java:49-67`; retained `conditional-start-compositions/large-order-*` and `expedited-order-*`, which agree once the profile selects this entry.
 
 **Boundary:** Root Conditional start Events of the root process, started by a single-instance start input. Event Sub-Process and intermediate Conditional Events stay CIB-EXT-0035.
+
+### CIB-EXT-0045 — a Call names its callee by key text and binds a deployment, a version or a version tag
+
+**Status:** Optional CIB extension for `CalledElementResolution.cibKey`; selected by the cibseven profiles
+
+BPMN 2.0.2 types `calledElement` as `xsd:QName` (`Semantic.xsd:149`) and names no version; the standards reading (`qualifiedName`) resolves it through its namespace binding and binds the latest carried version (`work.call.binding` for any other binding). CIB Seven `2.2.0` reads `calledElement` as a definition key text, prefix included, and selects by `camunda:calledElementBinding`: `latest`, `deployment` (the caller's own deployment), `version` (`camunda:calledElementVersion`) or `versionTag` (`camunda:calledElementVersionTag`). Under `cibKey` the kernel names the carried process whose key equals the literal text and admits the same four bindings with literal values, each resolved when the caller is deployed (CIB-LIM-0031): `latest` the highest eligible version, `deployment` the eligible process of the caller's own deployment, `version` and `versionTag` the eligible process carrying it. A prefixed text such as `tns:CalledProcess` names no carried process and is refused as missing, where CIB rolls the invocation back by the same key lookup; two eligible processes with one tag are `work.call.ambiguous`.
+
+**Evidence:** Pinned `BpmnParse.java:3945-3987`, `:4016-4070`, `CallableElementUtil.java:75-103`, `ProcessDefinitionManager.java:141-162`; retained `call-binding-time/*`, which stay PC-SCOPE-03 disagreements under the cibseven profiles (the reader refuses `binding-forms` as `source.schema`, admission the `tag-binding` Calls as `work.call.calledProcessMissing`), and `called-process-call-activity` (negative calibration of the standards reading: CIB rolls back by key text where `qualifiedName` resolves the QName).
+
+**Boundary:** Literal Call selectors; expression selectors are CIB-LIM-0032 and tenants CIB-LIM-0033.
 
 ## Permitted operational-detail register
 

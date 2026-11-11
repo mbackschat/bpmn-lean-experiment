@@ -141,7 +141,7 @@ export function kernelProfileOptions(relations: readonly string[]): KernelProfil
     signalPayload: selects("CIB-EXT-0040", "CIB-EXT-0043") ? "variables" : "none",
     signalDelivery: selects("CIB-EXT-0042") ? "occurrenceTargeted" : "broadcastOnly",
     conditionalStart: selects("CIB-EXT-0044") ? "submittedContext" : "refused",
-    calledElementResolution: "qualifiedName",
+    calledElementResolution: selects("CIB-EXT-0045") ? "cibKey" : "qualifiedName",
     messageThrowForms: "refused",
   };
 }

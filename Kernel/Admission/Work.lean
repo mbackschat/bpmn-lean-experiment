@@ -122,13 +122,69 @@ def dataCorrespondence (work : CallWork) : Option String :=
 (PC-SCOPE-04). `loopCounter` is not among them: CIB's list holds only the three instance counts. -/
 def multiInstanceCounters : List String := multiInstanceCounterNames.erase "loopCounter"
 
-/-- A Call names a called process literally that the program carries, not the root process, binds the latest version, carries no business key or tenant and maps its data explicitly; its mappings
-live in `CallWork`, never in the envelope. Under `CalledElementResolution.qualifiedName` the literal is a QName, and one
-whose prefix has no namespace binding names nothing (`Semantic.xsd:149`). A carried process must answer the name before
-the binding is read, and exactly one the whole selector (`Program.calledProcessFor`, PC-SCOPE-03). -/
-def call (program : Program) (work : CallWork) : Option String :=
+/-- A Call binds the latest version in every profile; under `cibKey` also its caller's own `deployment` and a literal
+`version` or `versionTag` (CIB-EXT-0045), each resolved when its caller is deployed. CIB resolves a version or tag an
+expression gives at each invocation (`CallableElementUtil.java:75-103`), which binding at deployment cannot
+(CIB-LIM-0032). -/
+def callBinding (resolution : CalledElementResolution) (binding : CallBinding) : Option String :=
+  match resolution, binding with
+  | _, .latest => none
+  | .qualifiedName, _ => some "work.call.binding"
+  | .cibKey, .deployment => none
+  | .cibKey, .version (.literal _) => none
+  | .cibKey, .versionTag (.literal _) => none
+  | .cibKey, .version (.expression _) => some "work.call.bindingExpression"
+  | .cibKey, .versionTag (.expression _) => some "work.call.bindingExpression"
+
+/-- The carried process a Call on `header`'s element binds, when its selector admits exactly one. -/
+def boundProcess (program : Program) (header : Header) (work : CallWork) : Option CalledProcess :=
+  match program.calledProcessFor program.options.calledElementResolution (program.callerDeployment header) work with
+  | [process] => some process
+  | _ => none
+
+/-- The carried processes the Calls on `process`'s elements bind. -/
+def callees (program : Program) (process : CalledProcess) : List CalledProcess :=
+  program.elements.filterMap fun element =>
+    if ((program.processOf element.header).map (·.definition)) == some process.definition then
+      element.activity?.bind fun (header, payload) => payload.work.call?.bind (boundProcess program header ·)
+    else none
+
+/-- Whether `origin` is in `frontier` or among the processes its Calls bind, transitively. Each process is expanded
+once (`seen`), so the search is linear in the carried processes, which also bound its rounds (`fuel`). -/
+def callsInto (program : Program) (origin : DefinitionRef) : Nat → List DefinitionRef → List CalledProcess → Bool
+  | 0, _, _ => false
+  | fuel + 1, seen, frontier =>
+    let fresh := frontier.filter (!seen.contains ·.definition)
+    fresh.any (·.definition == origin) ||
+      (!fresh.isEmpty && callsInto program origin fuel (seen ++ fresh.map (·.definition)) (fresh.flatMap (callees program)))
+
+/-- A Call on a carried process whose callee leads back to that process is recursion, which CIB runs as a new instance
+per invocation and assembly-time binding refuses (CIB-LIM-0034), as a call of the root process is. -/
+def cycle (program : Program) (header : Header) (work : CallWork) : Option String :=
+  match program.processOf header, boundProcess program header work with
+  | some own, some callee =>
+    if callsInto program own.definition (program.processes.length + 1) [] [callee] then some "work.call.cycle" else none
+  | _, _ => none
+
+/-- A Call's Data Associations correspond to its callee's by position (BPMN 2.0.2 §10.3.6), which the reader resolves
+only within the caller's document; a callee of another deployment has no correspondence the program carries
+(CIB-LIM-0035). -/
+def dataAcrossDeployments (program : Program) (header : Header) (work : CallWork) : Option String :=
+  let deployment := program.callerDeployment header
+  if (work.inputs ++ work.outputs).any (·.dialect == .dataAssociation) &&
+      ((boundProcess program header work).map (·.definition.deployment)).any (· != deployment) then
+    some "work.call.dataAcrossDeployments"
+  else none
+
+/-- A Call names a called process literally that the program carries, not the root process, binds as its profile
+admits (`callBinding`), carries no business key or tenant and maps its data explicitly; its mappings live in `CallWork`,
+never in the envelope. Under `CalledElementResolution.qualifiedName` the literal is a QName, and one whose prefix has no
+namespace binding names nothing (`Semantic.xsd:149`). A carried process eligible for the Call's caller must answer the
+name before the binding is read, and exactly one the whole selector (`Program.calledProcessFor`); a Call on a carried
+process binds at that process's deployment (`Program.callerDeployment`, PC-SCOPE-03). -/
+def call (program : Program) (header : Header) (work : CallWork) : Option String :=
   let resolution := program.options.calledElementResolution
-  let deployment := program.identity.deployment
+  let deployment := program.callerDeployment header
   let element : Option String :=
     match work.calledElement with
     | .literal _ =>
@@ -138,23 +194,24 @@ def call (program : Program) (work : CallWork) : Option String :=
           process.definition.eligibleFor deployment && work.namesDefinition resolution process.definition) then none
       else some "work.call.calledProcessMissing"
     | .expression _ => some "work.call.calledElementExpression"
-  let binding : Option String :=
-    match work.binding with
-    | .latest => none
-    | .deployment => some "work.call.binding"
-    | .version _ => some "work.call.binding"
-    | .versionTag _ => some "work.call.binding"
   let selected : Option String :=
     match program.calledProcessFor resolution deployment work with
     | [_] => none
     | [] => some "work.call.calledProcessMissing"
     | _ :: _ :: _ => some "work.call.ambiguous"
-  element <|> binding <|> selected <|>
+  element <|> callBinding resolution work.binding <|> selected <|> cycle program header work <|>
     (if work.outputs.any (multiInstanceCounters.contains ·.target) then some "work.call.multiInstanceCounterOutput"
      else if work.businessKey.isSome then some "work.call.businessKey"
      else if work.tenant.isSome then some "work.call.tenant"
      else if work.propagateAllInputs || work.propagateAllOutputs then some "work.call.propagateAll"
-     else dataCorrespondence work)
+     else dataCorrespondence work <|> dataAcrossDeployments program header work)
+
+/-- A Business Rule Task names a decision among the DMN resources deployed with its own document, which a copy of
+another deployment's process does not carry (CIB-LIM-0036). -/
+def ruleAcrossDeployments (program : Program) (header : Header) : Option String :=
+  if (program.processOf header).any (·.definition.deployment.any (some · != program.identity.deployment)) then
+    some "work.rule.acrossDeployments"
+  else none
 
 /-- A model string CIB evaluates as an expression: it holds `${` or `#{`, the reader's own marker. -/
 def expressionText (value : String) : Bool :=
@@ -223,7 +280,7 @@ def userTask (task : UserWork) : Option String :=
 def service (work : ServiceWork) : Option String :=
   if work.protocol.isEmpty || work.operation.isEmpty then some "work.service.unboundImplementation" else none
 
-def activity (program : Program) (payload : ActivityPayload) : Option String :=
+def activity (program : Program) (header : Header) (payload : ActivityPayload) : Option String :=
   let work : Option String :=
     match payload.work with
     | .none => none
@@ -233,8 +290,8 @@ def activity (program : Program) (payload : ActivityPayload) : Option String :=
     | .service work => service work
     | .send _ => some "work.send"
     | .script _ => some "work.script"
-    | .rule work => Decision.task program work payload.envelope
-    | .call work => call program work
+    | .rule work => ruleAcrossDeployments program header <|> Decision.task program work payload.envelope
+    | .call work => call program header work
   let read := traits payload.work
   work <|> handlerKey program read.handlerKey <|> workEnvelope program.options read payload.envelope
 

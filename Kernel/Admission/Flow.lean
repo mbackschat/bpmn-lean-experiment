@@ -16,13 +16,12 @@ def distinct {α : Type} [DecidableEq α] (list : List α) : Bool :=
 /-! ## References -/
 
 /-- Where an element or boundary sits: its parent Scope, and for a process-level element the called process holding
-it (`none` for the root process). A boundary sits where its host does. -/
-def place (program : Program) (id : ElementId) : Option (Option ElementId × Option String) :=
-  let located (element : Element) : Option ElementId × Option String :=
+it by its position among the carried processes (`none` for the root process), since one key names every carried version
+of a process (PC-SCOPE-03). A boundary sits where its host does. -/
+def place (program : Program) (id : ElementId) : Option (Option ElementId × Option Nat) :=
+  let located (element : Element) : Option ElementId × Option Nat :=
     (element.header.parent,
-      if element.header.parent.isNone then
-        (program.processes.find? (·.children.contains element.header.id)).map (·.definition.key)
-      else none)
+      if element.header.parent.isNone then program.processes.findIdx? (·.children.contains element.header.id) else none)
   match program.element? id with
   | some element => some (located element)
   | none => (program.boundary? id).map fun (host, _) => located host

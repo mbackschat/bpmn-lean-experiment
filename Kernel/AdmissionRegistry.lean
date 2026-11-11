@@ -174,7 +174,7 @@ def element (program : Program) (throws : List Element) : Element → Option Str
       (payload.work.call?.bind fun work =>
         Admission.Data.mappings program.options.evaluator (site program (some header.id)) work.inputs <|>
           Admission.Data.mappings program.options.evaluator (site program (some header.id)) work.outputs) <|>
-      Admission.Work.activity program payload <|>
+      Admission.Work.activity program header payload <|>
       activityOrigin program header payload <|>
       payload.envelope.multiInstance.bind
         (Admission.MultiInstance.activityLoop program.options Admission.Data.loopExpression
@@ -245,7 +245,8 @@ def flow (program : Program) (entry : Flow) : Option String :=
     Admission.Flow.concurrentWrite program entry
 
 /-- A called process's deployment, version and version tag are the population's stamps, which `Population.deploy`
-validates against its registry (PC-SCOPE-03); the population has one tenant, so a tenant stays refused. -/
+validates against its registry (PC-SCOPE-03); the population has one tenant, so a tenant stays refused
+(CIB-LIM-0033). -/
 def calledProcessBinding (process : CalledProcess) : Option String :=
   if process.definition.tenant.isSome then some "process.definition.binding" else none
 

@@ -18,15 +18,23 @@ import {
   CalledElementResolution,
   callWorkNamesDefinition,
   definitionRefEligibleFor,
+  definitionRefEquals,
+  elementHeader,
   programCalledProcessFor,
+  programCallerDeployment,
   programCallsRoot,
+  programProcessOf,
+  workCall,
   elementActivity,
   elementEnvelope,
   multiInstanceCounterNames,
   parseJavaInt,
   type ActivityPayload,
   type CallBinding,
+  type CalledProcess,
   type CallWork,
+  type DefinitionRef,
+  type Header,
   type Envelope,
   type Mapping,
   type Program,
@@ -182,12 +190,13 @@ function dataCorrespondence(work: CallWork): string | null {
 
 /**
  * Under `CalledElementResolution.qualifiedName` the literal is a QName, and one whose prefix has no namespace binding
- * names nothing (`Semantic.xsd:149`). A carried process must answer the name before the binding is read (PC-SCOPE-03).
+ * names nothing (`Semantic.xsd:149`). A carried process eligible for the Call's caller must answer the name before the
+ * binding is read (PC-SCOPE-03).
  */
-function calledElement(program: Program, work: CallWork): string | null {
+function calledElement(program: Program, header: Header, work: CallWork): string | null {
   const called = work.calledElement;
   const resolution = program.options.calledElementResolution;
-  const deployment = program.identity.deployment;
+  const deployment = programCallerDeployment(program, header);
   switch (called.tag) {
     case ValueSourceTag.Expression:
       return "work.call.calledElementExpression";
@@ -202,24 +211,85 @@ function calledElement(program: Program, work: CallWork): string | null {
   return assertNever(called);
 }
 
-/** Exactly one carried process must answer the whole selector (`programCalledProcessFor`, PC-SCOPE-03). */
-function calledProcess(program: Program, work: CallWork): string | null {
+/** Exactly one carried process must answer the whole selector at the Call's caller's deployment (PC-SCOPE-03). */
+function calledProcess(program: Program, header: Header, work: CallWork): string | null {
   const resolution = program.options.calledElementResolution;
-  const processes = programCalledProcessFor(program, resolution, program.identity.deployment, work);
+  const processes = programCalledProcessFor(program, resolution, programCallerDeployment(program, header), work);
   if (processes.length === 0) return "work.call.calledProcessMissing";
   return processes.length === 1 ? null : "work.call.ambiguous";
 }
 
-function callBinding(binding: CallBinding): string | null {
+/**
+ * A Call binds the latest version in every profile; under `cibKey` also its caller's own `deployment` and a literal
+ * `version` or `versionTag` (CIB-EXT-0045), each resolved when its caller is deployed. CIB resolves a version or tag an
+ * expression gives at each invocation (`CallableElementUtil.java:75-103`), which binding at deployment cannot
+ * (CIB-LIM-0032).
+ */
+function callBinding(resolution: CalledElementResolution, binding: CallBinding): string | null {
+  if (binding.tag === CallBindingTag.Latest) return null;
+  if (resolution === CalledElementResolution.QualifiedName) return "work.call.binding";
   switch (binding.tag) {
-    case CallBindingTag.Latest:
-      return null;
     case CallBindingTag.Deployment:
+      return null;
     case CallBindingTag.Version:
     case CallBindingTag.VersionTag:
-      return "work.call.binding";
+      return binding.value.tag === ValueSourceTag.Literal ? null : "work.call.bindingExpression";
   }
   return assertNever(binding);
+}
+
+/** The carried process a Call on `header`'s element binds, when its selector admits exactly one. */
+function boundProcess(program: Program, header: Header, work: CallWork): CalledProcess | null {
+  const resolution = program.options.calledElementResolution;
+  const [process, ...others] = programCalledProcessFor(program, resolution, programCallerDeployment(program, header), work);
+  return process !== undefined && others.length === 0 ? process : null;
+}
+
+/** The carried processes the Calls on `process`'s elements bind. */
+function callees(program: Program, process: CalledProcess): readonly CalledProcess[] {
+  return program.elements.flatMap((element) => {
+    const owner = programProcessOf(program, elementHeader(element));
+    const activity = elementActivity(element);
+    const work = activity === null ? null : workCall(activity[1].work);
+    if (owner === null || !definitionRefEquals(owner.definition, process.definition) || activity === null || work === null) return [];
+    const bound = boundProcess(program, activity[0], work);
+    return bound === null ? [] : [bound];
+  });
+}
+
+/**
+ * Whether `origin` is in `frontier` or among the processes its Calls bind, transitively. Each process is expanded once
+ * (`seen`), so the search is linear in the carried processes, which also bound its rounds (`fuel`).
+ */
+function callsInto(program: Program, origin: DefinitionRef, fuel: number, seen: readonly DefinitionRef[],
+  frontier: readonly CalledProcess[]): boolean {
+  if (fuel === 0) return false;
+  const fresh = frontier.filter((process) => !seen.some((definition) => definitionRefEquals(definition, process.definition)));
+  return fresh.some((process) => definitionRefEquals(process.definition, origin)) ||
+    (fresh.length > 0 && callsInto(program, origin, fuel - 1, [...seen, ...fresh.map((process) => process.definition)],
+      fresh.flatMap((process) => callees(program, process))));
+}
+
+/**
+ * A Call on a carried process whose callee leads back to that process is recursion, which CIB runs as a new instance per
+ * invocation and assembly-time binding refuses (CIB-LIM-0034), as a call of the root process is.
+ */
+function cycle(program: Program, header: Header, work: CallWork): string | null {
+  const own = programProcessOf(program, header);
+  const callee = boundProcess(program, header, work);
+  if (own === null || callee === null) return null;
+  return callsInto(program, own.definition, program.processes.length + 1, [], [callee]) ? "work.call.cycle" : null;
+}
+
+/**
+ * A Call's Data Associations correspond to its callee's by position (BPMN 2.0.2 §10.3.6), which the reader resolves only
+ * within the caller's document; a callee of another deployment has no correspondence the program carries (CIB-LIM-0035).
+ */
+function dataAcrossDeployments(program: Program, header: Header, work: CallWork): string | null {
+  const callee = boundProcess(program, header, work);
+  const data = [...work.inputs, ...work.outputs].some((mapping) => mapping.dialect === MappingDialect.DataAssociation);
+  return data && callee !== null && callee.definition.deployment !== programCallerDeployment(program, header)
+    ? "work.call.dataAcrossDeployments" : null;
 }
 
 /**
@@ -230,18 +300,28 @@ function callBinding(binding: CallBinding): string | null {
 const multiInstanceCounters: readonly string[] = multiInstanceCounterNames.filter((name) => name !== "loopCounter");
 
 /**
- * A Call names a called process literally that the program carries, not the root process and without an Event
- * Sub-Process, binds the latest version, carries no business key or tenant and maps its data explicitly; its mappings
- * live in `CallWork`, never in the envelope.
+ * A Call names a called process literally that the program carries, not the root process, binds as its profile admits
+ * (`callBinding`), carries no business key or tenant and maps its data explicitly; its mappings live in `CallWork`,
+ * never in the envelope. A Call on a carried process binds at that process's deployment (`programCallerDeployment`).
  */
-function call(program: Program, work: CallWork): string | null {
-  const refused = calledElement(program, work) ?? callBinding(work.binding) ?? calledProcess(program, work);
+function call(program: Program, header: Header, work: CallWork): string | null {
+  const refused = calledElement(program, header, work) ?? callBinding(program.options.calledElementResolution, work.binding) ??
+    calledProcess(program, header, work) ?? cycle(program, header, work);
   if (refused !== null) return refused;
   if (work.outputs.some((mapping) => multiInstanceCounters.includes(mapping.target))) return "work.call.multiInstanceCounterOutput";
   if (work.businessKey !== null) return "work.call.businessKey";
   if (work.tenant !== null) return "work.call.tenant";
   if (work.propagateAllInputs || work.propagateAllOutputs) return "work.call.propagateAll";
-  return dataCorrespondence(work);
+  return dataCorrespondence(work) ?? dataAcrossDeployments(program, header, work);
+}
+
+/**
+ * A Business Rule Task names a decision among the DMN resources deployed with its own document, which a copy of another
+ * deployment's process does not carry (CIB-LIM-0036).
+ */
+function ruleAcrossDeployments(program: Program, header: Header): string | null {
+  const deployment = programProcessOf(program, header)?.definition.deployment ?? null;
+  return deployment !== null && deployment !== program.identity.deployment ? "work.rule.acrossDeployments" : null;
 }
 
 /** A model string CIB evaluates as an expression: it holds `${` or `#{`, the reader's own marker. */
@@ -325,7 +405,7 @@ function service(work: ServiceWork): string | null {
   return work.protocol.length === 0 || work.operation.length === 0 ? "work.service.unboundImplementation" : null;
 }
 
-function work(program: Program, payload: ActivityPayload): string | null {
+function work(program: Program, header: Header, payload: ActivityPayload): string | null {
   const assigned = payload.work;
   switch (assigned.tag) {
     case WorkTag.None:
@@ -342,14 +422,14 @@ function work(program: Program, payload: ActivityPayload): string | null {
     case WorkTag.Script:
       return "work.script";
     case WorkTag.Rule:
-      return Decision.task(program, assigned.payload, payload.envelope);
+      return ruleAcrossDeployments(program, header) ?? Decision.task(program, assigned.payload, payload.envelope);
     case WorkTag.Call:
-      return call(program, assigned.payload);
+      return call(program, header, assigned.payload);
   }
   return assertNever(assigned);
 }
 
-export function activity(program: Program, payload: ActivityPayload): string | null {
+export function activity(program: Program, header: Header, payload: ActivityPayload): string | null {
   const read = traits(payload.work);
-  return work(program, payload) ?? handlerKey(program, read.handlerKey) ?? workEnvelope(program.options, read, payload.envelope);
+  return work(program, header, payload) ?? handlerKey(program, read.handlerKey) ?? workEnvelope(program.options, read, payload.envelope);
 }

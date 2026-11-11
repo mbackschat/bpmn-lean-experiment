@@ -673,6 +673,12 @@ def processOf (program : Program) (header : Header) : Option CalledProcess :=
   let top := outermost program.elements.length header.id
   program.processes.find? (·.children.contains top)
 
+/-- The deploy ordinal a Call on `header`'s element binds at: its copy's, for an element of another deployment's process
+the program carries, else the program's own, so a process binds the same callees in every program that carries it
+(PC-SCOPE-03). -/
+def callerDeployment (program : Program) (header : Header) : Option Nat :=
+  ((program.processOf header).bind (·.definition.deployment)).orElse fun _ => program.identity.deployment
+
 /-- The source element type of an element or boundary, which semantic publication shows. A boundary has no header; BPMN
 has one element type for it. -/
 def sourceType? (program : Program) (id : ElementId) : Option String :=

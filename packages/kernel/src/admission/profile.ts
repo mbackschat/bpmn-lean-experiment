@@ -10,7 +10,6 @@
 import {
   AbnormalScopeEnd,
   CallBindingTime,
-  CalledElementResolution,
   CompensationHandlerFailureTag,
   CompensationOrder,
   DeliveryVariables,
@@ -59,6 +58,5 @@ export function options(abnormalScope: boolean, loops: boolean, selected: Profil
   if (abnormalScope && selected.abnormalScopeEnd === AbnormalScopeEnd.WithoutOutflow) return "profile.abnormalScopeEnd.withoutOutflow";
   const loop = multiInstance(loops, selected);
   if (loop !== null) return loop;
-  if (selected.calledElementResolution === CalledElementResolution.CibKey) return "profile.calledElementResolution.cibKey";
   return selected.messageThrowForms === MessageThrowForms.CibForms ? "profile.messageThrowForms.cibForms" : null;
 }

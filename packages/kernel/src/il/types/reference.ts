@@ -97,9 +97,10 @@ export function callWorkNamesDefinition(resolution: CalledElementResolution, wor
 
 /**
  * The definitions among `carried` a Call's selector admits for a caller deployed at `callerDeployment`: the eligible ones
- * it targets, narrowed by its binding. `latest` keeps the highest version, an unversioned definition counting lowest;
- * `deployment` the caller's own deployment; a literal `version` or `versionTag` the definitions carrying it; an
- * expression admits none. More than one result is an ambiguous selector, none a missing one.
+ * it targets, narrowed by its binding. `latest` keeps the highest version; `deployment` the caller's own deployment; a
+ * literal `version` or `versionTag` the definitions carrying it; an expression admits none. A definition no population
+ * stamped is version 1, as every process of a single-instance program is its one deployment's first (population
+ * contract §2.1). More than one result is an ambiguous selector, none a missing one.
  */
 export function callWorkSelects(resolution: CalledElementResolution, callerDeployment: number | null, work: CallWork,
   carried: readonly DefinitionRef[]): readonly DefinitionRef[] {
@@ -109,15 +110,15 @@ export function callWorkSelects(resolution: CalledElementResolution, callerDeplo
     value.tag === ValueSourceTag.Literal ? targets.filter((definition) => keep(value.value, definition)) : [];
   const binding = work.binding;
   if (binding.tag === CallBindingTag.Latest) {
-    const highest = targets.reduce((top, definition) => Math.max(top, definition.version ?? 0), 0);
-    return targets.filter((definition) => (definition.version ?? 0) === highest);
+    const highest = targets.reduce((top, definition) => Math.max(top, definition.version ?? 1), 1);
+    return targets.filter((definition) => (definition.version ?? 1) === highest);
   }
   if (binding.tag === CallBindingTag.Deployment) return targets.filter((definition) => definition.deployment === callerDeployment);
-  // CIB reads a literal version with `Integer.parseInt` (`CallableElementUtil.java:84-97`).
+  // CIB reads a literal version with `Integer.valueOf`, `parseInt`'s decimal reading (`BaseCallableElement.java:95-100`).
   if (binding.tag === CallBindingTag.Version) {
     return literal(binding.value, (text, definition) => {
       const number = parseJavaInt(text);
-      return number !== null && number >= 0n && definition.version === Number(number);
+      return number !== null && number >= 0n && (definition.version ?? 1) === Number(number);
     });
   }
   return literal(binding.value, (text, definition) => definition.versionTag === text);

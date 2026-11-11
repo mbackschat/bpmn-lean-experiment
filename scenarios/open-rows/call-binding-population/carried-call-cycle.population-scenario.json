@@ -1,0 +1,23 @@
+{
+  "kind": "populationScenario",
+  "id": "call-binding-population-carried-call-cycle",
+  "profile": "bpmn-2.0.2",
+  "definitions": [
+    {
+      "definitionRef": "call-binding-population-escalation-loop",
+      "bpmn": {
+        "id": "call-binding-population-escalation-loop",
+        "relativePath": "scenarios/open-rows/call-binding-population/escalation-loop.bpmn",
+        "sha256": "af49e594eca65d26aa2a8acb2543b44d57d918f6f2af9cdfdd75510a5591fa9a",
+        "sourceOverlay": null
+      }
+    }
+  ],
+  "steps": [
+    {
+      "kind": "deploy",
+      "definitionRef": "call-binding-population-escalation-loop",
+      "at": 0
+    }
+  ]
+}

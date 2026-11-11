@@ -15,6 +15,7 @@ import {
   elementActivity,
   elementStart,
   programCalledProcessFor,
+  programCallerDeployment,
   programCallsRoot,
   programElement,
   programProcessChildren,
@@ -61,11 +62,12 @@ function copy(ctx: Ctx, unavailable: string, context: EvalContext, mappings: rea
 }
 
 /**
- * The called process a Call names, the one its selector admits (`programCalledProcessFor`). An expression-named called
- * element, a call of the root process and a selector admitting no process or several are refused at admission
- * (`work.call.calledElementExpression`, `work.call.rootProcess`, `work.call.calledProcessMissing`, `work.call.ambiguous`).
+ * The called process the Call on `header`'s element names, the one its selector admits at its caller's deployment
+ * (`programCalledProcessFor`, `programCallerDeployment`). An expression-named called element, a call of the root
+ * process and a selector admitting no process or several are refused at admission (`work.call.calledElementExpression`,
+ * `work.call.rootProcess`, `work.call.calledProcessMissing`, `work.call.ambiguous`).
  */
-function calledProcess(ctx: Ctx, work: CallWork): Result<CalledProcess> {
+function calledProcess(ctx: Ctx, header: Header, work: CallWork): Result<CalledProcess> {
   const called = work.calledElement;
   const resolution = ctx.program.options.calledElementResolution;
   switch (called.tag) {
@@ -73,7 +75,8 @@ function calledProcess(ctx: Ctx, work: CallWork): Result<CalledProcess> {
       return failed(FailureTag.Unsupported, "work-call-called-element-expression");
     case ValueSourceTag.Literal: {
       if (programCallsRoot(ctx.program, resolution, work)) return failed(FailureTag.Unsupported, "work-call-root-process");
-      const [process, ...others] = programCalledProcessFor(ctx.program, resolution, ctx.program.identity.deployment, work);
+      const deployment = programCallerDeployment(ctx.program, header);
+      const [process, ...others] = programCalledProcessFor(ctx.program, resolution, deployment, work);
       return process === undefined || others.length > 0
         ? failed(FailureTag.SemanticFailure, "call-without-called-process")
         : committed(process);
@@ -87,7 +90,7 @@ function calledProcess(ctx: Ctx, work: CallWork): Result<CalledProcess> {
  * starts (`Signal.armScope`, as `Scopes.enter` arms a Sub-Process), and begin its none start.
  */
 export function invoke(ctx: Ctx, header: Header, payload: ActivityPayload, work: CallWork, occurrence: Occurrence, state: State): Outcome {
-  const process = calledProcess(ctx, work);
+  const process = calledProcess(ctx, header, work);
   if (!process.ok) return process;
   const children = programProcessChildren(ctx.program, process.value);
   const inputs = copy(ctx, "call-input-unavailable", evalContext(state, occurrence.scope), work.inputs);

@@ -6,7 +6,7 @@
  */
 import {
   activity, append, callWork, computed, criterion, definitionRef, loop, mapping, qName, receiveWork, refusalTests,
-  ruleWork, scriptWork, sendWork, serviceWork, task, text, userWork, variable, withOptions,
+  ruleWork, scriptWork, sendWork, serviceWork, task, text, userWork, variable, withOptions, withOrigin,
 } from "./admission-refusal-support.ts";
 import type { Json, Row } from "./admission-refusal-support.ts";
 
@@ -36,6 +36,40 @@ const callVariable = (target: string) => mapping(target, variable("source"), "ca
 const mapped = { inputs: [dataAssociation("in")], outputs: [dataAssociation("out")] };
 
 const user = (over: Json) => withTask(userWork(over));
+
+/** `T` calls `Called` under CIB's key reading (CIB-EXT-0045), whose literal `deployment`, `version` and `versionTag` it admits. */
+const keyed = (over: Json = {}) => (program: Json): Json => calling(over)(withOptions(program, cibKey));
+
+/** Two carried versions of `Called` (`CT` version 1, `CU` version 2) tagged `first` and `second`. */
+const versions = (first: string, second: string) => (program: Json): Json => ({
+  ...append(program, secondCalledChild),
+  processes: [
+    { definition: definitionRef("Called", { version: 1, versionTag: first }), children: ["CT"], variables: [], executable: true },
+    { definition: definitionRef("Called", { version: 2, versionTag: second }), children: ["CU"], variables: [], executable: true },
+  ],
+});
+const tagged = (tag: Json) => (program: Json): Json => versions("gold", "silver")(keyed({ binding: { versionTag: { value: tag } } })(program));
+
+/**
+ * `T` calls `Called`, whose process-level element `CT` is a Call of `next`; another `next` is carried with `CN`, a Call of
+ * `Called` when `back`, else a Task.
+ */
+const chain = (next: string, back = false) => (program: Json): Json => {
+  const called = calling({}, activity("CT", callWork({ calledElement: text(next) }), { incoming: [], outgoing: [] }))(program);
+  if (next === "Called") return called;
+  return {
+    ...append(called, activity("CN", back ? callWork() : "manual", { incoming: [], outgoing: [] })),
+    processes: [...(called.processes as Json[]), { definition: definitionRef(next), children: ["CN"], variables: [], executable: true }],
+  };
+};
+/** `T` calls `Called` with `mapped`; `Called` is a copy of deployment 2 under the unstamped root, its element `CT@2`. */
+const copiedCallee = (program: Json): Json => {
+  const called = task(activity("T", callWork(mapped)))(program);
+  return {
+    ...append(called, withOrigin(activity("CT@2", "manual", { incoming: [], outgoing: [] }), { definition: null, sourceId: "CT" })),
+    processes: [{ definition: definitionRef("Called", { deployment: 2 }), children: ["CT@2"], variables: [], executable: true }],
+  };
+};
 
 export const rows: readonly Row[] = [
   {
@@ -132,9 +166,11 @@ export const rows: readonly Row[] = [
     control: calling(),
   },
   {
-    code: "profile.calledElementResolution.cibKey",
+    // CIB looks the literal text up as a key, prefix included (CIB-EXT-0045); no carried process has that key.
+    code: "work.call.calledProcessMissing",
     description: "under CIB's key reading, a Call Activity whose called element's prefix has no namespace binding",
-    mutate: (program) => calling({ calledQName: null })(withOptions(program, cibKey)),
+    mutate: keyed({ calledElement: text("missing:Called"), calledQName: null }),
+    control: keyed({ calledQName: null }),
   },
   {
     code: "work.call.calledProcessMissing",
@@ -143,9 +179,10 @@ export const rows: readonly Row[] = [
     control: calling(),
   },
   {
-    code: "profile.calledElementResolution.cibKey",
-    description: "under CIB's key reading, a Call Activity whose called element names another namespace",
-    mutate: (program) => calling({ calledQName: qName("Called", foreignNamespace) })(withOptions(program, cibKey)),
+    code: "work.call.calledProcessMissing",
+    description: "under CIB's key reading, a Call Activity whose called element names another namespace by a prefix",
+    mutate: keyed({ calledElement: text("other:Called"), calledQName: qName("Called", foreignNamespace) }),
+    control: keyed({ calledQName: qName("Called", foreignNamespace) }),
   },
   {
     code: "work.call.calledProcessMissing",
@@ -182,6 +219,58 @@ export const rows: readonly Row[] = [
     description: "a Call Activity bound to its deployment",
     mutate: calling({ binding: "deployment" }),
     control: calling({ binding: "latest" }),
+  },
+  {
+    code: "work.call.bindingExpression",
+    description: "under CIB's key reading, a Call Activity bound to a version an expression gives",
+    mutate: keyed({ binding: { version: { value: computed(variable("v")) } } }),
+    control: keyed({ binding: { version: { value: text("1") } } }),
+  },
+  {
+    code: "work.call.bindingExpression",
+    description: "under CIB's key reading, a Call Activity bound to a version tag an expression gives",
+    mutate: tagged(computed(variable("tag"))),
+    control: tagged(text("gold")),
+  },
+  {
+    code: "work.call.calledProcessMissing",
+    description: "under CIB's key reading, a Call Activity bound to a version no carried process has",
+    mutate: keyed({ binding: { version: { value: text("2") } } }),
+    control: keyed({ binding: "deployment" }),
+  },
+  {
+    code: "work.call.calledProcessMissing",
+    description: "under CIB's key reading, a Call Activity bound to a version tag no carried process has",
+    mutate: tagged(text("bronze")),
+    control: tagged(text("silver")),
+  },
+  {
+    code: "work.call.ambiguous",
+    description: "under CIB's key reading, a Call Activity bound to a version tag two carried versions share",
+    mutate: (program) => versions("gold", "gold")(keyed({ binding: { versionTag: { value: text("gold") } } })(program)),
+    control: (program) => versions("gold", "gold")(keyed({ binding: { version: { value: text("2") } } })(program)),
+  },
+  {
+    code: "work.call.cycle",
+    description: "a called process calling itself",
+    mutate: chain("Called"),
+    control: chain("Next"),
+  },
+  {
+    code: "work.call.cycle",
+    description: "two called processes calling each other",
+    mutate: chain("Next", true),
+    control: chain("Next"),
+  },
+  {
+    code: "work.call.dataAcrossDeployments",
+    description: "a Call Activity with Data Associations whose callee is of another deployment",
+    mutate: copiedCallee,
+    control: (program) => {
+      const copied = copiedCallee(program);
+      return { ...copied, elements: (copied.elements as Json[]).map((element) => ((Object.values(element)[0] as Json).header as Json).id === "T"
+        ? activity("T", callWork({ inputs: [callVariable("in")], outputs: [callVariable("out")] })) : element) };
+    },
   },
   {
     code: "work.call.multiInstanceCounterOutput",

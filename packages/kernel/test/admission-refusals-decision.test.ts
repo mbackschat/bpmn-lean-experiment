@@ -4,7 +4,8 @@
  * the subset reaches its stable code; each control is the same construct in its admitted form.
  */
 import {
-  activity, computed, conditionOn, juel, mapping, refusalTests, task, userWork, variable, withOptions,
+  activity, append, computed, conditionOn, definitionRef, juel, mapping, refusalTests, ruleWork, task, userWork, variable,
+  withOptions, withOrigin,
 } from "./admission-refusal-support.ts";
 import type { Json, Row } from "./admission-refusal-support.ts";
 import {
@@ -35,6 +36,18 @@ const outputReads = (name: string) => (program: Json): Json =>
   underJuel(task(activity("T", userWork(), { outputs: [mapping("copy", juelReads(name))] }))(program));
 const conditionReads = (name: string) => (program: Json): Json => underJuel(conditionOn(program, "f2", juelReads(name)));
 
+/**
+ * The admitted decision task with a carried process `Called` whose element is a decision task too: a copy of deployment 2
+ * (`CT@2`) when `copied`, else the root's own document's (`CT`).
+ */
+const inCalled = (copied: boolean) => (program: Json): Json => {
+  const element = activity(copied ? "CT@2" : "CT", ruleWork(), { incoming: [], outgoing: [] });
+  return {
+    ...append(admitted(program), copied ? withOrigin(element, { definition: null, sourceId: "CT" }) : element),
+    processes: [{ definition: definitionRef("Called", { deployment: copied ? 2 : null }), children: [copied ? "CT@2" : "CT"], variables: [], executable: true }],
+  };
+};
+
 const rows: Row[] = [
   { code: "expression.juel.decisionResult", description: "an output parameter reading decisionResult",
     mutate: outputReads("decisionResult"), control: outputReads("grade") },
@@ -53,6 +66,8 @@ const rows: Row[] = [
   { code: "work.rule.binding", description: "a decisionRef bound by deployment", mutate: withRule({ binding: "deployment" }), control: admitted },
   { code: "work.rule.tenant", description: "a decisionRef with a tenant", mutate: withRule({ tenant: { literal: { value: "t" } } }), control: admitted },
   { code: "work.rule.decisionMissing", description: "a decisionRef no carried resource declares", mutate: withRule({}, []), control: admitted },
+  { code: "work.rule.acrossDeployments", description: "a decision task in a copy of another deployment's process",
+    mutate: inCalled(true), control: inCalled(false) },
   { code: "work.rule.resultVariable", description: "a result variable named decisionResult",
     mutate: withRule({ resultVariable: "decisionResult" }), control: withRule({ resultVariable: "grade" }) },
   { code: "decision.namespace", description: "a DMN 1.1 resource",

@@ -84,9 +84,10 @@ def CallWork.namesDefinition (resolution : CalledElementResolution) (work : Call
     | .expression _ => false
 
 /-- The definitions among `carried` a Call's selector admits for a caller deployed at `callerDeployment`: the eligible
-ones it targets, narrowed by its binding. `latest` keeps the highest version, an unversioned definition counting lowest;
-`deployment` the caller's own deployment; a literal `version` or `versionTag` the definitions carrying it; an expression
-admits none. More than one result is an ambiguous selector, none a missing one. -/
+ones it targets, narrowed by its binding. `latest` keeps the highest version; `deployment` the caller's own deployment;
+a literal `version` or `versionTag` the definitions carrying it; an expression admits none. A definition no population
+stamped is version 1, as every process of a single-instance program is its one deployment's first (population
+contract §2.1). More than one result is an ambiguous selector, none a missing one. -/
 def CallWork.selects (resolution : CalledElementResolution) (callerDeployment : Option Nat) (work : CallWork)
     (carried : List DefinitionRef) : List DefinitionRef :=
   let targets := carried.filter fun definition =>
@@ -97,13 +98,13 @@ def CallWork.selects (resolution : CalledElementResolution) (callerDeployment : 
     | .expression _ => []
   match work.binding with
   | .latest =>
-    let highest := targets.foldl (fun top definition => max top (definition.version.getD 0)) 0
-    targets.filter (·.version.getD 0 == highest)
+    let highest := targets.foldl (fun top definition => max top (definition.version.getD 1)) 1
+    targets.filter (·.version.getD 1 == highest)
   | .deployment => targets.filter (·.deployment == callerDeployment)
-  -- CIB reads a literal version with `Integer.parseInt` (`CallableElementUtil.java:84-97`).
+  -- CIB reads a literal version with `Integer.valueOf`, `parseInt`'s decimal reading (`BaseCallableElement.java:95-100`).
   | .version value => literal value fun text definition =>
     match parseJavaInt? text with
-    | some number => decide (0 ≤ number) && definition.version == some number.toNat
+    | some number => decide (0 ≤ number) && definition.version.getD 1 == number.toNat
     | none => false
   | .versionTag value => literal value fun text definition => definition.versionTag == some text
 

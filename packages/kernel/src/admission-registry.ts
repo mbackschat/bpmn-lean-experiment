@@ -305,7 +305,7 @@ function element(program: Program, throws: readonly Element[], entry: Element): 
           ? null
           : Data.mappings(program.options.evaluator, site(program, header.id), call.inputs) ??
             Data.mappings(program.options.evaluator, site(program, header.id), call.outputs)),
-        () => Work.activity(program, payload),
+        () => Work.activity(program, header, payload),
         () => activityOrigin(program, header, payload),
         () => (loop === null ? null
           : MultiInstance.activityLoop(program.options, Data.loopExpression, Work.instanceBody(payload.work), payload.envelope, loop)),
@@ -399,7 +399,8 @@ function flow(program: Program, entry: Flow): string | null {
 
 /**
  * A called process's deployment, version and version tag are the population's stamps, which `Population.deploy`
- * validates against its registry (PC-SCOPE-03); the population has one tenant, so a tenant stays refused.
+ * validates against its registry (PC-SCOPE-03); the population has one tenant, so a tenant stays refused
+ * (CIB-LIM-0033).
  */
 function calledProcessBinding(process: CalledProcess): string | null {
   return process.definition.tenant !== null ? "process.definition.binding" : null;

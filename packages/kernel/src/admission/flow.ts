@@ -54,16 +54,15 @@ function distinct<T>(list: readonly T[]): boolean {
 // References.
 
 /**
- * Where an element or boundary sits: its parent Scope, and for a process-level element the called process holding it
- * (`null` for the root process). A boundary sits where its host does.
+ * Where an element or boundary sits: its parent Scope, and for a process-level element the called process holding it by
+ * its position among the carried processes (`null` for the root process), since one key names every carried version of
+ * a process (PC-SCOPE-03). A boundary sits where its host does.
  */
 function place(program: Program, id: ElementId): string | null {
   const located = (element: Element): string => {
     const header = elementHeader(element);
-    const process = header.parent === null
-      ? program.processes.find((candidate) => candidate.children.includes(header.id))?.definition.key ?? null
-      : null;
-    return JSON.stringify([header.parent, process]);
+    const position = header.parent === null ? program.processes.findIndex((candidate) => candidate.children.includes(header.id)) : -1;
+    return JSON.stringify([header.parent, position === -1 ? null : position]);
   };
   const element = programElement(program, id);
   if (element !== null) return located(element);
