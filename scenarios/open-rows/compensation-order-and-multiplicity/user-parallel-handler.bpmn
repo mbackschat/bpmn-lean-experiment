@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_UserParallelHandler"
+  targetNamespace="urn:bpmn-lean:scenarios:compensation-order-and-multiplicity:user-parallel-handler">
+  <bpmn:process id="Process_UserParallelHandler" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Start" />
+    <bpmn:userTask id="UserTask_Review" name="Review an item">
+      <bpmn:multiInstanceLoopCharacteristics isSequential="false" camunda:collection="items" camunda:elementVariable="item" />
+    </bpmn:userTask>
+    <bpmn:boundaryEvent id="Boundary_CompensateReview" attachedToRef="UserTask_Review">
+      <bpmn:compensateEventDefinition id="CompensateDefinition_Review" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="UserTask_UndoReview" name="Undo a review" isForCompensation="true" />
+    <bpmn:userTask id="UserTask_Pause" name="Pause before compensating" />
+    <bpmn:intermediateThrowEvent id="IntermediateThrow_All">
+      <bpmn:compensateEventDefinition id="CompensateDefinition_All" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:userTask id="UserTask_After" name="Continue after compensation" />
+    <bpmn:endEvent id="EndEvent_Done" />
+    <bpmn:sequenceFlow id="Flow_StartStart_Review" sourceRef="StartEvent_Start" targetRef="UserTask_Review" />
+    <bpmn:sequenceFlow id="Flow_Review_Pause" sourceRef="UserTask_Review" targetRef="UserTask_Pause" />
+    <bpmn:sequenceFlow id="Flow_Pause_All" sourceRef="UserTask_Pause" targetRef="IntermediateThrow_All" />
+    <bpmn:sequenceFlow id="Flow_All_After" sourceRef="IntermediateThrow_All" targetRef="UserTask_After" />
+    <bpmn:sequenceFlow id="Flow_After_EndDone" sourceRef="UserTask_After" targetRef="EndEvent_Done" />
+    <bpmn:association id="Association_CompensateReview" associationDirection="One" sourceRef="Boundary_CompensateReview" targetRef="UserTask_UndoReview" />
+  </bpmn:process>
+</bpmn:definitions>

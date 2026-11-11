@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_DefaultReadsAndWritesOuter"
+  targetNamespace="urn:bpmn-lean:scenarios:compensation-context-live-outer:default-reads-and-writes-outer">
+  <bpmn:process id="Process_DefaultReadsAndWritesOuter" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Start" />
+    <bpmn:subProcess id="SubProcess_Work" name="Work">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="note">${shared}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+      <bpmn:startEvent id="StartEvent_Work" />
+      <bpmn:userTask id="UserTask_Work" name="Do the work" />
+      <bpmn:endEvent id="EndEvent_Work" />
+      <bpmn:sequenceFlow id="Flow_StartWork_Work" sourceRef="StartEvent_Work" targetRef="UserTask_Work" />
+      <bpmn:sequenceFlow id="Flow_Work_EndWork" sourceRef="UserTask_Work" targetRef="EndEvent_Work" />
+      <bpmn:boundaryEvent id="Boundary_CompensateWork" attachedToRef="UserTask_Work">
+        <bpmn:compensateEventDefinition id="CompensateDefinition_Work" />
+      </bpmn:boundaryEvent>
+      <bpmn:userTask id="UserTask_UndoWork" name="Undo the work" isForCompensation="true">
+        <bpmn:extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="seenNote">${note}</camunda:inputParameter>
+            <camunda:inputParameter name="seenShared">${shared}</camunda:inputParameter>
+            <camunda:outputParameter name="shared">handler-wrote</camunda:outputParameter>
+          </camunda:inputOutput>
+        </bpmn:extensionElements>
+      </bpmn:userTask>
+      <bpmn:association id="Association_CompensateWork" associationDirection="One" sourceRef="Boundary_CompensateWork" targetRef="UserTask_UndoWork" />
+    </bpmn:subProcess>
+    <bpmn:userTask id="UserTask_Pause" name="Pause before compensating" />
+    <bpmn:intermediateThrowEvent id="IntermediateThrow_All">
+      <bpmn:compensateEventDefinition id="CompensateDefinition_All" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:userTask id="UserTask_After" name="Continue after compensation">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="finalShared">${shared}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+    </bpmn:userTask>
+    <bpmn:endEvent id="EndEvent_Done" />
+    <bpmn:sequenceFlow id="Flow_Work_Pause" sourceRef="SubProcess_Work" targetRef="UserTask_Pause" />
+    <bpmn:sequenceFlow id="Flow_Pause_All" sourceRef="UserTask_Pause" targetRef="IntermediateThrow_All" />
+    <bpmn:sequenceFlow id="Flow_All_After" sourceRef="IntermediateThrow_All" targetRef="UserTask_After" />
+    <bpmn:sequenceFlow id="Flow_After_EndDone" sourceRef="UserTask_After" targetRef="EndEvent_Done" />
+    <bpmn:sequenceFlow id="Flow_StartStart_Work" sourceRef="StartEvent_Start" targetRef="SubProcess_Work" />
+  </bpmn:process>
+</bpmn:definitions>

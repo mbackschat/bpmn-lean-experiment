@@ -1,0 +1,133 @@
+{
+  "kind": "scenario",
+  "id": "compensation-order-and-multiplicity-with-message-before-a-completes",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "compensation-order-and-multiplicity-boundary-path-handler",
+    "relativePath": "scenarios/open-rows/compensation-order-and-multiplicity/boundary-path-handler.bpmn",
+    "sha256": "e30fab7879586263f85312119ced6921472386aa6d9d8af86374bed79cdd2bf8",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    },
+    {
+      "kind": "deliver",
+      "commandId": "s01-deliver-message-Boundary_Note-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Boundary_Note",
+        "activation": 1
+      },
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "directMessage",
+          "messageId": "Message_Note"
+        }
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-complete-UserTask_B-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_B",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-complete-UserTask_InA-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_InA",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s04-complete-UserTask_UndoA-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_UndoA",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s05-complete-UserTask_UndoB-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_UndoB",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s06-complete-UserTask_UndoA-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_UndoA",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s07-complete-UserTask_After-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_After",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.7",
+      "BPMN 2.0.2 §10.7.2",
+      "BPMN 2.0.2 §13.5.5",
+      "BPMN 2.0.2 §10.3.8",
+      "BPMN 2.0.2 §13.3.7",
+      "BPMN 2.0.2 §13.5.3",
+      "BPMN 2.0.2 Table 10.88"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/helper/CompensationUtil.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/event/CompensationEventHandler.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/AbstractBpmnActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/MultiInstanceActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/BoundaryEventActivityBehavior.java",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/event/compensate/CompensateEventTest.java"
+    ]
+  }
+}

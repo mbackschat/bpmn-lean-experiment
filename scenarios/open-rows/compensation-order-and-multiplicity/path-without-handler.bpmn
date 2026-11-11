@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_PathWithoutHandler"
+  targetNamespace="urn:bpmn-lean:scenarios:compensation-order-and-multiplicity:path-without-handler">
+  <bpmn:process id="Process_PathWithoutHandler" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Start" />
+    <bpmn:userTask id="UserTask_A" name="Do A" />
+    <bpmn:boundaryEvent id="Boundary_CompensateA" attachedToRef="UserTask_A">
+      <bpmn:compensateEventDefinition id="CompensateDefinition_A" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="UserTask_UndoA" name="Undo A" isForCompensation="true" />
+    <bpmn:userTask id="UserTask_Between" name="Do the step without a handler" />
+    <bpmn:exclusiveGateway id="Gateway_Route" />
+    <bpmn:userTask id="UserTask_B" name="Do B" />
+    <bpmn:boundaryEvent id="Boundary_CompensateB" attachedToRef="UserTask_B">
+      <bpmn:compensateEventDefinition id="CompensateDefinition_B" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="UserTask_UndoB" name="Undo B" isForCompensation="true" />
+    <bpmn:intermediateThrowEvent id="IntermediateThrow_All">
+      <bpmn:compensateEventDefinition id="CompensateDefinition_All" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:userTask id="UserTask_After" name="Continue after compensation" />
+    <bpmn:endEvent id="EndEvent_Done" />
+    <bpmn:sequenceFlow id="Flow_StartStart_A" sourceRef="StartEvent_Start" targetRef="UserTask_A" />
+    <bpmn:sequenceFlow id="Flow_A_Between" sourceRef="UserTask_A" targetRef="UserTask_Between" />
+    <bpmn:sequenceFlow id="Flow_Between_Route" sourceRef="UserTask_Between" targetRef="Gateway_Route" />
+    <bpmn:sequenceFlow id="Flow_Route_B" sourceRef="Gateway_Route" targetRef="UserTask_B" />
+    <bpmn:sequenceFlow id="Flow_B_All" sourceRef="UserTask_B" targetRef="IntermediateThrow_All" />
+    <bpmn:sequenceFlow id="Flow_All_After" sourceRef="IntermediateThrow_All" targetRef="UserTask_After" />
+    <bpmn:sequenceFlow id="Flow_After_EndDone" sourceRef="UserTask_After" targetRef="EndEvent_Done" />
+    <bpmn:association id="Association_CompensateA" associationDirection="One" sourceRef="Boundary_CompensateA" targetRef="UserTask_UndoA" />
+    <bpmn:association id="Association_CompensateB" associationDirection="One" sourceRef="Boundary_CompensateB" targetRef="UserTask_UndoB" />
+  </bpmn:process>
+</bpmn:definitions>

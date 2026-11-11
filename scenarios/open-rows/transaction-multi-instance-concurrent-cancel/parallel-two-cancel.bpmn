@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_ParallelTwoCancel"
+  targetNamespace="urn:bpmn-lean:scenarios:transaction-multi-instance-concurrent-cancel:parallel-two-cancel">
+  <bpmn:process id="Process_ParallelTwoCancel" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Start" />
+    <bpmn:transaction id="Transaction_Lot" name="Handle a lot">
+      <bpmn:multiInstanceLoopCharacteristics isSequential="false" camunda:collection="lots" camunda:elementVariable="lot" />
+      <bpmn:startEvent id="StartEvent_Lot" />
+      <bpmn:userTask id="UserTask_Process" name="Process the lot" />
+      <bpmn:boundaryEvent id="Boundary_CompensateProcess" attachedToRef="UserTask_Process">
+        <bpmn:compensateEventDefinition id="CompensateDefinition_Process" />
+      </bpmn:boundaryEvent>
+      <bpmn:userTask id="UserTask_UndoProcess" name="Undo the lot" isForCompensation="true">
+        <bpmn:extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="seenLot">${lot}</camunda:inputParameter>
+          </camunda:inputOutput>
+        </bpmn:extensionElements>
+      </bpmn:userTask>
+      <bpmn:userTask id="UserTask_Check" name="Check the lot" />
+      <bpmn:exclusiveGateway id="Gateway_Check" default="Flow_Check_EndKeep" />
+      <bpmn:sequenceFlow id="Flow_Check_EndCancel" sourceRef="Gateway_Check" targetRef="EndEvent_Cancel">
+        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${lot != goodLot}</bpmn:conditionExpression>
+      </bpmn:sequenceFlow>
+      <bpmn:sequenceFlow id="Flow_Check_EndKeep" sourceRef="Gateway_Check" targetRef="EndEvent_Keep" />
+      <bpmn:endEvent id="EndEvent_Cancel">
+        <bpmn:cancelEventDefinition id="CancelDefinition_Lot" />
+      </bpmn:endEvent>
+      <bpmn:endEvent id="EndEvent_Keep" />
+      <bpmn:sequenceFlow id="Flow_StartLot_Process" sourceRef="StartEvent_Lot" targetRef="UserTask_Process" />
+      <bpmn:sequenceFlow id="Flow_Process_Check" sourceRef="UserTask_Process" targetRef="UserTask_Check" />
+      <bpmn:sequenceFlow id="Flow_Check_Check" sourceRef="UserTask_Check" targetRef="Gateway_Check" />
+      <bpmn:association id="Association_CompensateProcess" associationDirection="One" sourceRef="Boundary_CompensateProcess" targetRef="UserTask_UndoProcess" />
+    </bpmn:transaction>
+    <bpmn:boundaryEvent id="Boundary_Cancel" attachedToRef="Transaction_Lot">
+      <bpmn:cancelEventDefinition id="CancelDefinition_Catch" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="UserTask_BatchDone" name="Finish the batch" />
+    <bpmn:endEvent id="EndEvent_Done" />
+    <bpmn:userTask id="UserTask_BatchCancelled" name="Handle the cancelled batch" />
+    <bpmn:endEvent id="EndEvent_Cancelled" />
+    <bpmn:sequenceFlow id="Flow_StartStart_Lot" sourceRef="StartEvent_Start" targetRef="Transaction_Lot" />
+    <bpmn:sequenceFlow id="Flow_Lot_BatchDone" sourceRef="Transaction_Lot" targetRef="UserTask_BatchDone" />
+    <bpmn:sequenceFlow id="Flow_BatchDone_EndDone" sourceRef="UserTask_BatchDone" targetRef="EndEvent_Done" />
+    <bpmn:sequenceFlow id="Flow_Cancel_BatchCancelled" sourceRef="Boundary_Cancel" targetRef="UserTask_BatchCancelled" />
+    <bpmn:sequenceFlow id="Flow_BatchCancelled_EndCancelled" sourceRef="UserTask_BatchCancelled" targetRef="EndEvent_Cancelled" />
+  </bpmn:process>
+</bpmn:definitions>

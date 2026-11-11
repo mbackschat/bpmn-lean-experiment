@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_UserParallelHandlerStandards"
+  targetNamespace="urn:bpmn-lean:scenarios:compensation-order-and-multiplicity:user-parallel-handler-standards">
+  <bpmn:itemDefinition id="ItemDefinition_String" itemKind="Information" structureRef="xsd:string" isCollection="false" />
+  <bpmn:itemDefinition id="ItemDefinition_StringList" itemKind="Information" isCollection="true" />
+  <bpmn:process id="Process_UserParallelHandlerStandards" isExecutable="true">
+    <bpmn:property id="items" itemSubjectRef="ItemDefinition_StringList" />
+    <bpmn:startEvent id="StartEvent_Start" />
+    <bpmn:userTask id="UserTask_Review" name="Review an item">
+      <bpmn:ioSpecification id="IoSpecification_Review">
+        <bpmn:dataInput id="DataInput_Items" itemSubjectRef="ItemDefinition_StringList" isCollection="true" />
+        <bpmn:dataInput id="DataInput_Item" itemSubjectRef="ItemDefinition_String" isCollection="false" />
+        <bpmn:inputSet id="InputSet_Review">
+          <bpmn:dataInputRefs>DataInput_Items</bpmn:dataInputRefs>
+          <bpmn:dataInputRefs>DataInput_Item</bpmn:dataInputRefs>
+          <bpmn:outputSetRefs>OutputSet_Review</bpmn:outputSetRefs>
+        </bpmn:inputSet>
+        <bpmn:outputSet id="OutputSet_Review">
+          <bpmn:inputSetRefs>InputSet_Review</bpmn:inputSetRefs>
+        </bpmn:outputSet>
+      </bpmn:ioSpecification>
+      <bpmn:dataInputAssociation id="DataInputAssociation_Items">
+        <bpmn:sourceRef>items</bpmn:sourceRef>
+        <bpmn:targetRef>DataInput_Items</bpmn:targetRef>
+      </bpmn:dataInputAssociation>
+      <bpmn:dataInputAssociation id="DataInputAssociation_Item">
+        <bpmn:sourceRef>InputDataItem_Item</bpmn:sourceRef>
+        <bpmn:targetRef>DataInput_Item</bpmn:targetRef>
+      </bpmn:dataInputAssociation>
+      <bpmn:multiInstanceLoopCharacteristics isSequential="false">
+        <bpmn:loopDataInputRef>DataInput_Items</bpmn:loopDataInputRef>
+        <bpmn:inputDataItem id="InputDataItem_Item" itemSubjectRef="ItemDefinition_String" isCollection="false" />
+      </bpmn:multiInstanceLoopCharacteristics>
+    </bpmn:userTask>
+    <bpmn:boundaryEvent id="Boundary_CompensateReview" attachedToRef="UserTask_Review">
+      <bpmn:compensateEventDefinition id="CompensateDefinition_Review" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="UserTask_UndoReview" name="Undo a review" isForCompensation="true" />
+    <bpmn:userTask id="UserTask_Pause" name="Pause before compensating" />
+    <bpmn:intermediateThrowEvent id="IntermediateThrow_All">
+      <bpmn:compensateEventDefinition id="CompensateDefinition_All" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:userTask id="UserTask_After" name="Continue after compensation" />
+    <bpmn:endEvent id="EndEvent_Done" />
+    <bpmn:sequenceFlow id="Flow_StartStart_Review" sourceRef="StartEvent_Start" targetRef="UserTask_Review" />
+    <bpmn:sequenceFlow id="Flow_Review_Pause" sourceRef="UserTask_Review" targetRef="UserTask_Pause" />
+    <bpmn:sequenceFlow id="Flow_Pause_All" sourceRef="UserTask_Pause" targetRef="IntermediateThrow_All" />
+    <bpmn:sequenceFlow id="Flow_All_After" sourceRef="IntermediateThrow_All" targetRef="UserTask_After" />
+    <bpmn:sequenceFlow id="Flow_After_EndDone" sourceRef="UserTask_After" targetRef="EndEvent_Done" />
+    <bpmn:association id="Association_CompensateReview" associationDirection="One" sourceRef="Boundary_CompensateReview" targetRef="UserTask_UndoReview" />
+  </bpmn:process>
+</bpmn:definitions>

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_BoundaryPathHandler"
+  targetNamespace="urn:bpmn-lean:scenarios:compensation-order-and-multiplicity:boundary-path-handler">
+  <bpmn:message id="Message_Note" name="note" />
+  <bpmn:process id="Process_BoundaryPathHandler" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Start" />
+    <bpmn:subProcess id="SubProcess_A" name="A">
+      <bpmn:startEvent id="StartEvent_A" />
+      <bpmn:userTask id="UserTask_InA" name="Work inside A" />
+      <bpmn:endEvent id="EndEvent_A" />
+      <bpmn:sequenceFlow id="Flow_StartA_InA" sourceRef="StartEvent_A" targetRef="UserTask_InA" />
+      <bpmn:sequenceFlow id="Flow_InA_EndA" sourceRef="UserTask_InA" targetRef="EndEvent_A" />
+    </bpmn:subProcess>
+    <bpmn:boundaryEvent id="Boundary_CompensateA" attachedToRef="SubProcess_A">
+      <bpmn:compensateEventDefinition id="CompensateDefinition_A" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="UserTask_UndoA" name="Undo A" isForCompensation="true" />
+    <bpmn:boundaryEvent id="Boundary_Note" attachedToRef="SubProcess_A" cancelActivity="false">
+      <bpmn:messageEventDefinition id="MessageDefinition_Note" messageRef="Message_Note" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="UserTask_B" name="Do B after the note" />
+    <bpmn:endEvent id="EndEvent_B" />
+    <bpmn:boundaryEvent id="Boundary_CompensateB" attachedToRef="UserTask_B">
+      <bpmn:compensateEventDefinition id="CompensateDefinition_B" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="UserTask_UndoB" name="Undo B" isForCompensation="true" />
+    <bpmn:intermediateThrowEvent id="IntermediateThrow_All">
+      <bpmn:compensateEventDefinition id="CompensateDefinition_All" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:userTask id="UserTask_After" name="Continue after compensation" />
+    <bpmn:endEvent id="EndEvent_Done" />
+    <bpmn:sequenceFlow id="Flow_StartStart_A" sourceRef="StartEvent_Start" targetRef="SubProcess_A" />
+    <bpmn:sequenceFlow id="Flow_A_All" sourceRef="SubProcess_A" targetRef="IntermediateThrow_All" />
+    <bpmn:sequenceFlow id="Flow_All_After" sourceRef="IntermediateThrow_All" targetRef="UserTask_After" />
+    <bpmn:sequenceFlow id="Flow_After_EndDone" sourceRef="UserTask_After" targetRef="EndEvent_Done" />
+    <bpmn:sequenceFlow id="Flow_Note_B" sourceRef="Boundary_Note" targetRef="UserTask_B" />
+    <bpmn:sequenceFlow id="Flow_B_EndB" sourceRef="UserTask_B" targetRef="EndEvent_B" />
+    <bpmn:association id="Association_CompensateA" associationDirection="One" sourceRef="Boundary_CompensateA" targetRef="UserTask_UndoA" />
+    <bpmn:association id="Association_CompensateB" associationDirection="One" sourceRef="Boundary_CompensateB" targetRef="UserTask_UndoB" />
+  </bpmn:process>
+</bpmn:definitions>

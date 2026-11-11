@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_ErrorEspUntargeted"
+  targetNamespace="urn:bpmn-lean:scenarios:compensation-event-subprocess-throws:error-esp-untargeted">
+  <bpmn:error id="Error_Fault" name="Fault" errorCode="FAULT" />
+  <bpmn:process id="Process_ErrorEspUntargeted" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Start" />
+    <bpmn:subProcess id="SubProcess_Group" name="Group">
+      <bpmn:startEvent id="StartEvent_Group" />
+      <bpmn:userTask id="UserTask_Task" name="Do the task" />
+      <bpmn:userTask id="UserTask_Check" name="Check the task" />
+      <bpmn:endEvent id="EndEvent_Fault">
+        <bpmn:errorEventDefinition id="ErrorDefinition_Fault" errorRef="Error_Fault" />
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="Flow_StartGroup_Task" sourceRef="StartEvent_Group" targetRef="UserTask_Task" />
+      <bpmn:sequenceFlow id="Flow_Task_Check" sourceRef="UserTask_Task" targetRef="UserTask_Check" />
+      <bpmn:sequenceFlow id="Flow_Check_EndFault" sourceRef="UserTask_Check" targetRef="EndEvent_Fault" />
+      <bpmn:boundaryEvent id="Boundary_CompensateTask" attachedToRef="UserTask_Task">
+        <bpmn:compensateEventDefinition id="CompensateDefinition_Task" />
+      </bpmn:boundaryEvent>
+      <bpmn:userTask id="UserTask_UndoTask" name="Undo the task" isForCompensation="true" />
+      <bpmn:subProcess id="EventSubProcess_Fault" triggeredByEvent="true">
+        <bpmn:startEvent id="StartEvent_Fault" isInterrupting="true">
+          <bpmn:errorEventDefinition id="ErrorDefinition_Catch" errorRef="Error_Fault" />
+        </bpmn:startEvent>
+        <bpmn:userTask id="UserTask_Recover" name="Recover from the fault" />
+        <bpmn:intermediateThrowEvent id="IntermediateThrow_FromEsp">
+          <bpmn:compensateEventDefinition id="CompensateDefinition_FromEsp" />
+        </bpmn:intermediateThrowEvent>
+        <bpmn:userTask id="UserTask_Recovered" name="Continue after the recovery" />
+        <bpmn:endEvent id="EndEvent_Recovered" />
+        <bpmn:sequenceFlow id="Flow_StartFault_Recover" sourceRef="StartEvent_Fault" targetRef="UserTask_Recover" />
+        <bpmn:sequenceFlow id="Flow_Recover_FromEsp" sourceRef="UserTask_Recover" targetRef="IntermediateThrow_FromEsp" />
+        <bpmn:sequenceFlow id="Flow_FromEsp_Recovered" sourceRef="IntermediateThrow_FromEsp" targetRef="UserTask_Recovered" />
+        <bpmn:sequenceFlow id="Flow_Recovered_EndRecovered" sourceRef="UserTask_Recovered" targetRef="EndEvent_Recovered" />
+      </bpmn:subProcess>
+      <bpmn:association id="Association_CompensateTask" associationDirection="One" sourceRef="Boundary_CompensateTask" targetRef="UserTask_UndoTask" />
+    </bpmn:subProcess>
+    <bpmn:userTask id="UserTask_Settle" name="Settle the group" />
+    <bpmn:endEvent id="EndEvent_Done" />
+    <bpmn:sequenceFlow id="Flow_StartStart_Group" sourceRef="StartEvent_Start" targetRef="SubProcess_Group" />
+    <bpmn:sequenceFlow id="Flow_Group_Settle" sourceRef="SubProcess_Group" targetRef="UserTask_Settle" />
+    <bpmn:sequenceFlow id="Flow_Settle_EndDone" sourceRef="UserTask_Settle" targetRef="EndEvent_Done" />
+  </bpmn:process>
+</bpmn:definitions>

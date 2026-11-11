@@ -1,0 +1,92 @@
+{
+  "kind": "scenario",
+  "id": "compensation-order-and-multiplicity-user-handler-zero-items-standards",
+  "profile": "bpmn-2.0.2",
+  "bpmn": {
+    "id": "compensation-order-and-multiplicity-user-parallel-handler-standards",
+    "relativePath": "scenarios/open-rows/compensation-order-and-multiplicity/user-parallel-handler-standards.bpmn",
+    "sha256": "4f48d5b769e34696db0bf820c2c68cf546de9a370714d199968ca87afe8158aa",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "items",
+          "value": {
+            "kind": "stringList",
+            "value": []
+          }
+        }
+      ]
+    },
+    {
+      "kind": "command",
+      "commandId": "s01-complete-UserTask_Pause-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Pause",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-complete-UserTask_UndoReview-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_UndoReview",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-complete-UserTask_UndoReview-2",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_UndoReview",
+        "activation": 2
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s04-complete-UserTask_After-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_After",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.7",
+      "BPMN 2.0.2 §10.7.2",
+      "BPMN 2.0.2 §13.5.5",
+      "BPMN 2.0.2 §10.3.8",
+      "BPMN 2.0.2 §13.3.7",
+      "BPMN 2.0.2 §13.5.3",
+      "BPMN 2.0.2 Table 10.88"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

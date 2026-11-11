@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_EspConsumesOneOfTwo"
+  targetNamespace="urn:bpmn-lean:scenarios:compensation-handler-consumption:esp-consumes-one-of-two">
+  <bpmn:process id="Process_EspConsumesOneOfTwo" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Start" />
+    <bpmn:subProcess id="SubProcess_Group" name="Group">
+      <bpmn:startEvent id="StartEvent_Group" />
+      <bpmn:userTask id="UserTask_A" name="Do A" />
+      <bpmn:userTask id="UserTask_B" name="Do B" />
+      <bpmn:endEvent id="EndEvent_Group" />
+      <bpmn:sequenceFlow id="Flow_StartGroup_A" sourceRef="StartEvent_Group" targetRef="UserTask_A" />
+      <bpmn:sequenceFlow id="Flow_A_B" sourceRef="UserTask_A" targetRef="UserTask_B" />
+      <bpmn:sequenceFlow id="Flow_B_EndGroup" sourceRef="UserTask_B" targetRef="EndEvent_Group" />
+      <bpmn:boundaryEvent id="Boundary_CompensateA" attachedToRef="UserTask_A">
+        <bpmn:compensateEventDefinition id="CompensateDefinition_A" />
+      </bpmn:boundaryEvent>
+      <bpmn:userTask id="UserTask_UndoA" name="Undo A" isForCompensation="true" />
+      <bpmn:boundaryEvent id="Boundary_CompensateB" attachedToRef="UserTask_B">
+        <bpmn:compensateEventDefinition id="CompensateDefinition_B" />
+      </bpmn:boundaryEvent>
+      <bpmn:userTask id="UserTask_UndoB" name="Undo B" isForCompensation="true" />
+      <bpmn:subProcess id="EventSubProcess_Group" triggeredByEvent="true">
+        <bpmn:startEvent id="StartEvent_UndoGroup" isInterrupting="false">
+          <bpmn:compensateEventDefinition id="CompensateDefinition_UndoGroup" />
+        </bpmn:startEvent>
+        <bpmn:userTask id="UserTask_UndoGroup" name="Undo the group" />
+        <bpmn:intermediateThrowEvent id="IntermediateThrow_FromEsp">
+          <bpmn:compensateEventDefinition id="CompensateDefinition_FromEsp" activityRef="UserTask_A" />
+        </bpmn:intermediateThrowEvent>
+        <bpmn:endEvent id="EndEvent_UndoGroup" />
+        <bpmn:sequenceFlow id="Flow_StartUndoGroup_UndoGroup" sourceRef="StartEvent_UndoGroup" targetRef="UserTask_UndoGroup" />
+        <bpmn:sequenceFlow id="Flow_UndoGroup_FromEsp" sourceRef="UserTask_UndoGroup" targetRef="IntermediateThrow_FromEsp" />
+        <bpmn:sequenceFlow id="Flow_FromEsp_EndUndoGroup" sourceRef="IntermediateThrow_FromEsp" targetRef="EndEvent_UndoGroup" />
+      </bpmn:subProcess>
+      <bpmn:association id="Association_CompensateA" associationDirection="One" sourceRef="Boundary_CompensateA" targetRef="UserTask_UndoA" />
+      <bpmn:association id="Association_CompensateB" associationDirection="One" sourceRef="Boundary_CompensateB" targetRef="UserTask_UndoB" />
+    </bpmn:subProcess>
+    <bpmn:userTask id="UserTask_Pause" name="Pause before compensating" />
+    <bpmn:intermediateThrowEvent id="IntermediateThrow_All">
+      <bpmn:compensateEventDefinition id="CompensateDefinition_All" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:userTask id="UserTask_After" name="Continue after compensation" />
+    <bpmn:endEvent id="EndEvent_Done" />
+    <bpmn:sequenceFlow id="Flow_Group_Pause" sourceRef="SubProcess_Group" targetRef="UserTask_Pause" />
+    <bpmn:sequenceFlow id="Flow_Pause_All" sourceRef="UserTask_Pause" targetRef="IntermediateThrow_All" />
+    <bpmn:sequenceFlow id="Flow_All_After" sourceRef="IntermediateThrow_All" targetRef="UserTask_After" />
+    <bpmn:sequenceFlow id="Flow_After_EndDone" sourceRef="UserTask_After" targetRef="EndEvent_Done" />
+    <bpmn:sequenceFlow id="Flow_StartStart_Group" sourceRef="StartEvent_Start" targetRef="SubProcess_Group" />
+  </bpmn:process>
+</bpmn:definitions>

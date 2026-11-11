@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_ErrorEndInTransaction"
+  targetNamespace="urn:bpmn-lean:scenarios:transaction-and-error-exits:error-end-in-transaction">
+  <bpmn:error id="Error_Fault" name="Fault" errorCode="FAULT" />
+  <bpmn:process id="Process_ErrorEndInTransaction" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Start" />
+    <bpmn:subProcess id="SubProcess_Outer" name="Outer">
+      <bpmn:startEvent id="StartEvent_Outer" />
+      <bpmn:transaction id="Transaction_Work" name="Work">
+        <bpmn:startEvent id="StartEvent_Work" />
+        <bpmn:userTask id="UserTask_Work" name="Do the work" />
+        <bpmn:userTask id="UserTask_Check" name="Check the work" />
+        <bpmn:endEvent id="EndEvent_Fault">
+          <bpmn:errorEventDefinition id="ErrorDefinition_Fault" errorRef="Error_Fault" />
+        </bpmn:endEvent>
+        <bpmn:sequenceFlow id="Flow_StartWork_Work" sourceRef="StartEvent_Work" targetRef="UserTask_Work" />
+        <bpmn:sequenceFlow id="Flow_Work_Check" sourceRef="UserTask_Work" targetRef="UserTask_Check" />
+        <bpmn:sequenceFlow id="Flow_Check_EndFault" sourceRef="UserTask_Check" targetRef="EndEvent_Fault" />
+        <bpmn:boundaryEvent id="Boundary_CompensateWork" attachedToRef="UserTask_Work">
+          <bpmn:compensateEventDefinition id="CompensateDefinition_Work" />
+        </bpmn:boundaryEvent>
+        <bpmn:userTask id="UserTask_UndoWork" name="Undo the work" isForCompensation="true" />
+        <bpmn:association id="Association_CompensateWork" associationDirection="One" sourceRef="Boundary_CompensateWork" targetRef="UserTask_UndoWork" />
+      </bpmn:transaction>
+      <bpmn:endEvent id="EndEvent_Outer" />
+      <bpmn:sequenceFlow id="Flow_StartOuter_Work" sourceRef="StartEvent_Outer" targetRef="Transaction_Work" />
+      <bpmn:sequenceFlow id="Flow_Work_EndOuter" sourceRef="Transaction_Work" targetRef="EndEvent_Outer" />
+    </bpmn:subProcess>
+    <bpmn:boundaryEvent id="Boundary_Fault" attachedToRef="SubProcess_Outer">
+      <bpmn:errorEventDefinition id="ErrorDefinition_Catch" errorRef="Error_Fault" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="UserTask_Caught" name="Handle the fault" />
+    <bpmn:endEvent id="EndEvent_Caught" />
+    <bpmn:userTask id="UserTask_Settle" name="Settle after the work" />
+    <bpmn:endEvent id="EndEvent_Done" />
+    <bpmn:sequenceFlow id="Flow_StartStart_Outer" sourceRef="StartEvent_Start" targetRef="SubProcess_Outer" />
+    <bpmn:sequenceFlow id="Flow_Outer_Settle" sourceRef="SubProcess_Outer" targetRef="UserTask_Settle" />
+    <bpmn:sequenceFlow id="Flow_Settle_EndDone" sourceRef="UserTask_Settle" targetRef="EndEvent_Done" />
+    <bpmn:sequenceFlow id="Flow_Fault_Caught" sourceRef="Boundary_Fault" targetRef="UserTask_Caught" />
+    <bpmn:sequenceFlow id="Flow_Caught_EndCaught" sourceRef="UserTask_Caught" targetRef="EndEvent_Caught" />
+  </bpmn:process>
+</bpmn:definitions>

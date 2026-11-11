@@ -1,0 +1,81 @@
+{
+  "kind": "scenario",
+  "id": "transaction-and-error-exits-transaction-completes-while-boundary-path-runs-standards",
+  "profile": "bpmn-2.0.2",
+  "bpmn": {
+    "id": "transaction-and-error-exits-completes-while-boundary-path-runs",
+    "relativePath": "scenarios/open-rows/transaction-and-error-exits/completes-while-boundary-path-runs.bpmn",
+    "sha256": "442121c19c8d5a75e665509799af07346af94a6dbf983ed0bf0eb4648a7e0fc4",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    },
+    {
+      "kind": "timerFire",
+      "commandId": "s01-fire-timer-Boundary_Slow-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Boundary_Slow",
+        "activation": 1
+      },
+      "logicalTimeMs": 10000
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-complete-UserTask_Work-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Work",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-complete-UserTask_Done-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Done",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s04-complete-UserTask_Side-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Side",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.5",
+      "BPMN 2.0.2 §10.7.3",
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 §13.3.4",
+      "BPMN 2.0.2 §13.5.3",
+      "BPMN 2.0.2 §13.5.5",
+      "BPMN 2.0.2 §13.5.6"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

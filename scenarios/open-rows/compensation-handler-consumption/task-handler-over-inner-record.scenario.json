@@ -1,0 +1,102 @@
+{
+  "kind": "scenario",
+  "id": "compensation-handler-consumption-task-handler-over-inner-record",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "compensation-handler-consumption-boundary-task-handler",
+    "relativePath": "scenarios/open-rows/compensation-handler-consumption/boundary-task-handler.bpmn",
+    "sha256": "7c800bf353d8fe4c0efe5fa7f55db8d1351fb8aadaca4788464d3fa9e305ef53",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    },
+    {
+      "kind": "command",
+      "commandId": "s01-complete-UserTask_Inner-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Inner",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-complete-UserTask_Pause-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Pause",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-complete-UserTask_UndoGroup-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_UndoGroup",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s04-complete-UserTask_UndoInner-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_UndoInner",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s05-complete-UserTask_After-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_After",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.7",
+      "BPMN 2.0.2 §10.7.2",
+      "BPMN 2.0.2 §13.5.4",
+      "BPMN 2.0.2 §13.5.5",
+      "BPMN 2.0.2 Table 10.88",
+      "BPMN 2.0.2 Table 10.89"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/helper/CompensationUtil.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/event/CompensationEventHandler.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/AbstractBpmnActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/EventSubProcessActivityBehavior.java",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/event/compensate/CompensateEventTest.java"
+    ]
+  }
+}

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_HandlerTerminate"
+  targetNamespace="urn:bpmn-lean:scenarios:compensation-handler-terminate:handler-terminate">
+  <bpmn:process id="Process_HandlerTerminate" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Start" />
+    <bpmn:userTask id="UserTask_Work" name="Do the work" />
+    <bpmn:boundaryEvent id="Boundary_CompensateWork" attachedToRef="UserTask_Work">
+      <bpmn:compensateEventDefinition id="CompensateDefinition_Work" />
+    </bpmn:boundaryEvent>
+    <bpmn:subProcess id="SubProcess_Undo" name="Undo the work" isForCompensation="true">
+      <bpmn:startEvent id="StartEvent_Undo" />
+      <bpmn:parallelGateway id="Gateway_Fork" />
+      <bpmn:userTask id="UserTask_UndoQuick" name="Undo the quick part" />
+      <bpmn:endEvent id="EndEvent_Terminate">
+        <bpmn:terminateEventDefinition id="TerminateDefinition_Undo" />
+      </bpmn:endEvent>
+      <bpmn:userTask id="UserTask_UndoSlow" name="Undo the slow part" />
+      <bpmn:endEvent id="EndEvent_Slow" />
+      <bpmn:sequenceFlow id="Flow_StartUndo_Fork" sourceRef="StartEvent_Undo" targetRef="Gateway_Fork" />
+      <bpmn:sequenceFlow id="Flow_Fork_UndoQuick" sourceRef="Gateway_Fork" targetRef="UserTask_UndoQuick" />
+      <bpmn:sequenceFlow id="Flow_UndoQuick_EndTerminate" sourceRef="UserTask_UndoQuick" targetRef="EndEvent_Terminate" />
+      <bpmn:sequenceFlow id="Flow_Fork_UndoSlow" sourceRef="Gateway_Fork" targetRef="UserTask_UndoSlow" />
+      <bpmn:sequenceFlow id="Flow_UndoSlow_EndSlow" sourceRef="UserTask_UndoSlow" targetRef="EndEvent_Slow" />
+    </bpmn:subProcess>
+    <bpmn:intermediateThrowEvent id="IntermediateThrow_All">
+      <bpmn:compensateEventDefinition id="CompensateDefinition_All" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:userTask id="UserTask_After" name="Continue after compensation" />
+    <bpmn:endEvent id="EndEvent_Done" />
+    <bpmn:sequenceFlow id="Flow_StartStart_Work" sourceRef="StartEvent_Start" targetRef="UserTask_Work" />
+    <bpmn:sequenceFlow id="Flow_Work_All" sourceRef="UserTask_Work" targetRef="IntermediateThrow_All" />
+    <bpmn:sequenceFlow id="Flow_All_After" sourceRef="IntermediateThrow_All" targetRef="UserTask_After" />
+    <bpmn:sequenceFlow id="Flow_After_EndDone" sourceRef="UserTask_After" targetRef="EndEvent_Done" />
+    <bpmn:association id="Association_CompensateWork" associationDirection="One" sourceRef="Boundary_CompensateWork" targetRef="SubProcess_Undo" />
+  </bpmn:process>
+</bpmn:definitions>

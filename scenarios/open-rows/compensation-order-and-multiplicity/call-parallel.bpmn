@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_CallParallel"
+  targetNamespace="urn:bpmn-lean:scenarios:compensation-order-and-multiplicity:call-parallel">
+  <bpmn:process id="Process_CallParallel" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Start" />
+    <bpmn:callActivity id="CallActivity_Review" name="Review one reviewer" calledElement="Process_Review">
+      <bpmn:multiInstanceLoopCharacteristics isSequential="false" camunda:collection="reviewers" camunda:elementVariable="reviewer" />
+    </bpmn:callActivity>
+    <bpmn:boundaryEvent id="Boundary_CompensateReview" attachedToRef="CallActivity_Review">
+      <bpmn:compensateEventDefinition id="CompensateDefinition_Review" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="UserTask_UndoReview" name="Undo a review" isForCompensation="true">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="seenReviewer">${reviewer}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+    </bpmn:userTask>
+    <bpmn:userTask id="UserTask_Pause" name="Pause before compensating" />
+    <bpmn:intermediateThrowEvent id="IntermediateThrow_All">
+      <bpmn:compensateEventDefinition id="CompensateDefinition_All" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:userTask id="UserTask_After" name="Continue after compensation" />
+    <bpmn:endEvent id="EndEvent_Done" />
+    <bpmn:sequenceFlow id="Flow_StartStart_Review" sourceRef="StartEvent_Start" targetRef="CallActivity_Review" />
+    <bpmn:sequenceFlow id="Flow_Review_Pause" sourceRef="CallActivity_Review" targetRef="UserTask_Pause" />
+    <bpmn:sequenceFlow id="Flow_Pause_All" sourceRef="UserTask_Pause" targetRef="IntermediateThrow_All" />
+    <bpmn:sequenceFlow id="Flow_All_After" sourceRef="IntermediateThrow_All" targetRef="UserTask_After" />
+    <bpmn:sequenceFlow id="Flow_After_EndDone" sourceRef="UserTask_After" targetRef="EndEvent_Done" />
+    <bpmn:association id="Association_CompensateReview" associationDirection="One" sourceRef="Boundary_CompensateReview" targetRef="UserTask_UndoReview" />
+  </bpmn:process>
+  <bpmn:process id="Process_Review" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Check" />
+    <bpmn:userTask id="UserTask_Check" name="Check one reviewer" />
+    <bpmn:endEvent id="EndEvent_Checked" />
+    <bpmn:sequenceFlow id="Flow_StartCheck_Check" sourceRef="StartEvent_Check" targetRef="UserTask_Check" />
+    <bpmn:sequenceFlow id="Flow_Check_EndChecked" sourceRef="UserTask_Check" targetRef="EndEvent_Checked" />
+  </bpmn:process>
+</bpmn:definitions>

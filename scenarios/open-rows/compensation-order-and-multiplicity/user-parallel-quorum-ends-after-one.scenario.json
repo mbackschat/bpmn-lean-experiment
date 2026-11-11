@@ -1,0 +1,149 @@
+{
+  "kind": "scenario",
+  "id": "compensation-order-and-multiplicity-user-parallel-quorum-ends-after-one",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "compensation-order-and-multiplicity-user-parallel-quorum",
+    "relativePath": "scenarios/open-rows/compensation-order-and-multiplicity/user-parallel-quorum.bpmn",
+    "sha256": "a0922df7a25e3198d2f65ff5161a53d125bd366c25c46b4f5c3827faa7180f6b",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "item",
+          "value": {
+            "kind": "string",
+            "value": "outside"
+          }
+        },
+        {
+          "name": "items",
+          "value": {
+            "kind": "stringList",
+            "value": [
+              "a",
+              "b",
+              "c"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "kind": "command",
+      "commandId": "s01-complete-UserTask_Review-2",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Review",
+        "activation": 2
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-complete-UserTask_Review-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Review",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-complete-UserTask_Review-3",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Review",
+        "activation": 3
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s04-complete-UserTask_Pause-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Pause",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s05-complete-UserTask_UndoReview-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_UndoReview",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s06-complete-UserTask_UndoReview-2",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_UndoReview",
+        "activation": 2
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s07-complete-UserTask_After-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_After",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.7",
+      "BPMN 2.0.2 §10.7.2",
+      "BPMN 2.0.2 §13.5.5",
+      "BPMN 2.0.2 §10.3.8",
+      "BPMN 2.0.2 §13.3.7",
+      "BPMN 2.0.2 §13.5.3",
+      "BPMN 2.0.2 Table 10.88"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/helper/CompensationUtil.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/event/CompensationEventHandler.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/AbstractBpmnActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/MultiInstanceActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/BoundaryEventActivityBehavior.java",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/event/compensate/CompensateEventTest.java"
+    ]
+  }
+}

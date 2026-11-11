@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_CompletesWhileBoundaryPathRuns"
+  targetNamespace="urn:bpmn-lean:scenarios:transaction-and-error-exits:completes-while-boundary-path-runs">
+  <bpmn:process id="Process_CompletesWhileBoundaryPathRuns" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Start" />
+    <bpmn:transaction id="Transaction_Work" name="Work">
+      <bpmn:startEvent id="StartEvent_Work" />
+      <bpmn:userTask id="UserTask_Work" name="Do the work" />
+      <bpmn:endEvent id="EndEvent_Work" />
+      <bpmn:sequenceFlow id="Flow_StartWork_Work" sourceRef="StartEvent_Work" targetRef="UserTask_Work" />
+      <bpmn:sequenceFlow id="Flow_Work_EndWork" sourceRef="UserTask_Work" targetRef="EndEvent_Work" />
+    </bpmn:transaction>
+    <bpmn:boundaryEvent id="Boundary_Slow" attachedToRef="Transaction_Work" cancelActivity="false">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT10S</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="UserTask_Side" name="Follow up on the slow work" />
+    <bpmn:endEvent id="EndEvent_Side" />
+    <bpmn:userTask id="UserTask_Done" name="Finish after the transaction" />
+    <bpmn:endEvent id="EndEvent_Done" />
+    <bpmn:sequenceFlow id="Flow_StartStart_Work" sourceRef="StartEvent_Start" targetRef="Transaction_Work" />
+    <bpmn:sequenceFlow id="Flow_Work_Done" sourceRef="Transaction_Work" targetRef="UserTask_Done" />
+    <bpmn:sequenceFlow id="Flow_Done_EndDone" sourceRef="UserTask_Done" targetRef="EndEvent_Done" />
+    <bpmn:sequenceFlow id="Flow_Slow_Side" sourceRef="Boundary_Slow" targetRef="UserTask_Side" />
+    <bpmn:sequenceFlow id="Flow_Side_EndSide" sourceRef="UserTask_Side" targetRef="EndEvent_Side" />
+  </bpmn:process>
+</bpmn:definitions>

@@ -1,0 +1,151 @@
+{
+  "kind": "scenario",
+  "id": "compensation-handler-bodies-without-receive-abandoned-while-handlers-wait",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "compensation-handler-bodies-without-receive-handler-bodies",
+    "relativePath": "scenarios/open-rows/compensation-handler-bodies-without-receive/handler-bodies.bpmn",
+    "sha256": "99aeee4f8c2750344435c38c38c00ee38abec1adea79d2249d2ff3e543209060",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    },
+    {
+      "kind": "command",
+      "commandId": "s01-complete-UserTask_Plan-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Plan",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-complete-UserTask_Quote-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Quote",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-complete-UserTask_Ship-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Ship",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s04-complete-UserTask_UndoPlanReview-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_UndoPlanReview",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s05-complete-UserTask_UndoQuote-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_UndoQuote",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "timerFire",
+      "commandId": "s06-fire-timer-Boundary_Abandon-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Boundary_Abandon",
+        "activation": 1
+      },
+      "logicalTimeMs": 60000
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "s07-effect-success-ServiceTask_UndoPlanNotify-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "ServiceTask_UndoPlanNotify",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s08-complete-UserTask_Reverse-1",
+      "occurrence": {
+        "processInstanceId": "call:10:Instance_1:21:CallActivity_UndoShip:1",
+        "elementId": "UserTask_Reverse",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s09-complete-UserTask_Abandoned-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Abandoned",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.7",
+      "BPMN 2.0.2 §10.7.1",
+      "BPMN 2.0.2 §10.7.2",
+      "BPMN 2.0.2 §13.5.5",
+      "BPMN 2.0.2 §10.3.3.1",
+      "BPMN 2.0.2 §10.3.6",
+      "BPMN 2.0.2 §13.3.4"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/helper/CompensationUtil.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/event/CompensationEventHandler.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/event/compensate/CompensateEventTest.java"
+    ]
+  }
+}

@@ -1,0 +1,130 @@
+{
+  "kind": "scenario",
+  "id": "transaction-cancel-waiting-handlers-stale-interior-result-while-handlers-wait",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "transaction-cancel-waiting-handlers-cancel-with-waiting-handlers",
+    "relativePath": "scenarios/open-rows/transaction-cancel-waiting-handlers/cancel-with-waiting-handlers.bpmn",
+    "sha256": "e5ed783128d20538fe6dc9a06205031febbcd9a65176cfbe4d9f014f04d3104c",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    },
+    {
+      "kind": "command",
+      "commandId": "s01-complete-UserTask_Pick-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Pick",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "s02-effect-success-ServiceTask_Charge-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "ServiceTask_Charge",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-complete-UserTask_Decide-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Decide",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "s04-effect-success-ServiceTask_Slow-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "ServiceTask_Slow",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s05-complete-UserTask_UndoPick-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_UndoPick",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "s06-effect-success-ServiceTask_Refund-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "ServiceTask_Refund",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s07-complete-UserTask_Cancelled-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Cancelled",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.5",
+      "BPMN 2.0.2 §10.7",
+      "BPMN 2.0.2 §10.7.2",
+      "BPMN 2.0.2 §13.3.4",
+      "BPMN 2.0.2 §13.5.5",
+      "BPMN 2.0.2 Table 10.88",
+      "BPMN 2.0.2 Table 10.90"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/helper/CompensationUtil.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/event/CompensationEventHandler.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/CancelEndEventActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/CancelBoundaryEventActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/event/compensate/CompensateEventTest.java"
+    ]
+  }
+}

@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_CancelWithWaitingHandlers"
+  targetNamespace="urn:bpmn-lean:scenarios:transaction-cancel-waiting-handlers:cancel-with-waiting-handlers">
+  <bpmn:process id="Process_CancelWithWaitingHandlers" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Start" />
+    <bpmn:transaction id="Transaction_Order" name="Order">
+      <bpmn:startEvent id="StartEvent_Order" />
+      <bpmn:parallelGateway id="Gateway_Fork" />
+      <bpmn:sequenceFlow id="Flow_StartOrder_Fork" sourceRef="StartEvent_Order" targetRef="Gateway_Fork" />
+      <bpmn:sequenceFlow id="Flow_Fork_Pick" sourceRef="Gateway_Fork" targetRef="UserTask_Pick" />
+      <bpmn:sequenceFlow id="Flow_Fork_Charge" sourceRef="Gateway_Fork" targetRef="ServiceTask_Charge" />
+      <bpmn:sequenceFlow id="Flow_Fork_Slow" sourceRef="Gateway_Fork" targetRef="ServiceTask_Slow" />
+      <bpmn:sequenceFlow id="Flow_Fork_Decide" sourceRef="Gateway_Fork" targetRef="UserTask_Decide" />
+      <bpmn:userTask id="UserTask_Pick" name="Pick the goods" />
+      <bpmn:endEvent id="EndEvent_Pick" />
+      <bpmn:sequenceFlow id="Flow_Pick_EndPick" sourceRef="UserTask_Pick" targetRef="EndEvent_Pick" />
+      <bpmn:boundaryEvent id="Boundary_CompensatePick" attachedToRef="UserTask_Pick">
+        <bpmn:compensateEventDefinition id="CompensateDefinition_Pick" />
+      </bpmn:boundaryEvent>
+      <bpmn:userTask id="UserTask_UndoPick" name="Put the goods back" isForCompensation="true" />
+      <bpmn:serviceTask id="ServiceTask_Charge" name="Charge the customer" implementation="urn:bpmn-lean:effect:probe-v1" camunda:delegateExpression="${bpmnLeanEffectHandler}" camunda:asyncBefore="true" />
+      <bpmn:endEvent id="EndEvent_Charge" />
+      <bpmn:sequenceFlow id="Flow_Charge_EndCharge" sourceRef="ServiceTask_Charge" targetRef="EndEvent_Charge" />
+      <bpmn:boundaryEvent id="Boundary_CompensateCharge" attachedToRef="ServiceTask_Charge">
+        <bpmn:compensateEventDefinition id="CompensateDefinition_Charge" />
+      </bpmn:boundaryEvent>
+      <bpmn:serviceTask id="ServiceTask_Refund" name="Refund the customer" isForCompensation="true" implementation="urn:bpmn-lean:effect:probe-v1" camunda:delegateExpression="${bpmnLeanEffectHandler}" camunda:asyncBefore="true" />
+      <bpmn:serviceTask id="ServiceTask_Slow" name="Confirm with the carrier" implementation="urn:bpmn-lean:effect:probe-v1" camunda:delegateExpression="${bpmnLeanEffectHandler}" camunda:asyncBefore="true" />
+      <bpmn:endEvent id="EndEvent_Slow" />
+      <bpmn:sequenceFlow id="Flow_Slow_EndSlow" sourceRef="ServiceTask_Slow" targetRef="EndEvent_Slow" />
+      <bpmn:userTask id="UserTask_Decide" name="Decide to cancel" />
+      <bpmn:endEvent id="EndEvent_Cancel">
+        <bpmn:cancelEventDefinition id="CancelDefinition_Order" />
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="Flow_Decide_EndCancel" sourceRef="UserTask_Decide" targetRef="EndEvent_Cancel" />
+      <bpmn:association id="Association_CompensatePick" associationDirection="One" sourceRef="Boundary_CompensatePick" targetRef="UserTask_UndoPick" />
+      <bpmn:association id="Association_CompensateCharge" associationDirection="One" sourceRef="Boundary_CompensateCharge" targetRef="ServiceTask_Refund" />
+    </bpmn:transaction>
+    <bpmn:boundaryEvent id="Boundary_Cancel" attachedToRef="Transaction_Order">
+      <bpmn:cancelEventDefinition id="CancelDefinition_Catch" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="UserTask_Confirm" name="Confirm the order" />
+    <bpmn:endEvent id="EndEvent_Confirmed" />
+    <bpmn:userTask id="UserTask_Cancelled" name="Handle the cancellation" />
+    <bpmn:endEvent id="EndEvent_Cancelled" />
+    <bpmn:sequenceFlow id="Flow_StartStart_Order" sourceRef="StartEvent_Start" targetRef="Transaction_Order" />
+    <bpmn:sequenceFlow id="Flow_Order_Confirm" sourceRef="Transaction_Order" targetRef="UserTask_Confirm" />
+    <bpmn:sequenceFlow id="Flow_Confirm_EndConfirmed" sourceRef="UserTask_Confirm" targetRef="EndEvent_Confirmed" />
+    <bpmn:sequenceFlow id="Flow_Cancel_Cancelled" sourceRef="Boundary_Cancel" targetRef="UserTask_Cancelled" />
+    <bpmn:sequenceFlow id="Flow_Cancelled_EndCancelled" sourceRef="UserTask_Cancelled" targetRef="EndEvent_Cancelled" />
+  </bpmn:process>
+</bpmn:definitions>

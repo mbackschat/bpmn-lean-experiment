@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_ErrorUncaught"
+  targetNamespace="urn:bpmn-lean:scenarios:compensation-handler-failure-at-wait:error-uncaught">
+  <bpmn:error id="Error_UndoFailed" name="Undo failed" errorCode="UNDO_FAILED" />
+  <bpmn:process id="Process_ErrorUncaught" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Start" />
+    <bpmn:subProcess id="SubProcess_Outer" name="Booking">
+      <bpmn:startEvent id="StartEvent_Outer" />
+      <bpmn:subProcess id="SubProcess_Work" name="Work">
+        <bpmn:startEvent id="StartEvent_Work" />
+        <bpmn:userTask id="UserTask_Work" name="Do the work" />
+        <bpmn:endEvent id="EndEvent_Work" />
+        <bpmn:sequenceFlow id="Flow_StartWork_Work" sourceRef="StartEvent_Work" targetRef="UserTask_Work" />
+        <bpmn:sequenceFlow id="Flow_Work_EndWork" sourceRef="UserTask_Work" targetRef="EndEvent_Work" />
+      </bpmn:subProcess>
+      <bpmn:boundaryEvent id="Boundary_CompensateWork" attachedToRef="SubProcess_Work">
+        <bpmn:compensateEventDefinition id="CompensateDefinition_Work" />
+      </bpmn:boundaryEvent>
+      <bpmn:subProcess id="SubProcess_Undo" name="Undo the work" isForCompensation="true">
+        <bpmn:startEvent id="StartEvent_Undo" />
+        <bpmn:userTask id="UserTask_UndoReview" name="Review the undo" />
+        <bpmn:endEvent id="EndEvent_UndoFailed">
+          <bpmn:errorEventDefinition id="ErrorDefinition_UndoFailed" errorRef="Error_UndoFailed" />
+        </bpmn:endEvent>
+        <bpmn:sequenceFlow id="Flow_StartUndo_UndoReview" sourceRef="StartEvent_Undo" targetRef="UserTask_UndoReview" />
+        <bpmn:sequenceFlow id="Flow_UndoReview_EndUndoFailed" sourceRef="UserTask_UndoReview" targetRef="EndEvent_UndoFailed" />
+      </bpmn:subProcess>
+      <bpmn:intermediateThrowEvent id="IntermediateThrow_All">
+        <bpmn:compensateEventDefinition id="CompensateDefinition_All" />
+      </bpmn:intermediateThrowEvent>
+      <bpmn:userTask id="UserTask_After" name="Continue after compensation" />
+      <bpmn:endEvent id="EndEvent_Outer" />
+      <bpmn:sequenceFlow id="Flow_StartOuter_Work" sourceRef="StartEvent_Outer" targetRef="SubProcess_Work" />
+      <bpmn:sequenceFlow id="Flow_Work_All" sourceRef="SubProcess_Work" targetRef="IntermediateThrow_All" />
+      <bpmn:sequenceFlow id="Flow_All_After" sourceRef="IntermediateThrow_All" targetRef="UserTask_After" />
+      <bpmn:sequenceFlow id="Flow_After_EndOuter" sourceRef="UserTask_After" targetRef="EndEvent_Outer" />
+      <bpmn:association id="Association_CompensateWork" associationDirection="One" sourceRef="Boundary_CompensateWork" targetRef="SubProcess_Undo" />
+    </bpmn:subProcess>
+    <bpmn:userTask id="UserTask_Settle" name="Settle the booking" />
+    <bpmn:endEvent id="EndEvent_Done" />
+    <bpmn:sequenceFlow id="Flow_StartStart_Outer" sourceRef="StartEvent_Start" targetRef="SubProcess_Outer" />
+    <bpmn:sequenceFlow id="Flow_Outer_Settle" sourceRef="SubProcess_Outer" targetRef="UserTask_Settle" />
+    <bpmn:sequenceFlow id="Flow_Settle_EndDone" sourceRef="UserTask_Settle" targetRef="EndEvent_Done" />
+  </bpmn:process>
+</bpmn:definitions>
