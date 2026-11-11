@@ -75,7 +75,7 @@ Browser eligibility separates 3 human-work journeys from 9 guided simulations wi
 | Recover scoped work after a business error | retainedScenario | subprocess-error-recovery | accepted | subprocess-error-propagation-trigger-first | retainedEvidence | notCatalogReady |
 | Wait for a review window | retainedScenario | timer-then-human-review | accepted | timer-user-task-composition | retainedEvidence | notCatalogReady |
 | Continue a review after a message | retainedScenario | message-then-human-review | accepted | intermediate-catch-message | retainedEvidence | notCatalogReady |
-| Review a confirmed settlement | retainedScenario | message-payload-then-human-review | accepted | message-payload-catch-supplied-scalar | notSelected | notCatalogReady |
+| Review a confirmed settlement | retainedScenario | message-payload-then-human-review | accepted | message-payload-catch-supplied-scalar | retainedEvidence | notCatalogReady |
 | Review a received shipment manifest | retainedScenario | shipment-manifest-structured-payload | accepted | portable-message-payload-manifest-delivered | notSelected | notCatalogReady |
 | Correlate a settlement confirmation to its waiting case | retainedScenario | message-key-correlated-settlement-review | accepted | message-key-correlation-unique | notSelected | notCatalogReady |
 | Wait for an invoice receipt | retainedScenario | addressed-receive-task | accepted | message-addressed-receive-task | retainedEvidence | guidedJourneyBacked |
