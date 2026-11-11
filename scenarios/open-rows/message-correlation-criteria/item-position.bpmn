@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             id="Definitions_ItemPosition" targetNamespace="urn:bpmn-lean:scenarios:message-correlation-criteria:item-position">
+  <message id="Message_OrderConfirmed" name="order-confirmed" />
+  <process id="Process_ItemPosition" name="Confirm an order after reviewing its items" isExecutable="true">
+    <startEvent id="OrderPlaced" name="Order placed" />
+    <subProcess id="ReviewItems" name="Review each item">
+      <multiInstanceLoopCharacteristics isSequential="true">
+        <loopCardinality>2</loopCardinality>
+      </multiInstanceLoopCharacteristics>
+      <startEvent id="ItemReached" name="Item reached" />
+      <userTask id="ReviewItem" name="Review the item">
+        <extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="position">${loopCounter}</camunda:inputParameter>
+            <camunda:outputParameter name="lastPosition">${position}</camunda:outputParameter>
+          </camunda:inputOutput>
+        </extensionElements>
+      </userTask>
+      <endEvent id="ItemReviewed" name="Item reviewed" />
+      <sequenceFlow id="Flow_ItemReached" sourceRef="ItemReached" targetRef="ReviewItem" />
+      <sequenceFlow id="Flow_ItemReviewed" sourceRef="ReviewItem" targetRef="ItemReviewed" />
+    </subProcess>
+    <intermediateCatchEvent id="AwaitConfirmation" name="Await confirmation">
+      <messageEventDefinition id="AwaitConfirmation_Message" messageRef="Message_OrderConfirmed" />
+    </intermediateCatchEvent>
+    <userTask id="FulfilOrder" name="Fulfil the order" />
+    <endEvent id="OrderFulfilled" name="Order fulfilled" />
+    <sequenceFlow id="Flow_Placed" sourceRef="OrderPlaced" targetRef="ReviewItems" />
+    <sequenceFlow id="Flow_Reviewed" sourceRef="ReviewItems" targetRef="AwaitConfirmation" />
+    <sequenceFlow id="Flow_Confirmed" sourceRef="AwaitConfirmation" targetRef="FulfilOrder" />
+    <sequenceFlow id="Flow_Fulfilled" sourceRef="FulfilOrder" targetRef="OrderFulfilled" />
+  </process>
+</definitions>

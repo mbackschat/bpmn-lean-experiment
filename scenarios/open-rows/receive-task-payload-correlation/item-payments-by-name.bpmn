@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_ItemPaymentsByName" targetNamespace="urn:bpmn-lean:receive-item-payments-by-name">
+  <message id="Message_Payment" name="paymentReceived" />
+  <process id="Process_ItemPaymentsByName" name="Collect one payment per named item at once" isExecutable="true">
+    <startEvent id="ItemsReceived" name="Items received" />
+    <receiveTask id="AwaitItemPayment" name="Await item payment" messageRef="Message_Payment">
+      <multiInstanceLoopCharacteristics isSequential="false" camunda:collection="items" camunda:elementVariable="item" />
+    </receiveTask>
+    <endEvent id="ItemsPaid" name="Items paid" />
+    <sequenceFlow id="Flow_Received" sourceRef="ItemsReceived" targetRef="AwaitItemPayment" />
+    <sequenceFlow id="Flow_Paid" sourceRef="AwaitItemPayment" targetRef="ItemsPaid" />
+  </process>
+</definitions>

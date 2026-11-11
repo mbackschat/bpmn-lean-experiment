@@ -12,6 +12,7 @@ A correlation is the list of matches a delivery states against the target occurr
 | [confirmation-payload](confirmation-payload.bpmn) | The same shape with the catch reached through the Interface *Warehouse* and one Data Output associated to the Process Property `Property_ConfirmationReference`. |
 | [parallel-confirmations](parallel-confirmations.bpmn) | A Parallel fork into two Message catches of the one Message `order-confirmed`, *Await confirmation of part A* and *Await confirmation of part B*, each followed by its own User Task and joined before the End. |
 | [item-confirmations](item-confirmations.bpmn) | A parallel Multi-Instance Sub-Process of cardinality two whose body is a Message catch *Await item confirmation* (`item-confirmed`) and the User Task *Pack the item*. |
+| [item-position](item-position.bpmn) | A sequential Multi-Instance Sub-Process of cardinality two whose body is the User Task *Review the item*: its input parameter `position` reads the body's `loopCounter`, and its output parameter writes `position` to the Process variable `lastPosition`. Then the Message catch *Await confirmation* (`order-confirmed`) and the User Task *Fulfil the order*. |
 | [message-key-correlation process](../../message-key-correlation/process.bpmn) | The existing settlement model with its modeled correlation key, bound by path from [modeled-key-api-criterion](modeled-key-api-criterion.scenario.json). |
 
 ## Schedules
@@ -29,6 +30,8 @@ A correlation is the list of matches a delivery states against the target occurr
 | [ambiguous-same-instance](ambiguous-same-instance.scenario.json) | parallel-confirmations | The criterion `orderId` `A-1`, which equals the instance's variable, delivered to each of the two catches of the one Message. |
 | [local-variable-body-counter](local-variable-body-counter.scenario.json) | item-confirmations | `loopCounter` stated as 1, then as 0, at the first body's catch. |
 | [object-valued-criterion](object-valued-criterion.scenario.json) | order-confirmation | The criterion on `orderId` stated as a list, a Decimal and a map, each of which CIB's variable query refuses, then as the String `A-1`. |
+| [integer-beyond-int-range](integer-beyond-int-range.scenario.json) | order-confirmation | `ticket` started as the Integer 3000000000, beyond a 32-bit range: a delivery under 7294967296, which shares its low 32 bits, then under 3000000000. |
+| [engine-integer-criterion](engine-integer-criterion.scenario.json) | item-position | After both bodies, a criterion of the Integer 1 on `lastPosition`, a value the engine derived from a Multi-Instance counter rather than one a command supplied. |
 | [modeled-key-api-criterion](modeled-key-api-criterion.scenario.json) | message-key-correlation process | A String payload at the first catch, then a criterion on the Process variable `Property_SettlementReference` at the second. |
 
 The schedules carry no expected match, variable or Process state; the retained CIB evidence is the answer.

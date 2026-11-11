@@ -1,0 +1,106 @@
+{
+  "kind": "scenario",
+  "id": "message-correlation-criteria-engine-integer-criterion",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "message-correlation-criteria-item-position",
+    "relativePath": "scenarios/open-rows/message-correlation-criteria/item-position.bpmn",
+    "sha256": "90c4ead0dd7283da5958b4ef3fd0c1ca2c4385f2cda589ce4d240e9c2de85c39",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-complete-ReviewItem-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "ReviewItem",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-complete-ReviewItem-2",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "ReviewItem",
+        "activation": 2
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "deliver",
+      "commandId": "s04-deliver-last-position",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "AwaitConfirmation",
+        "activation": 1
+      },
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "directMessage",
+          "messageId": "Message_OrderConfirmed"
+        }
+      },
+      "correlation": [
+        {
+          "target": {
+            "kind": "processVariable",
+            "name": "lastPosition"
+          },
+          "expected": {
+            "kind": "integer",
+            "value": 1
+          }
+        }
+      ]
+    },
+    {
+      "kind": "command",
+      "commandId": "s05-complete-FulfilOrder-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "FulfilOrder",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 8.4.2",
+      "BPMN 2.0.2 Clause 8.4.11",
+      "BPMN 2.0.2 Clause 10.5.4",
+      "BPMN 2.0.2 Table 8.31",
+      "BPMN 2.0.2 Table 8.35",
+      "BPMN 2.0.2 Table 10.99",
+      "BPMN 2.0.2 Table 10.30"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/runtime/DefaultCorrelationHandler.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/MessageCorrelationBuilderImpl.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/cmd/AbstractCorrelateMessageCmd.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/QueryVariableValue.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/MultiInstanceActivityBehavior.java"
+    ]
+  }
+}
