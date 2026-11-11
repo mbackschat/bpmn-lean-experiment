@@ -77,6 +77,10 @@ const racing = (first: string, second: string, read = "source", condition: strin
   }, { outputContext: "activityScope" });
 };
 
+/** `racing`'s branch `A` becomes a Sub-Process without a start Event whose plain Task `AW`, begun implicitly, writes `inner`. */
+const racingInside = (inner: string) => (program: Json): Json =>
+  append(replace(racing("unused", "x")(program), "A", scope("A", "embedded")), activity("AW", "none", { outputs: [mapping(inner, variable("source"))] }, "A"));
+
 /**
  * `Start -> T (Inclusive split) -> A, B -> J (Inclusive join) -> End`: `a` and `b` leave the split, `ja` and `jb` enter
  * the join, and `B` is a User Task unless a row names other work.
@@ -193,6 +197,12 @@ export const rows: readonly Row[] = [
     description: "two branches of a Parallel fork writing one name with no wait between",
     mutate: racing("x", "x"),
     control: racing("x", "y"),
+  },
+  {
+    code: "flow.concurrentWrite",
+    description: "a branch whose Sub-Process begins a Task writing a sibling branch's name implicitly",
+    mutate: racingInside("x"),
+    control: racingInside("y"),
   },
   {
     code: "start.rootCombination",

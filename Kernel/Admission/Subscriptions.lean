@@ -157,12 +157,11 @@ def escalationTrigger (variables : ErrorCatchVariables) (trigger : EscalationTri
   | .eventScope => none
   | .refused => if trigger.codeVariable.isSome then some "event.escalation.codeVariable" else none
 
-/-- The codes of the raised-event boundaries and the literal Message names a host declared before the one being
-admitted; `none` is an Escalation catch-all. -/
+/-- The codes of the raised-event catchers one place declared before the one being admitted: the boundaries of a host,
+or the Event Sub-Processes of a scope; `none` is an Escalation catch-all. -/
 structure Declared where
   errorCodes : List String := []
   escalations : List (Option String) := []
-  messageNames : List String := []
 
 /-- At most one Escalation handler of one kind in one place may match any code: among the boundaries of a host, or among
 the Event Sub-Processes of a scope, a second one of the same code, a catch-all beside any other, or two catch-alls are
@@ -177,36 +176,51 @@ def escalationDeclared (refusal : String) (earlier : List (Option String)) (code
     | none => !earlier.isEmpty
   if conflicts then .error refusal else .ok (earlier ++ [code])
 
+/-- At most one interrupting Error catcher of one kind in one place per exact code: among the boundaries of a host, or
+among the Event Sub-Processes of a scope, a second one of a code in `earlier` is refused as `refusal`, and an admitted
+code joins `earlier`. BPMN 2.0.2 §10.5.6 allows one interrupting handler per Event Declaration ("only one Event
+Sub-Process for the same Event Declaration MUST be modeled") and orders no two of one code; CIB keeps them and catches
+with the first in document order (`BpmnParse.java:3645-3650`, a stable sort by precedence), which is not adopted, so
+they are refused under every profile (PC-ERROR-01, PC-ERROR-02). A catch-all (`none`) is never refused: catch-alls of
+one place catch in document order (CIB-INT-0010). -/
+def errorDeclared (refusal : String) (earlier : List String) : Option String → Except String (List String)
+  | some code => if earlier.contains code then .error refusal else .ok (code :: earlier)
+  | none => .ok earlier
+
 /-- An interrupting Event Sub-Process started by a Message has no selected meaning for the Scope it interrupts; an Error
 Event Sub-Process always interrupts (BPMN 2.0.2 Table 10.86, Table 10.87 `isInterrupting`, §13.5.4) (PC-ERROR-02).
-`earlier` holds the Escalation codes of the Event Sub-Processes the same scope declared before this one
-(`escalationDeclared`). -/
-def eventSubProcessAfter (earlier : List (Option String)) (start : Subscription) (interrupting : Bool) :
-    Except String (List (Option String)) :=
-  let refused : Option String → Except String (List (Option String))
+`seen` holds the Error and Escalation codes of the Event Sub-Processes the same scope declared before this one
+(`errorDeclared`, `escalationDeclared`). -/
+def eventSubProcessAfter (seen : Declared) (start : Subscription) (interrupting : Bool) : Except String Declared :=
+  let refused : Option String → Except String Declared
     | some code => .error code
-    | none => .ok earlier
+    | none => .ok seen
   match definitions start with
   | some code => .error code
   | none =>
     match start.trigger with
     | .message _ => refused (if interrupting then some "scope.eventSubProcess.interruptingMessage" else none)
-    | .timer _ => .ok earlier
-    | .error _ => refused (if interrupting then none else some "start.error.nonInterrupting")
-    | .signal _ => .ok earlier
-    | .condition _ => .ok earlier
-    | .escalation trigger => escalationDeclared "scope.eventSubProcess.escalationDuplicate" earlier trigger.code
-    | .compensation => .ok earlier
-    | .cancel => .ok earlier
+    | .timer _ => .ok seen
+    | .error trigger => do
+      let seen ← refused (if interrupting then none else some "start.error.nonInterrupting")
+      let errorCodes ← errorDeclared "scope.eventSubProcess.errorDuplicateCode" seen.errorCodes trigger.code
+      .ok { seen with errorCodes }
+    | .signal _ => .ok seen
+    | .condition _ => .ok seen
+    | .escalation trigger => do
+      let escalations ← escalationDeclared "scope.eventSubProcess.escalationDuplicate" seen.escalations trigger.code
+      .ok { seen with escalations }
+    | .compensation => .ok seen
+    | .cancel => .ok seen
 
 def eventSubProcess (start : Subscription) (interrupting : Bool) : Option String :=
-  match eventSubProcessAfter [] start interrupting with
+  match eventSubProcessAfter {} start interrupting with
   | .error code => some code
   | .ok _ => none
 
 /-- The Event Sub-Processes one scope declares, as their starts in document order, taken together. -/
 def eventSubProcessDeclarations (starts : List (Subscription × Bool)) : Option String :=
-  match starts.foldlM (fun earlier (start, interrupting) => eventSubProcessAfter earlier start interrupting) [] with
+  match starts.foldlM (fun seen (start, interrupting) => eventSubProcessAfter seen start interrupting) {} with
   | .error code => some code
   | .ok _ => none
 
@@ -222,14 +236,20 @@ def catchEvent (options : ProfileOptions) (reading : Reading) (subscription : Su
   | .compensation => some "event.catch.compensation"
   | .cancel => some "event.catch.cancel"
 
-/-- `transactionHost` says whether the boundary hangs on a Transaction. An Error boundary always interrupts (BPMN 2.0.2
+/-- What a boundary's admission reads of its host: whether it is a Transaction, and whether an Escalation boundary may
+hang on it. Pinned CIB admits an Escalation boundary only on a Sub-Process (a Transaction counts as one,
+`BpmnParse.java:3879`, `:3908`), a Call Activity or a User Task and refuses the deployment otherwise
+(`BpmnParse.java:3335-3342`). BPMN 2.0.2 §10.5.6 restricts no host, so another host lies outside the target and is
+refused under every profile (`boundary.escalation.host`, PC-ESCALATION-02). -/
+structure Host where
+  transaction : Bool
+  escalation : Bool
+
+/-- `host` says what the boundary hangs on (`Host`). An Error boundary always interrupts (BPMN 2.0.2
 Table 10.90) (PC-ERROR-01); a Cancel boundary always interrupts and hangs only on a Transaction (Table 10.90, §10.3.5;
-`BpmnParse#parseBoundaryCancelEventDefinition`) (PC-TX-02). `seen.errorCodes` holds the codes of the host's Error boundaries
-before this one, and an admitted Error boundary adds its own. Two with one code are refused: BPMN 2.0.2 §10.5.6
-allows one interrupting handler per Event Declaration and states no precedence between two declarations of one code,
-so the kernel restricts a host to one boundary per code, and CIB's first in document order (`BpmnParse:3646`) is not
-adopted (PC-ERROR-01). `seen.escalations` holds the host's earlier Escalation boundary codes (`escalationDeclared`). -/
-def boundary (options : ProfileOptions) (reading : Reading) (transactionHost : Bool) (seen : Declared)
+`BpmnParse#parseBoundaryCancelEventDefinition`) (PC-TX-02). `seen` holds the host's earlier Error boundary codes
+(`errorDeclared`) and Escalation boundary codes (`escalationDeclared`). -/
+def boundary (options : ProfileOptions) (reading : Reading) (host : Host) (seen : Declared)
     (boundary : Boundary) : Except String Declared :=
   let variables := options.errorCatchVariables
   let check (refusal : Option String) : Except String Declared :=
@@ -241,39 +261,67 @@ def boundary (options : ProfileOptions) (reading : Reading) (transactionHost : B
   | none =>
     match boundary.subscription.trigger with
     | .timer trigger => check (timerAt options reading false trigger)
-    | .message trigger => do
-      let seen ← check (message options reading false trigger)
-      -- CIB refuses two Message subscriptions of one name in one event scope (`BpmnParse.java:1277-1282`).
-      match options.messageNames, trigger.name with
-      | .addresses, some (.literal name) =>
-        if seen.messageNames.contains name then .error "message.duplicateName"
-        else .ok { seen with messageNames := name :: seen.messageNames }
-      | .addresses, some (.expression _) | .addresses, none | .description, _ => .ok seen
+    | .message trigger => check (message options reading false trigger)
     | .signal _ => .error "boundary.signal"
     | .condition trigger => check (conditionRefusal options reading trigger)
     | .error trigger => do
       let seen ← check ((if boundary.interrupting then none else some "boundary.error.nonInterrupting") <|>
         errorTrigger variables trigger)
-      match trigger.code with
-      | some code =>
-        if seen.errorCodes.contains code then .error "boundary.error.duplicateCode"
-        else .ok { seen with errorCodes := code :: seen.errorCodes }
-      | none => .ok seen
+      let errorCodes ← errorDeclared "boundary.error.duplicateCode" seen.errorCodes trigger.code
+      .ok { seen with errorCodes }
     | .escalation trigger => do
-      let seen ← check (escalationTrigger variables trigger)
+      let seen ← check ((if host.escalation then none else some "boundary.escalation.host") <|>
+        escalationTrigger variables trigger)
       let escalations ← escalationDeclared "boundary.escalation.duplicate" seen.escalations trigger.code
       .ok { seen with escalations }
     | .compensation => .ok seen
     | .cancel =>
-      check (if !transactionHost then some "boundary.cancel.host"
+      check (if !host.transaction then some "boundary.cancel.host"
         else if boundary.interrupting then none
         else some "boundary.cancel.nonInterrupting")
 
-def boundaries (options : ProfileOptions) (reading : Reading) (transactionHost : Bool) (list : List Boundary) :
+def boundaries (options : ProfileOptions) (reading : Reading) (host : Host) (list : List Boundary) :
     Option String :=
-  match list.foldlM (boundary options reading transactionHost) {} with
+  match list.foldlM (boundary options reading host) {} with
   | .error code => some code
   | .ok _ => none
+
+/-- The event scope CIB declares a Message subscription in (`BpmnParse#addEventSubscriptionDeclaration`,
+`BpmnParse.java:1271-1295`): a process level (the root for `none`, else the called process of that definition), an
+element, or the Multi-Instance body of a looping host. -/
+inductive EventScope where
+  | process (definition : Option DefinitionRef)
+  | element (id : ElementId)
+  | body (host : ElementId)
+  deriving DecidableEq
+
+/-- A Message subscription as CIB declares it: its event scope, its `isStartEvent` mark, which only a root Message
+start sets (`BpmnParse.java:1029`), and its trigger. -/
+structure MessageSite where
+  scope : EventScope
+  start : Bool
+  trigger : MessageTrigger
+
+/-- Under `MessageNames.addresses` two Message subscriptions of one event scope and one start mark may not share a name:
+CIB refuses the second at deployment when its unresolved name text equals the first's
+(`hasMultipleEventDefinitionsWithSameName`, `BpmnParse.java:1277-1282`, `:1317-1327`). `sites` are every Message
+subscription of the program. A literal name compares by its text. Admission cannot compare expression texts: the IL
+keeps an expression's parsed form, a guarded JUEL table, not its text. So two expression names on one Message, which
+has one name text, are `message.duplicateName`, and two on different Messages are refused as `message.expressionNames`
+rather than guessed, which also refuses pairs of different texts that CIB deploys (PC-MESSAGE-01). A literal never
+collides with an expression: the reader reads every text holding `${` or `#{` as an expression. -/
+def messageNames (options : ProfileOptions) (sites : List MessageSite) : Option String :=
+  let clash (earlier site : MessageSite) : Option String :=
+    if earlier.scope != site.scope || earlier.start != site.start then none
+    else
+      match earlier.trigger.name, site.trigger.name with
+      | some (.literal left), some (.literal right) => if left == right then some "message.duplicateName" else none
+      | some (.expression _), some (.expression _) =>
+        some (if earlier.trigger.messageRef == site.trigger.messageRef then "message.duplicateName"
+          else "message.expressionNames")
+      | _, _ => none
+  if options.messageNames != .addresses then none
+  else sites.zipIdx.findSome? fun (site, index) => (sites.take index).findSome? (clash · site)
 
 /-- A triggered start. At process level (`nested = false`) the start input names it; nested, it is an Event
 Sub-Process start, which may also repeat a cycle and catch what `Kernel.Feature.Propagation` raises. -/

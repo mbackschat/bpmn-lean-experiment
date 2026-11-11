@@ -18,11 +18,14 @@ import {
   TriggerTag,
   ValueSourceTag,
   assertNever,
+  definitionRefEquals,
   triggerMessage,
   valueSourceLiteral,
   variableEventNamed,
   type Boundary,
   type ConditionTrigger,
+  type DefinitionRef,
+  type ElementId,
   type Expression,
   type ProfileOptions,
   type CorrelationCriterion,
@@ -260,8 +263,11 @@ function escalationTrigger(variables: ErrorCatchVariables, trigger: EscalationTr
   return assertNever(variables);
 }
 
-/** The codes of the raised-event boundaries and the literal Message names a host declared before the one being admitted. */
-type Declared = { readonly errorCodes: Set<string>; readonly escalations: Array<string | null>; readonly messageNames: Set<string> };
+/**
+ * The codes of the raised-event catchers one place declared before the one being admitted: the boundaries of a host, or
+ * the Event Sub-Processes of a scope; `null` is an Escalation catch-all.
+ */
+type Declared = { readonly errorCodes: Set<string>; readonly escalations: Array<string | null> };
 
 /**
  * At most one Escalation handler of one kind in one place may match any code: among the boundaries of a host, or among
@@ -279,10 +285,28 @@ function escalationDeclared(refusal: string, earlier: Array<string | null>, code
 }
 
 /**
+ * At most one interrupting Error catcher of one kind in one place per exact code: among the boundaries of a host, or
+ * among the Event Sub-Processes of a scope, a second one of a code in `earlier` is refused as `refusal`, and an admitted
+ * code joins `earlier`. BPMN 2.0.2 §10.5.6 allows one interrupting handler per Event Declaration ("only one Event
+ * Sub-Process for the same Event Declaration MUST be modeled") and orders no two of one code; CIB keeps them and catches
+ * with the first in document order (`BpmnParse.java:3645-3650`, a stable sort by precedence), which is not adopted, so
+ * they are refused under every profile (PC-ERROR-01, PC-ERROR-02). A catch-all (`null`) is never refused: catch-alls of
+ * one place catch in document order (CIB-INT-0010).
+ */
+function errorDeclared(refusal: string, earlier: Set<string>, code: string | null): string | null {
+  if (code === null) return null;
+  if (earlier.has(code)) return refusal;
+  earlier.add(code);
+  return null;
+}
+
+/**
  * An interrupting Event Sub-Process started by a Message has no selected meaning for the Scope it interrupts; an Error
  * Event Sub-Process always interrupts (BPMN 2.0.2 Table 10.86, Table 10.87 `isInterrupting`, §13.5.4) (PC-ERROR-02).
+ * `seen` holds the Error and Escalation codes of the Event Sub-Processes the same scope declared before this one
+ * (`errorDeclared`, `escalationDeclared`).
  */
-function eventSubProcessAfter(earlier: Array<string | null>, start: Subscription, interrupting: boolean): string | null {
+function eventSubProcessAfter(seen: Declared, start: Subscription, interrupting: boolean): string | null {
   const refused = definitions(start);
   if (refused !== null) return refused;
   const trigger = start.trigger;
@@ -292,9 +316,10 @@ function eventSubProcessAfter(earlier: Array<string | null>, start: Subscription
     case TriggerTag.Timer:
       return null;
     case TriggerTag.Error:
-      return interrupting ? null : "start.error.nonInterrupting";
+      return (interrupting ? null : "start.error.nonInterrupting") ??
+        errorDeclared("scope.eventSubProcess.errorDuplicateCode", seen.errorCodes, trigger.payload.code);
     case TriggerTag.Escalation:
-      return escalationDeclared("scope.eventSubProcess.escalationDuplicate", earlier, trigger.payload.code);
+      return escalationDeclared("scope.eventSubProcess.escalationDuplicate", seen.escalations, trigger.payload.code);
     case TriggerTag.Signal:
     case TriggerTag.Condition:
     case TriggerTag.Compensation:
@@ -305,14 +330,14 @@ function eventSubProcessAfter(earlier: Array<string | null>, start: Subscription
 }
 
 export function eventSubProcess(start: Subscription, interrupting: boolean): string | null {
-  return eventSubProcessAfter([], start, interrupting);
+  return eventSubProcessAfter({ errorCodes: new Set<string>(), escalations: [] }, start, interrupting);
 }
 
 /** The Event Sub-Processes one scope declares, as their starts in document order, taken together. */
 export function eventSubProcessDeclarations(starts: readonly (readonly [Subscription, boolean])[]): string | null {
-  const earlier: Array<string | null> = [];
+  const seen: Declared = { errorCodes: new Set<string>(), escalations: [] };
   for (const [start, interrupting] of starts) {
-    const refused = eventSubProcessAfter(earlier, start, interrupting);
+    const refused = eventSubProcessAfter(seen, start, interrupting);
     if (refused !== null) return refused;
   }
   return null;
@@ -344,16 +369,24 @@ export function catchEvent(options: ProfileOptions, reading: Reading, subscripti
 }
 
 /**
- * `transactionHost` says whether the boundary hangs on a Transaction. An Error boundary always interrupts (BPMN 2.0.2
- * Table 10.90) (PC-ERROR-01); a Cancel boundary always interrupts and hangs only on a Transaction (Table 10.90, §10.3.5;
- * `BpmnParse#parseBoundaryCancelEventDefinition`) (PC-TX-02). `seen.errorCodes` holds the codes of the host's Error boundaries
- * before this one, and an admitted Error boundary adds its own. Two with one code are refused: BPMN 2.0.2 §10.5.6
- * allows one interrupting handler per Event Declaration and states no precedence between two declarations of one code,
- * so the kernel restricts a host to one boundary per code, and CIB's first in document order (`BpmnParse:3646`) is not
- * adopted (PC-ERROR-01). `seen.escalations` holds the codes of the host's Escalation boundaries before this one, `null`
- * for a catch-all (`escalationDeclared`).
+ * What a boundary's admission reads of its host: whether it is a Transaction, and whether an Escalation boundary may
+ * hang on it. Pinned CIB admits an Escalation boundary only on a Sub-Process (a Transaction counts as one,
+ * `BpmnParse.java:3879`, `:3908`), a Call Activity or a User Task and refuses the deployment otherwise
+ * (`BpmnParse.java:3335-3342`). BPMN 2.0.2 §10.5.6 restricts no host, so another host lies outside the target and is
+ * refused under every profile (`boundary.escalation.host`, PC-ESCALATION-02).
  */
-function boundary(options: ProfileOptions, reading: Reading, transactionHost: boolean, seen: Declared, attached: Boundary): string | null {
+export interface Host {
+  readonly transaction: boolean;
+  readonly escalation: boolean;
+}
+
+/**
+ * `host` says what the boundary hangs on (`Host`). An Error boundary always interrupts (BPMN 2.0.2
+ * Table 10.90) (PC-ERROR-01); a Cancel boundary always interrupts and hangs only on a Transaction (Table 10.90, §10.3.5;
+ * `BpmnParse#parseBoundaryCancelEventDefinition`) (PC-TX-02). `seen` holds the host's earlier Error boundary codes
+ * (`errorDeclared`) and Escalation boundary codes, `null` for a catch-all (`escalationDeclared`).
+ */
+function boundary(options: ProfileOptions, reading: Reading, host: Host, seen: Declared, attached: Boundary): string | null {
   const variables = options.errorCatchVariables;
   const refused = definitions(attached.subscription) ?? subscriptionOutputs(attached.subscription);
   if (refused !== null) return refused;
@@ -361,16 +394,8 @@ function boundary(options: ProfileOptions, reading: Reading, transactionHost: bo
   switch (trigger.tag) {
     case TriggerTag.Timer:
       return timerAt(options, reading, false, trigger.payload);
-    case TriggerTag.Message: {
-      const refused = message(options, reading, false, trigger.payload);
-      if (refused !== null) return refused;
-      // CIB refuses two Message subscriptions of one name in one event scope (`BpmnParse.java:1277-1282`).
-      const name = trigger.payload.name;
-      if (options.messageNames !== MessageNames.Addresses || name === null || name.tag !== ValueSourceTag.Literal) return null;
-      if (seen.messageNames.has(name.value)) return "message.duplicateName";
-      seen.messageNames.add(name.value);
-      return null;
-    }
+    case TriggerTag.Message:
+      return message(options, reading, false, trigger.payload);
     case TriggerTag.Signal:
       return "boundary.signal";
     case TriggerTag.Condition:
@@ -378,29 +403,101 @@ function boundary(options: ProfileOptions, reading: Reading, transactionHost: bo
     case TriggerTag.Error: {
       const declared = (attached.interrupting ? null : "boundary.error.nonInterrupting") ?? errorTrigger(variables, trigger.payload);
       if (declared !== null) return declared;
-      const code = trigger.payload.code;
-      if (code === null) return null;
-      if (seen.errorCodes.has(code)) return "boundary.error.duplicateCode";
-      seen.errorCodes.add(code);
-      return null;
+      return errorDeclared("boundary.error.duplicateCode", seen.errorCodes, trigger.payload.code);
     }
     case TriggerTag.Escalation:
-      return escalationTrigger(variables, trigger.payload) ??
+      return (host.escalation ? null : "boundary.escalation.host") ?? escalationTrigger(variables, trigger.payload) ??
         escalationDeclared("boundary.escalation.duplicate", seen.escalations, trigger.payload.code);
     case TriggerTag.Compensation:
       return null;
     case TriggerTag.Cancel:
-      if (!transactionHost) return "boundary.cancel.host";
+      if (!host.transaction) return "boundary.cancel.host";
       return attached.interrupting ? null : "boundary.cancel.nonInterrupting";
   }
   return assertNever(trigger);
 }
 
-export function boundaries(options: ProfileOptions, reading: Reading, transactionHost: boolean, list: readonly Boundary[]): string | null {
-  const seen: Declared = { errorCodes: new Set<string>(), escalations: [], messageNames: new Set<string>() };
+export function boundaries(options: ProfileOptions, reading: Reading, host: Host, list: readonly Boundary[]): string | null {
+  const seen: Declared = { errorCodes: new Set<string>(), escalations: [] };
   for (const attached of list) {
-    const refused = boundary(options, reading, transactionHost, seen, attached);
+    const refused = boundary(options, reading, host, seen, attached);
     if (refused !== null) return refused;
+  }
+  return null;
+}
+
+export enum EventScopeTag {
+  Process = "process",
+  Element = "element",
+  Body = "body",
+}
+
+/**
+ * The event scope CIB declares a Message subscription in (`BpmnParse#addEventSubscriptionDeclaration`,
+ * `BpmnParse.java:1271-1295`): a process level (the root for `null`, else the called process of that definition), an
+ * element, or the Multi-Instance body of a looping host.
+ */
+export type EventScope =
+  | { readonly tag: EventScopeTag.Process; readonly definition: DefinitionRef | null }
+  | { readonly tag: EventScopeTag.Element; readonly id: ElementId }
+  | { readonly tag: EventScopeTag.Body; readonly host: ElementId };
+
+/** Lean's derived `DecidableEq EventScope`. */
+function eventScopeEquals(left: EventScope, right: EventScope): boolean {
+  switch (left.tag) {
+    case EventScopeTag.Process:
+      return right.tag === EventScopeTag.Process && (left.definition === null || right.definition === null
+        ? left.definition === right.definition
+        : definitionRefEquals(left.definition, right.definition));
+    case EventScopeTag.Element:
+      return right.tag === EventScopeTag.Element && left.id === right.id;
+    case EventScopeTag.Body:
+      return right.tag === EventScopeTag.Body && left.host === right.host;
+  }
+  return assertNever(left);
+}
+
+/**
+ * A Message subscription as CIB declares it: its event scope, its `isStartEvent` mark, which only a root Message start
+ * sets (`BpmnParse.java:1029`), and its trigger.
+ */
+export interface MessageSite {
+  readonly scope: EventScope;
+  readonly start: boolean;
+  readonly trigger: MessageTrigger;
+}
+
+/**
+ * Under `MessageNames.Addresses` two Message subscriptions of one event scope and one start mark may not share a name:
+ * CIB refuses the second at deployment when its unresolved name text equals the first's
+ * (`hasMultipleEventDefinitionsWithSameName`, `BpmnParse.java:1277-1282`, `:1317-1327`). `sites` are every Message
+ * subscription of the program. A literal name compares by its text. Admission cannot compare expression texts: the IL
+ * keeps an expression's parsed form, a guarded JUEL table, not its text. So two expression names on one Message, which
+ * has one name text, are `message.duplicateName`, and two on different Messages are refused as `message.expressionNames`
+ * rather than guessed, which also refuses pairs of different texts that CIB deploys (PC-MESSAGE-01). A literal never
+ * collides with an expression: the reader reads every text holding `${` or `#{` as an expression.
+ */
+export function messageNames(options: ProfileOptions, sites: readonly MessageSite[]): string | null {
+  if (options.messageNames !== MessageNames.Addresses) return null;
+  const clash = (earlier: MessageSite, site: MessageSite): string | null => {
+    if (earlier.start !== site.start || !eventScopeEquals(earlier.scope, site.scope)) return null;
+    const left = earlier.trigger.name;
+    const right = site.trigger.name;
+    if (left === null || right === null) return null;
+    switch (left.tag) {
+      case ValueSourceTag.Literal:
+        return right.tag === ValueSourceTag.Literal && left.value === right.value ? "message.duplicateName" : null;
+      case ValueSourceTag.Expression:
+        if (right.tag !== ValueSourceTag.Expression) return null;
+        return earlier.trigger.messageRef === site.trigger.messageRef ? "message.duplicateName" : "message.expressionNames";
+    }
+    return assertNever(left);
+  };
+  for (const [index, site] of sites.entries()) {
+    for (const earlier of sites.slice(0, index)) {
+      const refused = clash(earlier, site);
+      if (refused !== null) return refused;
+    }
   }
   return null;
 }

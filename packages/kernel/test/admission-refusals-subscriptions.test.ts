@@ -8,8 +8,8 @@
  */
 import {
   activity, append, boundary, cancelTrigger, catchEvent, channel, compensationTrigger, condition, criterion, cycle, date, duration,
-  errorTrigger, escalationTrigger, eventSubProcess, foreign, literalValue, bool, mapping, message, refusalTests, replace, scope,
-  signal, simpleBoolean, start, task, variable, computed, text, withOptions,
+  errorTrigger, escalationTrigger, eventBased, eventSubProcess, flow, foreign, gateway, juel, literalValue, loop, bool, mapping, message,
+  receiveWork, refusalTests, replace, scope, signal, simpleBoolean, start, task, userWork, variable, computed, text, withFlows, withOptions,
 } from "./admission-refusal-support.ts";
 import type { Json, Row } from "./admission-refusal-support.ts";
 
@@ -49,6 +49,70 @@ const addresses = (placed: (program: Json) => Json) => (program: Json): Json =>
 const conditionWith = (over: Json): Json => {
   const base = condition() as { condition: { payload: Json } };
   return { condition: { payload: { ...base.condition.payload, ...over } } };
+};
+
+/** `addresses` with the options a Multi-Instance loop reads under JUEL. */
+const addressesLooping = (placed: (program: Json) => Json) => (program: Json): Json =>
+  placed(withOptions(program, {
+    messageNames: "addresses", evaluator: "juel", multiInstanceBinding: "loopReferences", multiInstanceCounters: "cibLocals",
+    multiInstanceInputFailure: "rollback", multiInstanceCount: "javaInt",
+  }));
+
+/** A Message `M2` distinct from `named`'s `M` but of its name. */
+const sameName = message({ messageRef: "M2", name: text("M") });
+
+/** A non-interrupting Event Sub-Process `id` started by `trigger`, in `parent` or at the process level. */
+const handler = (id: string, trigger: Json, parent: string | null = null): Json => scope(id, eventSubProcess(trigger, false), {}, {}, parent);
+
+const twoHandlers = (program: Json): Json => append(program, handler("H1", named), handler("H2", sameName));
+
+/**
+ * `T` becomes a Sub-Process with a Message boundary `B`, a Task `C` its implicit start begins and a Message Event
+ * Sub-Process `H` of `B`'s name; `env` adds to its envelope.
+ */
+const hostAndHandler = (env: Json = {}) => (program: Json): Json =>
+  append(task(scope("T", "embedded", {}, { boundaries: [boundary("B", named)], ...env }))(program),
+    activity("C", "manual", { incoming: [], outgoing: [] }, "T"), handler("H", sameName, "T"));
+
+/** `T` becomes an Event-Based Gateway whose arm `E` catches `first` and, unless `second` is null, whose arm `E2` catches it. */
+const arms = (first: Json, second: Json | null) => (program: Json): Json => {
+  const gated = replace(replace(program, "T", gateway("T", eventBased())), "E", catchEvent("E", first));
+  return second === null ? gated : withFlows(append(gated, catchEvent("E2", second)), flow("f3", "T", "E2"));
+};
+
+/**
+ * `T` becomes a Task with boundaries `B` and `B2` on the Messages `firstRef` and `secondRef` named `first` and `second`;
+ * two references to one Message carry its one name.
+ */
+const namedBy = (first: Json, second: Json, secondRef = "M2") => task(activity("T", "manual", {
+  boundaries: [boundary("B", message({ messageRef: "M", name: first })), boundary("B2", message({ messageRef: secondRef, name: second }))],
+}));
+
+/** The name expression `${order.<property>}`. */
+const orderField = (property: string): Json => computed(juel({ identifier: { name: "order" } }, { dot: { base: 0, property } }));
+
+/** `T` and `E` become two catch Events in sequence of one name. */
+const twoCatches = (program: Json): Json => replace(replace(program, "T", catchEvent("T", named)), "E", catchEvent("E", sameName));
+
+/** `T` becomes a Receive Task of `named` with a boundary `B` of its name; `env` adds to its envelope. */
+const receiving = (env: Json = {}) =>
+  task(activity("T", receiveWork({ messageRef: "M", name: text("M") }), { boundaries: [boundary("B", sameName)], ...env }));
+
+/** The process starts `S` and `X` wait for Messages of one name. */
+const twoStarts = (program: Json): Json =>
+  withFlows(append(replace(program, "S", start("S", named)), start("X", sameName)), flow("fX", "X", "E"));
+
+/**
+ * Two interrupting Error Event Sub-Processes `H1` and `H2` catching `first` and `second` (`null` catches every Error),
+ * declared at the process level or in a Sub-Process `parent` (`T`). An interrupting one is an abnormal scope end, so the
+ * profile that completes normally is selected.
+ */
+const errorHandlers = (first: string | null, second: string | null, parent: string | null = null) => (program: Json): Json => {
+  const profiled = withOptions(program, { abnormalScopeEnd: "completesNormally" });
+  const [h1, h2] = [first, second].map((code, index) =>
+    scope(`H${index + 1}`, eventSubProcess(errorTrigger({ code }), true), {}, {}, parent));
+  return parent === null ? append(profiled, h1!, h2!)
+    : append(task(scope("T", "embedded"))(profiled), activity("C", "manual", { incoming: [], outgoing: [] }, "T"), h1!, h2!);
 };
 
 /** The profile selection under which a Conditional fires on each matching write, filtered (CIB-EXT-0035). */
@@ -262,10 +326,34 @@ export const rows: readonly Row[] = [
     })),
   },
   {
+    code: "scope.eventSubProcess.errorDuplicateCode",
+    description: "two Error Event Sub-Processes of the process level with the same code",
+    mutate: errorHandlers("Failure", "Failure"),
+    control: errorHandlers("Failure", "Other"),
+  },
+  {
+    code: "scope.eventSubProcess.errorDuplicateCode",
+    description: "two Error Event Sub-Processes of one Sub-Process with the same code",
+    mutate: errorHandlers("Failure", "Failure", "T"),
+    control: errorHandlers("Failure", "Other", "T"),
+  },
+  {
+    code: "scope.eventSubProcess.errorDuplicateCode",
+    description: "two Error Event Sub-Processes of the same code beside two catch-all ones, which catch in document order",
+    mutate: errorHandlers("Failure", "Failure"),
+    control: errorHandlers(null, null),
+  },
+  {
+    code: "scope.eventSubProcess.errorDuplicateCode",
+    description: "two Error Event Sub-Processes of the same code beside a coded one and a catch-all",
+    mutate: errorHandlers("Failure", "Failure", "T"),
+    control: errorHandlers("Failure", null, "T"),
+  },
+  {
     code: "event.escalation.codeVariable",
     description: "a boundary Escalation naming a code variable",
-    mutate: bounded(escalationTrigger({ codeVariable: "code" })),
-    control: bounded(escalationTrigger({ code: "Warning" })),
+    mutate: task(activity("T", userWork(), { boundaries: [boundary("B", escalationTrigger({ codeVariable: "code" }))] })),
+    control: task(activity("T", userWork(), { boundaries: [boundary("B", escalationTrigger({ code: "Warning" }))] })),
   },
   {
     code: "scope.eventSubProcess.interruptingMessage",
@@ -374,6 +462,99 @@ export const rows: readonly Row[] = [
     control: addresses(task(activity("T", "manual", {
       boundaries: [boundary("B", named), boundary("B2", message({ messageRef: "M2", name: text("N") }))],
     }))),
+  },
+  // One name in one CIB event scope (CIB-LIM-0022): each refused pair's control drops `addresses` or moves one
+  // subscription to another event scope.
+  {
+    code: "message.duplicateName",
+    description: "two boundaries of one host on one Message named by an expression, where names address",
+    mutate: addresses(namedBy(orderField("id"), orderField("id"), "M")),
+    control: addresses(namedBy({ literal: { value: "order" } }, orderField("id"))),
+  },
+  {
+    code: "message.expressionNames",
+    description: "two boundaries of one host on two Messages named by one expression text, where names address",
+    mutate: addresses(namedBy(orderField("id"), orderField("id"))),
+    control: addresses(namedBy(text("M"), orderField("id"))),
+  },
+  {
+    // Conservative: admission cannot compare expression texts, so it refuses two that CIB deploys.
+    code: "message.expressionNames",
+    description: "two boundaries of one host on two Messages named by different expression texts, where names address",
+    mutate: addresses(namedBy(orderField("id"), orderField("number"))),
+    control: addresses(namedBy(text("M"), text("N"))),
+  },
+  {
+    code: "message.duplicateName",
+    description: "two boundaries of one host on two Messages of one literal name beside a literal and an expression name, where names address",
+    mutate: addresses(namedBy(text("M"), text("M"))),
+    control: addresses(namedBy(text("M"), orderField("id"))),
+  },
+  {
+    code: "message.duplicateName",
+    description: "two Message Event Sub-Processes of one scope and one name, where names address",
+    mutate: addresses(twoHandlers),
+    control: twoHandlers,
+  },
+  {
+    code: "message.duplicateName",
+    description: "a Message boundary of a Sub-Process and a Message Event Sub-Process inside it of one name, where names address",
+    mutate: addresses(hostAndHandler()),
+    control: hostAndHandler(),
+  },
+  {
+    code: "message.duplicateName",
+    description: "two Event-Based Gateway arms of one name, where names address",
+    mutate: addresses(arms(named, sameName)),
+    control: arms(named, sameName),
+  },
+  {
+    code: "message.duplicateName",
+    description: "a Receive Task and its own Message boundary of one name, where names address",
+    mutate: addresses(receiving()),
+    control: receiving(),
+  },
+  {
+    code: "message.duplicateName",
+    description: "two Message boundaries of a Multi-Instance host of one name, where names address",
+    mutate: addressesLooping(task(activity("T", userWork(), { multiInstance: loop(), boundaries: [boundary("B", named), boundary("B2", sameName)] }))),
+    control: task(activity("T", userWork(), { multiInstance: loop(), boundaries: [boundary("B", named), boundary("B2", sameName)] })),
+  },
+  {
+    code: "message.duplicateName",
+    description: "two root Message starts of one name, where names address",
+    mutate: addresses(twoStarts),
+    control: twoStarts,
+  },
+  {
+    code: "message.duplicateName",
+    description: "two Event-Based Gateway arms of one name beside two plain catches of it, where names address",
+    mutate: addresses(arms(named, sameName)),
+    control: addresses(twoCatches),
+  },
+  {
+    code: "message.duplicateName",
+    description: "two Message Event Sub-Processes beside a Message Event Sub-Process and a gateway arm of one name, where names address",
+    mutate: addresses(twoHandlers),
+    control: addresses((program) => append(arms(named, null)(program), handler("H2", sameName))),
+  },
+  {
+    code: "message.duplicateName",
+    description: "a Sub-Process boundary and its Message Event Sub-Process beside a Multi-Instance Sub-Process's, where names address",
+    mutate: addresses(hostAndHandler()),
+    control: addressesLooping(hostAndHandler({ multiInstance: loop({ outputDataItem: null, inputDataItemName: "item" }) })),
+  },
+  {
+    code: "message.duplicateName",
+    description: "a Receive Task and its own boundary beside a Multi-Instance Receive Task's, where names address",
+    mutate: addresses(receiving()),
+    control: addressesLooping(receiving({ multiInstance: loop({ outputDataItem: null }) })),
+  },
+  {
+    code: "message.duplicateName",
+    description: "two root Message starts beside a root Message start and a Message Event Sub-Process, where names address",
+    mutate: addresses(twoStarts),
+    control: addresses((program) => append(replace(program, "S", start("S", named)), handler("H", sameName))),
   },
   {
     code: "start.messageNameExpression",

@@ -11,6 +11,7 @@
  * instance may do is admitted by `admission/work.ts`.
  */
 import {
+  BranchSchedule,
   CollectionRead,
   Evaluator,
   ExpressionTag,
@@ -89,15 +90,20 @@ function juelCount(juel: LoopExpression, count: InstanceCount): string | null {
   return assertNever(count);
 }
 
-/** A sequential loop whose collection is `.juel`, which CIB re-evaluates before every later instance (PC-MI-08). */
-function rereads(loop: MultiInstance): boolean {
+/** Whether the loop runs its instances at once, not one after another (BPMN 2.0.2 §13.3.7). */
+function runsAtOnce(loop: MultiInstance): boolean {
   switch (loop.mode) {
     case MultiInstanceMode.Parallel:
-      return false;
+      return true;
     case MultiInstanceMode.Sequential:
-      return loop.count.tag === InstanceCountTag.Collection && loop.count.items.tag === ExpressionTag.Juel;
+      return false;
   }
   return assertNever(loop.mode);
+}
+
+/** A sequential loop whose collection is `.juel`, which CIB re-evaluates before every later instance (PC-MI-08). */
+function rereads(loop: MultiInstance): boolean {
+  return !runsAtOnce(loop) && loop.count.tag === InstanceCountTag.Collection && loop.count.items.tag === ExpressionTag.Juel;
 }
 
 /**
@@ -177,6 +183,32 @@ export function ownInputNames(options: ProfileOptions, loop: MultiInstance): rea
  */
 export function counterTarget(counters: boolean, targets: readonly string[]): string | null {
   return counters && targets.some((target) => multiInstanceCounterNames.includes(target)) ? "multiInstance.counterTarget" : null;
+}
+
+/** Whether the loop runs its instances at once, in no order the schedule fixes. */
+function unordered(options: ProfileOptions, loop: MultiInstance): boolean {
+  switch (options.branchSchedule) {
+    case BranchSchedule.DeclarationDepthFirst:
+      return false;
+    case BranchSchedule.OrderInvariant:
+      return runsAtOnce(loop);
+  }
+  return assertNever(options.branchSchedule);
+}
+
+/**
+ * Under `BranchSchedule.orderInvariant`, the instances of a parallel loop may not race one another in the closure that
+ * begins them (`admission/flow.ts` `instanceClosure`): BPMN 2.0.2 §13.3.7 fixes no order among them, which
+ * `feature/multi-instance.ts` leaves to the closure's first-in, first-out queue, so a name an instance writes there, or
+ * which instance's completion first satisfies the completion condition and cancels the rest, would depend on an order no
+ * input states. `races` and `completes` count conservatively, as `flow.concurrentWrite` does: an instance's write to its
+ * own item counts, and so does any completion path. A forward-compatible restriction; CIB's `declarationDepthFirst` runs
+ * instance 0 first (CIB-OP-0016). A User, Service or Receive Task instance waits, so its loop is admitted.
+ */
+export function concurrentInstances(options: ProfileOptions, loop: MultiInstance, races: boolean, completes: boolean): string | null {
+  return unordered(options, loop) && (races || (loop.completionCondition !== null && completes))
+    ? "multiInstance.concurrentInstances"
+    : null;
 }
 
 /**

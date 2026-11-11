@@ -106,7 +106,8 @@ The boundary, Message start, Timer start and payload accounts select no CIB rela
 | `profile.timerZone` | a process time zone | PC-TIMER-01 |
 | `message.unspecified` | a Message catch, boundary or start without a `messageRef` | no channel to address (PC-MESSAGE-01) |
 | `message.unnamed` | under `messageNames = addresses`, a Message without a name or with a blank one | [CIB-LIM-0022][r-lim-0022] |
-| `message.duplicateName` | under `addresses`, two boundaries of one host whose Messages share a literal name | [CIB-LIM-0022][r-lim-0022] |
+| `message.duplicateName` | under `addresses`, two Message subscriptions of one CIB event scope and start mark with one literal name, or with expression names on one Message: two boundaries of one host or of one Multi-Instance body, a Receive Task and its own boundary, two Event Sub-Process starts of one scope or one of them and a boundary of the Sub-Process holding it, two arms of one Event-Based Gateway, two root Message starts of one process | [CIB-LIM-0022][r-lim-0022] |
+| `message.expressionNames` | under `addresses`, two such subscriptions with expression names on different Messages: admission cannot compare expression texts (the IL keeps the parsed form), so it refuses the pair, also when the texts differ and CIB deploys it | [CIB-LIM-0022][r-lim-0022] |
 | `message.nameExpression` | a Message name expression under `messageNames = description`, or outside the Events JUEL level | PC-MESSAGE-01 ([CIB-INT-0024][r-int-0024]) |
 | `start.messageNameExpression` | a root Message start whose name is an expression | CIB refuses it at deployment |
 | `boundary.error.nonInterrupting`, `start.error.nonInterrupting` | a non-interrupting Error boundary or Error Event Sub-Process | stated in [propagation](PROPAGATION-SEMANTICS-SPEC.md); PC-ERROR-02 |
@@ -141,7 +142,7 @@ Superseded first-profile restrictions: the boundary, catch and start profiles ea
 | PC-TIMER-03 | Acceptance of data-derived values; the clock after a rolled-back firing ([CIB-OP-0017][r-op-0017]). |
 | PC-TIMER-04 | Root Timer start schedules bound to an exact definition version (see [population](POPULATION-SEMANTICS-SPEC.md)); the engine-published Timer start capability ([TST scheduling][tst-schedule]). |
 | PC-TIMER-08 | Timer lifetimes across Transaction owners, which consume the PC-TX contracts. |
-| PC-MESSAGE-01 | Two Event Sub-Process starts or Event-Based Gateway arms of one Message name (`message.duplicateName` covers one host's boundaries only); a nameless Receive Task under `messageNames = addresses` (work admission). |
+| PC-MESSAGE-01 | Expression names on different Messages of one event scope, refused as `message.expressionNames` also where CIB deploys them; a nameless Receive Task under `messageNames = addresses` (work admission). |
 | PC-MESSAGE-03 | Payload catches in branches and nested work; the runner does not yet deliver payloads, so no CIB evidence. |
 | PC-MESSAGE-06 | Interrupting Message Event Sub-Processes (refused). |
 | PC-MESSAGE-09 | Modeled Message throws and Message End (`throw.message`, see [propagation](PROPAGATION-SEMANTICS-SPEC.md)). |

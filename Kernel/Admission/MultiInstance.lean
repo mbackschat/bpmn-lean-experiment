@@ -41,9 +41,12 @@ def juelCount (juel : Bool → Expression → Option String) : InstanceCount →
   | .cardinality count => juel false count
   | .countAndCollection _ _ => some "multiInstance.countAndCollection"
 
+/-- Whether the loop runs its instances at once, not one after another (BPMN 2.0.2 §13.3.7). -/
+def runsAtOnce (loop : MultiInstance) : Bool := loop.mode == .parallel
+
 /-- A sequential loop whose collection is `.juel`, which CIB re-evaluates before every later instance (PC-MI-08). -/
 def rereads (loop : MultiInstance) : Bool :=
-  loop.mode == .sequential && match loop.count with
+  !runsAtOnce loop && match loop.count with
     | .collection (.juel _) => true
     | .collection _ => false
     | .cardinality _ => false
@@ -99,6 +102,21 @@ the scope the targets are written in (CIB-LIM-0020). A write no admission sees s
 (`multiInstance.resultShadowsInstance`). -/
 def counterTarget (counters : Bool) (targets : List String) : Option String :=
   if counters && targets.any multiInstanceCounterNames.contains then some "multiInstance.counterTarget" else none
+
+/-- Under `BranchSchedule.orderInvariant`, the instances of a parallel loop may not race one another in the closure that
+begins them (`Kernel.Admission.Flow.instanceClosure`): BPMN 2.0.2 §13.3.7 fixes no order among them, which
+`Kernel.Feature.MultiInstance` leaves to the closure's first-in, first-out queue, so a name an instance writes there,
+or which instance's completion first satisfies the completion condition and cancels the rest, would depend on an order
+no input states. `races` and `completes` count conservatively, as `flow.concurrentWrite` does: an instance's write to
+its own item counts, and so does any completion path. A forward-compatible restriction; CIB's `declarationDepthFirst`
+runs instance 0 first (CIB-OP-0016). A User, Service or Receive Task instance waits, so its loop is admitted. -/
+def concurrentInstances (options : ProfileOptions) (loop : MultiInstance) (races completes : Bool) : Option String :=
+  let unordered := match options.branchSchedule with
+    | .orderInvariant => runsAtOnce loop
+    | .declarationDepthFirst => false
+  if unordered && (races || (loop.completionCondition.isSome && completes)) then
+    some "multiInstance.concurrentInstances"
+  else none
 
 /-- `submits` is `none` for work no instance may do, which `Kernel.Admission.Work` refuses. Under the CIB counters an
 item named like a counter is refused: CIB sets both on one execution, so one overwrites the other. A collection loop

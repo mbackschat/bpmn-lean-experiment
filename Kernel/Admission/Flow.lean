@@ -204,42 +204,61 @@ def footprint (program : Program) (element : Element) : Footprint :=
       (((call.map fun work => mappingReads work.inputs).getD {}).union conditions),
     writes := { names := outputs.map (·.target) ++ callOutputs, all := call.any (·.propagateAllOutputs) } }
 
-/-- An element a token stops at within its closure: a User, Service or Receive Task, a catch Event or an Event-Based
-Gateway waits for a stimulus, and a converging Parallel or Inclusive Gateway joins the branches (CIB parks its
-execution there too). -/
-def branchStop (element : Element) : Bool :=
+/-- An element a token waits at for a stimulus: a User, Service or Receive Task, a catch Event or an Event-Based
+Gateway. -/
+def awaitsStimulus (element : Element) : Bool :=
   (element.activity?.any fun (_, payload) =>
     payload.work.isUser || payload.work.isService || payload.work.receive?.isSome) ||
   (element.event?.any fun (_, payload) => payload.catch?.isSome) ||
-  element.gateway?.any fun (_, payload) =>
-    (routing payload).waits || ((routing payload).concurrent && payload.incoming.length ≥ 2)
+  element.gateway?.any fun (_, payload) => (routing payload).waits
 
-/-- The flows a token continues on from `element` in the same closure: its outgoing flows, a throwing Link's catch,
-and the outgoing flows of a Scope's starts, which its occurrence begins at once. -/
-def onward (program : Program) (element : Element) : List FlowId :=
+/-- An element a branch stops at within its closure: one that awaits a stimulus, or a converging Parallel or Inclusive
+Gateway, which joins the branches (CIB parks its execution there too). -/
+def branchStop (element : Element) : Bool :=
+  awaitsStimulus element ||
+    element.gateway?.any fun (_, payload) => (routing payload).concurrent && payload.incoming.length ≥ 2
+
+/-- The elements `flows` lead to. -/
+def flowTargets (program : Program) (flows : List FlowId) : List Element :=
+  flows.filterMap fun flow => (program.target? flow).bind program.element?
+
+/-- The children an occurrence of the Scope `id` begins on entry: its start Events, or, without one, the children
+that begin implicitly (`Program.beginsImplicitly`), as `Kernel.Feature.Scopes.implicitStart` begins them. -/
+def enteredChildren (program : Program) (id : ElementId) : List Element :=
+  let children := program.children (some id)
+  if children.any (·.start?.isSome) then children.filter (·.start?.isSome) else children.filter program.beginsImplicitly
+
+/-- The elements a token reaches next from `element` in the same closure: its outgoing flows' targets, a throwing
+Link's catch's, and a Scope's `enteredChildren`. -/
+def onward (program : Program) (element : Element) : List Element :=
   let link := (element.event?.bind fun (header, payload) => payload.linkThrow?.map (header, ·)).map fun (header, name) =>
     (program.children header.parent).flatMap fun other =>
       if (other.event?.bind (·.2.linkCatch?)) == some name then other.outgoing else []
-  let starts := element.scope?.map fun (header, _) =>
-    (program.children (some header.id)).flatMap fun child => if child.start?.isSome then child.outgoing else []
-  element.outgoing ++ link.getD [] ++ starts.getD []
+  let entered := element.scope?.map fun (header, _) => enteredChildren program header.id
+  flowTargets program (element.outgoing ++ link.getD []) ++ entered.getD []
+
+/-- What the work beginning at `begun` reaches may read and write in one closure, where an element `stop` names only
+begins, and whether a token may end there: reach an element that neither stops nor continues. -/
+def closureWalk (program : Program) (stop : Element → Bool) (begun : List Element) : Footprint × Bool :=
+  let rec go (fuel : Nat) (frontier : List Element) (seen : List ElementId) (found : Footprint) (ends : Bool) :
+      Footprint × Bool :=
+    match fuel, frontier with
+    | _, [] => (found, ends)
+    -- The fuel bounds every visit of every element, so it is never exhausted; running out answers what was found.
+    | 0, _ :: _ => (found, ends)
+    | fuel + 1, element :: rest =>
+      let id := element.header.id
+      if seen.contains id then go fuel rest seen found ends
+      else if stop element then go fuel rest (id :: seen) (found.union { reads := beginReads element }) ends
+      else
+        let next := onward program element
+        go fuel (rest ++ next) (id :: seen) (found.union (footprint program element)) (ends || next.isEmpty)
+  let size := program.elements.length + program.flows.length + 1
+  go (size * size) begun [] {} false
 
 /-- What the work a token on `start` reaches may read and write in one closure; an element it stops at only begins. -/
 def branchFootprint (program : Program) (start : FlowId) : Footprint :=
-  let rec go (fuel : Nat) (frontier seen : List FlowId) (found : Footprint) : Footprint :=
-    match fuel, frontier with
-    | _, [] => found
-    -- The fuel bounds every visit of every flow, so it is never exhausted; running out answers what was found.
-    | 0, _ :: _ => found
-    | fuel + 1, flow :: rest =>
-      if seen.contains flow then go fuel rest seen found
-      else
-        match (program.target? flow).bind program.element? with
-        | none => go fuel rest (flow :: seen) found
-        | some element =>
-          if branchStop element then go fuel rest (flow :: seen) (found.union { reads := beginReads element })
-          else go fuel (rest ++ onward program element) (flow :: seen) (found.union (footprint program element))
-  go ((program.flows.length + 1) * (program.flows.length + 1)) [start] [] {}
+  (closureWalk program branchStop (flowTargets program [start])).1
 
 /-- Under `BranchSchedule.orderInvariant`, no branch of a split may write a name another branch reads or writes in the
 same closure: BPMN 2.0.2 lets concurrent branches interleave in any order (Table 13.1, §13.3.1), so the value left or
@@ -260,6 +279,24 @@ def concurrentWrite (program : Program) (flow : Flow) : Option String :=
     if concurrent && siblings.any fun other => other != flow.id && own.races (branchFootprint program other) then
       some "flow.concurrentWrite"
     else none
+
+/-- What the instances of a looping `element` do in the closure that begins them, which
+`Kernel.Admission.MultiInstance.concurrentInstances` reads. -/
+structure InstanceClosure where
+  /-- One instance writes a name before it waits; every instance has the same footprint, so it meets its own. -/
+  races : Bool
+  /-- An instance may complete in that closure. -/
+  completes : Bool
+
+/-- A Sub-Process instance runs from its `enteredChildren` and continues past a join, which the instance's own branches
+reach in that closure; a task instance is its work, which completes at once unless it awaits a stimulus. `completes`
+over-approximates: a token reaching an element that neither waits nor continues, ignoring that a sibling branch of a
+Parallel split may wait, which flows a condition selects and whether a nested Call waits. -/
+def instanceClosure (program : Program) (element : Element) : InstanceClosure :=
+  let (own, completes) := match element.scope? with
+    | some (header, _) => closureWalk program awaitsStimulus (enteredChildren program header.id)
+    | none => if awaitsStimulus element then ({}, false) else (footprint program element, true)
+  { races := own.races own, completes }
 
 /-- Pinned CIB parses one initial start per process, a None or Timer Start (`BpmnParse#selectInitial`), and one start
 per Sub-Process (`BpmnParse#parseScopeStartEvent`); BPMN 2.0.2 §10.5.2 admits several, which lie outside the target

@@ -6,14 +6,23 @@ import {
   ElementTag,
   EventRoleTag,
   assertNever,
+  elementActivity,
   elementEnvelope,
   elementEvent,
+  elementGateway,
+  elementHeader,
   elementScope,
+  elementStart,
+  eventPayloadCatch,
   firstOf,
   programChildren,
   programElement,
   programInCalledProcess,
+  programSource,
+  triggerMessage,
   workCall,
+  workIsUser,
+  workReceive,
   type ActivityPayload,
   type Boundary,
   type CalledProcess,
@@ -166,6 +175,64 @@ function processEventSubProcesses(program: Program): string | null {
     level(process.children.flatMap((id) => { const found = programElement(program, id); return found === null ? [] : [found]; })));
 }
 
+/** The process level holding the parentless element `id`: the root (`null`) or a called process's definition. */
+function processLevel(program: Program, id: ElementId): Subscriptions.EventScope {
+  const process = program.processes.find((candidate) => candidate.children.includes(id));
+  return { tag: Subscriptions.EventScopeTag.Process, definition: process === undefined ? null : process.definition };
+}
+
+/** The Event-Based Gateway a catch Event is an arm of, if a flow from one enters it. */
+function armOf(program: Program, payload: EventPayload): ElementId | null {
+  for (const flowId of payload.incoming) {
+    const source = programSource(program, flowId);
+    const found = source === null ? null : programElement(program, source);
+    const gateway = found === null ? null : elementGateway(found);
+    if (gateway !== null && FlowAdmission.routing(gateway[1]).waits) return gateway[0].id;
+  }
+  return null;
+}
+
+/**
+ * An element's Message subscriptions in CIB's event scopes, each also declared with its start mark:
+ * - a boundary in its host, or in the host's Multi-Instance body when the host loops (`BpmnParse.java:3290-3301`,
+ *   `getMultiInstanceScope` `:3388-3393`, declared at `:3455`);
+ * - a Receive Task's own Message in the Receive Task, which its boundaries share unless it loops (`:2753-2760`);
+ * - an Event Sub-Process start in the scope holding the Event Sub-Process (`:1112`), unmarked
+ *   (`parseEventDefinitionForSubprocess`, `:3499-3503`), so a boundary of that Sub-Process shares it;
+ * - an Event-Based Gateway arm in the gateway (`:1526-1527`, parsed from the gateway at `:2132`), any other catch in
+ *   itself (`:1529-1530`), declared at `:1596`;
+ * - a root Message start in its process, marked (`:1026-1032`), apart from that level's Event Sub-Process starts.
+ * A start nested in a Scope is taken with its Event Sub-Process.
+ */
+function messageSites(program: Program, entry: Element): Subscriptions.MessageSite[] {
+  const id = elementHeader(entry).id;
+  const own: Subscriptions.EventScope = { tag: Subscriptions.EventScopeTag.Element, id };
+  const site = (scope: Subscriptions.EventScope, start: boolean, subscription: Subscription): Subscriptions.MessageSite[] => {
+    const trigger = triggerMessage(subscription.trigger);
+    return trigger === null ? [] : [{ scope, start, trigger }];
+  };
+  const envelope = elementEnvelope(entry);
+  const attached = envelope === null ? [] : envelope.boundaries.flatMap((attachedBoundary) => site(
+    envelope.multiInstance === null ? own : { tag: Subscriptions.EventScopeTag.Body, host: id }, false, attachedBoundary.subscription));
+  const activityEntry = elementActivity(entry);
+  const receivedTrigger = activityEntry === null ? null : workReceive(activityEntry[1].work);
+  const received = receivedTrigger === null ? [] : [{ scope: own, start: false, trigger: receivedTrigger }];
+  const scopeEntry = elementScope(entry);
+  const handler = scopeEntry === null ? null : Scopes.eventSubProcessOf(scopeEntry[1]);
+  const handled = scopeEntry === null || handler === null ? [] : site(scopeEntry[0].parent === null
+    ? processLevel(program, id)
+    : { tag: Subscriptions.EventScopeTag.Element, id: scopeEntry[0].parent }, false, handler[0]);
+  const eventEntry = elementEvent(entry);
+  const caughtSubscription = eventEntry === null ? null : eventPayloadCatch(eventEntry[1]);
+  const gateway = eventEntry === null ? null : armOf(program, eventEntry[1]);
+  const caught = caughtSubscription === null ? [] : site(
+    gateway === null ? own : { tag: Subscriptions.EventScopeTag.Element, id: gateway }, false, caughtSubscription);
+  const startEntry = elementStart(entry);
+  const started = startEntry === null || startEntry[0].parent !== null || startEntry[1].subscription === null
+    ? [] : site(processLevel(program, id), true, startEntry[1].subscription);
+  return [...attached, ...received, ...handled, ...caught, ...started];
+}
+
 /** `throws` lists the program's Compensation throws. */
 function element(program: Program, throws: readonly Element[], entry: Element): string | null {
   const header = entry.header;
@@ -186,7 +253,8 @@ function element(program: Program, throws: readonly Element[], entry: Element): 
         () => (loop === null ? null
           : MultiInstance.activityLoop(program.options, Data.loopExpression, Work.instanceBody(payload.work), payload.envelope, loop)),
         () => outputTargets(program, header, [...payload.envelope.outputs, ...(call?.outputs ?? [])]),
-        () => Subscriptions.boundaries(program.options, subscriptionReading(program, header.parent), false, payload.envelope.boundaries),
+        () => Subscriptions.boundaries(program.options, subscriptionReading(program, header.parent),
+          { transaction: false, escalation: workIsUser(payload.work) || call !== null }, payload.envelope.boundaries),
         () => boundaryData(program, header, payload.envelope.boundaries),
         () => Scopes.nestedCompensation(program, throws, header, payload.envelope),
       );
@@ -206,7 +274,8 @@ function element(program: Program, throws: readonly Element[], entry: Element): 
         () => (subProcess === null ? null : Subscriptions.eventSubProcess(subProcess[0], subProcess[1])),
         () => Subscriptions.eventSubProcessDeclarations(eventSubProcessStarts(programChildren(program, header.id))),
         () => Subscriptions.boundaries(
-          program.options, subscriptionReading(program, header.parent), Scopes.isTransaction(payload), payload.envelope.boundaries),
+          program.options, subscriptionReading(program, header.parent), { transaction: Scopes.isTransaction(payload), escalation: true },
+          payload.envelope.boundaries),
         () => boundaryData(program, header, payload.envelope.boundaries),
         () => Scopes.nestedCompensation(program, throws, header, payload.envelope),
       );
@@ -250,6 +319,17 @@ function loops(program: Program): boolean {
 }
 
 /**
+ * Whether a looping element's instances race one another where they begin: the closure is `admission/flow.ts`'s, the
+ * loop's mode and condition `admission/multi-instance.ts`'s.
+ */
+function loopInstances(program: Program, entry: Element): string | null {
+  const loop = elementEnvelope(entry)?.multiInstance ?? null;
+  if (loop === null) return null;
+  const closure = FlowAdmission.instanceClosure(program, entry);
+  return MultiInstance.concurrentInstances(program.options, loop, closure.races, closure.completes);
+}
+
+/**
  * A flow's condition, evaluated in its source's enclosing scope, then where it may sit, then whether its branch races a
  * sibling's write.
  */
@@ -281,7 +361,8 @@ function executable(program: Program): string | null {
 
 /**
  * The first refusal: references, profile options, a process not marked executable, the carried DMN resources, then
- * called-process bindings, the process levels' Event Sub-Processes, flows and elements in program order.
+ * called-process bindings, the process levels' Event Sub-Processes, flows and elements in program order, the instances
+ * of each loop, then the Message names of the whole program.
  */
 export function admit(program: Program): string | null {
   const throws = program.elements.filter(compensationThrow);
@@ -295,5 +376,7 @@ export function admit(program: Program): string | null {
     () => processEventSubProcesses(program),
     () => firstOf(program.flows, (entry) => flow(program, entry)),
     () => firstOf(program.elements, (entry) => element(program, throws, entry)),
+    () => firstOf(program.elements, (entry) => loopInstances(program, entry)),
+    () => Subscriptions.messageNames(program.options, program.elements.flatMap((entry) => messageSites(program, entry))),
   );
 }

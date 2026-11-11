@@ -2,13 +2,17 @@
  * Refusal tests of `admission/multi-instance.ts`: the kernel runs one User Task or Service Task per item of an input
  * collection it reads once on entry, gives each instance its item through a data item, takes a User Task's result
  * through its output data item and a Service Task's as the empty OutputSet, and reads a completion condition only as
- * Simple Boolean. Every other loop shape is refused whole. Under `Evaluator.juel` the Multi-Instance level admits JUEL,
+ * Simple Boolean. Every other loop shape is refused whole. Under the standards schedule (`orderInvariant`) a parallel
+ * loop whose instances race one another where they begin is refused (`concurrentInstances`). Under `Evaluator.juel` the Multi-Instance level admits JUEL,
  * a variable read and text at the cardinality, collection and completion sites, with the profile options it reads
  * (docs/kernel/semantics/EXPRESSION-SEMANTICS-SPEC.md, "Multi-Instance level").
  */
+import assert from "node:assert/strict";
+import { test } from "node:test";
+
 import {
-  activity, append, foreign, juel, literalValue, bool, loop, mapping, refusalTests, scope, serviceWork, simpleBoolean, task, userWork,
-  variable, withOptions,
+  activity, append, callWork, definitionRef, end, flow, foreign, gateway, juel, literalValue, bool, loop, mapping, receiveWork,
+  base, refusalOf, refusalTests, scope, serviceWork, simpleBoolean, start, task, text, userWork, variable, withFlows, withOptions,
 } from "./admission-refusal-support.ts";
 import type { Json, Row } from "./admission-refusal-support.ts";
 
@@ -39,6 +43,43 @@ const nestedOutputs = (...outputs: Json[]) => (program: Json): Json => cibLoop()
 /** `T` becomes a Service Task running the loop `loop(over)` without an output data item (PC-MI-02). */
 const effects = (over: Json = {}) =>
   task(activity("T", serviceWork(), { multiInstance: loop({ outputDataItem: null, ...over }) }));
+
+/**
+ * `T` becomes a Sub-Process looping by `loop(over)`, without an output data item, whose instance runs from `TS` to `TE`
+ * through `elements`; `path` names the elements in order from `TS` to `TE`, and `flows` adds the flows off that path.
+ */
+const instances = (over: Json, path: string[] = [], elements: Json[] = [], flows: Json[] = []) => (program: Json): Json => {
+  const chain = ["TS", ...path, "TE"];
+  return withFlows(append(task(scope("T", "embedded", {}, { multiInstance: loop({ outputDataItem: null, ...over }) }))(program),
+    start("TS", null, [], "T"), end("TE", "none", "T"), ...elements),
+  ...chain.slice(1).map((id, index) => flow(`t${String(index)}`, chain[index]!, id)), ...flows);
+};
+/** `T` becomes a Sub-Process looping by `loop(over)`, without a start Event, whose `elements` without an incoming flow
+ * begin implicitly (`scopeStart: implicit`). */
+const implicitInstances = (over: Json, elements: Json[], flows: Json[] = []) => (program: Json): Json =>
+  withFlows(append(task(scope("T", "embedded", {}, { multiInstance: loop({ outputDataItem: null, ...over }) }))(program), ...elements),
+    ...flows);
+const itemIsB: Json = { simpleBoolean: { body: { stringEquals: { name: "item", value: "b" } } } };
+const review = activity("R", userWork(), {}, "T");
+/** The inner Sub-Process `N`, `NS → NE`, whose output writes `x` from the item when it completes. */
+const writesX: [Json[], Json[]] = [[
+  scope("N", "embedded", {}, { outputs: [mapping("x", variable("item"), "dataAssociation")] }, "T"),
+  start("NS", null, [], "N"), end("NE", "none", "N"),
+], [flow("n1", "NS", "NE")]];
+/** The Call `C` writing `x` from the item through the called process `Q`, `QS → QE`, which returns in the same closure. */
+const callsQ: [Json[], Json[]] = [[
+  activity("C", callWork({ calledElement: text("Q"), inputs: [mapping("din", variable("item"), "dataAssociation")],
+    outputs: [mapping("x", variable("din"), "dataAssociation")] }), {}, "T"),
+  start("QS"), end("QE"),
+], [flow("q1", "QS", "QE")]];
+const withCalled = (shape: (program: Json) => Json) => (program: Json): Json =>
+  ({ ...shape(program), processes: [{ definition: definitionRef("Q"), children: ["QS", "QE"], variables: ["din"], executable: true }] });
+/** The Parallel split `P` into the plain Tasks `A` and `B`, joined by `J`. */
+const forkJoin: [Json[], Json[]] = [[
+  gateway("P", "parallel", {}, "T"), activity("A", "none", {}, "T"), activity("B", "none", {}, "T"), gateway("J", "parallel", {}, "T"),
+], [flow("pa", "P", "A"), flow("pb", "P", "B"), flow("aj", "A", "J"), flow("bj", "B", "J")]];
+const cibSchedule = (shape: (program: Json) => Json) => (program: Json): Json =>
+  withOptions(shape(program), { branchSchedule: "declarationDepthFirst" });
 
 export const rows: readonly Row[] = [
   {
@@ -239,6 +280,55 @@ export const rows: readonly Row[] = [
     mutate: (program: Json) => withOptions(looping()(program), { multiInstanceCounters: "cibLocals" }),
     control: admitted,
   },
+  {
+    // BPMN 2.0.2 §13.3.7: the instances interleave in any order, so which instance's completion closes the loop is undefined.
+    code: "multiInstance.concurrentInstances",
+    description: "under the standards schedule, a parallel loop with a completion condition whose instance may complete where it begins",
+    mutate: instances({ completionCondition: itemIsB }),
+    control: instances({ completionCondition: itemIsB }, ["R"], [review]),
+  },
+  {
+    code: "multiInstance.concurrentInstances",
+    description: "under the standards schedule, a parallel loop with a completion condition whose instance completes past a Parallel join",
+    mutate: instances({ completionCondition: itemIsB }, ["P", "J"], ...forkJoin),
+    control: instances({ completionCondition: itemIsB }, ["P", "J", "R"], forkJoin[0].concat(review), forkJoin[1]),
+  },
+  {
+    code: "multiInstance.concurrentInstances",
+    description: "under the standards schedule, a parallel loop whose instances write one name from an inner Sub-Process before they wait",
+    mutate: instances({}, ["N"], ...writesX),
+    control: instances({ mode: "sequential" }, ["N"], ...writesX),
+  },
+  {
+    code: "multiInstance.concurrentInstances",
+    description: "under the standards schedule, a parallel loop whose instances write one name from a Call that returns at once",
+    mutate: withCalled(instances({}, ["C"], ...callsQ)),
+    control: withCalled(instances({}, ["R", "C"], callsQ[0].concat(review), callsQ[1])),
+  },
+  {
+    code: "multiInstance.concurrentInstances",
+    description: "under the standards schedule, a parallel loop with a completion condition whose implicitly begun Task completes the instance",
+    mutate: implicitInstances({ completionCondition: itemIsB }, [activity("M", "manual", {}, "T")]),
+    control: implicitInstances({ completionCondition: itemIsB }, [review]),
+  },
+  {
+    code: "multiInstance.concurrentInstances",
+    description: "under the standards schedule, a parallel loop whose instances write one name from an implicitly begun Sub-Process",
+    mutate: implicitInstances({}, ...writesX),
+    control: implicitInstances({ mode: "sequential" }, ...writesX),
+  },
 ];
 
 refusalTests("multi-instance", rows);
+
+test("multi-instance: instances that always wait, a sequential loop and CIB's schedule are admitted", () => {
+  const condition = { completionCondition: simpleBoolean() };
+  assert.equal(refusalOf(looping(condition)(base())), null, "a User Task body (PC-MI-01)");
+  assert.equal(refusalOf(effects(condition)(base())), null, "a Service Task body (PC-MI-02)");
+  assert.equal(refusalOf(task(activity("T", receiveWork({ messageRef: "M", name: text("M") }),
+    { multiInstance: loop({ outputDataItem: null, ...condition }) }))(base())), null, "a Receive Task body");
+  assert.equal(refusalOf(instances({})(base())), null, "a Sub-Process body that writes nothing, without a condition");
+  assert.equal(refusalOf(instances({ mode: "sequential", completionCondition: itemIsB })(base())), null, "a sequential loop");
+  assert.equal(refusalOf(cibSchedule(instances({ completionCondition: itemIsB }))(base())), null, "declarationDepthFirst");
+  assert.equal(refusalOf(cibSchedule(instances({}, ["N"], ...writesX))(base())), null, "declarationDepthFirst");
+});

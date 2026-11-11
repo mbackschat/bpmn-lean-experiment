@@ -6,7 +6,8 @@
  * only with the Error catch variables (PC-ESCALATION-01, CIB-EXT-0028).
  */
 import {
-  activity, append, boundary, escalationTrigger, eventSubProcess, refusalTests, scope, start, task, withOptions,
+  activity, append, boundary, callWork, definitionRef, end, escalationTrigger, eventSubProcess, flow, receiveWork, refusalTests, scope,
+  serviceWork, start, task, text, userWork, withFlows, withOptions,
 } from "./admission-refusal-support.ts";
 import type { Json } from "./admission-refusal-support.ts";
 
@@ -14,8 +15,22 @@ const exact = (code: string) => escalationTrigger({ code });
 const catchAll = escalationTrigger();
 const nonInterrupting = { interrupting: false };
 
-/** `T` becomes a manual Task hosting `boundaries` in document order. */
-const hosting = (...boundaries: unknown[]) => task(activity("T", "manual", { boundaries }));
+/** `T` becomes a User Task hosting `boundaries` in document order. */
+const hosting = (...boundaries: unknown[]) => task(activity("T", userWork(), { boundaries }));
+
+/** `T` becomes an Activity of `work` with one interrupting Escalation boundary `B`. */
+const escalationOn = (work: Json | string) => task(activity("T", work, { boundaries: [boundary("B", exact("OVERRUN"))] }));
+
+/** `T` becomes a Scope of `kind` with one interrupting Escalation boundary `B` and a Task `C` its implicit start begins. */
+const escalationOnScope = (kind: Json | string) => (program: Json): Json =>
+  append(task(scope("T", kind, {}, { boundaries: [boundary("B", exact("OVERRUN"))] }))(program),
+    activity("C", "manual", { incoming: [], outgoing: [] }, "T"));
+
+/** `T` becomes a Call Activity of the carried process `Q`, `QS → QE`, with one interrupting Escalation boundary `B`. */
+const escalationOnCall = (program: Json): Json => ({
+  ...withFlows(append(escalationOn(callWork({ calledElement: text("Q") }))(program), start("QS"), end("QE")), flow("q1", "QS", "QE")),
+  processes: [{ definition: definitionRef("Q"), children: ["QS", "QE"], variables: [], executable: true }],
+});
 
 /** `T` becomes a Sub-Process whose own start Event `SS` waits for `trigger`, an Event Sub-Process start. */
 const nested = (trigger: Json) => (program: Json): Json =>
@@ -37,6 +52,32 @@ const handlers = (first: [Json, boolean], second: [Json, boolean], parent: strin
 };
 
 refusalTests("escalation declarations", [
+  // Pinned CIB admits an Escalation boundary only on a Sub-Process, a Transaction, a Call Activity or a User Task
+  // (`BpmnParse.java:3335-3342`).
+  {
+    code: "boundary.escalation.host",
+    description: "an Escalation boundary on a manual Task",
+    mutate: escalationOn("manual"),
+    control: escalationOn(userWork()),
+  },
+  {
+    code: "boundary.escalation.host",
+    description: "an Escalation boundary on a Service Task",
+    mutate: escalationOn(serviceWork()),
+    control: escalationOnScope("embedded"),
+  },
+  {
+    code: "boundary.escalation.host",
+    description: "an Escalation boundary on a Task without a type",
+    mutate: escalationOn("none"),
+    control: escalationOnCall,
+  },
+  {
+    code: "boundary.escalation.host",
+    description: "an Escalation boundary on a Receive Task",
+    mutate: escalationOn(receiveWork({ messageRef: "M" })),
+    control: escalationOnScope({ transaction: { payload: { method: "compensate" } } }),
+  },
   {
     code: "scope.eventSubProcess.escalationDuplicate",
     description: "a process level with an interrupting and a non-interrupting Escalation Event Sub-Process of one code",

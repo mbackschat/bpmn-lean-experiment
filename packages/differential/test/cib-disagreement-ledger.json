@@ -1124,12 +1124,6 @@
     ]
   },
   {
-    "evidence": "scenarios/open-rows/message-start-compositions/duplicate-message-starts-start.cibseven-evidence.json",
-    "owners": [
-      "PC-MESSAGE-02"
-    ]
-  },
-  {
     "evidence": "scenarios/open-rows/message-start-compositions/shipment-payload-absent.cibseven-evidence.json",
     "owners": [
       "PC-MESSAGE-02"

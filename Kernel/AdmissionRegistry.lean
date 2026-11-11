@@ -88,6 +88,48 @@ def processEventSubProcesses (program : Program) : Option String :=
   level (program.children none) <|> program.processes.findSome? fun process =>
     level (process.children.filterMap program.element?)
 
+/-- The process level holding the parentless element `id`: the root (`none`) or a called process's definition. -/
+def processLevel (program : Program) (id : ElementId) : Admission.Subscriptions.EventScope :=
+  .process ((program.processes.find? (·.children.contains id)).map (·.definition))
+
+/-- The Event-Based Gateway a catch Event is an arm of, if a flow from one enters it. -/
+def armOf (program : Program) (payload : EventPayload) : Option ElementId :=
+  payload.incoming.findSome? fun flow => (program.source? flow).bind fun source =>
+    ((program.element? source).bind (·.gateway?)).bind fun (header, gateway) =>
+      if (Admission.Flow.routing gateway).waits then some header.id else none
+
+/-- An element's Message subscriptions in CIB's event scopes, each also declared with its start mark:
+- a boundary in its host, or in the host's Multi-Instance body when the host loops (`BpmnParse.java:3290-3301`,
+  `getMultiInstanceScope` `:3388-3393`, declared at `:3455`);
+- a Receive Task's own Message in the Receive Task, which its boundaries share unless it loops (`:2753-2760`);
+- an Event Sub-Process start in the scope holding the Event Sub-Process (`:1112`), unmarked
+  (`parseEventDefinitionForSubprocess`, `:3499-3503`), so a boundary of that Sub-Process shares it;
+- an Event-Based Gateway arm in the gateway (`:1526-1527`, parsed from the gateway at `:2132`), any other catch in
+  itself (`:1529-1530`), declared at `:1596`;
+- a root Message start in its process, marked (`:1026-1032`), apart from that level's Event Sub-Process starts.
+A start nested in a Scope is taken with its Event Sub-Process. -/
+def messageSites (program : Program) (element : Element) : List Admission.Subscriptions.MessageSite :=
+  let id := element.header.id
+  let declared (scope : Admission.Subscriptions.EventScope) (start : Bool) (trigger : MessageTrigger) :
+      Admission.Subscriptions.MessageSite := { scope, start, trigger }
+  let site (scope : Admission.Subscriptions.EventScope) (start : Bool) (subscription : Subscription) :=
+    subscription.trigger.message?.map (declared scope start)
+  let attached := ((element.envelope?).map fun envelope =>
+    let scope : Admission.Subscriptions.EventScope := if envelope.multiInstance.isSome then .body id else .element id
+    envelope.boundaries.filterMap (site scope false ·.subscription)).getD []
+  let received := ((element.activity?).bind fun (_, payload) => payload.work.receive?).map (declared (.element id) false)
+  let handled := (element.scope?).bind fun (header, payload) => (Admission.Scopes.eventSubProcess? payload).bind
+    fun (start, _) => site (match header.parent with
+      | some parent => .element parent
+      | none => processLevel program id) false start
+  let caught := (element.event?).bind fun (_, payload) => payload.catch?.bind
+    (site (match armOf program payload with
+      | some gateway => .element gateway
+      | none => .element id) false)
+  let started := (element.start?).bind fun (header, payload) =>
+    if header.parent.isNone then payload.subscription.bind (site (processLevel program id) true) else none
+  attached ++ received.toList ++ handled.toList ++ caught.toList ++ started.toList
+
 /-- `throws` lists the program's Compensation throws. -/
 def element (program : Program) (throws : List Element) : Element → Option String
   | .activity header payload =>
@@ -101,7 +143,8 @@ def element (program : Program) (throws : List Element) : Element → Option Str
         (Admission.MultiInstance.activityLoop program.options Admission.Data.loopExpression
           (Admission.Work.instanceBody payload.work) payload.envelope) <|>
       outputTargets program header (payload.envelope.outputs ++ ((payload.work.call?.map (·.outputs)).getD [])) <|>
-      Admission.Subscriptions.boundaries program.options (subscriptionReading program header.parent) false payload.envelope.boundaries <|>
+      Admission.Subscriptions.boundaries program.options (subscriptionReading program header.parent)
+        { transaction := false, escalation := payload.work.isUser || payload.work.call?.isSome } payload.envelope.boundaries <|>
       boundaryData program header payload.envelope.boundaries <|>
       Admission.Scopes.nestedCompensation program throws header payload.envelope
   | .scope header payload =>
@@ -114,8 +157,8 @@ def element (program : Program) (throws : List Element) : Element → Option Str
       (Admission.Scopes.eventSubProcess? payload).bind (fun (start, interrupting) =>
         Admission.Subscriptions.eventSubProcess start interrupting) <|>
       Admission.Subscriptions.eventSubProcessDeclarations (eventSubProcessStarts (program.children (some header.id))) <|>
-      Admission.Subscriptions.boundaries program.options (subscriptionReading program header.parent) (Admission.Scopes.isTransaction payload)
-        payload.envelope.boundaries <|>
+      Admission.Subscriptions.boundaries program.options (subscriptionReading program header.parent)
+        { transaction := Admission.Scopes.isTransaction payload, escalation := true } payload.envelope.boundaries <|>
       boundaryData program header payload.envelope.boundaries <|>
       Admission.Scopes.nestedCompensation program throws header payload.envelope
   | .event header payload =>
@@ -150,6 +193,13 @@ def abnormalScope (program : Program) : Bool :=
 def loops (program : Program) : Bool :=
   program.elements.any fun element => ((element.envelope?).bind (·.multiInstance)).isSome
 
+/-- Whether a looping element's instances race one another where they begin: the closure is
+`Admission.Flow`'s, the loop's mode and condition `Admission.MultiInstance`'s. -/
+def loopInstances (program : Program) (element : Element) : Option String :=
+  (element.envelope?.bind (·.multiInstance)).bind fun loop =>
+    let closure := Admission.Flow.instanceClosure program element
+    Admission.MultiInstance.concurrentInstances program.options loop closure.races closure.completes
+
 /-- A flow's condition, evaluated in its source's enclosing scope, then where it may sit, then whether its branch races
 a sibling's write. -/
 def flow (program : Program) (entry : Flow) : Option String :=
@@ -171,7 +221,8 @@ def executable (program : Program) : Option String :=
   if !program.executable || program.processes.any (!·.executable) then some "process.notExecutable" else none
 
 /-- The first refusal: references, profile options, a process not marked executable, the carried DMN resources, then
-called-process bindings, the process levels' Event Sub-Processes, flows and elements in program order. -/
+called-process bindings, the process levels' Event Sub-Processes, flows and elements in program order, the instances of
+each loop, then the Message names of the whole program. -/
 def admit (program : Program) : Option String :=
   Admission.Flow.references program <|> Admission.Scopes.membership program <|>
     Admission.Profile.options (abnormalScope program) (loops program) program.options <|>
@@ -180,6 +231,8 @@ def admit (program : Program) : Option String :=
     program.processes.findSome? calledProcessBinding <|>
     processEventSubProcesses program <|>
     program.flows.findSome? (flow program) <|>
-    program.elements.findSome? (element program (program.elements.filter compensationThrow))
+    program.elements.findSome? (element program (program.elements.filter compensationThrow)) <|>
+    program.elements.findSome? (loopInstances program) <|>
+    Admission.Subscriptions.messageNames program.options (program.elements.flatMap (messageSites program))
 
 end Kernel.AdmissionRegistry

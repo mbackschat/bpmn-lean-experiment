@@ -22,6 +22,7 @@ import {
   eventPayloadCatch,
   eventPayloadLinkCatch,
   eventPayloadLinkThrow,
+  programBeginsImplicitly,
   programBoundary,
   programChildren,
   programElement,
@@ -102,13 +103,13 @@ function listReference(program: Program, element: Element): boolean {
  * What the admissions read of a Gateway's kind: the candidates and default of a conditional Gateway, whether one
  * activation may leave on several flows at once, and whether it waits for an event.
  */
-type Routing = Readonly<{
+export type Routing = Readonly<{
   conditional: Readonly<{ candidates: readonly FlowId[]; defaultFlow: FlowId | null }> | null;
   concurrent: boolean;
   waits: boolean;
 }>;
 
-function routing(payload: GatewayPayload): Routing {
+export function routing(payload: GatewayPayload): Routing {
   const kind = payload.kind;
   switch (kind.tag) {
     case GatewayKindTag.Exclusive:
@@ -320,12 +321,8 @@ function footprint(program: Program, element: Element): Footprint {
   };
 }
 
-/**
- * An element a token stops at within its closure: a User, Service or Receive Task, a catch Event or an Event-Based
- * Gateway waits for a stimulus, and a converging Parallel or Inclusive Gateway joins the branches (CIB parks its
- * execution there too).
- */
-function branchStop(element: Element): boolean {
+/** An element a token waits at for a stimulus: a User, Service or Receive Task, a catch Event or an Event-Based Gateway. */
+function awaitsStimulus(element: Element): boolean {
   const activity = elementActivity(element);
   if (activity !== null) {
     const work = activity[1].work;
@@ -334,16 +331,41 @@ function branchStop(element: Element): boolean {
   const event = elementEvent(element);
   if (event !== null) return eventPayloadCatch(event[1]) !== null;
   const gateway = elementGateway(element);
-  if (gateway === null) return false;
-  const fan = routing(gateway[1]);
-  return fan.waits || (fan.concurrent && gateway[1].incoming.length >= 2);
+  return gateway !== null && routing(gateway[1]).waits;
 }
 
 /**
- * The flows a token continues on from `element` in the same closure: its outgoing flows, a throwing Link's catch, and
- * the outgoing flows of a Scope's starts, which its occurrence begins at once.
+ * An element a branch stops at within its closure: one that awaits a stimulus, or a converging Parallel or Inclusive
+ * Gateway, which joins the branches (CIB parks its execution there too).
  */
-function onward(program: Program, element: Element): readonly FlowId[] {
+function branchStop(element: Element): boolean {
+  const gateway = elementGateway(element);
+  return awaitsStimulus(element) || (gateway !== null && routing(gateway[1]).concurrent && gateway[1].incoming.length >= 2);
+}
+
+/** The elements `flows` lead to. */
+const flowTargets = (program: Program, flows: readonly FlowId[]): readonly Element[] => flows.flatMap((flow) => {
+  const target = programTarget(program, flow);
+  const element = target === null ? null : programElement(program, target);
+  return element === null ? [] : [element];
+});
+
+/**
+ * The children an occurrence of the Scope `id` begins on entry: its start Events, or, without one, the children that
+ * begin implicitly (`programBeginsImplicitly`), as `feature/scopes.ts` `implicitStart` begins them.
+ */
+function enteredChildren(program: Program, id: ElementId): readonly Element[] {
+  const children = programChildren(program, id);
+  return children.some((child) => elementStart(child) !== null)
+    ? children.filter((child) => elementStart(child) !== null)
+    : children.filter((child) => programBeginsImplicitly(program, child));
+}
+
+/**
+ * The elements a token reaches next from `element` in the same closure: its outgoing flows' targets, a throwing Link's
+ * catch's, and a Scope's `enteredChildren`.
+ */
+function onward(program: Program, element: Element): readonly Element[] {
   const event = elementEvent(element);
   const name = event === null ? null : eventPayloadLinkThrow(event[1]);
   const link = event === null || name === null ? [] : programChildren(program, event[0].parent).flatMap((other) => {
@@ -351,38 +373,42 @@ function onward(program: Program, element: Element): readonly FlowId[] {
     return caught !== null && eventPayloadLinkCatch(caught[1]) === name ? elementOutgoing(other) : [];
   });
   const scope = elementScope(element);
-  const starts = scope === null ? []
-    : programChildren(program, scope[0].id).flatMap((child) => (elementStart(child) === null ? [] : elementOutgoing(child)));
-  return [...elementOutgoing(element), ...link, ...starts];
+  const entered = scope === null ? [] : enteredChildren(program, scope[0].id);
+  return [...flowTargets(program, [...elementOutgoing(element), ...link]), ...entered];
 }
 
-/** What the work a token on `start` reaches may read and write in one closure; an element it stops at only begins. */
-function branchFootprint(program: Program, start: FlowId): Footprint {
-  let frontier: readonly FlowId[] = [start];
-  const seen: FlowId[] = [];
+/**
+ * What the work beginning at `begun` reaches may read and write in one closure, where an element `stop` names only
+ * begins, and whether a token may end there: reach an element that neither stops nor continues.
+ */
+function closureWalk(program: Program, stop: (element: Element) => boolean, begun: readonly Element[]): readonly [Footprint, boolean] {
+  let frontier: readonly Element[] = begun;
+  const seen: ElementId[] = [];
   let found: Footprint = { reads: noNames, writes: noNames };
-  // The fuel bounds every visit of every flow, so it is never exhausted; running out answers what was found.
-  for (let fuel = (program.flows.length + 1) * (program.flows.length + 1); ; fuel -= 1) {
-    const [flow, ...rest] = frontier;
-    if (flow === undefined || fuel === 0) return found;
-    if (seen.includes(flow)) {
-      frontier = rest;
-      continue;
-    }
-    seen.unshift(flow);
-    const target = programTarget(program, flow);
-    const element = target === null ? null : programElement(program, target);
-    if (element === null) {
-      frontier = rest;
-    } else if (branchStop(element)) {
-      frontier = rest;
+  let ends = false;
+  const size = program.elements.length + program.flows.length + 1;
+  // The fuel bounds every visit of every element, so it is never exhausted; running out answers what was found.
+  for (let fuel = size * size; ; fuel -= 1) {
+    const [element, ...rest] = frontier;
+    if (element === undefined || fuel === 0) return [found, ends];
+    frontier = rest;
+    const id = elementHeader(element).id;
+    if (seen.includes(id)) continue;
+    seen.unshift(id);
+    if (stop(element)) {
       found = joined(found, { reads: beginReads(element), writes: noNames });
     } else {
-      frontier = [...rest, ...onward(program, element)];
+      const next = onward(program, element);
+      frontier = [...rest, ...next];
       found = joined(found, footprint(program, element));
+      ends ||= next.length === 0;
     }
   }
 }
+
+/** What the work a token on `start` reaches may read and write in one closure; an element it stops at only begins. */
+const branchFootprint = (program: Program, start: FlowId): Footprint =>
+  closureWalk(program, branchStop, flowTargets(program, [start]))[0];
 
 /**
  * Under `BranchSchedule.orderInvariant`, no branch of a split may write a name another branch reads or writes in the
@@ -409,6 +435,26 @@ export function concurrentWrite(program: Program, flow: Flow): string | null {
     }
   }
   return assertNever(program.options.branchSchedule);
+}
+
+/**
+ * What the instances of a looping element do in the closure that begins them, which
+ * `concurrentInstances` (`admission/multi-instance.ts`) reads: `races` when one instance writes a name before it waits,
+ * since every instance has the same footprint and so meets its own, and `completes` when an instance may complete there.
+ */
+export type InstanceClosure = Readonly<{ races: boolean; completes: boolean }>;
+
+/**
+ * A Sub-Process instance runs from its `enteredChildren` and continues past a join, which the instance's own branches reach
+ * in that closure; a task instance is its work, which completes at once unless it awaits a stimulus. `completes`
+ * over-approximates: a token reaching an element that neither waits nor continues, ignoring that a sibling branch of a
+ * Parallel split may wait, which flows a condition selects and whether a nested Call waits.
+ */
+export function instanceClosure(program: Program, element: Element): InstanceClosure {
+  const scope = elementScope(element);
+  const [own, completes] = scope !== null ? closureWalk(program, awaitsStimulus, enteredChildren(program, scope[0].id))
+    : awaitsStimulus(element) ? [{ reads: noNames, writes: noNames }, false] as const : [footprint(program, element), true] as const;
+  return { races: races(own, own), completes };
 }
 
 /**
