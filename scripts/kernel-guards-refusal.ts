@@ -14,6 +14,7 @@ import {
   emptyInputFinding,
   finding,
   isJustified,
+  isLeanExecutable,
   TokenKind,
   typeScriptEnums,
   type KernelTree,
@@ -74,10 +75,11 @@ export function refusalTestFindings(tree: KernelTree): string[] {
 
 type RuntimeRefusal = Readonly<{ code: string; source: Source; line: number }>;
 
-/** Runtime `unsupported` codes: Lean `.unsupported "x"` and TypeScript `failed(FailureTag.Unsupported, "x")`. */
+/** Runtime `unsupported` codes: Lean `.unsupported "x"` and TypeScript `failed(FailureTag.Unsupported, "x")`. A
+`Laws` or `Proofs` module that names an outcome never answers one, so only executable Lean modules are read. */
 export function runtimeUnsupportedCodes(tree: KernelTree): RuntimeRefusal[] {
   const refusals: RuntimeRefusal[] = [];
-  for (const source of tree.lean) {
+  for (const source of tree.lean.filter((lean) => isLeanExecutable(lean.file))) {
     const { tokens } = source;
     tokens.forEach((token, i) => {
       const next = tokens[i + 1];

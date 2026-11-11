@@ -5,6 +5,7 @@ import path from "node:path";
 import { test } from "node:test";
 
 import {
+  classify,
   duplicateNameFindings,
   featureFileFindings,
   Layer,
@@ -77,6 +78,41 @@ test("layering rejects a feature importing another feature, an admission importi
     "Kernel.Admission.Flow: admission module imports state module Kernel.State",
     "Kernel.Admission.Flow: imports Lean.Data.Json outside the kernel",
     "Kernel.Publish: dispatch module imports dispatch module Kernel.Step",
+  ]);
+});
+
+test("a Laws module is classified apart, imports only its own feature or dispatch family besides the shared layers, and nothing executable imports it", () => {
+  assert.deepEqual(classify(["Laws", "Population"]), [Layer.Laws, "population"]);
+  const module = (name: string, layer: Layer, family: string, imports: string[], file = `${name.split(".").join("/")}.lean`): Module =>
+    ({ name, layer, family, file, imports });
+  const modules = [
+    module("Kernel", Layer.Root, "", ["Kernel.Laws.State"], "Kernel.lean"),
+    module("Kernel.State", Layer.State, "", []),
+    module("Kernel.Hooks", Layer.Hooks, "", ["Kernel.State"]),
+    module("Kernel.Feature.Flow", Layer.Feature, "flow", ["Kernel.Hooks", "Kernel.Laws.Flow"]),
+    module("Kernel.Feature.Data", Layer.Feature, "data", ["Kernel.Hooks"]),
+    module("Kernel.Population.Contract", Layer.Dispatch, "population", ["Kernel.State"]),
+    module("Kernel.Step", Layer.Dispatch, "step", ["Kernel.Hooks", "Kernel.Laws.Flow"]),
+    module("Kernel.Run", Layer.Run, "", ["Kernel.Step", "Kernel.Laws.State"]),
+    module("Kernel.Laws.State", Layer.Laws, "state", ["Kernel.State"]),
+    module("Kernel.Laws.Flow", Layer.Laws, "flow", ["Kernel.Feature.Flow", "Kernel.Laws.State", "Kernel.Feature.Data"]),
+    module("Kernel.Laws.Population", Layer.Laws, "population", ["Kernel.Population.Contract", "Kernel.Step"]),
+  ];
+  assert.deepEqual(layeringFindings(modules, (name) => name === "Kernel" || name.startsWith("Kernel.")), [
+    "Kernel/Feature/Flow.lean: feature module imports laws module Kernel.Laws.Flow",
+    "Kernel/Step.lean: dispatch module imports laws module Kernel.Laws.Flow",
+    "Kernel/Run.lean: run module imports laws module Kernel.Laws.State",
+    "Kernel/Laws/Flow.lean: laws module imports feature module Kernel.Feature.Data",
+    "Kernel/Laws/Population.lean: laws module imports dispatch module Kernel.Step",
+  ]);
+  // The TypeScript kernel transcribes only executable modules, so it has no laws layer and its index exports none.
+  const typeScript = [
+    module("index", Layer.Root, "", ["laws/flow"], "packages/kernel/src/index.ts"),
+    module("laws/flow", Layer.Laws, "flow", [], "packages/kernel/src/laws/flow.ts"),
+  ];
+  assert.deepEqual(layeringFindings(typeScript, (name) => !name.startsWith("node:")), [
+    "packages/kernel/src/index.ts: root module imports laws module laws/flow",
+    "packages/kernel/src/laws/flow.ts: the TypeScript kernel has no laws layer",
   ]);
 });
 

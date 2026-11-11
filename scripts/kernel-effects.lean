@@ -144,11 +144,16 @@ structure Config where
 def allowedFor (config : Config) (module : Name) (writers : List Name) (primitive : Name) : Bool :=
   config.moduleOf primitive == some module || writers.any (·.isPrefixOf module)
 
-/-- Every kernel declaration with a value, across imported and local constants. -/
+/-- Every executable kernel declaration with a value, across imported and local constants. `Kernel.Laws` and
+`Kernel.Proofs` are not executable: a law's example state is no effect, and a law reading a field must not make a field
+the executable kernel never reads look live (guard 19). -/
 def kernelDeclarations (env : Environment) (config : Config) : Array (Name × Name × ConstantInfo) :=
   env.constants.fold (init := #[]) fun acc declaration info =>
     match config.moduleOf declaration with
-    | some module => if (`Kernel).isPrefixOf module then acc.push (declaration, module, info) else acc
+    | some module =>
+      if (`Kernel).isPrefixOf module && !(`Kernel.Laws).isPrefixOf module && !(`Kernel.Proofs).isPrefixOf module then
+        acc.push (declaration, module, info)
+      else acc
     | none => acc
 
 structure Report where
@@ -314,6 +319,11 @@ end IL.Types
 namespace IL.Codec
 def codecOnly (used : Used) : Nat := used.unread
 end IL.Codec
+namespace Laws.State
+def lawWrite (state : State) : State := { state with tokens := [], occurrences := [] }
+def lawRead (used : Used) : Nat := used.unread
+def lawLifecycle (state : State) : State := state.emit.beginOccurrence
+end Laws.State
 namespace Step
 def firstMatch (element : Element) : Nat := match element with
   | .task => 1
@@ -328,7 +338,7 @@ end Kernel
 /-- Which fixture namespace is a module: the longest prefix among the fixture's stand-in modules. -/
 def fixtureModuleOf (declaration : Name) : Option Name :=
   let modules := [`Kernel.Step, `Kernel.Feature.Flow, `Kernel.Feature.Data, `Kernel.Feature.MultiInstance,
-    `Kernel.Feature.Work, `Kernel.IL.Codec, `Kernel.IL.Types, `Kernel.Hooks, `Kernel.State]
+    `Kernel.Feature.Work, `Kernel.IL.Codec, `Kernel.IL.Types, `Kernel.Hooks, `Kernel.State, `Kernel.Laws.State]
   match modules.filter (·.isPrefixOf declaration) with
   | [] => if (`Kernel).isPrefixOf declaration then some `Kernel.IL.Types else none
   | head :: tail => some (tail.foldl (fun best module => if best.isPrefixOf module then module else best) head)
@@ -356,6 +366,10 @@ def selfTest : IO UInt32 := do
     unless (joined.splitOn expected).length > 1 do
       IO.eprintln s!"self-test: the seeded violation was not reported: {expected}"
       failed := true
+  -- A law builds states and reads fields without being an executable effect or reader (`lawWrite`, `lawRead`).
+  if (joined.splitOn "Kernel.Laws").length > 1 then
+    IO.eprintln "self-test: a Laws declaration was scanned as executable"
+    failed := true
   let empty ← run base { moduleOf := fixtureModuleOf, budgets := [], requireEveryGuardedType := false }
   unless empty.findings.any (fun line => (line.splitOn "read nothing").length > 1 || (line.splitOn "read no ").length > 1) do
     IO.eprintln "self-test: a scan of an environment with no kernel did not fail"

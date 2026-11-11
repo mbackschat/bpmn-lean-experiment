@@ -22,6 +22,7 @@ export const Layer = {
   Registry: "registry",
   AdmissionRegistry: "admissionRegistry",
   Run: "run",
+  Laws: "laws",
   Root: "root",
 } as const;
 
@@ -30,7 +31,8 @@ export type Layer = typeof Layer[keyof typeof Layer];
 export type Module = Readonly<{ name: string; layer: Layer; family: string; file: string; imports: readonly string[] }>;
 
 /** Which layers a layer may import; a feature, admission or dispatch module may also import its own family's modules,
- * so a family splits into paired parts instead of outgrowing the size target, and the runner its own parts. */
+ * so a family splits into paired parts instead of outgrowing the size target, and the runner its own parts. A `Laws`
+ * module may also import the feature or dispatch family it states laws for; no executable layer imports `Laws`. */
 const mayImport: Readonly<Record<Layer, readonly Layer[]>> = {
   [Layer.Il]: [Layer.Il],
   [Layer.Codec]: [Layer.Il, Layer.State, Layer.Codec],
@@ -42,6 +44,7 @@ const mayImport: Readonly<Record<Layer, readonly Layer[]>> = {
   [Layer.Registry]: [Layer.Il, Layer.State, Layer.Hooks, Layer.Feature],
   [Layer.AdmissionRegistry]: [Layer.Il, Layer.Admission],
   [Layer.Run]: [Layer.Il, Layer.Codec, Layer.State, Layer.Hooks, Layer.Dispatch, Layer.Registry, Layer.AdmissionRegistry, Layer.Run],
+  [Layer.Laws]: [Layer.Il, Layer.State, Layer.Hooks, Layer.Laws],
   [Layer.Root]: Object.values(Layer),
 };
 
@@ -65,6 +68,7 @@ export function classify(segments: readonly string[]): readonly [Layer, string] 
     case "registry": return [Layer.Registry, ""];
     case "admissionregistry": return [Layer.AdmissionRegistry, ""];
     case "run": return [Layer.Run, ""];
+    case "laws": return [Layer.Laws, second];
     case "index":
     case "kernel": return [Layer.Root, ""];
     default: throw new Error(`unclassified kernel module: ${segments.join("/")}`);
@@ -107,10 +111,14 @@ export function typeScriptModules(root = projectRoot): Module[] {
 }
 
 /** Guard 4: every import follows the layer table, features, admissions and dispatch modules import no other family
- * (population may import step), and only the codec and the runner reach outside the kernel. */
+ * (population may import step), only the codec and the runner reach outside the kernel, no executable module imports
+ * `Laws`, and the TypeScript kernel has no laws layer. */
 export function layeringFindings(modules: readonly Module[], isKernel: (name: string) => boolean): string[] {
   const byName = new Map(modules.map((module) => [module.name, module]));
-  return modules.flatMap((module) => module.imports.flatMap((imported) => {
+  // Laws are Lean-only: the TypeScript kernel transcribes the executable modules, and only the generated Lean root,
+  // which nothing executable imports, may import a Laws module.
+  const isLean = (module: Module): boolean => module.file.endsWith(".lean");
+  const importFindings = (module: Module, imported: string): string[] => {
     const target = byName.get(imported);
     if (target === undefined) {
       if (isKernel(imported)) return [`${module.file}: imports unknown kernel module ${imported}`];
@@ -121,9 +129,17 @@ export function layeringFindings(modules: readonly Module[], isKernel: (name: st
     // The population layer drives each instance through the one step function (proposal, module table and guard 13).
     const populationSteps = module.layer === Layer.Dispatch && module.family === "population" &&
       target.layer === Layer.Dispatch && target.family === "step";
-    if (sameFamily || populationSteps || mayImport[module.layer].includes(target.layer)) return [];
+    // `Kernel.Laws.<F>` states the rules of the feature or dispatch family `F` (proposal, module table).
+    const ownLaws = module.layer === Layer.Laws && target.family === module.family &&
+      (target.layer === Layer.Feature || target.layer === Layer.Dispatch);
+    const typeScriptRootLaws = module.layer === Layer.Root && target.layer === Layer.Laws && !isLean(module);
+    if (!typeScriptRootLaws && (sameFamily || populationSteps || ownLaws || mayImport[module.layer].includes(target.layer))) return [];
     return [`${module.file}: ${module.layer} module imports ${target.layer} module ${imported}`];
-  }));
+  };
+  return modules.flatMap((module) => [
+    ...(module.layer === Layer.Laws && !isLean(module) ? [`${module.file}: the TypeScript kernel has no laws layer`] : []),
+    ...module.imports.flatMap((imported) => importFindings(module, imported)),
+  ]);
 }
 
 /**

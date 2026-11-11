@@ -465,6 +465,14 @@ def g : Except Failure Nat := .error (.unsupported "marked-dynamic")
   assert.deepEqual(findings, []);
 });
 
+test("guard 20 reads runtime codes only, so a law naming an unsupported outcome is no runtime site", () => {
+  assert.deepEqual(refusalParityFindings(fixture({
+    "Kernel/Laws/Population.lean": `module
+def Stop (entry : Failure) : Prop := entry = .unsupported "never-admitted"
+`,
+  })), []);
+});
+
 holdsItsGround("guard 24 (justified rules)", justifiedRuleFindings, {
   "packages/kernel/src/feature/flow.ts": `// The frozen evaluator orders the arrivals this way.\nexport function gateway(state) { return state; }\n`,
 }, /rule justified by "frozen evaluator"/u);
