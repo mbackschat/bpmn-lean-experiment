@@ -36,6 +36,7 @@ import {
   coverageRows,
   refusalParityFindings,
   refusalTestFindings,
+  rowFixtureFindings,
   shapeSufficiencyFindings,
 } from "./kernel-guards-refusal.ts";
 import { ilRecordScopeFindings, rebuildFindings, shapeEditReport } from "./kernel-rebuild-model.ts";
@@ -133,8 +134,9 @@ export function work(value) {
   "scenarios/two/scenario.json": "{}\n",
   "scenarios/three/scenario.json": "{}\n",
   "docs/PRACTICAL-CIB7-COVERAGE-TARGET.md": "| `PC-CF-02` | outcome | - | open | x |\n| `PC-JOURNEY-01` | outcome | - | open | x |\n",
-  "docs/kernel/ROW-TRACEABILITY-MAP.md": "| PC-CF-02 | PC-CF-02.json | x |\n| PC-JOURNEY-01 | n/a | x |\n",
-  "packages/kernel/test/fixtures/rows/PC-CF-02.json": "{}\n",
+  "docs/kernel/ROW-TRACEABILITY-MAP.md":
+    "| PC-CF-02 | PC-CF-02.json | GatewayKind.exclusive~, Flow.condition+ | x |\n| PC-JOURNEY-01 | n/a | - | x |\n",
+  "packages/kernel/test/fixtures/rows/PC-CF-02.json": `{"flows": [{"condition": null}], "kind": "exclusive"}\n`,
 };
 
 function fixture(overrides: Readonly<Record<string, string | null>> = {}): KernelTree {
@@ -498,10 +500,21 @@ test("guard 21 fails on a missing row, entry or fixture and on a decode failure,
   assert.deepEqual(shapeSufficiencyFindings(clean.root, decodes), []);
   const missingFixture = fixture({ "packages/kernel/test/fixtures/rows/PC-CF-02.json": null });
   assert.match(shapeSufficiencyFindings(missingFixture.root, decodes).join("\n"), /G21 PC-CF-02: fixture PC-CF-02\.json is missing/u);
-  const missingEntry = fixture({ "docs/kernel/ROW-TRACEABILITY-MAP.md": "| PC-JOURNEY-01 | n/a | x |\n" });
+  const missingEntry = fixture({ "docs/kernel/ROW-TRACEABILITY-MAP.md": "| PC-JOURNEY-01 | n/a | - | x |\n" });
   assert.match(shapeSufficiencyFindings(missingEntry.root, decodes).join("\n"), /G21 PC-CF-02: no traceability entry/u);
   assert.match(shapeSufficiencyFindings(clean.root, { typeScript: () => "bad", lean: () => null }).join("\n"), /does not decode in the TypeScript kernel: bad/u);
+  assert.match(shapeSufficiencyFindings(clean.root, { typeScript: () => null, lean: () => "bad" }).join("\n"), /does not decode in the Lean kernel: bad/u);
   assert.match(shapeSufficiencyFindings(emptyFixture().root, decodes)[0] ?? "", /read no coverage target rows/u);
+});
+
+// A generic decodable program copied to every row would pass a decode-only check while proving nothing about the row.
+test("guard 21 refuses a row fixture that does not carry the IL members its traceability entry names", () => {
+  assert.deepEqual(rowFixtureFindings(clean.root), []);
+  const generic = fixture({ "packages/kernel/test/fixtures/rows/PC-CF-02.json": `{"kind": "parallel"}\n` });
+  assert.deepEqual(rowFixtureFindings(generic.root), ["G21 PC-CF-02: fixture PC-CF-02.json carries no GatewayKind.exclusive, Flow.condition"]);
+  const malformed = fixture({ "packages/kernel/test/fixtures/rows/PC-CF-02.json": "{\n" });
+  assert.match(rowFixtureFindings(malformed.root)[0] ?? "", /G21 PC-CF-02: fixture PC-CF-02\.json is not JSON/u);
+  assert.match(rowFixtureFindings(emptyFixture().root)[0] ?? "", /read no coverage target rows/u);
 });
 
 test("the structural guards of kernel-structure.ts reject seeded violations and fail on empty inputs", () => {
@@ -574,9 +587,11 @@ test("guard 18 reads only kernel paths, so a large commit outside the kernel nev
   ]);
 });
 
-test("guard 21 reports its state and does not fail until the row fixtures exist", (t) => {
+// Root direction (2026-11-08): the missing row fixtures are reported, not failed; the decoders run in
+// packages/differential/test/row-fixtures.integration-test.ts.
+test("guard 21 reports the rows whose fixture is missing or does not carry its traced members", (t) => {
   assert.ok(coverageRows(tree.root).length > 0, "the coverage target must list rows");
-  const pending = shapeSufficiencyFindings(tree.root, { typeScript: () => null, lean: () => null });
+  const pending = rowFixtureFindings(tree.root);
   t.diagnostic(`guard 21 pending: ${pending.length} findings, e.g. ${pending[0] ?? "none"}`);
 });
 

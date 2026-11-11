@@ -33,7 +33,7 @@ if (process.env.BPMN_PIPELINE_PREBUILT !== "1") {
 
 const testFiles = modelCorpusOnly
   ? ["model-corpus/test/executable-model-corpus.test.ts"]
-  : ["packages/differential/test/kernel-behavior-oracle.integration-test.ts"];
+  : ["packages/differential/test/kernel-behavior-oracle.integration-test.ts", "packages/differential/test/row-fixtures.integration-test.ts"];
 
 const testRun = await runProjectCommand(
   process.execPath,

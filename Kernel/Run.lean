@@ -31,6 +31,10 @@ deployment in deploy order (`Kernel.Run.Population`) and one digest of its conte
 harness computes so that the kernel never reimplements canonical JSON or SHA-256. Its entry lives here because this is the one module that may import both
 registries; `Kernel.Run.Population` reads the scenario and renders the result. A source the reader or admission
 refuses is a refused deployment, a result; a malformed population scenario is a harness error with a stable code.
+
+`kernelRun --decode <program.json>...` prints, per program in argument order, `{fixture, refusal}`: `null` when the strict
+codec decodes it, else the codec's refusal. It runs nothing, so guard 21 holds every row fixture to the Lean codec in one
+process; an unreadable file is a harness error.
 -/
 
 public section
@@ -350,10 +354,23 @@ def runPopulation (digestsPath : String) (sourcePaths : List String) (scenarioPa
   let result ← orFail scenarioPath (Population.runStimuli Registry.hooks AdmissionRegistry.admit stimuli)
   pure (populationResultJson observationJson scenarioId result)
 
+/-- The strict codec's answer for each program file: `refusal` is `null` when it decodes, else the codec's message. -/
+def decodePrograms (paths : List String) : IO Json := do
+  let answers ← paths.mapM fun (path : String) => do
+    let text ← IO.FS.readFile path
+    let refusal := match Codec.parseStrict text >>= Codec.programFromJson with
+      | .ok _ => Json.null
+      | .error message => Json.str message
+    pure (Json.mkObj [("fixture", Json.str path), ("refusal", refusal)])
+  pure (Json.arr answers.toArray)
+
 end Kernel.Run
 
 def main (args : List String) : IO UInt32 := do
   match args with
+  | "--decode" :: paths@(_ :: _) =>
+    IO.println (← Kernel.Run.decodePrograms paths).compress
+    pure 0
   | "--population" :: digestsPath :: paths@(_ :: _ :: _) =>
     IO.println (← Kernel.Run.runPopulation digestsPath paths.dropLast paths.getLast!).compress
     pure 0
@@ -366,5 +383,6 @@ def main (args : List String) : IO UInt32 := do
   | _ =>
     IO.eprintln ("usage: kernelRun <program.json> <scenario.json>\n" ++
       "       kernelRun --host-view <program.json> <scenario.json>\n" ++
-      "       kernelRun --population <digests.json> <source.json>... <population-scenario.json>")
+      "       kernelRun --population <digests.json> <source.json>... <population-scenario.json>\n" ++
+      "       kernelRun --decode <program.json>...")
     pure 64
