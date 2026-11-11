@@ -15,7 +15,8 @@ public section
 namespace Kernel.Host
 
 /-- What a program needs from its host. `maxConcurrentWaits` is `none` when the shape bounds nothing, which is every
-program with a wait: tokens can multiply through implicit splits and loops, and no finer bound is selected. -/
+program that can hold a wait: tokens can multiply through implicit splits and loops, and no finer bound is selected.
+Every declared subscription counts as one that can, a Signal or Conditional one included, which no flag names. -/
 structure Requirements where
   timers : Bool
   messages : Bool
@@ -47,7 +48,7 @@ def hostRequirements (program : Program) : Requirements :=
   let effects := work.any (·.isService)
   let userTasks := work.any (·.isUser)
   let calls := work.any (·.call?.isSome)
-  let waits := timers || messages || effects || userTasks || calls
+  let waits := !triggers.isEmpty || messages || effects || userTasks || calls
   { timers, messages, effects, userTasks, calls, maxConcurrentWaits := if waits then none else some 0 }
 
 /-- A start the host can offer: a none start, a Message start on its channel, or a Timer start with its resolved

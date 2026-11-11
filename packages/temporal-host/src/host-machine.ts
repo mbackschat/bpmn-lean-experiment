@@ -190,12 +190,12 @@ const unboundedWaitAllowance = 256;
 /**
  * The history length at which a Run continues as new. The reserve keeps room for every open wait to settle once
  * after the threshold is crossed, since the Run drains its live Activities before it rolls over; each wait costs the
- * events of the mechanisms the program's requirements name.
+ * events of the mechanisms the program's requirements name, and an Update besides, since a Signal or Conditional wait,
+ * which no flag names, ends on one.
  */
 export function historyBudget(requirements: Requirements, override: number | null): number {
   if (override !== null) return override;
-  const perWait = workflowTaskEvents +
-    (requirements.messages || requirements.userTasks ? updateEvents : 0) +
+  const perWait = workflowTaskEvents + updateEvents +
     (requirements.timers ? timerEvents : 0) +
     (requirements.effects ? activityEvents : 0);
   const waits = requirements.maxConcurrentWaits ?? unboundedWaitAllowance;

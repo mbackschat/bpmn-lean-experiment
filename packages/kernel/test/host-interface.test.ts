@@ -12,6 +12,7 @@ import {
   capabilitiesJson,
   decodeProgram,
   definitionCapabilities,
+  hostRequirements,
   InputTag,
   hooks,
   matching,
@@ -28,6 +29,7 @@ import {
   catchEvent,
   channel,
   computed,
+  condition,
   criterion,
   cycle,
   date,
@@ -35,6 +37,7 @@ import {
   message,
   replace,
   serviceWork,
+  signal,
   start,
   variable,
   withOptions,
@@ -62,6 +65,16 @@ function committed(outcome: Outcome): State {
 
 const string = (value: string): Json => ({ kind: "string", value });
 const begin = (variables: Json[] = []): Json => ({ kind: "start", commandId: "start", instanceId: "Instance_1", variables });
+
+test("a program without a subscription or waiting work opens no wait, and one whose waits are Signal or Conditional bounds none", () => {
+  assert.equal(hostRequirements(admitted(base())).maxConcurrentWaits, 0);
+  for (const trigger of [signal(), condition()]) {
+    const waiting = admitted(replace(base(), "T", catchEvent("T", trigger)));
+    assert.equal(hostRequirements(waiting).maxConcurrentWaits, null);
+    const started = withOptions(replace(base(), "S", start("S", trigger)), { conditionalStart: "submittedContext" });
+    assert.equal(hostRequirements(admitted(started)).maxConcurrentWaits, null);
+  }
+});
 
 test("a Timer start offers the duration the kernel resolves from its schedule", () => {
   const program = admitted(replace(base(), "S", start("S", duration("PT1M30S"))));

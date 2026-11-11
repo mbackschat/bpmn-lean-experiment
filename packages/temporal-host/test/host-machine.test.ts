@@ -138,6 +138,11 @@ test("the history budget leaves room for the waits a program can have open, and 
   assert.equal(machine.historyBudget(everything, 40), 40);
 });
 
+test("a wait no requirement flag names, a Signal or Conditional one, is charged the Update that ends it", () => {
+  const unnamed = { timers: false, messages: false, effects: false, userTasks: false, calls: false, maxConcurrentWaits: null };
+  assert.equal(machine.historyBudget(unnamed, null), machine.historyBudget({ ...unnamed, messages: true }, null));
+});
+
 type FakeState = Readonly<{ view: HostView }>;
 type FakeInput = Readonly<{ route: import("../src/port.ts").Route; result: StepResult<FakeState> }>;
 

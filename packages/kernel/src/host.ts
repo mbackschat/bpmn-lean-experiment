@@ -54,7 +54,8 @@ import { messageTriggerChannel, ownVariables } from "./hooks.js";
 
 /**
  * What a program needs from its host. `maxConcurrentWaits` is `null` when the shape bounds nothing, which is every
- * program with a wait: tokens can multiply through implicit splits and loops, and no finer bound is selected.
+ * program that can hold a wait: tokens can multiply through implicit splits and loops, and no finer bound is selected.
+ * Every declared subscription counts as one that can, a Signal or Conditional one included, which no flag names.
  */
 export interface Requirements {
   readonly timers: boolean;
@@ -98,7 +99,7 @@ export function hostRequirements(program: Program): Requirements {
   const effects = work.some(workIsService);
   const userTasks = work.some(workIsUser);
   const calls = work.some((entry) => workCall(entry) !== null);
-  const waits = timers || messages || effects || userTasks || calls;
+  const waits = triggers.length > 0 || messages || effects || userTasks || calls;
   return { timers, messages, effects, userTasks, calls, maxConcurrentWaits: waits ? null : 0 };
 }
 
