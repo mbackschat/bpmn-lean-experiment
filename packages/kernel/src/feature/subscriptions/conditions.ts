@@ -8,7 +8,6 @@
  */
 import {
   ConditionalRetrigger,
-  TriggerTag,
   ValueTag,
   assertNever,
   elementEvent,
@@ -17,10 +16,10 @@ import {
   eventPayloadCatch,
   programBoundary,
   programElement,
+  triggerCondition,
   type ConditionTrigger,
   type Expression,
   type Subscription,
-  type Trigger,
 } from "../../il/types.js";
 import {
   FailureTag,
@@ -96,26 +95,9 @@ function evaluateItem(ctx: Ctx, write: WriteEvent | null, item: OpenItem, condit
   return assertNever(ctx.program.options.conditionalRetrigger);
 }
 
-/** The Conditional trigger a subscription waits for, if it is one. */
-function conditionTrigger(trigger: Trigger): ConditionTrigger | null {
-  switch (trigger.tag) {
-    case TriggerTag.Condition:
-      return trigger.payload;
-    case TriggerTag.Timer:
-    case TriggerTag.Message:
-    case TriggerTag.Signal:
-    case TriggerTag.Error:
-    case TriggerTag.Escalation:
-    case TriggerTag.Compensation:
-    case TriggerTag.Cancel:
-      return null;
-  }
-  return assertNever(trigger);
-}
-
 /** What an item does once open: a Conditional one is evaluated at once. */
 export function armed(ctx: Ctx, subscription: Subscription, item: OpenItem, state: State): Outcome {
-  const condition = conditionTrigger(subscription.trigger);
+  const condition = triggerCondition(subscription.trigger);
   return condition === null ? committed(state) : evaluateItem(ctx, null, item, condition, state);
 }
 
@@ -139,7 +121,7 @@ export function subscriptionOf(ctx: Ctx, item: OpenItem): Subscription | null {
 /** The Conditional trigger of an open item's subscription, if it has one. */
 function conditionOf(ctx: Ctx, item: OpenItem): ConditionTrigger | null {
   const subscription = subscriptionOf(ctx, item);
-  return subscription === null ? null : conditionTrigger(subscription.trigger);
+  return subscription === null ? null : triggerCondition(subscription.trigger);
 }
 
 /** Whether a write passes a Conditional item's `camunda:variableName` and `camunda:variableEvents` filters. */

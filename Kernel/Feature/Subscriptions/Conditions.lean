@@ -46,14 +46,9 @@ def evaluateItem (ctx : Ctx) (write : Option WriteEvent) (item : OpenItem) (trig
       if open_.id == item.id then { open_ with kind := .conditional { detail with lastValue := some value } } else open_ }
     .ok (if value && detail.lastValue != some true then fire recorded else recorded)
 
-/-- The Conditional trigger a subscription waits for, if it is one. -/
-def conditionTrigger? : Trigger → Option ConditionTrigger
-  | .condition trigger => some trigger
-  | .timer _ | .message _ | .signal _ | .error _ | .escalation _ | .compensation | .cancel => none
-
 /-- What an item does once open: a Conditional one is evaluated at once. -/
 def armed (ctx : Ctx) (subscription : Subscription) (item : OpenItem) (state : State) : Outcome :=
-  match conditionTrigger? subscription.trigger with
+  match subscription.trigger.condition? with
   | some trigger => evaluateItem ctx none item trigger state
   | none => .ok state
 
@@ -70,8 +65,8 @@ def subscription? (ctx : Ctx) (item : OpenItem) : Option Subscription :=
     catchEvent <|> eventStart
 
 /-- The Conditional trigger of an open item's subscription, if it has one. -/
-def condition? (ctx : Ctx) (item : OpenItem) : Option ConditionTrigger :=
-  (subscription? ctx item).bind (conditionTrigger? ·.trigger)
+def itemCondition? (ctx : Ctx) (item : OpenItem) : Option ConditionTrigger :=
+  (subscription? ctx item).bind (·.trigger.condition?)
 
 /-- Whether a write passes a Conditional item's `camunda:variableName` and `camunda:variableEvents` filters. -/
 def passes (trigger : ConditionTrigger) (write : WriteEvent) : Bool :=
@@ -107,7 +102,7 @@ the variable whose filters it passes, outermost first and then in opening order,
 def offerWrites (ctx : Ctx) (writes : List WriteEvent) (state : State) : Outcome :=
   writes.foldlM (fun state write =>
     let offered := state.openItems.filterMap fun item =>
-      (condition? ctx item).bind fun trigger =>
+      (itemCondition? ctx item).bind fun trigger =>
         if passes trigger write && inSubtree state write.scope (homeScope state item) then some (item, trigger) else none
     let ordered := offered.mergeSort fun (left, _) (right, _) =>
       depth state left < depth state right || (depth state left == depth state right && left.id ≤ right.id)

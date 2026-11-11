@@ -538,6 +538,17 @@ def Trigger.message? : Trigger → Option MessageTrigger
   | .compensation => none
   | .cancel => none
 
+/-- The Conditional trigger of a trigger, if it is one. -/
+def Trigger.condition? : Trigger → Option ConditionTrigger
+  | .condition payload => some payload
+  | .timer _ => none
+  | .message _ => none
+  | .signal _ => none
+  | .error _ => none
+  | .escalation _ => none
+  | .compensation => none
+  | .cancel => none
+
 /-- The Call a work record names, if it is one. -/
 def Work.call? : Work → Option CallWork
   | .call work => some work

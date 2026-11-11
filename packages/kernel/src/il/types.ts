@@ -640,6 +640,22 @@ export function triggerTimer(trigger: Trigger): TimerTrigger | null {
   return assertNever(trigger);
 }
 
+/** The Conditional trigger of a trigger, if it is one. */
+export function triggerCondition(trigger: Trigger): ConditionTrigger | null {
+  switch (trigger.tag) {
+    case TriggerTag.Condition: return trigger.payload;
+    case TriggerTag.Timer:
+    case TriggerTag.Message:
+    case TriggerTag.Signal:
+    case TriggerTag.Error:
+    case TriggerTag.Escalation:
+    case TriggerTag.Compensation:
+    case TriggerTag.Cancel:
+      return null;
+  }
+  return assertNever(trigger);
+}
+
 /** The Message of a trigger, if it is one. */
 export function triggerMessage(trigger: Trigger): MessageTrigger | null {
   switch (trigger.tag) {
