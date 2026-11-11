@@ -28,11 +28,25 @@ inductive StartTrigger where
   | condition
   deriving Repr
 
+/-- How a Signal delivery reached its occurrence. Only the population's fan-out builds `broadcast`; the scenario wire and
+every external ingress decode to `targeted`, so no caller can set it (PC-SIGNAL-04). -/
+inductive SignalReach where
+  /-- A request naming one occurrence, admitted only under `signalDelivery = occurrenceTargeted` (CIB-EXT-0042). -/
+  | targeted
+  /-- One receiver of a broadcast or of a thrown Signal's intent, taken from the population's snapshot. -/
+  | broadcast
+  deriving DecidableEq, Repr
+
 /-- What a delivery delivers. An addressless Receive stays a delivery on the unspecified channel (CIB-INT-0004). -/
 inductive DeliveryTrigger where
   | message (channel : MessageChannel)
-  | signal (address : SignalAddress)
+  | signal (address : SignalAddress) (reach : SignalReach)
   deriving Repr
+
+/-- Whether a delivery is one receiver of a broadcast, which may carry the Signal's variables. -/
+def DeliveryTrigger.fromBroadcast : DeliveryTrigger → Bool
+  | .signal _ reach => reach == .broadcast
+  | .message _ => false
 
 inductive CriterionTarget where
   | processVariable (name : String)

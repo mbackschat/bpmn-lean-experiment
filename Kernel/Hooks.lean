@@ -43,7 +43,7 @@ def MessageTrigger.channel (trigger : MessageTrigger) : MessageChannel :=
 
 def DeliveryTrigger.channel? : DeliveryTrigger → Option MessageChannel
   | .message channel => some channel
-  | .signal _ => none
+  | .signal _ _ => none
 
 /-- The members of an input collection in order, `none` for a value that is not a collection; a String List's
 members are Strings. -/

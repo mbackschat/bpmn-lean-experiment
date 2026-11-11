@@ -23,8 +23,8 @@ import {
 } from "./il/types.js";
 import {
   ActivationRole, CauseTag, CommandActionTag, ContinuationTag, DeliveryTriggerTag, EffectOutcomeTag, FailureTag,
-  FiredTag, InputTag, InstanceStatus, IterationTag, LeaveTag, SignalTag, Terminal, TokenTag, WriteRule, beginOccurrence,
-  beginRequest, busyScopes, closeOwnItems, committed, crossed, emptyDraft, entryCount, failed, failedWith, idle,
+  FiredTag, InputTag, InstanceStatus, IterationTag, LeaveTag, SignalReach, SignalTag, Terminal, TokenTag, WriteRule, beginOccurrence,
+  beginRequest, busyScopes, closeOwnItems, committed, crossed, deliveryTriggerFromBroadcast, emptyDraft, entryCount, failed, failedWith, idle,
   initial, instanceOf, keyOf, occurrenceOf, openKindView, ownScope, recordEnd, reserve, root, signal as enqueue,
   startReserved,
   type BeginRequest, type Binding, type Cause, type CommandAction, type CommandInput, type EffectInput, type Fired,
@@ -582,7 +582,7 @@ export function context(hooks: Hooks, program: Program): Ctx {
 
 function deliver(hooks: Hooks, ctx: Ctx, input: Extract<Input, { tag: InputTag.Deliver }>, state: State): Outcome {
   const data = input.payload;
-  if (data.variables.length > 0) return failed(FailureTag.Rejected, "delivery-variables-not-admitted");
+  if (data.variables.length > 0 && !deliveryTriggerFromBroadcast(data.trigger)) return failed(FailureTag.Rejected, "delivery-variables-not-admitted");
   switch (data.trigger.tag) {
     case DeliveryTriggerTag.Message: {
       const item = itemOf(ctx, state, data.occurrence, (view) => view.channel);
@@ -591,7 +591,7 @@ function deliver(hooks: Hooks, ctx: Ctx, input: Extract<Input, { tag: InputTag.D
         : fireItem(hooks, ctx, item, { tag: FiredTag.Message, delivery: data }, state);
     }
     case DeliveryTriggerTag.Signal: {
-      if (ctx.program.options.signalDelivery === SignalDelivery.BroadcastOnly) return failed(FailureTag.Rejected, "signal-delivery-targeted");
+      if (data.trigger.reach === SignalReach.Targeted && ctx.program.options.signalDelivery === SignalDelivery.BroadcastOnly) return failed(FailureTag.Rejected, "signal-delivery-targeted");
       const item = itemOf(ctx, state, data.occurrence, (view) => view.signal);
       return item === null
         ? failed(FailureTag.Rejected, "unknown-signal-subscription")

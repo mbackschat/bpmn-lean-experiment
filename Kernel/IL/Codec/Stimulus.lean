@@ -122,7 +122,7 @@ def commandActionFromJson (json : Json) : Except String CommandAction := do
 def deliveryTriggerFromJson (json : Json) : Except String DeliveryTrigger := do
   match ← kindOf json with
   | "message" => fields json ["kind", "channel"]; pure (.message (← channelFromJson (← json.getObjVal? "channel")))
-  | "signal" => fields json ["kind"] ["name", "signalRef"]; pure (.signal (← signalAddressFromJson json))
+  | "signal" => fields json ["kind"] ["name", "signalRef"]; pure (.signal (← signalAddressFromJson json) .targeted)
   | other => throw s!"unknown delivery trigger kind {other}"
 
 def criterionTargetFromJson (json : Json) : Except String CriterionTarget := do

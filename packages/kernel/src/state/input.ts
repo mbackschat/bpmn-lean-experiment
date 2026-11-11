@@ -30,12 +30,28 @@ export type StartTrigger =
 
 export const noStartTrigger: StartTrigger = { tag: StartTriggerTag.None };
 
+/**
+ * How a Signal delivery reached its occurrence. Only the population's fan-out builds `Broadcast`; the scenario wire and
+ * every external ingress decode to `Targeted`, so no caller can set it (PC-SIGNAL-04).
+ */
+export enum SignalReach {
+  /** A request naming one occurrence, admitted only under `signalDelivery = occurrenceTargeted` (CIB-EXT-0042). */
+  Targeted = "targeted",
+  /** One receiver of a broadcast or of a thrown Signal's intent, taken from the population's snapshot. */
+  Broadcast = "broadcast",
+}
+
 /** What a delivery delivers. An addressless Receive stays a delivery on the unspecified channel (CIB-INT-0004). */
 export enum DeliveryTriggerTag { Message = "message", Signal = "signal" }
 
 export type DeliveryTrigger =
   | { readonly tag: DeliveryTriggerTag.Message; readonly channel: MessageChannel }
-  | { readonly tag: DeliveryTriggerTag.Signal; readonly address: SignalAddress };
+  | { readonly tag: DeliveryTriggerTag.Signal; readonly address: SignalAddress; readonly reach: SignalReach };
+
+/** Whether a delivery is one receiver of a broadcast, which may carry the Signal's variables. */
+export function deliveryTriggerFromBroadcast(trigger: DeliveryTrigger): boolean {
+  return trigger.tag === DeliveryTriggerTag.Signal && trigger.reach === SignalReach.Broadcast;
+}
 
 export enum CriterionTargetTag {
   ProcessVariable = "processVariable",

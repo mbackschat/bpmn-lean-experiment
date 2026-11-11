@@ -31,6 +31,7 @@ import {
   FailureTag,
   InputTag,
   SignalAddressTag,
+  SignalReach,
   StartTriggerTag,
   noStartTrigger,
   type Binding,
@@ -281,7 +282,7 @@ function deliveryTriggerFromJson(json: unknown): DeliveryTrigger {
       return { tag: DeliveryTriggerTag.Message, channel: get(channelFromJson(present(json, "channel"))) };
     case "signal":
       fields(json, ["kind"], ["name", "signalRef"]);
-      return { tag: DeliveryTriggerTag.Signal, address: signalAddressFromJson(json) };
+      return { tag: DeliveryTriggerTag.Signal, address: signalAddressFromJson(json), reach: SignalReach.Targeted };
   }
   throw new Refusal(`unknown delivery trigger kind ${kind}`);
 }

@@ -253,7 +253,7 @@ def correlates (ctx : Ctx) (item : OpenItem) (channel : MessageChannel) (correla
 
 /-- The address a delivery names, when it delivers a Signal. -/
 def signalDelivered : DeliveryTrigger → Option SignalAddress
-  | .signal address => some address
+  | .signal address _ => some address
   | .message _ => none
 
 /-- What a Signal's variables install in the receiving scope: under `SignalPayload.variables` all of them, as CIB's

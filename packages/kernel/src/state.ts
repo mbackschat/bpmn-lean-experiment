@@ -30,15 +30,15 @@ export {
 };
 import {
   type CommandAction, CommandActionTag, type CommandInput, type CorrelationMatch, type CriterionTarget,
-  CriterionTargetTag, type DeliveryInput, type DeliveryTrigger, DeliveryTriggerTag, type EffectInput,
+  CriterionTargetTag, type DeliveryInput, type DeliveryTrigger, deliveryTriggerFromBroadcast, DeliveryTriggerTag, type EffectInput,
   type EffectOutcome, EffectOutcomeTag, type EvalContext, type Input, noStartTrigger, type OccurrenceRef,
-  type StartInput, type StartTrigger, StartTriggerTag, type TimerInput,
+  SignalReach, type StartInput, type StartTrigger, StartTriggerTag, type TimerInput,
 } from "./state/input.js";
 export {
   type CommandAction, CommandActionTag, type CommandInput, type CorrelationMatch, type CriterionTarget,
-  CriterionTargetTag, type DeliveryInput, type DeliveryTrigger, DeliveryTriggerTag, type EffectInput,
+  CriterionTargetTag, type DeliveryInput, type DeliveryTrigger, deliveryTriggerFromBroadcast, DeliveryTriggerTag, type EffectInput,
   type EffectOutcome, EffectOutcomeTag, type EvalContext, type Input, noStartTrigger, type OccurrenceRef,
-  type StartInput, type StartTrigger, StartTriggerTag, type TimerInput,
+  SignalReach, type StartInput, type StartTrigger, StartTriggerTag, type TimerInput,
 };
 import {
   type Compensable, type CompensationRun, type Compensations, type FeatureSlots, featureSlotsClear,

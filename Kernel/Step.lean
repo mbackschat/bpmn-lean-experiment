@@ -446,16 +446,16 @@ def step (hooks : Hooks) (program : Program) (before : Option State) (input : In
         (begin hooks ctx { element := start, scope := State.root, trigger := payload.trigger }) initial)
   | .command data => onRunning hooks ctx input before (command hooks ctx data)
   | .deliver data => onRunning hooks ctx input before fun state =>
-    if !data.variables.isEmpty then .error (.rejected "delivery-variables-not-admitted") else
+    if !data.variables.isEmpty && !data.trigger.fromBroadcast then .error (.rejected "delivery-variables-not-admitted") else
     match data.trigger with
     | .message _ =>
       match item? ctx state data.occurrence (·.channel) with
       | none => .error (.rejected "unknown-message-subscription")
       | some item => fireItem hooks ctx item (.message data) state
-    -- A `deliver` names one occurrence; BPMN 2.0.2 Table 10.88 only broadcasts a Signal, so a targeted one needs
-    -- `occurrenceTargeted` (CIB-EXT-0042). A throw's own-State receivers fire through `Signal.fire`, never here.
-    | .signal _ =>
-      if ctx.program.options.signalDelivery == .broadcastOnly then .error (.rejected "signal-delivery-targeted") else
+    -- Table 10.88 only broadcasts a Signal: one its caller targets needs `occurrenceTargeted` (CIB-EXT-0042).
+    | .signal _ reach =>
+      if reach == .targeted && ctx.program.options.signalDelivery == .broadcastOnly then
+        .error (.rejected "signal-delivery-targeted") else
       match item? ctx state data.occurrence (·.signal) with
       | none => .error (.rejected "unknown-signal-subscription")
       | some item => fireItem hooks ctx item (.signal data) state

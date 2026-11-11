@@ -401,7 +401,7 @@ def thrownDelivery (ctx : Ctx) (state : State) (address : SignalAddress) (variab
     (item : OpenItem) : DeliveryInput :=
   { occurrence := { processInstanceId := state.instanceOf item.scope, element := ctx.program.publicId item.element
                     activation := ((state.occurrence? item.occurrence).map (·.activation)).getD 0 }
-    trigger := .signal address, variables }
+    trigger := .signal address .broadcast, variables }
 
 def throwSignal (ctx : Ctx) (payload : EventPayload) (record : SignalThrow) (origin : Origin) (occurrence : Occurrence)
     (state : State) : Outcome := do
