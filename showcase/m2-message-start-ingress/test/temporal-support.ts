@@ -92,18 +92,13 @@ export async function waitForOpenUserTask(
         return tasks[0];
       }
     } catch {
-      // Temporal accepts the start before the replacement Worker can answer its first Query.
+      // Temporal accepts the start before the Worker has run its first Workflow task to answer a Query.
     }
     await delay(25);
   }
   throw new Error(
     `Message Start Process did not expose User Task ${expectedName}: ${JSON.stringify(latest)}`,
   );
-}
-
-export function assertWorkerAbsentHistory(history: TemporalHistory): void {
-  assert.equal(historyEvents(history, "workflowExecutionStartedEventAttributes").length, 1);
-  assert.equal(historyEvents(history, "workflowTaskStartedEventAttributes").length, 0);
 }
 
 /** The host Workflow's one start argument (`RunProcessArgs` of `packages/temporal-host/src/host-contract.ts`). */

@@ -402,6 +402,35 @@ test("M2 schedules engine occurrences, refuses a superseded version, decides can
       );
     }
 
+    // A firing started outside Product 2 with the version-2 action's own arguments is the host's, not a Schedule: the
+    // population refuses the consumed occurrence, and it creates no Schedule, no Process and no platform Schedule.
+    const schedulesBeforeDirectFiring = await listScheduleIds(client);
+    const versionTwoSchedulesBeforeDirectFiring = (await listDefinitionSchedules(origin, versionTwo.value)).value.schedules;
+    assert.equal(versionTwoSchedulesBeforeDirectFiring.length, 1);
+    const directFiringWorkflowId = `direct-firing-mutation-${process.pid}`;
+    const directFiring = requireRecord(await withDeadline(
+      client.workflow.execute(timerFiringWorkflowType, {
+        taskQueue,
+        workflowId: directFiringWorkflowId,
+        workflowIdReusePolicy: "REJECT_DUPLICATE",
+        args: [actions[1]!.observed.firing],
+      }),
+      operationDeadlineMs,
+      "direct firing-Workflow mutation",
+    ), "direct firing answer");
+    assert.deepEqual(directFiring.resolution, { kind: "rejected", code: "timer-start-occurrence-consumed" });
+    assert.deepEqual(await listScheduleIds(client), schedulesBeforeDirectFiring, "a direct firing must create no Schedule");
+    assert.deepEqual(
+      await listWorkflowIds(client, [workflowType]),
+      [processWorkflowId],
+      "a consumed occurrence must start no second Process",
+    );
+    assert.deepEqual(
+      (await listDefinitionSchedules(origin, versionTwo.value)).value.schedules,
+      versionTwoSchedulesBeforeDirectFiring,
+      "a host-level firing must create or change no platform Schedule",
+    );
+
     // The third version's occurrence is cancelled before it is due, so its action never exists.
     const versionThree = await deployDefinition(origin, {
       bytes: versionBytes(3, cancelledTimerDuration.iso),

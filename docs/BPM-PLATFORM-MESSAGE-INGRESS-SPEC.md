@@ -186,7 +186,7 @@ The marker identifies the caller-declared intent but is not independent proof of
 
 ## Temporal hosting and refinement preflight
 
-The durable ingress is the existing Process Workflow start with the existing `TriggerMessageStart` stimulus. There is no Signal, Update-With-Start, Schedule, Activity, Child Workflow, Workflow Timer, broker, or router Workflow in this path. Workflow creation remains Worker-independent, and normal semantic execution starts when a Worker later polls.
+The durable ingress is the existing Process Workflow start with the existing `TriggerMessageStart` stimulus. There is no Signal, Update-With-Start, Schedule, Activity, Child Workflow, Workflow Timer, broker, or router Workflow in this path. The start runs under the deployment its definition version registered with the population, which the engine reads from the population ingress Workflow by Query before it starts the Process Workflow, so a publication needs a polling Worker to be accepted; the Process Workflow start itself is a direct client start.
 
 The preserved relation is unchanged from the Message Start Event specification: direct core execution and the hosted Workflow receive the same exact program and stimulus and reach the same public semantic state. Product 2 publication state, Memo, host address, retries, and the `indeterminate` outcome are outside BPMN state. `accepted` establishes durable host creation, not semantic progress.
 
@@ -219,7 +219,7 @@ Required:
 - strict public request, item, route, decoder, HTTP client, and UI;
 - durable reservation, immutable retry comparison, at-most-once dispatch edge, accepted receipt, and indeterminate tombstone;
 - pre-reservation exact recompilation plus semantic and host admission;
-- Worker-independent direct Workflow start, private versioned intent-marker Memo, separately guarded start construction, describe-only ambiguous recovery, and replay;
+- direct Workflow start under the registered deployment, private versioned intent-marker Memo, separately guarded start construction, describe-only ambiguous recovery, and replay;
 - server restart recovery, controlled retention-loss evidence, two-version discrimination, private-ID exclusion, and separate live/browser showcase gates.
 
 Optional after this increment:

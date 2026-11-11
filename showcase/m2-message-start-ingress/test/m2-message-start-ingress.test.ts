@@ -43,7 +43,6 @@ import type {
 } from "./http-support.ts";
 import {
   assertCompletedMessageStartHistory,
-  assertWorkerAbsentHistory,
   listScheduleIds,
   listWorkflowExecutions,
   processHandle,
@@ -77,13 +76,15 @@ test("M2 publishes one exact Message Start after response loss and replays", asy
     environmentStartupDeadlineMs,
     "M2 Message Start Temporal environment startup",
   );
-  // No Worker polls until the publication has started its Workflow, so its history shows a start no Worker took yet.
+  // The Worker polls from the first deploy: registering a version and resolving a start's deployment both reach the
+  // population ingress Workflow, which only a Worker answers.
   const namespace = environmentNamespace(environment);
   const client = environment.client;
   let platform: PlatformServerRuntime | undefined;
-  let replacementWorker: ShowcaseWorker | undefined;
+  let worker: ShowcaseWorker | undefined;
 
   try {
+    worker = await startWorker(environment);
     platform = await startPlatform(
       origin,
       port,
@@ -172,13 +173,12 @@ test("M2 publishes one exact Message Start after response loss and replays", asy
     assert.equal((await listWorkflowExecutions(client)).length, workflowsBefore.length + 1);
 
     const handle = processHandle(client.workflow, execution);
-    const absentHistory = await withDeadline(
+    const startedHistory = await withDeadline(
       handle.fetchHistory(),
       operationDeadlineMs,
-      "published Process history while Worker is absent",
+      "published Process start history",
     ) as TemporalHistory;
-    assertWorkerAbsentHistory(absentHistory);
-    const startArguments = workflowStartArguments(absentHistory);
+    const startArguments = workflowStartArguments(startedHistory);
     assertVersionStart(startArguments, execution.memo, versionOne.value.source.sha256, versionOneOperation);
     assertNoSemanticInstanceFanout([startArguments]);
 
@@ -209,7 +209,6 @@ test("M2 publishes one exact Message Start after response loss and replays", asy
     assert.deepEqual(retry.value, recovered.value);
     assert.equal((await listWorkflowExecutions(client)).length, workflowsBefore.length + 1);
 
-    replacementWorker = await startWorker(environment);
     const processes = new ProcessClient(client, taskQueue);
     const task = await waitForOpenUserTask(handle, versionOneTask);
     assert.notEqual(task.name, versionTwoTask);
@@ -255,9 +254,6 @@ test("M2 publishes one exact Message Start after response loss and replays", asy
       "published Process completed history",
     ) as TemporalHistory;
     assertCompletedMessageStartHistory(completedHistory);
-
-    await replacementWorker.shutdown();
-    replacementWorker = undefined;
     await withDeadline(
       replayHistory(completedHistory, execution.workflowId),
       30_000,
@@ -290,6 +286,9 @@ test("M2 publishes one exact Message Start after response loss and replays", asy
       versionTwoOperation,
     );
     assertNoSemanticInstanceFanout([startArguments, versionTwoArguments]);
+    // The Workflow-start mutations below bypass the platform, so no Worker needs to run them.
+    await worker.shutdown();
+    worker = undefined;
 
     const fanoutWorkflowId = `direct-message-start-fanout-mutation-${token}`;
     const fanoutWorkflowsBefore = await listWorkflowExecutions(client);
@@ -366,7 +365,7 @@ test("M2 publishes one exact Message Start after response loss and replays", asy
   } finally {
     const cleanupFailures: unknown[] = [];
     for (const cleanup of [
-      replacementWorker === undefined ? undefined : () => replacementWorker?.shutdown(),
+      worker === undefined ? undefined : () => worker?.shutdown(),
       platform === undefined ? undefined : () => platform?.close(),
       () => environment.teardown(),
       () => rm(dataDirectory, { recursive: true, force: true }),
@@ -389,11 +388,11 @@ async function startWorker(
   return await withDeadline(
     ShowcaseWorker.start(environment, {
       taskQueue,
-      identity: `bpmn-m2-message-ingress-replacement-${process.pid}`,
+      identity: `bpmn-m2-message-ingress-worker-${process.pid}`,
       effects: noEffects,
     }),
     20_000,
-    "replacement host Worker startup",
+    "host Worker startup",
   );
 }
 
