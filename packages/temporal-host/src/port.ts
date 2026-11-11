@@ -261,10 +261,12 @@ export type ReachOutcome =
 /**
  * Everything the population ingress and the Workflows that answer it ask of the kernel's population layer
  * (`Kernel.Population.*`, [population ingress](../../../docs/kernel/ARCHITECTURE-SPEC.md#population-ingress)). Kernel
- * values cross it as `Wire`; every match, order, budget, identity and verdict is the kernel's. Decoders throw
- * `TypeError` on malformed input, a caller fault.
+ * values cross it as `Wire`, except a fan-out machine `M`, the binding's own value: one fan-out records an entry per
+ * receiver, so re-encoding it at every action would make a fan-out quadratic in its receivers; it crosses as `Wire` only
+ * through `machineWire` and `machineOf`. Every match, order, budget, identity and verdict is the kernel's. Decoders
+ * throw `TypeError` on malformed input, a caller fault.
  */
-export interface PopulationPort<P, S> {
+export interface PopulationPort<P, S, M> {
   readonly decodeCommand: (kind: string, json: JsonValue) => { readonly view: CommandView; readonly command: Wire };
   // The ingress, over deployment summaries.
   readonly deploymentSummary: (program: P) => Wire;
@@ -282,16 +284,19 @@ export interface PopulationPort<P, S> {
   /** An API broadcast's emission, whose address and variables its scans ask about. */
   readonly broadcastEmission: (command: Wire) => Wire;
   /** An API broadcast's fan-out over its snapshot in its `order`, `null` when the order is no permutation of it. */
-  readonly broadcastBegin: (command: Wire, snapshot: readonly Wire[], budget: number) => Wire | null;
+  readonly broadcastBegin: (command: Wire, snapshot: readonly Wire[], budget: number) => M | null;
   /** A Conditional evaluation's fan-out over its starts in its `order`, `null` when the order is no permutation of them. */
-  readonly conditionsBegin: (command: Wire, starts: readonly Wire[], budget: number) => Wire | null;
+  readonly conditionsBegin: (command: Wire, starts: readonly Wire[], budget: number) => M | null;
   /** The machine past a Conditional start whose predicate does not hold. */
-  readonly fanOutPass: (machine: Wire) => Wire;
+  readonly fanOutPass: (machine: M) => M;
   /** The fan-out of the intents an instance left, which may reach `budget` receivers. */
-  readonly cascadeBegin: (commandId: string, emitter: string, intents: readonly Wire[], budget: number) => Wire;
-  readonly fanOutNext: (machine: Wire) => FanOutStep;
-  readonly fanOutSnapshot: (machine: Wire, receivers: readonly Wire[]) => Wire;
-  readonly fanOutRecord: (machine: Wire, entry: Wire, intents: readonly Wire[], emitter: string) => Wire;
+  readonly cascadeBegin: (commandId: string, emitter: string, intents: readonly Wire[], budget: number) => M;
+  readonly fanOutNext: (machine: M) => FanOutStep;
+  readonly fanOutSnapshot: (machine: M, receivers: readonly Wire[]) => M;
+  readonly fanOutRecord: (machine: M, entry: Wire, intents: readonly Wire[], emitter: string) => M;
+  /** A machine's wire form, flat whatever its length, which `machineOf` inverts. */
+  readonly machineWire: (machine: M) => Wire;
+  readonly machineOf: (wire: Wire) => M;
   readonly startReceiver: (deploymentId: number, startEvent: string) => Wire;
   readonly occurrenceReceiver: (target: Wire) => Wire;
   /** An occurrence receiver's target; `TypeError` for a start. */

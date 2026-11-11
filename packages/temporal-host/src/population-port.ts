@@ -258,7 +258,7 @@ function startRequest(request: StartRequest): Wire {
   return toWire(request);
 }
 
-export const populationPort: PopulationPort<Program, State> = {
+export const populationPort: PopulationPort<Program, State, FanOutMachine> = {
   decodeCommand: (kind, json) => {
     let command: Command | null;
     try {
@@ -301,28 +301,29 @@ export const populationPort: PopulationPort<Program, State> = {
     const sent = decode<Command & { tag: CommandTag.Broadcast }>(command).broadcast;
     const ordered = inOrder((receiver: Receiver) => receiver, snapshot.map((wire) => decode<Receiver>(wire)), sent.order);
     if (ordered === null) return null;
-    return machineToWire(fanOutBegin(sent.commandId,
-      ordered.map((receiver): Pending => ({ tag: PendingTag.Receiver, emission, receiver })), budget));
+    return fanOutBegin(sent.commandId, ordered.map((receiver): Pending => ({ tag: PendingTag.Receiver, emission, receiver })), budget);
   },
   conditionsBegin: (command, starts, budget) => {
     const issued = decode<Command>(command);
     if (issued.tag !== CommandTag.EvaluateConditions) throw new TypeError("not a Conditional evaluation");
     const ordered = inOrder((receiver: Receiver) => receiver, starts.map((wire) => decode<Receiver>(wire)), issued.evaluation.order);
     if (ordered === null) return null;
-    return machineToWire(fanOutBegin(issued.evaluation.commandId,
-      ordered.map((receiver): Pending => ({ tag: PendingTag.Receiver, emission: null, receiver })), budget));
+    return fanOutBegin(issued.evaluation.commandId,
+      ordered.map((receiver): Pending => ({ tag: PendingTag.Receiver, emission: null, receiver })), budget);
   },
-  fanOutPass: (machine) => machineToWire(fanOutPass(machineFromWire(machine))),
-  cascadeBegin: (commandId, emitter, intents, budget) => machineToWire(fanOutBegin(commandId,
-    intents.map((intent): Pending => ({ tag: PendingTag.Intent, emitter, intent: decode<BroadcastIntent>(intent) })), budget)),
-  fanOutNext: (machine) => nextStep(machineFromWire(machine)),
+  fanOutPass,
+  cascadeBegin: (commandId, emitter, intents, budget) => fanOutBegin(commandId,
+    intents.map((intent): Pending => ({ tag: PendingTag.Intent, emitter, intent: decode<BroadcastIntent>(intent) })), budget),
+  fanOutNext: nextStep,
   fanOutSnapshot: (machine, receivers) => {
-    const taken = fanOutSnapshot(machineFromWire(machine), receivers.map((wire) => decode<Receiver>(wire)), null);
+    const taken = fanOutSnapshot(machine, receivers.map((wire) => decode<Receiver>(wire)), null);
     if (!taken.ok) throw new TypeError(`fan-out snapshot: ${taken.error}`);
-    return machineToWire(taken.value);
+    return taken.value;
   },
-  fanOutRecord: (machine, entry, intents, emitter) => machineToWire(fanOutRecord(machineFromWire(machine), decode<FanOutEntry>(entry),
-    intents.map((intent) => decode<BroadcastIntent>(intent)), emitter)),
+  fanOutRecord: (machine, entry, intents, emitter) => fanOutRecord(machine, decode<FanOutEntry>(entry),
+    intents.map((intent) => decode<BroadcastIntent>(intent)), emitter),
+  machineWire: machineToWire,
+  machineOf: machineFromWire,
   occurrenceReceiver: (target) => toWire({ tag: ReceiverTag.Occurrence, ref: decode<OccurrenceRef>(target) } satisfies Receiver),
   receiverTarget: (receiver) => {
     const decoded = decode<Receiver>(receiver);

@@ -32,8 +32,8 @@ interface Chain<P, S> {
 /** The kernel status name of a running instance (`Kernel.Publish.statusName`). */
 const running = "running";
 
-export class MemoryPopulation<P, S> {
-  ingress: IngressState = emptyIngress;
+export class MemoryPopulation<P, S, M> {
+  ingress: IngressState<M> = emptyIngress;
   readonly chains = new Map<string, Chain<P, S>>();
   readonly programs = new Map<number, P>();
   /** Each population start's outcome by its chain, which a repeated start of the identity answers again. */
@@ -42,8 +42,10 @@ export class MemoryPopulation<P, S> {
   private readonly unsettled = new Map<string, Readonly<{ instanceId: string; intents: readonly Wire[] }>>();
 
   constructor(
-    private readonly port: PopulationPort<P, S>,
+    private readonly port: PopulationPort<P, S, M>,
     private readonly hostView: (program: P, state: S) => HostView,
+    /** The most receivers one command may reach: the host's capacity, or the kernel's bound to refine the kernel's run. */
+    private readonly receivers: number,
   ) {}
 
   /** Register a deployment of `program`, or one admission refused with `refused`. */
@@ -86,7 +88,7 @@ export class MemoryPopulation<P, S> {
       const [state, action] = advance(this.port, this.ingress, atMs);
       this.ingress = state;
       if (action === null) break;
-      this.ingress = answer(this.port, this.ingress, this.perform(action, atMs));
+      this.ingress = answer(this.port, this.ingress, this.perform(action, atMs), this.receivers);
     }
   }
 
@@ -111,7 +113,7 @@ export class MemoryPopulation<P, S> {
     return program;
   }
 
-  private reached(workflowId: string, deploymentId: number, program: P, outcome: ReturnType<PopulationPort<P, S>["populationStart"]>): ReachOutcome {
+  private reached(workflowId: string, deploymentId: number, program: P, outcome: ReturnType<PopulationPort<P, S, M>["populationStart"]>): ReachOutcome {
     switch (outcome.kind) {
       case "passed":
       case "failed":

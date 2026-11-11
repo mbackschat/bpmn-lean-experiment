@@ -34,7 +34,7 @@ export interface PopulationIngressArgs {
   readonly population: string;
   readonly config: HostConfig;
   readonly rolloverEvents: number | null;
-  readonly carried: IngressState | null;
+  readonly carried: IngressState<Wire> | null;
 }
 
 export interface DeploymentArgs {

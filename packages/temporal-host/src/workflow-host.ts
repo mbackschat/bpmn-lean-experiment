@@ -139,14 +139,14 @@ const conditionNotHeldCode = "conditional-start-not-held";
 /** How many population deliveries a chain remembers, so a delivery retried across Continue-As-New applies once. */
 const deliveryLedgerCapacity = 1_024;
 
-export function createRunProcess<P, S, I>(
+export function createRunProcess<P, S, I, M>(
   port: KernelPort<P, S, I>,
-  population: PopulationPort<P, S>,
+  population: PopulationPort<P, S, M>,
 ): (args: RunProcessArgs) => Promise<ProcessResult> {
   return (args) => hostProcess(port, population, args);
 }
 
-async function hostProcess<P, S, I>(port: KernelPort<P, S, I>, populationPort: PopulationPort<P, S>, args: RunProcessArgs): Promise<ProcessResult> {
+async function hostProcess<P, S, I, M>(port: KernelPort<P, S, I>, populationPort: PopulationPort<P, S, M>, args: RunProcessArgs): Promise<ProcessResult> {
   const config: HostConfig = args.config;
   const program = port.decodeProgram(args.program);
   const refusal = port.admit(program);
@@ -247,7 +247,7 @@ async function hostProcess<P, S, I>(port: KernelPort<P, S, I>, populationPort: P
     return applied;
   };
   /** A population step's committed state, its intents returned to the fan-out. */
-  const reached = (commandId: string, step: ReturnType<PopulationPort<P, S>["populationStart"]>): ReachOutcome => {
+  const reached = (commandId: string, step: ReturnType<PopulationPort<P, S, M>["populationStart"]>): ReachOutcome => {
     if (step.kind !== "committed") return step;
     commitState(commandId, step.state);
     return { kind: "committed", instanceId: populationPort.instanceIdOf(step.state), intents: populationPort.intentsOf(program, step.state) };

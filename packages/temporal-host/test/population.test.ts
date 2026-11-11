@@ -23,14 +23,14 @@ const { kernelPort } = await import(new URL("../dist/kernel-port.js", import.met
 const { advance, emptyIngress, enqueueCommand, enqueueEmit, populationCapacity, register, registerDeployment, takeAnswer } = population;
 
 /** A port that answers only the questions `answers` names, so a rule that asks anything else fails loudly. */
-function port(answers: Partial<PopulationPort<never, never>>): PopulationPort<never, never> {
+function port(answers: Partial<PopulationPort<never, never, Wire>>): PopulationPort<never, never, Wire> {
   return new Proxy(answers, {
     get: (target, name: string) => {
       const answer = (target as Record<string, unknown>)[name];
       if (answer === undefined) throw new TypeError(`unexpected kernel question ${name}`);
       return answer;
     },
-  }) as PopulationPort<never, never>;
+  }) as PopulationPort<never, never, Wire>;
 }
 
 const rendered = { renderResolution: (parts: unknown) => parts as JsonValue };
@@ -105,7 +105,7 @@ test("a deployment request answers once, conflicts with other content, and super
   const kernel = port({
     registerSummary: (_registry, deploymentId, candidate) => ({ summary: candidate, key: String(candidate), versions: [[String(candidate), deploymentId]] }),
   });
-  let state: import("../src/population.ts").IngressState = { ...emptyIngress, timers: [{ deploymentId: 1, startEvent: "T", dueMs: 60_000 }] };
+  let state: import("../src/population.ts").IngressState<Wire> = { ...emptyIngress, timers: [{ deploymentId: 1, startEvent: "T", dueMs: 60_000 }] };
   const [first, deployed] = registerDeployment(kernel, state, "r1", "d1", { summary: "Orders" }, 0);
   assert.deepEqual(deployed, { deploymentId: 1, versions: [["Orders", 1]], deployedAtMs: 0 });
   assert.deepEqual(registerDeployment(kernel, first, "r1", "d1", { summary: "Orders" }, 5)[1], deployed);
@@ -145,7 +145,7 @@ test("a broadcast whose first snapshot exceeds the receivers one command may rea
   assert.ok(ticket !== null);
   const [scanning, scan] = advance(kernel, state, 0);
   assert.equal(scan?.kind, "scanSignal");
-  const answered = population.answer(kernel, scanning, { kind: "signalScan", chains: [], starts: [] });
+  const answered = population.answer(kernel, scanning, { kind: "signalScan", chains: [], starts: [] }, populationCapacity.receivers);
   assert.deepEqual(takeAnswer(answered, ticket)?.[1], { commandId: "b", ordinal: 1, atMs: 0, resolution: { kind: "rejected", code: population.fanOutCapacityCode }, chain: null });
 });
 
@@ -161,12 +161,12 @@ test("an ingress continuing as new releases every waiting Update, so no answer o
   const kernel = port({ ...rendered, decodeCommand: () => ({ view, command: "broadcast" }), broadcastEmission: () => null,
     emissionAddress: () => null, emissionVariables: () => null, currentDeployments: () => [], linearize: () => [],
     broadcastBegin: () => null });
-  let [state] = enqueueCommand(emptyIngress, "b", "broadcast", {}, "d");
+  let [state] = enqueueCommand<Wire>(emptyIngress, "b", "broadcast", {}, "d");
   [state] = enqueueCommand(state, "c", "broadcast", {}, "d");
   [state] = advance(kernel, state, 0);
   const released = population.releaseHandlers(state);
   assert.deepEqual([released.current?.item.ticket, ...released.queue.map((item) => item.ticket)], [null, null]);
-  const answered = population.answer(kernel, released, { kind: "signalScan", chains: [], starts: [] });
+  const answered = population.answer(kernel, released, { kind: "signalScan", chains: [], starts: [] }, populationCapacity.receivers);
   assert.deepEqual(answered.answers, [], "a released command settles into the ledger only");
   assert.equal(answered.ledger.length, 1);
 });
@@ -182,7 +182,7 @@ test("a population start whose instance identity a directly started chain holds 
   const instanceId = timerInstanceId(1, startEvent, 1_000);
   const firing = { commandId: "fire", deploymentId: 1, startEvent, dueMs: 1_000 };
   const fresh = () => {
-    const memory = new MemoryPopulation(binding.populationPort, kernelPort.hostView);
+    const memory = new MemoryPopulation(binding.populationPort, kernelPort.hostView, populationCapacity.receivers);
     memory.deploy("d", "digest", program, 0);
     return memory;
   };

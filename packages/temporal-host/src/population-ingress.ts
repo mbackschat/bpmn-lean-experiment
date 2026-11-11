@@ -36,6 +36,7 @@ import type {
 import {
   advance,
   answer,
+  carriedState,
   configurationConflict,
   deploymentOf,
   emptyIngress,
@@ -47,6 +48,7 @@ import {
   register,
   registerDeployment,
   releaseHandlers,
+  resumedState,
   takeAnswer,
   type Action,
 } from "./population.js";
@@ -103,15 +105,15 @@ async function perform(population: PopulationIngressArgs, action: Action): Promi
   }
 }
 
-export function createRunPopulationIngress<P, S, I>(
+export function createRunPopulationIngress<P, S, I, M>(
   kernel: KernelPort<P, S, I>,
-  port: PopulationPort<P, S>,
+  port: PopulationPort<P, S, M>,
 ): (args: PopulationIngressArgs) => Promise<void> {
   return (args) => hostIngress(kernel, port, args);
 }
 
-async function hostIngress<P, S, I>(kernel: KernelPort<P, S, I>, port: PopulationPort<P, S>, args: PopulationIngressArgs): Promise<void> {
-  let state: IngressState = args.carried ?? emptyIngress;
+async function hostIngress<P, S, I, M>(kernel: KernelPort<P, S, I>, port: PopulationPort<P, S, M>, args: PopulationIngressArgs): Promise<void> {
+  let state: IngressState<M> = args.carried === null ? emptyIngress : resumedState(port, args.carried);
   let rolling = false;
   /** Serializes registrations: each takes its ordinal and starts its Workflow before the next is considered. */
   let registering: Promise<unknown> = Promise.resolve();
@@ -194,7 +196,7 @@ async function hostIngress<P, S, I>(kernel: KernelPort<P, S, I>, port: Populatio
       await registering;
       await condition(allHandlersFinished);
       // The released handlers' commands answer through the ledger, which `populationResult` reads.
-      return continueAsNew<(next: PopulationIngressArgs) => Promise<void>>({ ...args, carried: releaseHandlers(state) });
+      return continueAsNew<(next: PopulationIngressArgs) => Promise<void>>({ ...args, carried: carriedState(port, releaseHandlers(state)) });
     }
     const [next, action] = advance(port, state, Date.now());
     state = next;
@@ -203,14 +205,14 @@ async function hostIngress<P, S, I>(kernel: KernelPort<P, S, I>, port: Populatio
       continue;
     }
     const answered = await perform(args, action);
-    state = answer(port, state, answered);
+    state = answer(port, state, answered, populationCapacity.receivers);
     acted = true;
   }
 }
 
-export function createRunDeployment<P, S, I>(
+export function createRunDeployment<P, S, I, M>(
   kernel: KernelPort<P, S, I>,
-  port: PopulationPort<P, S>,
+  port: PopulationPort<P, S, M>,
 ): (args: DeploymentArgs) => Promise<void> {
   return async (args) => {
     const program = kernel.decodeProgram(args.program);

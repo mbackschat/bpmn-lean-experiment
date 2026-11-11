@@ -2,13 +2,16 @@
  * The hosted population refines the kernel's: every population scenario runs through the ingress driver the Workflows
  * use (`@bpmn-lean/temporal-host` `population.ts`), each action answered in process over kernel states, and answers the
  * kernel population runner's deployments, command resolutions, input cascades, input failures and final instance
- * states exactly. Every receiver steps at its command's time, which the kernel runner also uses.
+ * states exactly. Every receiver steps at its command's time, which the kernel runner also uses. The driver may reach as
+ * many receivers per command as the kernel's cascade bound, so a cascade stops where the kernel's does; the host's
+ * smaller capacity and its code are the driver's own rule, which `temporal-host/test/population.test.ts` holds.
  */
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
   DeploymentOutcomeTag,
+  cascadeBound,
   StimulusTag,
   admit,
   definitionRefFromJson,
@@ -24,6 +27,7 @@ import {
   step,
   stimuliOfPopulation,
   type Deployment,
+  type FanOutMachine,
   type Program,
   type State,
 } from "@bpmn-lean/kernel";
@@ -47,8 +51,8 @@ function hosted(sources: readonly unknown[], document: PopulationScenarioDocumen
   const stimuli = stimuliOfPopulation(declared, sources.map((json, index) => deploymentSourceFromJson(json, `source ${String(index)}`)),
     steps, digests, "population");
   const commandSteps = steps.filter((json) => commandKinds.has(json["kind"] as string));
-  const population = new MemoryPopulation<Program, State>(populationPort,
-    (program, state) => hostViewJson(hostView(program, state)) as unknown as HostView);
+  const population = new MemoryPopulation<Program, State, FanOutMachine>(populationPort,
+    (program, state) => hostViewJson(hostView(program, state)) as unknown as HostView, cascadeBound);
   const registry: Deployment[] = [];
   const refused: number[] = [];
   const deployments: JsonValue[] = [];
