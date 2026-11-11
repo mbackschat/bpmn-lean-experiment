@@ -155,6 +155,8 @@ Lean is the formal semantic authority as the executable specification: every sce
 | Evaluation result | none: evaluation runs inside the kernel step | no host mechanism |
 | Population | correlation and broadcast through the correlation ingress Workflow; version binding at start | zero or ambiguous match; broadcast discovery order; witnessed when its rows land |
 
+Hosting gap (2026-11-11): cross-deployment Call binding is not hosted. The engine API compiles each deployment's own document and never assembles the stamped callee copies of other deployments (`assembleProgram` in [`bpmn-source`](../../packages/bpmn-source/README.md)), so admission refuses a Call that names another deployment's process as `work.call.calledProcessMissing` before any Workflow starts; the kernel's population binds it (PC-SCOPE-03).
+
 One generic scheduler in [`@bpmn-lean/temporal-host`](../../packages/temporal-host/src/host.ts) drives all of them from `hostView`. The continuation chain carries the kernel state codec. Event-History capacity is derived from `hostRequirements`. Hosted CI witnesses chain handoff with the state codec, the capacity bounds, replay determinism, and the start, command, delivery, timer and effect mechanisms once each. The state relation preserved is the publication: the host's projection of kernel state equals the published contract. The [Temporal lifecycle specification](../TEMPORAL-PROCESS-LIFECYCLE-SPEC.md) owns the production Workflow contract.
 
 ## Guardrails against degradation
