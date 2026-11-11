@@ -135,8 +135,6 @@ Superseded first-profile restrictions: the embedded, nested, concurrent and re-e
 | Row | Decision owed or not yet implemented |
 |---|---|
 | PC-SCOPE-01 | Nested embedded scopes with mixed activities and selected gateways complete at exact owned quiescence (the mechanism above); acceptance on the kernel's scenarios. |
-| PC-SCOPE-06 | Exceptional Call return and propagated cancellation under the selected ancestor and output policy; called Event Sub-Processes run since `27561b587` lifted `call.calledEventSubProcess`, and a raise caught at a busy called root is refused (`raise-caught-at-busy-called-root`). Interpretation [reviewed](#pc-scope-06-exceptional-call-return-and-propagated-cancellation). |
-| PC-TERMINATE-01 | Root and nested Terminate across all wait kinds and live handler work; the standards reading of the nested continuation is held by `profile.abnormalScopeEnd.withoutOutflow`. |
 | PC-TERMINATE-02 | Terminate inside called children, both Multi-Instance modes and non-interrupting Event Sub-Process instances, with stale-result rejection. Interpretation [reviewed](#pc-terminate-02-terminate-inside-called-children-multi-instance-bodies-and-event-sub-process-instances). |
 | PC-MESSAGE-06 | Interrupting Message Event Sub-Process (refused); stated in [subscriptions](SUBSCRIPTIONS-SEMANTICS-SPEC.md). |
 

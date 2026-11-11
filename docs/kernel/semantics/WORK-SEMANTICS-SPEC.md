@@ -172,7 +172,6 @@ Rejected commands: `unknown-user-task`, `unknown-effect`, `unknown-incident`, `u
 | PC-AUTO-04 | Message-addressed Send Task with recipient and correlation (`SendWork`) |
 | PC-AUTO-05, PC-AUTO-06 | Script binding per the owner decision |
 | PC-SCOPE-03 (M8) | called-definition version, deployment, tag and tenant binding |
-| PC-SCOPE-06 (M4) | exceptional Call return and propagated cancellation |
 
 ## Sources
 

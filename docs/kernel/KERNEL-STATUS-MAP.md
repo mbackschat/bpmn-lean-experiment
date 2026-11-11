@@ -47,7 +47,7 @@ The kernel column reads: `accepted`, the row is `done` and the listed kernel sce
 | PC-SCOPE-03 | slice | [`called-process-call-activity`](../../scenarios/called-process-call-activity/README.md) | — |
 | PC-SCOPE-04 | accepted | [`call-variable-mapping`](../../scenarios/call-variable-mapping/README.md); [`call-activity-data-boundaries`](../../scenarios/call-activity-data-boundaries/README.md) | — |
 | PC-SCOPE-05 | accepted | [`repeated-nested-concurrent-calls`](../../scenarios/repeated-nested-concurrent-calls/README.md); [`call-activity-data-boundaries`](../../scenarios/call-activity-data-boundaries/README.md) | concurrency |
-| PC-SCOPE-06 | slice | [`call-activity-data-boundaries`](../../scenarios/call-activity-data-boundaries/README.md) | — |
+| PC-SCOPE-06 | accepted | [`call-activity-data-boundaries`](../../scenarios/call-activity-data-boundaries/README.md); [`call-exceptional-return`](../../scenarios/open-rows/call-exceptional-return/README.md); [`call-raised-outputs`](../../scenarios/open-rows/call-raised-outputs/README.md); [`escalation-busy-called-root`](../../scenarios/open-rows/escalation-busy-called-root/README.md) | — |
 | PC-SCOPE-07 | absent | — | cancellation |
 | PC-MI-01 | slice | [`sequential-multi-instance`](../../scenarios/sequential-multi-instance/README.md); [`parallel-multi-instance`](../../scenarios/parallel-multi-instance/README.md) | Multi-Instance |
 | PC-MI-02 | slice | [`multi-instance-service-task`](../../scenarios/open-rows/multi-instance-service-task/README.md) (collection form, identity-level ownership; open: the cardinality generation form, refused, and per-instance argument and result values, deferred to PC-MI-10's mapping surface) | Multi-Instance |
@@ -93,7 +93,7 @@ The kernel column reads: `accepted`, the row is `done` and the listed kernel sce
 | PC-ESCALATION-01 | absent | — | — |
 | PC-ESCALATION-02 | absent | — | cancellation |
 | PC-ESCALATION-03 | absent | — | cancellation |
-| PC-TERMINATE-01 | slice | [`terminate-end-event`](../../scenarios/terminate-end-event/README.md) | cancellation |
+| PC-TERMINATE-01 | accepted | [`terminate-end-event`](../../scenarios/terminate-end-event/README.md); [`terminate-containing-region`](../../scenarios/open-rows/terminate-containing-region/README.md) | cancellation |
 | PC-TERMINATE-02 | absent | — | cancellation, Multi-Instance |
 | PC-COMPENSATION-01 | absent | — | Compensation and Transaction |
 | PC-COMPENSATION-02 | slice | [`compensation`](../../scenarios/compensation/README.md) | Compensation and Transaction |
