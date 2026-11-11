@@ -11,6 +11,7 @@ import type {
   DeploymentRequest,
   PopulationResult,
   PopulationScope,
+  RegisteredDeployment,
 } from "./population-contract.js";
 import type { JsonValue } from "./port.js";
 
@@ -60,6 +61,8 @@ export interface PopulationHost {
   registerDeployment(request: Omit<DeploymentRequest, "config">): Promise<DeploymentAnswer>;
   /** The answer a deployment request received, `null` when it was never registered. */
   deployment(deploymentRequestId: string): Promise<DeploymentAnswer | null>;
+  /** Every registered deployment with its program, in deploy order; none before the first registration. */
+  deployments(): Promise<readonly RegisteredDeployment[]>;
   /** Submits a command in the population scenario contract's form, `kind` its step kind; its answer once it settled. */
   command(kind: string, command: JsonValue & { readonly commandId: string }): Promise<CommandAnswer>;
   result(commandId: string): Promise<PopulationResult>;

@@ -14,7 +14,12 @@ import {
 } from "@temporalio/client";
 
 import type { HostConfig } from "./host-contract.js";
-import { populationCommandDigest, populationCommandUpdateId, populationIngressWorkflowId } from "./population-address.js";
+import {
+  deploymentWorkflowId,
+  populationCommandDigest,
+  populationCommandUpdateId,
+  populationIngressWorkflowId,
+} from "./population-address.js";
 import {
   PopulationRefused,
   populationIngressWorkflowType,
@@ -23,13 +28,16 @@ import {
   type DeploymentRequest,
   type PopulationIngressArgs,
   type PopulationResult,
+  type RegisteredDeployment,
 } from "./population-contract.js";
 import type { JsonValue } from "./port.js";
 import type { PopulationHost } from "./process-port.js";
 import {
+  deploymentProgramQuery,
   populationBacklogQuery,
   populationCommandUpdate,
   populationDeploymentQuery,
+  populationDeploymentsQuery,
   populationResultQuery,
   registerDeploymentUpdate,
   rejectionType,
@@ -77,6 +85,24 @@ export class PopulationClient implements PopulationHost {
       if (error instanceof WorkflowNotFoundError) return null;
       throw error;
     }
+  }
+
+  /**
+   * Every registered deployment with its program, in deploy order, none when no ingress runs: the ingress names the
+   * deployments and each deployment's Workflow answers its program.
+   */
+  async deployments(): Promise<readonly RegisteredDeployment[]> {
+    let deploymentIds: readonly number[];
+    try {
+      deploymentIds = await this.ingress().query(populationDeploymentsQuery);
+    } catch (error) {
+      if (error instanceof WorkflowNotFoundError) return [];
+      throw error;
+    }
+    return Promise.all(deploymentIds.map(async (deploymentId) => ({
+      deploymentId,
+      program: await this.client.workflow.getHandle(deploymentWorkflowId(this.population, deploymentId)).query(deploymentProgramQuery),
+    })));
   }
 
   /** Submit a command in the population scenario contract's form, `kind` its step kind; its answer once it settled. */

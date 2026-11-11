@@ -128,3 +128,26 @@ test("two populations of one host that derive the same kernel instance identity 
     assert.equal((await host.describe(chain))?.running, true, "each population started the instance under its own chain");
   }
 });
+
+test("a population lists its registered deployments in deploy order with their programs, never a refused request", async () => {
+  const read = async (body: string): Promise<JsonValue> => {
+    const result = await readKernelProgram({
+      bytes: new TextEncoder().encode(`<?xml version="1.0" encoding="UTF-8"?><bpmn:definitions
+        xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="D" targetNamespace="urn:t">${body}</bpmn:definitions>`),
+      overlay: null, profile: "test-profile", limits: { maxBytes: 1_048_576, parserDeadlineMs: 1_000 },
+    }, kernelProfileOptions([]));
+    if (result.kind !== "read") throw new Error(`reader refused ${result.code}`);
+    return JSON.parse(JSON.stringify(result.program)) as JsonValue;
+  };
+  const tasks = await userTaskProgram();
+  // Kernel admission refuses a Call nothing carries; the refused request still takes deploy ordinal 2.
+  const refused = await read(`<bpmn:process id="Caller" isExecutable="true"><bpmn:startEvent id="S"/>
+    <bpmn:callActivity id="Call" calledElement="Nowhere"/><bpmn:sequenceFlow id="f" sourceRef="S" targetRef="Call"/></bpmn:process>`);
+  const population = createMemoryProcessHost({ taskQueue: "q" }).population("listed", durable);
+  assert.deepEqual(await population.deployments(), []);
+  assert.ok("deploymentId" in await population.registerDeployment({ deploymentRequestId: "a", digest: "a", program: tasks }));
+  assert.deepEqual(await population.registerDeployment({ deploymentRequestId: "b", digest: "b", program: refused }),
+    { refused: "work.call.calledProcessMissing" });
+  assert.ok("deploymentId" in await population.registerDeployment({ deploymentRequestId: "c", digest: "c", program: tasks }));
+  assert.deepEqual(await population.deployments(), [{ deploymentId: 1, program: tasks }, { deploymentId: 3, program: tasks }]);
+});

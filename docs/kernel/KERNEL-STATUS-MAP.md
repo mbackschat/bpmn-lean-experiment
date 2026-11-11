@@ -144,6 +144,14 @@ What a row needs beyond a slice is refused at admission with a stable code, neve
 | [Admission registry](../../Kernel/AdmissionRegistry.lean) | `activity.compensationHandler.input`, `compensation.handlerMultiInstance`, `compensation.handlerWork`, `process.definition.binding`, `scope.implicitStart` |
 | [Profile options](../../Kernel/Admission/Profile.lean) | `profile.abnormalScopeEnd.withoutOutflow`, `profile.callBindingTime.invocation`, `profile.compensationHandlerFailure.selected`, `profile.compensationOrder.reverseCreation`, `profile.deliveryVariables.installs`, `profile.evaluator.juel`, `profile.messageCorrelation.apiCriteria`, `profile.timerZone` |
 
+### Host restrictions
+
+What the kernel executes but the hosted engine does not yet host is refused by the engine API with a stable `host.` code, never with a kernel code, and each restriction has an open issue:
+
+| Row | Restriction | Code | Issue |
+|---|---|---|---|
+| PC-SCOPE-03 | a Call that only another registered deployment's process answers: the host never assembles another deployment's callees into a program (`compileDefinitionForDeployment` in [`definition-deployment.ts`](../../packages/engine-api/src/definition-deployment.ts)); a Call no deployment answers keeps `work.call.calledProcessMissing` | `host.call.crossDeployment` | [#94](https://github.com/mbackschat/bpmn-lean-experiment/issues/94) |
+
 ## Open proof lanes
 
 The kernel has no `Kernel.Laws` or `Kernel.Proofs` module (2026-11-09); Lean is the executable specification every scenario checks. The four lanes the 2026-10-14 assurance rule made `proved` are deliberately open until the coverage rows close, when the proof wave proves `Step` sound against the `Laws` ([Lean assurance lane](ARCHITECTURE-SPEC.md#lean-assurance-lane), [owner decision](ARCHITECTURE-SPEC.md#owner-decisions-on-the-path)). The row table names the lanes each row depends on.

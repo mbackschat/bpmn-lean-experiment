@@ -23,6 +23,7 @@ export {
   type DeploymentAnswer,
   type PopulationResult,
   type PopulationScope,
+  type RegisteredDeployment,
   type TimerFiringArgs,
 } from "./population-contract.js";
 export { configurationConflictCode, deploymentRequestConflictCode, queueFullCode } from "./population.js";

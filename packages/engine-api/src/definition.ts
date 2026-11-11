@@ -10,6 +10,7 @@ import {
   decodeProgram,
   definitionCapabilities,
   hostRequirements,
+  type Program,
 } from "@bpmn-lean/kernel";
 
 import {
@@ -77,10 +78,27 @@ export async function compileBpmnDefinition(
   return "program" in compiled ? compiled.compilation : compiled;
 }
 
+/** A source the reader read and the kernel decoded, before admission. */
+export type ReadDefinition = Readonly<{
+  source: EngineSourceIdentity;
+  profile: EngineProfile;
+  overlay: ReturnType<typeof snapshotOverlay>;
+  program: JsonValue;
+  decoded: Program;
+}>;
+
 /** Reads, decodes and admits one source; every refusal is one diagnostic with its stable code. */
 export async function compileProgram(
   request: EngineDefinitionCompilationRequest,
 ): Promise<CompiledDefinition | EngineRejectedDefinitionCompilation> {
+  const read = await readDefinition(request);
+  return "decoded" in read ? admitDefinition(read) : read;
+}
+
+/** Reads and decodes one source; a refusal is one diagnostic with the reader's or the decoder's code. */
+export async function readDefinition(
+  request: EngineDefinitionCompilationRequest,
+): Promise<ReadDefinition | EngineRejectedDefinitionCompilation> {
   const bytes = requireBytes(request.bytes, "bytes");
   const sourceId = requireWireString(request.sourceId, "sourceId");
   const profile = snapshotProfile(request.profile);
@@ -93,9 +111,6 @@ export async function compileProgram(
     declaredEncoding: declaredSourceEncoding(bytes),
     decodedAs: null,
   };
-  const rejected = (source: EngineSourceIdentity, code: string, element: string | null, evidence: string):
-    EngineRejectedDefinitionCompilation =>
-    ({ status: EngineDefinitionCompilationStatus.Rejected, source, diagnostics: [{ code, element, evidence }] });
   const read = await readKernelProgram({
     bytes,
     ...(request.expectedSha256 === undefined ? {} : { expectedSha256: request.expectedSha256 }),
@@ -110,22 +125,34 @@ export async function compileProgram(
   const programJson = JSON.parse(JSON.stringify(read.program)) as JsonValue;
   const decoded = decodeProgram(programJson);
   if (!decoded.ok) return rejected(source, "kernel.decode", null, decoded.refusal);
-  const refusal = admit(decoded.value);
+  return { source, profile, overlay, program: programJson, decoded: decoded.value };
+}
+
+/** Admits a decoded source: its compilation, or the kernel's refusal as one diagnostic. */
+export function admitDefinition(read: ReadDefinition): CompiledDefinition | EngineRejectedDefinitionCompilation {
+  const { source, profile, overlay, decoded } = read;
+  const refusal = admit(decoded);
   if (refusal !== null) return rejected(source, refusal, null, `Kernel admission refused the definition: ${refusal}.`);
   return {
-    program: programJson,
+    program: read.program,
     compilation: {
       status: EngineDefinitionCompilationStatus.Accepted,
       source,
       definition: {
-        ref: { definitionKey: decoded.value.identity.processId, version: null, sha256: source.sha256 },
+        ref: { definitionKey: decoded.identity.processId, version: null, sha256: source.sha256 },
         profile: profile.id,
         sourceOverlay: overlayIdentity(overlay),
       },
-      hostRequirements: hostRequirements(decoded.value),
-      capabilities: engineDefinitionCapabilitiesFromJson(capabilitiesJson(definitionCapabilities(decoded.value))),
+      hostRequirements: hostRequirements(decoded),
+      capabilities: engineDefinitionCapabilitiesFromJson(capabilitiesJson(definitionCapabilities(decoded))),
     },
   };
+}
+
+/** One coded refusal of `source`. */
+export function rejected(source: EngineSourceIdentity, code: string, element: string | null, evidence: string):
+  EngineRejectedDefinitionCompilation {
+  return { status: EngineDefinitionCompilationStatus.Rejected, source, diagnostics: [{ code, element, evidence }] };
 }
 
 /** The compiled definition as the deployed `version` the platform stored it under. */

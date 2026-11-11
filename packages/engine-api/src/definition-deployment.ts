@@ -5,6 +5,8 @@
  * instances. The registration is keyed by the version's definition identity and its program's digest, so a repeated
  * registration answers as the first and another program under the same identity is refused.
  */
+import { assembleProgram, type KernelJson } from "@bpmn-lean/bpmn-source";
+import { admit, decodeProgram } from "@bpmn-lean/kernel";
 import { canonicalJson, type DeploymentAnswer, type PopulationScope } from "@bpmn-lean/temporal-host/host";
 
 import {
@@ -17,12 +19,33 @@ import {
   type EngineLimits,
   type EngineProfile,
   type EngineSourceOverlaySelection,
+  type JsonValue,
 } from "./common.js";
-import { atVersion, compileProgram, type CompiledDefinition } from "./definition.js";
+import {
+  admitDefinition,
+  atVersion,
+  compileProgram,
+  readDefinition,
+  rejected,
+  type CompiledDefinition,
+  type EngineDefinitionCompilationRequest,
+  type EngineDefinitionCompilationResult,
+} from "./definition.js";
 import { engineDeploymentRequestId, type EngineHost } from "./host.js";
 
 /** A start or publication naming a definition version no registration holds (the kernel's selector refusal). */
 export const engineDefinitionNotDeployedCode = "definition-not-deployed";
+
+/**
+ * The refusal of a deploying document one of whose Calls only another registered deployment's process answers. The
+ * kernel's population binds such a Call (PC-SCOPE-03), but the host compiles each deployment's own document and never
+ * assembles another deployment's processes into its program
+ * ([#94](https://github.com/mbackschat/bpmn-lean-experiment/issues/94)): a host restriction, not a missing process.
+ */
+export const engineCrossDeploymentCallCode = "host.call.crossDeployment";
+
+/** The kernel's refusal of a Call no carried process answers: the one refusal assembly with other deployments can lift. */
+const calledProcessMissingCode = "work.call.calledProcessMissing";
 
 export enum EngineDeploymentStatus {
   Registered = "registered",
@@ -80,6 +103,42 @@ export async function registerEngineDeployment(request: EngineDeploymentRequest)
     versions: answer.versions,
     deployedAtMs: answer.deployedAtMs,
   };
+}
+
+/**
+ * Compiles a document for deployment to `host`'s population, as `compileBpmnDefinition` does, except that a document
+ * kernel admission refuses as `work.call.calledProcessMissing` is refused as `host.call.crossDeployment` when admission
+ * accepts it assembled with the registered deployments' processes (`assembleProgram`). Only an admitted assembly shows
+ * that the missing assembly is the one obstacle, so any other answer keeps the kernel's refusal. The assembled program
+ * only classifies the refusal: it is never registered or run, and kernel admission stays the one owner of Call resolution.
+ */
+export async function compileDefinitionForDeployment(
+  request: EngineDefinitionCompilationRequest & Readonly<{ host: EngineHost }>,
+): Promise<EngineDefinitionCompilationResult> {
+  const read = await readDefinition(request);
+  if (!("decoded" in read)) return read;
+  const admitted = admitDefinition(read);
+  if ("program" in admitted) return admitted.compilation;
+  if (admitted.diagnostics[0].code !== calledProcessMissingCode || !await admittedWithRegistered(request.host, read.program)) {
+    return admitted;
+  }
+  return rejected(read.source, engineCrossDeploymentCallCode, null,
+    "A Call names a process only another registered deployment carries, and the host does not assemble cross-deployment callees.");
+}
+
+/**
+ * Whether kernel admission accepts `program` assembled, as the population's next deployment, with every registered
+ * deployment's processes. A registered program does not carry its root's version tag (the reader returns it beside the
+ * program), so a copy of another deployment's root has none, and a Call binding a root by version tag stays refused.
+ */
+async function admittedWithRegistered(host: EngineHost, program: JsonValue): Promise<boolean> {
+  const registered = await host.population.deployments();
+  if (registered.length === 0) return false;
+  const deploymentId = Math.max(...registered.map((deployment) => deployment.deploymentId)) + 1;
+  const assembled = assembleProgram([...registered, { deploymentId, program }].map((deployment) =>
+    ({ deploymentId: deployment.deploymentId, program: deployment.program as KernelJson, versionTag: null })), deploymentId);
+  const decoded = decodeProgram(JSON.parse(JSON.stringify(assembled)) as JsonValue);
+  return decoded.ok && admit(decoded.value) === null;
 }
 
 /** The registered deployment of `definition`, `null` when no registration holds it or the population refused it. */

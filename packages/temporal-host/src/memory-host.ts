@@ -28,10 +28,18 @@ import {
   type DeploymentAnswer,
   type PopulationResult,
   type PopulationScope,
+  type RegisteredDeployment,
 } from "./population-contract.js";
 import { MemoryPopulation, type PopulationChain, type PopulationChains } from "./population-memory.js";
 import { populationPort } from "./population-port.js";
-import { configurationConflict, deploymentOf, populationCapacity, populationResult, queueFullCode } from "./population.js";
+import {
+  configurationConflict,
+  deploymentOf,
+  populationCapacity,
+  populationResult,
+  queueFullCode,
+  registeredDeploymentIds,
+} from "./population.js";
 
 export { MemoryPopulation, type PopulationChain, type PopulationChains } from "./population-memory.js";
 export { populationPort } from "./population-port.js";
@@ -49,6 +57,13 @@ interface Chain<P, S> {
   readonly memo: Readonly<Record<string, JsonValue>> | null;
   instance: { readonly state: S; readonly view: HostView } | null;
   log: PublicationLog;
+}
+
+/** One population of the memory host: its chain configuration, its driver and each registered deployment's wire program. */
+interface HeldPopulation<P, S, M> {
+  readonly config: HostConfig;
+  readonly driver: MemoryPopulation<P, S, M>;
+  readonly programs: Map<number, JsonValue>;
 }
 
 export interface MemoryProcessHostOptions {
@@ -73,7 +88,7 @@ export class UnknownWorkflow extends Error {
 
 class MemoryHost<P, S, I, M> implements MemoryProcessHost {
   readonly #chains = new Map<string, Chain<P, S>>();
-  readonly #populations = new Map<string, { readonly config: HostConfig; readonly driver: MemoryPopulation<P, S, M> }>();
+  readonly #populations = new Map<string, HeldPopulation<P, S, M>>();
 
   constructor(
     private readonly port: KernelPort<P, S, I>,
@@ -125,23 +140,31 @@ class MemoryHost<P, S, I, M> implements MemoryProcessHost {
   }
 
   population(name: string, config: HostConfig): PopulationHost {
-    const driver = (): MemoryPopulation<P, S, M> => {
+    const checked = (): HeldPopulation<P, S, M> => {
       const held = this.#population(name, config);
       const conflict = configurationConflict(held.config, config);
       if (conflict !== null) throw new PopulationRefused(conflict);
-      return held.driver;
+      return held;
     };
+    const driver = (): MemoryPopulation<P, S, M> => checked().driver;
     return {
       population: name,
       registerDeployment: async (request) => {
-        const population = driver();
+        const held = checked();
         const program = this.port.decodeProgram(request.program);
         const refusal = this.port.admit(program);
-        return population.deploy(request.deploymentRequestId, request.digest, refusal === null ? program : { refused: refusal },
-          this.now());
+        const answer = held.driver.deploy(request.deploymentRequestId, request.digest,
+          refusal === null ? program : { refused: refusal }, this.now());
+        if ("deploymentId" in answer) held.programs.set(answer.deploymentId, request.program);
+        return answer;
       },
       deployment: async (deploymentRequestId): Promise<DeploymentAnswer | null> =>
         deploymentOf(driver().ingress, deploymentRequestId),
+      deployments: async (): Promise<readonly RegisteredDeployment[]> => {
+        const held = checked();
+        return registeredDeploymentIds(held.driver.ingress).map((deploymentId) =>
+          ({ deploymentId, program: held.programs.get(deploymentId) as JsonValue }));
+      },
       command: async (kind, command): Promise<CommandAnswer> => {
         const population = driver();
         try {
@@ -194,13 +217,14 @@ class MemoryHost<P, S, I, M> implements MemoryProcessHost {
   }
 
   /** The population `name`, made on first use with `config`, the configuration of the chains it starts. */
-  #population(name: string, config: HostConfig): { readonly config: HostConfig; readonly driver: MemoryPopulation<P, S, M> } {
+  #population(name: string, config: HostConfig): HeldPopulation<P, S, M> {
     const held = this.#populations.get(name);
     if (held !== undefined) return held;
     const made = {
       config: JSON.parse(canonicalJson(config)) as HostConfig,
       driver: new MemoryPopulation(this.populationPort, this.port.hostView, populationCapacity.receivers, this.#store(name, config),
         (instanceId) => processInstanceWorkflowId(name, instanceId)),
+      programs: new Map<number, JsonValue>(),
     };
     this.#populations.set(name, made);
     return made;

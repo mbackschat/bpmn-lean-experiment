@@ -72,6 +72,8 @@ export const populationEmitUpdate = defineUpdate<void, [EmitReference]>("emit");
 export const populationResultQuery = defineQuery<JsonValue, [commandId: string]>("populationResult");
 /** The answer a deployment request received, `null` for a request never registered. */
 export const populationDeploymentQuery = defineQuery<DeploymentAnswer | null, [deploymentRequestId: string]>("deployment");
+/** The deploy ordinals of the registered deployments, in deploy order. */
+export const populationDeploymentsQuery = defineQuery<readonly number[]>("deployments");
 /** How many commands and hand-offs the ingress has queued or in flight. */
 export const populationBacklogQuery = defineQuery<number>("populationBacklog");
 

@@ -314,6 +314,11 @@ export function deploymentOf<M>(state: IngressState<M>, deploymentRequestId: str
   return state.registry.find((entry) => entry.deploymentRequestId === deploymentRequestId)?.answer ?? null;
 }
 
+/** The deploy ordinals of the registered deployments, in deploy order; a refused request holds an ordinal but no deployment. */
+export function registeredDeploymentIds<M>(state: IngressState<M>): readonly number[] {
+  return state.registry.flatMap((entry) => entry.summary === null ? [] : [entry.deploymentId]);
+}
+
 /**
  * The refusal of a caller whose chain configuration differs from the one the ingress was started with: the chains the
  * ingress starts never run under a configuration their caller did not give.

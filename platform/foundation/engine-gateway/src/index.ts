@@ -4,7 +4,7 @@ import {
   EngineDefinitionStartStatus,
   EngineDeploymentStatus,
   EngineStartDescriptionStatus,
-  compileBpmnDefinition,
+  compileDefinitionForDeployment,
   createEngineHostRuntime,
   describeBpmnDefinitionVersionStart,
   prepareBpmnDefinitionVersionStart,
@@ -176,7 +176,9 @@ export class BpmnEngineGateway implements DefinitionCompiler, DefinitionVersionR
       },
         { code: unknownProfileCode, element: null, evidence: `The profile catalog does not hold ${request.semanticProfile}.` });
     }
-    const result = await compileBpmnDefinition({
+    // Product 2 compiles a source to deploy it, so the population's registered deployments classify a Call refusal.
+    const result = await compileDefinitionForDeployment({
+      host: this.#context.host,
       bytes,
       sourceId: request.sourceId,
       ...(request.expectedSha256 === undefined ? {} : { expectedSha256: request.expectedSha256 }),

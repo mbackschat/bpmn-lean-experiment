@@ -12,8 +12,8 @@ import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { after, before, test } from "node:test";
 
-import { kernelProfileOptions, readKernelProgram } from "@bpmn-lean/bpmn-source";
-import { runScenario as runKernelScenario, timerInstanceId } from "@bpmn-lean/kernel";
+import { assembleProgram, kernelProfileOptions, readKernelProgram, type KernelJson } from "@bpmn-lean/bpmn-source";
+import { admit, decodeProgram, runScenario as runKernelScenario, timerInstanceId } from "@bpmn-lean/kernel";
 import type { TestWorkflowEnvironment } from "@temporalio/testing";
 import type { Worker } from "@temporalio/worker";
 
@@ -281,6 +281,52 @@ test("schedule superseded: a Schedule of a deployment a redeploy superseded fire
   } finally {
     await schedules.delete(scheduleId);
   }
+});
+
+/** A read program of one Definitions document in the `urn:calls` namespace, whose unprefixed Calls name its processes. */
+async function callsProgram(body: string): Promise<JsonValue> {
+  const read = await readKernelProgram({
+    bytes: new TextEncoder().encode(`<?xml version="1.0" encoding="UTF-8"?><bpmn:definitions
+      xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="Definitions" targetNamespace="urn:calls">${body}</bpmn:definitions>`),
+    overlay: null, profile: "witness-profile", limits: { maxBytes: 1024 * 1024, parserDeadlineMs: 1_000 },
+  }, kernelProfileOptions([]));
+  if (read.kind === "refused") throw new Error(`kernel reader refused ${read.code}`);
+  return wire(read.program);
+}
+
+const caller = (calledElement: string): Promise<JsonValue> => callsProgram(`<bpmn:process id="Caller" isExecutable="true">
+  <bpmn:startEvent id="Start"/><bpmn:callActivity id="Call" calledElement="${calledElement}"/><bpmn:endEvent id="End"/>
+  <bpmn:sequenceFlow id="f1" sourceRef="Start" targetRef="Call"/><bpmn:sequenceFlow id="f2" sourceRef="Call" targetRef="End"/>
+</bpmn:process>`);
+
+/** Kernel admission of `program` assembled, as the next deployment, with `registered` (the engine API's classification). */
+function assembledRefusal(registered: readonly Readonly<{ deploymentId: number; program: JsonValue }>[], program: JsonValue): string | null {
+  const deploymentId = Math.max(...registered.map((deployment) => deployment.deploymentId)) + 1;
+  const assembled = assembleProgram([...registered, { deploymentId, program }].map((deployment) =>
+    ({ deploymentId: deployment.deploymentId, program: deployment.program as KernelJson, versionTag: null })), deploymentId);
+  const decoded = decodeProgram(wire(assembled));
+  if (!decoded.ok) throw new Error(decoded.refusal);
+  return admit(decoded.value);
+}
+
+test("deployments: the ingress lists its registered programs, so a Call only deployment 1 answers is found from deployment 2", async () => {
+  const callee = await callsProgram(`<bpmn:process id="Callee" isExecutable="true">
+    <bpmn:startEvent id="Start"/><bpmn:endEvent id="End"/><bpmn:sequenceFlow id="f" sourceRef="Start" targetRef="End"/>
+  </bpmn:process>`);
+  const population = new PopulationClient(environment.client, taskQueue, `witness-${randomUUID()}`, { scheduling: Scheduling.Durable, effectStartToCloseMs: 10_000, historyEventBudget: null });
+  assert.deepEqual(await population.deployments(), [], "no ingress runs before the first registration");
+  assert.ok("deploymentId" in await population.registerDeployment({ deploymentRequestId: "callee", digest: "callee", program: callee }));
+  const missing = await caller("Nowhere");
+  assert.deepEqual(await population.registerDeployment({ deploymentRequestId: "missing", digest: "missing", program: missing }),
+    { refused: "work.call.calledProcessMissing" });
+  const registered = await population.deployments();
+  assert.deepEqual(registered, [{ deploymentId: 1, program: callee }], "a refused request takes an ordinal but is no deployment");
+  const crossing = await caller("Callee");
+  const own = decodeProgram(crossing);
+  assert.ok(own.ok);
+  assert.equal(admit(own.value), "work.call.calledProcessMissing", "deployment 2's own document cannot bind the Call");
+  assert.equal(assembledRefusal(registered, crossing), null, "deployment 1's Callee answers it once assembled");
+  assert.equal(assembledRefusal(registered, missing), "work.call.calledProcessMissing", "a Call nothing answers stays missing");
 });
 
 test("replay: every captured history replays deterministically on the same bundle", async () => {

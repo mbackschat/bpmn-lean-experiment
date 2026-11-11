@@ -47,6 +47,7 @@ import {
   queueFullCode,
   register,
   registerDeployment,
+  registeredDeploymentIds,
   releaseHandlers,
   resumedState,
   takeAnswer,
@@ -63,6 +64,7 @@ import {
   populationRegisterUpdate,
   populationBacklogQuery,
   populationDeploymentQuery,
+  populationDeploymentsQuery,
   populationResultQuery,
   registerDeploymentUpdate,
   rejectionType,
@@ -120,6 +122,7 @@ async function hostIngress<P, S, I, M>(kernel: KernelPort<P, S, I>, port: Popula
 
   setHandler(populationResultQuery, (commandId) => populationResult(state, commandId));
   setHandler(populationDeploymentQuery, (deploymentRequestId) => deploymentOf(state, deploymentRequestId));
+  setHandler(populationDeploymentsQuery, () => registeredDeploymentIds(state));
   setHandler(populationBacklogQuery, () => state.queue.length + (state.current === null ? 0 : 1));
 
   setHandler(registerDeploymentUpdate, (request) => {

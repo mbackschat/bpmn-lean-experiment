@@ -94,6 +94,8 @@ export {
 export {
   EngineDeploymentIntegrityCode,
   EngineDeploymentStatus,
+  compileDefinitionForDeployment,
+  engineCrossDeploymentCallCode,
   engineDefinitionNotDeployedCode,
   registerEngineDeployment,
   type EngineDeploymentRequest,

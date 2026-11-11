@@ -45,6 +45,12 @@ export interface DeploymentArgs {
   readonly program: JsonValue;
 }
 
+/** A registered deployment: its deploy ordinal and the program it was registered with. */
+export interface RegisteredDeployment {
+  readonly deploymentId: number;
+  readonly program: JsonValue;
+}
+
 /**
  * A deployment to register: the caller's request identifier, its definition identity's digest and its program; `config`
  * is the chain configuration the caller expects the ingress to run with (`configurationConflict`).
