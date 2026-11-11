@@ -488,6 +488,14 @@ def EventPayload.catch? (payload : EventPayload) : Option Subscription :=
   | .linkCatch _ => none
   | .linkThrow _ => none
 
+/-- The throw of a throw Event. -/
+def EventPayload.throw? (payload : EventPayload) : Option Throw :=
+  match payload.role with
+  | .throw record => some record
+  | .catch _ => none
+  | .linkCatch _ => none
+  | .linkThrow _ => none
+
 /-- The Link name of a throwing Link Event. -/
 def EventPayload.linkThrow? (payload : EventPayload) : Option String :=
   match payload.role with
@@ -503,6 +511,28 @@ def EventPayload.linkCatch? (payload : EventPayload) : Option String :=
   | .catch _ => none
   | .throw _ => none
   | .linkThrow _ => none
+
+/-- What a throw is read for outside its owners: whether it terminates its scope or throws Compensation, the Signal it
+references, whose name `Kernel.Admission.Subscriptions.signalDefinitionNames` compares, and the effect a bound Message
+throw opens (PC-MESSAGE-09). The IL's one match on `Throw`. -/
+structure ThrowView where
+  terminates : Bool := false
+  compensates : Bool := false
+  signal : Option SignalTrigger := none
+  effect : Option EffectBinding := none
+
+def throwView : Throw → ThrowView
+  | .terminate => { terminates := true }
+  | .compensation _ => { compensates := true }
+  | .signal record => { signal := some { signalRef := record.signalRef, name := record.name } }
+  | .message record => { effect := record.binding }
+  | .none => {}
+  | .error _ => {}
+  | .escalation _ => {}
+  | .cancel => {}
+
+/-- The effect a bound Message throw opens, as a Service Task's. -/
+def Throw.effect? (thrown : Throw) : Option EffectBinding := (throwView thrown).effect
 
 /-- The outgoing flows of an element, boundaries' flows excluded. -/
 def Element.outgoing : Element → List FlowId
@@ -520,38 +550,35 @@ def Element.incoming : Element → List FlowId
   | .gateway _ payload => payload.incoming
   | .start _ _ => []
 
+/-- One trigger, read uniformly: the payload of its kind, `none` for every other. The IL's one match on `Trigger`; a
+reader outside its owners takes the field it is about. -/
+structure TriggerView where
+  timer : Option TimerTrigger := none
+  message : Option MessageTrigger := none
+  signal : Option SignalTrigger := none
+  condition : Option ConditionTrigger := none
+
+def triggerView : Trigger → TriggerView
+  | .timer payload => { timer := some payload }
+  | .message payload => { message := some payload }
+  | .signal payload => { signal := some payload }
+  | .condition payload => { condition := some payload }
+  | .error _ => {}
+  | .escalation _ => {}
+  | .compensation => {}
+  | .cancel => {}
+
 /-- The Timer of a trigger, if it is one. -/
-def Trigger.timer? : Trigger → Option TimerTrigger
-  | .timer payload => some payload
-  | .message _ => none
-  | .signal _ => none
-  | .condition _ => none
-  | .error _ => none
-  | .escalation _ => none
-  | .compensation => none
-  | .cancel => none
+def Trigger.timer? (trigger : Trigger) : Option TimerTrigger := (triggerView trigger).timer
 
 /-- The Message of a trigger, if it is one. -/
-def Trigger.message? : Trigger → Option MessageTrigger
-  | .message payload => some payload
-  | .timer _ => none
-  | .signal _ => none
-  | .condition _ => none
-  | .error _ => none
-  | .escalation _ => none
-  | .compensation => none
-  | .cancel => none
+def Trigger.message? (trigger : Trigger) : Option MessageTrigger := (triggerView trigger).message
+
+/-- The Signal of a trigger, if it is one. -/
+def Trigger.signal? (trigger : Trigger) : Option SignalTrigger := (triggerView trigger).signal
 
 /-- The Conditional trigger of a trigger, if it is one. -/
-def Trigger.condition? : Trigger → Option ConditionTrigger
-  | .condition payload => some payload
-  | .timer _ => none
-  | .message _ => none
-  | .signal _ => none
-  | .error _ => none
-  | .escalation _ => none
-  | .compensation => none
-  | .cancel => none
+def Trigger.condition? (trigger : Trigger) : Option ConditionTrigger := (triggerView trigger).condition
 
 /-- The Call a work record names, if it is one. -/
 def Work.call? : Work → Option CallWork

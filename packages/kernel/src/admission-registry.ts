@@ -14,11 +14,13 @@ import {
   elementScope,
   elementStart,
   eventPayloadCatch,
+  eventPayloadThrow,
   firstOf,
   programChildren,
   programElement,
   programInCalledProcess,
   programSource,
+  throwView,
   triggerMessage,
   workCall,
   workIsUser,
@@ -38,6 +40,7 @@ import {
   type Program,
   type SignalTrigger,
   type Subscription,
+  type ThrowView,
 } from "./il/types.js";
 import * as Data from "./admission/data.js";
 import * as FlowAdmission from "./admission/flow.js";
@@ -136,19 +139,10 @@ function inTransaction(program: Program, header: Header): boolean {
 }
 
 /** What an element throws, if it is a throw Event. */
-function thrown(entry: Element): readonly [Header, Propagation.Reading] | null {
+function thrown(entry: Element): readonly [Header, ThrowView] | null {
   const event = elementEvent(entry);
-  if (event === null) return null;
-  const role = event[1].role;
-  switch (role.tag) {
-    case EventRoleTag.Throw:
-      return [event[0], Propagation.reading(role.record)];
-    case EventRoleTag.Catch:
-    case EventRoleTag.LinkCatch:
-    case EventRoleTag.LinkThrow:
-      return null;
-  }
-  return assertNever(role);
+  const record = event === null ? null : eventPayloadThrow(event[1]);
+  return event === null || record === null ? null : [event[0], throwView(record)];
 }
 
 function compensationThrow(entry: Element): boolean {

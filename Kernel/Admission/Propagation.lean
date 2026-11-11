@@ -72,21 +72,4 @@ def throwRecord (options : ProfileOptions) (site : ThrowSite) (inTransaction : B
     else none
   | .cancel => if inTransaction then none else some "throw.cancel.outsideTransaction"
 
-/-- What other admissions read of a throw: whether it terminates its scope or throws Compensation, and the Signal it
-references, whose name `Kernel.Admission.Subscriptions.signalDefinitionNames` compares. -/
-structure Reading where
-  terminates : Bool := false
-  compensates : Bool := false
-  signal : Option SignalTrigger := none
-
-def reading : Throw → Reading
-  | .terminate => { terminates := true }
-  | .compensation _ => { compensates := true }
-  | .none => {}
-  | .message _ => {}
-  | .signal record => { signal := some { signalRef := record.signalRef, name := record.name } }
-  | .error _ => {}
-  | .escalation _ => {}
-  | .cancel => {}
-
 end Kernel.Admission.Propagation

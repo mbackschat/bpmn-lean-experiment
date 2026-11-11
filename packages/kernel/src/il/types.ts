@@ -596,6 +596,15 @@ export function eventPayloadCatch(payload: EventPayload): Subscription | null {
   return assertNever(payload.role);
 }
 
+/** The throw of a throw Event. */
+export function eventPayloadThrow(payload: EventPayload): Throw | null {
+  switch (payload.role.tag) {
+    case EventRoleTag.Throw: return payload.role.record;
+    case EventRoleTag.Catch: case EventRoleTag.LinkCatch: case EventRoleTag.LinkThrow: return null;
+  }
+  return assertNever(payload.role);
+}
+
 /** The Link name of a throwing Link Event. */
 export function eventPayloadLinkThrow(payload: EventPayload): string | null {
   switch (payload.role.tag) {
@@ -613,6 +622,25 @@ export function eventPayloadLinkCatch(payload: EventPayload): string | null {
   }
   return assertNever(payload.role);
 }
+
+/** A throw as read outside its owners, the IL's one match on `Throw`; `effect` is a bound Message throw's (PC-MESSAGE-09). */
+export interface ThrowView { readonly terminates: boolean; readonly compensates: boolean; readonly signal: SignalTrigger | null;
+  readonly effect: EffectBinding | null; }
+
+export function throwView(thrown: Throw): ThrowView {
+  const none: ThrowView = { terminates: false, compensates: false, signal: null, effect: null };
+  switch (thrown.tag) {
+    case ThrowTag.Terminate: return { ...none, terminates: true };
+    case ThrowTag.Compensation: return { ...none, compensates: true };
+    case ThrowTag.Signal: return { ...none, signal: { signalRef: thrown.payload.signalRef, name: thrown.payload.name } };
+    case ThrowTag.Message: return { ...none, effect: thrown.payload.binding };
+    case ThrowTag.None: case ThrowTag.Error: case ThrowTag.Escalation: case ThrowTag.Cancel: return none;
+  }
+  return assertNever(thrown);
+}
+
+/** The effect a bound Message throw opens, as a Service Task's. */
+export function throwEffect(thrown: Throw): EffectBinding | null { return throwView(thrown).effect; }
 
 /** The outgoing flows of an element, boundaries' flows excluded. */
 export function elementOutgoing(element: Element): readonly FlowId[] {
@@ -633,53 +661,27 @@ export function elementIncoming(element: Element): readonly FlowId[] {
   return assertNever(element);
 }
 
-/** The Timer of a trigger, if it is one. */
-export function triggerTimer(trigger: Trigger): TimerTrigger | null {
+/** A trigger's payload under its kind, `null` under every other: the IL's one match on `Trigger` (`triggerTimer` and so on). */
+export interface TriggerView { readonly timer: TimerTrigger | null; readonly message: MessageTrigger | null;
+  readonly signal: SignalTrigger | null; readonly condition: ConditionTrigger | null; }
+
+export function triggerView(trigger: Trigger): TriggerView {
+  const none: TriggerView = { timer: null, message: null, signal: null, condition: null };
   switch (trigger.tag) {
-    case TriggerTag.Timer: return trigger.payload;
-    case TriggerTag.Message:
-    case TriggerTag.Signal:
-    case TriggerTag.Condition:
-    case TriggerTag.Error:
-    case TriggerTag.Escalation:
-    case TriggerTag.Compensation:
-    case TriggerTag.Cancel:
-      return null;
+    case TriggerTag.Timer: return { ...none, timer: trigger.payload };
+    case TriggerTag.Message: return { ...none, message: trigger.payload };
+    case TriggerTag.Signal: return { ...none, signal: trigger.payload };
+    case TriggerTag.Condition: return { ...none, condition: trigger.payload };
+    case TriggerTag.Error: case TriggerTag.Escalation: case TriggerTag.Compensation: case TriggerTag.Cancel: return none;
   }
   return assertNever(trigger);
 }
 
-/** The Conditional trigger of a trigger, if it is one. */
-export function triggerCondition(trigger: Trigger): ConditionTrigger | null {
-  switch (trigger.tag) {
-    case TriggerTag.Condition: return trigger.payload;
-    case TriggerTag.Timer:
-    case TriggerTag.Message:
-    case TriggerTag.Signal:
-    case TriggerTag.Error:
-    case TriggerTag.Escalation:
-    case TriggerTag.Compensation:
-    case TriggerTag.Cancel:
-      return null;
-  }
-  return assertNever(trigger);
-}
-
-/** The Message of a trigger, if it is one. */
-export function triggerMessage(trigger: Trigger): MessageTrigger | null {
-  switch (trigger.tag) {
-    case TriggerTag.Message: return trigger.payload;
-    case TriggerTag.Timer:
-    case TriggerTag.Signal:
-    case TriggerTag.Condition:
-    case TriggerTag.Error:
-    case TriggerTag.Escalation:
-    case TriggerTag.Compensation:
-    case TriggerTag.Cancel:
-      return null;
-  }
-  return assertNever(trigger);
-}
+/** The Timer, Message, Signal or Conditional trigger of a trigger, if it is one. */
+export function triggerTimer(trigger: Trigger): TimerTrigger | null { return triggerView(trigger).timer; }
+export function triggerMessage(trigger: Trigger): MessageTrigger | null { return triggerView(trigger).message; }
+export function triggerSignal(trigger: Trigger): SignalTrigger | null { return triggerView(trigger).signal; }
+export function triggerCondition(trigger: Trigger): ConditionTrigger | null { return triggerView(trigger).condition; }
 
 /** The Call a work record names, if it is one. */
 export function workCall(work: Work): CallWork | null {

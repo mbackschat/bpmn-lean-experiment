@@ -1,7 +1,7 @@
 /** Admission of throw Events, transcribed from `Kernel/Admission/Propagation.lean`. A refusal carries a stable code. */
 import {
   ExpressionTag, MappingDialect, MessageThrowForms, SignalPayload, ThrowTag, ValueSourceTag, assertNever, type Expression,
-  type Mapping, type MessageThrow, type ProfileOptions, type QName, type SignalThrow, type SignalTrigger, type Throw, type ValueSource,
+  type Mapping, type MessageThrow, type ProfileOptions, type QName, type SignalThrow, type Throw, type ValueSource,
 } from "../il/types.js";
 
 /**
@@ -88,31 +88,6 @@ export function throwRecord(options: ProfileOptions, site: ThrowSite, inTransact
       if (thrown.payload.activity !== null) return "throw.compensation.activity";
       if (!thrown.payload.waitForCompletion) return "throw.compensation.asynchronous";
       return null;
-  }
-  return assertNever(thrown);
-}
-
-/**
- * What other admissions read of a throw: whether it terminates its scope or throws Compensation, and the Signal it
- * references, whose name `admission/subscriptions.ts#signalDefinitionNames` compares.
- */
-export type Reading = Readonly<{ terminates: boolean; compensates: boolean; signal: SignalTrigger | null }>;
-
-export function reading(thrown: Throw): Reading {
-  const none: Reading = { terminates: false, compensates: false, signal: null };
-  switch (thrown.tag) {
-    case ThrowTag.Terminate:
-      return { ...none, terminates: true };
-    case ThrowTag.Compensation:
-      return { ...none, compensates: true };
-    case ThrowTag.Signal:
-      return { ...none, signal: { signalRef: thrown.payload.signalRef, name: thrown.payload.name } };
-    case ThrowTag.None:
-    case ThrowTag.Message:
-    case ThrowTag.Error:
-    case ThrowTag.Escalation:
-    case ThrowTag.Cancel:
-      return none;
   }
   return assertNever(thrown);
 }

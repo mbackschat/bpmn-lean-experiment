@@ -74,13 +74,8 @@ def throwSite (program : Program) (header : Header) : Admission.Propagation.Thro
     handlerKey := Admission.Work.handlerKey program }
 
 /-- What an element throws, if it is a throw Event. -/
-def thrown (element : Element) : Option (Header × Admission.Propagation.Reading) :=
-  element.event?.bind fun (header, payload) =>
-    match payload.role with
-    | .throw record => some (header, Admission.Propagation.reading record)
-    | .catch _ => none
-    | .linkCatch _ => none
-    | .linkThrow _ => none
+def thrown (element : Element) : Option (Header × ThrowView) :=
+  element.event?.bind fun (header, payload) => payload.throw?.map fun record => (header, throwView record)
 
 def compensationThrow (element : Element) : Bool :=
   (thrown element).any (·.2.compensates)
