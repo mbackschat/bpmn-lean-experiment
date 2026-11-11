@@ -44,6 +44,7 @@ public import Kernel.IL.Types.MultiInstance
 public import Kernel.IL.Types.Options
 public import Kernel.IL.Types.Reference
 public import Kernel.Laws.Flow
+public import Kernel.Laws.MultiInstance
 public import Kernel.Laws.Population
 public import Kernel.Laws.State
 public import Kernel.Population
