@@ -4,7 +4,7 @@
  * leaves, which cascades depth-first (PC-SIGNAL-04,
  * [specification](../../../../docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md#signal-broadcasts)).
  */
-import { SignalPayload, assertNever, compareStrings, elementStart, mergeSort, programChildren, programPublicId, type Program } from "../il/types.js";
+import { SignalPayload, assertNever, compareStrings, elementStart, mergeSort, programChildren, programPublicId, type Header, type Program } from "../il/types.js";
 import type { Hooks } from "../hooks.js";
 import {
   DeliveryTriggerTag,
@@ -262,11 +262,12 @@ export enum PendingTag {
 }
 
 /**
- * What a fan-out still has to do, first item first: reach a receiver, or take the snapshot of an intent the instance
- * `emitter` left, its origin by public identifier, and reach its receivers.
+ * What a fan-out still has to do, first item first: reach a receiver, of a Signal's `emission` or, without one, one the
+ * command names itself (a Conditional start); or take the snapshot of an intent the instance `emitter` left, its origin
+ * by public identifier, and reach its receivers.
  */
 export type Pending =
-  | { readonly tag: PendingTag.Receiver; readonly emission: Emission; readonly receiver: Receiver }
+  | { readonly tag: PendingTag.Receiver; readonly emission: Emission | null; readonly receiver: Receiver }
   | { readonly tag: PendingTag.Intent; readonly emitter: string; readonly intent: BroadcastIntent };
 
 /**
@@ -293,7 +294,7 @@ export enum FanOutNextTag {
  * nothing more, with every entry.
  */
 export type FanOutNext =
-  | { readonly tag: FanOutNextTag.Reach; readonly receiver: Receiver; readonly emission: Emission }
+  | { readonly tag: FanOutNextTag.Reach; readonly receiver: Receiver; readonly emission: Emission | null }
   | { readonly tag: FanOutNextTag.Snapshot; readonly intent: BroadcastIntent; readonly emitter: OccurrenceRef; readonly emission: Emission }
   | { readonly tag: FanOutNextTag.Done; readonly entries: readonly FanOutEntry[] };
 
@@ -316,13 +317,6 @@ function machineStop(machine: FanOutMachine, receiver: Receiver): FanOutMachine 
   // dynamic-only: how far a cascade runs depends on the population and its run
   const failure: Failure = { tag: FailureTag.Unsupported, code: "population-cascade-bound" };
   return { ...machineAdd(machine, { tag: FanOutEntryTag.Failed, target: receiver, failure }), stopped: true, pending: null };
-}
-
-/** Spend one of the fan-out's receivers on `receiver`: `false` when the fan-out has stopped or stops now at it. */
-export function machineSpend(machine: FanOutMachine, receiver: Receiver): readonly [FanOutMachine, boolean] {
-  if (machine.stopped) return [machine, false];
-  if (machine.budget === 0) return [machineStop(machine, receiver), false];
-  return [{ ...machine, budget: machine.budget - 1 }, true];
 }
 
 /** The machine stopped at its next receiver when no receiver is left to spend, else as it is. */
@@ -369,6 +363,16 @@ export function fanOutRecord(machine: FanOutMachine, entry: FanOutEntry, intents
   return { ...machineAdd(machine, entry), budget: machine.budget - 1, pending: pushAll(items, next.tail) };
 }
 
+/**
+ * Pass the receiver `fanOutNext` named: it takes one of the fan-out's receivers and records nothing, as a Conditional
+ * start whose predicate does not hold.
+ */
+export function fanOutPass(machine: FanOutMachine): FanOutMachine {
+  const next = machine.pending;
+  if (next === null || next.head.tag !== PendingTag.Receiver) return machine;
+  return { ...machine, budget: machine.budget - 1, pending: next.tail };
+}
+
 /** A fan-out over the population's instances. */
 export type Fanning = Readonly<{ instances: readonly Instance[]; machine: FanOutMachine }>;
 
@@ -377,17 +381,8 @@ export function fanningOf(commandId: string, instances: readonly Instance[], bud
   return { instances, machine: fanOutBegin(commandId, [], budget) };
 }
 
-export function fanningAdd(fanning: Fanning, entry: FanOutEntry): Fanning {
-  return { ...fanning, machine: machineAdd(fanning.machine, entry) };
-}
-
 export function fanningEntries(fanning: Fanning): readonly FanOutEntry[] {
   return machineEntries(fanning.machine);
-}
-
-export function fanningSpend(fanning: Fanning, receiver: Receiver): readonly [Fanning, boolean] {
-  const [machine, reachable] = machineSpend(fanning.machine, receiver);
-  return [{ ...fanning, machine }, reachable];
 }
 
 /** The intents a committed step of `state`, an instance of `program`, left, origins by public identifier. */
@@ -395,12 +390,31 @@ export function publicIntents(program: Program, state: State): readonly Broadcas
   return state.outbox.map((intent) => ({ ...intent, origin: { ...intent.origin, element: programPublicId(program, intent.origin.element) } }));
 }
 
-type Reached = readonly [readonly Instance[], FanOutEntry, readonly [State, Program] | null];
+/**
+ * What reaching one receiver did: the instances, the receiver's entry, `null` when it records nothing, and, when it
+ * committed, its State and program, whose intents cascade.
+ */
+export type Reached = readonly [readonly Instance[], FanOutEntry | null, readonly [State, Program] | null];
+
+/** The reach of a receiver the command names itself among `instances`. */
+export type OwnReach = (instances: readonly Instance[], receiver: Receiver) => Refusable<Reached>;
+
+/** The registered deployment `deploymentId` and its root start `startEvent`, by public identifier. */
+export function rootStart(registry: readonly Deployment[], deploymentId: number, startEvent: string): Refusable<readonly [Deployment, Header]> {
+  const deployment = registry.find((candidate) => candidate.deploymentId === deploymentId);
+  if (deployment === undefined) return { ok: false, error: "receiver-without-deployment" };
+  const program = deployment.program;
+  const header = programChildren(program, null).flatMap((element) => {
+    const started = elementStart(element);
+    return started !== null && programPublicId(program, started[0].id) === startEvent ? [started[0]] : [];
+  })[0];
+  if (header === undefined) return { ok: false, error: "receiver-without-start" };
+  return { ok: true, value: [deployment, header] };
+}
 
 /**
- * Reach one receiver at `atMs` in the fan-out `commandId` began: an occurrence by `reachOccurrence` in the instance it
- * is waiting in, `skipped` when none still waits there; a start starts its instance. Answers the instances, the
- * receiver's entry and, when it committed, its State and program, whose intents cascade.
+ * Reach one receiver of `emission` at `atMs` in the fan-out `commandId` began: an occurrence by `reachOccurrence` in the
+ * instance it is waiting in, `skipped` when none still waits there; a start starts its instance.
  */
 export function reachReceiver(
   hooks: Hooks,
@@ -423,14 +437,10 @@ export function reachReceiver(
     }
     return { ok: true, value: [instances, { tag: FanOutEntryTag.Skipped, target }, null] };
   }
-  const deployment = registry.find((candidate) => candidate.deploymentId === receiver.deploymentId);
-  if (deployment === undefined) return { ok: false, error: "receiver-without-deployment" };
+  const found = rootStart(registry, receiver.deploymentId, receiver.startEvent);
+  if (!found.ok) return found;
+  const [deployment, header] = found.value;
   const program = deployment.program;
-  const header = programChildren(program, null).flatMap((element) => {
-    const started = elementStart(element);
-    return started !== null && programPublicId(program, started[0].id) === receiver.startEvent ? [started[0]] : [];
-  })[0];
-  if (header === undefined) return { ok: false, error: "receiver-without-start" };
   const started = startInstance(hooks, deployment, receiver.startEvent, {
     instanceId: emissionStartedId(emission, commandId, receiver.deploymentId, receiver.startEvent), startEvent: header.id, variables: [],
     trigger: { tag: StartTriggerTag.Signal, address: emission.address, variables: emission.variables },
@@ -449,8 +459,24 @@ export function reachReceiver(
  */
 export const pendingFuel = (cascadeBound + 1) * (closureBound + 2);
 
-/** Take the snapshot or reach the receiver `next` names at `atMs`. */
-function fanOutStep(hooks: Hooks, registry: readonly Deployment[], atMs: number, fanning: Fanning, next: FanOutNext): Refusable<Fanning> {
+/**
+ * The reach of a receiver the command names itself, in a fan-out whose every receiver is a Signal's: there is none, so
+ * reaching one is a harness defect.
+ */
+export const signalsOnly: OwnReach = () => ({ ok: false, error: "receiver-without-emission" });
+
+/**
+ * Take the snapshot or reach the receiver `next` names at `atMs`: a Signal's by `reachReceiver`, one the command names
+ * itself by `own`; one that records nothing is passed.
+ */
+function fanOutStep(
+  hooks: Hooks,
+  registry: readonly Deployment[],
+  atMs: number,
+  own: OwnReach,
+  fanning: Fanning,
+  next: FanOutNext,
+): Refusable<Fanning> {
   const machine = fanning.machine;
   switch (next.tag) {
     case FanOutNextTag.Done:
@@ -460,9 +486,12 @@ function fanOutStep(hooks: Hooks, registry: readonly Deployment[], atMs: number,
       return taken.ok ? { ok: true, value: { ...fanning, machine: taken.value } } : taken;
     }
     case FanOutNextTag.Reach: {
-      const reached = reachReceiver(hooks, registry, atMs, machine.commandId, fanning.instances, next.emission, next.receiver);
+      const reached = next.emission === null
+        ? own(fanning.instances, next.receiver)
+        : reachReceiver(hooks, registry, atMs, machine.commandId, fanning.instances, next.emission, next.receiver);
       if (!reached.ok) return reached;
       const [instances, entry, committed] = reached.value;
+      if (entry === null) return { ok: true, value: { instances, machine: fanOutPass(machine) } };
       const [emitter, intents] = committed === null ? ["", []] as const : [committed[0].instanceId, publicIntents(committed[1], committed[0])] as const;
       return { ok: true, value: { instances, machine: fanOutRecord(machine, entry, intents, emitter) } };
     }
@@ -473,10 +502,11 @@ function fanOutStep(hooks: Hooks, registry: readonly Deployment[], atMs: number,
 /**
  * Run the fan-out's machine to its end at `atMs`, each receiver its own unit of commitment
  * (docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md#signal-broadcasts): a committed receiver's intents go first,
- * depth-first, each taking its snapshot (`receiversOf`) when its own delivery begins, before the next receiver. The
- * work list is the machine's, so a long cascade needs no deep call stack.
+ * depth-first, each taking its snapshot (`receiversOf`) when its own delivery begins, before the next receiver. A
+ * receiver of a Signal is reached by `reachReceiver`, one the command names itself by `own`; one that records nothing is
+ * passed. The work list is the machine's, so a long cascade needs no deep call stack.
  */
-export function fanOut(hooks: Hooks, registry: readonly Deployment[], atMs: number, start: Fanning): Refusable<Fanning> {
+export function fanOut(hooks: Hooks, registry: readonly Deployment[], atMs: number, own: OwnReach, start: Fanning): Refusable<Fanning> {
   let fanning = start;
   for (let fuel = pendingFuel; ; fuel -= 1) {
     const machine = machineStopWhenSpent(fanning.machine);
@@ -485,7 +515,7 @@ export function fanOut(hooks: Hooks, registry: readonly Deployment[], atMs: numb
     if (next.tag === FanOutNextTag.Done) return { ok: true, value: fanning };
     // `pendingFuel` bounds every fan-out, so running out of it is a harness defect.
     if (fuel === 0) return { ok: false, error: "population-fan-out-fuel" };
-    const stepped = fanOutStep(hooks, registry, atMs, fanning, next);
+    const stepped = fanOutStep(hooks, registry, atMs, own, fanning, next);
     if (!stepped.ok) return stepped;
     fanning = stepped.value;
   }
@@ -494,7 +524,7 @@ export function fanOut(hooks: Hooks, registry: readonly Deployment[], atMs: numb
 /** Deliver the intents a committed step of `state`, an instance of `program`, left, before the fan-out's other work. */
 export function cascade(hooks: Hooks, registry: readonly Deployment[], atMs: number, fanning: Fanning, state: State, program: Program): Refusable<Fanning> {
   const items = publicIntents(program, state).map((intent): Pending => ({ tag: PendingTag.Intent, emitter: state.instanceId, intent }));
-  return fanOut(hooks, registry, atMs, { ...fanning, machine: { ...fanning.machine, pending: pushAll(items, fanning.machine.pending) } });
+  return fanOut(hooks, registry, atMs, signalsOnly, { ...fanning, machine: { ...fanning.machine, pending: pushAll(items, fanning.machine.pending) } });
 }
 
 /**
@@ -579,7 +609,7 @@ export function broadcast(
   const ordered = inOrder((receiver: Receiver) => receiver, snapshot, sent.order);
   if (ordered === null) return rejected("discovery-order-mismatch");
   const root = ordered.map((receiver): Pending => ({ tag: PendingTag.Receiver, emission, receiver }));
-  const fanned = fanOut(hooks, registry, atMs, { instances, machine: fanOutBegin(sent.commandId, root, cascadeBound) });
+  const fanned = fanOut(hooks, registry, atMs, signalsOnly, { instances, machine: fanOutBegin(sent.commandId, root, cascadeBound) });
   if (!fanned.ok) return fanned;
   return { ok: true, value: [fanned.value.instances, { tag: ResolutionTag.FanOut, entries: fanningEntries(fanned.value) }] };
 }

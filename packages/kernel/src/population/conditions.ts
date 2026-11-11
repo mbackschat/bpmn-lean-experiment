@@ -4,28 +4,30 @@
  * an instance at each start that holds, each start its own unit of commitment (PC-CONDITION-02, CIB-EXT-0044,
  * [specification](../../../../docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md)).
  */
-import { elementStart, programChildren, programPublicId, triggerCondition, type Header, type Program } from "../il/types.js";
+import { assertNever, elementStart, programChildren, programPublicId, triggerCondition, type Header, type Program } from "../il/types.js";
 import type { Hooks } from "../hooks.js";
 import { StartTriggerTag, type Result, type StartInput } from "../state.js";
 import { context } from "../step.js";
 import {
   FanOutEntryTag,
+  PendingTag,
   ReceiverTag,
   ResolutionTag,
-  cascade,
+  cascadeBound,
   currentDeployments,
-  fanningAdd,
+  fanOut,
+  fanOutBegin,
   fanningEntries,
-  fanningOf,
-  fanningSpend,
   inOrder,
+  rootStart,
   selected,
   startInstance,
   startedInstanceId,
   type ConditionEvaluation,
   type Deployment,
-  type Fanning,
   type Instance,
+  type Pending,
+  type Reached,
   type Receiver,
   type Refusable,
   type Resolution,
@@ -62,41 +64,49 @@ export function conditionalStartVerdict(hooks: Hooks, program: Program, input: S
 }
 
 /**
- * Evaluate one start for `evaluation` at `atMs`: a start whose predicate does not hold adds nothing, one whose predicate
- * fails adds its `failed` entry, and one that holds starts its instance with the business key and every submitted
- * variable, adding the start's entry, and the intents its step left cascade before the next start. The predicate is
- * asked first (`conditionalStartVerdict`), so a false start is never read off a refused start step.
+ * Reach the Conditional root start `receiver` names for `evaluation` at `atMs`: a start whose predicate does not hold
+ * records nothing, one whose predicate fails its `failed` entry, and one that holds starts its instance with the
+ * business key and every submitted variable and records the start's entry. The predicate is asked first
+ * (`conditionalStartVerdict`), so a false start is never read off a refused start step.
  */
 export function evaluateStart(
   hooks: Hooks,
   registry: readonly Deployment[],
   evaluation: ConditionEvaluation,
   atMs: number,
-  before: Fanning,
-  [deployment, header, publicStart]: ConditionalStart,
-): Refusable<Fanning> {
-  const receiver: Receiver = { tag: ReceiverTag.Start, deploymentId: deployment.deploymentId, startEvent: publicStart };
-  const [fanning, reachable] = fanningSpend(before, receiver);
-  if (!reachable) return { ok: true, value: fanning };
-  const input: StartInput = {
-    instanceId: startedInstanceId(evaluation.commandId, deployment.deploymentId, publicStart), startEvent: header.id,
-    variables: evaluation.variables, trigger: { tag: StartTriggerTag.Condition }, businessKey: evaluation.businessKey, atMs,
-  };
-  const verdict = conditionalStartVerdict(hooks, deployment.program, input);
-  if (!verdict.ok) return { ok: true, value: fanningAdd(fanning, { tag: FanOutEntryTag.Failed, target: receiver, failure: verdict.failure }) };
-  if (!verdict.value) return { ok: true, value: fanning };
-  const started = startInstance(hooks, deployment, publicStart, input);
-  if (!started.ok) return started;
-  const [instance, entry] = started.value;
-  const added = fanningAdd(fanning, entry);
-  if (instance === null) return { ok: true, value: added };
-  return cascade(hooks, registry, atMs, { ...added, instances: [...added.instances, instance] }, instance.state, deployment.program);
+  instances: readonly Instance[],
+  receiver: Receiver,
+): Refusable<Reached> {
+  switch (receiver.tag) {
+    case ReceiverTag.Occurrence:
+      // An evaluation's fan-out names only Conditional starts itself, so an occurrence here is a harness defect.
+      return { ok: false, error: "conditional-receiver-without-start" };
+    case ReceiverTag.Start: {
+      const found = rootStart(registry, receiver.deploymentId, receiver.startEvent);
+      if (!found.ok) return found;
+      const [deployment, header] = found.value;
+      const input: StartInput = {
+        instanceId: startedInstanceId(evaluation.commandId, receiver.deploymentId, receiver.startEvent), startEvent: header.id,
+        variables: evaluation.variables, trigger: { tag: StartTriggerTag.Condition }, businessKey: evaluation.businessKey, atMs,
+      };
+      const verdict = conditionalStartVerdict(hooks, deployment.program, input);
+      if (!verdict.ok) return { ok: true, value: [instances, { tag: FanOutEntryTag.Failed, target: receiver, failure: verdict.failure }, null] };
+      if (!verdict.value) return { ok: true, value: [instances, null, null] };
+      const started = startInstance(hooks, deployment, receiver.startEvent, input);
+      if (!started.ok) return started;
+      const [instance, entry] = started.value;
+      if (instance === null) return { ok: true, value: [instances, entry, null] };
+      return { ok: true, value: [[...instances, instance], entry, [instance.state, deployment.program]] };
+    }
+  }
+  return assertNever(receiver);
 }
 
 /**
  * Evaluate the Conditional root starts in scope at `atMs` (PC-CONDITION-02): each that holds starts one instance, each
  * start its own unit of commitment, so a failing start leaves every other start's instance in place (CIB starts all or
- * none, CIB-INT-0033). The answer is the fan-out of the starts that held or failed and of their cascades, in order, and
+ * none, CIB-INT-0033). Every start takes one of the fan-out's receivers, held or not, and the intents a started
+ * instance's step left cascade before the next start. The answer is the fan-out of the starts that held or failed and of their cascades, in order, and
  * `fanOut []` when none held. A selector naming no registered deployment is `rejected definition-not-deployed`, a scope
  * without a Conditional start `rejected no-conditional-start` and an `order` naming other starts
  * `rejected discovery-order-mismatch`.
@@ -117,11 +127,11 @@ export function evaluateConditions(
   const ordered = inOrder(([deployment, , start]) => ({ tag: ReceiverTag.Start, deploymentId: deployment.deploymentId, startEvent: start }),
     starts, evaluation.order);
   if (ordered === null) return rejected("discovery-order-mismatch");
-  let fanning = fanningOf(evaluation.commandId, instances);
-  for (const start of ordered) {
-    const next = evaluateStart(hooks, registry, evaluation, atMs, fanning, start);
-    if (!next.ok) return next;
-    fanning = next.value;
-  }
-  return { ok: true, value: [fanning.instances, { tag: ResolutionTag.FanOut, entries: fanningEntries(fanning) }] };
+  const root = ordered.map(([deployment, , start]): Pending =>
+    ({ tag: PendingTag.Receiver, emission: null, receiver: { tag: ReceiverTag.Start, deploymentId: deployment.deploymentId, startEvent: start } }));
+  const own = (reached: readonly Instance[], receiver: Receiver): Refusable<Reached> =>
+    evaluateStart(hooks, registry, evaluation, atMs, reached, receiver);
+  const fanned = fanOut(hooks, registry, atMs, own, { instances, machine: fanOutBegin(evaluation.commandId, root, cascadeBound) });
+  if (!fanned.ok) return fanned;
+  return { ok: true, value: [fanned.value.instances, { tag: ResolutionTag.FanOut, entries: fanningEntries(fanned.value) }] };
 }

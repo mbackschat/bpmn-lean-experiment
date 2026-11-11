@@ -31,33 +31,31 @@ def conditionalStartVerdict (hooks : Hooks) (program : Program) (input : StartIn
   | .ok (_ :: _) => .ok true
   | .error failure => .error failure
 
-/-- Evaluate one start for `evaluation` at `atMs`: a start whose predicate does not hold adds nothing, one whose
-predicate fails adds its `failed` entry, and one that holds starts its instance with the business key and every
-submitted variable, adding the start's entry, and the intents its step left cascade before the next start. The
-predicate is asked first (`conditionalStartVerdict`), so a false start is never read off a refused start step. -/
+/-- Reach the Conditional root start `receiver` names for `evaluation` at `atMs`: a start whose predicate does not hold
+records nothing, one whose predicate fails its `failed` entry, and one that holds starts its instance with the business
+key and every submitted variable and records the start's entry. The predicate is asked first
+(`conditionalStartVerdict`), so a false start is never read off a refused start step. -/
 def evaluateStart (hooks : Hooks) (registry : List Deployment) (evaluation : ConditionEvaluation) (atMs : Nat)
-    (fanning : Fanning) : Deployment × Header × String → Except String Fanning
-  | (deployment, header, publicStart) => do
-    let receiver : Receiver := .start deployment.deploymentId publicStart
-    let (fanning, reachable) := fanning.spend receiver
-    if !reachable then return fanning
+    (instances : List Instance) : Receiver → Except String Reached
+  | .start deploymentId publicStart => do
+    let (deployment, header) ← rootStart registry deploymentId publicStart
     let input : StartInput :=
-      { instanceId := startedInstanceId evaluation.commandId deployment.deploymentId publicStart
+      { instanceId := startedInstanceId evaluation.commandId deploymentId publicStart
         startEvent := some header.id, variables := evaluation.variables, trigger := .condition
         businessKey := evaluation.businessKey, atMs := some atMs }
     match conditionalStartVerdict hooks deployment.program input with
-    | .ok false => pure fanning
+    | .ok false => pure (instances, none, none)
     | .ok true =>
       let (started, entry) ← startInstance hooks deployment publicStart input
-      let fanning := { fanning.add entry with instances := fanning.instances ++ started.toList }
-      match started with
-      | some member => cascade hooks registry atMs fanning member.state deployment.program
-      | none => pure fanning
-    | .error failure => pure (fanning.add (.failed receiver failure))
+      pure (instances ++ started.toList, some entry, started.map fun member => (member.state, deployment.program))
+    | .error failure => pure (instances, some (.failed (.start deploymentId publicStart) failure), none)
+  -- An evaluation's fan-out names only Conditional starts itself, so an occurrence here is a harness defect.
+  | .occurrence _ => throw "conditional-receiver-without-start"
 
 /-- Evaluate the Conditional root starts in scope at `atMs` (PC-CONDITION-02): each that holds starts one instance,
 each start its own unit of commitment, so a failing start leaves every other start's instance in place (CIB starts all
-or none, CIB-INT-0033). The answer is the fan-out of the starts that held or failed and of their cascades, in order,
+or none, CIB-INT-0033). Every start takes one of the fan-out's receivers, held or not, and the intents a started
+instance's step left cascade before the next start. The answer is the fan-out of the starts that held or failed and of their cascades, in order,
 and `fanOut []` when none held. A selector naming no registered deployment is `rejected definition-not-deployed`, a
 scope without a Conditional start `rejected no-conditional-start` and an `order` naming other starts
 `rejected discovery-order-mismatch`. -/
@@ -68,8 +66,9 @@ def evaluateConditions (hooks : Hooks) (registry : List Deployment) (instances :
   if starts.isEmpty then return (instances, .rejected "no-conditional-start")
   let some ordered := inOrder (fun (deployment, _, start) => .start deployment.deploymentId start) starts evaluation.order
     | return (instances, .rejected "discovery-order-mismatch")
-  let fanning ← ordered.foldlM (evaluateStart hooks registry evaluation atMs)
-    (fanningOf evaluation.commandId instances)
+  let root := ordered.map fun (deployment, _, start) => .receiver none (.start deployment.deploymentId start)
+  let fanning ← fanOut hooks registry atMs (evaluateStart hooks registry evaluation atMs) pendingFuel
+    { instances, machine := fanOutBegin evaluation.commandId root cascadeBound }
   pure (fanning.instances, .fanOut fanning.entries)
 
 end Kernel.Population

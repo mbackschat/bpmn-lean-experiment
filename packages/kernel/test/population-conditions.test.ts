@@ -8,9 +8,32 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { cascadeInstanceId, runPopulation } from "@bpmn-lean/kernel";
+import {
+  FanOutEntryTag,
+  FanOutNextTag,
+  InputTag,
+  PendingTag,
+  ReceiverTag,
+  StartTriggerTag,
+  cascadeInstanceId,
+  conditionalStartVerdict,
+  decodeProgram,
+  fanOutBegin,
+  fanOutEntryJson,
+  fanOutNext,
+  fanOutPass,
+  fanOutRecord,
+  hooks,
+  runPopulation,
+  startedInstanceId,
+  step,
+  stimulusFromJson,
+} from "@bpmn-lean/kernel";
+import type { FanOutEntry, FanOutMachine, Receiver } from "@bpmn-lean/kernel";
 
-import { activity, append, base, flow, juel, replace, start, userWork, withFlows, withOptions, wired } from "./admission-refusal-support.ts";
+import {
+  activity, append, base, catchEvent, end, flow, juel, qName, replace, signal, start, text, userWork, withFlows, withOptions, wired,
+} from "./admission-refusal-support.ts";
 
 type Json = Record<string, unknown>;
 
@@ -120,4 +143,95 @@ test("a cascade-started instance's identity adds the throw's occurrence as one l
   // "ä" is two UTF-8 bytes and "€" three, so each length counts bytes, not characters.
   assert.equal(cascadeInstanceId("c-1", 3, "Start", emitter),
     "start:3:c-1:1:3:5:Start:29:13:Bestellung-ä:8:Wurf-€:2");
+});
+
+const throwOf = (localName: string): Json => ({
+  signal: {
+    payload: { signalRef: qName(localName), name: text(localName), payload: [], propagateAll: null, localOnly: false, businessKey: null, asynchronous: false },
+  },
+});
+
+/** `key`'s process with `elements` and `flows` under the Conditional options, every flow list rebuilt from the flows. */
+const model = (key: string, elements: Json[], flows: Json[]): Json => {
+  const shaped = wired(withOptions({ ...base(), elements, flows }, conditional));
+  return { ...shaped, identity: { ...(shaped.identity as Json), processId: key, sourceSha256: `${key}-sha` } };
+};
+
+/** Catches `Sig` at `C`, throws `Sig` at `Th` and waits at `C` again, so two instances relay one Signal forever. */
+const echo = (key: string): Json => {
+  const header = { id: "Th", origin: { definition: null, sourceId: "Th" }, sourceType: "intermediateThrowEvent", parent: null };
+  const role = { throw: { record: throwOf("Sig") } };
+  const rethrow = { event: { header, payload: { role, placement: "intermediate", incoming: [], outgoing: [], alternativeThrows: [] } } };
+  return model(key, [start("S"), catchEvent("C", signal()), rethrow], [flow("f1", "S", "C"), flow("f2", "C", "Th"), flow("f3", "Th", "C")]);
+};
+
+test("a Conditional start's cascade stops at the cascade bound, the start spending one receiver and later starts unreached", () => {
+  const relaying = model("Relay", [start("Large", condition("amount")), end("E", throwOf("Sig"))], [flow("f1", "Large", "E")]);
+  const begin = (instanceId: string): Json =>
+    ({ kind: "instance", definitionRef: "d2", instanceId, stimulus: { kind: "start", commandId: `start-${instanceId}`, instanceId, variables: [] } });
+  const result = populate([relaying, echo("Echo"), processModel("Audit", [["Big", condition("amount")]])],
+    [begin("A"), begin("B"), evaluate("c1", amount(2_500))]);
+  const [evaluated] = resolutions(result) as Json[];
+  const entries = (evaluated as Json).entries as Json[];
+  // The bound is `Step.closureBound` (100000) receivers: the start takes one, the relays the other 99999.
+  assert.equal(entries.length, 100_001);
+  assert.deepEqual(entries[0], started("c1", 1, "Large"));
+  assert.ok(entries.slice(1, -1).every((entry) => entry.kind === "delivered"));
+  const last = entries.at(-1);
+  assert.deepEqual([last?.kind, last?.outcome, last?.code], ["failed", "unsupported", "population-cascade-bound"]);
+});
+
+/**
+ * Drive one Conditional evaluation of `programs`' starts on the fan-out machine as a host does, over submitted
+ * `variables` and a budget of `budget` receivers: a false start is passed, a failing one records its `failed` entry,
+ * a holding one starts its instance and records its `started` entry. None of these starts throws, so no snapshot comes.
+ */
+function drive(programs: readonly Json[], starts: readonly Receiver[], variables: readonly Json[], budget: number): unknown[] {
+  const decoded = programs.map((program) => {
+    const read = decodeProgram(program);
+    assert.ok(read.ok);
+    return read.value;
+  });
+  const parsed = stimulusFromJson({ kind: "start", commandId: "c1", instanceId: "I", variables });
+  assert.ok(parsed.ok && parsed.value[1].tag === InputTag.Start);
+  const bindings = parsed.value[1].payload.variables;
+  let machine: FanOutMachine = fanOutBegin("c1", starts.map((receiver) => ({ tag: PendingTag.Receiver, emission: null, receiver })), budget);
+  for (;;) {
+    const next = fanOutNext(machine);
+    if (next.tag === FanOutNextTag.Done) return next.entries.map(fanOutEntryJson);
+    assert.ok(next.tag === FanOutNextTag.Reach && next.emission === null && next.receiver.tag === ReceiverTag.Start);
+    const { deploymentId, startEvent } = next.receiver;
+    const program = decoded[deploymentId - 1];
+    assert.ok(program !== undefined);
+    const input = {
+      instanceId: startedInstanceId("c1", deploymentId, startEvent), startEvent, variables: bindings,
+      trigger: { tag: StartTriggerTag.Condition } as const, businessKey: null, atMs: 5_000,
+    };
+    const verdict = conditionalStartVerdict(hooks, program, input);
+    if (verdict.ok && !verdict.value) {
+      machine = fanOutPass(machine);
+      continue;
+    }
+    const outcome = verdict.ok ? step(hooks, program, null, { tag: InputTag.Start, payload: input }) : verdict;
+    const entry: FanOutEntry = outcome.ok
+      ? { tag: FanOutEntryTag.Started, instanceId: input.instanceId, deploymentId, version: 1, startEvent }
+      : { tag: FanOutEntryTag.Failed, target: next.receiver, failure: outcome.failure };
+    machine = fanOutRecord(machine, entry, [], input.instanceId);
+  }
+}
+
+test("a host driving the fan-out machine over a Conditional evaluation answers the population runner's fan-out", () => {
+  const programs = [
+    processModel("Orders", [["Small", condition("small")], ["Large", condition("amount")], ["Flagged", condition("flag", false)]]),
+    processModel("Audit", [["Big", condition("amount")]]),
+  ];
+  const variables = [...amount(2_500), { name: "small", value: integer(1) }, { name: "flag", value: { kind: "null" } }];
+  const starts = [startTarget(1, "Small"), startTarget(1, "Large"), startTarget(1, "Flagged"), startTarget(2, "Big")]
+    .map((target): Receiver => ({ tag: ReceiverTag.Start, deploymentId: target.deploymentId as number, startEvent: target.startEvent as string }));
+  const [ran] = resolutions(populate(programs, [evaluate("c1", variables)])) as Json[];
+  assert.deepEqual(drive(programs, starts, variables, 100_000), (ran as Json).entries);
+  assert.deepEqual(drive(programs, starts, variables, 2), [
+    started("c1", 1, "Large"),
+    { kind: "failed", target: startTarget(1, "Flagged"), outcome: "unsupported", code: "population-cascade-bound" },
+  ]);
 });

@@ -23,6 +23,7 @@ import {
   deploymentSummary,
   fanOutBegin,
   fanOutNext,
+  fanOutPass,
   fanOutRecord,
   fanOutSnapshot,
   hooks,
@@ -211,6 +212,20 @@ test("the fan-out machine takes an intent's snapshot in the order given and runs
   const drained = fanOutSnapshot(recorded, [], null);
   assert.ok(drained.ok);
   assert.deepEqual(reachedNext(drained.value), at(ref("A", "x")));
+});
+
+test("fanOutPass spends the receiver it passes and records nothing, and leaves a snapshot position as it is", () => {
+  const root = (receiver: Receiver): Pending => ({ tag: PendingTag.Receiver, emission: null, receiver });
+  const machine = fanOutBegin("c", [root(startOf(1, "Small")), root(startOf(1, "Large"))], 1);
+  const passed = fanOutPass(machine);
+  assert.deepEqual(fanOutNext(passed), {
+    tag: FanOutNextTag.Done,
+    entries: [{ tag: FanOutEntryTag.Failed, target: startOf(1, "Large"), failure: { tag: FailureTag.Unsupported, code: "population-cascade-bound" } }],
+  });
+  const roomy = fanOutPass(fanOutBegin("c", [root(startOf(1, "Small")), root(startOf(1, "Large"))], 2));
+  assert.deepEqual(reachedNext(roomy), startOf(1, "Large"));
+  const snapshotting = fanOutBegin("c", [{ tag: PendingTag.Intent, emitter: "I", intent: intent("Throw") }], 5);
+  assert.deepEqual(fanOutPass(snapshotting), snapshotting);
 });
 
 test("conditionalStartVerdict holds, does not hold, or fails over the start input it is given", () => {

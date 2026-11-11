@@ -37,6 +37,7 @@ export {
   PendingTag,
   fanOutBegin,
   fanOutNext,
+  fanOutPass,
   fanOutRecord,
   fanOutSnapshot,
   linearizeReceivers,
