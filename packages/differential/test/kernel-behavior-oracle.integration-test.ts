@@ -1,6 +1,8 @@
 /**
  * Guard 16 of the kernel rewrite proposal over every discovered scenario: Lean `kernelRun` and the TypeScript kernel
- * return the same whole result on every scenario and population scenario, and on every scenario with retained CIB Seven
+ * return the same whole result on every scenario and population scenario, the same whole host-view run on every
+ * admitted single-instance scenario (`--host-view`: the result, host requirements, definition capabilities and every
+ * committed input's host view with its registration addresses), and on every scenario with retained CIB Seven
  * evidence the kernel's result equals the retained one at the CIB observation boundary (`compareTargetResults`, which
  * drops the kernel-only `code` and `scopes` members and sorts open waits, after `foldSynchronousEffects` folds the
  * effect inputs of delegates CIB ran inside another command), as on every population with retained evidence
@@ -29,11 +31,11 @@ import {
   populationClockMs,
 } from "@bpmn-lean/differential";
 import type { PopulationResultDocument, ScenarioDisagreement, ValueDisagreement } from "@bpmn-lean/differential";
-import { parseStrict, runPopulation, runScenario } from "@bpmn-lean/kernel";
+import { parseStrict, runHostView, runPopulation, runScenario } from "@bpmn-lean/kernel";
 
 import { pipelineTestTimeoutMs } from "../../../scripts/pipeline-budget.ts";
 import { ledgerViolations, readCibDisagreementLedger } from "./cib-disagreement-ledger.ts";
-import { runLeanKernelPopulation, runLeanKernelScenario, writeProgram } from "./kernel-targets.ts";
+import { runLeanKernelHostView, runLeanKernelPopulation, runLeanKernelScenario, writeProgram } from "./kernel-targets.ts";
 import { projectRoot } from "./pipeline-target-support.ts";
 import { populationStepDigests } from "./population-digest.ts";
 import { populationPrograms } from "./population-programs.ts";
@@ -63,6 +65,12 @@ const effectInputsOf = (document: ScenarioDocument): ReadonlySet<string> =>
 
 const label = (scenario: DiscoveredScenario): string => `${scenario.document.id} (${scenario.relativePath})`;
 
+/** A `--host-view` run: its `result` is the plain run's, so the host view costs one process, not a second one. */
+type HostViewRun = Readonly<{
+  result: CanonicalResult;
+  hostViews: ReadonlyArray<Readonly<{ addresses?: ReadonlyArray<Readonly<{ message?: unknown; signal?: unknown }>> }>>;
+}>;
+
 test("the Lean and TypeScript kernels agree on every discovered scenario, and the kernel on every retained CIB result", {
   timeout: pipelineTestTimeoutMs(),
 }, async (t) => {
@@ -74,6 +82,8 @@ test("the Lean and TypeScript kernels agree on every discovered scenario, and th
   const evidenceDisagreements: Array<EvidenceDisagreement> = [];
   let populationCount = 0;
   let evidenceCount = 0;
+  let messageAddresses = 0;
+  let signalAddresses = 0;
   try {
     for (const [index, scenario] of scenarios.entries()) {
       const scenarioPath = path.join(projectRoot, scenario.relativePath);
@@ -108,10 +118,15 @@ test("the Lean and TypeScript kernels agree on every discovered scenario, and th
           else {
             const programPath = path.join(directory, `scenario-${String(index)}.json`);
             await writeProgram(programPath, input.program);
-            const lean = await runLeanKernelScenario(programPath, scenarioPath);
-            typeScript = wireValue(runScenario(input.program, scenario.document)) as CanonicalResult;
-            const difference = compared(label(scenario), lean, typeScript);
+            const lean = await runLeanKernelHostView(programPath, scenarioPath) as HostViewRun;
+            const hosted = wireValue(runHostView(input.program, scenario.document)) as HostViewRun;
+            typeScript = hosted.result;
+            const difference = compared(label(scenario), lean, hosted);
             if (difference !== null) kernelDisagreements.push(difference);
+            for (const address of lean.hostViews.flatMap((view) => view.addresses ?? [])) {
+              if (address.message !== undefined) messageAddresses += 1;
+              if (address.signal !== undefined) signalAddresses += 1;
+            }
           }
           if (scenario.evidence === null) break;
           evidenceCount += 1;
@@ -140,12 +155,14 @@ test("the Lean and TypeScript kernels agree on every discovered scenario, and th
 
   assert.ok(scenarios.length > populationCount && populationCount > 0, "discovery found no scenarios of a required kind");
   assert.ok(evidenceCount > 0, "discovery found no retained CIB evidence");
+  assert.ok(messageAddresses > 0 && signalAddresses > 0, "the host views registered no Message or no Signal address");
   const violations = ledgerViolations(new Set(evidenceDisagreements.map(({ evidence }) => evidence)), retained, ledger);
   const unlisted = new Set(violations.unlisted);
   t.diagnostic(
     `scenarios ${String(scenarios.length - populationCount)}, populations ${String(populationCount)}, ` +
       `retained CIB results ${String(evidenceCount)}, kernel disagreements ${String(kernelDisagreements.length)}, ` +
-      `evidence disagreements ${String(evidenceDisagreements.length)}, classified ${String(ledger.length)}`,
+      `evidence disagreements ${String(evidenceDisagreements.length)}, classified ${String(ledger.length)}, ` +
+      `host-view addresses ${String(messageAddresses)} Message and ${String(signalAddresses)} Signal`,
   );
   assert.deepEqual(
     { kernelDisagreements, violations },

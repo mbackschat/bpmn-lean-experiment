@@ -29,7 +29,9 @@ import {
 
 import {
   activity,
+  append,
   base,
+  callWork,
   catchEvent,
   channel,
   computed,
@@ -37,13 +39,16 @@ import {
   criterion,
   cycle,
   date,
+  definitionRef,
   duration,
   end,
   message,
+  receiveWork,
   replace,
   serviceWork,
   signal,
   start,
+  userWork,
   variable,
   withOptions,
   wired,
@@ -71,24 +76,40 @@ function committed(outcome: Outcome): State {
 const string = (value: string): Json => ({ kind: "string", value });
 const begin = (variables: Json[] = []): Json => ({ kind: "start", commandId: "start", instanceId: "Instance_1", variables });
 
+type Requirements = ReturnType<typeof hostRequirements>;
+
+const serves = (served: Partial<Requirements>, maxConcurrentWaits: number | null): Requirements =>
+  ({ timers: false, messages: false, effects: false, userTasks: false, calls: false, ...served, maxConcurrentWaits });
+
 test("a program without a subscription or waiting work opens no wait, and one whose waits are Signal or Conditional bounds none", () => {
-  assert.equal(hostRequirements(admitted(base())).maxConcurrentWaits, 0);
+  assert.deepEqual(hostRequirements(admitted(base())), serves({}, 0));
   for (const trigger of [signal(), condition()]) {
     const waiting = admitted(replace(base(), "T", catchEvent("T", trigger)));
-    assert.equal(hostRequirements(waiting).maxConcurrentWaits, null);
+    assert.deepEqual(hostRequirements(waiting), serves({}, null));
     const started = withOptions(replace(base(), "S", start("S", trigger)), { conditionalStart: "submittedContext" });
-    assert.equal(hostRequirements(admitted(started)).maxConcurrentWaits, null);
+    assert.deepEqual(hostRequirements(admitted(started)), serves({}, null));
   }
+});
+
+test("each waiting kind asks the host for exactly the service that serves it and leaves concurrent waits unbounded", () => {
+  const waitingOn = (element: Json, carried: Json = base()): Requirements => hostRequirements(admitted(replace(carried, "T", element)));
+  // The called process `Called` carries one Manual Task, so the call is the program's only wait.
+  const called = { ...append(base(), activity("CT", "manual", { incoming: [], outgoing: [] })),
+    processes: [{ definition: definitionRef("Called"), children: ["CT"], variables: [], executable: true }] };
+  assert.deepEqual(waitingOn(catchEvent("T", duration("PT1M"))), serves({ timers: true }, null));
+  assert.deepEqual(waitingOn(catchEvent("T", message(channel()))), serves({ messages: true }, null));
+  assert.deepEqual(waitingOn(activity("T", receiveWork(channel()))), serves({ messages: true }, null));
+  assert.deepEqual(waitingOn(activity("T", serviceWork())), serves({ effects: true }, null));
+  assert.deepEqual(waitingOn(activity("T", userWork())), serves({ userTasks: true }, null));
+  assert.deepEqual(waitingOn(activity("T", callWork()), called), serves({ calls: true }, null));
 });
 
 test("a bound Message throw needs the host to serve effects, as a Service Task does, and an unbound one does not", () => {
   const throwing = (binding: Json | null): Program => admitted(withOptions(
     replace(base(), "E", end("E", { message: { payload: { binding, handlerKey: null, payload: [] } } })),
     { messageThrowForms: "cibForms" }));
-  const bound = hostRequirements(throwing({ protocol: "urn:p", operation: "urn:send" }));
-  assert.deepEqual([bound.effects, bound.maxConcurrentWaits], [true, null]);
-  const unbound = hostRequirements(throwing(null));
-  assert.deepEqual([unbound.effects, unbound.maxConcurrentWaits], [false, 0]);
+  assert.deepEqual(hostRequirements(throwing({ protocol: "urn:p", operation: "urn:send" })), serves({ effects: true }, null));
+  assert.deepEqual(hostRequirements(throwing(null)), serves({}, 0));
 });
 
 test("a Timer start offers the duration the kernel resolves from its schedule", () => {
