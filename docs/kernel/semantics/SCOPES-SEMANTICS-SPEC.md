@@ -37,6 +37,10 @@ Adopted kernel owner document (W0 extraction, 2026-11-09). The kernel modules it
 - When the handler completes it produces no parent token; at the process level the instance then completes ([IMESP contract][imesp-contract]). Ordinary completion before the trigger withdraws the dormant subscription and invents no handler lifecycle. Task completion and delivery are ordered inputs with no BPMN priority: whichever commits first makes the other stale.
 - A non-interrupting start leaves the parent's work running; a Message start stays open with its identity and a cycle Timer re-arms ([REPEATABLE scope][rep-scope]); see [subscriptions](SUBSCRIPTIONS-SEMANTICS-SPEC.md#repetition).
 
+### Interpretation M9 (draft)
+
+Track M9's draft in [compensation](COMPENSATION-SEMANTICS-SPEC.md#interpretation-m9) touches scopes in three items: an untargeted Compensation throw inside an Event Sub-Process compensates the records of the Sub-Process holding it (I2, D15); a completed Sub-Process or Transaction without a handler is retained as one implicit group under the cibseven profiles (I5, `implicitCompensation`); and a Multi-Instance Transaction is admitted, a body's Cancel ending the whole Activity through its Cancel boundary (I15).
+
 ## Interpretations reviewed (M4, 2026-11-10)
 
 Both sections passed the cold interpretation review with required changes, folded in here. CIB citations are paths under `../oss/cibseven/cibseven/engine/src/main/java/org/cibseven/bpm/engine/impl/` at the [pinned commit](../../SOURCES.md) unless a path says otherwise.

@@ -35,6 +35,10 @@ The propagation feature owns throw Events and the search for a catcher of a rais
 - An Escalation End or intermediate throw raises its code by the same search; the intermediate throw also continues on its outgoing flows. A caught Escalation interrupts or not as its catcher says; a non-interrupting catch begins its handler and leaves the host running.
 - A Cancel End raises Cancel, which only a Cancel boundary catches; on a Transaction it first runs the retained compensation ([compensation](COMPENSATION-SEMANTICS-SPEC.md)).
 
+### Interpretation M9 (draft)
+
+Track M9's draft in [compensation](COMPENSATION-SEMANTICS-SPEC.md#interpretation-m9) changes where the search stops at a compensation handler: under `compensationHandlerFailure = propagatesFromTrigger` (the cibseven profiles) an Error or Escalation leaving a handler continues the search from the compensation trigger's occurrence, and one no catcher takes follows `unhandledError`; under `failsInstance` (standards) an Error End and an Escalation fail the instance as an effect's Error does (I11, D8). An uncaught Cancel becomes the static refusal `throw.cancel.uncaught` (I13, D10).
+
 ## Interpretations reviewed (M7, 2026-11-10)
 
 Each subsection states one row's meaning before its code; the cold review of 2026-11-10 approved them with the changes folded in here. `../oss` paths are under `cibseven/cibseven/engine/src/main/java/org/cibseven/bpm/engine/impl/` at the pinned `5a45b47`, whose BPMN engine is byte-identical to `2.2.0` ([sources](../../SOURCES.md)). The numbers of entries still drafted below are provisional; each lands in the register with its behavior.
