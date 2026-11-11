@@ -88,11 +88,12 @@ final class CibSevenOccurrences {
   }
 
   /**
-   * A single-instance scenario's called definition: its key alone, as the kernel names a callee its one document
-   * carries unstamped.
+   * A single-instance scenario's called definition: its key and `camunda:versionTag`, as the kernel stamps a callee its
+   * one document carries. That document has no version, deployment or tenant, and the kernel's source digest has no
+   * CIB counterpart, so those stay absent.
    */
-  static DefinitionRef keyOnly(ProcessDefinition definition) {
-    return new DefinitionRef(definition.getKey(), null, null, null, null, null);
+  static DefinitionRef keyAndVersionTag(ProcessDefinition definition) {
+    return new DefinitionRef(definition.getKey(), null, definition.getVersionTag(), null, null, null);
   }
 
   /** One running process instance: its engine and stable identifiers and the called definition it runs. */

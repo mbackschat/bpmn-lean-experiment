@@ -186,7 +186,7 @@ final class CibSevenEngineScenarioRunner implements AutoCloseable {
             LOGICAL_EPOCH,
             options.incidentsEnabled(),
             options.incidentsCancellable(),
-            CibSevenOccurrences::keyOnly);
+            CibSevenOccurrences::keyAndVersionTag);
     var executor =
         new CibSevenCommandExecutor(processEngine, projector, effects, effectSchedule, options, LOGICAL_EPOCH);
     var totalStartedAt = System.nanoTime();
