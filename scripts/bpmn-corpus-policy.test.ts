@@ -14,6 +14,8 @@ import { fileURLToPath } from "node:url";
  * used by the two executable consumers.
  */
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
+const externalRoot = process.env["BPMN_EXTERNAL_ROOT"] ??
+  path.resolve(projectRoot, "../oss");
 const manifestPath = path.join(
   projectRoot,
   "docs/reference/bpmn-2.0.2/LOCAL-CORPUS.sha256",
@@ -97,9 +99,9 @@ test("the Semantic XSD calibration fails rather than skipping missing evidence",
       encoding: "utf8",
       env: {
         ...process.env,
-        BPMN_CMOF_PATH: path.resolve(
-          projectRoot,
-          "../oss/omg-bpmn-2.0.2/machine-readable/BPMN20.cmof",
+        BPMN_CMOF_PATH: path.join(
+          externalRoot,
+          "omg-bpmn-2.0.2/machine-readable/BPMN20.cmof",
         ),
         BPMN_SEMANTIC_XSD_PATH: path.join(tmpdir(), "absent-semantic.xsd"),
       },
@@ -112,9 +114,9 @@ test("the Semantic XSD calibration fails rather than skipping missing evidence",
 });
 
 test("the Semantic XSD calibration honors its direct source override", () => {
-  const externalCorpusRoot = path.resolve(
-    projectRoot,
-    "../oss/omg-bpmn-2.0.2/machine-readable",
+  const externalCorpusRoot = path.join(
+    externalRoot,
+    "omg-bpmn-2.0.2/machine-readable",
   );
   const result = spawnSync(
     process.execPath,
