@@ -68,7 +68,8 @@ def deployStimulus (entry : Declared) (atMs : Nat) :
       throw s!"program identity differs from definition {entry.definitionRef}"
     pure (.deploy entry.definitionRef entry.ref program atMs, rest)
 
-/-- A malformed population scenario: a harness refusal with its stable code (contract §2.2, §7). -/
+/-- A malformed population scenario: a harness refusal with its stable code
+(docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md#message-key-correlation). -/
 def harnessRefusal {α : Type} (code detail : String) : Except String α :=
   throw s!"{code}: {detail}"
 

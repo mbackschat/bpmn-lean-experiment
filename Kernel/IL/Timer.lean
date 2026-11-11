@@ -486,7 +486,7 @@ def successor (deadlineMs : Nat) (recurrence : Repeat) : Option (Nat × Repeat) 
 
 /-- A Timer schedule resolved to what a host arms: one duration, an absolute instant, a cycle's period and its
 repetitions (`none` unbounded), or a Cron expression. A duration, a cycle and a Cron expression count from their
-deployment's deploy time, an instant does not (population contract, M8-INT-A). -/
+deployment's deploy time, an instant does not (CIB-INT-0029). -/
 inductive Resolved where
   | duration (ms : Nat)
   | date (instantMs : Nat)
@@ -526,9 +526,9 @@ def cronOccurs (fields : CronFields) (dueMs : Nat) : Nat → Nat → Bool
     | none => false
 
 /-- Whether `dueMs` is an occurrence of a root Timer start resolved as `resolved` whose schedule counts from
-`originMs`, its deployment's deploy time (M8-INT-A): a duration `originMs + d`; a date its own instant, also before the
-origin; the `k`-th period after the origin for `1 ≤ k ≤ n`, every `k ≥ 1` when unbounded (CIB-INT-0008); a Cron match
-strictly after the origin or after the match before it, as `successor` repeats it. -/
+`originMs`, its deployment's deploy time (CIB-INT-0029): a duration `originMs + d`; a date its own instant, also before
+the origin; the `k`-th period after the origin for `1 ≤ k ≤ n`, every `k ≥ 1` when unbounded (CIB-INT-0008); a Cron
+match strictly after the origin or after the match before it, as `successor` repeats it. -/
 def occurs (originMs dueMs : Nat) : Resolved → Bool
   | .duration ms => dueMs == originMs + ms
   | .date instantMs => dueMs == instantMs

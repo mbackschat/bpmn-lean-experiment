@@ -135,11 +135,12 @@ def registerSummary (registry : List DeploymentSummary) (deploymentId : Nat) (ca
   | some code => .error code
   | none => .ok (deploymentId, summaryVersions registry candidate)
 
-/-- Deploy `program` as `deploymentId` at `atMs` (population contract §2.3, PC-SCOPE-03). Each key it contains takes
-1 + the number of registered deployments containing that key, so a refused deployment numbers nothing, as CIB registers
-none. A copy of another deployment's process stays only if that deployment is registered and no later than this one: a
-copy of a later or a refused deployment is removed, so no Call binds a callee deployed after its caller or never
-deployed. The rest are stamped (`stampCarried`); then admission runs, then the Message start names are checked. -/
+/-- Deploy `program` as `deploymentId` at `atMs` (docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md#deployments,
+PC-SCOPE-03). Each key it contains takes 1 + the number of registered deployments containing that key, so a refused
+deployment numbers nothing, as CIB registers none. A copy of another deployment's process stays only if that deployment
+is registered and no later than this one: a copy of a later or a refused deployment is removed, so no Call binds a
+callee deployed after its caller or never deployed. The rest are stamped (`stampCarried`); then admission runs, then the
+Message start names are checked. -/
 def deploy (admission : Program → Option String) (registry : List Deployment) (refused : List Nat) (deploymentId : Nat)
     (definitionRef : String) (ref : DeploymentRef) (program : Program) (atMs : Nat) :
     DeploymentResult × Option Deployment :=

@@ -1,6 +1,7 @@
 /**
- * The derived instance identities the CIB runner maps CIB's instances to (M8-OP-A) are the kernel's, byte for byte: each
- * literal here is also pinned by the runner's `PopulationContractTest`, so a change on either side fails one of them.
+ * The derived instance identities the CIB runner maps CIB's instances to
+ * (docs/CIB-OBSERVATION-POLICY.md#population-evidence) are the kernel's, byte for byte: each literal here is also
+ * pinned by the runner's `PopulationContractTest`, so a change on either side fails one of them.
  */
 import assert from "node:assert/strict";
 import { test } from "node:test";

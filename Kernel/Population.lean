@@ -21,7 +21,7 @@ own unit of commitment, the intents every committed step leaves cascading depth-
 instance input's into `inputCascades`. Every command is
 answered once: the ledger keeps each command's result under the digest of its content, so the same command
 again answers its recorded result and changes nothing, and the same command identifier with other content is
-`rejected command-content-mismatch` (population contract §7).
+`rejected command-content-mismatch` (docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md#message-key-correlation).
 
 A refused deployment, an instance input that does not commit and a delivery a target refuses are results, never
 harness errors; a candidate whose key cannot be evaluated is no match.

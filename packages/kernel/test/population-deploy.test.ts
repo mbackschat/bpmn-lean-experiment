@@ -1,9 +1,10 @@
 /**
- * `Population.deploy` (population contract §2.3, PC-SCOPE-03): versions count registered deployments only, a copy of a
- * refused or later deployment's process is removed with its elements and flows, a copy of a registered one must match
- * that deployment's key, namespace and source (`population.callee.stamp`), and under Message name addressing a root
- * Message start name is unique across other keys' current deployments (`deployment.messageStartName`, CIB-LIM-0028).
- * The programs are hand-built stamped IL, as `bpmn-source`'s assembly will produce it.
+ * `Population.deploy` (docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md#deployments, PC-SCOPE-03): versions count
+ * registered deployments only, a copy of a refused or later deployment's process is removed with its elements and
+ * flows, a copy of a registered one must match that deployment's key, namespace and source (`population.callee.stamp`),
+ * and under Message name addressing a root Message start name is unique across other keys' current deployments
+ * (`deployment.messageStartName`, CIB-LIM-0028). The programs are hand-built stamped IL, as `bpmn-source`'s assembly
+ * will produce it.
  */
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";

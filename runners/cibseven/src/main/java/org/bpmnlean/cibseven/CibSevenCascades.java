@@ -16,7 +16,7 @@ import org.cibseven.bpm.model.bpmn.instance.ThrowEvent;
 
 /**
  * Names the root instances a thrown Signal started inside a step: a cascaded intent, whose identity is the command's
- * start identity extended by its emitter's key (population contract §4, cascade identity as decided for milestone 5:
+ * start identity extended by its emitter's key (docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md#signal-broadcasts:
  * `start:<len>:<commandId>:<len>:<deploymentId>:<len>:<startEventId>:<len>:<emitterKey>`, the emitter key
  * `<len>:<processInstanceId>:<len>:<publicElementId>:<activation>` of the throw occurrence).
  *

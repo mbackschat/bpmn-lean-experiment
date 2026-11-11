@@ -8,7 +8,7 @@ Run the retained CIB oracle cases, inspect bounded source-grounded probes, and e
 
 The same JSON-lines boundary also runs population scenarios (`kind: populationScenario`): several deployments at logical times, instance steps and population commands, answered with a `cibSevenPopulationResult` that keeps the kernel's population result within CIB's observation boundary.
 
-A population run names every root instance by the identity the scenario gives it or the population contract derives for it; an instance it cannot name fails the run as a harness failure rather than being observed under a guessed identity. Runner limitations of that mapping:
+A population run names every root instance by the identity the scenario gives it or the [population semantics](../../docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md) derive for it; an instance it cannot name fails the run as a harness failure rather than being observed under a guessed identity. Runner limitations of that mapping:
 
 - CIB records no link from an instance a thrown Signal started to the throw, so the emitter is the one throw of that Signal the step began; a step with several throws of it, or a broadcast whose receiver rethrows the broadcast's own Signal, cannot be named.
 - An emitter's activation is its position in CIB's occurrence order, which does not cover a throw inside concurrent Multi-Instance instances, and an emitter in a called instance that ended inside the step has no public identifier left.

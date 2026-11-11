@@ -1,9 +1,10 @@
 /**
- * `Population.timerStart` (PC-TIMER-04, M8-INT-A): a Timer-start occurrence is named by its due instant and fires at the
- * command's logical time. It commits iff its start is a root Timer start of the deployment, the due instant is one of
- * the schedule's counted from the deploy time, the firing is not before it, the deployment is current for its key and
- * the occurrence is unconsumed; the instance `timer:<len>:<deploymentId>:<len>:<startEvent>:<dueMs>` takes the firing
- * time. A single-instance scenario names the occurrence by the trigger's own time, so only an on-time firing commits.
+ * `Population.timerStart` (PC-TIMER-04, CIB-INT-0029): a Timer-start occurrence is named by its due instant and fires
+ * at the command's logical time. It commits iff its start is a root Timer start of the deployment, the due instant is
+ * one of the schedule's counted from the deploy time, the firing is not before it, the deployment is current for its
+ * key and the occurrence is unconsumed; the instance `timer:<len>:<deploymentId>:<len>:<startEvent>:<dueMs>` takes the
+ * firing time. A single-instance scenario names the occurrence by the trigger's own time, so only an on-time firing
+ * commits.
  */
 import assert from "node:assert/strict";
 import { test } from "node:test";

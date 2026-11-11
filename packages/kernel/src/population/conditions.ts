@@ -36,7 +36,7 @@ type ConditionalStart = readonly [Deployment, Header, string];
 /**
  * The Conditional root starts of the deployments in scope, each with its public identifier: those of the selected
  * deployment, or of each key's current deployment (CIB-INT-0031); deployments in deploy order, starts in document order
- * (population contract §6).
+ * (docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md#conditional-start-evaluations).
  */
 export function conditionalStarts(registry: readonly Deployment[], scope: Deployment | null): readonly ConditionalStart[] {
   const deployments = scope === null ? currentDeployments(registry) : [scope];

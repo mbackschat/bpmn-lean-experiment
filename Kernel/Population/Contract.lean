@@ -128,7 +128,8 @@ structure StepResult where
   atMs : Nat
   resolution : Resolution
 
-/-- A command the population answered, under the digest of its content (contract §7). -/
+/-- A command the population answered, under the digest of its content
+(docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md#message-key-correlation). -/
 structure LedgerEntry where
   commandId : String
   digest : String
@@ -174,18 +175,20 @@ structure Result where
   /-- The committed instance inputs whose intents reached a receiver, with the fan-out of those intents. -/
   inputCascades : List (String × List FanOutEntry)
 
-/-- The identity of the instance a command starts at `startEvent` of a deployment (population contract §4): each part
-prefixed by its UTF-8 byte length, as `State.calledInstanceId`, so a command starts at most one instance per deployment
-and start Event and a retried command can never start a second one. -/
+/-- The identity of the instance a command starts at `startEvent` of a deployment
+(docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md#message-key-correlation): each part prefixed by its UTF-8 byte
+length, as `State.calledInstanceId`, so a command starts at most one instance per deployment and start Event and a
+retried command can never start a second one. -/
 def startedInstanceId (commandId : String) (deploymentId : Nat) (startEvent : String) : String :=
   let deployment := toString deploymentId
   s!"start:{commandId.utf8ByteSize}:{commandId}:{deployment.utf8ByteSize}:{deployment}:" ++
     s!"{startEvent.utf8ByteSize}:{startEvent}"
 
 /-- The identity of the instance a thrown Signal's intent starts at `startEvent` of a deployment, in the cascade the
-command `commandId` began (population contract §4): `startedInstanceId`'s parts, then the throw's own occurrence
-`emitter` as one length-prefixed key `<len>:<processInstanceId>:<len>:<publicElementId>:<activation>`, written as
-`State.calledInstanceId` writes an occurrence, so two throws of one cascade never start the same instance. -/
+command `commandId` began (docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md#signal-broadcasts): `startedInstanceId`'s
+parts, then the throw's own occurrence `emitter` as one length-prefixed key
+`<len>:<processInstanceId>:<len>:<publicElementId>:<activation>`, written as `State.calledInstanceId` writes an
+occurrence, so two throws of one cascade never start the same instance. -/
 def cascadeInstanceId (commandId : String) (deploymentId : Nat) (startEvent : String) (emitter : OccurrenceRef) :
     String :=
   let key := s!"{emitter.processInstanceId.utf8ByteSize}:{emitter.processInstanceId}:" ++

@@ -5,16 +5,16 @@ public import Kernel.Population.Messages
 /-! # Population: Signal fan-out
 
 A Signal reaches every receiver of the population one at a time, each its own unit of commitment: an API broadcast,
-and the intent a committed step's throw leaves, which cascades depth-first (PC-SIGNAL-04, population contract §5, §6,
-[specification](../../docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md)).
+and the intent a committed step's throw leaves, which cascades depth-first (PC-SIGNAL-04,
+[specification](../../docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md#signal-broadcasts)).
 -/
 
 public section
 
 namespace Kernel.Population
 
-/-- `Step.closureBound`'s value (D-CASCADE): how many receivers one stimulus reaches, its cascades included; a semantic
-limit, not a guard bound. -/
+/-- `Step.closureBound`'s value (docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md#signal-broadcasts): how many
+receivers one stimulus reaches, its cascades included; a semantic limit, not a guard bound. -/
 def cascadeBound : Nat := Step.closureBound
 
 /-- Whether two receivers are one. -/
@@ -25,7 +25,8 @@ def Receiver.same : Receiver → Receiver → Bool
   | .occurrence _, .start _ _ | .start _ _, .occurrence _ => false
 
 /-- `listed` in the order a command's `order` gives, which must name each of them exactly once; without one, as listed
-(population contract §6). `none` when the order is no such permutation (`discovery-order-mismatch`). -/
+(docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md#signal-broadcasts). `none` when the order is no such permutation
+(`discovery-order-mismatch`). -/
 def inOrder {α : Type} (receiver : α → Receiver) (listed : List α) : Option (List Receiver) → Option (List α)
   | none => some listed
   | some order =>
@@ -37,7 +38,7 @@ def inOrder {α : Type} (receiver : α → Receiver) (listed : List α) : Option
 /-- A Signal on its way to the population: its address and variables, the business key of the instances it starts, the
 throw occurrence it left by public identifier, which names the instances it starts (`cascadeInstanceId`; without one,
 `startedInstanceId` after the command), and the State that threw it, which never receives it again: its own receivers
-fired inside the throwing step (M7 OP-A). Plain data, so a host can carry it in a fan-out in progress. -/
+fired inside the throwing step (CIB-OP-0019). Plain data, so a host can carry it in a fan-out in progress. -/
 structure Emission where
   address : SignalAddress
   variables : List (String × Value)
@@ -79,9 +80,10 @@ def signalStartReceivers (hooks : Hooks) (deploymentId : Nat) (program : Program
     | .ok (_ :: _) => some (.start deploymentId (program.publicId header.id).value)
     | .ok [] | .error _ => none
 
-/-- The defined linearization of a delivery's snapshot (population contract §6, CIB-INT-0030): the waiting receivers of
-every instance by their process instance identifier, each instance's own in the order its list gives, then the start
-receivers of each deployment in deploy order. No process instance identifier spans two instances' lists. -/
+/-- The defined linearization of a delivery's snapshot
+(docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md#signal-broadcasts, CIB-INT-0030): the waiting receivers of every
+instance by their process instance identifier, each instance's own in the order its list gives, then the start receivers
+of each deployment in deploy order. No process instance identifier spans two instances' lists. -/
 def linearizeReceivers (waiting : List (String × List OccurrenceRef)) (starts : List (Nat × List Receiver)) :
     List Receiver :=
   let occurrences := (waiting.flatMap (·.2)).mergeSort fun left right =>
@@ -104,7 +106,8 @@ def receiversOf (hooks : Hooks) (registry : List Deployment) (instances : List I
     (starts.map fun (deployment, receivers) => (deployment.deploymentId, receivers)), reached)
 
 /-- What reaching an occurrence of one instance did: nothing when it is no longer a receiver of the address, read off
-the open items and never off a Step failure (R8), else the step of its broadcast delivery. -/
+the open items and never off a Step failure (docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md#signal-broadcasts), else
+the step of its broadcast delivery. -/
 inductive OccurrenceReach where
   | skipped
   | stepped (outcome : Outcome)
@@ -124,9 +127,9 @@ inductive Pending where
   | receiver (emission : Emission) (receiver : Receiver)
   | intent (emitter : String) (intent : BroadcastIntent)
 
-/-- A fan-out in progress as plain data (population contract §5): its command, the work still to do, the entries so
-far, newest first so that adding one costs the same however long a cascade runs, how many receivers it may still reach
-and whether the cascade bound stopped it. -/
+/-- A fan-out in progress as plain data (docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md#signal-broadcasts): its
+command, the work still to do, the entries so far, newest first so that adding one costs the same however long a cascade
+runs, how many receivers it may still reach and whether the cascade bound stopped it. -/
 structure FanOutMachine where
   commandId : String
   pending : List Pending
@@ -254,9 +257,10 @@ def reachReceiver (hooks : Hooks) (registry : List Deployment) (atMs : Nat) (com
 micro-step, so at most `Step.closureBound + 1`. -/
 def pendingFuel : Nat := (cascadeBound + 1) * (Step.closureBound + 2)
 
-/-- Run the fan-out's machine to its end at `atMs`, each receiver its own unit of commitment (population contract §5):
-a committed receiver's intents go first, depth-first, each taking its snapshot (`receiversOf`) when its own delivery
-begins, before the next receiver. The work list is the machine's, so a long cascade needs no deep stack. -/
+/-- Run the fan-out's machine to its end at `atMs`, each receiver its own unit of commitment
+(docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md#signal-broadcasts): a committed receiver's intents go first,
+depth-first, each taking its snapshot (`receiversOf`) when its own delivery begins, before the next receiver. The work
+list is the machine's, so a long cascade needs no deep stack. -/
 def fanOut (hooks : Hooks) (registry : List Deployment) (atMs : Nat) : Nat → Fanning → Except String Fanning
   | fuel, fanning =>
     let machine := fanning.machine.stopWhenSpent

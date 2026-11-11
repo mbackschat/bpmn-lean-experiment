@@ -1,9 +1,9 @@
 /**
- * The programs a population's deployments run (population contract §2.3, PC-SCOPE-03): each definition is read once,
- * and each deployment's program is `assembleProgram` over every deployment whose source the reader accepted, so a
- * deployment carries the other deployments' processes its Calls name and `Kernel.Population.deploy` decides which of
- * them it may bind. A deployment whose source the reader refuses deploys as refused and contributes no process; it
- * still takes its ordinal, which assembly's stamps and renames use.
+ * The programs a population's deployments run (docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md#deployments,
+ * PC-SCOPE-03): each definition is read once, and each deployment's program is `assembleProgram` over every deployment
+ * whose source the reader accepted, so a deployment carries the other deployments' processes its Calls name and
+ * `Kernel.Population.deploy` decides which of them it may bind. A deployment whose source the reader refuses deploys as
+ * refused and contributes no process; it still takes its ordinal, which assembly's stamps and renames use.
  */
 import { assembleProgram } from "@bpmn-lean/bpmn-source";
 import type { AssemblyDeployment, KernelJson, KernelRead } from "@bpmn-lean/bpmn-source";

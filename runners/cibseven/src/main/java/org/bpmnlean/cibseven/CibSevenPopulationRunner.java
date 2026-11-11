@@ -38,8 +38,9 @@ import org.cibseven.bpm.engine.impl.util.ClockUtil;
  * clock lock, the boot state and the cleanup of {@link #deploymentIds()}.
  *
  * <p>The answer keeps the kernel's population result within CIB's observation boundary (PopulationProtocol). Every root
- * instance is named by the identity the scenario gives it or the population contract derives for it (M8-OP-A); a root
- * the run cannot name fails the run as a harness failure, so no instance is observed under a guessed identity.
+ * instance is named by the identity the scenario gives it or the population semantics derive for it
+ * (docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md; docs/CIB-OBSERVATION-POLICY.md#population-evidence); a root the
+ * run cannot name fails the run as a harness failure, so no instance is observed under a guessed identity.
  */
 final class CibSevenPopulationRunner {
 
@@ -81,9 +82,10 @@ final class CibSevenPopulationRunner {
   }
 
   /**
-   * Runs the population (population contract §2-§4): the definitions no `deploy` step names deploy at 0 in list
-   * order, then every step at its logical time, which a step gives as `at` or inherits from the one before (0 for the
-   * first). The answer carries no diagnostics; the engine scenario runner adds them after cleanup.
+   * Runs the population (contracts/schemas/engine-population-scenario.schema.json, the `deploy` step and `at`): the
+   * definitions no `deploy` step names deploy at 0 in list order, then every step at its logical time, which a step
+   * gives as `at` or inherits from the one before (0 for the first). The answer carries no diagnostics; the engine
+   * scenario runner adds them after cleanup.
    */
   PopulationResult run(PopulationScenario scenario, Map<String, ValidatedResource> resources) throws IOException {
     var deployedByStep = new HashSet<String>();

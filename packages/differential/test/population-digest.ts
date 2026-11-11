@@ -1,9 +1,10 @@
 /**
- * The digests a population's command ledger binds (population contract §7): for each step, the SHA-256 of its
+ * The digests a population's command ledger binds
+ * (docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md#message-key-correlation): for each step, the SHA-256 of its
  * canonical wire form, the scenario's JSON for the step without its logical time `at` and with every object's keys in
  * code-unit order. A retry arrives later than the command it repeats, so its time is not its content (engine contract
- * (5)). The harness computes them once and passes them to both kernels, so neither kernel reimplements canonical JSON or
- * SHA-256, and the Lean kernel trusts them: the binding of a digest to its content is outside the Lean authority.
+ * (5)). The harness computes them once and passes them to both kernels, so neither kernel reimplements canonical JSON
+ * or SHA-256, and the Lean kernel trusts them: the binding of a digest to its content is outside the Lean authority.
  */
 import { createHash } from "node:crypto";
 

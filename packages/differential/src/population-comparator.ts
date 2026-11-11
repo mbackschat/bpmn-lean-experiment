@@ -1,16 +1,16 @@
 /**
- * Population results compared at CIB Seven's observation boundary (population contract §8): the kernel's population
- * result (`contracts/schemas/engine-population-result.schema.json`) projected onto what retained CIB population evidence
- * (`cibseven-population-evidence.schema.json`) records, then compared structurally. The projection drops what CIB
- * cannot observe and restates what CIB records in another form, so every remaining difference is a disagreement. The
- * [observation policy](../../../docs/CIB-OBSERVATION-POLICY.md#population-evidence) classifies every evidence field
- * with this treatment and its reason:
+ * Population results compared at CIB Seven's observation boundary (docs/CIB-OBSERVATION-POLICY.md#population-evidence):
+ * the kernel's population result (`contracts/schemas/engine-population-result.schema.json`) projected onto what
+ * retained CIB population evidence (`cibseven-population-evidence.schema.json`) records, then compared structurally.
+ * The projection drops what CIB cannot observe and restates what CIB records in another form, so every remaining
+ * difference is a disagreement. The [observation policy](../../../docs/CIB-OBSERVATION-POLICY.md#population-evidence)
+ * classifies every evidence field with this treatment and its reason:
  *
  * - CIB names no refusal codes: a deployment outcome, failed fan-out entry or input failure keeps no `code`.
  * - CIB delivers every receiver of a command in one transaction (CIB-INT-0033) and reports the instances the command
  *   started, not the receivers it delivered to: a fan-out keeps its `started` and `failed` entries, and a `delivered`
- *   or `skipped` entry shows only in its instance's state. The entries' order is CIB's `HashSet` order (population
- *   contract §6), so both sides compare sorted.
+ *   or `skipped` entry shows only in its instance's state. The entries' order is CIB's `HashSet` order (CIB-INT-0030),
+ *   so both sides compare sorted.
  * - A kernel resolution becomes CIB's command outcome: `committed` and `fanOut` committed, a `failed` delivery or a
  *   `rejected` or `unsupported` command its outcome class without a resolution, and `noMatch` or `ambiguous` a
  *   rolled-back command with that resolution, as CIB refuses an unmatched correlation inside its command
@@ -70,7 +70,8 @@ function kernelStep(step: unknown): unknown {
   const answer = members(resolution);
   switch (answer["kind"]) {
     case "committed": {
-      // Receiver outcomes are kernel-only (population contract §8); the instances a cascade starts compare in processStates.
+      // Receiver outcomes are kernel-only (docs/CIB-OBSERVATION-POLICY.md#population-evidence); the instances a
+      // cascade starts compare in processStates.
       const { cascade: _kernelOnly, ...delivered } = answer;
       return { ...rest, outcome: "committed", resolution: delivered };
     }

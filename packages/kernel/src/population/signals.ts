@@ -1,8 +1,8 @@
 /**
  * Population: Signal fan-out, transcribed from `Kernel/Population/Signals.lean`: a Signal reaches every receiver of the
  * population one at a time, each its own unit of commitment: an API broadcast, and the intent a committed step's throw
- * leaves, which cascades depth-first (PC-SIGNAL-04, population contract §5, §6,
- * [specification](../../../../docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md)).
+ * leaves, which cascades depth-first (PC-SIGNAL-04,
+ * [specification](../../../../docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md#signal-broadcasts)).
  */
 import { SignalPayload, assertNever, compareStrings, elementStart, mergeSort, programChildren, programPublicId, type Program } from "../il/types.js";
 import type { Hooks } from "../hooks.js";
@@ -62,7 +62,10 @@ export {
   type Resolution,
 } from "./messages.js";
 
-/** `step.ts`'s `closureBound` (D-CASCADE): how many receivers one stimulus reaches, its cascades included; a semantic limit, not a guard bound. */
+/**
+ * `step.ts`'s `closureBound` (docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md#signal-broadcasts): how many
+ * receivers one stimulus reaches, its cascades included; a semantic limit, not a guard bound.
+ */
 export const cascadeBound = closureBound;
 
 function sameOccurrence(left: OccurrenceRef, right: OccurrenceRef): boolean {
@@ -77,7 +80,8 @@ export function receiverSame(left: Receiver, right: Receiver): boolean {
 
 /**
  * `listed` in the order a command's `order` gives, which must name each of them exactly once; without one, as listed
- * (population contract §6). `null` when the order is no such permutation (`discovery-order-mismatch`).
+ * (docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md#signal-broadcasts). `null` when the order is no such permutation
+ * (`discovery-order-mismatch`).
  */
 export function inOrder<T>(receiver: (item: T) => Receiver, listed: readonly T[], order: readonly Receiver[] | null): readonly T[] | null {
   if (order === null) return listed;
@@ -93,7 +97,7 @@ export function inOrder<T>(receiver: (item: T) => Receiver, listed: readonly T[]
  * A Signal on its way to the population: its address and variables, the business key of the instances it starts, the
  * throw occurrence it left by public identifier, which names the instances it starts (`cascadeInstanceId`; without one,
  * `startedInstanceId` after the command), and the State that threw it, which never receives it again: its own receivers
- * fired inside the throwing step (M7 OP-A). Plain data, so a host can carry it in a fan-out in progress.
+ * fired inside the throwing step (CIB-OP-0019). Plain data, so a host can carry it in a fan-out in progress.
  */
 export type Emission = Readonly<{
   address: SignalAddress;
@@ -163,8 +167,9 @@ export function signalStartReceivers(
 }
 
 /**
- * The defined linearization of a delivery's snapshot (population contract §6, CIB-INT-0030): the waiting receivers of
- * every instance by their process instance identifier, each instance's own in the order its list gives, then the start
+ * The defined linearization of a delivery's snapshot
+ * (docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md#signal-broadcasts, CIB-INT-0030): the waiting receivers of every
+ * instance by their process instance identifier, each instance's own in the order its list gives, then the start
  * receivers of each deployment in deploy order. No process instance identifier spans two instances' lists.
  */
 export function linearizeReceivers(
@@ -207,7 +212,8 @@ export function receiversOf(
 
 /**
  * What reaching an occurrence of one instance did: nothing when it is no longer a receiver of the address, read off the
- * open items and never off a Step failure (R8), else the step of its broadcast delivery.
+ * open items and never off a Step failure (docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md#signal-broadcasts), else
+ * the step of its broadcast delivery.
  */
 export type OccurrenceReach = { readonly skipped: true } | { readonly skipped: false; readonly outcome: Outcome };
 
@@ -264,9 +270,9 @@ export type Pending =
   | { readonly tag: PendingTag.Intent; readonly emitter: string; readonly intent: BroadcastIntent };
 
 /**
- * A fan-out in progress as plain data (population contract §5): its command, the work still to do, the entries so far,
- * newest first so that adding one costs the same however long a cascade runs, how many receivers it may still reach and
- * whether the cascade bound stopped it.
+ * A fan-out in progress as plain data (docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md#signal-broadcasts): its
+ * command, the work still to do, the entries so far, newest first so that adding one costs the same however long a
+ * cascade runs, how many receivers it may still reach and whether the cascade bound stopped it.
  */
 export type FanOutMachine = Readonly<{
   commandId: string;
@@ -465,9 +471,10 @@ function fanOutStep(hooks: Hooks, registry: readonly Deployment[], atMs: number,
 }
 
 /**
- * Run the fan-out's machine to its end at `atMs`, each receiver its own unit of commitment (population contract §5): a
- * committed receiver's intents go first, depth-first, each taking its snapshot (`receiversOf`) when its own delivery
- * begins, before the next receiver. The work list is the machine's, so a long cascade needs no deep call stack.
+ * Run the fan-out's machine to its end at `atMs`, each receiver its own unit of commitment
+ * (docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md#signal-broadcasts): a committed receiver's intents go first,
+ * depth-first, each taking its snapshot (`receiversOf`) when its own delivery begins, before the next receiver. The
+ * work list is the machine's, so a long cascade needs no deep call stack.
  */
 export function fanOut(hooks: Hooks, registry: readonly Deployment[], atMs: number, start: Fanning): Refusable<Fanning> {
   let fanning = start;

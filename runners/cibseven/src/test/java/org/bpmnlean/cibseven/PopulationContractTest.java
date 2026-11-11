@@ -23,7 +23,8 @@ import org.junit.Test;
 
 /**
  * The population wire contract as the CIB runner reads and answers it, the derived instance identities it maps CIB's
- * instances to (population contract §4), and the root-process rule it shares with the kernel reader.
+ * instances to (docs/CIB-OBSERVATION-POLICY.md#population-evidence), and the root-process rule it shares with the
+ * kernel reader.
  */
 public class PopulationContractTest {
 

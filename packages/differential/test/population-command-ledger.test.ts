@@ -1,7 +1,8 @@
 /**
- * The command ledger binds a command's content, never its arrival (population contract §7, engine contract (5)): a
- * retry arrives later than the command it repeats, so a step whose identifier and content equal an earlier command's
- * answers that command's resolution again whatever its logical time `at`, and a step with other content is
+ * The command ledger binds a command's content, never its arrival
+ * (docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md#message-key-correlation, engine contract (5)): a retry arrives
+ * later than the command it repeats, so a step whose identifier and content equal an earlier command's answers that
+ * command's resolution again whatever its logical time `at`, and a step with other content is
  * `rejected command-content-mismatch`. Every discovered population schedule that repeats a command identifier is
  * checked against that oracle, computed here from the steps without the digest, so a new replay witness joins without
  * an edit here; the later-time replay of each command kind must be among them.

@@ -25,8 +25,9 @@ import {
 } from "./messages.js";
 
 /**
- * The identity of the instance a Timer-start occurrence starts (population contract §4): bound to the occurrence, not to a
- * command, so one occurrence can never start two instances under any firing time or command identity.
+ * The identity of the instance a Timer-start occurrence starts
+ * (docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md#timer-starts): bound to the occurrence, not to a command, so one
+ * occurrence can never start two instances under any firing time or command identity.
  */
 export function timerInstanceId(deploymentId: number, startEvent: string, dueMs: number): string {
   const deployment = String(deploymentId);
@@ -46,8 +47,8 @@ export function timerFiring(originMs: number, dueMs: number, atMs: number, resol
 
 /**
  * A single-instance Timer start is the degenerate population: one deployment at 0, its occurrence named by the trigger's
- * time and fired on time (population contract §2.2, PC-TIMER-04). The start `named`, else the sole Timer start, is
- * checked; any other start is left to the step.
+ * time and fired on time (docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md#timer-starts, PC-TIMER-04). The start
+ * `named`, else the sole Timer start, is checked; any other start is left to the step.
  */
 export function onTimeRefusal(program: Program, named: ElementId | null, dueMs: number): string | null {
   const reached = timerStarts(program).filter(([header]) => named === null || header.id === named);
@@ -81,8 +82,8 @@ export function timerStartCheck(
 }
 
 /**
- * Fire a Timer-start occurrence at `atMs` (PC-TIMER-04, M8-INT-A, CIB-INT-0031) unless `timerStartCheck` refuses it.
- * The instance takes the firing time; a committed start consumes the occurrence.
+ * Fire a Timer-start occurrence at `atMs` (PC-TIMER-04, CIB-INT-0029, CIB-INT-0031) unless `timerStartCheck` refuses
+ * it. The instance takes the firing time; a committed start consumes the occurrence.
  */
 export function timerStart(
   hooks: Hooks,

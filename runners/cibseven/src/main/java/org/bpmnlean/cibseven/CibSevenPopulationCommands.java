@@ -41,9 +41,10 @@ import org.cibseven.bpm.model.bpmn.instance.StartEvent;
  * Applies a population's commands to CIB through its public API: a publication through `createMessageCorrelation`, a
  * broadcast through `createSignalEvent`, a Conditional start evaluation through `createConditionEvaluation`, and a
  * Timer-start firing by executing the start's job. CIB delivers every receiver of one command in one transaction
- * (M8-LIM-G), so a command has one outcome; the instances it started are named by the derived identities of the
- * population contract §4, mapped from CIB's by their deployment and start activity (M8-OP-A). The instances a thrown
- * Signal started inside the command are no instances it started; the population runner names them as cascades.
+ * (CIB-INT-0033), so a command has one outcome; the instances it started are named by the derived identities that
+ * docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md defines, mapped from CIB's by their deployment and start activity
+ * (docs/CIB-OBSERVATION-POLICY.md#population-evidence). The instances a thrown Signal started inside the command are no
+ * instances it started; the population runner names them as cascades.
  */
 final class CibSevenPopulationCommands {
 
@@ -270,7 +271,8 @@ final class CibSevenPopulationCommands {
    * Fires the Timer-start occurrence of a deployment due at `dueMs`, at `atMs`. CIB keeps one job per Timer start, due
    * at its next occurrence, and removes a superseded deployment's jobs (`BpmnDeployer.java:251-258`), so the firing
    * needs that job, due at `dueMs`, and a time not before it; anything else is rejected without reaching the engine.
-   * The started instance is named by the occurrence (`timer:` identity, population contract §4).
+   * The started instance is named by the occurrence (`timer:` identity,
+   * docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md#timer-starts).
    */
   private Answer timerStart(TimerStartStep timer, long atMs) {
     var deployment = registry.byOrdinal(timer.deploymentId());
@@ -303,7 +305,7 @@ final class CibSevenPopulationCommands {
 
   /**
    * The instances a command started, each named `start:` by the command, its deployment and its start Event, and
-   * ordered by deployment and start Event: CIB's order comes from a `HashSet` (population contract §6), which a
+   * ordered by deployment and start Event: CIB's order comes from a `HashSet` (CIB-INT-0030), which a
    * witness compared with CIB never depends on.
    */
   private Answer started(String commandId, List<String> engineIds) {
@@ -358,8 +360,9 @@ final class CibSevenPopulationCommands {
   }
 
   /**
-   * The identity of the instance a command starts at a deployment's start Event (population contract §4,
-   * `startedInstanceId` in `packages/kernel/src/population/contract.ts`): each part prefixed by its UTF-8 byte length.
+   * The identity of the instance a command starts at a deployment's start Event
+   * (docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md#message-key-correlation, `startedInstanceId` in
+   * `packages/kernel/src/population/contract.ts`): each part prefixed by its UTF-8 byte length.
    */
   static String startedInstanceId(String commandId, long deploymentId, String startEvent) {
     var deployment = Long.toString(deploymentId);

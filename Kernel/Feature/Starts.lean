@@ -24,8 +24,8 @@ structure StartsHooks where
 
 /-- `Hooks.startsFired`: the root starts `input`'s trigger fires, in document order. A named input considers only the
 start it names, so no other start's predicate is evaluated for it: each start is its own unit of commitment
-(population contract, per-receiver commitment). An unnamed none trigger fires the sole none start, and nothing when
-there is none or several. -/
+(docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md#conditional-start-evaluations). An unnamed none trigger fires the
+sole none start, and nothing when there is none or several. -/
 def startsFired (hooks : StartsHooks) (ctx : Ctx) (input : StartInput) : Except Failure (List ElementId) :=
   let starts : List (Header × StartPayload) := (ctx.program.children none).filterMap Element.start?
   match input.startEvent, input.trigger with

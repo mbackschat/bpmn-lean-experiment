@@ -25,11 +25,11 @@ import org.bpmnlean.cibseven.ScenarioProtocol.VariableValue;
  * CIB population result this runner answers it with.
  *
  * <p>The result keeps the shapes of the kernel's population result (`engine-population-result.schema.json`) within
- * CIB's observation boundary (population contract §8): every deployment's outcome and versions, each command's outcome
- * with the delivery target or the instances it started, the instance inputs that did not commit, and every root
- * instance's final state. CIB has no stable refusal codes, so none is written; it delivers every receiver of one
- * command in one transaction (M8-LIM-G), so a command has one outcome and its receivers' deliveries show only in the
- * instances' states.
+ * CIB's observation boundary (docs/CIB-OBSERVATION-POLICY.md#population-evidence): every deployment's outcome and
+ * versions, each command's outcome with the delivery target or the instances it started, the instance inputs that did
+ * not commit, and every root instance's final state. CIB has no stable refusal codes, so none is written; it delivers
+ * every receiver of one command in one transaction (CIB-INT-0033), so a command has one outcome and its receivers'
+ * deliveries show only in the instances' states.
  */
 public final class PopulationProtocol {
 
@@ -222,7 +222,7 @@ public final class PopulationProtocol {
   /**
    * One receiver of an explicit discovery order. CIB delivers in the hash order of its subscriptions
    * (`EventSubscriptionManager.java:94-105`) and takes no order, so the runner reads it and cannot follow it; a witness
-   * compared with CIB depends on no order (population contract §6).
+   * compared with CIB depends on no order (CIB-INT-0030).
    */
   @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "kind")
   @JsonSubTypes({
@@ -330,7 +330,7 @@ public final class PopulationProtocol {
   @JsonSubTypes({@JsonSubTypes.Type(value = Started.class, name = "started")})
   public sealed interface FanOutEntry permits Started {}
 
-  /** An instance a command started, under its derived identity (M8-OP-A). */
+  /** An instance a command started, under its derived identity (docs/CIB-OBSERVATION-POLICY.md#population-evidence). */
   public record Started(String instanceId, long deploymentId, long version, String startEvent) implements FanOutEntry {
     public Started {
       Objects.requireNonNull(instanceId, "instanceId");

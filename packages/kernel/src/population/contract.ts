@@ -197,7 +197,10 @@ export interface StepResult {
   readonly resolution: Resolution;
 }
 
-/** A command the population answered, under the digest of its content (contract §7). */
+/**
+ * A command the population answered, under the digest of its content
+ * (docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md#message-key-correlation).
+ */
 export interface LedgerEntry {
   readonly commandId: string;
   readonly digest: string;
@@ -280,9 +283,10 @@ export interface Result {
 }
 
 /**
- * The identity of the instance a command starts at `startEvent` of a deployment (population contract §4): each part
- * prefixed by its UTF-8 byte length, as `calledInstanceId`, so a command starts at most one instance per deployment and
- * start Event and a retried command can never start a second one.
+ * The identity of the instance a command starts at `startEvent` of a deployment
+ * (docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md#message-key-correlation): each part prefixed by its UTF-8 byte
+ * length, as `calledInstanceId`, so a command starts at most one instance per deployment and start Event and a retried
+ * command can never start a second one.
  */
 export function startedInstanceId(commandId: string, deploymentId: number, startEvent: string): string {
   const deployment = String(deploymentId);
@@ -292,9 +296,10 @@ export function startedInstanceId(commandId: string, deploymentId: number, start
 
 /**
  * The identity of the instance a thrown Signal's intent starts at `startEvent` of a deployment, in the cascade the
- * command `commandId` began (population contract §4): `startedInstanceId`'s parts, then the throw's own occurrence
- * `emitter` as one length-prefixed key `<len>:<processInstanceId>:<len>:<publicElementId>:<activation>`, written as
- * `calledInstanceId` writes an occurrence, so two throws of one cascade never start the same instance.
+ * command `commandId` began (docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md#signal-broadcasts):
+ * `startedInstanceId`'s parts, then the throw's own occurrence `emitter` as one length-prefixed key
+ * `<len>:<processInstanceId>:<len>:<publicElementId>:<activation>`, written as `calledInstanceId` writes an occurrence,
+ * so two throws of one cascade never start the same instance.
  */
 export function cascadeInstanceId(commandId: string, deploymentId: number, startEvent: string, emitter: OccurrenceRef): string {
   const key = `${utf8ByteSize(emitter.processInstanceId)}:${emitter.processInstanceId}:` +

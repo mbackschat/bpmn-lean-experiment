@@ -105,7 +105,10 @@ function deployStimulus(entry: Declared, atMs: number, pending: DeploymentSource
   return assertNever(source);
 }
 
-/** A malformed population scenario: a harness refusal with its stable code (contract §2.2, §7). */
+/**
+ * A malformed population scenario: a harness refusal with its stable code
+ * (docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md#message-key-correlation).
+ */
 function harnessRefusal(where: string, code: string, detail: string): never {
   throw new Error(`${where}: ${code}: ${detail}`);
 }

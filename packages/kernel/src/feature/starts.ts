@@ -65,8 +65,8 @@ function firedAmong(hooks: StartsHooks, ctx: Ctx, input: StartInput, starts: rea
 /**
  * `Hooks.startsFired`: the root starts `input`'s trigger fires, in document order. A named input considers only the
  * start it names, so no other start's predicate is evaluated for it: each start is its own unit of commitment
- * (population contract, per-receiver commitment). An unnamed none trigger fires the sole none start, and nothing when
- * there is none or several.
+ * (docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md#conditional-start-evaluations). An unnamed none trigger fires the
+ * sole none start, and nothing when there is none or several.
  */
 export function startsFired(hooks: StartsHooks, ctx: Ctx, input: StartInput): Result<readonly ElementId[]> {
   const starts = programChildren(ctx.program, null).flatMap((element) => {

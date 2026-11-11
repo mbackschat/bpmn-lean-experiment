@@ -9,11 +9,11 @@
  * [specification](../../../docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md)). Every command is answered once: the
  * ledger keeps each command's result under the digest of its content, so the same command again answers
  * its recorded result and changes nothing, and the same command identifier with other content is
- * `rejected command-content-mismatch` (population contract §7). Timer-start occurrences fire once each while their
- * deployment is current (`timerStart`), Conditional root starts are evaluated over submitted variables, each start that
- * holds starting its own instance (`evaluateConditions`), and Signals are broadcast to every receiver, each its own unit
- * of commitment, the intents every committed step leaves cascading depth-first after it (`broadcast`), an instance
- * input's into `inputCascades`.
+ * `rejected command-content-mismatch` (docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md#message-key-correlation).
+ * Timer-start occurrences fire once each while their deployment is current (`timerStart`), Conditional root starts are
+ * evaluated over submitted variables, each start that holds starting its own instance (`evaluateConditions`), and
+ * Signals are broadcast to every receiver, each its own unit of commitment, the intents every committed step leaves
+ * cascading depth-first after it (`broadcast`), an instance input's into `inputCascades`.
  *
  * A refused deployment, an instance input that does not commit and a delivery a target refuses are results, never
  * harness errors; a candidate whose key cannot be evaluated is no match.

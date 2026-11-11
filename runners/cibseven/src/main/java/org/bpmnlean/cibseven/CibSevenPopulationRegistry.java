@@ -30,9 +30,10 @@ import org.cibseven.bpm.engine.repository.ProcessDefinition;
 import org.cibseven.bpm.model.bpmn.BpmnModelInstance;
 
 /**
- * A population's deployments in deploy order, each numbered by its deploy ordinal (population contract §2): the CIB
- * deployment it became, or CIB's refusal, which takes an ordinal too. It answers the population's definition selectors
- * and translates the scenario's Message and Signal identifiers into the names CIB addresses them by.
+ * A population's deployments in deploy order, each numbered by its deploy ordinal
+ * (docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md#deployments): the CIB deployment it became, or CIB's refusal,
+ * which takes an ordinal too. It answers the population's definition selectors and translates the scenario's Message
+ * and Signal identifiers into the names CIB addresses them by.
  */
 final class CibSevenPopulationRegistry {
 

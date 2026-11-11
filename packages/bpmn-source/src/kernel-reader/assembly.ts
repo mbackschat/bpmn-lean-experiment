@@ -1,9 +1,10 @@
 /**
- * Program assembly for one deployment of a population (PC-SCOPE-03, population contract §2.3): beside its own
- * processes, a deployment's program carries a copy of every process of every other listed deployment whose key one of
- * its Calls names, transitively over the Calls of the copies. Assembly is mechanical. It numbers no version, reads no
- * deploy order and filters nothing: `Kernel.Population.deploy` stamps versions, removes the copies of deployments later
- * than the caller and validates the stamps, and admission selects among the copies (`Program.calledProcessFor`).
+ * Program assembly for one deployment of a population (PC-SCOPE-03,
+ * docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md#deployments): beside its own processes, a deployment's program
+ * carries a copy of every process of every other listed deployment whose key one of its Calls names, transitively over
+ * the Calls of the copies. Assembly is mechanical. It numbers no version, reads no deploy order and filters nothing:
+ * `Kernel.Population.deploy` stamps versions, removes the copies of deployments later than the caller and validates the
+ * stamps, and admission selects among the copies (`Program.calledProcessFor`).
  *
  * A Call names the key of its resolved QName's local part. That covers both `calledElementResolution` readings without
  * branching on a profile: under `cibKey` a literal names a process only when unprefixed, since an `xsd:ID` never

@@ -15,7 +15,7 @@ namespace Kernel.Population
 
 /-- The Conditional root starts of the deployments in scope, each with its public identifier: those of the selected
 deployment, or of each key's current deployment (CIB-INT-0031); deployments in deploy order, starts in document order
-(population contract §6). -/
+(docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md#conditional-start-evaluations). -/
 def conditionalStarts (registry : List Deployment) (scope : Option Deployment) : List (Deployment × Header × String) :=
   (scope.map ([·])).getD (currentDeployments registry) |>.flatMap fun deployment =>
     ((deployment.program.children none).filterMap Element.start?).filterMap fun (header, start) =>
