@@ -735,12 +735,6 @@
     ]
   },
   {
-    "evidence": "scenarios/open-rows/conditional-start-population/no-conditional-start-in-scope.population-cibseven-evidence.json",
-    "owners": [
-      "CIB-EXT-0044"
-    ]
-  },
-  {
     "evidence": "scenarios/open-rows/conditional-start-population/one-start-fails-others-start.population-cibseven-evidence.json",
     "owners": [
       "CIB-INT-0033"
@@ -1203,6 +1197,12 @@
     "evidence": "scenarios/open-rows/message-correlation-criteria/modeled-key-api-criterion.cibseven-evidence.json",
     "owners": [
       "CIB-LIM-0002"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/message-correlation-criteria/object-valued-criterion.cibseven-evidence.json",
+    "owners": [
+      "CIB-EXT-0025"
     ]
   },
   {
@@ -1854,6 +1854,12 @@
     "evidence": "scenarios/open-rows/signal-broadcast-population/broadcast-start-fails-catch-still-delivered.population-cibseven-evidence.json",
     "owners": [
       "CIB-INT-0033"
+    ]
+  },
+  {
+    "evidence": "scenarios/open-rows/signal-broadcast-population/sibling-branch-cascade.population-cibseven-evidence.json",
+    "owners": [
+      "CIB-INT-0035"
     ]
   },
   {
