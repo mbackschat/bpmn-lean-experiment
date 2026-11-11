@@ -22,6 +22,11 @@ const preservedNotationSourcePath = new URL(
   import.meta.url,
 );
 
+const conversationSourcePath = new URL(
+  "../../../../scenarios/message-key-correlation/process.bpmn",
+  import.meta.url,
+);
+
 function sha256(value: string): string {
   return createHash("sha256").update(value, "utf8").digest("hex");
 }
@@ -116,6 +121,14 @@ test("generates self-contained DI for the exact M3 metadata source without chang
   assert.equal(
     presentationXml.indexOf(generated.diagramInterchangeXml),
     sourceXml.lastIndexOf("</bpmn:definitions>"),
+  );
+});
+
+test("reads a Conversation's BPMN 2.0.2 messageFlowRef children and refuses layout only for the Collaboration", async () => {
+  const sourceXml = await readFile(conversationSourcePath, "utf8");
+  await assert.rejects(
+    new BpmnAutoLayoutPresentationAdapter().generate(sourceXml, "Process_SettlementCorrelation"),
+    /generated layout does not support Collaborations/u,
   );
 });
 

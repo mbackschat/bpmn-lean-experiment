@@ -1,4 +1,7 @@
 import { BpmnModdle } from "bpmn-moddle";
+import upstreamBpmnDescriptor from "bpmn-moddle/resources/bpmn/json/bpmn.json" with {
+  type: "json",
+};
 
 import { layoutInventory } from "./layout-inventory.js";
 
@@ -82,9 +85,33 @@ type ProcessDiagramSelection = Readonly<{
   participant: ModdleElement | null;
 }>;
 
+type DescriptorType = Readonly<{ name: string; properties?: ReadonlyArray<Readonly<{ name: string }>> }>;
+
+/**
+ * The pinned `bpmn` descriptor with its Conversation property named as BPMN 2.0.2 `Semantic.xsd` declares it:
+ * `bpmn-moddle@10.0.0` names `ConversationNode.messageFlowRefs`, so a strict parse refuses a standard
+ * `<bpmn:messageFlowRef>` child. `@bpmn-lean/bpmn-source` corrects the same property for admission
+ * (`bpmn-2.0.2-moddle-descriptor.ts`); the platform may not import it, so the one-property correction is repeated here.
+ */
+const bpmnDescriptor = (() => {
+  let corrections = 0;
+  const types = (upstreamBpmnDescriptor.types as ReadonlyArray<DescriptorType>).map((type) => type.name !== "ConversationNode" ? type : {
+    ...type,
+    properties: type.properties?.map((property) => {
+      if (property.name !== "messageFlowRefs") return property;
+      corrections += 1;
+      return { ...property, name: "messageFlowRef" };
+    }),
+  });
+  if (corrections !== 1) {
+    throw new TypeError("the pinned BPMN moddle descriptor does not contain exactly one ConversationNode.messageFlowRefs property");
+  }
+  return { ...upstreamBpmnDescriptor, types };
+})();
+
 export function createPresentationModdle(): PresentationModdleParser {
   // Upstream publishes no declarations; this private cast is the parser trust boundary.
-  return new BpmnModdle({ bpmnLean: structuredFormModdle }) as unknown as PresentationModdleParser;
+  return new BpmnModdle({ bpmn: bpmnDescriptor, bpmnLean: structuredFormModdle }) as unknown as PresentationModdleParser;
 }
 
 export async function parsePresentationModel(

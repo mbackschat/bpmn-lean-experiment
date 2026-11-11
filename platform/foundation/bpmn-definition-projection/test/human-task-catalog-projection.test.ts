@@ -149,3 +149,11 @@ test("does not accept misplaced forms, attributes, arbitrary descendants, or CIB
   );
   assert.equal((await project(cibOnly)).kind, "absent");
 });
+
+test("finds no catalog in a source whose Conversation names its Message Flows (BPMN 2.0.2 messageFlowRef)", async () => {
+  const sourceXml = await readFile(new URL("../../../../scenarios/message-key-correlation/process.bpmn", import.meta.url), "utf8");
+  const result = await projectHumanTaskCatalog(sourceXml, {
+    processId: "Process_SettlementCorrelation", semanticProfile, sourceSha256: sha256(sourceXml),
+  });
+  assert.equal(result.kind, "absent");
+});
