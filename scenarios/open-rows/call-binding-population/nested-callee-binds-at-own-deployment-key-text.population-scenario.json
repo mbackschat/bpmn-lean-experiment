@@ -1,0 +1,91 @@
+{
+  "kind": "populationScenario",
+  "id": "call-binding-population-nested-callee-binds-at-own-deployment-key-text",
+  "profile": "cibseven-2.2.0",
+  "definitions": [
+    {
+      "definitionRef": "call-binding-population-review-first",
+      "bpmn": {
+        "id": "call-binding-population-review-first",
+        "relativePath": "scenarios/open-rows/call-binding-population/review-first.bpmn",
+        "sha256": "141ccdde9ac71b63e80a98e3ff18a8206f4693e63c41fde022f38ecdf31ac315",
+        "sourceOverlay": null
+      }
+    },
+    {
+      "definitionRef": "call-binding-population-triage-key",
+      "bpmn": {
+        "id": "call-binding-population-triage-key",
+        "relativePath": "scenarios/open-rows/call-binding-population/triage-key.bpmn",
+        "sha256": "9ed9c2dfb92cce902ebd2287737ad5212314f6b067928903ab6c80612f6873d8",
+        "sourceOverlay": null
+      }
+    },
+    {
+      "definitionRef": "call-binding-population-review-second",
+      "bpmn": {
+        "id": "call-binding-population-review-second",
+        "relativePath": "scenarios/open-rows/call-binding-population/review-second.bpmn",
+        "sha256": "ff3eccd836de2d17499c0a26353010a0748891e6e0c7017d693018afc78c046e",
+        "sourceOverlay": null
+      }
+    },
+    {
+      "definitionRef": "call-binding-population-damage-claim-key",
+      "bpmn": {
+        "id": "call-binding-population-damage-claim-key",
+        "relativePath": "scenarios/open-rows/call-binding-population/damage-claim-key.bpmn",
+        "sha256": "a7d9a90dd404138bbe61b451e6494f8d7cd0622bbeaf457bbc6c2d6d8bf6dacd",
+        "sourceOverlay": null
+      }
+    }
+  ],
+  "steps": [
+    {
+      "kind": "deploy",
+      "definitionRef": "call-binding-population-review-first",
+      "at": 0
+    },
+    {
+      "kind": "deploy",
+      "definitionRef": "call-binding-population-triage-key",
+      "at": 10
+    },
+    {
+      "kind": "deploy",
+      "definitionRef": "call-binding-population-review-second",
+      "at": 20
+    },
+    {
+      "kind": "deploy",
+      "definitionRef": "call-binding-population-damage-claim-key",
+      "at": 30
+    },
+    {
+      "kind": "instance",
+      "definitionRef": "call-binding-population-damage-claim-key",
+      "instanceId": "DamageClaim_1",
+      "at": 40,
+      "stimulus": {
+        "kind": "start",
+        "commandId": "start-damage-claim-1",
+        "instanceId": "DamageClaim_1",
+        "variables": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.3.5",
+      "BPMN 2.0.2 Clause 10.3.6"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/util/CallableElementUtil.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/CallActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/model/BaseCallableElement.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/persistence/entity/ProcessDefinitionManager.java"
+    ]
+  }
+}

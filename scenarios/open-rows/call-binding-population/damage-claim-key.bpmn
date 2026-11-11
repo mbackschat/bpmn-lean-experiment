@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="Definitions_DamageClaimKey" targetNamespace="urn:bpmn-lean:scenarios:call-binding-population:damage-claim">
+  <bpmn:process id="DamageClaim" name="Handle a damage claim" isExecutable="true">
+    <bpmn:startEvent id="DamageReported" name="Damage reported" />
+    <bpmn:callActivity id="Call_TriageDamage" name="Triage the damage" calledElement="TriageDamage" />
+    <bpmn:endEvent id="ClaimHandled" name="Claim handled" />
+    <bpmn:sequenceFlow id="Flow_Reported_Triage" sourceRef="DamageReported" targetRef="Call_TriageDamage" />
+    <bpmn:sequenceFlow id="Flow_Triage_Handled" sourceRef="Call_TriageDamage" targetRef="ClaimHandled" />
+  </bpmn:process>
+</bpmn:definitions>
