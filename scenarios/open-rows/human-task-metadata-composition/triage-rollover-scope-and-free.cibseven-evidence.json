@@ -6,7 +6,7 @@
   },
   "profile": {
     "id": "cibseven-2.2.0",
-    "sha256": "186794b9b170bcdbc8353972e4902d2cedcd9c120f9bf3dc53b7e6256964547c"
+    "sha256": "4ba42187245bb54385253541eb59396076d54b24469a2cdb7550084e9bdadaa8"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -140,12 +140,12 @@
               {
                 "type": "candidate",
                 "userId": null,
-                "groupId": "triagers"
+                "groupId": "leads"
               },
               {
                 "type": "candidate",
                 "userId": null,
-                "groupId": "leads"
+                "groupId": "triagers"
               },
               {
                 "type": "candidate",
@@ -191,12 +191,12 @@
               {
                 "type": "candidate",
                 "userId": null,
-                "groupId": "triagers"
+                "groupId": "leads"
               },
               {
                 "type": "candidate",
                 "userId": null,
-                "groupId": "leads"
+                "groupId": "triagers"
               },
               {
                 "type": "assignee",

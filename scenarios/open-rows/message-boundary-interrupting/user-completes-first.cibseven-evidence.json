@@ -2,11 +2,11 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "message-boundary-interrupting-user-completes-first",
-    "sha256": "a74f6e324addf22a6ac132a9627b0e84d3550dd0aa53a7568263a56475d7e54b"
+    "sha256": "d6814847246c24e060c9bea905b073d5056efa3272dbc885f3598ccd7eef1152"
   },
   "profile": {
     "id": "cibseven-2.2.0",
-    "sha256": "186794b9b170bcdbc8353972e4902d2cedcd9c120f9bf3dc53b7e6256964547c"
+    "sha256": "4ba42187245bb54385253541eb59396076d54b24469a2cdb7550084e9bdadaa8"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -541,78 +541,6 @@
         "jobs": []
       }
     ],
-    "effectJobs": [
-      {
-        "afterCommandId": "s01-start",
-        "jobs": [
-          {
-            "elementId": "Host_Service",
-            "activation": 1,
-            "protocol": "urn:bpmn-lean:effect:probe-v1",
-            "handler": "bpmnLeanEffectHandler",
-            "retries": 3,
-            "executable": true,
-            "dueDatePresent": false
-          }
-        ]
-      },
-      {
-        "afterCommandId": "s02-complete-Host_User",
-        "jobs": [
-          {
-            "elementId": "Host_Service",
-            "activation": 1,
-            "protocol": "urn:bpmn-lean:effect:probe-v1",
-            "handler": "bpmnLeanEffectHandler",
-            "retries": 3,
-            "executable": true,
-            "dueDatePresent": false
-          }
-        ]
-      },
-      {
-        "afterCommandId": "s03-deliver-Cancel_User",
-        "jobs": [
-          {
-            "elementId": "Host_Service",
-            "activation": 1,
-            "protocol": "urn:bpmn-lean:effect:probe-v1",
-            "handler": "bpmnLeanEffectHandler",
-            "retries": 3,
-            "executable": true,
-            "dueDatePresent": false
-          }
-        ]
-      },
-      {
-        "afterCommandId": "s04-deliver-Amend_User",
-        "jobs": [
-          {
-            "elementId": "Host_Service",
-            "activation": 1,
-            "protocol": "urn:bpmn-lean:effect:probe-v1",
-            "handler": "bpmnLeanEffectHandler",
-            "retries": 3,
-            "executable": true,
-            "dueDatePresent": false
-          }
-        ]
-      },
-      {
-        "afterCommandId": "s05-complete-After_User",
-        "jobs": [
-          {
-            "elementId": "Host_Service",
-            "activation": 1,
-            "protocol": "urn:bpmn-lean:effect:probe-v1",
-            "handler": "bpmnLeanEffectHandler",
-            "retries": 3,
-            "executable": true,
-            "dueDatePresent": false
-          }
-        ]
-      }
-    ],
     "historicProcessStates": [
       {
         "afterCommandId": "s01-start",
@@ -634,8 +562,7 @@
         "afterCommandId": "s05-complete-After_User",
         "state": "ACTIVE"
       }
-    ],
-    "effectExecutions": []
+    ]
   },
   "projection": {
     "id": "canonical-scenario-result"
@@ -810,23 +737,6 @@
               "criteria": []
             },
             "input": "deliver"
-          },
-          {
-            "id": {
-              "processInstanceId": "Instance_1",
-              "elementId": "Host_Service",
-              "activation": 1
-            },
-            "definition": null,
-            "detail": {
-              "kind": "effect",
-              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
-              "operation": "urn:bpmn-lean:effect-operation:probe-v1",
-              "arguments": [],
-              "failures": 0,
-              "send": null
-            },
-            "input": "effectResult"
           },
           {
             "id": {
@@ -1147,23 +1057,6 @@
           {
             "id": {
               "processInstanceId": "Instance_1",
-              "elementId": "Host_Service",
-              "activation": 1
-            },
-            "definition": null,
-            "detail": {
-              "kind": "effect",
-              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
-              "operation": "urn:bpmn-lean:effect-operation:probe-v1",
-              "arguments": [],
-              "failures": 0,
-              "send": null
-            },
-            "input": "effectResult"
-          },
-          {
-            "id": {
-              "processInstanceId": "Instance_1",
               "elementId": "Quit_MiPar",
               "activation": 1
             },
@@ -1454,23 +1347,6 @@
               "criteria": []
             },
             "input": "deliver"
-          },
-          {
-            "id": {
-              "processInstanceId": "Instance_1",
-              "elementId": "Host_Service",
-              "activation": 1
-            },
-            "definition": null,
-            "detail": {
-              "kind": "effect",
-              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
-              "operation": "urn:bpmn-lean:effect-operation:probe-v1",
-              "arguments": [],
-              "failures": 0,
-              "send": null
-            },
-            "input": "effectResult"
           },
           {
             "id": {
@@ -1769,23 +1645,6 @@
           {
             "id": {
               "processInstanceId": "Instance_1",
-              "elementId": "Host_Service",
-              "activation": 1
-            },
-            "definition": null,
-            "detail": {
-              "kind": "effect",
-              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
-              "operation": "urn:bpmn-lean:effect-operation:probe-v1",
-              "arguments": [],
-              "failures": 0,
-              "send": null
-            },
-            "input": "effectResult"
-          },
-          {
-            "id": {
-              "processInstanceId": "Instance_1",
               "elementId": "Quit_MiPar",
               "activation": 1
             },
@@ -2054,23 +1913,6 @@
               "criteria": []
             },
             "input": "deliver"
-          },
-          {
-            "id": {
-              "processInstanceId": "Instance_1",
-              "elementId": "Host_Service",
-              "activation": 1
-            },
-            "definition": null,
-            "detail": {
-              "kind": "effect",
-              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
-              "operation": "urn:bpmn-lean:effect-operation:probe-v1",
-              "arguments": [],
-              "failures": 0,
-              "send": null
-            },
-            "input": "effectResult"
           },
           {
             "id": {

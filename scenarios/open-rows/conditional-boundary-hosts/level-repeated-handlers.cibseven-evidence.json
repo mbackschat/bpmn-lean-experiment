@@ -2,11 +2,11 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "conditional-boundary-hosts-level-repeated-handlers",
-    "sha256": "7d117a297cf7dddba346b7dc017c996922474c278297084957a0311afe1d3904"
+    "sha256": "2eeb8e3a7c956d4f98b784002a32c68c6a0441d495570e83797c2f9307cf1855"
   },
   "profile": {
     "id": "cibseven-2.2.0",
-    "sha256": "186794b9b170bcdbc8353972e4902d2cedcd9c120f9bf3dc53b7e6256964547c"
+    "sha256": "4ba42187245bb54385253541eb59396076d54b24469a2cdb7550084e9bdadaa8"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -403,10 +403,6 @@
         "afterCommandId": "s06-complete-Host_Level",
         "tasks": [
           {
-            "elementId": "After_Level",
-            "name": "File the level work"
-          },
-          {
             "elementId": "Writer",
             "name": "Record the outcome"
           },
@@ -437,6 +433,10 @@
           {
             "elementId": "Host_MiUser",
             "name": "Review every lot together"
+          },
+          {
+            "elementId": "After_Level",
+            "name": "File the level work"
           },
           {
             "elementId": "Child_Work",
@@ -471,92 +471,6 @@
         "jobs": []
       }
     ],
-    "effectJobs": [
-      {
-        "afterCommandId": "s01-start",
-        "jobs": [
-          {
-            "elementId": "Host_Service",
-            "activation": 1,
-            "protocol": "urn:bpmn-lean:effect:probe-v1",
-            "handler": "bpmnLeanEffectHandler",
-            "retries": 3,
-            "executable": true,
-            "dueDatePresent": false
-          }
-        ]
-      },
-      {
-        "afterCommandId": "s02-set-level",
-        "jobs": [
-          {
-            "elementId": "Host_Service",
-            "activation": 1,
-            "protocol": "urn:bpmn-lean:effect:probe-v1",
-            "handler": "bpmnLeanEffectHandler",
-            "retries": 3,
-            "executable": true,
-            "dueDatePresent": false
-          }
-        ]
-      },
-      {
-        "afterCommandId": "s03-set-level",
-        "jobs": [
-          {
-            "elementId": "Host_Service",
-            "activation": 1,
-            "protocol": "urn:bpmn-lean:effect:probe-v1",
-            "handler": "bpmnLeanEffectHandler",
-            "retries": 3,
-            "executable": true,
-            "dueDatePresent": false
-          }
-        ]
-      },
-      {
-        "afterCommandId": "s04-complete-Handle_Warn",
-        "jobs": [
-          {
-            "elementId": "Host_Service",
-            "activation": 1,
-            "protocol": "urn:bpmn-lean:effect:probe-v1",
-            "handler": "bpmnLeanEffectHandler",
-            "retries": 3,
-            "executable": true,
-            "dueDatePresent": false
-          }
-        ]
-      },
-      {
-        "afterCommandId": "s05-complete-Handle_Warn",
-        "jobs": [
-          {
-            "elementId": "Host_Service",
-            "activation": 1,
-            "protocol": "urn:bpmn-lean:effect:probe-v1",
-            "handler": "bpmnLeanEffectHandler",
-            "retries": 3,
-            "executable": true,
-            "dueDatePresent": false
-          }
-        ]
-      },
-      {
-        "afterCommandId": "s06-complete-Host_Level",
-        "jobs": [
-          {
-            "elementId": "Host_Service",
-            "activation": 1,
-            "protocol": "urn:bpmn-lean:effect:probe-v1",
-            "handler": "bpmnLeanEffectHandler",
-            "retries": 3,
-            "executable": true,
-            "dueDatePresent": false
-          }
-        ]
-      }
-    ],
     "historicProcessStates": [
       {
         "afterCommandId": "s01-start",
@@ -582,8 +496,7 @@
         "afterCommandId": "s06-complete-Host_Level",
         "state": "ACTIVE"
       }
-    ],
-    "effectExecutions": []
+    ]
   },
   "projection": {
     "id": "canonical-scenario-result"
@@ -812,23 +725,6 @@
               "inputs": []
             },
             "input": "command"
-          },
-          {
-            "id": {
-              "processInstanceId": "Instance_1",
-              "elementId": "Host_Service",
-              "activation": 1
-            },
-            "definition": null,
-            "detail": {
-              "kind": "effect",
-              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
-              "operation": "urn:bpmn-lean:effect-operation:probe-v1",
-              "arguments": [],
-              "failures": 0,
-              "send": null
-            },
-            "input": "effectResult"
           },
           {
             "id": {
@@ -1230,23 +1126,6 @@
               "inputs": []
             },
             "input": "command"
-          },
-          {
-            "id": {
-              "processInstanceId": "Instance_1",
-              "elementId": "Host_Service",
-              "activation": 1
-            },
-            "definition": null,
-            "detail": {
-              "kind": "effect",
-              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
-              "operation": "urn:bpmn-lean:effect-operation:probe-v1",
-              "arguments": [],
-              "failures": 0,
-              "send": null
-            },
-            "input": "effectResult"
           },
           {
             "id": {
@@ -1674,23 +1553,6 @@
           {
             "id": {
               "processInstanceId": "Instance_1",
-              "elementId": "Host_Service",
-              "activation": 1
-            },
-            "definition": null,
-            "detail": {
-              "kind": "effect",
-              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
-              "operation": "urn:bpmn-lean:effect-operation:probe-v1",
-              "arguments": [],
-              "failures": 0,
-              "send": null
-            },
-            "input": "effectResult"
-          },
-          {
-            "id": {
-              "processInstanceId": "Instance_1",
               "elementId": "Outer_Cond",
               "activation": 1
             },
@@ -2092,23 +1954,6 @@
           {
             "id": {
               "processInstanceId": "Instance_1",
-              "elementId": "Host_Service",
-              "activation": 1
-            },
-            "definition": null,
-            "detail": {
-              "kind": "effect",
-              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
-              "operation": "urn:bpmn-lean:effect-operation:probe-v1",
-              "arguments": [],
-              "failures": 0,
-              "send": null
-            },
-            "input": "effectResult"
-          },
-          {
-            "id": {
-              "processInstanceId": "Instance_1",
               "elementId": "Outer_Cond",
               "activation": 1
             },
@@ -2488,23 +2333,6 @@
           {
             "id": {
               "processInstanceId": "Instance_1",
-              "elementId": "Host_Service",
-              "activation": 1
-            },
-            "definition": null,
-            "detail": {
-              "kind": "effect",
-              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
-              "operation": "urn:bpmn-lean:effect-operation:probe-v1",
-              "arguments": [],
-              "failures": 0,
-              "send": null
-            },
-            "input": "effectResult"
-          },
-          {
-            "id": {
-              "processInstanceId": "Instance_1",
               "elementId": "Outer_Cond",
               "activation": 1
             },
@@ -2880,23 +2708,6 @@
               "inputs": []
             },
             "input": "command"
-          },
-          {
-            "id": {
-              "processInstanceId": "Instance_1",
-              "elementId": "Host_Service",
-              "activation": 1
-            },
-            "definition": null,
-            "detail": {
-              "kind": "effect",
-              "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
-              "operation": "urn:bpmn-lean:effect-operation:probe-v1",
-              "arguments": [],
-              "failures": 0,
-              "send": null
-            },
-            "input": "effectResult"
           },
           {
             "id": {

@@ -6,7 +6,7 @@
   },
   "profile": {
     "id": "cibseven-2.2.0",
-    "sha256": "186794b9b170bcdbc8353972e4902d2cedcd9c120f9bf3dc53b7e6256964547c"
+    "sha256": "4ba42187245bb54385253541eb59396076d54b24469a2cdb7550084e9bdadaa8"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -39,8 +39,8 @@
         "afterCommandId": "s01-start",
         "tasks": [
           {
-            "elementId": "Chosen_Beta",
-            "name": "Take the beta arm"
+            "elementId": "Chosen_Alpha",
+            "name": "Take the alpha arm"
           }
         ]
       }
@@ -94,13 +94,13 @@
           {
             "id": {
               "processInstanceId": "Instance_1",
-              "elementId": "Chosen_Beta",
+              "elementId": "Chosen_Alpha",
               "activation": 1
             },
             "definition": null,
             "detail": {
               "kind": "userTask",
-              "name": "Take the beta arm",
+              "name": "Take the alpha arm",
               "assignee": null,
               "candidateUsers": [],
               "candidateGroups": [],
