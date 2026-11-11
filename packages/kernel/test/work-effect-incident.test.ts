@@ -11,32 +11,38 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import { decodeProgram, hooks, step, stimulusFromJson } from "@bpmn-lean/kernel";
-import type { Outcome, State } from "@bpmn-lean/kernel";
+import type { Outcome, Program, State } from "@bpmn-lean/kernel";
 
 import { activity, base, serviceWork, task, withOptions, wired } from "./admission-refusal-support.ts";
 
-const program = (() => {
+function incidentProgram(incidentProcessCancellation: boolean): Program {
   const decoded = decodeProgram(wired(withOptions(task(activity("T", serviceWork()))(base()), {
-    technicalFailure: "incident", incidentProcessCancellation: true,
+    technicalFailure: "incident", incidentProcessCancellation,
   })));
   assert.ok(decoded.ok, decoded.ok ? "" : decoded.refusal);
   return decoded.value;
-})();
+}
+
+const program = incidentProgram(true);
 
 const occurrence = { processInstanceId: "I", elementId: "T", activation: 1 };
 const fail = { kind: "effectResult", occurrence, outcome: { kind: "technicalFailure" } };
 const retry = (generation: number) => ({ kind: "command", occurrence, action: { kind: "retryIncident", generation } });
 
-function apply(state: State | null, raw: Record<string, unknown>): Outcome {
+function apply(state: State | null, raw: Record<string, unknown>, on: Program = program): Outcome {
   const stimulus = stimulusFromJson({ commandId: "c", ...raw });
   assert.ok(stimulus.ok, stimulus.ok ? "" : stimulus.refusal);
-  return step(hooks, program, state, stimulus.value[1]);
+  return step(hooks, on, state, stimulus.value[1]);
 }
 
 function run(...stimuli: Record<string, unknown>[]): State {
+  return runOn(program, ...stimuli);
+}
+
+function runOn(on: Program, ...stimuli: Record<string, unknown>[]): State {
   let state: State | null = null;
   for (const raw of stimuli) {
-    const outcome = apply(state, raw);
+    const outcome = apply(state, raw, on);
     assert.ok(outcome.ok, JSON.stringify(outcome));
     state = outcome.value;
   }
@@ -64,4 +70,11 @@ test("a failure after a retry opens the next incident generation on the same occ
 test("a retry naming an earlier incident generation is stale", () => {
   const outcome = apply(run(start, fail, retry(1), fail), retry(1));
   assert.deepEqual(outcome, { ok: false, failure: { tag: "rejected", code: "incident-generation-stale" } });
+});
+
+test("cancelling an incident's process is rejected under a profile that does not select the cancellation", () => {
+  const uncancellable = incidentProgram(false);
+  const cancel = { kind: "command", occurrence, action: { kind: "cancelIncidentProcess", generation: 1 } };
+  const outcome = apply(runOn(uncancellable, start, fail), cancel, uncancellable);
+  assert.deepEqual(outcome, { ok: false, failure: { tag: "rejected", code: "incident-process-cancellation-unavailable" } });
 });

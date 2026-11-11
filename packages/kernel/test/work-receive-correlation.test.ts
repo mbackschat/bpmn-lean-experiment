@@ -39,3 +39,16 @@ test("a criterion delivered where the profile reads only modeled keys is unsuppo
   assert.ok(completed.ok, JSON.stringify(completed));
   assert.equal((completed.value as State).status, "completed");
 });
+
+test("a Receive Task delivery whose payload lies outside the value domain is rejected before its channel is matched", () => {
+  const decoded = decodeProgram(wired(task(activity("T", receiveWork()))(base())));
+  assert.ok(decoded.ok, decoded.ok ? "" : decoded.refusal);
+  const started = step(hooks, decoded.value, null, stimulus({ kind: "start", instanceId: "I", variables: [] }));
+  assert.ok(started.ok, JSON.stringify(started));
+  const nested = (depth: number): unknown => depth === 0 ? { kind: "string", value: "x" } : { kind: "list", value: [nested(depth - 1)] };
+  const outside = stimulus({
+    kind: "deliver", occurrence: { processInstanceId: "I", elementId: "T", activation: 1 },
+    trigger: { kind: "message", channel: { kind: "unspecifiedMessage" } }, payload: nested(6),
+  });
+  assert.deepEqual(step(hooks, decoded.value, started.value, outside), { ok: false, failure: { tag: "rejected", code: "value-outside-domain" } });
+});

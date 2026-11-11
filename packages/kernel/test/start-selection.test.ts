@@ -68,6 +68,12 @@ test("a Timer trigger naming one of the starts it fires starts that one", () => 
 
 const userTask = { processInstanceId: "I", elementId: "T", activation: 1 };
 
+test("a start applied to an instance that has already started is rejected, since only the state before it takes a start", () => {
+  const started = committed(run(waiting, null, { kind: "start", commandId: "start", instanceId: "I", variables: [] }));
+  const outcome = run(waiting, started, { kind: "start", commandId: "again", instanceId: "I", variables: [] });
+  assert.deepEqual(outcome.ok ? null : outcome.failure, { tag: "rejected", code: "instance-already-started" });
+});
+
 test("a delivery carrying variables is not admitted", () => {
   const started = committed(run(waiting, null, { kind: "start", commandId: "start", instanceId: "I", variables: [] }));
   const outcome = run(waiting, started, {

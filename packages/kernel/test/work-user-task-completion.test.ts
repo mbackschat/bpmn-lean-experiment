@@ -80,7 +80,7 @@ function program(shape: Shape): Json {
 type After = Readonly<{ root: Record<string, unknown>; open: readonly string[] }>;
 
 /** Start, complete `Review` with `values`, and return the root variables and the open tasks, or the failure. */
-function afterReview(json: Json, values: Record<string, string>): After | unknown {
+function afterReview(json: Json, values: Record<string, string> | ReadonlyArray<readonly [string, string]>): After | unknown {
   const decoded = decodeProgram(json);
   assert.ok(decoded.ok, decoded.ok ? "" : decoded.refusal);
   const stimuli = [
@@ -89,7 +89,7 @@ function afterReview(json: Json, values: Record<string, string>): After | unknow
       kind: "command", commandId: "review", occurrence: { processInstanceId: "I", elementId: "Review", activation: 1 },
       action: {
         kind: "completeUserTask",
-        values: Object.entries(values).map(([name, value]) => ({ name, value: { kind: "string", value } })),
+        values: (Array.isArray(values) ? values : Object.entries(values)).map(([name, value]) => ({ name, value: { kind: "string", value } })),
       },
     },
   ];
@@ -125,4 +125,9 @@ test("an outgoing condition reads an installed value but not an output under the
     { root: { verdict: "fast" }, open: ["A", "D"] });
   assert.deepEqual(afterReview(program({ outputs: [mapping("route", read("verdict"))], toA: equals("route", "fast") }), { verdict: "fast" }),
     { root: { route: "fast", verdict: "fast" }, open: ["D"] });
+});
+
+test("a completion submitting one name twice is rejected, since a submission sets each name once", () => {
+  assert.deepEqual(afterReview(program({}), [["verdict", "approve"], ["verdict", "reject"]]),
+    { tag: "rejected", code: "duplicate-output" });
 });
