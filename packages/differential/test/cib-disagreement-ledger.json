@@ -563,34 +563,9 @@
     ]
   },
   {
-    "evidence": "scenarios/open-rows/conditional-boundary-hosts/body-local-write-reads-another-scope.cibseven-evidence.json",
-    "owners": [
-      "CIB-EXT-0038"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/conditional-boundary-hosts/call-host-condition-then-return.cibseven-evidence.json",
-    "owners": [
-      "CIB-EXT-0038"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/conditional-boundary-hosts/call-return-write-reaches-watcher.cibseven-evidence.json",
-    "owners": [
-      "CIB-EXT-0038"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/conditional-boundary-hosts/completion-write-reaches-sibling.cibseven-evidence.json",
-    "owners": [
-      "CIB-EXT-0038"
-    ]
-  },
-  {
     "evidence": "scenarios/open-rows/conditional-boundary-hosts/completion-write-read-by-own-boundary.cibseven-evidence.json",
     "owners": [
-      "CIB-DEV-0005",
-      "CIB-EXT-0038"
+      "CIB-DEV-0005"
     ]
   },
   {
@@ -600,21 +575,9 @@
     ]
   },
   {
-    "evidence": "scenarios/open-rows/conditional-boundary-hosts/level-both-eligible.cibseven-evidence.json",
+    "evidence": "scenarios/open-rows/conditional-catch/gateway-two-true-arms.cibseven-evidence.json",
     "owners": [
-      "CIB-EXT-0038"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/conditional-boundary-hosts/level-repeated-handlers.cibseven-evidence.json",
-    "owners": [
-      "CIB-EXT-0038"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/conditional-boundary-hosts/multi-instance-task-halt.cibseven-evidence.json",
-    "owners": [
-      "CIB-EXT-0038"
+      "PC-CONDITION-03"
     ]
   },
   {
@@ -663,12 +626,6 @@
     "evidence": "scenarios/open-rows/conditional-evaluation/null-and-false-values.cibseven-evidence.json",
     "owners": [
       "CIB-LIM-0009"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/conditional-evaluation/portable-entry-true.cibseven-evidence.json",
-    "owners": [
-      "PC-CONDITION-01"
     ]
   },
   {
@@ -1155,18 +1112,6 @@
     ]
   },
   {
-    "evidence": "scenarios/open-rows/message-boundary-interrupting/call-child-completes-first.cibseven-evidence.json",
-    "owners": [
-      "CIB-EXT-0038"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/message-boundary-interrupting/call-stop-while-child-open.cibseven-evidence.json",
-    "owners": [
-      "CIB-EXT-0038"
-    ]
-  },
-  {
     "evidence": "scenarios/open-rows/message-boundary-interrupting/effect-abort-before-result.cibseven-evidence.json",
     "owners": [
       "CIB-EXT-0038"
@@ -1174,72 +1119,6 @@
   },
   {
     "evidence": "scenarios/open-rows/message-boundary-interrupting/effect-result-first.cibseven-evidence.json",
-    "owners": [
-      "CIB-EXT-0038"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/message-boundary-interrupting/parallel-bodies-complete-first.cibseven-evidence.json",
-    "owners": [
-      "CIB-EXT-0038"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/message-boundary-interrupting/parallel-bodies-quit.cibseven-evidence.json",
-    "owners": [
-      "CIB-EXT-0038"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/message-boundary-interrupting/receive-message-first.cibseven-evidence.json",
-    "owners": [
-      "CIB-EXT-0038"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/message-boundary-interrupting/receive-withdraw-before-own-message.cibseven-evidence.json",
-    "owners": [
-      "CIB-EXT-0038"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/message-boundary-interrupting/scope-completes-first.cibseven-evidence.json",
-    "owners": [
-      "CIB-EXT-0038"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/message-boundary-interrupting/scope-halt-while-work-open.cibseven-evidence.json",
-    "owners": [
-      "CIB-EXT-0038"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/message-boundary-interrupting/sequential-bodies-complete-first.cibseven-evidence.json",
-    "owners": [
-      "CIB-EXT-0038"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/message-boundary-interrupting/sequential-bodies-quit.cibseven-evidence.json",
-    "owners": [
-      "CIB-EXT-0038"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/message-boundary-interrupting/user-amend-first.cibseven-evidence.json",
-    "owners": [
-      "CIB-EXT-0038"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/message-boundary-interrupting/user-cancel-then-amend.cibseven-evidence.json",
-    "owners": [
-      "CIB-EXT-0038"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/message-boundary-interrupting/user-completes-first.cibseven-evidence.json",
     "owners": [
       "CIB-EXT-0038"
     ]
@@ -1721,6 +1600,12 @@
     ]
   },
   {
+    "evidence": "scenarios/open-rows/scope-without-start/transaction-entry-rolls-back.cibseven-evidence.json",
+    "owners": [
+      "CIB-LIM-0024"
+    ]
+  },
+  {
     "evidence": "scenarios/open-rows/signal-start-compositions/failing-signal-start-start.cibseven-evidence.json",
     "owners": [
       "PC-SIGNAL-02",
@@ -1895,16 +1780,9 @@
     ]
   },
   {
-    "evidence": "scenarios/open-rows/timer-boundary-hosts/call-child-completes-first.cibseven-evidence.json",
-    "owners": [
-      "CIB-EXT-0038"
-    ]
-  },
-  {
     "evidence": "scenarios/open-rows/timer-boundary-hosts/call-reminders-then-late.cibseven-evidence.json",
     "owners": [
-      "CIB-DEV-0006",
-      "CIB-EXT-0038"
+      "CIB-DEV-0006"
     ]
   },
   {
@@ -1915,54 +1793,6 @@
   },
   {
     "evidence": "scenarios/open-rows/timer-boundary-hosts/effect-timer-before-result.cibseven-evidence.json",
-    "owners": [
-      "CIB-EXT-0038"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/timer-boundary-hosts/loop-stale-deadline.cibseven-evidence.json",
-    "owners": [
-      "CIB-EXT-0038"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/timer-boundary-hosts/receive-message-first.cibseven-evidence.json",
-    "owners": [
-      "CIB-EXT-0038"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/timer-boundary-hosts/receive-remind-then-late.cibseven-evidence.json",
-    "owners": [
-      "CIB-EXT-0038"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/timer-boundary-hosts/scope-hard-while-work-open.cibseven-evidence.json",
-    "owners": [
-      "CIB-EXT-0038"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/timer-boundary-hosts/scope-soft-then-work-completes.cibseven-evidence.json",
-    "owners": [
-      "CIB-EXT-0038"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/timer-boundary-hosts/user-completes-first.cibseven-evidence.json",
-    "owners": [
-      "CIB-EXT-0038"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/timer-boundary-hosts/user-hard-first.cibseven-evidence.json",
-    "owners": [
-      "CIB-EXT-0038"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/timer-boundary-hosts/user-soft-then-hard.cibseven-evidence.json",
     "owners": [
       "CIB-EXT-0038"
     ]
