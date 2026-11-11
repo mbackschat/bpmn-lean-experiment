@@ -1,0 +1,354 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "receive-task-payload-correlation-embedded-delivery-after-cancellation",
+    "sha256": "ef6354509b99c97e1928d8947e1b5232af016d629e4ec45f12479f6a5d3a4ebc"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "5e79ebcb1dd2a72a946b2d15af085065c111277f579abe75c7cb9ab4c94b1601"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "o-1"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "fire-payment-timeout",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 3600000,
+        "variables": [
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "o-1"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "deliver-after-cancellation",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 3600000,
+        "variables": [
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "o-1"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "escalate",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 3600000,
+        "variables": [
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "o-1"
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "fire-payment-timeout",
+        "tasks": [
+          {
+            "elementId": "Escalate",
+            "name": "Escalate unpaid order"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "deliver-after-cancellation",
+        "tasks": [
+          {
+            "elementId": "Escalate",
+            "name": "Escalate unpaid order"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "escalate",
+        "tasks": []
+      }
+    ],
+    "messageSubscriptions": [
+      {
+        "afterCommandId": "start",
+        "subscriptions": [
+          {
+            "elementId": "AwaitPayment",
+            "eventName": "paymentReceived",
+            "messageId": "Message_Payment",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "fire-payment-timeout",
+        "subscriptions": []
+      },
+      {
+        "afterCommandId": "deliver-after-cancellation",
+        "subscriptions": []
+      },
+      {
+        "afterCommandId": "escalate",
+        "subscriptions": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start",
+        "jobs": [
+          {
+            "elementId": "PaymentTimeout",
+            "dueDateDeltaMs": 3600000,
+            "executable": false
+          }
+        ]
+      },
+      {
+        "afterCommandId": "fire-payment-timeout",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "deliver-after-cancellation",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "escalate",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "fire-payment-timeout",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "deliver-after-cancellation",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "escalate",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Order_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "o-1"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Order_1",
+              "elementId": "AwaitPayment",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Payment"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Order_1",
+              "elementId": "PaymentTimeout",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "timer",
+              "deadlineMs": 3600000,
+              "recurrence": null
+            },
+            "input": "timerFire"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "fire-payment-timeout",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Order_1",
+        "status": "running",
+        "logicalTimeMs": 3600000,
+        "variables": [
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "o-1"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Order_1",
+              "elementId": "Escalate",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Escalate unpaid order",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "deliver-after-cancellation",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Order_1",
+        "status": "running",
+        "logicalTimeMs": 3600000,
+        "variables": [
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "o-1"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Order_1",
+              "elementId": "Escalate",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Escalate unpaid order",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "escalate",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Order_1",
+        "status": "completed",
+        "logicalTimeMs": 3600000,
+        "variables": [
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "o-1"
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}

@@ -1,0 +1,92 @@
+{
+  "kind": "cibSevenPopulationEvidence",
+  "scenario": {
+    "id": "signal-broadcast-population-broadcast-start-fails-catch-still-delivered",
+    "sha256": "0f333b32a9449189e53f37184f1405152bd3d4647385b87ceb49bf67efd3bd2c"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "5e79ebcb1dd2a72a946b2d15af085065c111277f579abe75c7cb9ab4c94b1601"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "projection": {
+    "id": "cib-population-result"
+  },
+  "result": {
+    "deployments": [
+      {
+        "deploymentId": 1,
+        "definitionRef": "shift-till",
+        "versions": [
+          {
+            "key": "Process_ShiftTill",
+            "version": 1
+          }
+        ],
+        "outcome": {
+          "kind": "deployed"
+        }
+      },
+      {
+        "deploymentId": 2,
+        "definitionRef": "shift-audit",
+        "versions": [
+          {
+            "key": "Process_ShiftAudit",
+            "version": 1
+          }
+        ],
+        "outcome": {
+          "kind": "deployed"
+        }
+      }
+    ],
+    "steps": [
+      {
+        "commandId": "s02-broadcast-shift-closed",
+        "ordinal": 1,
+        "at": 10,
+        "outcome": "rolledBack"
+      }
+    ],
+    "inputFailures": [
+      {
+        "commandId": "s03-complete-ReconcileTill-1",
+        "outcome": "rejected"
+      }
+    ],
+    "processStates": [
+      {
+        "kind": "state",
+        "instanceId": "Till_1",
+        "status": "running",
+        "logicalTimeMs": 20,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Till_1",
+              "elementId": "CatchShiftClosed",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "signal",
+              "name": "shift-closed",
+              "payload": false
+            },
+            "input": "deliver"
+          }
+        ]
+      }
+    ]
+  }
+}

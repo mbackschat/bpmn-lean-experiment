@@ -1,0 +1,112 @@
+{
+  "kind": "cibSevenPopulationEvidence",
+  "scenario": {
+    "id": "timer-start-population-redeploy-supersedes-timer-start",
+    "sha256": "f8e7b3dea722e36ea62ff7c40e9380fdd87ccdc079df799ed9fb1418151885b2"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "5e79ebcb1dd2a72a946b2d15af085065c111277f579abe75c7cb9ab4c94b1601"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "projection": {
+    "id": "cib-population-result"
+  },
+  "result": {
+    "deployments": [
+      {
+        "deploymentId": 1,
+        "definitionRef": "duration-start-v1",
+        "versions": [
+          {
+            "key": "Process_DurationBatch",
+            "version": 1
+          }
+        ],
+        "outcome": {
+          "kind": "deployed"
+        }
+      },
+      {
+        "deploymentId": 2,
+        "definitionRef": "duration-start-v2",
+        "versions": [
+          {
+            "key": "Process_DurationBatch",
+            "version": 2
+          }
+        ],
+        "outcome": {
+          "kind": "deployed"
+        }
+      }
+    ],
+    "steps": [
+      {
+        "commandId": "s01-fire-first-version",
+        "ordinal": 1,
+        "at": 3600000,
+        "outcome": "rejected"
+      },
+      {
+        "commandId": "s02-fire-second-version",
+        "ordinal": 2,
+        "at": 5400000,
+        "outcome": "committed",
+        "resolution": {
+          "kind": "fanOut",
+          "entries": [
+            {
+              "kind": "started",
+              "instanceId": "timer:1:2:18:StartAfterDuration:5400000",
+              "deploymentId": 2,
+              "version": 2,
+              "startEvent": "StartAfterDuration"
+            }
+          ]
+        }
+      }
+    ],
+    "processStates": [
+      {
+        "kind": "state",
+        "instanceId": "timer:1:2:18:StartAfterDuration:5400000",
+        "status": "running",
+        "logicalTimeMs": 5400000,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "timer:1:2:18:StartAfterDuration:5400000",
+              "elementId": "ReviewBatchRevised",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review the batch",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      }
+    ]
+  }
+}

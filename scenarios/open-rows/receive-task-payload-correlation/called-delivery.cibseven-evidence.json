@@ -1,0 +1,347 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "receive-task-payload-correlation-called-delivery",
+    "sha256": "584fcaf2e727c364127d39e2a128fe6c323b96b2e8b605b1700b11e460691683"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "5e79ebcb1dd2a72a946b2d15af085065c111277f579abe75c7cb9ab4c94b1601"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "o-1"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "deliver-caller-identity",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "o-1"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "deliver-called-payment",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "o-1"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "wrap-up",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "o-1"
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "start",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "deliver-caller-identity",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "deliver-called-payment",
+        "tasks": [
+          {
+            "elementId": "WrapUp",
+            "name": "Wrap up"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "wrap-up",
+        "tasks": []
+      }
+    ],
+    "messageSubscriptions": [
+      {
+        "afterCommandId": "start",
+        "subscriptions": [
+          {
+            "elementId": "AwaitPayment",
+            "eventName": "paymentReceived",
+            "messageId": "Message_Payment",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "deliver-caller-identity",
+        "subscriptions": [
+          {
+            "elementId": "AwaitPayment",
+            "eventName": "paymentReceived",
+            "messageId": "Message_Payment",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "deliver-called-payment",
+        "subscriptions": []
+      },
+      {
+        "afterCommandId": "wrap-up",
+        "subscriptions": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "deliver-caller-identity",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "deliver-called-payment",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "wrap-up",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "deliver-caller-identity",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "deliver-called-payment",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "wrap-up",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Desk_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "o-1"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "call:6:Desk_1:14:CollectPayment:1",
+              "elementId": "AwaitPayment",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_PaymentCollection",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Payment"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "deliver-caller-identity",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Desk_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "o-1"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "call:6:Desk_1:14:CollectPayment:1",
+              "elementId": "AwaitPayment",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_PaymentCollection",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Payment"
+              },
+              "payload": false,
+              "criteria": []
+            },
+            "input": "deliver"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "deliver-called-payment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Desk_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "o-1"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Desk_1",
+              "elementId": "WrapUp",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Wrap up",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "wrap-up",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Desk_1",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "o-1"
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}

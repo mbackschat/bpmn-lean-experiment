@@ -1,0 +1,72 @@
+{
+  "kind": "cibSevenPopulationEvidence",
+  "scenario": {
+    "id": "signal-broadcast-population-broadcast-expired-receiver-unchanged",
+    "sha256": "f6f41c7bb26b3d68378904ff943ba38e89821b9affe4d505ebc221f5e98eb330"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "5e79ebcb1dd2a72a946b2d15af085065c111277f579abe75c7cb9ab4c94b1601"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "projection": {
+    "id": "cib-population-result"
+  },
+  "result": {
+    "deployments": [
+      {
+        "deploymentId": 1,
+        "definitionRef": "approval-race",
+        "versions": [
+          {
+            "key": "Process_ApprovalRace",
+            "version": 1
+          }
+        ],
+        "outcome": {
+          "kind": "deployed"
+        }
+      }
+    ],
+    "steps": [
+      {
+        "commandId": "s02-broadcast-approved",
+        "ordinal": 1,
+        "at": 10,
+        "outcome": "committed",
+        "resolution": {
+          "kind": "fanOut",
+          "entries": []
+        }
+      },
+      {
+        "commandId": "s03-broadcast-rejected",
+        "ordinal": 2,
+        "at": 20,
+        "outcome": "committed",
+        "resolution": {
+          "kind": "fanOut",
+          "entries": []
+        }
+      }
+    ],
+    "processStates": [
+      {
+        "kind": "state",
+        "instanceId": "Race_1",
+        "status": "completed",
+        "logicalTimeMs": 30,
+        "variables": [],
+        "openWaits": []
+      }
+    ]
+  }
+}

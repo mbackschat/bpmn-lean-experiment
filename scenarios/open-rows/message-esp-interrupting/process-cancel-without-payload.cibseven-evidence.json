@@ -1,0 +1,377 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "message-esp-interrupting-process-cancel-without-payload",
+    "sha256": "7b27d9a4762be9586dcb608d56014b692739a8930b1b689b994999f2c0d6cac5"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "5e79ebcb1dd2a72a946b2d15af085065c111277f579abe75c7cb9ab4c94b1601"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "orderRef",
+            "value": {
+              "kind": "string",
+              "value": "order-1"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-deliver-Start_Cancel",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "orderRef",
+            "value": {
+              "kind": "string",
+              "value": "order-1"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-deliver-Start_Cancel",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "orderRef",
+            "value": {
+              "kind": "string",
+              "value": "order-1"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-complete-Cancel_Handler",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "orderRef",
+            "value": {
+              "kind": "string",
+              "value": "order-1"
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "tasks": [
+          {
+            "elementId": "Work",
+            "name": "Prepare the order"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-deliver-Start_Cancel",
+        "tasks": [
+          {
+            "elementId": "Cancel_Handler",
+            "name": "Record the cancellation"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-deliver-Start_Cancel",
+        "tasks": [
+          {
+            "elementId": "Cancel_Handler",
+            "name": "Record the cancellation"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-complete-Cancel_Handler",
+        "tasks": []
+      }
+    ],
+    "messageSubscriptions": [
+      {
+        "afterCommandId": "s01-start",
+        "subscriptions": [
+          {
+            "elementId": "Start_Cancel",
+            "eventName": "cancelOrder",
+            "messageId": "Message_Cancel",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-deliver-Start_Cancel",
+        "subscriptions": []
+      },
+      {
+        "afterCommandId": "s03-deliver-Start_Cancel",
+        "subscriptions": []
+      },
+      {
+        "afterCommandId": "s04-complete-Cancel_Handler",
+        "subscriptions": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s02-deliver-Start_Cancel",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s03-deliver-Start_Cancel",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s04-complete-Cancel_Handler",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "s01-start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s02-deliver-Start_Cancel",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s03-deliver-Start_Cancel",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s04-complete-Cancel_Handler",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "orderRef",
+            "value": {
+              "kind": "string",
+              "value": "order-1"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Start_Cancel",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "message",
+              "channel": {
+                "kind": "directMessage",
+                "messageId": "Message_Cancel"
+              },
+              "payload": true,
+              "criteria": []
+            },
+            "input": "deliver"
+          },
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Work",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Prepare the order",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s02-deliver-Start_Cancel",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "orderRef",
+            "value": {
+              "kind": "string",
+              "value": "order-1"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Cancel_Handler",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Record the cancellation",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "orderSeen",
+                  "value": {
+                    "kind": "string",
+                    "value": "order-1"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s03-deliver-Start_Cancel",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "orderRef",
+            "value": {
+              "kind": "string",
+              "value": "order-1"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "Cancel_Handler",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Record the cancellation",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": [
+                {
+                  "name": "orderSeen",
+                  "value": {
+                    "kind": "string",
+                    "value": "order-1"
+                  }
+                }
+              ]
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s04-complete-Cancel_Handler",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "orderRef",
+            "value": {
+              "kind": "string",
+              "value": "order-1"
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "kind": "cibSevenPopulationEvidence",
+  "scenario": {
+    "id": "conditional-start-population-no-conditional-start-in-scope",
+    "sha256": "b138af44256dcde68e3b5c9c28d894282f40537e9c4320af78753a055d242611"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "5e79ebcb1dd2a72a946b2d15af085065c111277f579abe75c7cb9ab4c94b1601"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "projection": {
+    "id": "cib-population-result"
+  },
+  "result": {
+    "deployments": [
+      {
+        "deploymentId": 1,
+        "definitionRef": "order-intake",
+        "versions": [
+          {
+            "key": "Process_OrderIntake",
+            "version": 1
+          }
+        ],
+        "outcome": {
+          "kind": "deployed"
+        }
+      }
+    ],
+    "steps": [
+      {
+        "commandId": "s01-evaluate",
+        "ordinal": 1,
+        "at": 0,
+        "outcome": "rolledBack"
+      }
+    ],
+    "processStates": []
+  }
+}

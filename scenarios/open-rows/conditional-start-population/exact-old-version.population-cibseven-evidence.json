@@ -1,0 +1,181 @@
+{
+  "kind": "cibSevenPopulationEvidence",
+  "scenario": {
+    "id": "conditional-start-population-exact-old-version",
+    "sha256": "5dcb4d0b81138349af0d1b912c630824722a0528974bb5df6da3b6c4eeb2e361"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "5e79ebcb1dd2a72a946b2d15af085065c111277f579abe75c7cb9ab4c94b1601"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "projection": {
+    "id": "cib-population-result"
+  },
+  "result": {
+    "deployments": [
+      {
+        "deploymentId": 1,
+        "definitionRef": "large-order-v1",
+        "versions": [
+          {
+            "key": "Process_LargeOrder",
+            "version": 1
+          }
+        ],
+        "outcome": {
+          "kind": "deployed"
+        }
+      },
+      {
+        "deploymentId": 2,
+        "definitionRef": "large-order-v2",
+        "versions": [
+          {
+            "key": "Process_LargeOrder",
+            "version": 2
+          }
+        ],
+        "outcome": {
+          "kind": "deployed"
+        }
+      }
+    ],
+    "steps": [
+      {
+        "commandId": "s01-evaluate-current",
+        "ordinal": 1,
+        "at": 20,
+        "outcome": "committed",
+        "resolution": {
+          "kind": "fanOut",
+          "entries": [
+            {
+              "kind": "started",
+              "instanceId": "start:20:s01-evaluate-current:1:2:15:StartLargeOrder",
+              "deploymentId": 2,
+              "version": 2,
+              "startEvent": "StartLargeOrder"
+            }
+          ]
+        }
+      },
+      {
+        "commandId": "s02-evaluate-old-below-threshold",
+        "ordinal": 2,
+        "at": 30,
+        "outcome": "committed",
+        "resolution": {
+          "kind": "fanOut",
+          "entries": []
+        }
+      },
+      {
+        "commandId": "s03-evaluate-old-above-threshold",
+        "ordinal": 3,
+        "at": 40,
+        "outcome": "committed",
+        "resolution": {
+          "kind": "fanOut",
+          "entries": [
+            {
+              "kind": "started",
+              "instanceId": "start:32:s03-evaluate-old-above-threshold:1:1:15:StartLargeOrder",
+              "deploymentId": 1,
+              "version": 1,
+              "startEvent": "StartLargeOrder"
+            }
+          ]
+        }
+      }
+    ],
+    "processStates": [
+      {
+        "kind": "state",
+        "instanceId": "start:20:s01-evaluate-current:1:2:15:StartLargeOrder",
+        "status": "running",
+        "logicalTimeMs": 40,
+        "variables": [
+          {
+            "name": "amount",
+            "value": {
+              "kind": "integer",
+              "value": 700
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "start:20:s01-evaluate-current:1:2:15:StartLargeOrder",
+              "elementId": "ReviewOrderRevised",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review the order",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "state",
+        "instanceId": "start:32:s03-evaluate-old-above-threshold:1:1:15:StartLargeOrder",
+        "status": "running",
+        "logicalTimeMs": 40,
+        "variables": [
+          {
+            "name": "amount",
+            "value": {
+              "kind": "integer",
+              "value": 2500
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "start:32:s03-evaluate-old-above-threshold:1:1:15:StartLargeOrder",
+              "elementId": "ReviewOrder",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review the order",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      }
+    ]
+  }
+}

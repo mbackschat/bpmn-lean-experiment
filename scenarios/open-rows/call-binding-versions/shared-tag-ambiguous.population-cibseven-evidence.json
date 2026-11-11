@@ -1,0 +1,74 @@
+{
+  "kind": "cibSevenPopulationEvidence",
+  "scenario": {
+    "id": "call-binding-versions-shared-tag-ambiguous",
+    "sha256": "3fa86236a3c3e19b0af86b43a79b45be5ba2c85c575abdb86595067db094ee6f"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "5e79ebcb1dd2a72a946b2d15af085065c111277f579abe75c7cb9ab4c94b1601"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "projection": {
+    "id": "cib-population-result"
+  },
+  "result": {
+    "deployments": [
+      {
+        "deploymentId": 1,
+        "definitionRef": "callee-stable",
+        "versions": [
+          {
+            "key": "Process_Callee",
+            "version": 1
+          }
+        ],
+        "outcome": {
+          "kind": "deployed"
+        }
+      },
+      {
+        "deploymentId": 2,
+        "definitionRef": "callee-stable",
+        "versions": [
+          {
+            "key": "Process_Callee",
+            "version": 2
+          }
+        ],
+        "outcome": {
+          "kind": "deployed"
+        }
+      },
+      {
+        "deploymentId": 3,
+        "definitionRef": "caller",
+        "versions": [
+          {
+            "key": "Process_Caller",
+            "version": 1
+          }
+        ],
+        "outcome": {
+          "kind": "deployed"
+        }
+      }
+    ],
+    "steps": [],
+    "inputFailures": [
+      {
+        "commandId": "s01-start-order-1",
+        "outcome": "rolledBack"
+      }
+    ],
+    "processStates": []
+  }
+}

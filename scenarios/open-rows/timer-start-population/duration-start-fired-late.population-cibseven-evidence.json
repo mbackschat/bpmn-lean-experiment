@@ -1,0 +1,93 @@
+{
+  "kind": "cibSevenPopulationEvidence",
+  "scenario": {
+    "id": "timer-start-population-duration-start-fired-late",
+    "sha256": "707840a09fd1cd57ecfb01b606ec17fd8700ceb710757fd027c9038558d16ca3"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "5e79ebcb1dd2a72a946b2d15af085065c111277f579abe75c7cb9ab4c94b1601"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "projection": {
+    "id": "cib-population-result"
+  },
+  "result": {
+    "deployments": [
+      {
+        "deploymentId": 1,
+        "definitionRef": "duration-start",
+        "versions": [
+          {
+            "key": "Process_DurationBatch",
+            "version": 1
+          }
+        ],
+        "outcome": {
+          "kind": "deployed"
+        }
+      }
+    ],
+    "steps": [
+      {
+        "commandId": "s01-fire-late",
+        "ordinal": 1,
+        "at": 3660000,
+        "outcome": "committed",
+        "resolution": {
+          "kind": "fanOut",
+          "entries": [
+            {
+              "kind": "started",
+              "instanceId": "timer:1:1:18:StartAfterDuration:3600000",
+              "deploymentId": 1,
+              "version": 1,
+              "startEvent": "StartAfterDuration"
+            }
+          ]
+        }
+      }
+    ],
+    "processStates": [
+      {
+        "kind": "state",
+        "instanceId": "timer:1:1:18:StartAfterDuration:3600000",
+        "status": "running",
+        "logicalTimeMs": 3660000,
+        "variables": [],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "timer:1:1:18:StartAfterDuration:3600000",
+              "elementId": "ReviewBatch",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Review the batch",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      }
+    ]
+  }
+}

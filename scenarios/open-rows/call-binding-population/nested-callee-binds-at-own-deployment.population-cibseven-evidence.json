@@ -1,0 +1,87 @@
+{
+  "kind": "cibSevenPopulationEvidence",
+  "scenario": {
+    "id": "call-binding-population-nested-callee-binds-at-own-deployment",
+    "sha256": "60b13bb226928ada0347a76ce61246a071a66be269fca101279b8a716bf81472"
+  },
+  "profile": {
+    "id": "bpmn-2.0.2",
+    "sha256": "c66c82c92927b4c7413fb00aee153fd0d2d7d4e32c2cf38235347b423aa6468e"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "projection": {
+    "id": "cib-population-result"
+  },
+  "result": {
+    "deployments": [
+      {
+        "deploymentId": 1,
+        "definitionRef": "call-binding-population-review-first",
+        "versions": [
+          {
+            "key": "ReviewDamage",
+            "version": 1
+          }
+        ],
+        "outcome": {
+          "kind": "deployed"
+        }
+      },
+      {
+        "deploymentId": 2,
+        "definitionRef": "call-binding-population-triage",
+        "versions": [
+          {
+            "key": "TriageDamage",
+            "version": 1
+          }
+        ],
+        "outcome": {
+          "kind": "deployed"
+        }
+      },
+      {
+        "deploymentId": 3,
+        "definitionRef": "call-binding-population-review-second",
+        "versions": [
+          {
+            "key": "ReviewDamage",
+            "version": 2
+          }
+        ],
+        "outcome": {
+          "kind": "deployed"
+        }
+      },
+      {
+        "deploymentId": 4,
+        "definitionRef": "call-binding-population-damage-claim",
+        "versions": [
+          {
+            "key": "DamageClaim",
+            "version": 1
+          }
+        ],
+        "outcome": {
+          "kind": "deployed"
+        }
+      }
+    ],
+    "steps": [],
+    "inputFailures": [
+      {
+        "commandId": "start-damage-claim-1",
+        "outcome": "rolledBack"
+      }
+    ],
+    "processStates": []
+  }
+}
