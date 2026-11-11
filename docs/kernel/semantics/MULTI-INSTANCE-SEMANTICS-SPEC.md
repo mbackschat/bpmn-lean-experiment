@@ -121,7 +121,6 @@ Superseded first-profile restrictions: the sequential and parallel User Task pro
 | Row | Decision owed or not yet implemented |
 |---|---|
 | PC-MI-01 | Cardinality generation; both modes on User Task bodies under the selected CIB result account; the sequential completion condition and its partial-output resolution ([SMI account][smi-normative]). |
-| PC-MI-02 | Service Task bodies run in both modes on the collection form and agree with the retained CIB witnesses at identity level. The cardinality generation form runs under `Evaluator.juel` (the Multi-Instance level) and agrees with `parallel-cardinality-reversed` and `sequential-cardinality` once the CIB profile selects CIB-INT-0018 and CIB-INT-0019. Open: per-instance argument and result values, the typed explicit effects whose distinct argument and result owners go beyond identity level, which need body mappings and are deferred to PC-MI-10's mapping surface (`multiInstance.mappings`, `multiInstance.instanceResult`). |
 | PC-MI-03 | Call Activity bodies with called instances. |
 | PC-MI-04, PC-MI-05 | Sequential and parallel Multi-Instance Sub-Processes: body quiescence, reset locals, fresh identities, early completion that cancels unfinished bodies after complete body quiescence ([SMIS basis][smis-basis], [PMIS purpose][pmis-purpose]). |
 | PC-MI-06 | Cardinality-driven Sub-Process bodies with a fixed total. |

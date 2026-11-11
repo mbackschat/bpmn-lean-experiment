@@ -50,7 +50,7 @@ The kernel column reads: `accepted`, the row is `done` and the listed kernel sce
 | PC-SCOPE-06 | accepted | [`call-activity-data-boundaries`](../../scenarios/call-activity-data-boundaries/README.md); [`call-exceptional-return`](../../scenarios/open-rows/call-exceptional-return/README.md); [`call-raised-outputs`](../../scenarios/open-rows/call-raised-outputs/README.md); [`escalation-busy-called-root`](../../scenarios/open-rows/escalation-busy-called-root/README.md) | — |
 | PC-SCOPE-07 | absent | — | cancellation |
 | PC-MI-01 | slice | [`sequential-multi-instance`](../../scenarios/sequential-multi-instance/README.md); [`parallel-multi-instance`](../../scenarios/parallel-multi-instance/README.md) | Multi-Instance |
-| PC-MI-02 | slice | [`multi-instance-service-task`](../../scenarios/open-rows/multi-instance-service-task/README.md) (collection form, identity-level ownership; open: the cardinality generation form, refused, and per-instance argument and result values, deferred to PC-MI-10's mapping surface) | Multi-Instance |
+| PC-MI-02 | accepted | [`multi-instance-service-task`](../../scenarios/open-rows/multi-instance-service-task/README.md) (both generation forms; per-instance mapped values belong to PC-MI-10) | Multi-Instance |
 | PC-MI-03 | absent | — | Multi-Instance |
 | PC-MI-04 | absent | — | Multi-Instance |
 | PC-MI-05 | absent | — | concurrency, Multi-Instance |
