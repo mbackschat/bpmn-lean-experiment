@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { test } from "node:test";
 
 import {
+  DefinitionScheduleConflictError,
   DefinitionScheduleIntegrityError,
   DefinitionScheduleState,
   SqliteDefinitionScheduleRepository,
@@ -43,34 +44,22 @@ test("round-trips immutable snapshots and orders schedule IDs by Unicode scalar"
   });
 });
 
-test("enforces private host and semantic instance uniqueness", async () => {
+test("refuses a taken occurrence as a conflict and a taken host schedule as an integrity failure", async () => {
   await withRepository(async (repository) => {
     await repository.reserve(record("first", 1));
 
-    for (const collision of [
-      {
-        processInstanceId: "instance-1",
-        hostScheduleId: "host-2",
-        configuredWorkflowIdBase: "configured-2",
-      },
-      {
-        processInstanceId: "instance-2",
-        hostScheduleId: "host-1",
-        configuredWorkflowIdBase: "configured-2",
-      },
-      {
-        processInstanceId: "instance-2",
-        hostScheduleId: "host-2",
-        configuredWorkflowIdBase: "configured-1",
-      },
-    ]) {
-      const duplicate = record("second", 2);
-      Object.assign(duplicate.identity, collision);
-      await assert.rejects(
-        repository.reserve(duplicate),
-        (error: unknown) => error instanceof DefinitionScheduleIntegrityError,
-      );
-    }
+    const taken = record("second", 2);
+    Object.assign(taken.identity, { processInstanceId: "instance-1" });
+    await assert.rejects(
+      repository.reserve(taken),
+      (error: unknown) => error instanceof DefinitionScheduleConflictError,
+    );
+    const sharedHost = record("second", 2);
+    Object.assign(sharedHost.identity, { hostScheduleId: "host-1" });
+    await assert.rejects(
+      repository.reserve(sharedHost),
+      (error: unknown) => error instanceof DefinitionScheduleIntegrityError,
+    );
     assert.equal(
       (await repository.listForDefinition({ processId: "Process_Timer", version: 1 })).length,
       1,
@@ -98,7 +87,6 @@ test("reopen preserves private identities, lifecycle state, and stale CAS refusa
       assert.deepEqual(durable?.identity, {
         processInstanceId: "instance-7",
         hostScheduleId: "host-7",
-        configuredWorkflowIdBase: "configured-7",
       });
       assert.equal(
         await reopened.compareAndSet(
@@ -230,12 +218,10 @@ function record(scheduleId: string, identity: number): NewDefinitionScheduleReco
       sourceOverlay: null,
     },
     timerStart: { startEventId: "TimerStart", durationMs: 1_000 },
-    activationAt: "2026-08-11T12:00:00.000Z",
     dueAt: "2026-08-11T12:00:01.000Z",
     identity: {
       processInstanceId: `instance-${identity}`,
       hostScheduleId: `host-${identity}`,
-      configuredWorkflowIdBase: `configured-${identity}`,
     },
   };
 }

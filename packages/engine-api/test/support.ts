@@ -31,8 +31,9 @@ export async function sha256(bytes: Uint8Array): Promise<string> {
 
 export type TestHost = MemoryEngineHost;
 
-export function testHost(served: EngineServedRequirements = servesEverything): TestHost {
-  return createMemoryEngineHost({ served, taskQueue: "engine-test", now: () => 1_000 });
+/** A memory host whose Workflow time is `now`, 1,000 ms unless a test moves it. */
+export function testHost(served: EngineServedRequirements = servesEverything, now: () => number = () => 1_000): TestHost {
+  return createMemoryEngineHost({ served, taskQueue: "engine-test", now });
 }
 
 /** `request` once the definition version it names is registered with its host's population, as Product 2 deploys. */

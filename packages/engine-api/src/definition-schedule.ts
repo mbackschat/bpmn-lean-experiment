@@ -1,82 +1,68 @@
 /**
- * Timer Start Schedules: one Temporal Schedule per platform Schedule fires the selected Timer start once at its due
- * instant. Every operation recompiles the stored bytes and checks the selected Timer start, so the stored Schedule is
- * compared with what the definition produces now; its memo carries the start's intent, which the started process
- * inherits.
+ * Timer Start Schedules: one Temporal Schedule per platform Schedule fires one occurrence of the selected root Timer
+ * start of a registered definition version through the population, whose kernel decides whether it starts an instance
+ * ([population ingress](../../../docs/kernel/ARCHITECTURE-SPEC.md#population-ingress)). The occurrence is named by its
+ * due instant, which must be one of the kernel's occurrences counted from the deployment's deploy time
+ * (`timer-occurrence-unknown`). Every operation recompiles the stored bytes and checks the selected Timer start, so the
+ * stored Schedule is compared with what the definition produces now; its memo carries the firing's intent.
  *
- * The caller computes the due instant from the Timer start's resolved schedule (`EngineTimerSchedule`); the engine API
- * checks that the selected start and its schedule are what the definition compiles to now.
+ * A Schedule whose action ran reports the firing's verdict: the instance it started under the kernel-derived identity,
+ * or the kernel's refusal (a redeploy supersedes the deployment, `timer-start-superseded`; another firing consumed the
+ * occurrence, `timer-start-occurrence-consumed`). Until the firing answers, the Schedule is `firing`.
  */
 import {
   SchedulePhase,
   ScheduleCreation,
   assessSchedule,
+  canonicalJson,
+  timerFiringWorkflowId,
+  timerFiringWorkflowType,
+  type CommandAnswer,
   type ExpectedSchedule,
+  type TimerFiringArgs,
 } from "@bpmn-lean/temporal-host/host";
 
+import { member, requireWireString, sha256Hex, type EngineFailure, type JsonValue } from "./common.js";
 import {
-  requireWireString,
-  sameJson,
-  snapshotOverlay,
-  snapshotProfile,
-  type EngineFailure,
-  type EngineLimits,
-  type EngineProfile,
-  type EngineSourceOverlaySelection,
-  type JsonValue,
-} from "./common.js";
-import type { EngineStartCapability, EngineTimerSchedule } from "./definition-capabilities.js";
-import { atVersion, compileProgram, type CompiledDefinition } from "./definition.js";
-import { engineDeploymentScope } from "./definition-deployment.js";
+  EngineDefinitionScheduleIntegrityCode,
+  occurrenceAt,
+  prepareTimerStart,
+  type EngineTimerStartDefinitionRequest,
+  type TimerStartRefusal,
+} from "./definition-timer-occurrences.js";
 import { engineHostConfig, type EngineHost } from "./host.js";
-import { engineProcessLocatorForWorkflowId, type EngineProcessLocator } from "./process-locator.js";
-import { prepareStart, startMemo, type PreparedStart } from "./start-dispatch.js";
+import { engineProcessLocatorForCanonicalProcess, type EngineProcessLocator } from "./process-locator.js";
 
 export const engineTimerStartProtocol = "bpmn-kernel-timer-start";
 
 export enum EngineDefinitionScheduleStatus {
   Pending = "pending",
+  /** The action ran and its firing has not been answered yet. */
+  Firing = "firing",
   Started = "started",
+  /** The action ran and the population refused the occurrence with the kernel's code; no instance started. */
+  Refused = "refused",
   Missed = "missed",
   Rejected = "rejected",
   IntegrityFailure = "integrityFailure",
 }
 
-export enum EngineDefinitionScheduleIntegrityCode {
-  CompilationRejected = "definitionCompilationRejected",
-  IdentityDrift = "definitionIdentityDrift",
-  CapabilityDrift = "definitionStartCapabilityDrift",
-  ScheduleDrift = "temporalScheduleDrift",
-  InvalidSchedulePhase = "temporalSchedulePhaseInvalid",
-  ScheduleMissing = "temporalScheduleMissing",
-}
-
-export type EngineTimerStartSelection = Readonly<{ startEventId: string; schedule: EngineTimerSchedule }>;
-
-export type EngineDefinitionScheduleBindingRequest = Readonly<{
-  host: EngineHost;
-  bytes: Uint8Array;
-  sourceOverlay?: EngineSourceOverlaySelection | null;
-  sourceId: string;
-  expectedSha256: string;
-  expectedByteLength: number;
-  profile: EngineProfile;
-  expectedProcessId: string;
-  /** The deployed version the platform stored the definition under. */
-  version: number;
-  expectedStarts: readonly EngineStartCapability[];
-  timerStart: EngineTimerStartSelection;
-  processInstanceId: string;
+export type EngineDefinitionScheduleBindingRequest = EngineTimerStartDefinitionRequest & Readonly<{
   scheduleId: string;
-  workflowIdBase: string;
-  /** A whole UTC second, the unit of a Schedule's calendar. */
+  /** The occurrence's due instant: one of the selected Timer start's occurrences (`listEngineTimerStartOccurrences`). */
   dueAtEpochMs: number;
-  limits: EngineLimits;
 }>;
 
 export type EngineDefinitionScheduleResult =
-  | Readonly<{ status: EngineDefinitionScheduleStatus.Pending; paused: boolean }>
-  | Readonly<{ status: EngineDefinitionScheduleStatus.Started; paused: boolean; locator: EngineProcessLocator }>
+  | Readonly<{ status: EngineDefinitionScheduleStatus.Pending | EngineDefinitionScheduleStatus.Firing; paused: boolean }>
+  | Readonly<{
+      status: EngineDefinitionScheduleStatus.Started;
+      paused: boolean;
+      /** The kernel's identity of the started instance (`timer:…`). */
+      processInstanceId: string;
+      locator: EngineProcessLocator;
+    }>
+  | Readonly<{ status: EngineDefinitionScheduleStatus.Refused; paused: boolean; failure: EngineFailure }>
   | Readonly<{ status: EngineDefinitionScheduleStatus.Missed; paused: boolean }>
   | Readonly<{
       status: EngineDefinitionScheduleStatus.Rejected | EngineDefinitionScheduleStatus.IntegrityFailure;
@@ -89,18 +75,11 @@ export type EngineDefinitionScheduleAddressRequest = Readonly<{ host: EngineHost
 export async function createBpmnDefinitionSchedule(
   request: EngineDefinitionScheduleBindingRequest,
 ): Promise<EngineDefinitionScheduleResult> {
-  const prepared = await prepare(snapshot(request), request.host);
+  const prepared = await prepare(request);
   if ("status" in prepared) return prepared;
-  const population = await engineDeploymentScope(request.host, prepared.start.compiled.compilation.definition);
-  if ("code" in population) return { status: EngineDefinitionScheduleStatus.Rejected, failure: population };
   const created = await request.host.schedules.create({
     scheduleId: prepared.expected.scheduleId,
-    dueAtEpochMs: prepared.expected.dueAtEpochMs,
-    workflowIdBase: prepared.expected.workflowIdBase,
-    program: prepared.start.compiled.program,
-    config: engineHostConfig(request.host),
-    start: prepared.start.stimulus,
-    population,
+    firing: prepared.firing,
     memo: prepared.expected.memo,
   });
   switch (created) {
@@ -113,14 +92,14 @@ export async function createBpmnDefinitionSchedule(
 export async function inspectBpmnDefinitionSchedule(
   request: EngineDefinitionScheduleBindingRequest,
 ): Promise<EngineDefinitionScheduleResult> {
-  const prepared = await prepare(snapshot(request), request.host);
+  const prepared = await prepare(request);
   return "status" in prepared ? prepared : inspect(request.host, prepared, false);
 }
 
 export async function pauseBpmnDefinitionSchedule(
   request: EngineDefinitionScheduleBindingRequest,
 ): Promise<EngineDefinitionScheduleResult> {
-  const prepared = await prepare(snapshot(request), request.host);
+  const prepared = await prepare(request);
   if ("status" in prepared) return prepared;
   await request.host.schedules.pause(prepared.expected.scheduleId);
   return inspect(request.host, prepared, true);
@@ -130,73 +109,45 @@ export function deleteBpmnDefinitionSchedule(request: EngineDefinitionScheduleAd
   return request.host.schedules.delete(requireWireString(request.scheduleId, "scheduleId"));
 }
 
-type Snapshot = Omit<EngineDefinitionScheduleBindingRequest, "host" | "sourceOverlay"> & Readonly<{
-  sourceOverlay: EngineSourceOverlaySelection | null;
-}>;
+type PreparedSchedule = Readonly<{ firing: TimerFiringArgs; expected: ExpectedSchedule }>;
 
-type PreparedSchedule = Readonly<{ start: PreparedStart; expected: ExpectedSchedule }>;
-
-function snapshot(request: EngineDefinitionScheduleBindingRequest): Snapshot {
-  if (!(request.bytes instanceof Uint8Array)) throw new TypeError("bytes must be a Uint8Array");
-  if (!Number.isSafeInteger(request.dueAtEpochMs) || request.dueAtEpochMs <= 0 || request.dueAtEpochMs % 1_000 !== 0) {
-    throw new RangeError("dueAtEpochMs must be a positive whole UTC second");
-  }
-  return {
-    bytes: Uint8Array.from(request.bytes),
-    sourceOverlay: snapshotOverlay(request.sourceOverlay),
-    sourceId: requireWireString(request.sourceId, "sourceId"),
-    expectedSha256: requireWireString(request.expectedSha256, "expectedSha256"),
-    expectedByteLength: request.expectedByteLength,
-    profile: snapshotProfile(request.profile),
-    expectedProcessId: requireWireString(request.expectedProcessId, "expectedProcessId"),
-    version: request.version,
-    expectedStarts: structuredClone(request.expectedStarts),
-    timerStart: structuredClone(request.timerStart),
-    processInstanceId: requireWireString(request.processInstanceId, "processInstanceId"),
-    scheduleId: requireWireString(request.scheduleId, "scheduleId"),
-    workflowIdBase: requireWireString(request.workflowIdBase, "workflowIdBase"),
-    dueAtEpochMs: request.dueAtEpochMs,
-    limits: { maxBytes: request.limits.maxBytes, parserDeadlineMs: request.limits.parserDeadlineMs },
+async function prepare(request: EngineDefinitionScheduleBindingRequest): Promise<PreparedSchedule | EngineDefinitionScheduleResult> {
+  const scheduleId = requireWireString(request.scheduleId, "scheduleId");
+  const dueAtEpochMs = request.dueAtEpochMs;
+  if (!Number.isSafeInteger(dueAtEpochMs) || dueAtEpochMs < 0) throw new RangeError("dueAtEpochMs must be a non-negative safe integer");
+  const prepared = await prepareTimerStart(request);
+  if ("refusal" in prepared) return refused(prepared);
+  const occurrence = occurrenceAt(prepared, dueAtEpochMs);
+  if ("code" in occurrence) return { status: EngineDefinitionScheduleStatus.Rejected, failure: occurrence };
+  const firing: TimerFiringArgs = {
+    population: prepared.population,
+    config: engineHostConfig(request.host),
+    deploymentId: prepared.deployment.deploymentId,
+    startEvent: prepared.startEventId,
+    dueMs: dueAtEpochMs,
   };
-}
-
-async function prepare(snapshot: Snapshot, host: EngineHost): Promise<PreparedSchedule | EngineDefinitionScheduleResult> {
-  const read = await compileProgram(snapshot);
-  if (!("program" in read)) {
-    return integrityFailure(EngineDefinitionScheduleIntegrityCode.CompilationRejected, read.diagnostics[0].evidence);
-  }
-  const compiled = atVersion(read, snapshot.version);
-  if (!identityMatches(compiled, snapshot)) {
-    return integrityFailure(EngineDefinitionScheduleIntegrityCode.IdentityDrift,
-      "Compiled source and definition identity did not match the stored definition version.");
-  }
-  const starts = compiled.compilation.capabilities.starts;
-  const selected = starts.filter((start) =>
-    start.startEventId === snapshot.timerStart.startEventId && start.schedule !== null &&
-    sameJson(start.schedule, snapshot.timerStart.schedule));
-  if (!sameJson(starts, snapshot.expectedStarts) || selected.length !== 1) {
-    return integrityFailure(EngineDefinitionScheduleIntegrityCode.CapabilityDrift,
-      "The compiled Timer start did not match the stored definition version.");
-  }
-  const stimulus: JsonValue = {
-    kind: "start",
-    commandId: `timer-start:${snapshot.processInstanceId}`,
-    instanceId: snapshot.processInstanceId,
-    startEvent: snapshot.timerStart.startEventId,
-    trigger: { kind: "timer", logicalTimeMs: snapshot.dueAtEpochMs },
-    variables: [],
+  const workflowIdBase = timerFiringWorkflowId(firing.population, firing.deploymentId, firing.startEvent, firing.dueMs);
+  const definition = prepared.compiled.compilation.definition;
+  const content = {
+    protocol: engineTimerStartProtocol,
+    workflowIdBase,
+    workflowType: timerFiringWorkflowType,
+    taskQueue: request.host.taskQueue,
+    definition,
+    programSha256: sha256Hex(canonicalJson(prepared.compiled.program)),
+    firing,
   };
-  const start = prepareStart(host, engineTimerStartProtocol, compiled, snapshot.workflowIdBase, snapshot.processInstanceId,
-    stimulus);
-  if ("code" in start) return { status: EngineDefinitionScheduleStatus.Rejected, failure: start };
   return {
-    start,
+    firing,
     expected: {
-      scheduleId: snapshot.scheduleId,
-      dueAtEpochMs: snapshot.dueAtEpochMs,
-      workflowIdBase: snapshot.workflowIdBase,
-      taskQueue: host.taskQueue,
-      memo: startMemo(start) as unknown as Readonly<Record<string, JsonValue>>,
+      scheduleId,
+      dueAtEpochMs,
+      workflowIdBase,
+      taskQueue: request.host.taskQueue,
+      memo: {
+        intent: { protocol: engineTimerStartProtocol, intentSha256: sha256Hex(canonicalJson(content)) },
+        definition: definition as unknown as JsonValue,
+      },
     },
   };
 }
@@ -221,25 +172,69 @@ async function inspect(host: EngineHost, prepared: PreparedSchedule, expectedPau
     return integrityFailure(EngineDefinitionScheduleIntegrityCode.InvalidSchedulePhase,
       `The Schedule's paused state was not ${String(expectedPaused)}.`);
   }
+  const paused = assessment.paused;
   switch (assessment.phase) {
     case SchedulePhase.Pending:
-      return { status: EngineDefinitionScheduleStatus.Pending, paused: assessment.paused };
-    case SchedulePhase.Started:
-      return {
-        status: EngineDefinitionScheduleStatus.Started,
-        paused: assessment.paused,
-        locator: engineProcessLocatorForWorkflowId(assessment.workflowId),
-      };
+      return { status: EngineDefinitionScheduleStatus.Pending, paused };
     case SchedulePhase.Missed:
-      return { status: EngineDefinitionScheduleStatus.Missed, paused: assessment.paused };
+      return { status: EngineDefinitionScheduleStatus.Missed, paused };
+    case SchedulePhase.Started: {
+      const outcome = await host.schedules.firing(assessment.workflowId);
+      if (outcome === null) {
+        return integrityFailure(EngineDefinitionScheduleIntegrityCode.FiringUnanswered, "No firing Workflow of the action is retained.");
+      }
+      switch (outcome.kind) {
+        case "running":
+          return { status: EngineDefinitionScheduleStatus.Firing, paused };
+        case "failed":
+          return integrityFailure(EngineDefinitionScheduleIntegrityCode.FiringUnanswered, outcome.evidence);
+        case "answered":
+          return fired(outcome.answer, paused);
+      }
+    }
   }
 }
 
-function identityMatches(compiled: CompiledDefinition, snapshot: Snapshot): boolean {
-  const { source, definition } = compiled.compilation;
-  return source.id === snapshot.sourceId && source.sha256 === snapshot.expectedSha256 &&
-    source.byteLength === snapshot.expectedByteLength && definition.ref.definitionKey === snapshot.expectedProcessId &&
-    definition.profile === snapshot.profile.id;
+/** The firing's verdict: the root start entry of a committed fan-out, its failure, or the command's rejection. */
+function fired(answer: CommandAnswer, paused: boolean): EngineDefinitionScheduleResult {
+  const resolution = answer.resolution;
+  const code = (json: unknown): string | null => {
+    const value = member(json, "code");
+    return typeof value === "string" ? value : null;
+  };
+  switch (member(resolution, "kind")) {
+    case "rejected": {
+      const rejection = code(resolution);
+      if (rejection === null) break;
+      return { status: EngineDefinitionScheduleStatus.Refused, paused, failure: { code: rejection, evidence: "The population refused the occurrence." } };
+    }
+    case "fanOut": {
+      const entries = member(resolution, "entries");
+      const entry: unknown = Array.isArray(entries) ? entries[0] : undefined;
+      const instanceId = member(entry, "instanceId");
+      if (member(entry, "kind") === "started" && typeof instanceId === "string") {
+        return {
+          status: EngineDefinitionScheduleStatus.Started,
+          paused,
+          processInstanceId: instanceId,
+          locator: engineProcessLocatorForCanonicalProcess(instanceId),
+        };
+      }
+      const failure = code(entry);
+      if (member(entry, "kind") === "failed" && failure !== null) {
+        return { status: EngineDefinitionScheduleStatus.Refused, paused, failure: { code: failure, evidence: "The occurrence's start failed." } };
+      }
+      break;
+    }
+  }
+  return integrityFailure(EngineDefinitionScheduleIntegrityCode.FiringAnswerInvalid, "The firing's answer is no Timer start resolution.");
+}
+
+function refused(prepared: TimerStartRefusal): EngineDefinitionScheduleResult {
+  return {
+    status: prepared.refusal === "rejected" ? EngineDefinitionScheduleStatus.Rejected : EngineDefinitionScheduleStatus.IntegrityFailure,
+    failure: prepared.failure,
+  };
 }
 
 function integrityFailure(code: EngineDefinitionScheduleIntegrityCode, evidence: string): EngineDefinitionScheduleResult {

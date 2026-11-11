@@ -5,7 +5,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { pendingSchedule } from "@bpmn-lean/engine-api/testing";
+import { createMemoryEngineHost, pendingSchedule } from "@bpmn-lean/engine-api/testing";
 import {
   BpmnDefinitionMessageStartGateway,
   BpmnDefinitionScheduleGateway,
@@ -15,7 +15,6 @@ import {
   DefinitionMessageStartStatus,
   DefinitionScheduleHostPhase,
   definitionScheduleHostId,
-  definitionScheduleWorkflowIdBase,
   messageStartPublicationCommandId,
   messageStartPublicationProcessInstanceId,
   messageStartPublicationWorkflowId,
@@ -86,22 +85,23 @@ test("a stored definition whose capabilities differ from its bytes is an integri
   assert.equal(result.status, DefinitionMessageStartStatus.IntegrityFailure);
 });
 
-const activationAt = "2026-11-09T12:00:00Z";
-const dueAt = "2026-11-09T12:00:01Z";
+/** The memory host deploys at 1,000 ms, so the PT1S start's one occurrence is due one second later. */
+const dueAt = new Date(2_000).toISOString();
 
 async function scheduleRequest(host: MemoryEngineHost): Promise<DefinitionScheduleHostRequest> {
   const { bytes, definition } = await stored(host, "timer-start-event/process.bpmn");
   const [timerStart] = definition.startCapabilities.timerStarts;
   if (timerStart === undefined) throw new Error("no Timer start");
+  const listed = await new BpmnDefinitionScheduleGateway(testContext(host))
+    .occurrences({ bytes, definition, timerStart, from: dueAt, limit: 1 });
+  if (listed.kind !== "listed" || listed.occurrences[0]?.dueAt !== dueAt) throw new Error("no occurrence at the due instant");
   return {
     bytes,
     definition,
     timerStart,
-    activationAt,
     dueAt,
-    processInstanceId: "timer-instance",
+    processInstanceId: listed.occurrences[0].processInstanceId,
     hostScheduleId: definitionScheduleHostId({ processId: definition.processId, version: 1, scheduleId: "s" }),
-    configuredWorkflowIdBase: definitionScheduleWorkflowIdBase("timer-instance"),
   };
 }
 
@@ -119,16 +119,39 @@ test("a stored Timer start validates and its Schedule is created pending, then d
   });
   assert.equal(validated.status, "accepted");
   assert.deepEqual(await gateway.createOrCompare(request), { phase: DefinitionScheduleHostPhase.Pending, paused: false });
-  assert.equal(host.schedules.created[0]?.dueAtEpochMs, Date.parse(dueAt));
+  assert.equal(host.schedules.created[0]?.firing.dueMs, Date.parse(dueAt));
   await gateway.delete(request);
   assert.deepEqual(host.schedules.deleted, [request.hostScheduleId]);
 });
 
-test("a due instant before activation is refused before the host is touched", async () => {
+test("occurrences carry the engine's instance identity; another instant is refused as no occurrence", async () => {
   const host = testHost();
-  const request = { ...await scheduleRequest(host), dueAt: "2026-11-09T11:59:59Z" };
-  await assert.rejects(new BpmnDefinitionScheduleGateway(testContext(host)).createOrCompare(request), RangeError);
+  const gateway = new BpmnDefinitionScheduleGateway(testContext(host));
+  const request = await scheduleRequest(host);
+  // The kernel's `timerInstanceId` of deployment 1, start TimerStart_PT1S and the occurrence due at 2,000 ms.
+  assert.equal(request.processInstanceId, "timer:1:1:15:TimerStart_PT1S:2000");
+  assert.deepEqual(await gateway.occurrences({ ...request, from: new Date(2_001).toISOString(), limit: 5 }),
+    { kind: "listed", occurrences: [] });
+  const other = await gateway.createOrCompare({ ...request, dueAt: new Date(2_500).toISOString() });
+  assert.equal(other.phase, DefinitionScheduleHostPhase.IntegrityFailure);
+  await assert.rejects(gateway.createOrCompare({ ...request, dueAt: "1970-01-01T00:00:02Z" }), TypeError,
+    "a noncanonical instant is refused before the host is touched");
   assert.deepEqual(host.schedules.created, []);
+});
+
+test("a fired Schedule reports the started instance under the occurrence's identity", async () => {
+  let now = 1_000;
+  const host = createMemoryEngineHost({ taskQueue: "gateway-test", now: () => now });
+  const gateway = new BpmnDefinitionScheduleGateway(testContext(host));
+  const request = await scheduleRequest(host);
+  await gateway.createOrCompare(request);
+  now = Date.parse(dueAt);
+  await host.schedules.fire(request.hostScheduleId);
+  const started = await gateway.inspect(request);
+  assert.equal(started.phase, DefinitionScheduleHostPhase.Started);
+  if (started.phase === DefinitionScheduleHostPhase.Started) assert.equal(started.processInstanceId, request.processInstanceId);
+  assert.equal((await gateway.inspect({ ...request, processInstanceId: "other" })).phase, DefinitionScheduleHostPhase.IntegrityFailure,
+    "an instance identity other than the occurrence's is never accepted");
 });
 
 test("publication and Schedule addresses are deterministic and domain-separated", () => {

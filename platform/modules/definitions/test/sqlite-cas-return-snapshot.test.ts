@@ -153,12 +153,10 @@ function scheduleRecord() {
     },
     definition: definition("Process_Timer", "timer-source", "1"),
     timerStart: { startEventId: "TimerStart", durationMs: 1_000 },
-    activationAt: "2026-08-17T12:00:00.000Z",
     dueAt: "2026-08-17T12:00:01.000Z",
     identity: {
       processInstanceId: "schedule-instance",
       hostScheduleId: "host-schedule",
-      configuredWorkflowIdBase: "configured-schedule",
     },
   };
 }

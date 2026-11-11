@@ -15,44 +15,40 @@ import type {
   DefinitionScheduleBase,
   DefinitionScheduleConflictErrorResponse,
   DefinitionScheduleListResponse,
+  DefinitionScheduleOccurrenceListResponse,
   PutDefinitionScheduleRequest,
 } from "./definition-schedules.js";
-import type { DeployedDefinitionVersion } from "./definitions.js";
+import type { DeployedDefinitionVersion, PublicTimerStartCapability } from "./definitions.js";
 import { PublicApiErrorCode } from "./definitions.js";
 import { decodePublicProcessInstanceIdentity } from "./process-instance-decoders.js";
 
-const canonicalWholeSecondUtc =
-  /^[0-9]{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12][0-9]|3[01])T(?:[01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]\.000Z$/u;
+const canonicalUtc =
+  /^[0-9]{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12][0-9]|3[01])T(?:[01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]\.[0-9]{3}Z$/u;
 
 /** Decodes the one-field immutable schedule request. */
 export function decodePutDefinitionScheduleRequest(
   value: unknown,
 ): PutDefinitionScheduleRequest {
   requireObject(value, "schedule request");
-  requireExactKeys(value, "schedule request", ["activationAt"]);
-  return {
-    activationAt: decodeCanonicalWholeSecondUtcInstant(
-      readOwn(value, "activationAt"),
-      "activationAt",
-    ),
-  };
+  requireExactKeys(value, "schedule request", ["dueAt"]);
+  return { dueAt: decodeCanonicalUtcInstant(readOwn(value, "dueAt"), "dueAt") };
 }
 
-/** Requires exact canonical `.000Z` rendering of a real UTC whole-second instant. */
-export function decodeCanonicalWholeSecondUtcInstant(
+/** Requires the exact `Date.prototype.toISOString` millisecond rendering of a real UTC instant. */
+export function decodeCanonicalUtcInstant(
   value: unknown,
   label: string,
 ): string {
   const instant = requireString(value, label);
-  if (!canonicalWholeSecondUtc.test(instant)) {
-    throw new TypeError(`${label} must be a canonical whole-second UTC instant`);
+  if (!canonicalUtc.test(instant)) {
+    throw new TypeError(`${label} must be a canonical UTC instant`);
   }
   const milliseconds = Date.parse(instant);
   if (
     !Number.isFinite(milliseconds) ||
     new Date(milliseconds).toISOString() !== instant
   ) {
-    throw new TypeError(`${label} must be a canonical whole-second UTC instant`);
+    throw new TypeError(`${label} must be a canonical UTC instant`);
   }
   return instant;
 }
@@ -63,19 +59,29 @@ export function decodeDefinitionSchedule(
   label = "definition schedule",
 ): DefinitionSchedule {
   requireObject(value, label);
+  const status = readOwn(value, "status");
   requireExactKeys(value, label, [
-    "activationAt",
     "definition",
     "dueAt",
     "instance",
+    ...(status === DefinitionScheduleStatus.Refused ? ["refusal"] : []),
     "scheduleId",
     "status",
     "timerStart",
   ]);
   const base = decodeScheduleBase(value, label);
-  const status = readOwn(value, "status");
   const instance = readOwn(value, "instance");
   switch (status) {
+    case DefinitionScheduleStatus.Refused:
+      if (instance !== null) {
+        throw new TypeError("refused schedule.instance must be null");
+      }
+      return {
+        ...base,
+        status,
+        instance,
+        refusal: requireNonemptyString(readOwn(value, "refusal"), `${label}.refusal`),
+      };
     case DefinitionScheduleStatus.Scheduled:
     case DefinitionScheduleStatus.Missed:
     case DefinitionScheduleStatus.Cancelled:
@@ -126,6 +132,34 @@ export function decodeDefinitionScheduleListResponse(
   return { definition, schedules };
 }
 
+/** Decodes the closed occurrence list of one exact deployed definition's Timer start, in strictly ascending due order. */
+export function decodeDefinitionScheduleOccurrenceListResponse(
+  value: unknown,
+): DefinitionScheduleOccurrenceListResponse {
+  const label = "definition schedule occurrences";
+  requireObject(value, label);
+  requireExactKeys(value, label, ["definition", "occurrences", "timerStart"]);
+  const definition = decodeDeployedDefinitionVersion(readOwn(value, "definition"), "definition");
+  const timerStart = decodePublishedTimerStart(definition, readOwn(value, "timerStart"), `${label}.timerStart`);
+  const occurrencesValue = readOwn(value, "occurrences");
+  if (!Array.isArray(occurrencesValue)) {
+    throw new TypeError("occurrences must be an array");
+  }
+  const occurrences = Array.from(occurrencesValue, (occurrence, index) => {
+    const itemLabel = `occurrences[${index}]`;
+    requireObject(occurrence, itemLabel);
+    requireExactKeys(occurrence, itemLabel, ["dueAt"]);
+    return { dueAt: decodeCanonicalUtcInstant(readOwn(occurrence, "dueAt"), `${itemLabel}.dueAt`) };
+  });
+  occurrences.forEach((occurrence, index) => {
+    const previous = occurrences[index - 1];
+    if (previous !== undefined && Date.parse(previous.dueAt) >= Date.parse(occurrence.dueAt)) {
+      throw new TypeError("occurrences must be in strictly ascending due order");
+    }
+  });
+  return { definition, timerStart, occurrences };
+}
+
 /** Decodes only the selected closed 409 schedule-conflict body. */
 export function decodeDefinitionScheduleConflictErrorResponse(
   value: unknown,
@@ -155,10 +189,23 @@ function decodeScheduleBase(value: object, label: string): DefinitionScheduleBas
     readOwn(value, "definition"),
     `${label}.definition`,
   );
-  const timerStart = decodePublicTimerStartCapability(
-    readOwn(value, "timerStart"),
-    `${label}.timerStart`,
-  );
+  return {
+    scheduleId: requireNonemptyString(
+      readOwn(value, "scheduleId"),
+      `${label}.scheduleId`,
+    ),
+    definition,
+    timerStart: decodePublishedTimerStart(definition, readOwn(value, "timerStart"), `${label}.timerStart`),
+    dueAt: decodeCanonicalUtcInstant(readOwn(value, "dueAt"), `${label}.dueAt`),
+  };
+}
+
+function decodePublishedTimerStart(
+  definition: DeployedDefinitionVersion,
+  value: unknown,
+  label: string,
+): PublicTimerStartCapability {
+  const timerStart = decodePublicTimerStartCapability(value, label);
   if (!definition.startCapabilities.timerStarts.some((capability) =>
     capability.startEventId === timerStart.startEventId &&
     capability.durationMs === timerStart.durationMs
@@ -167,29 +214,7 @@ function decodeScheduleBase(value: object, label: string): DefinitionScheduleBas
       "timerStart must be published by definition.startCapabilities",
     );
   }
-  const activationAt = decodeCanonicalWholeSecondUtcInstant(
-    readOwn(value, "activationAt"),
-    `${label}.activationAt`,
-  );
-  const dueAt = decodeCanonicalWholeSecondUtcInstant(
-    readOwn(value, "dueAt"),
-    `${label}.dueAt`,
-  );
-  if (timerStart.durationMs === null || Date.parse(activationAt) + timerStart.durationMs !== Date.parse(dueAt)) {
-    throw new TypeError(
-      "dueAt must equal activationAt plus timerStart.durationMs",
-    );
-  }
-  return {
-    scheduleId: requireNonemptyString(
-      readOwn(value, "scheduleId"),
-      `${label}.scheduleId`,
-    ),
-    definition,
-    timerStart,
-    activationAt,
-    dueAt,
-  };
+  return timerStart;
 }
 
 function definitionsEqual(

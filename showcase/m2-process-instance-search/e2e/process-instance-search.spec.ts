@@ -15,6 +15,8 @@ import {
   decodeDefinitionSchedule,
   decodeMessageStartPublication,
   decodeProcessInstanceStartResult,
+  decodeDefinitionScheduleOccurrenceListResponse,
+  definitionScheduleOccurrencesPath,
   definitionSchedulePath,
   definitionVersionStartPath,
   definitionsCollectionPath,
@@ -42,6 +44,11 @@ const messageTemplateUrl = new URL(
   "../../../scenarios/message-start-event/process.bpmn",
   import.meta.url,
 );
+/**
+ * The scheduled version's Timer Start duration: its one occurrence counts from the version's engine registration, and
+ * must still lie ahead when the setup lists and schedules it.
+ */
+const timerDuration = "PT5S";
 
 function requireApiOrigin(): string {
   const value = process.env.PLATFORM_API_ORIGIN;
@@ -275,9 +282,18 @@ async function scheduleDefinitionStart(
     definitionSchedulePath(definition.processId, definition.version, scheduleId),
     apiOrigin,
   ).toString();
+  const listed = await request.get(new URL(
+    definitionScheduleOccurrencesPath(definition.processId, definition.version),
+    apiOrigin,
+  ).toString(), { headers: { accept: "application/json" } });
+  expect(listed.status()).toBe(200);
+  const [occurrence] = decodeDefinitionScheduleOccurrenceListResponse(await listed.json() as unknown).occurrences;
+  if (occurrence === undefined) {
+    throw new Error("browser setup Timer Start lists no occurrence");
+  }
   const put = await request.put(url, {
     headers: { accept: "application/json", "content-type": "application/json" },
-    data: { activationAt: nextWholeSecond(2) },
+    data: { dueAt: occurrence.dueAt },
   });
   expect([200, 201]).toContain(put.status());
   expect(decodeDefinitionSchedule(await put.json() as unknown).status)
@@ -365,6 +381,7 @@ async function runtimeSources(
       .replaceAll("Definitions_TimerStart", `Definitions_Browser_Timer_${token}`)
       .replaceAll("Process_TimerStart", sharedProcessId)
       .replace('name="Review"', `name="Browser scheduled ${token}"`)
+      .replace(">PT1S<", `>${timerDuration}<`)
       .replace(
         "https://bpmn-lean.local/tests/timer-start",
         `https://third-party.invalid/search/browser/timer/${token}`,
@@ -382,9 +399,4 @@ async function runtimeSources(
         `https://third-party.invalid/search/browser/message/${token}`,
       )),
   };
-}
-
-function nextWholeSecond(offsetSeconds: number): string {
-  const wholeSecond = Math.ceil(Date.now() / 1_000) * 1_000;
-  return new Date(wholeSecond + offsetSeconds * 1_000).toISOString();
 }

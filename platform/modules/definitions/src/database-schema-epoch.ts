@@ -3,7 +3,7 @@ import { decodePublicProcessInstanceIdentity } from "@bpmn-lean/platform-contrac
 import type { DatabaseSync } from "node:sqlite";
 
 const legacyDefinitionDatabaseSchemaEpoch = 3;
-const currentDefinitionDatabaseSchemaEpoch = 5;
+const currentDefinitionDatabaseSchemaEpoch = 6;
 const canonicalEmptyStartCommandSql = "CAST('{\"initialVariables\":[]}' AS BLOB)";
 
 const legacyConfirmedProcessInstancesTableSql = `

@@ -67,15 +67,13 @@ export const definitionSchedulesTableSql = `
       semantic_profile TEXT NOT NULL,
       start_capabilities_json TEXT NOT NULL,
       timer_start_event_id TEXT NOT NULL,
-      timer_duration_ms INTEGER NOT NULL CHECK (timer_duration_ms > 0),
-      activation_at TEXT NOT NULL,
+      timer_duration_ms INTEGER CHECK (timer_duration_ms IS NULL OR timer_duration_ms > 0),
       due_at TEXT NOT NULL,
       process_instance_id TEXT NOT NULL UNIQUE,
       host_schedule_id TEXT NOT NULL UNIQUE,
-      configured_workflow_id_base TEXT NOT NULL UNIQUE,
       state TEXT NOT NULL CHECK (state IN (
         'creating', 'creatingHost', 'scheduled', 'cancelling',
-        'started', 'missed', 'cancelled'
+        'started', 'refused', 'missed', 'cancelled'
       )),
       cleanup_complete INTEGER NOT NULL CHECK (cleanup_complete IN (0, 1)),
       cancellation_origin TEXT CHECK (
@@ -83,6 +81,7 @@ export const definitionSchedulesTableSql = `
         OR cancellation_origin IN ('creatingHost', 'scheduled')
       ),
       process_locator TEXT,
+      refusal_code TEXT,
       PRIMARY KEY (process_id, version, schedule_id),
       CHECK (
         (state = 'cancelling' AND cancellation_origin IS NOT NULL)
@@ -93,7 +92,11 @@ export const definitionSchedulesTableSql = `
         OR (state <> 'started' AND process_locator IS NULL)
       ),
       CHECK (
-        state IN ('started', 'missed', 'cancelled') OR cleanup_complete = 0
+        (state = 'refused' AND length(refusal_code) > 0)
+        OR (state <> 'refused' AND refusal_code IS NULL)
+      ),
+      CHECK (
+        state IN ('started', 'refused', 'missed', 'cancelled') OR cleanup_complete = 0
       )
     ) STRICT
   `;

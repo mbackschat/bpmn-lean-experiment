@@ -29,6 +29,14 @@ export function processInstanceWorkflowId(instanceId: string): string {
   return `bpmn-process-sha256:${sha256(canonicalJson(["semanticProcessInstance", instanceId]))}`;
 }
 
+/**
+ * The Workflow ID base of the Schedule action that fires one Timer-start occurrence: bound to the occurrence, so every
+ * Schedule of it names the same firing Workflow. Temporal appends the action's time to it.
+ */
+export function timerFiringWorkflowId(population: string, deploymentId: number, startEvent: string, dueMs: number): string {
+  return `bpmn-timer-firing-sha256:${sha256(canonicalJson(["timerStartFiring", population, deploymentId, startEvent, dueMs]))}`;
+}
+
 /** The digest of a population command's content, which a repeat must equal (population contract §7). */
 export function populationCommandDigest(kind: string, command: JsonValue): string {
   return sha256(canonicalJson([kind, command]));

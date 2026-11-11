@@ -10,7 +10,7 @@ import type {
   RecoveryLeaseStore,
 } from "@bpmn-lean/platform-recovery-runtime";
 
-export const RECOVERY_WORKER_SCHEMA_EPOCH = 14;
+export const RECOVERY_WORKER_SCHEMA_EPOCH = 15;
 const readinessFamily = "recovery-worker.readiness";
 
 type ReadinessRow = PostgresqlRow & Readonly<{

@@ -19,7 +19,9 @@ import {
   populationIngressWorkflowId,
   processInstanceWorkflowId,
 } from "./population-address.js";
+import { PopulationClient } from "./population-client.js";
 import {
+  PopulationRefused,
   deploymentWorkflowType,
   type Answer,
   type DeploymentArgs,
@@ -27,6 +29,7 @@ import {
   type PopulationIngressArgs,
   type ScanRequest,
 } from "./population-contract.js";
+import { queueFullCode } from "./population.js";
 import type { JsonValue, ReachOutcome } from "./port.js";
 import {
   deploymentConditionalStartsQuery,
@@ -179,6 +182,21 @@ export function createPopulationActivities(): PopulationActivities {
         });
       } catch (error) {
         if (!(error instanceof WorkflowExecutionAlreadyStartedError)) throw error;
+      }
+    },
+    fireTimerStart: async (request) => {
+      const { client, info } = Context.current();
+      const population = new PopulationClient(client, info.taskQueue, request.population, request.config);
+      try {
+        return await population.command("timerStart", {
+          commandId: request.commandId, deploymentId: request.deploymentId, startEvent: request.startEvent, dueMs: request.dueMs,
+        });
+      } catch (error) {
+        // A full queue drains, so its refusal is retried; any other refusal before acceptance answers every retry alike.
+        if (error instanceof PopulationRefused && error.code !== queueFullCode) {
+          throw ApplicationFailure.nonRetryable(error.code, "PopulationRefused");
+        }
+        throw error;
       }
     },
   };

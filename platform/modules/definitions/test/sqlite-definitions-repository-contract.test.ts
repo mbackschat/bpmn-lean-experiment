@@ -10,9 +10,13 @@ import {
   SqliteMessageStartPublicationRepository,
 } from "@bpmn-lean/platform-definitions";
 
-import { registerDefinitionsRepositoryContract } from "./support/definitions-repository-contract.ts";
+import {
+  registerDefinitionsRepositoryContract,
+  type DefinitionsRepositoryContractFactory,
+} from "./support/definitions-repository-contract.ts";
+import { registerDefinitionScheduleRepositoryContract } from "./support/definition-schedule-repository-contract.ts";
 
-registerDefinitionsRepositoryContract("SQLite Definitions repositories", async () => {
+const sqliteRepositories: DefinitionsRepositoryContractFactory = async () => {
   const root = await mkdtemp(join(tmpdir(), "bpmn-definitions-contract-"));
   const databaseFile = join(root, "definitions.sqlite");
   const definitions = new SqliteDefinitionRepository(databaseFile);
@@ -35,4 +39,7 @@ registerDefinitionsRepositoryContract("SQLite Definitions repositories", async (
       await rm(root, { recursive: true, force: true });
     },
   };
-});
+};
+
+registerDefinitionsRepositoryContract("SQLite Definitions repositories", sqliteRepositories);
+registerDefinitionScheduleRepositoryContract("SQLite Definitions repositories", sqliteRepositories);

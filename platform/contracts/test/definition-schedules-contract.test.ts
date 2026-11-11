@@ -5,12 +5,15 @@ import {
   decodeDefinitionSchedule,
   decodeDefinitionScheduleConflictErrorResponse,
   decodeDefinitionScheduleListResponse,
+  decodeDefinitionScheduleOccurrenceListResponse,
   decodePutDefinitionScheduleRequest,
   decodePublicDefinitionStartCapabilities,
   decodePublicTimerStartCapability,
+  definitionScheduleOccurrencesPath,
   definitionSchedulePath,
   definitionSchedulesPath,
   DefinitionScheduleStatus,
+  matchDefinitionScheduleOccurrencesPath,
   matchDefinitionSchedulePath,
   matchDefinitionSchedulesPath,
   PublicApiErrorCode,
@@ -18,6 +21,7 @@ import {
 import type {
   DefinitionSchedule,
   DefinitionScheduleListResponse,
+  DefinitionScheduleOccurrenceListResponse,
   DeployedDefinitionVersion,
   PutDefinitionScheduleRequest,
 } from "@bpmn-lean/platform-contracts";
@@ -45,16 +49,15 @@ const scheduled = {
   scheduleId: "schedule/alpha",
   definition,
   timerStart: { startEventId: "TimerStart_1", durationMs: 1000 },
-  activationAt: "2026-08-11T12:00:00.000Z",
-  dueAt: "2026-08-11T12:00:01.000Z",
+  dueAt: "2026-08-11T12:00:01.250Z",
   status: DefinitionScheduleStatus.Scheduled,
   instance: null,
 } as const satisfies DefinitionSchedule;
 
-test("decodes the exact closed Timer Start capability and activation request", () => {
+test("decodes the exact closed Timer Start capability and occurrence request", () => {
   const capability = { startEventId: "TimerStart_1", durationMs: 1000 };
   const request = {
-    activationAt: "2026-08-11T12:00:00.000Z",
+    dueAt: "2026-08-11T12:00:01.250Z",
   } as const satisfies PutDefinitionScheduleRequest;
 
   assert.deepEqual(decodePublicTimerStartCapability(capability), capability);
@@ -91,7 +94,7 @@ test("decodes the exact closed Timer Start capability and activation request", (
   );
 });
 
-test("decodes a Timer Start whose duration the engine resolves to none, but derives no Schedule from it", () => {
+test("decodes a Timer Start whose duration the engine resolves to none, and schedules it by occurrence", () => {
   const unresolved = { startEventId: "TimerStart_1", durationMs: null };
   assert.deepEqual(decodePublicTimerStartCapability(unresolved), unresolved);
   assert.deepEqual(
@@ -102,10 +105,8 @@ test("decodes a Timer Start whose duration the engine resolves to none, but deri
     ...definition,
     startCapabilities: { messageStarts: [], timerStarts: [unresolved] },
   };
-  assert.throws(
-    () => decodeDefinitionSchedule({ ...scheduled, definition: unresolvedDefinition, timerStart: unresolved }),
-    /dueAt must equal activationAt plus timerStart.durationMs/u,
-  );
+  const unresolvedSchedule = { ...scheduled, definition: unresolvedDefinition, timerStart: unresolved };
+  assert.deepEqual(decodeDefinitionSchedule(unresolvedSchedule), unresolvedSchedule);
   assert.throws(
     () => decodeDefinitionSchedule({ ...scheduled, definition: unresolvedDefinition }),
     /timerStart must be published by definition.startCapabilities/u,
@@ -116,27 +117,28 @@ test("decodes a Timer Start whose duration the engine resolves to none, but deri
   );
 });
 
-test("rejects nonzero-millisecond and noncanonical activation instants", () => {
+test("rejects noncanonical due instants", () => {
   const malformed = [
-    "2026-08-11T12:00:00.001Z",
+    "2026-08-11T12:00:00.1Z",
     "2026-08-11T12:00:00Z",
     "2026-08-11T14:00:00.000+02:00",
     "2026-02-30T12:00:00.000Z",
     "not-an-instant",
   ];
 
-  for (const activationAt of malformed) {
+  for (const dueAt of malformed) {
     assert.throws(
-      () => decodePutDefinitionScheduleRequest({ activationAt }),
-      /activationAt must be a canonical whole-second UTC instant/u,
+      () => decodePutDefinitionScheduleRequest({ dueAt }),
+      /dueAt must be a canonical UTC instant/u,
     );
   }
 });
 
-test("rejects missing, extra, empty, and malformed activation request fields", () => {
+test("rejects missing, extra, empty, and malformed occurrence request fields", () => {
   const malformed = [
     {},
-    { activationAt: "2026-08-11T12:00:00.000Z", dueAt: "private" },
+    { activationAt: "2026-08-11T12:00:00.000Z" },
+    { dueAt: "2026-08-11T12:00:00.000Z", processInstanceId: "private" },
   ];
   for (const request of malformed) {
     assert.throws(
@@ -145,8 +147,8 @@ test("rejects missing, extra, empty, and malformed activation request fields", (
     );
   }
   assert.throws(
-    () => decodePutDefinitionScheduleRequest({ activationAt: 42 }),
-    /activationAt must be a string/u,
+    () => decodePutDefinitionScheduleRequest({ dueAt: 42 }),
+    /dueAt must be a string/u,
   );
 });
 
@@ -155,6 +157,7 @@ test("decodes every closed public schedule status and reconstructs nested values
     scheduled,
     { ...scheduled, status: DefinitionScheduleStatus.Missed },
     { ...scheduled, status: DefinitionScheduleStatus.Cancelled },
+    { ...scheduled, status: DefinitionScheduleStatus.Refused, refusal: "timer-start-superseded" },
     {
       ...scheduled,
       status: DefinitionScheduleStatus.Started,
@@ -232,8 +235,24 @@ test("rejects malformed schedule identities, capabilities, instants, and status 
       message: /timerStart must be published by definition.startCapabilities/u,
     },
     {
-      value: { ...scheduled, dueAt: "2026-08-11T12:00:02.000Z" },
-      message: /dueAt must equal activationAt plus timerStart.durationMs/u,
+      value: { ...scheduled, dueAt: "2026-08-11T12:00:02Z" },
+      message: /dueAt must be a canonical UTC instant/u,
+    },
+    {
+      value: { ...scheduled, activationAt: "2026-08-11T12:00:00.000Z" },
+      message: /definition schedule must contain exactly its public fields/u,
+    },
+    {
+      value: { ...scheduled, status: DefinitionScheduleStatus.Refused },
+      message: /definition schedule must contain exactly its public fields/u,
+    },
+    {
+      value: { ...scheduled, refusal: "timer-start-superseded" },
+      message: /definition schedule must contain exactly its public fields/u,
+    },
+    {
+      value: { ...scheduled, status: DefinitionScheduleStatus.Refused, refusal: "" },
+      message: /refusal must not be empty/u,
     },
     {
       value: { ...scheduled, status: DefinitionScheduleStatus.Started },
@@ -294,6 +313,31 @@ test("decodes a closed exact-definition schedule list", () => {
   );
 });
 
+test("decodes a closed occurrence list in strictly ascending due order", () => {
+  const listed = {
+    definition,
+    timerStart: { startEventId: "TimerStart_1", durationMs: 1000 },
+    occurrences: [{ dueAt: "2026-08-11T12:00:01.250Z" }, { dueAt: "2026-08-11T13:00:01.250Z" }],
+  } as const satisfies DefinitionScheduleOccurrenceListResponse;
+  assert.deepEqual(decodeDefinitionScheduleOccurrenceListResponse(listed), listed);
+  assert.deepEqual(decodeDefinitionScheduleOccurrenceListResponse({ ...listed, occurrences: [] }), { ...listed, occurrences: [] });
+  for (const occurrences of [
+    [listed.occurrences[1], listed.occurrences[0]],
+    [listed.occurrences[0], listed.occurrences[0]],
+  ]) {
+    assert.throws(() => decodeDefinitionScheduleOccurrenceListResponse({ ...listed, occurrences }),
+      /occurrences must be in strictly ascending due order/u);
+  }
+  assert.throws(
+    () => decodeDefinitionScheduleOccurrenceListResponse({ ...listed, occurrences: [{ dueAt: listed.occurrences[0].dueAt, processInstanceId: "x" }] }),
+    /occurrences\[0\] must contain exactly its public fields/u,
+  );
+  assert.throws(
+    () => decodeDefinitionScheduleOccurrenceListResponse({ ...listed, timerStart: { startEventId: "Other", durationMs: 1000 } }),
+    /timerStart must be published by definition.startCapabilities/u,
+  );
+});
+
 test("decodes only the selected closed conflict response", () => {
   const input = {
     error: {
@@ -315,6 +359,15 @@ test("decodes only the selected closed conflict response", () => {
     }),
     /schedule conflict error must contain exactly its public fields/u,
   );
+});
+
+test("builds and matches the exact occurrence-listing path, beside the schedule collection", () => {
+  const path = definitionScheduleOccurrencesPath("order/process alpha", 2);
+  assert.equal(path, "/api/v1/definitions/order%2Fprocess%20alpha/versions/2/schedule-occurrences");
+  assert.deepEqual(matchDefinitionScheduleOccurrencesPath(path), { processId: "order/process alpha", version: 2 });
+  assert.equal(matchDefinitionScheduleOccurrencesPath(`${path}/x`), null);
+  assert.equal(matchDefinitionSchedulePath(path), null);
+  assert.equal(matchDefinitionScheduleOccurrencesPath(definitionSchedulesPath("order/process alpha", 2)), null);
 });
 
 test("builds and matches exact collection and item paths", () => {

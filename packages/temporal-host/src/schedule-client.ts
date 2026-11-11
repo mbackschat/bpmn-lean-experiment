@@ -1,27 +1,35 @@
-/** The Temporal realization of `ScheduleHost`: one-shot Schedules created, described, paused and deleted through the SDK. */
+/**
+ * The Temporal realization of `ScheduleHost`: one-shot Schedules created, described, paused and deleted through the
+ * SDK, each firing one Timer-start occurrence, and the outcome of a firing Workflow read back by its ID.
+ */
 import {
   ScheduleAlreadyRunning,
   ScheduleNotFoundError,
   ScheduleOverlapPolicy,
+  WorkflowNotFoundError,
   type Client,
   type ScheduleDescription,
 } from "@temporalio/client";
 
-import { RunKind, workflowType } from "./host-contract.js";
+import { timerFiringWorkflowId } from "./population-address.js";
+import { timerFiringWorkflowType, type CommandAnswer, type TimerFiringArgs } from "./population-contract.js";
 import type { JsonValue } from "./port.js";
 import {
   ScheduleCreation,
+  scheduleActionAtMs,
   scheduleCatchupWindowMs,
   type OneShotScheduleRequest,
   type ScheduleHost,
   type StoredSchedule,
+  type TimerFiringOutcome,
 } from "./schedules.js";
 
 export class ScheduleClient implements ScheduleHost {
   constructor(private readonly client: Client, private readonly taskQueue: string) {}
 
   async create(request: OneShotScheduleRequest): Promise<ScheduleCreation> {
-    const due = new Date(request.dueAtEpochMs);
+    const { firing } = request;
+    const due = new Date(scheduleActionAtMs(firing.dueMs));
     try {
       await this.client.schedule.create({
         scheduleId: request.scheduleId,
@@ -40,16 +48,10 @@ export class ScheduleClient implements ScheduleHost {
         },
         action: {
           type: "startWorkflow",
-          workflowType,
+          workflowType: timerFiringWorkflowType,
           taskQueue: this.taskQueue,
-          workflowId: request.workflowIdBase,
-          args: [{
-            kind: RunKind.Start,
-            program: request.program,
-            config: request.config,
-            population: request.population,
-            start: request.start,
-          }],
+          workflowId: timerFiringWorkflowId(firing.population, firing.deploymentId, firing.startEvent, firing.dueMs),
+          args: [firing satisfies TimerFiringArgs],
           memo: request.memo,
         },
         policies: {
@@ -72,6 +74,25 @@ export class ScheduleClient implements ScheduleHost {
     } catch (error) {
       if (error instanceof ScheduleNotFoundError) return null;
       throw error;
+    }
+  }
+
+  async firing(workflowId: string): Promise<TimerFiringOutcome | null> {
+    const handle = this.client.workflow.getHandle<(args: TimerFiringArgs) => Promise<CommandAnswer>>(workflowId);
+    let status: string;
+    try {
+      status = (await handle.describe()).status.name;
+    } catch (error) {
+      if (error instanceof WorkflowNotFoundError) return null;
+      throw error;
+    }
+    switch (status) {
+      case "RUNNING":
+        return { kind: "running" };
+      case "COMPLETED":
+        return { kind: "answered", answer: await handle.result() };
+      default:
+        return { kind: "failed", evidence: `The firing Workflow closed as ${status}.` };
     }
   }
 

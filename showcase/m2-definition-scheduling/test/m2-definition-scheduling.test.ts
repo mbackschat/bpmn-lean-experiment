@@ -1,4 +1,4 @@
-/** Live Product 2 evidence for exact-version one-shot Timer Start scheduling. */
+/** Live Product 2 evidence for engine-occurrence Timer Start scheduling. */
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
@@ -8,6 +8,8 @@ import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 import { test } from "node:test";
 
+import { DefinitionScheduleStatus, PublicApiErrorCode } from "@bpmn-lean/platform-contracts";
+import type { DefinitionSchedule, DeployedDefinitionVersion } from "@bpmn-lean/platform-contracts";
 import {
   createPlatformServer,
   readPlatformServerConfig,
@@ -15,7 +17,8 @@ import {
 import type {
   PlatformServerRuntime,
 } from "@bpmn-lean/platform-server";
-import { ProcessClient, ResultKind, workflowType } from "@bpmn-lean/temporal-host/client";
+import { ProcessClient, ResultKind, processInstanceWorkflowId, workflowType } from "@bpmn-lean/temporal-host/client";
+import { timerFiringWorkflowType } from "@bpmn-lean/temporal-host/host";
 import { replayHistory } from "@bpmn-lean/temporal-host/worker";
 
 import { showcaseEngineDeploymentEnvironment } from "../../engine-deployment.ts";
@@ -33,29 +36,44 @@ import {
   deployDefinition,
   getDefinitionSchedule,
   listDefinitionSchedules,
+  listScheduleOccurrences,
   putDefinitionSchedule,
+  putDefinitionScheduleExpectingRefusal,
 } from "./http-support.ts";
 import type {
   CapturedJson,
 } from "./http-support.ts";
 import {
+  assertAnsweredFiringHistory,
   assertCompletedTimerStartHistory,
   assertWorkerAbsentHistory,
   listScheduleIds,
   listWorkflowIds,
-  nextWholeSecond,
   processHandle,
   requireOnlyNewIdentity,
   waitForExactScheduleAction,
   waitForOpenUserTask,
   waitForScheduleCleanup,
 } from "./temporal-support.ts";
-import type { TemporalHistory } from "./temporal-support.ts";
+import type { ObservedScheduleAction, TemporalHistory } from "./temporal-support.ts";
 
 const profileId = "bpmn-2.0.2";
 const taskQueue = "bpmn-m2-definition-scheduling";
 const operationDeadlineMs = 10_000;
 const environmentStartupDeadlineMs = 40_000;
+/**
+ * The Timer Start's duration in the versions the witness fires: an occurrence counts from the version's engine
+ * registration, so it must outlast the steps that run before the Worker leaves.
+ */
+const firedTimerDuration = { iso: "PT10S", ms: 10_000 } as const;
+/** The cancelled version's Timer Start only has to outlast the cancellation. */
+const cancelledTimerDuration = { iso: "PT4S", ms: 4_000 } as const;
+/** The template's Start Event ID keeps its original spelling whatever duration a version rewrites. */
+const timerStartEventId = "TimerStart_PT1S";
+/** What a due action creates: its firing Workflow and, when the engine accepts the occurrence, the Process. */
+const firedWorkflowTypes = [timerFiringWorkflowType, workflowType];
+/** The tolerance for comparing the engine's registration time with this process's clock around the deploy call. */
+const registrationClockToleranceMs = 1_000;
 const temporalCacheDirectory = fileURLToPath(
   new URL("../../../.cache/temporal-cli/", import.meta.url),
 );
@@ -64,7 +82,7 @@ const sourceUrl = new URL(
   import.meta.url,
 );
 
-test("M2 schedules exact version 1, decides cancellation races, and replays", async () => {
+test("M2 schedules engine occurrences, refuses a superseded version, decides cancellation races, and replays", async () => {
   const dataDirectory = await mkdtemp(join(tmpdir(), "bpmn-lean-m2-scheduling-"));
   const port = await allocatePort();
   const origin = `http://127.0.0.1:${port}`;
@@ -76,13 +94,16 @@ test("M2 schedules exact version 1, decides cancellation races, and replays", as
     environmentStartupDeadlineMs,
     "M2 Temporal environment startup",
   );
-  // No Worker polls until the Schedule has acted, so the action's history shows a start no Worker has taken yet.
   const namespace = environmentNamespace(environment);
   const client = environment.client;
   let platform: PlatformServerRuntime | undefined;
-  let replacementWorker: ShowcaseWorker | undefined;
+  let worker: ShowcaseWorker | undefined;
 
   try {
+    // Registering a version, listing its occurrences and reading a Schedule all query the population, so a Worker
+    // polls until the occurrences are scheduled; it leaves before the first action, so the firing Workflows' first
+    // tasks stay untaken until a replacement Worker returns.
+    worker = await startWorker(environment, "first");
     platform = await startPlatform(
       origin,
       port,
@@ -91,59 +112,135 @@ test("M2 schedules exact version 1, decides cancellation races, and replays", as
       namespace,
     );
     const template = await readFile(sourceUrl, "utf8");
-    const versionOneBytes = Buffer.from(
-      template.replace('name="Review"', 'name="Review version 1"'),
-      "utf8",
-    );
-    const versionTwoBytes = Buffer.from(
-      template.replace('name="Review"', 'name="Review version 2"'),
+    assert.ok(template.includes(">PT1S<"), "the template must spell its Timer Start duration as PT1S");
+    const versionBytes = (revision: number, duration: string): Buffer => Buffer.from(
+      template
+        .replace('name="Review"', `name="Review version ${revision}"`)
+        .replace(">PT1S<", `>${duration}<`),
       "utf8",
     );
     const publicCaptures: CapturedJson<unknown>[] = [];
+
+    const beforeVersionOne = Date.now();
     const versionOne = await deployDefinition(origin, {
-      bytes: versionOneBytes,
+      bytes: versionBytes(1, firedTimerDuration.iso),
       sourceId: "timer-start-version-1.bpmn",
       semanticProfile: profileId,
     });
+    const afterVersionOne = Date.now();
     assert.equal(versionOne.value.version, 1);
     assert.deepEqual(versionOne.value.startCapabilities.messageStarts, []);
     assert.deepEqual(versionOne.value.startCapabilities.timerStarts, [{
-      startEventId: "TimerStart_PT1S",
-      durationMs: 1_000,
+      startEventId: timerStartEventId,
+      durationMs: firedTimerDuration.ms,
     }]);
+
+    const versionOneOccurrences = await listScheduleOccurrences(origin, versionOne.value);
+    publicCaptures.push(versionOneOccurrences);
+    const dueAtOne = onlyOccurrenceDueAt(versionOneOccurrences, "version 1");
+    assertCountedFromRegistration(dueAtOne, beforeVersionOne, afterVersionOne, firedTimerDuration.ms);
+    assert.equal(versionOneOccurrences.value.definition.version, 1);
+    assert.equal(versionOneOccurrences.value.timerStart.startEventId, timerStartEventId);
+    const laterThanOnly = await listScheduleOccurrences(origin, versionOne.value, {
+      from: new Date(Date.parse(dueAtOne) + 1).toISOString(),
+    });
+    publicCaptures.push(laterThanOnly);
+    assert.deepEqual(laterThanOnly.value.occurrences, [], "a one-shot Timer Start has no occurrence after its only one");
 
     const scheduleIdsBefore = await listScheduleIds(client);
     const primaryScheduleId = `schedule-version-1-${process.pid}`;
-    const primaryPut = await putDefinitionSchedule(
-      origin,
-      versionOne.value,
-      primaryScheduleId,
-      nextWholeSecond(6),
-    );
+    const primaryPut = await putDefinitionSchedule(origin, versionOne.value, primaryScheduleId, dueAtOne);
     publicCaptures.push(primaryPut);
     assert.equal(primaryPut.status, 201);
     assert.equal(primaryPut.value.status, "scheduled");
     assert.equal(primaryPut.value.definition.version, 1);
-    assert.equal(
-      Date.parse(primaryPut.value.dueAt) - Date.parse(primaryPut.value.activationAt),
-      1_000,
-    );
-    const privateScheduleId = requireOnlyNewIdentity(
+    assert.equal(primaryPut.value.dueAt, dueAtOne);
+    const scheduleIdsAfterOne = await listScheduleIds(client);
+    const privateScheduleIdOne = requireOnlyNewIdentity(
       scheduleIdsBefore,
-      await listScheduleIds(client),
+      scheduleIdsAfterOne,
       "version-1 schedule",
     );
 
+    const retriedPut = await putDefinitionSchedule(origin, versionOne.value, primaryScheduleId, dueAtOne);
+    publicCaptures.push(retriedPut);
+    assert.equal(retriedPut.status, 200);
+    assert.deepEqual(retriedPut.value, primaryPut.value, "a PUT retry answers as the first");
+    const refusedPuts = [
+      await putDefinitionScheduleExpectingRefusal(
+        origin,
+        versionOne.value,
+        `second-identity-${process.pid}`,
+        dueAtOne,
+        { status: 409 },
+      ),
+      await putDefinitionScheduleExpectingRefusal(
+        origin,
+        versionOne.value,
+        primaryScheduleId,
+        new Date(Date.parse(dueAtOne) + 1_000).toISOString(),
+        { status: 409 },
+      ),
+      await putDefinitionScheduleExpectingRefusal(
+        origin,
+        versionOne.value,
+        `unlisted-occurrence-${process.pid}`,
+        new Date(Date.parse(dueAtOne) + 1).toISOString(),
+        { status: 422 },
+      ),
+      await putDefinitionScheduleExpectingRefusal(
+        origin,
+        versionOne.value,
+        `past-occurrence-${process.pid}`,
+        new Date(Date.now() - 1_000).toISOString(),
+        { status: 422 },
+      ),
+    ];
+    publicCaptures.push(...refusedPuts);
+    assert.deepEqual(
+      refusedPuts.map(({ value }) => value.error.code),
+      [
+        PublicApiErrorCode.Conflict,
+        PublicApiErrorCode.Conflict,
+        PublicApiErrorCode.InvalidRequest,
+        PublicApiErrorCode.InvalidRequest,
+      ],
+    );
+    assert.deepEqual(
+      await listScheduleIds(client),
+      scheduleIdsAfterOne,
+      "a refused PUT must create no Temporal Schedule",
+    );
+
+    // A later version of the same process supersedes this one's Timer Start at the engine, not at the platform.
+    const beforeVersionTwo = Date.now();
     const versionTwo = await deployDefinition(origin, {
-      bytes: versionTwoBytes,
+      bytes: versionBytes(2, firedTimerDuration.iso),
       sourceId: "timer-start-version-2.bpmn",
       semanticProfile: profileId,
     });
+    const afterVersionTwo = Date.now();
     assert.equal(versionTwo.value.version, 2);
     assert.notEqual(versionTwo.value.source.sha256, versionOne.value.source.sha256);
     assert.deepEqual(
       (await listDefinitionSchedules(origin, versionTwo.value)).value.schedules,
       [],
+    );
+    const versionTwoOccurrences = await listScheduleOccurrences(origin, versionTwo.value);
+    publicCaptures.push(versionTwoOccurrences);
+    const dueAtTwo = onlyOccurrenceDueAt(versionTwoOccurrences, "version 2");
+    assertCountedFromRegistration(dueAtTwo, beforeVersionTwo, afterVersionTwo, firedTimerDuration.ms);
+    assert.ok(Date.parse(dueAtTwo) > Date.parse(dueAtOne), "version 2 registered after version 1");
+    const secondScheduleId = `schedule-version-2-${process.pid}`;
+    const secondPut = await putDefinitionSchedule(origin, versionTwo.value, secondScheduleId, dueAtTwo);
+    publicCaptures.push(secondPut);
+    assert.equal(secondPut.status, 201);
+    assert.equal(secondPut.value.status, "scheduled");
+    assert.equal(secondPut.value.definition.version, 2);
+    const privateScheduleIdTwo = requireOnlyNewIdentity(
+      scheduleIdsAfterOne,
+      await listScheduleIds(client),
+      "version-2 schedule",
     );
 
     await platform.close();
@@ -154,72 +251,111 @@ test("M2 schedules exact version 1, decides cancellation races, and replays", as
       environment.address,
       namespace,
     );
-    const afterRestart = await getDefinitionSchedule(
-      origin,
-      versionOne.value,
-      primaryScheduleId,
-    );
-    publicCaptures.push(afterRestart);
-    assert.equal(afterRestart.value.status, "scheduled");
-    assert.equal(afterRestart.value.definition.version, 1);
+    for (const [definition, scheduleId, version] of [
+      [versionOne.value, primaryScheduleId, 1],
+      [versionTwo.value, secondScheduleId, 2],
+    ] as const) {
+      const afterRestart = await getDefinitionSchedule(origin, definition, scheduleId);
+      publicCaptures.push(afterRestart);
+      assert.equal(afterRestart.value.status, "scheduled");
+      assert.equal(afterRestart.value.definition.version, version);
+    }
 
-    const action = await waitForExactScheduleAction(
-      client,
-      privateScheduleId,
-      primaryPut.value.dueAt,
-    );
-    assert.equal(action.description.action.taskQueue, taskQueue);
-    assertDefinitionSource(action.description.action.memo, versionOne.value.source.sha256);
-    assert.notEqual(action.workflowId, action.description.action.workflowId);
-    const absentHistory = await withDeadline(
-      client.workflow
-        .getHandle(action.workflowId, action.firstExecutionRunId)
-        .fetchHistory(),
-      operationDeadlineMs,
-      "scheduled Process history while Worker is absent",
-    ) as TemporalHistory;
-    assertWorkerAbsentHistory(absentHistory);
+    await worker.shutdown();
+    worker = undefined;
+    assert.ok(Date.now() < Date.parse(dueAtOne), "the Worker must have left before the first action is due");
 
+    const actions: readonly Readonly<{
+      observed: ObservedScheduleAction;
+      source: DeployedDefinitionVersion;
+    }>[] = [
+      {
+        observed: await waitForExactScheduleAction(client, privateScheduleIdOne, dueAtOne),
+        source: versionOne.value,
+      },
+      {
+        observed: await waitForExactScheduleAction(client, privateScheduleIdTwo, dueAtTwo),
+        source: versionTwo.value,
+      },
+    ];
+    for (const { observed, source } of actions) {
+      assert.equal(observed.description.action.taskQueue, taskQueue);
+      assertDefinitionSource(observed.description.action.memo, source.source.sha256);
+      assert.notEqual(observed.workflowId, observed.description.action.workflowId);
+      assert.ok(
+        observed.workflowId.startsWith(observed.description.action.workflowId),
+        "Temporal appends the action time to the firing Workflow ID base",
+      );
+      assert.equal(observed.firing.startEvent, timerStartEventId);
+      assertWorkerAbsentHistory(await fetchHistory(
+        client.workflow.getHandle(observed.workflowId, observed.firstExecutionRunId),
+        "firing Workflow history while the Worker is absent",
+      ));
+    }
+    assert.deepEqual(
+      await listWorkflowIds(client, [workflowType]),
+      [],
+      "no Process may start while no Worker polls",
+    );
+
+    worker = await startWorker(environment, "replacement");
+    // The firing Workflow is the Schedule's action: deleting the Schedule cannot undo it, so the action wins the race.
     const actionWins = await deleteDefinitionScheduleExpectingConflict(
       origin,
-      versionOne.value,
-      primaryScheduleId,
+      versionTwo.value,
+      secondScheduleId,
     );
     publicCaptures.push(actionWins);
     assert.equal(actionWins.value.error.code, "conflict");
-    const started = await getDefinitionSchedule(
+
+    const started = await waitForScheduleStatus(
+      origin,
+      versionTwo.value,
+      secondScheduleId,
+      DefinitionScheduleStatus.Started,
+    );
+    publicCaptures.push(started);
+    const instance = started.value.instance;
+    assert.equal(instance.definition.version, 2);
+    assert.equal(instance.definition.source.sha256, versionTwo.value.source.sha256);
+    assert.match(instance.processInstanceId, /^timer:/u, "the engine names the instance an occurrence starts");
+    assert.equal(started.value.scheduleId, secondScheduleId);
+    const versionTwoList = await listDefinitionSchedules(origin, versionTwo.value);
+    publicCaptures.push(versionTwoList);
+    assert.deepEqual(versionTwoList.value.schedules, [started.value]);
+
+    // The occurrence of version 1 fired too, but registering version 2 superseded its Timer Start.
+    const refused = await waitForScheduleStatus(
       origin,
       versionOne.value,
       primaryScheduleId,
+      DefinitionScheduleStatus.Refused,
     );
-    publicCaptures.push(started);
-    assert.equal(started.value.status, "started");
-    assert.ok(started.value.instance !== null);
-    assert.equal(started.value.instance.definition.version, 1);
-    assert.equal(started.value.instance.definition.source.sha256, versionOne.value.source.sha256);
-    assert.equal(started.value.scheduleId, primaryScheduleId);
+    publicCaptures.push(refused);
+    assert.equal(refused.value.refusal, "timer-start-superseded");
+    assert.equal(refused.value.instance, null);
+    assert.equal(refused.value.definition.version, 1);
+    assert.equal(refused.value.dueAt, dueAtOne);
     const versionOneList = await listDefinitionSchedules(origin, versionOne.value);
     publicCaptures.push(versionOneList);
-    assert.deepEqual(versionOneList.value.schedules, [started.value]);
-    await waitForScheduleCleanup(client, privateScheduleId);
+    assert.deepEqual(versionOneList.value.schedules, [refused.value]);
+    await waitForScheduleCleanup(client, privateScheduleIdOne);
+    await waitForScheduleCleanup(client, privateScheduleIdTwo);
 
-    replacementWorker = await startWorker(environment, "replacement");
-    const processes = new ProcessClient(client, taskQueue);
-    const handle = processHandle(client.workflow, action.workflowId, action.firstExecutionRunId);
-    const task = await waitForOpenUserTask(
-      processHandle(
-        client.workflow,
-        action.workflowId,
-        action.firstExecutionRunId,
-      ),
-      "Review version 1",
+    const processWorkflowId = processInstanceWorkflowId(instance.processInstanceId);
+    assert.deepEqual(
+      await listWorkflowIds(client, [workflowType]),
+      [processWorkflowId],
+      "only the occurrence that was not superseded starts a Process",
     );
-    assert.equal(task.id.processInstanceId, started.value.instance.processInstanceId);
-    assert.notEqual(task.name, "Review version 2");
+    const processes = new ProcessClient(client, taskQueue);
+    const handle = processHandle(client.workflow, processWorkflowId);
+    const task = await waitForOpenUserTask(handle, "Review version 2");
+    assert.equal(task.id.processInstanceId, instance.processInstanceId);
     const command = await withDeadline(
-      processes.command(action.workflowId, {
+      processes.command(processWorkflowId, {
         kind: "command",
-        commandId: `complete-scheduled-version-1-${process.pid}`,
+        commandId: `complete-scheduled-version-2-${process.pid}`,
         occurrence: task.id,
         action: { kind: "completeUserTask", values: [] },
       }),
@@ -230,70 +366,60 @@ test("M2 schedules exact version 1, decides cancellation races, and replays", as
     const terminal = await withDeadline(
       handle.result(),
       operationDeadlineMs,
-      "scheduled version-1 Process completion",
+      "scheduled version-2 Process completion",
     );
     assert.equal(terminal.kind, ResultKind.Ended);
     assert.equal(terminal.kind === ResultKind.Ended ? terminal.status : null, "completed");
     const finalState = requireRecord(
-      await withDeadline(processes.observation(action.workflowId), operationDeadlineMs, "completed Process observation"),
+      await withDeadline(processes.observation(processWorkflowId), operationDeadlineMs, "completed Process observation"),
       "completed Process observation",
     );
-    assert.equal(finalState.instanceId, started.value.instance.processInstanceId);
+    assert.equal(finalState.instanceId, instance.processInstanceId);
     assert.equal(finalState.status, "completed");
-    const completedDescription = await processes.describe(action.workflowId);
+    const completedDescription = await processes.describe(processWorkflowId);
     assert.ok(completedDescription !== null);
-    assertDefinitionSource(completedDescription.memo, versionOne.value.source.sha256);
-    assert.equal(
-      definitionSha256(completedDescription.memo) === versionTwo.value.source.sha256,
-      false,
-      "the scheduled instance must run version 1, never the latest version",
-    );
-    const completedHistory = await withDeadline(
-      handle.fetchHistory(),
-      operationDeadlineMs,
-      "scheduled version-1 Process history",
-    ) as TemporalHistory;
+    assert.equal(completedDescription.workflowType, workflowType);
+    assert.equal(completedDescription.taskQueue, taskQueue);
+    assert.equal(completedDescription.running, false);
+
+    const completedHistory = await fetchHistory(handle, "scheduled version-2 Process history");
     assertCompletedTimerStartHistory(completedHistory);
-
-    await replacementWorker.shutdown();
-    replacementWorker = undefined;
     await withDeadline(
-      replayHistory(completedHistory, action.workflowId),
+      replayHistory(completedHistory, processWorkflowId),
       30_000,
-      "scheduled version-1 history replay",
+      "scheduled version-2 history replay",
     );
+    for (const { observed } of actions) {
+      const firingHistory = await fetchHistory(
+        client.workflow.getHandle(observed.workflowId, observed.firstExecutionRunId),
+        "answered firing Workflow history",
+      );
+      assertAnsweredFiringHistory(firingHistory);
+      await withDeadline(
+        replayHistory(firingHistory, observed.workflowId),
+        30_000,
+        "firing Workflow history replay",
+      );
+    }
 
-    const schedulesBeforeDirectStart = await listScheduleIds(client);
-    const directWorkflowId = `direct-start-mutation-${process.pid}`;
-    await withDeadline(
-      client.workflow.start(workflowType, {
-        taskQueue,
-        workflowId: directWorkflowId,
-        workflowIdReusePolicy: "REJECT_DUPLICATE",
-        args: [directWorkflowArgs(action.actionArgs[0])],
-      }),
-      operationDeadlineMs,
-      "direct Workflow-start mutation",
-    );
-    assert.deepEqual(
-      await listScheduleIds(client),
-      schedulesBeforeDirectStart,
-      "a direct Workflow start must create no Schedule action",
-    );
-    assert.deepEqual(
-      (await listDefinitionSchedules(origin, versionTwo.value)).value.schedules,
-      [],
-      "latest version lookup cannot satisfy the version-1 schedule",
-    );
-
-    const workflowsBeforeCancellation = await listWorkflowIds(client);
+    // The third version's occurrence is cancelled before it is due, so its action never exists.
+    const versionThree = await deployDefinition(origin, {
+      bytes: versionBytes(3, cancelledTimerDuration.iso),
+      sourceId: "timer-start-version-3.bpmn",
+      semanticProfile: profileId,
+    });
+    assert.equal(versionThree.value.version, 3);
+    const versionThreeOccurrences = await listScheduleOccurrences(origin, versionThree.value);
+    publicCaptures.push(versionThreeOccurrences);
+    const dueAtThree = onlyOccurrenceDueAt(versionThreeOccurrences, "version 3");
+    const workflowsBeforeCancellation = await listWorkflowIds(client, firedWorkflowTypes);
     const cancellationScheduleId = `cancel-before-due-${process.pid}`;
     const cancellationSchedulesBefore = await listScheduleIds(client);
     const cancellationPut = await putDefinitionSchedule(
       origin,
-      versionOne.value,
+      versionThree.value,
       cancellationScheduleId,
-      nextWholeSecond(2),
+      dueAtThree,
     );
     publicCaptures.push(cancellationPut);
     assert.equal(cancellationPut.value.status, "scheduled");
@@ -304,7 +430,7 @@ test("M2 schedules exact version 1, decides cancellation races, and replays", as
     );
     const cancelled = await deleteDefinitionSchedule(
       origin,
-      versionOne.value,
+      versionThree.value,
       cancellationScheduleId,
     );
     publicCaptures.push(cancelled);
@@ -322,32 +448,38 @@ test("M2 schedules exact version 1, decides cancellation races, and replays", as
     );
     const repeatedCancellation = await deleteDefinitionSchedule(
       origin,
-      versionOne.value,
+      versionThree.value,
       cancellationScheduleId,
     );
     publicCaptures.push(repeatedCancellation);
     assert.deepEqual(repeatedCancellation.value, cancelled.value);
-    const waitPastCancellationDue = Date.parse(cancellationPut.value.dueAt) - Date.now() + 250;
+    // The action would have been taken at the first whole second not before the due instant.
+    const waitPastCancellationDue = Date.parse(cancellationPut.value.dueAt) - Date.now() + 1_250;
     if (waitPastCancellationDue > 0) {
       await delay(waitPastCancellationDue);
     }
     assert.deepEqual(
-      await listWorkflowIds(client),
+      await listWorkflowIds(client, firedWorkflowTypes),
       workflowsBeforeCancellation,
-      "a durably cancelled Schedule must start no Workflow",
+      "a durably cancelled Schedule must start no firing and no Process",
     );
 
     assertPublicResponsesHidePrivateIdentities(publicCaptures, [
-      privateScheduleId,
+      privateScheduleIdOne,
+      privateScheduleIdTwo,
       cancellationPrivateId,
-      action.workflowId,
-      action.firstExecutionRunId,
-      action.description.action.workflowId,
+      processWorkflowId,
+      (await handle.describe()).runId,
+      ...actions.flatMap(({ observed }) => [
+        observed.workflowId,
+        observed.firstExecutionRunId,
+        observed.description.action.workflowId,
+      ]),
     ]);
   } finally {
     const cleanupFailures: unknown[] = [];
     for (const cleanup of [
-      replacementWorker === undefined ? undefined : () => replacementWorker?.shutdown(),
+      worker === undefined ? undefined : () => worker?.shutdown(),
       platform === undefined ? undefined : () => platform?.close(),
       () => environment.teardown(),
       () => rm(dataDirectory, { recursive: true, force: true }),
@@ -431,30 +563,63 @@ async function allocatePort(): Promise<number> {
   return address.port;
 }
 
-/** The source digest of the definition a start memo names (`packages/engine-api/src/start-dispatch.ts`). */
+/** The source digest of the definition a Schedule's memo names (`packages/engine-api/src/definition-schedule.ts`). */
 function definitionSha256(memo: unknown): unknown {
-  const definition = requireRecord(requireRecord(memo, "start memo").definition, "start memo definition");
-  return requireRecord(definition.ref, "start memo definition ref").sha256;
+  const definition = requireRecord(requireRecord(memo, "Schedule memo").definition, "Schedule memo definition");
+  return requireRecord(definition.ref, "Schedule memo definition ref").sha256;
 }
 
 function assertDefinitionSource(memo: unknown, sourceSha256: string): void {
   assert.equal(definitionSha256(memo), sourceSha256);
 }
 
-/** The Schedule's own start arguments with a fresh command and instance, as a direct Workflow start would send them. */
-function directWorkflowArgs(value: unknown): Record<string, unknown> {
-  const args = requireRecord(value, "Schedule start arguments");
-  const start = requireRecord(args.start, "Schedule start stimulus");
-  assert.equal(start.kind, "start");
-  assert.equal(requireRecord(start.trigger, "Schedule start trigger").kind, "timer");
-  return {
-    ...args,
-    start: {
-      ...start,
-      commandId: `direct-start-mutation-command-${process.pid}`,
-      instanceId: `DirectStartMutation_${process.pid}`,
-    },
-  };
+function onlyOccurrenceDueAt(
+  listing: CapturedJson<Readonly<{ occurrences: readonly Readonly<{ dueAt: string }>[] }>>,
+  label: string,
+): string {
+  assert.equal(listing.value.occurrences.length, 1, `${label}: a duration Timer Start has exactly one occurrence`);
+  const [occurrence] = listing.value.occurrences;
+  assert.ok(occurrence !== undefined);
+  return occurrence.dueAt;
+}
+
+/** An occurrence is due one duration after the version's engine registration, which happened during the deploy call. */
+function assertCountedFromRegistration(
+  dueAt: string,
+  deployStartedMs: number,
+  deployReturnedMs: number,
+  durationMs: number,
+): void {
+  const dueMs = Date.parse(dueAt);
+  assert.ok(
+    dueMs >= deployStartedMs + durationMs - registrationClockToleranceMs &&
+      dueMs <= deployReturnedMs + durationMs + registrationClockToleranceMs,
+    `occurrence ${dueAt} is not one duration after the deploy`,
+  );
+}
+
+async function waitForScheduleStatus<Status extends DefinitionSchedule["status"]>(
+  origin: string,
+  definition: DeployedDefinitionVersion,
+  scheduleId: string,
+  status: Status,
+): Promise<CapturedJson<Extract<DefinitionSchedule, { status: Status }>>> {
+  let latest: CapturedJson<DefinitionSchedule> | undefined;
+  for (let attempt = 0; attempt < 300; attempt += 1) {
+    latest = await getDefinitionSchedule(origin, definition, scheduleId);
+    if (latest.value.status === status) {
+      return latest as CapturedJson<Extract<DefinitionSchedule, { status: Status }>>;
+    }
+    await delay(50);
+  }
+  throw new Error(`Schedule ${scheduleId} did not reach ${status}: ${JSON.stringify(latest?.value)}`);
+}
+
+async function fetchHistory(
+  handle: ReturnType<typeof processHandle>,
+  label: string,
+): Promise<TemporalHistory> {
+  return await withDeadline(handle.fetchHistory(), operationDeadlineMs, label) as TemporalHistory;
 }
 
 function assertPublicResponsesHidePrivateIdentities(

@@ -39,7 +39,6 @@ import {
   createBpmnEngineGatewayRuntime,
   engineDeploymentRuntimeOptions,
   definitionScheduleHostId,
-  definitionScheduleWorkflowIdBase,
   messageStartPublicationCommandId,
   messageStartPublicationProcessInstanceId,
   messageStartPublicationWorkflowId,
@@ -222,9 +221,7 @@ function composeSharedPlatformServer(
     schedules,
     host: engine.scheduleHost,
     identities: {
-      processInstanceId: randomUUID,
       hostScheduleId: definitionScheduleHostId,
-      configuredWorkflowIdBase: definitionScheduleWorkflowIdBase,
     },
     now: Date.now,
     confirmedInstances,

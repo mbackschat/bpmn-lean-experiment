@@ -3,6 +3,7 @@ import {
   ProcessInstanceStartStatus,
   decodeDefinitionDeployResult,
   decodeDefinitionSchedule,
+  decodeDefinitionScheduleOccurrenceListResponse,
   decodeMessageStartPublication,
   decodeProcessInstanceStartResult,
   decodePublicTaskDetail,
@@ -10,6 +11,7 @@ import {
   decodeWorkClaimResult,
   decodeWorkCompletionResult,
   decodeWorkTaskSnapshot,
+  definitionScheduleOccurrencesPath,
   definitionSchedulePath,
   definitionVersionStartPath,
   definitionsCollectionPath,
@@ -93,11 +95,29 @@ export async function startDefinition(
   return { status: captured.status, text: captured.text, value: result };
 }
 
+/** The first occurrence of the version's Timer Start that the engine lists as due from now on. */
+export async function firstScheduleOccurrence(
+  origin: string,
+  definition: DeployedDefinitionVersion,
+): Promise<string> {
+  const listed = await get(
+    origin,
+    definitionScheduleOccurrencesPath(definition.processId, definition.version),
+    decodeDefinitionScheduleOccurrenceListResponse,
+  );
+  const [first] = listed.value.occurrences;
+  if (first === undefined) {
+    throw new Error(`the engine lists no occurrence of the Timer Start: ${listed.text}`);
+  }
+  return first.dueAt;
+}
+
+/** Binds `scheduleId` to the occurrence due at `dueAt`, which the occurrences route must have listed. */
 export async function putDefinitionSchedule(
   origin: string,
   definition: DeployedDefinitionVersion,
   scheduleId: string,
-  activationAt: string,
+  dueAt: string,
 ): Promise<CapturedJson<DefinitionSchedule>> {
   const captured = await requestJson(new URL(definitionSchedulePath(
     definition.processId,
@@ -106,7 +126,7 @@ export async function putDefinitionSchedule(
   ), origin), {
     method: "PUT",
     headers: { accept: "application/json", "content-type": "application/json" },
-    body: JSON.stringify({ activationAt }),
+    body: JSON.stringify({ dueAt }),
   });
   requireStatus(captured, [200, 201]);
   return {

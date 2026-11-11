@@ -10,7 +10,6 @@ import {
   ConfirmedProcessInstanceIntegrityError,
   ConfirmedProcessInstanceState,
   DefinitionPresentationIntegrityError,
-  DefinitionScheduleIntegrityError,
   DefinitionScheduleState,
   DefinitionStartService,
   ConfirmedProcessInstancePublicationService,
@@ -300,107 +299,6 @@ export function registerDefinitionsRepositoryContract(
     });
   });
 
-  test(`${label}: schedules preserve identities, deterministic order, and cancellation`, async () => {
-    await usingFixture(createFixture, async ({ definitions, schedules }) => {
-      const definition = await definitions.allocateNext(timerMetadata());
-      await schedules.reserve(schedule(definition, "😀", 1));
-      const exactA = schedule(definition, "A", 2);
-      await schedules.reserve(exactA);
-      const changedA = schedule(definition, "A", 9);
-      assert.deepEqual(
-        await schedules.reserve(changedA),
-        { inserted: false, record: { ...exactA, state: DefinitionScheduleState.Creating,
-          cleanupComplete: false, cancellationOrigin: null,
-          processLocator: null } },
-      );
-      assert.deepEqual(
-        (await schedules.listForDefinition(definition)).map(
-          ({ reference }) => reference.scheduleId,
-        ),
-        ["A", "😀"],
-      );
-      for (const [suffix, collision] of [
-        ["process", { processInstanceId: "schedule-instance-1" }],
-        ["host", { hostScheduleId: "host-schedule-1" }],
-        ["workflow", { configuredWorkflowIdBase: "workflow-base-1" }],
-      ] as const) {
-        const duplicateIdentity = schedule(definition, `other-${suffix}`, 3);
-        Object.assign(duplicateIdentity.identity, collision);
-        await assert.rejects(
-          schedules.reserve(duplicateIdentity),
-          DefinitionScheduleIntegrityError,
-        );
-      }
-      await schedules.reserve(schedule(definition, "race", 4));
-      const scheduleRace = await Promise.all([
-        schedules.compareAndSet(
-          scheduleReference(definition, "race"),
-          DefinitionScheduleState.Creating,
-          { state: DefinitionScheduleState.CreatingHost },
-        ),
-        schedules.compareAndSet(
-          scheduleReference(definition, "race"),
-          DefinitionScheduleState.Creating,
-          { state: DefinitionScheduleState.CreatingHost },
-        ),
-      ]);
-      assert.equal(scheduleRace.filter((value) => value !== null).length, 1);
-      await schedules.reserve(schedule(definition, "illegal", 5));
-      await assert.rejects(
-        schedules.compareAndSet(
-          scheduleReference(definition, "illegal"),
-          DefinitionScheduleState.Creating,
-          {
-            state: DefinitionScheduleState.Started,
-            processLocator: "bpmn-process-work-v1:execution",
-          },
-        ),
-        /illegal schedule transition/u,
-      );
-      assert.equal(
-        (await schedules.get(scheduleReference(definition, "illegal")))?.state,
-        DefinitionScheduleState.Creating,
-      );
-      const creatingHost = await schedules.compareAndSet(
-        { processId: definition.processId, version: definition.version, scheduleId: "A" },
-        DefinitionScheduleState.Creating,
-        { state: DefinitionScheduleState.CreatingHost },
-      );
-      assert.equal(creatingHost?.state, DefinitionScheduleState.CreatingHost);
-      const cancelling = await schedules.requestCancellation(
-        { processId: definition.processId, version: definition.version, scheduleId: "A" },
-      );
-      assert.equal(cancelling?.state, DefinitionScheduleState.Cancelling);
-      assert.equal(cancelling?.cancellationOrigin, DefinitionScheduleState.CreatingHost);
-      assert.equal(
-        await schedules.compareAndSet(
-          { processId: definition.processId, version: definition.version, scheduleId: "A" },
-          DefinitionScheduleState.CreatingHost,
-          { state: DefinitionScheduleState.Scheduled },
-        ),
-        null,
-      );
-      const cancelled = await schedules.compareAndSet(
-        scheduleReference(definition, "A"),
-        DefinitionScheduleState.Cancelling,
-        { state: DefinitionScheduleState.Cancelled },
-      );
-      assert.equal(cancelled?.cleanupComplete, false);
-      const cleaned = await schedules.markCleanupComplete(
-        scheduleReference(definition, "A"),
-        DefinitionScheduleState.Cancelled,
-      );
-      assert.equal(cleaned?.cleanupComplete, true);
-      assert.deepEqual(
-        await schedules.markCleanupComplete(
-          scheduleReference(definition, "A"),
-          DefinitionScheduleState.Cancelled,
-        ),
-        cleaned,
-      );
-    });
-  });
-
   test(`${label}: Message Start preserves three private identities and closed CAS`, async () => {
     await usingFixture(createFixture, async ({ definitions, messages }) => {
       const definition = await definitions.allocateNext(messageMetadata());
@@ -471,7 +369,7 @@ export function registerDefinitionsRepositoryContract(
   });
 }
 
-async function usingFixture(
+export async function usingFixture(
   createFixture: DefinitionsRepositoryContractFactory,
   run: (fixture: DefinitionsRepositoryContractFixture) => Promise<void>,
 ): Promise<void> {
@@ -596,12 +494,12 @@ function metadata(processId: string): NewDefinitionMetadata {
   };
 }
 
-function timerMetadata(): NewDefinitionMetadata {
+export function timerMetadata(durationMs: number | null = 1_000): NewDefinitionMetadata {
   return {
     ...metadata("Timer_Process"),
     startCapabilities: {
       messageStarts: [],
-      timerStarts: [{ startEventId: "TimerStart", durationMs: 1_000 }],
+      timerStarts: [{ startEventId: "TimerStart", durationMs }],
     },
   };
 }
@@ -677,22 +575,27 @@ function confirmedPublication(processInstanceId: string = "confirmed-instance") 
   };
 }
 
-function schedule(definition: DefinitionMetadata, scheduleId: string, identity: number) {
+export function schedule(
+  definition: DefinitionMetadata,
+  scheduleId: string,
+  identity: number,
+  dueAt: string = "2026-08-11T12:00:01.000Z",
+) {
+  const timerStart = definition.startCapabilities.timerStarts[0];
+  assert.ok(timerStart !== undefined);
   return {
     reference: { processId: definition.processId, version: definition.version, scheduleId },
     definition,
-    timerStart: { startEventId: "TimerStart", durationMs: 1_000 },
-    activationAt: "2026-08-11T12:00:00.000Z",
-    dueAt: "2026-08-11T12:00:01.000Z",
+    timerStart: { ...timerStart },
+    dueAt,
     identity: {
       processInstanceId: `schedule-instance-${identity}`,
       hostScheduleId: `host-schedule-${identity}`,
-      configuredWorkflowIdBase: `workflow-base-${identity}`,
     },
   };
 }
 
-function scheduleReference(definition: DefinitionMetadata, scheduleId: string) {
+export function scheduleReference(definition: DefinitionMetadata, scheduleId: string) {
   return {
     processId: definition.processId,
     version: definition.version,

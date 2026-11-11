@@ -18,13 +18,15 @@ export {
 export { canonicalJson } from "./canonical-json.js";
 export {
   PopulationRefused,
+  timerFiringWorkflowType,
   type CommandAnswer,
   type DeploymentAnswer,
   type PopulationResult,
   type PopulationScope,
+  type TimerFiringArgs,
 } from "./population-contract.js";
 export { configurationConflictCode, deploymentRequestConflictCode, queueFullCode } from "./population.js";
-export { processInstanceWorkflowId } from "./population-address.js";
+export { processInstanceWorkflowId, timerFiringWorkflowId } from "./population-address.js";
 export { createHostClientRuntime, type HostClientOptions, type HostClientRuntime } from "./host-runtime.js";
 export type { HostView, JsonValue, OccurrenceId, Requirements, WaitView } from "./port.js";
 export type { PopulationHost, ProcessDescription, ProcessHost, StartRequest } from "./process-port.js";
@@ -33,10 +35,12 @@ export {
   ScheduleCreation,
   SchedulePhase,
   assessSchedule,
+  scheduleActionAtMs,
   scheduleCatchupWindowMs,
   type ExpectedSchedule,
   type OneShotScheduleRequest,
   type ScheduleAssessment,
   type ScheduleHost,
   type StoredSchedule,
+  type TimerFiringOutcome,
 } from "./schedules.js";

@@ -1,17 +1,24 @@
-/** Product 2's representation-free Timer start Schedule host. */
+/**
+ * Product 2's representation-free Timer start Schedule host: a Schedule fires one occurrence of a stored version's
+ * Timer start, named by its canonical UTC due instant, which must be one of the engine's occurrences
+ * (`timer-occurrence-unknown`); the instance it starts takes the engine's identity, which `occurrences` reports.
+ */
 import {
   EngineDefinitionCompilationStatus,
   EngineDefinitionScheduleStatus,
+  EngineTimerStartOccurrencesStatus,
   compileBpmnDefinition,
   createBpmnDefinitionSchedule,
   deleteBpmnDefinitionSchedule,
   inspectBpmnDefinitionSchedule,
+  listEngineTimerStartOccurrences,
   pauseBpmnDefinitionSchedule,
   serializeEngineProcessLocator,
   type EngineDefinitionScheduleBindingRequest,
   type EngineDefinitionScheduleResult,
   type EngineSourceOverlayIdentity,
   type EngineSourceOverlaySelection,
+  type EngineTimerStartDefinitionRequest,
 } from "@bpmn-lean/engine-api";
 import type { ExactPublicSourceIdentity } from "@bpmn-lean/platform-contracts";
 
@@ -44,34 +51,59 @@ export type DefinitionScheduleValidationResult =
     }>
   | Readonly<{ status: "rejected"; evidence: string }>;
 
-export type DefinitionScheduleHostRequest = Readonly<{
+/** A stored version and the Timer start selected on it. */
+export type DefinitionTimerStartRequest = Readonly<{
   bytes: Uint8Array;
   sourceOverlay?: EngineSourceOverlaySelection | null;
   definition: StoredDefinitionVersion;
   timerStart: DefinitionTimerStartCapability;
-  /** When the platform activated the Schedule; the due instant is never before it. */
-  activationAt: string;
+}>;
+
+export type DefinitionScheduleHostRequest = DefinitionTimerStartRequest & Readonly<{
+  /** The occurrence the Schedule fires, a canonical UTC instant. */
   dueAt: string;
+  /** The engine's identity of the instance the occurrence starts, as `occurrences` reported it. */
   processInstanceId: string;
   hostScheduleId: string;
-  configuredWorkflowIdBase: string;
 }>;
+
+export type DefinitionTimerOccurrencesRequest = DefinitionTimerStartRequest & Readonly<{
+  /** The first canonical UTC instant a listed occurrence may be due at. */
+  from: string;
+  /** At most `engineTimerOccurrenceListLimit`. */
+  limit: number;
+}>;
+
+/** One occurrence: its canonical UTC due instant and the engine's identity of the instance it starts. */
+export type DefinitionTimerOccurrence = Readonly<{ dueAt: string; processInstanceId: string }>;
+
+export type DefinitionTimerOccurrencesResult =
+  | Readonly<{ kind: "listed"; occurrences: readonly DefinitionTimerOccurrence[] }>
+  /** The engine refused the version: it is not registered, or the deployment does not serve it. */
+  | Readonly<{ kind: "refused"; code: string; evidence: string }>
+  | Readonly<{ kind: "integrityFailure"; evidence: string }>;
 
 export const DefinitionScheduleHostPhase = {
   Pending: "pending",
+  /** The action ran and the engine has not answered its firing yet. */
+  Firing: "firing",
   Started: "started",
+  /** The action ran and the engine refused the occurrence, such as after a redeploy superseded the version. */
+  Refused: "refused",
   Missed: "missed",
   IntegrityFailure: "integrityFailure",
 } as const;
 
 export type DefinitionScheduleHostResult =
-  | Readonly<{ phase: typeof DefinitionScheduleHostPhase.Pending; paused: boolean }>
-  | Readonly<{ phase: typeof DefinitionScheduleHostPhase.Started; processLocator: string }>
+  | Readonly<{ phase: typeof DefinitionScheduleHostPhase.Pending | typeof DefinitionScheduleHostPhase.Firing; paused: boolean }>
+  | Readonly<{ phase: typeof DefinitionScheduleHostPhase.Started; processInstanceId: string; processLocator: string }>
+  | Readonly<{ phase: typeof DefinitionScheduleHostPhase.Refused; code: string }>
   | Readonly<{ phase: typeof DefinitionScheduleHostPhase.Missed }>
   | Readonly<{ phase: typeof DefinitionScheduleHostPhase.IntegrityFailure; evidence: string }>;
 
 export interface DefinitionScheduleHost {
   validateDefinition(request: DefinitionScheduleValidationRequest): Promise<DefinitionScheduleValidationResult>;
+  occurrences(request: DefinitionTimerOccurrencesRequest): Promise<DefinitionTimerOccurrencesResult>;
   createOrCompare(request: DefinitionScheduleHostRequest): Promise<DefinitionScheduleHostResult>;
   inspect(request: DefinitionScheduleHostRequest): Promise<DefinitionScheduleHostResult>;
   pause(request: DefinitionScheduleHostRequest): Promise<DefinitionScheduleHostResult>;
@@ -116,6 +148,25 @@ export class BpmnDefinitionScheduleGateway implements DefinitionScheduleHost {
     };
   }
 
+  async occurrences(request: DefinitionTimerOccurrencesRequest): Promise<DefinitionTimerOccurrencesResult> {
+    const fromEpochMs = parseUtcInstant(request.from, "from");
+    const selected = await this.#selected(request);
+    if ("evidence" in selected) return { kind: "integrityFailure", evidence: selected.evidence };
+    const result = await listEngineTimerStartOccurrences({ ...selected, fromEpochMs, limit: request.limit });
+    switch (result.status) {
+      case EngineTimerStartOccurrencesStatus.Listed:
+        return {
+          kind: "listed",
+          occurrences: result.occurrences.map((occurrence) =>
+            ({ dueAt: new Date(occurrence.dueAtEpochMs).toISOString(), processInstanceId: occurrence.processInstanceId })),
+        };
+      case EngineTimerStartOccurrencesStatus.Rejected:
+        return { kind: "refused", code: result.failure.code, evidence: result.failure.evidence };
+      case EngineTimerStartOccurrencesStatus.IntegrityFailure:
+        return { kind: "integrityFailure", evidence: result.failure.evidence };
+    }
+  }
+
   createOrCompare(request: DefinitionScheduleHostRequest): Promise<DefinitionScheduleHostResult> {
     return this.#bound(request, createBpmnDefinitionSchedule);
   }
@@ -133,23 +184,28 @@ export class BpmnDefinitionScheduleGateway implements DefinitionScheduleHost {
   }
 
   async #bound(request: DefinitionScheduleHostRequest, operation: ScheduleOperation): Promise<DefinitionScheduleHostResult> {
-    const activationAtEpochMs = parseUtcInstant(request.activationAt, "activationAt");
     const dueAtEpochMs = parseUtcInstant(request.dueAt, "dueAt");
-    if (dueAtEpochMs < activationAtEpochMs) throw new RangeError("dueAt must not precede activationAt");
-    const overlay = request.sourceOverlay ?? null;
-    const resolved = await recompileStoredDefinition(this.#context, request.bytes, overlay, request.definition);
-    if (resolved.kind === "integrityFailure") {
-      return { phase: DefinitionScheduleHostPhase.IntegrityFailure, evidence: resolved.evidence };
-    }
-    const definition = request.definition;
-    const timer = engineTimerSchedule(resolved.compilation.capabilities, request.timerStart.startEventId);
-    if (timer === null) {
+    const selected = await this.#selected(request);
+    if ("evidence" in selected) return { phase: DefinitionScheduleHostPhase.IntegrityFailure, evidence: selected.evidence };
+    const result = mapHostResult(await operation({ ...selected, scheduleId: request.hostScheduleId, dueAtEpochMs }));
+    if (result.phase === DefinitionScheduleHostPhase.Started && result.processInstanceId !== request.processInstanceId) {
       return {
         phase: DefinitionScheduleHostPhase.IntegrityFailure,
-        evidence: "The definition publishes no Timer start with the selected identity.",
+        evidence: "The engine started another instance identity than the occurrence names.",
       };
     }
-    return mapHostResult(await operation({
+    return result;
+  }
+
+  /** The engine request for the stored version and its selected Timer start, after the stored bytes recompile. */
+  async #selected(request: DefinitionTimerStartRequest): Promise<EngineTimerStartDefinitionRequest | Readonly<{ evidence: string }>> {
+    const overlay = request.sourceOverlay ?? null;
+    const resolved = await recompileStoredDefinition(this.#context, request.bytes, overlay, request.definition);
+    if (resolved.kind === "integrityFailure") return { evidence: resolved.evidence };
+    const definition = request.definition;
+    const timer = engineTimerSchedule(resolved.compilation.capabilities, request.timerStart.startEventId);
+    if (timer === null) return { evidence: "The definition publishes no Timer start with the selected identity." };
+    return {
       host: this.#context.host,
       bytes: request.bytes,
       sourceOverlay: overlay,
@@ -161,12 +217,8 @@ export class BpmnDefinitionScheduleGateway implements DefinitionScheduleHost {
       version: definition.version,
       expectedStarts: resolved.compilation.capabilities.starts,
       timerStart: { startEventId: request.timerStart.startEventId, schedule: timer },
-      processInstanceId: request.processInstanceId,
-      scheduleId: request.hostScheduleId,
-      workflowIdBase: request.configuredWorkflowIdBase,
-      dueAtEpochMs,
       limits: this.#context.limits,
-    }));
+    };
   }
 }
 
@@ -174,8 +226,16 @@ function mapHostResult(result: EngineDefinitionScheduleResult): DefinitionSchedu
   switch (result.status) {
     case EngineDefinitionScheduleStatus.Pending:
       return { phase: DefinitionScheduleHostPhase.Pending, paused: result.paused };
+    case EngineDefinitionScheduleStatus.Firing:
+      return { phase: DefinitionScheduleHostPhase.Firing, paused: result.paused };
     case EngineDefinitionScheduleStatus.Started:
-      return { phase: DefinitionScheduleHostPhase.Started, processLocator: serializeEngineProcessLocator(result.locator) };
+      return {
+        phase: DefinitionScheduleHostPhase.Started,
+        processInstanceId: result.processInstanceId,
+        processLocator: serializeEngineProcessLocator(result.locator),
+      };
+    case EngineDefinitionScheduleStatus.Refused:
+      return { phase: DefinitionScheduleHostPhase.Refused, code: result.failure.code };
     case EngineDefinitionScheduleStatus.Missed:
       return { phase: DefinitionScheduleHostPhase.Missed };
     case EngineDefinitionScheduleStatus.Rejected:
@@ -184,8 +244,11 @@ function mapHostResult(result: EngineDefinitionScheduleResult): DefinitionSchedu
   }
 }
 
+/** A canonical UTC instant, as `Date.prototype.toISOString` renders it. */
 function parseUtcInstant(value: string, name: string): number {
   const epochMs = Date.parse(value);
-  if (!Number.isSafeInteger(epochMs)) throw new TypeError(`${name} must be a valid UTC instant`);
+  if (!Number.isSafeInteger(epochMs) || epochMs < 0 || new Date(epochMs).toISOString() !== value) {
+    throw new TypeError(`${name} must be a canonical UTC instant`);
+  }
   return epochMs;
 }

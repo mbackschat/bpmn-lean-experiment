@@ -45,8 +45,8 @@ export async function readDefinitionScheduleRequest(
   const record = value as Record<string, unknown>;
   if (
     Object.keys(record).length !== 1 ||
-    !Object.hasOwn(record, "activationAt") ||
-    typeof record.activationAt !== "string"
+    !Object.hasOwn(record, "dueAt") ||
+    typeof record.dueAt !== "string"
   ) {
     throw malformedShape();
   }
@@ -76,6 +76,6 @@ function malformedShape(): HttpRequestFailure {
   return new HttpRequestFailure(
     400,
     PublicApiErrorCode.InvalidRequest,
-    "The definition schedule request must contain only string activationAt.",
+    "The definition schedule request must contain only string dueAt.",
   );
 }

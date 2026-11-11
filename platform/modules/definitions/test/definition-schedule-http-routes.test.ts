@@ -20,7 +20,7 @@ import type {
   PutDefinitionScheduleResult,
 } from "@bpmn-lean/platform-definitions";
 
-const activationAt = "2026-08-11T12:00:00.000Z";
+const dueAt = "2026-08-11T12:00:01.250Z";
 const definition = {
   processId: "Process/Timer",
   version: 2,
@@ -43,8 +43,7 @@ const scheduled = {
   scheduleId: "schedule/one",
   definition,
   timerStart: definition.startCapabilities.timerStarts[0],
-  activationAt,
-  dueAt: "2026-08-11T12:00:01.000Z",
+  dueAt,
   status: DefinitionScheduleStatus.Scheduled,
   instance: null,
 } as const satisfies DefinitionSchedule;
@@ -58,7 +57,7 @@ test("creates one exact definition schedule through the public PUT route", async
 
   const response = await fixture.routes.handle(scheduleRequest("PUT", {
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ activationAt }),
+    body: JSON.stringify({ dueAt }),
   }));
 
   assert.equal(response?.status, 201);
@@ -67,7 +66,7 @@ test("creates one exact definition schedule through the public PUT route", async
     processId: definition.processId,
     version: definition.version,
     scheduleId: scheduled.scheduleId,
-    activationAt,
+    dueAt,
   }]);
 });
 
@@ -91,6 +90,45 @@ test("lists, reads, and cancels schedules without exposing private host identity
   assert.equal(JSON.stringify(deleted).includes("workflowId"), false);
 });
 
+test("lists the engine's occurrences with an optional from and a bounded limit", async () => {
+  const fixture = createFixture();
+  const occurrences = (query: string) => fixture.routes.handle(new Request(
+    `http://platform.test/api/v1/definitions/Process%2FTimer/versions/2/schedule-occurrences${query}`));
+
+  const listed = await occurrences("");
+  assert.equal(listed?.status, 200);
+  assert.deepEqual(await responseJson(listed), {
+    definition,
+    timerStart: definition.startCapabilities.timerStarts[0],
+    occurrences: [{ dueAt }],
+  });
+  assert.equal((await occurrences(`?from=${dueAt}&limit=100`))?.status, 200);
+  assert.deepEqual(fixture.occurrenceQueries, [{ from: null, limit: 10 }, { from: dueAt, limit: 100 }]);
+  for (const query of ["?limit=0", "?limit=101", "?limit=01", "?from=2026-08-11T12:00:01Z", "?limit=1&limit=2", "?cursor=1"]) {
+    assert.equal((await occurrences(query))?.status, 400, query);
+  }
+  assert.equal(fixture.occurrenceQueries.length, 2, "a malformed query never reaches the service");
+  assert.equal((await fixture.routes.handle(new Request(
+    "http://platform.test/api/v1/definitions/Process%2FTimer/versions/3/schedule-occurrences")))?.status, 404);
+  const refused = createFixture({ occurrencesError: new DefinitionScheduleValidationError("definition-not-deployed") });
+  assert.equal((await refused.routes.handle(new Request(
+    "http://platform.test/api/v1/definitions/Process%2FTimer/versions/2/schedule-occurrences")))?.status, 422);
+});
+
+test("publishes a refused firing with the engine's code and no instance", async () => {
+  const refused = {
+    ...scheduled,
+    status: DefinitionScheduleStatus.Refused,
+    refusal: "timer-start-superseded",
+  } as const satisfies DefinitionSchedule;
+  const fixture = createFixture({ getResult: refused });
+
+  const response = await fixture.routes.handle(scheduleRequest("GET"));
+
+  assert.equal(response?.status, 200);
+  assert.deepEqual(await responseJson(response), refused);
+});
+
 test("returns 200 for an identical idempotent PUT retry", async () => {
   const fixture = createFixture({
     putResult: { created: false, schedule: structuredClone(scheduled) },
@@ -105,20 +143,21 @@ test("returns 200 for an identical idempotent PUT retry", async () => {
 test("rejects malformed transport and request shapes before service entry", async () => {
   const cases = [
     { request: putRequest("{}"), status: 400 },
-    { request: putRequest(JSON.stringify({ activationAt, extra: true })), status: 400 },
-    { request: putRequest(JSON.stringify({ activationAt: 42 })), status: 400 },
+    { request: putRequest(JSON.stringify({ dueAt, extra: true })), status: 400 },
+    { request: putRequest(JSON.stringify({ activationAt: dueAt })), status: 400 },
+    { request: putRequest(JSON.stringify({ dueAt: 42 })), status: 400 },
     {
       request: putRequest(
-        `{"activationAt":"2026-08-11T11:00:00.000Z","\\u0061ctivationAt":"${activationAt}"}`,
+        `{"dueAt":"2026-08-11T11:00:00.000Z","\\u0064ueAt":"${dueAt}"}`,
       ),
       status: 400,
     },
     { request: putRequest("{"), status: 400 },
-    { request: putRequest(JSON.stringify({ activationAt: "2026-08-11T12:00:00.001Z" })), status: 422 },
+    { request: putRequest(JSON.stringify({ dueAt: "2026-08-11T12:00:01Z" })), status: 422 },
     {
       request: scheduleRequest("PUT", {
         headers: { "content-type": "text/plain" },
-        body: JSON.stringify({ activationAt }),
+        body: JSON.stringify({ dueAt }),
       }),
       status: 415,
     },
@@ -162,7 +201,7 @@ test("maps missing, conflict, validation, and integrity outcomes exactly", async
       code: PublicApiErrorCode.Conflict,
     },
     {
-      error: new DefinitionScheduleValidationError("activationAt is no longer future"),
+      error: new DefinitionScheduleValidationError("dueAt is no longer future"),
       status: 422,
       code: PublicApiErrorCode.InvalidRequest,
     },
@@ -217,7 +256,7 @@ test("rejects malformed/query/body route input and leaves unknown paths unclaime
   const fixture = createFixture();
   assert.equal(
     (await fixture.routes.handle(putRequest(
-      JSON.stringify({ activationAt }),
+      JSON.stringify({ dueAt }),
       `${scheduleUrl()}?private=1`,
     )))?.status,
     400,
@@ -249,13 +288,16 @@ type FixtureOptions = Readonly<{
   putError?: unknown;
   getResult?: DefinitionSchedule | null;
   deleteResult?: DefinitionSchedule | null;
+  occurrencesError?: unknown;
 }>;
 
 function createFixture(options: FixtureOptions = {}): Readonly<{
   routes: DefinitionScheduleHttpRoutes;
   puts: PutDefinitionSchedule[];
+  occurrenceQueries: Array<Readonly<{ from: string | null; limit: number }>>;
 }> {
   const puts: PutDefinitionSchedule[] = [];
+  const occurrenceQueries: Array<Readonly<{ from: string | null; limit: number }>> = [];
   const service = {
     put: async (request: PutDefinitionSchedule): Promise<PutDefinitionScheduleResult> => {
       puts.push(structuredClone(request));
@@ -269,6 +311,11 @@ function createFixture(options: FixtureOptions = {}): Readonly<{
     get: async (_reference: DefinitionScheduleReference) =>
       structuredClone(options.getResult === undefined ? scheduled : options.getResult),
     list: async (_reference: DefinitionReference) => [structuredClone(scheduled)],
+    occurrences: async (_reference: DefinitionReference, from: string | null, limit: number) => {
+      occurrenceQueries.push({ from, limit });
+      if (options.occurrencesError !== undefined) throw options.occurrencesError;
+      return { definition, timerStart: definition.startCapabilities.timerStarts[0], occurrences: [{ dueAt }] };
+    },
     delete: async (_reference: DefinitionScheduleReference) =>
       structuredClone(
         options.deleteResult === undefined ? cancelled : options.deleteResult,
@@ -286,6 +333,7 @@ function createFixture(options: FixtureOptions = {}): Readonly<{
   return {
     routes: new DefinitionScheduleHttpRoutes(service, definitions),
     puts,
+    occurrenceQueries,
   };
 }
 
@@ -297,7 +345,7 @@ function scheduleRequest(method: string, init: RequestInit = {}): Request {
 }
 
 function validPutRequest(): Request {
-  return putRequest(JSON.stringify({ activationAt }));
+  return putRequest(JSON.stringify({ dueAt }));
 }
 
 function putRequest(

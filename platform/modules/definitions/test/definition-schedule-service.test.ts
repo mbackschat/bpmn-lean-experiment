@@ -25,6 +25,8 @@ import type {
   DefinitionScheduleReservation,
   DefinitionScheduleTransition,
   DefinitionScheduleValidationRequest,
+  DefinitionTimerOccurrencesHostRequest,
+  DefinitionTimerOccurrencesHostResult,
   ExactArtifactStore,
   NewDefinitionMetadata,
   NewDefinitionScheduleRecord,
@@ -32,8 +34,10 @@ import type {
 
 const encoder = new TextEncoder();
 const bytes = encoder.encode("exact timer definition");
-const activationAt = "2026-08-11T12:00:00.000Z";
-const dueAt = "2026-08-11T12:00:01.000Z";
+/** An occurrence the engine lists, with a millisecond part: occurrences count from the deploy time. */
+const dueAt = "2026-08-11T12:00:01.250Z";
+/** The engine's identity of the instance the occurrence starts; the platform only stores it. */
+const instanceId = "timer:engine-derived-instance";
 
 test("DELETE winning before creatingHost causes zero Schedule host calls", async () => {
   const fixture = createFixture();
@@ -41,7 +45,7 @@ test("DELETE winning before creatingHost causes zero Schedule host calls", async
     await fixture.service.delete(reference());
   };
 
-  const result = await fixture.service.put({ ...reference(), activationAt });
+  const result = await fixture.service.put({ ...reference(), dueAt });
 
   assert.equal(result.created, false);
   assert.equal(result.schedule.status, DefinitionScheduleState.Cancelled);
@@ -50,7 +54,7 @@ test("DELETE winning before creatingHost causes zero Schedule host calls", async
 
 test("restart resumes durable cancelling after a crash following pause", async () => {
   const fixture = createFixture();
-  await fixture.service.put({ ...reference(), activationAt });
+  await fixture.service.put({ ...reference(), dueAt });
   fixture.host.failNextPause = true;
 
   await assert.rejects(fixture.service.delete(reference()), /pause crash/u);
@@ -70,29 +74,26 @@ test("accepted response lost after action exhaustion persists one started instan
   const fixture = createFixture();
   fixture.host.createResults.push({
     phase: DefinitionScheduleHostPhase.Started,
+    processInstanceId: instanceId,
     processLocator: "bpmn-process-work-v1:opaque-workflow",
   });
 
-  const first = await fixture.service.put({ ...reference(), activationAt });
+  const first = await fixture.service.put({ ...reference(), dueAt });
   fixture.setNow("2026-08-11T12:00:02.000Z");
-  const retry = await fixture.service.put({ ...reference(), activationAt });
+  const retry = await fixture.service.put({ ...reference(), dueAt });
 
   assert.equal(first.schedule.status, DefinitionScheduleState.Started);
   assert.deepEqual(first.schedule, retry.schedule);
-  assert.equal(first.schedule.instance?.processInstanceId, "process-instance-1");
+  assert.equal(first.schedule.instance?.processInstanceId, "timer:engine-derived-instance");
   assert.equal(fixture.host.createCalls.length, 1);
   assert.equal(fixture.schedules.records.size, 1);
   assert.deepEqual(fixture.confirmedPublications, [{
     instance: {
-      processInstanceId: "process-instance-1",
+      processInstanceId: "timer:engine-derived-instance",
       definition: timerDefinition(),
     },
     locator: "bpmn-process-work-v1:opaque-workflow",
   }]);
-  assert.doesNotMatch(
-    JSON.stringify(fixture.confirmedPublications),
-    /configured-base-1/u,
-  );
 
   const hostCalls = fixture.host.scheduleCalls.length;
   await fixture.service.reconcileSchedule(reference());
@@ -104,12 +105,13 @@ test("restart completes terminal cleanup after a successful delete response is l
   const fixture = createFixture();
   fixture.host.createResults.push({
     phase: DefinitionScheduleHostPhase.Started,
+    processInstanceId: instanceId,
     processLocator: "bpmn-process-work-v1:opaque-workflow",
   });
   fixture.host.failNextDeleteAfterSuccess = true;
 
   await assert.rejects(
-    fixture.service.put({ ...reference(), activationAt }),
+    fixture.service.put({ ...reference(), dueAt }),
     /delete response lost/u,
   );
   assert.equal((await fixture.schedules.get(reference()))?.cleanupComplete, false);
@@ -120,29 +122,31 @@ test("restart completes terminal cleanup after a successful delete response is l
   assert.equal(fixture.host.deleteCalls.length, 2);
 });
 
-test("changed activation under one public key conflicts without a Schedule host call", async () => {
+test("a changed occurrence under one public key conflicts without a Schedule host call", async () => {
   const fixture = createFixture();
-  await fixture.service.put({ ...reference(), activationAt });
+  await fixture.service.put({ ...reference(), dueAt });
   fixture.host.scheduleCalls.length = 0;
 
   await assert.rejects(
     fixture.service.put({
       ...reference(),
-      activationAt: "2026-08-11T12:01:00.000Z",
+      dueAt: "2026-08-11T13:00:01.250Z",
     }),
     (error: unknown) => error instanceof DefinitionScheduleConflictError,
   );
   assert.deepEqual(fixture.host.scheduleCalls, []);
 });
 
-test("derives dueAt from the exact capability and forwards immutable binding", async () => {
+test("binds the engine's occurrence and the instance identity it starts, and forwards the immutable binding", async () => {
   const fixture = createFixture();
 
-  const result = await fixture.service.put({ ...reference(), activationAt });
+  const result = await fixture.service.put({ ...reference(), dueAt });
 
   assert.equal(result.schedule.dueAt, dueAt);
+  assert.deepEqual(fixture.host.occurrenceCalls.map(({ from, limit }) => ({ from, limit })), [{ from: dueAt, limit: 1 }]);
+  assert.equal((await fixture.schedules.get(reference()))?.identity.processInstanceId, instanceId);
   assert.equal(fixture.host.createCalls[0]?.dueAt, dueAt);
-  assert.equal(fixture.host.createCalls[0]?.activationAt, activationAt);
+  assert.equal(fixture.host.createCalls[0]?.processInstanceId, instanceId);
   assert.deepEqual(fixture.host.createCalls[0]?.timerStart, {
     startEventId: "TimerStart",
     durationMs: 1_000,
@@ -150,16 +154,16 @@ test("derives dueAt from the exact capability and forwards immutable binding", a
   assert.equal(fixture.host.createCalls[0]?.definition.version, 1);
 });
 
-test("rejects malformed, non-whole-second, noncanonical, and past activation before host entry", async () => {
+test("rejects malformed, noncanonical, and past due instants before host entry", async () => {
   for (const candidate of [
     "not-an-instant",
-    "2026-08-11T12:00:00.123Z",
+    "2026-08-11T12:00:01Z",
     "2026-08-11T12:00:00.000+00:00",
     "2026-08-11T11:58:00.000Z",
   ]) {
     const fixture = createFixture();
     await assert.rejects(
-      fixture.service.put({ ...reference(), activationAt: candidate }),
+      fixture.service.put({ ...reference(), dueAt: candidate }),
       (error: unknown) => error instanceof DefinitionScheduleValidationError,
     );
     assert.equal(fixture.host.validationCalls.length, 0, candidate);
@@ -167,43 +171,124 @@ test("rejects malformed, non-whole-second, noncanonical, and past activation bef
   }
 });
 
-test("rejects a derived due instant outside the public four-digit year domain", async () => {
-  const fixture = createFixture();
-  const lastPublicSecond = "9999-12-31T23:59:59.000Z";
-
-  await assert.rejects(
-    fixture.service.put({ ...reference(), activationAt: lastPublicSecond }),
-    (error: unknown) => error instanceof DefinitionScheduleValidationError,
-  );
-
-  assert.equal(fixture.host.validationCalls.length, 1);
-  assert.deepEqual(fixture.host.scheduleCalls, []);
-  assert.equal(await fixture.schedules.get(reference()), null);
+test("an instant the engine lists no occurrence at, or a version it refuses, reserves nothing", async () => {
+  for (const listed of [
+    { kind: "listed", occurrences: [] },
+    { kind: "listed", occurrences: [{ dueAt: "2026-08-11T13:00:01.250Z", processInstanceId: "timer:later" }] },
+    { kind: "refused", code: "definition-not-deployed", evidence: "pending registration" },
+  ] as const) {
+    const fixture = createFixture();
+    fixture.host.occurrenceResults.push(listed);
+    await assert.rejects(
+      fixture.service.put({ ...reference(), dueAt }),
+      (error: unknown) => error instanceof DefinitionScheduleValidationError,
+    );
+    assert.deepEqual(fixture.host.scheduleCalls, []);
+    assert.equal(await fixture.schedules.get(reference()), null);
+  }
 });
 
-test("a Timer Start whose delay the engine does not resolve is refused before any Schedule exists", async () => {
+test("a second schedule identity of an occurrence already scheduled conflicts", async () => {
+  const fixture = createFixture();
+  await fixture.service.put({ ...reference(), dueAt });
+  fixture.host.scheduleCalls.length = 0;
+
+  await assert.rejects(
+    fixture.service.put({ ...reference(), scheduleId: "schedule-2", dueAt }),
+    (error: unknown) => error instanceof DefinitionScheduleConflictError,
+  );
+  assert.deepEqual(fixture.host.scheduleCalls, []);
+  assert.equal(await fixture.schedules.get({ ...reference(), scheduleId: "schedule-2" }), null);
+});
+
+test("a Timer Start without a resolved delay is scheduled by the engine's occurrence", async () => {
   const unresolved = timerDefinition();
   const fixture = createFixture({
     ...unresolved,
     startCapabilities: { messageStarts: [], timerStarts: [{ startEventId: "TimerStart", durationMs: null }] },
   });
 
-  await assert.rejects(
-    fixture.service.put({ ...reference(), activationAt }),
-    (error: unknown) => error instanceof DefinitionScheduleValidationError,
-  );
+  const result = await fixture.service.put({ ...reference(), dueAt });
 
-  assert.equal(fixture.host.validationCalls.length, 1);
+  assert.equal(result.schedule.status, DefinitionScheduleState.Scheduled);
+  assert.deepEqual(result.schedule.timerStart, { startEventId: "TimerStart", durationMs: null });
+});
+
+test("lists the engine's occurrences from now by default, without reserving anything", async () => {
+  const fixture = createFixture();
+
+  const listed = await fixture.service.occurrences({ processId: "Process_Timer", version: 1 }, null, 3);
+
+  assert.deepEqual(listed.occurrences, [{ dueAt }]);
+  assert.deepEqual(listed.timerStart, { startEventId: "TimerStart", durationMs: 1_000 });
+  assert.deepEqual(fixture.host.occurrenceCalls.map(({ from, limit }) => ({ from, limit })),
+    [{ from: "2026-08-11T11:59:00.000Z", limit: 3 }]);
   assert.deepEqual(fixture.host.scheduleCalls, []);
   assert.equal(await fixture.schedules.get(reference()), null);
 });
 
-test("rechecks future activation after asynchronous definition validation", async () => {
+test("a refused firing is terminal, cleaned up, and public with the engine's code", async () => {
   const fixture = createFixture();
-  fixture.host.beforeValidationResult = () => fixture.setNow(activationAt);
+  await fixture.service.put({ ...reference(), dueAt });
+  fixture.host.inspectResults.push({ phase: DefinitionScheduleHostPhase.Refused, code: "timer-start-superseded" });
+
+  const refused = await fixture.service.get(reference());
+
+  assert.deepEqual(refused && { status: refused.status, instance: refused.instance, refusal: "refusal" in refused ? refused.refusal : null },
+    { status: DefinitionScheduleState.Refused, instance: null, refusal: "timer-start-superseded" });
+  const stored = await fixture.schedules.get(reference());
+  assert.equal(stored?.cleanupComplete, true);
+  assert.equal(stored?.processLocator, null);
+  await assert.rejects(
+    fixture.service.delete(reference()),
+    (error: unknown) => error instanceof DefinitionScheduleConflictError,
+  );
+});
+
+test("an unanswered firing keeps the schedule scheduled, and a cancellation it won conflicts until it answers", async () => {
+  const fixture = createFixture();
+  await fixture.service.put({ ...reference(), dueAt });
+  fixture.host.inspectResults.push({ phase: DefinitionScheduleHostPhase.Firing, paused: false });
+  assert.equal((await fixture.service.get(reference()))?.status, DefinitionScheduleState.Scheduled);
+
+  fixture.host.pauseResults.push({ phase: DefinitionScheduleHostPhase.Firing, paused: true });
+  await assert.rejects(
+    fixture.service.delete(reference()),
+    (error: unknown) => error instanceof DefinitionScheduleConflictError,
+  );
+  assert.equal((await fixture.schedules.get(reference()))?.state, DefinitionScheduleState.Cancelling);
+
+  fixture.host.pauseResults.push({
+    phase: DefinitionScheduleHostPhase.Started,
+    processInstanceId: instanceId,
+    processLocator: "bpmn-process-work-v1:opaque-fired",
+  });
+  await fixture.restartedService().reconcileAll();
+  assert.equal((await fixture.schedules.get(reference()))?.state, DefinitionScheduleState.Started);
+});
+
+test("a started instance other than the occurrence's is an integrity failure", async () => {
+  const fixture = createFixture();
+  await fixture.service.put({ ...reference(), dueAt });
+  fixture.host.inspectResults.push({
+    phase: DefinitionScheduleHostPhase.Started,
+    processInstanceId: "timer:another-instance",
+    processLocator: "bpmn-process-work-v1:opaque-other",
+  });
 
   await assert.rejects(
-    fixture.service.put({ ...reference(), activationAt }),
+    fixture.service.get(reference()),
+    (error: unknown) => error instanceof DefinitionScheduleIntegrityError,
+  );
+  assert.equal((await fixture.schedules.get(reference()))?.state, DefinitionScheduleState.Scheduled);
+});
+
+test("rechecks a future due instant after asynchronous definition validation", async () => {
+  const fixture = createFixture();
+  fixture.host.beforeValidationResult = () => fixture.setNow(dueAt);
+
+  await assert.rejects(
+    fixture.service.put({ ...reference(), dueAt }),
     (error: unknown) => error instanceof DefinitionScheduleValidationError,
   );
 
@@ -214,9 +299,10 @@ test("rechecks future activation after asynchronous definition validation", asyn
 
 test("started host action wins a cancellation race and remains privately addressed", async () => {
   const fixture = createFixture();
-  await fixture.service.put({ ...reference(), activationAt });
+  await fixture.service.put({ ...reference(), dueAt });
   fixture.host.pauseResults.push({
     phase: DefinitionScheduleHostPhase.Started,
+    processInstanceId: instanceId,
     processLocator: "bpmn-process-work-v1:opaque-race-workflow",
   });
 
@@ -237,7 +323,7 @@ test("started host action wins a cancellation race and remains privately address
 
 test("requires pause-confirmed pending before cancellation can become cancelled", async () => {
   const fixture = createFixture();
-  await fixture.service.put({ ...reference(), activationAt });
+  await fixture.service.put({ ...reference(), dueAt });
   fixture.host.pauseResults.push({
     phase: DefinitionScheduleHostPhase.Pending,
     paused: false,
@@ -255,7 +341,7 @@ test("requires pause-confirmed pending before cancellation can become cancelled"
 
 test("divergent scheduled host is integrity failure and is never recreated", async () => {
   const fixture = createFixture();
-  await fixture.service.put({ ...reference(), activationAt });
+  await fixture.service.put({ ...reference(), dueAt });
   fixture.host.createCalls.length = 0;
   fixture.host.inspectResults.push({
     phase: DefinitionScheduleHostPhase.IntegrityFailure,
@@ -281,7 +367,7 @@ test("rejection while recompiling stored admitted bytes is integrity failure", a
   });
 
   await assert.rejects(
-    fixture.service.put({ ...reference(), activationAt }),
+    fixture.service.put({ ...reference(), dueAt }),
     (error: unknown) => error instanceof DefinitionScheduleIntegrityError,
   );
   assert.deepEqual(fixture.host.scheduleCalls, []);
@@ -290,7 +376,7 @@ test("rejection while recompiling stored admitted bytes is integrity failure", a
 
 test("reconciliation uses the snapshotted definition and never resolves latest", async () => {
   const fixture = createFixture();
-  await fixture.service.put({ ...reference(), activationAt });
+  await fixture.service.put({ ...reference(), dueAt });
   assert.equal(fixture.definitions.gets, 1);
 
   await fixture.service.get(reference());
@@ -304,7 +390,7 @@ test("missing exact definition remains distinct from validation failure", async 
   fixture.definitions.missing = true;
 
   await assert.rejects(
-    fixture.service.put({ ...reference(), activationAt }),
+    fixture.service.put({ ...reference(), dueAt }),
     (error: unknown) => error instanceof DefinitionScheduleNotFoundError,
   );
   assert.equal(fixture.host.validationCalls.length, 0);
@@ -339,9 +425,7 @@ function createFixture(definition: DefinitionMetadata = timerDefinition()) {
     schedules,
     host,
     identities: {
-      processInstanceId: () => "process-instance-1",
-      hostScheduleId: () => "host-schedule-1",
-      configuredWorkflowIdBase: () => "configured-base-1",
+      hostScheduleId: (selected: DefinitionScheduleReference) => `host-${selected.scheduleId}`,
     },
     now: () => now,
     confirmedInstances,
@@ -433,12 +517,16 @@ class MemoryScheduleRepository implements DefinitionScheduleRepository {
     if (found !== undefined) {
       return { inserted: false, record: found };
     }
+    if ([...this.records.values()].some((held) => held.identity.processInstanceId === value.identity.processInstanceId)) {
+      throw new DefinitionScheduleConflictError("the occurrence is already scheduled");
+    }
     const record: DefinitionScheduleRecord = {
       ...structuredClone(value),
       state: DefinitionScheduleState.Creating,
       cleanupComplete: false,
       cancellationOrigin: null,
       processLocator: null,
+      refusalCode: null,
     };
     this.records.set(key, record);
     return { inserted: true, record: structuredClone(record) };
@@ -548,6 +636,8 @@ class MemoryHost implements DefinitionScheduleHost {
   >>[] = [];
   readonly inspectResults: DefinitionScheduleHostResult[] = [];
   readonly pauseResults: DefinitionScheduleHostResult[] = [];
+  readonly occurrenceCalls: DefinitionTimerOccurrencesHostRequest[] = [];
+  readonly occurrenceResults: DefinitionTimerOccurrencesHostResult[] = [];
   failNextPause = false;
   failNextDeleteAfterSuccess = false;
   beforeValidationResult: (() => void) | null = null;
@@ -573,6 +663,15 @@ class MemoryHost implements DefinitionScheduleHost {
       semanticProfile: this.definition.semanticProfile,
       startCapabilities: structuredClone(this.definition.startCapabilities),
       sourceOverlay: null,
+    };
+  }
+
+  async occurrences(request: DefinitionTimerOccurrencesHostRequest): Promise<DefinitionTimerOccurrencesHostResult> {
+    this.occurrenceCalls.push(structuredClone(request));
+    return this.occurrenceResults.shift() ?? {
+      kind: "listed",
+      occurrences: [{ dueAt, processInstanceId: instanceId }]
+        .filter((occurrence) => Date.parse(occurrence.dueAt) >= Date.parse(request.from)).slice(0, request.limit),
     };
   }
 

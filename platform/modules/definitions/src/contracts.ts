@@ -39,10 +39,10 @@ export type DefinitionTimerStartCapability = Readonly<{
   durationMs: number | null;
 }>;
 
-/** A Timer start a Schedule can run: one whose delay the engine resolved. */
+/** The Timer start a schedule fires an occurrence of, as the version publishes it. */
 export type DefinitionScheduledTimerStart = Readonly<{
   startEventId: string;
-  durationMs: number;
+  durationMs: number | null;
 }>;
 
 export type DefinitionOperationMessageChannel = Readonly<{

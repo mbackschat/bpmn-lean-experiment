@@ -57,8 +57,7 @@ const scheduled = {
   scheduleId: "f7d7b521-a8b8-4fcf-86f9-bd3957c74d12",
   definition,
   timerStart: definition.startCapabilities.timerStarts[0],
-  activationAt: "2026-08-11T12:00:00.000Z",
-  dueAt: "2026-08-11T12:00:01.000Z",
+  dueAt: "2026-08-11T12:00:01.250Z",
   status: DefinitionScheduleStatus.Scheduled,
   instance: null,
 } as const satisfies DefinitionSchedule;
@@ -79,7 +78,7 @@ function createClient(
 
 test("creates one exact-version schedule from snapshotted public input", async () => {
   const mutableDefinition = structuredClone(definition);
-  const request: { activationAt: string } = { activationAt: scheduled.activationAt };
+  const request: { dueAt: string } = { dueAt: scheduled.dueAt };
   const release = Promise.withResolvers<void>();
   let capturedUrl: string | undefined;
   let capturedInit: RequestInit | undefined;
@@ -98,7 +97,7 @@ test("creates one exact-version schedule from snapshotted public input", async (
     processId: "Process_Mutated",
     version: 99,
   });
-  request.activationAt = "2030-01-01T00:00:00.000Z";
+  request.dueAt = "2030-01-01T00:00:00.000Z";
   release.resolve();
 
   assert.deepEqual(await pending, scheduled);
@@ -109,8 +108,44 @@ test("creates one exact-version schedule from snapshotted public input", async (
   assert.equal(capturedInit?.method, "PUT");
   assert.equal(new Headers(capturedInit?.headers).get("content-type"), "application/json");
   assert.deepEqual(JSON.parse(String(capturedInit?.body)), {
-    activationAt: scheduled.activationAt,
+    dueAt: scheduled.dueAt,
   });
+});
+
+test("rejects a creation response bound to another occurrence than requested", async () => {
+  const client = createClient(async () => jsonResponse(201, { ...scheduled, dueAt: "2026-08-11T13:00:01.250Z" }));
+  await assert.rejects(
+    client.create(definition, scheduled.scheduleId, { dueAt: scheduled.dueAt }),
+    (error: unknown) => error instanceof DefinitionProtocolError && /requested occurrence/u.test(error.message),
+  );
+});
+
+test("lists the engine's occurrences from an explicit instant with a bounded count", async () => {
+  const urls: string[] = [];
+  const listed = {
+    definition,
+    timerStart: definition.startCapabilities.timerStarts[0],
+    occurrences: [{ dueAt: "2026-08-11T12:00:01.250Z" }, { dueAt: "2026-08-11T13:00:01.250Z" }],
+  };
+  const client = createClient(async (input) => {
+    urls.push(String(input));
+    return jsonResponse(200, listed);
+  });
+
+  assert.deepEqual(await client.occurrences(definition), listed);
+  assert.deepEqual(await client.occurrences(definition, { from: "2026-08-11T12:00:01.250Z", limit: 10 }), listed);
+  assert.deepEqual(urls, [
+    "https://platform.test/api/v1/definitions/Process_Timer/versions/2/schedule-occurrences",
+    "https://platform.test/api/v1/definitions/Process_Timer/versions/2/schedule-occurrences?from=2026-08-11T12%3A00%3A01.250Z&limit=10",
+  ]);
+  await assert.rejects(
+    client.occurrences(definition, { from: "2026-08-11T12:30:00.000Z" }),
+    (error: unknown) => error instanceof DefinitionProtocolError && /precede/u.test(error.message),
+  );
+  await assert.rejects(
+    createClient(async () => jsonResponse(200, { ...listed, definition: { ...definition, version: 3 } })).occurrences(definition),
+    (error: unknown) => error instanceof DefinitionProtocolError,
+  );
 });
 
 test("rejects item and list responses whose exact public identities drift", async () => {

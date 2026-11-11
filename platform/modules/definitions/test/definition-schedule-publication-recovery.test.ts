@@ -67,9 +67,7 @@ test("restart republishes a stored started Schedule after confirmation persisten
         schedules: reopened,
         host: unusedHost(),
         identities: {
-          processInstanceId: () => "unused-instance",
           hostScheduleId: () => "unused-host",
-          configuredWorkflowIdBase: () => "unused-workflow",
         },
         now: () => 0,
         confirmedInstances,
@@ -110,12 +108,10 @@ function scheduleRecord(): NewDefinitionScheduleRecord {
     reference: { processId: definition.processId, version: 1, scheduleId: "schedule" },
     definition,
     timerStart: { startEventId: "TimerStart", durationMs: 1_000 },
-    activationAt: "2026-08-17T10:00:00.000Z",
     dueAt: "2026-08-17T10:00:01.000Z",
     identity: {
       processInstanceId: "schedule-instance",
       hostScheduleId: "host-schedule",
-      configuredWorkflowIdBase: "workflow-base",
     },
   };
 }
@@ -135,6 +131,9 @@ function unusedHost(): DefinitionScheduleHost {
   return {
     validateDefinition: async () => {
       throw new Error("terminal recovery must not validate");
+    },
+    occurrences: async () => {
+      throw new Error("terminal recovery must not list occurrences");
     },
     createOrCompare: async () => {
       throw new Error("terminal recovery must not create");

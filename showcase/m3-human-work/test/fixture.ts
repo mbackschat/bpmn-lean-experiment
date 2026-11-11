@@ -20,6 +20,11 @@ export const parallelMetadataProfile =
 export const structuredHumanWorkProfile =
   "bpmn-2.0.2";
 export const timerProfile = "bpmn-2.0.2";
+/**
+ * The scheduled version's Timer Start duration: its one occurrence counts from the version's engine registration, and
+ * must still lie ahead when the test lists and schedules it.
+ */
+const timerDuration = "PT5S";
 export const messageProfile = "bpmn-2.0.2";
 
 export type HumanWorkSources = Readonly<{
@@ -47,6 +52,7 @@ export async function humanWorkSources(token: string): Promise<HumanWorkSources>
       .replaceAll("Definitions_TimerStart", `Definitions_HumanWork_Timer_${token}`)
       .replaceAll("Process_TimerStart", `Process_HumanWork_Timer_${token}`)
       .replace('name="Review"', `name="Hidden timer task ${token}"`)
+      .replace(">PT1S<", `>${timerDuration}<`)
       .replace(
         "https://bpmn-lean.local/tests/timer-start",
         `https://third-party.invalid/human-work/timer/${token}`,

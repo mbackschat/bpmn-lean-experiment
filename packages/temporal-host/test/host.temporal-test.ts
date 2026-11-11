@@ -13,21 +13,23 @@ import { fileURLToPath } from "node:url";
 import { after, before, test } from "node:test";
 
 import { kernelProfileOptions, readKernelProgram } from "@bpmn-lean/bpmn-source";
-import { runScenario as runKernelScenario } from "@bpmn-lean/kernel";
+import { runScenario as runKernelScenario, timerInstanceId } from "@bpmn-lean/kernel";
 import type { TestWorkflowEnvironment } from "@temporalio/testing";
 import type { Worker } from "@temporalio/worker";
 
 import {
   PageKind,
+  PopulationClient,
   ProcessClient,
   ResultKind,
   ScheduleClient,
   Scheduling,
+  processInstanceWorkflowId,
   type HostConfig,
   type HostSnapshot,
   type JsonValue,
 } from "@bpmn-lean/temporal-host/client";
-import { ScheduleCreation } from "@bpmn-lean/temporal-host/host";
+import { ScheduleCreation, timerFiringWorkflowType, type CommandAnswer } from "@bpmn-lean/temporal-host/host";
 import { createCachedLocalEnvironment, runScenario } from "@bpmn-lean/temporal-host/testing";
 import { EffectResultKind, createHostWorker, replayHistory, type EffectRequest } from "@bpmn-lean/temporal-host/worker";
 
@@ -201,29 +203,81 @@ test("chain handoff: a Run past its history budget continues as new with its sta
   finished.push(id);
 });
 
-test("schedule start: a one-shot Schedule starts the Timer start at its due instant", async () => {
+/** A population of its own with the Timer start scenario registered once per `registrations` request ID. */
+async function timerPopulation(...registrations: readonly string[]) {
   const { program, scenario } = await retainedCase("scenarios/timer-start-event/scenario.json");
+  const config = durable(scenario);
+  const name = `witness-${randomUUID()}`;
+  const population = new PopulationClient(environment.client, taskQueue, name, config);
+  const deployments = [];
+  for (const request of registrations) {
+    const answer = await population.registerDeployment({ deploymentRequestId: request, digest: request, program });
+    if (!("deploymentId" in answer)) throw new Error(`deployment refused: ${answer.refused}`);
+    deployments.push(answer);
+  }
+  return { name, config, population, deployments, program, scenario };
+}
+
+/** The firing of the PT1S Timer start's first occurrence of `deployment`, counted from its deploy time. */
+function firstFiring(name: string, config: HostConfig, deployment: Readonly<{ deploymentId: number; deployedAtMs: number }>) {
+  return { population: name, config, deploymentId: deployment.deploymentId, startEvent: "TimerStart_PT1S", dueMs: deployment.deployedAtMs + 1_000 };
+}
+
+async function firedAnswer(schedules: ScheduleClient, scheduleId: string): Promise<CommandAnswer> {
+  const taken = await until("the Schedule's action", () => schedules.describe(scheduleId),
+    (stored) => (stored?.recentWorkflowIds.length ?? 0) > 0);
+  const firingId = taken?.recentWorkflowIds[0] ?? "";
+  const outcome = await until("the firing's answer", () => schedules.firing(firingId), (read) => read?.kind === "answered");
+  if (outcome?.kind !== "answered") throw new Error("the firing did not answer");
+  return outcome.answer;
+}
+
+test("schedule start: a one-shot Schedule fires the Timer start's occurrence through the population", async () => {
+  const { name, config, deployments: [deployment], scenario } = await timerPopulation("v1");
+  if (deployment === undefined) throw new Error("no deployment");
   const schedules = new ScheduleClient(environment.client, taskQueue);
-  // A calendar spec has whole UTC seconds; three seconds ahead leaves the creation call time to land first.
-  const due = Math.ceil(Date.now() / 1_000) * 1_000 + 3_000;
   const scheduleId = workflowId("schedule");
-  const base = workflowId("scheduled");
-  const start = stimulus(scenario, 0) as Readonly<Record<string, JsonValue>>;
-  assert.equal(await schedules.create({
-    scheduleId, dueAtEpochMs: due, workflowIdBase: base, program, config: durable(scenario),
-    start: { ...start, trigger: { kind: "timer", logicalTimeMs: due } },
-    population: { population: `witness-${randomUUID()}`, deploymentId: 1 },
-    memo: { witness: scheduleId },
-  }), ScheduleCreation.Created);
+  const firing = firstFiring(name, config, deployment);
+  // The occurrence is due one second after the deploy; the action fires at the next whole second, after the create.
+  assert.equal(await schedules.create({ scheduleId, firing, memo: { witness: scheduleId } }), ScheduleCreation.Created);
   try {
-    const taken = await until("the Schedule's action", () => schedules.describe(scheduleId),
-      (stored) => (stored?.recentWorkflowIds.length ?? 0) > 0);
-    const id = taken?.recentWorkflowIds[0] ?? "";
-    assert.ok(id.startsWith(base));
+    const answer = await firedAnswer(schedules, scheduleId);
+    const instanceId = timerInstanceId(firing.deploymentId, firing.startEvent, firing.dueMs);
+    assert.deepEqual(answer.resolution, {
+      kind: "fanOut",
+      entries: [{ kind: "started", instanceId, deploymentId: firing.deploymentId, version: 1, startEvent: firing.startEvent }],
+    });
+    const id = processInstanceWorkflowId(instanceId);
     await until("the started instance", () => client.hostView(id), hasUserTask("UserTask_AfterTimer"));
-    assert.equal((await client.command(id, stimulus(scenario, 1))).outcome, "committed");
+    const complete = stimulus(scenario, 1) as Readonly<Record<string, JsonValue>>;
+    const occurrence = complete["occurrence"] as Readonly<Record<string, JsonValue>>;
+    assert.equal((await client.command(id, { ...complete, occurrence: { ...occurrence, processInstanceId: instanceId } })).outcome,
+      "committed");
     assert.equal((await client.result(id)).kind, ResultKind.Ended);
     finished.push(id);
+    const refired = await environment.client.workflow.execute(timerFiringWorkflowType, {
+      workflowId: workflowId("refire"), taskQueue, args: [firing],
+    }) as CommandAnswer;
+    assert.deepEqual(refired.resolution, { kind: "rejected", code: "timer-start-occurrence-consumed" },
+      "a second firing of a consumed occurrence starts nothing");
+  } finally {
+    await schedules.delete(scheduleId);
+  }
+});
+
+test("schedule superseded: a Schedule of a deployment a redeploy superseded fires and starts nothing", async () => {
+  const { name, config, population, deployments: [deployment], program } = await timerPopulation("v1");
+  if (deployment === undefined) throw new Error("no deployment");
+  const schedules = new ScheduleClient(environment.client, taskQueue);
+  const scheduleId = workflowId("superseded");
+  const firing = firstFiring(name, config, deployment);
+  assert.equal(await schedules.create({ scheduleId, firing, memo: { witness: scheduleId } }), ScheduleCreation.Created);
+  try {
+    const redeployed = await population.registerDeployment({ deploymentRequestId: "v2", digest: "v2", program });
+    assert.ok("deploymentId" in redeployed && redeployed.deploymentId > deployment.deploymentId);
+    assert.deepEqual((await firedAnswer(schedules, scheduleId)).resolution, { kind: "rejected", code: "timer-start-superseded" });
+    const instanceId = timerInstanceId(firing.deploymentId, firing.startEvent, firing.dueMs);
+    assert.equal(await client.describe(processInstanceWorkflowId(instanceId)), null);
   } finally {
     await schedules.delete(scheduleId);
   }

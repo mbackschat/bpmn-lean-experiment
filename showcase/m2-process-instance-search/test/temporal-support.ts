@@ -101,10 +101,20 @@ export function requireOnlyNewIdentity(
   return identity;
 }
 
-export function nextWholeSecond(offsetSeconds: number, nowMs = Date.now()): string {
-  assert.ok(Number.isSafeInteger(offsetSeconds) && offsetSeconds > 0);
-  return new Date(Math.ceil(nowMs / 1_000) * 1_000 + offsetSeconds * 1_000)
-    .toISOString();
+/** The Workflow `workflowId` addresses, once it exists; a Timer Start's Process is addressed by its engine identity. */
+export async function waitForWorkflow(
+  client: TemporalClient,
+  workflowId: string,
+  label: string,
+): Promise<TemporalWorkflowExecution> {
+  for (let attempt = 0; attempt < 400; attempt += 1) {
+    const found = (await listWorkflowExecutions(client)).find((execution) => execution.workflowId === workflowId);
+    if (found !== undefined) {
+      return found;
+    }
+    await delay(25);
+  }
+  throw new Error(`${label} did not create Workflow ${workflowId}`);
 }
 
 function processHandle(

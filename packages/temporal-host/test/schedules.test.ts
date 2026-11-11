@@ -1,6 +1,6 @@
 /**
- * The one-shot Schedule assessment: the immutable stored action and occurrence against what the caller expects, then
- * the single action's phase from the Schedule's counters.
+ * The one-shot Schedule assessment: the immutable stored firing action and occurrence against what the caller expects,
+ * then the single action's phase from the Schedule's counters.
  */
 import assert from "node:assert/strict";
 import { test } from "node:test";
@@ -9,7 +9,7 @@ import type { ExpectedSchedule, StoredSchedule } from "../src/schedules.ts";
 
 const schedules = await import(new URL("../dist/schedules.js", import.meta.url).href) as
   typeof import("../src/schedules.ts");
-const { SchedulePhase, assessSchedule, scheduleCatchupWindowMs } = schedules;
+const { SchedulePhase, assessSchedule, scheduleActionAtMs, scheduleCatchupWindowMs } = schedules;
 
 const due = Date.UTC(2026, 10, 9, 12, 0, 0);
 
@@ -23,7 +23,7 @@ const expected: ExpectedSchedule = {
 
 const pending: StoredSchedule = {
   scheduleId: "schedule-1",
-  workflowType: "runProcess",
+  workflowType: "runTimerStartFiring",
   taskQueue: "queue",
   workflowId: "process-1",
   memo: { intent: { sha256: "abc" } },
@@ -55,6 +55,16 @@ test("a Schedule before its due instant is pending, with its paused state", () =
   assert.deepEqual(assessSchedule({ ...pending, paused: true }, expected), { phase: SchedulePhase.Pending, paused: true });
 });
 
+test("an occurrence due within a second fires at the first whole UTC second not before it", () => {
+  assert.equal(scheduleActionAtMs(due), due, "a whole-second occurrence fires at its due instant");
+  assert.equal(scheduleActionAtMs(due + 1), due + 1_000);
+  assert.equal(scheduleActionAtMs(due + 999), due + 1_000);
+  const occurrence = due - 250;
+  assert.deepEqual(assessSchedule(pending, { ...expected, dueAtEpochMs: occurrence }), { phase: SchedulePhase.Pending, paused: false });
+  assert.equal(assessSchedule({ ...pending, startAtEpochMs: occurrence, endAtEpochMs: occurrence, nextActionEpochMs: [occurrence] },
+    { ...expected, dueAtEpochMs: occurrence }).phase, SchedulePhase.Drift);
+});
+
 test("a Schedule whose one action ran names the one Workflow it started", () => {
   assert.deepEqual(assessSchedule(started, expected), {
     phase: SchedulePhase.Started,
@@ -78,6 +88,7 @@ test("a stored action, occurrence or policy other than expected is drift, whatev
     { ...pending, memo: { intent: { sha256: "other" } } },
     { ...pending, taskQueue: "elsewhere" },
     { ...pending, workflowType: "otherWorkflow" },
+    { ...pending, workflowType: "runProcess" },
     { ...pending, startAtEpochMs: due + 1_000 },
     { ...pending, overlapSkip: false },
     { ...started, workflowId: "process-2" },

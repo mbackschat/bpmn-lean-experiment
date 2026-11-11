@@ -19,6 +19,10 @@ export const sharedTimerStartCapability = Object.freeze({
   startEventId: "Timer_Start",
   durationMs: 60_000,
 });
+/** The one occurrence the fake engine lists for the Timer start, an hour after the module loads. */
+export const sharedTimerOccurrence = new Date(Math.ceil((Date.now() + 3_600_000) / 1_000) * 1_000 + 250).toISOString();
+/** The engine's identity of the instance that occurrence would start; the platform only stores it. */
+export const sharedTimerInstanceId = "timer:shared-timer-occurrence";
 export const sharedMessageStartCapability = Object.freeze({
   startEventId: "Message_Start",
   channel: Object.freeze({
@@ -154,6 +158,15 @@ export function createCrossReplicaEngineRuntime(
         sourceOverlay: null,
         startCapabilities: capabilities(),
       }),
+      occurrences: async (request: SourceBoundRequest & Readonly<{ from: string; limit: number }>) => {
+        source("schedule-occurrences", request);
+        return {
+          kind: "listed" as const,
+          occurrences: Date.parse(sharedTimerOccurrence) < Date.parse(request.from) || request.limit < 1
+            ? []
+            : [{ dueAt: sharedTimerOccurrence, processInstanceId: sharedTimerInstanceId }],
+        };
+      },
       createOrCompare: async (request: SourceBoundRequest) => {
         source("schedule-create", request);
         return { phase: DefinitionScheduleHostPhase.Pending, paused: false };

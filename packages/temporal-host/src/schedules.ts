@@ -1,30 +1,28 @@
 /**
- * One-shot Temporal Schedules whose single action starts a process chain (`runProcess`) with a timer-triggered start.
+ * One-shot Temporal Schedules whose single action fires one Timer-start occurrence through the population
+ * (`runTimerStartFiring`).
  *
- * A Schedule is the host's realization of a Timer Start ([architecture](../../../docs/kernel/ARCHITECTURE-SPEC.md#temporal-hosting-and-refinement-preflight)):
- * the caller computes the due instant from the definition's timer schedule and passes the start arguments; the host
- * fires them once, durably. The stored Schedule is compared with what the caller expects through a memo the caller
- * owns, so drift in the action is found without decoding its arguments.
+ * A Schedule is the host's realization of a root Timer start ([architecture](../../../docs/kernel/ARCHITECTURE-SPEC.md#population-ingress)):
+ * the caller names an occurrence of a registered deployment by its due instant, and the host fires it once, durably,
+ * at the first whole UTC second not before it, since a calendar spec has no finer unit. The kernel decides at the
+ * firing whether the occurrence starts an instance. The stored Schedule is compared with what the caller expects
+ * through a memo the caller owns, so drift in the action is found without decoding its arguments.
  */
 import type { JsonValue } from "./port.js";
-import { workflowType, type HostConfig } from "./host-contract.js";
-import type { PopulationScope } from "./population-contract.js";
+import { timerFiringWorkflowType, type CommandAnswer, type TimerFiringArgs } from "./population-contract.js";
 
 /** A missed occurrence is taken late only within this window; later than that, the Schedule reports it missed. */
 export const scheduleCatchupWindowMs = 60_000;
 
+/** The instant a Schedule fires the occurrence due at `dueMs`: the first whole UTC second not before it. */
+export function scheduleActionAtMs(dueMs: number): number {
+  return Math.ceil(dueMs / 1_000) * 1_000;
+}
+
 export interface OneShotScheduleRequest {
   readonly scheduleId: string;
-  /** Whole UTC seconds: a calendar spec has no finer unit. */
-  readonly dueAtEpochMs: number;
-  /** Temporal appends the action time to it, so each taken action has its own Workflow ID. */
-  readonly workflowIdBase: string;
-  readonly program: JsonValue;
-  readonly config: HostConfig;
-  /** The start stimulus, in the scenario contract's form. */
-  readonly start: JsonValue;
-  /** The started instance's population and deployment (`StartRequest.population`). */
-  readonly population: PopulationScope;
+  /** The occurrence the action fires; its due instant decides when (`scheduleActionAtMs`). */
+  readonly firing: TimerFiringArgs;
   /** Compared verbatim by `assessSchedule`; the caller's fingerprint of everything above. */
   readonly memo: Readonly<Record<string, JsonValue>>;
 }
@@ -65,7 +63,7 @@ export interface StoredSchedule {
   readonly actionsMissed: number;
   readonly actionsSkipped: number;
   readonly nextActionEpochMs: readonly number[];
-  /** Workflow IDs of the taken actions, recent ones first-to-last, then running ones. */
+  /** Workflow IDs of the taken actions' firing Workflows, recent ones first-to-last, then running ones. */
   readonly recentWorkflowIds: readonly string[];
   readonly runningWorkflowIds: readonly string[];
 }
@@ -73,6 +71,7 @@ export interface StoredSchedule {
 export interface ExpectedSchedule {
   readonly scheduleId: string;
   readonly dueAtEpochMs: number;
+  /** The firing Workflow's ID base (`timerFiringWorkflowId`). */
   readonly workflowIdBase: string;
   readonly taskQueue: string;
   readonly memo: Readonly<Record<string, JsonValue>>;
@@ -92,12 +91,13 @@ function sameJson(left: unknown, right: unknown): boolean {
 }
 
 function immutableDrift(stored: StoredSchedule, expected: ExpectedSchedule): string | null {
+  const actionAt = scheduleActionAtMs(expected.dueAtEpochMs);
   if (stored.scheduleId !== expected.scheduleId) return "Schedule identity drifted.";
-  if (stored.startAtEpochMs !== expected.dueAtEpochMs || stored.endAtEpochMs !== expected.dueAtEpochMs) {
+  if (stored.startAtEpochMs !== actionAt || stored.endAtEpochMs !== actionAt) {
     return "Schedule occurrence drifted.";
   }
   if (!stored.overlapSkip || stored.catchupWindowMs !== scheduleCatchupWindowMs) return "Schedule policy drifted.";
-  if (stored.workflowType !== workflowType || stored.taskQueue !== expected.taskQueue ||
+  if (stored.workflowType !== timerFiringWorkflowType || stored.taskQueue !== expected.taskQueue ||
       stored.workflowId !== expected.workflowIdBase || !sameJson(stored.memo, expected.memo)) {
     return "Schedule action drifted.";
   }
@@ -105,8 +105,8 @@ function immutableDrift(stored: StoredSchedule, expected: ExpectedSchedule): str
 }
 
 /**
- * Separates the immutable stored Schedule from its one-action phase: pending before the due instant, started once
- * its single action ran (naming the Workflow it started), missed when the catch-up window passed without it.
+ * Separates the immutable stored Schedule from its one-action phase: pending before the action instant, started once
+ * its single action ran (naming the firing Workflow it started), missed when the catch-up window passed without it.
  */
 export function assessSchedule(stored: StoredSchedule, expected: ExpectedSchedule): ScheduleAssessment {
   const drift = immutableDrift(stored, expected);
@@ -114,7 +114,7 @@ export function assessSchedule(stored: StoredSchedule, expected: ExpectedSchedul
   const quiet = stored.actionsSkipped === 0;
   if (stored.remainingActions === 1 && stored.actionsTaken === 0 && stored.actionsMissed === 0 && quiet &&
       stored.recentWorkflowIds.length === 0 && stored.runningWorkflowIds.length === 0 &&
-      stored.nextActionEpochMs.length === 1 && stored.nextActionEpochMs[0] === expected.dueAtEpochMs) {
+      stored.nextActionEpochMs.length === 1 && stored.nextActionEpochMs[0] === scheduleActionAtMs(expected.dueAtEpochMs)) {
     return { phase: SchedulePhase.Pending, paused: stored.paused };
   }
   if (stored.remainingActions === 0 && stored.actionsTaken === 1 && stored.actionsMissed === 0 && quiet &&
@@ -134,11 +134,22 @@ export function assessSchedule(stored: StoredSchedule, expected: ExpectedSchedul
   return { phase: SchedulePhase.InvalidPhase, evidence: "Schedule counters describe neither pending, started nor missed." };
 }
 
+/**
+ * What a started action's firing Workflow reached: still running, the population's answer to its `timerStart`, or a
+ * failure before any answer (a refusal before acceptance, such as a configuration conflict).
+ */
+export type TimerFiringOutcome =
+  | { readonly kind: "running" }
+  | { readonly kind: "answered"; readonly answer: CommandAnswer }
+  | { readonly kind: "failed"; readonly evidence: string };
+
 /** The Schedule operations the engine API uses; `ScheduleClient` is the Temporal realization. */
 export interface ScheduleHost {
   create(request: OneShotScheduleRequest): Promise<ScheduleCreation>;
   /** `null` when no Schedule has the identifier. */
   describe(scheduleId: string): Promise<StoredSchedule | null>;
+  /** The outcome of the firing Workflow a started action names; `null` when no such Workflow is retained. */
+  firing(workflowId: string): Promise<TimerFiringOutcome | null>;
   pause(scheduleId: string): Promise<void>;
   /** Deleting an absent Schedule succeeds: the caller's intent, no Schedule, holds. */
   delete(scheduleId: string): Promise<void>;

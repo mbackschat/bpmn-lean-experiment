@@ -44,7 +44,6 @@ import {
   createBpmnEngineGatewayRuntime,
   engineDeploymentRuntimeOptions,
   definitionScheduleHostId,
-  definitionScheduleWorkflowIdBase,
   messageStartPublicationCommandId,
   messageStartPublicationProcessInstanceId,
   messageStartPublicationWorkflowId,
@@ -304,9 +303,7 @@ async function createLocalPlatformServer(
       schedules: scheduleRepository,
       host: engineRuntime.scheduleHost,
       identities: {
-        processInstanceId: randomUUID,
         hostScheduleId: definitionScheduleHostId,
-        configuredWorkflowIdBase: definitionScheduleWorkflowIdBase,
       },
       now: Date.now,
       confirmedInstances,

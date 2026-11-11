@@ -4,7 +4,7 @@ import type {
   DefinitionScheduledTimerStart,
 } from "./contracts.js";
 import {
-  decodeCanonicalWholeSecondUtcInstant,
+  decodeCanonicalUtcInstant,
 } from "@bpmn-lean/platform-contracts";
 import {
   cloneDefinitionMetadata,
@@ -26,11 +26,9 @@ export function requireSameScheduleIntent(
   record: DefinitionScheduleRecord,
   definition: DefinitionMetadata,
   timerStart: DefinitionScheduledTimerStart,
-  activationAt: string,
   dueAt: string,
 ): void {
   if (
-    record.activationAt !== activationAt ||
     record.dueAt !== dueAt ||
     record.timerStart.startEventId !== timerStart.startEventId ||
     record.timerStart.durationMs !== timerStart.durationMs ||
@@ -42,36 +40,11 @@ export function requireSameScheduleIntent(
   }
 }
 
-export function deriveScheduleDueAt(
-  activationAt: string,
-  durationMs: number,
-): string {
-  if (!Number.isSafeInteger(durationMs) || durationMs <= 0 || durationMs % 1_000 !== 0) {
-    throw new DefinitionScheduleValidationError(
-      "Timer Start duration must be a positive whole-second duration",
-    );
-  }
-  const dueMs = Date.parse(activationAt) + durationMs;
-  if (!Number.isSafeInteger(dueMs)) {
-    throw new DefinitionScheduleValidationError("derived schedule due instant is out of range");
-  }
+export function requireCanonicalDueAt(value: string): string {
   try {
-    return decodeCanonicalWholeSecondUtcInstant(
-      new Date(dueMs).toISOString(),
-      "dueAt",
-    );
+    return decodeCanonicalUtcInstant(value, "dueAt");
   } catch {
-    throw new DefinitionScheduleValidationError("derived schedule due instant is out of range");
-  }
-}
-
-export function requireWholeSecondActivation(value: string): string {
-  try {
-    return decodeCanonicalWholeSecondUtcInstant(value, "activationAt");
-  } catch {
-    throw new DefinitionScheduleValidationError(
-      "activationAt must be a canonical whole-second UTC instant",
-    );
+    throw new DefinitionScheduleValidationError("dueAt must be a canonical UTC instant");
   }
 }
 
@@ -82,7 +55,6 @@ export function projectDefinitionSchedule(
     scheduleId: record.reference.scheduleId,
     definition: cloneDefinitionMetadata(record.definition),
     timerStart: { ...record.timerStart },
-    activationAt: record.activationAt,
     dueAt: record.dueAt,
   };
   switch (record.state) {
@@ -90,6 +62,11 @@ export function projectDefinitionSchedule(
     case DefinitionScheduleState.Missed:
     case DefinitionScheduleState.Cancelled:
       return { ...base, status: record.state, instance: null };
+    case DefinitionScheduleState.Refused:
+      if (record.refusalCode === null) {
+        throw new DefinitionScheduleIntegrityError("refused schedule has no engine refusal code");
+      }
+      return { ...base, status: record.state, instance: null, refusal: record.refusalCode };
     case DefinitionScheduleState.Started:
       return {
         ...base,

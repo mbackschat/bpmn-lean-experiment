@@ -281,12 +281,10 @@ function scheduleRecord(
     reference: { processId: definition.processId, version: definition.version, scheduleId },
     definition: structuredClone(definition),
     timerStart: { startEventId: "TimerStart", durationMs: 1_000 },
-    activationAt: "2026-08-17T10:00:00.000Z",
     dueAt: "2026-08-17T10:00:01.000Z",
     identity: {
       processInstanceId,
       hostScheduleId: `host:${scheduleId}`,
-      configuredWorkflowIdBase: `workflow:${scheduleId}`,
     },
   };
 }

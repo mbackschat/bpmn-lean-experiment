@@ -44,6 +44,7 @@ import {
   createCrossReplicaEngineEvidence,
   createCrossReplicaEngineRuntime,
   sharedMessageStartCapability,
+  sharedTimerOccurrence,
   sharedTimerStartCapability,
 } from "./shared-server-test-support.ts";
 
@@ -197,13 +198,15 @@ if (connectionString === undefined) {
 
       const schedulePath =
         `/api/v1/definitions/${deployed.processId}/versions/1/schedules/shared-schedule`;
-      const activationAt = new Date(
-        Math.ceil((Date.now() + 3_600_000) / 1_000) * 1_000,
-      ).toISOString();
+      const listedOccurrences = await requestJson(secondOrigin,
+        `/api/v1/definitions/${deployed.processId}/versions/1/schedule-occurrences`, 200) as Readonly<{
+          occurrences: ReadonlyArray<Readonly<{ dueAt: string }>>;
+        }>;
+      assert.deepEqual(listedOccurrences.occurrences, [{ dueAt: sharedTimerOccurrence }]);
       const scheduled = await requestJson(firstOrigin, schedulePath, 201, {
         method: "PUT",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ activationAt }),
+        body: JSON.stringify({ dueAt: sharedTimerOccurrence }),
       });
       assert.deepEqual(await requestJson(secondOrigin, schedulePath, 200), scheduled);
 
@@ -223,6 +226,7 @@ if (connectionString === undefined) {
         "first:compile",
         "first:message-prepare",
         "first:schedule-create",
+        "first:schedule-occurrences",
         "first:schedule-validate",
         "first:work-detail",
         "second:direct-prepare",
@@ -230,6 +234,7 @@ if (connectionString === undefined) {
         "second:message-prepare",
         "second:message-start",
         "second:schedule-inspect",
+        "second:schedule-occurrences",
       ]));
       assert.deepEqual(deployed.startCapabilities, {
         messageStarts: [sharedMessageStartCapability],
@@ -284,7 +289,7 @@ async function databaseFacts(runtime: PostgresqlRuntime): Promise<Readonly<{
       WHERE singleton = true
     `,
   });
-  assert.deepEqual(result.rows, [{ postgresql_major: 18, schema_epoch: 14 }]);
+  assert.deepEqual(result.rows, [{ postgresql_major: 18, schema_epoch: 15 }]);
   return {
     postgresqlMajor: result.rows[0]!.postgresql_major,
     schemaEpoch: result.rows[0]!.schema_epoch,

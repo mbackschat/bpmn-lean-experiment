@@ -10,6 +10,8 @@ import { Button, ButtonVariant } from "@bpmn-lean/platform-ui-kit";
 
 import type { DefinitionScheduleApiClient } from "./definition-schedule-api";
 import { ScheduleCreationKind, scheduleCreation } from "./definition-schedule-creation.ts";
+import { OccurrencePicker } from "./definition-schedule-occurrence-picker.tsx";
+import { occurrencePage, occurrencePageSize, type OccurrencePage } from "./definition-schedule-occurrences.ts";
 import styles from "./definition-schedule-panel.module.css";
 
 export type DefinitionSchedulePanelProps = Readonly<{
@@ -25,9 +27,29 @@ export function DefinitionSchedulePanel({
   const creation = scheduleCreation(timerStarts);
   const [schedules, setSchedules] = useState<ReadonlyArray<DefinitionSchedule>>([]);
   const [scheduleId, setScheduleId] = useState<string>(() => globalThis.crypto.randomUUID());
-  const [activationAt, setActivationAt] = useState(defaultActivationInstant);
+  const [page, setPage] = useState<OccurrencePage | null>(null);
+  const [pageFrom, setPageFrom] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>("list");
   const [error, setError] = useState<string | null>(null);
+  const available = creation.kind === ScheduleCreationKind.Available;
+
+  /** Lists the occurrences due at or after `from`, the server's now when `null`, keeping a still-listed selection. */
+  const loadOccurrences = useCallback(async (from: string | null) => {
+    setBusy("occurrences");
+    setError(null);
+    try {
+      const listed = await api.occurrences(definition, {
+        ...(from === null ? {} : { from }),
+        limit: occurrencePageSize,
+      });
+      setPage((current) => occurrencePage(listed.occurrences, current?.selected ?? null));
+      setPageFrom(from);
+    } catch (cause: unknown) {
+      setError(errorMessage(cause));
+    } finally {
+      setBusy(null);
+    }
+  }, [api, definition]);
 
   const refreshList = useCallback(async () => {
     setBusy("list");
@@ -43,18 +65,19 @@ export function DefinitionSchedulePanel({
   }, [api, definition]);
 
   useEffect(() => {
-    void refreshList();
-  }, [refreshList]);
+    void refreshList().then(() => available ? loadOccurrences(null) : undefined);
+  }, [refreshList, loadOccurrences, available]);
 
   async function create(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
+    const dueAt = page?.selected ?? null;
+    if (dueAt === null) return;
     setBusy("create");
     setError(null);
     try {
-      const schedule = await api.create(definition, scheduleId, { activationAt });
+      const schedule = await api.create(definition, scheduleId, { dueAt });
       setSchedules((current) => replaceSchedule(current, schedule));
       setScheduleId(globalThis.crypto.randomUUID());
-      setActivationAt(defaultActivationInstant());
     } catch (cause: unknown) {
       setError(errorMessage(cause));
     } finally {
@@ -136,19 +159,15 @@ export function DefinitionSchedulePanel({
               required
             />
           </label>
-          <label>
-            Activation instant
-            <input
-              name="activationAt"
-              type="text"
-              value={activationAt}
-              placeholder="2026-08-11T12:00:00.000Z"
-              onChange={(event) => { setActivationAt(event.currentTarget.value); }}
-              required
-            />
-            <small>Canonical UTC whole second ending in <code>.000Z</code></small>
-          </label>
-          <Button type="submit" isPending={busy !== null}>
+          <OccurrencePicker
+            page={page}
+            paged={pageFrom !== null}
+            busy={busy !== null}
+            onSelect={(dueAt) => { setPage((current) => current === null ? current : { ...current, selected: dueAt }); }}
+            onLater={(from) => { void loadOccurrences(from); }}
+            onFirst={() => { void loadOccurrences(null); }}
+          />
+          <Button type="submit" isPending={busy !== null} isDisabled={page?.selected == null}>
             {busy === "create" ? "Creating…" : "Create schedule"}
           </Button>
         </form>
@@ -167,10 +186,6 @@ export function DefinitionSchedulePanel({
               </div>
               <dl className={styles.facts}>
                 <div>
-                  <dt>Activation</dt>
-                  <dd><time dateTime={schedule.activationAt}>{schedule.activationAt}</time></dd>
-                </div>
-                <div>
                   <dt>Due</dt>
                   <dd><time dateTime={schedule.dueAt}>{schedule.dueAt}</time></dd>
                 </div>
@@ -178,6 +193,12 @@ export function DefinitionSchedulePanel({
                   <dt>Timer Start</dt>
                   <dd><code>{schedule.timerStart.startEventId}</code></dd>
                 </div>
+                {schedule.status === DefinitionScheduleStatus.Refused ? (
+                  <div>
+                    <dt>Engine refusal</dt>
+                    <dd><code>{schedule.refusal}</code></dd>
+                  </div>
+                ) : null}
                 {schedule.status === DefinitionScheduleStatus.Started ? (
                   <div>
                     <dt>Process instance</dt>
@@ -226,12 +247,6 @@ function ScheduleCreationNotice({
           Creation is unavailable because this version publishes multiple Timer Start capabilities.
         </p>
       );
-    case ScheduleCreationKind.UnresolvedDuration:
-      return (
-        <p className={styles.notice}>
-          Creation is unavailable because the engine resolves no duration for this Timer Start.
-        </p>
-      );
   }
 }
 
@@ -256,12 +271,6 @@ function compareCodePoints(left: string, right: string): number {
     }
   }
   return leftPoints.length - rightPoints.length;
-}
-
-function defaultActivationInstant(): string {
-  const minimumLeadTimeMs = 60_000;
-  const wholeSecond = Math.ceil((Date.now() + minimumLeadTimeMs) / 1_000) * 1_000;
-  return new Date(wholeSecond).toISOString();
 }
 
 function errorMessage(error: unknown): string {

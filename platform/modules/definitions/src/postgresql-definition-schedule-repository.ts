@@ -6,6 +6,7 @@ import type { PostgresqlRow } from "@bpmn-lean/platform-postgresql-runtime";
 
 import type { DefinitionReference } from "./contracts.js";
 import {
+  DefinitionScheduleConflictError,
   DefinitionScheduleIntegrityError,
   DefinitionScheduleState,
 } from "./definition-schedule-contracts.js";
@@ -18,10 +19,7 @@ import type {
   DefinitionScheduleTransition,
   NewDefinitionScheduleRecord,
 } from "./definition-schedule-contracts.js";
-import {
-  deriveScheduleDueAt,
-  requireWholeSecondActivation,
-} from "./definition-schedule-values.js";
+import { requireCanonicalDueAt } from "./definition-schedule-values.js";
 import {
   decodeNonemptyDefinitionMetadata,
   encodeNullablePostgresqlText,
@@ -57,11 +55,11 @@ export class PostgresqlDefinitionScheduleRepository
             process_id, version, schedule_id, source_kind, source_id,
             source_sha256, source_byte_length, source_declared_encoding,
             source_decoded_as, source_overlay_id, source_overlay_sha256, semantic_profile, start_capabilities_json,
-            timer_start_event_id, timer_duration_ms, activation_at, due_at,
-            process_instance_id, host_schedule_id, configured_workflow_id_base,
+            timer_start_event_id, timer_duration_ms, due_at,
+            process_instance_id, host_schedule_id,
             state, cleanup_complete, cancellation_origin,
-            process_locator
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, 'creating', false, NULL, NULL)
+            process_locator, refusal_code
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, 'creating', false, NULL, NULL, NULL)
           ON CONFLICT (process_id, version, schedule_id) DO NOTHING
           RETURNING *
         `,
@@ -72,11 +70,9 @@ export class PostgresqlDefinitionScheduleRepository
           ...metadataSqlValues(exact.definition),
           encodePostgresqlText(exact.timerStart.startEventId),
           exact.timerStart.durationMs,
-          exact.activationAt,
           exact.dueAt,
           encodePostgresqlText(exact.identity.processInstanceId),
           encodePostgresqlText(exact.identity.hostScheduleId),
-          encodePostgresqlText(exact.identity.configuredWorkflowIdBase),
         ],
       });
       const inserted = result.rows[0];
@@ -92,6 +88,17 @@ export class PostgresqlDefinitionScheduleRepository
       return { inserted: false, record: existing };
     } catch (error: unknown) {
       if (hasPostgresqlCode(error, "23505")) {
+        const holder = await this.#holderOf(exact.identity.processInstanceId);
+        if (
+          holder !== null &&
+          (holder.reference.processId !== exact.reference.processId ||
+            holder.reference.version !== exact.reference.version ||
+            holder.reference.scheduleId !== exact.reference.scheduleId)
+        ) {
+          throw new DefinitionScheduleConflictError(
+            "the occurrence's process instance already belongs to another schedule",
+          );
+        }
         throw new DefinitionScheduleIntegrityError(
           "schedule private identity collides with another durable schedule",
         );
@@ -104,6 +111,18 @@ export class PostgresqlDefinitionScheduleRepository
     reference: DefinitionScheduleReference,
   ): Promise<DefinitionScheduleRecord | null> {
     return await getRecord(this.#runtime, reference);
+  }
+
+  async #holderOf(processInstanceId: string): Promise<DefinitionScheduleRecord | null> {
+    const result = await this.#runtime.query({
+      text: `
+        SELECT * FROM bpmn_platform.definition_schedules
+        WHERE process_instance_id = $1
+      `,
+      values: [encodePostgresqlText(processInstanceId)],
+    });
+    const row = result.rows[0];
+    return row === undefined ? null : decodeRecord(row);
   }
 
   async listForDefinition(
@@ -145,9 +164,9 @@ export class PostgresqlDefinitionScheduleRepository
       text: `
         UPDATE bpmn_platform.definition_schedules
         SET state = $1, cleanup_complete = $2, cancellation_origin = $3,
-          process_locator = $4
-        WHERE process_id = $5 AND version = $6 AND schedule_id = $7
-          AND state = $8
+          process_locator = $4, refusal_code = $5
+        WHERE process_id = $6 AND version = $7 AND schedule_id = $8
+          AND state = $9
         RETURNING *
       `,
       values: [
@@ -155,6 +174,7 @@ export class PostgresqlDefinitionScheduleRepository
         next.cleanupComplete,
         next.cancellationOrigin,
         encodeNullablePostgresqlText(next.processLocator),
+        next.refusalCode,
         encodePostgresqlText(reference.processId),
         reference.version,
         encodePostgresqlText(reference.scheduleId),
@@ -249,23 +269,18 @@ function snapshotNewRecord(
     record.reference.processId !== definition.processId
   ) throw new TypeError("schedule reference must match its definition");
   requireInputString(record.timerStart.startEventId, "timerStart.startEventId");
-  if (!Number.isSafeInteger(record.timerStart.durationMs) ||
-      record.timerStart.durationMs <= 0) {
-    throw new TypeError("timerStart.durationMs must be a positive safe integer");
+  if (record.timerStart.durationMs !== null &&
+      (!Number.isSafeInteger(record.timerStart.durationMs) ||
+        record.timerStart.durationMs <= 0)) {
+    throw new TypeError("timerStart.durationMs must be null or a positive safe integer");
   }
-  const activationAt = requireWholeSecondActivation(record.activationAt);
-  const dueAt = requireWholeSecondActivation(record.dueAt);
-  if (deriveScheduleDueAt(activationAt, record.timerStart.durationMs) !== dueAt) {
-    throw new TypeError("schedule due instant does not match its Timer Start");
-  }
+  const dueAt = requireCanonicalDueAt(record.dueAt);
   requireInputString(record.identity.processInstanceId, "processInstanceId");
   requireInputString(record.identity.hostScheduleId, "hostScheduleId");
-  requireInputString(record.identity.configuredWorkflowIdBase, "configuredWorkflowIdBase");
   return {
     reference: { ...record.reference },
     definition,
     timerStart: { ...record.timerStart },
-    activationAt,
     dueAt,
     identity: { ...record.identity },
   };
@@ -277,26 +292,23 @@ export function decodePostgresqlDefinitionScheduleRecord(
   const definition = decodeNonemptyDefinitionMetadata(row);
   const timerStart = {
     startEventId: requireNonemptyByteText(row, "timer_start_event_id"),
-    durationMs: requirePositiveSafeInteger(row, "timer_duration_ms"),
+    durationMs: row.timer_duration_ms === null
+      ? null
+      : requirePositiveSafeInteger(row, "timer_duration_ms"),
   };
   if (
     definition.startCapabilities.timerStarts.length !== 1 ||
     definition.startCapabilities.timerStarts[0]?.startEventId !== timerStart.startEventId ||
     definition.startCapabilities.timerStarts[0]?.durationMs !== timerStart.durationMs
   ) throw new TypeError("PostgreSQL schedule has divergent Timer Start capability");
-  const activationAt = requireWholeSecondActivation(
-    requireNonemptyString(row, "activation_at"),
-  );
-  const dueAt = requireWholeSecondActivation(requireNonemptyString(row, "due_at"));
-  if (deriveScheduleDueAt(activationAt, timerStart.durationMs) !== dueAt) {
-    throw new TypeError("PostgreSQL schedule has invalid derived due instant");
-  }
+  const dueAt = requireCanonicalDueAt(requireNonemptyString(row, "due_at"));
   const state = decodeState(requireNonemptyString(row, "state"));
   const cancellationOrigin = decodeCancellationOrigin(
     requireNullableString(row, "cancellation_origin"),
   );
   const processLocator = requireNullableByteText(row, "process_locator");
-  requireStateFields(state, cancellationOrigin, processLocator);
+  const refusalCode = requireNullableString(row, "refusal_code");
+  requireStateFields(state, cancellationOrigin, processLocator, refusalCode);
   const cleanupComplete = requireBoolean(row, "cleanup_complete");
   if (!isTerminal(state) && cleanupComplete) {
     throw new TypeError("PostgreSQL schedule cleaned a nonterminal Schedule");
@@ -309,20 +321,16 @@ export function decodePostgresqlDefinitionScheduleRecord(
     },
     definition,
     timerStart,
-    activationAt,
     dueAt,
     identity: {
       processInstanceId: requireNonemptyByteText(row, "process_instance_id"),
       hostScheduleId: requireNonemptyByteText(row, "host_schedule_id"),
-      configuredWorkflowIdBase: requireNonemptyByteText(
-        row,
-        "configured_workflow_id_base",
-      ),
     },
     state,
     cleanupComplete,
     cancellationOrigin,
     processLocator,
+    refusalCode,
   };
 }
 
@@ -342,6 +350,7 @@ function cancellationTransition(
       };
     case DefinitionScheduleState.Cancelling:
     case DefinitionScheduleState.Started:
+    case DefinitionScheduleState.Refused:
     case DefinitionScheduleState.Missed:
     case DefinitionScheduleState.Cancelled:
       return null;
@@ -366,6 +375,9 @@ function applyTransition(
     processLocator: transition.processLocator === undefined
       ? current.processLocator
       : transition.processLocator,
+    refusalCode: transition.refusalCode === undefined
+      ? current.refusalCode
+      : transition.refusalCode,
   };
 }
 
@@ -385,6 +397,7 @@ function requireLegalTransition(
     next.state,
     next.cancellationOrigin,
     next.processLocator,
+    next.refusalCode,
   );
 }
 
@@ -399,21 +412,25 @@ function legalNextStates(
         DefinitionScheduleState.Scheduled,
         DefinitionScheduleState.Cancelling,
         DefinitionScheduleState.Started,
+        DefinitionScheduleState.Refused,
         DefinitionScheduleState.Missed,
       ];
     case DefinitionScheduleState.Scheduled:
       return [
         DefinitionScheduleState.Cancelling,
         DefinitionScheduleState.Started,
+        DefinitionScheduleState.Refused,
         DefinitionScheduleState.Missed,
       ];
     case DefinitionScheduleState.Cancelling:
       return [
         DefinitionScheduleState.Cancelled,
         DefinitionScheduleState.Started,
+        DefinitionScheduleState.Refused,
         DefinitionScheduleState.Missed,
       ];
     case DefinitionScheduleState.Started:
+    case DefinitionScheduleState.Refused:
     case DefinitionScheduleState.Missed:
     case DefinitionScheduleState.Cancelled:
       return [];
@@ -426,6 +443,7 @@ function requireStateFields(
   state: DefinitionScheduleState,
   origin: DefinitionScheduleCancellationOrigin | null,
   processLocator: string | null,
+  refusalCode: string | null,
 ): void {
   if ((state === DefinitionScheduleState.Cancelling) !== (origin !== null)) {
     throw new TypeError("PostgreSQL schedule has invalid cancellation origin");
@@ -436,6 +454,12 @@ function requireStateFields(
   }
   if (processLocator !== null && !isNonemptyWellFormed(processLocator)) {
     throw new TypeError("PostgreSQL schedule has malformed Process locator");
+  }
+  if ((state === DefinitionScheduleState.Refused) !== (refusalCode !== null)) {
+    throw new TypeError("PostgreSQL schedule has invalid refusal code");
+  }
+  if (refusalCode !== null && !isNonemptyWellFormed(refusalCode)) {
+    throw new TypeError("PostgreSQL schedule has malformed refusal code");
   }
 }
 
@@ -456,6 +480,7 @@ function decodeCancellationOrigin(
 
 function isTerminal(state: DefinitionScheduleState): boolean {
   return state === DefinitionScheduleState.Started ||
+    state === DefinitionScheduleState.Refused ||
     state === DefinitionScheduleState.Missed ||
     state === DefinitionScheduleState.Cancelled;
 }

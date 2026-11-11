@@ -4,6 +4,8 @@ const schedulesRoute =
   /^\/api\/v1\/definitions\/([^/]*)\/versions\/([^/]*)\/schedules$/u;
 const scheduleRoute =
   /^\/api\/v1\/definitions\/([^/]*)\/versions\/([^/]*)\/schedules\/([^/]*)$/u;
+const occurrencesRoute =
+  /^\/api\/v1\/definitions\/([^/]*)\/versions\/([^/]*)\/schedule-occurrences$/u;
 const canonicalPositiveInteger = /^[1-9][0-9]*$/u;
 
 export type DefinitionSchedulesPathMatch = Readonly<{
@@ -33,6 +35,31 @@ export function definitionSchedulePath(
 ): string {
   requireWellFormedNonempty(scheduleId, "scheduleId");
   return `${definitionSchedulesPath(processId, version)}/${encodeURIComponent(scheduleId)}`;
+}
+
+/**
+ * Public endpoint listing one exact definition version's Timer-start occurrences; the query names the first instant
+ * (`from`, default now) and the count (`limit`).
+ */
+export function definitionScheduleOccurrencesPath(
+  processId: string,
+  version: number,
+): string {
+  return `${definitionVersionPath(processId, version)}/schedule-occurrences`;
+}
+
+/** Matches only the exact occurrence-listing route and decodes its identity. */
+export function matchDefinitionScheduleOccurrencesPath(
+  pathname: string,
+): DefinitionSchedulesPathMatch | null {
+  const match = occurrencesRoute.exec(pathname);
+  if (match === null) {
+    return null;
+  }
+  return {
+    processId: decodeSegment(match[1] ?? "", "processId"),
+    version: decodeVersionSegment(match[2] ?? ""),
+  };
 }
 
 /** Matches only the exact schedule-collection route and decodes its identity. */

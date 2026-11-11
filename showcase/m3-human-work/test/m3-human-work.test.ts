@@ -28,6 +28,7 @@ import {
   completeTask,
   discardCompletionResponse,
   deployDefinition,
+  firstScheduleOccurrence,
   listWorkTasks,
   putDefinitionSchedule,
   putMessageStartPublication,
@@ -45,7 +46,6 @@ import {
 import {
   allocatePort,
   listWorkflowExecutions,
-  nextWholeSecond,
   operationDeadlineMs,
   replayHistory,
   startPlatform,
@@ -56,6 +56,7 @@ import {
   waitForOneOpenTask,
   waitForOnlyNewWorkflow,
   waitForStartedSchedule,
+  waitForWorkflow,
 } from "./runtime-support.ts";
 
 /**
@@ -122,23 +123,20 @@ test("runs the complete durable Human Work slice", async () => {
       semanticProfile: timerProfile,
     })).value;
     const scheduleId = `human-work-schedule-${token}`;
-    const beforeSchedule = await listWorkflowExecutions(client);
     capture(publicCaptures, await putDefinitionSchedule(
       origin,
       timerDefinition,
       scheduleId,
-      nextWholeSecond(2),
+      await firstScheduleOccurrence(origin, timerDefinition),
     ));
     const scheduled = await waitForStartedSchedule(origin, timerDefinition, scheduleId);
-    const scheduleExecution = await waitForOnlyNewWorkflow(
+    assert.match(scheduled.instance.processInstanceId, /^timer:/u, "the engine names the instance an occurrence starts");
+    // The Schedule's action starts a firing Workflow, which submits the occurrence to the population; the Process
+    // chain it starts has the same address as any other engine start of the instance.
+    const scheduleExecution = await waitForWorkflow(
       client,
-      beforeSchedule,
-      "Timer Schedule Human Work start",
-    );
-    assert.notEqual(
-      scheduleExecution.workflowId,
       processWorkflowId(scheduled.instance.processInstanceId),
-      "scheduled Work must use its service-returned execution address",
+      "Timer Schedule Human Work start",
     );
 
     const messageDefinition = capture(publicCaptures, await deployDefinition(origin, {

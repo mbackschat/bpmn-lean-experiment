@@ -12,13 +12,11 @@ import {
   encodeDefinitionStartCapabilities,
 } from "./definition-capabilities.js";
 import {
+  DefinitionScheduleConflictError,
   DefinitionScheduleIntegrityError,
   DefinitionScheduleState,
 } from "./definition-schedule-contracts.js";
-import {
-  deriveScheduleDueAt,
-  requireWholeSecondActivation,
-} from "./definition-schedule-values.js";
+import { requireCanonicalDueAt } from "./definition-schedule-values.js";
 import { requireDefinitionDatabaseSchemaEpoch } from "./database-schema-epoch.js";
 import type {
   DefinitionScheduleCancellationOrigin,
@@ -63,6 +61,15 @@ implements DefinitionScheduleRepository {
       if (existing !== null) {
         this.#database.exec("COMMIT");
         return { inserted: false, record: existing };
+      }
+      if (
+        this.#database.prepare(
+          "SELECT 1 FROM definition_schedules WHERE process_instance_id = ?",
+        ).get(record.identity.processInstanceId) !== undefined
+      ) {
+        throw new DefinitionScheduleConflictError(
+          "the occurrence's process instance already belongs to another schedule",
+        );
       }
       this.#insert(record);
       const inserted = this.#require(record.reference);
@@ -121,7 +128,7 @@ implements DefinitionScheduleRepository {
     const row = this.#database.prepare(`
       UPDATE definition_schedules
       SET state = ?, cleanup_complete = ?, cancellation_origin = ?,
-        process_locator = ?
+        process_locator = ?, refusal_code = ?
       WHERE process_id = ? AND version = ? AND schedule_id = ? AND state = ?
       RETURNING *
     `).get(
@@ -129,6 +136,7 @@ implements DefinitionScheduleRepository {
       next.cleanupComplete ? 1 : 0,
       next.cancellationOrigin,
       next.processLocator,
+      next.refusalCode,
       reference.processId,
       reference.version,
       reference.scheduleId,
@@ -164,6 +172,7 @@ implements DefinitionScheduleRepository {
           break;
         case DefinitionScheduleState.Cancelling:
         case DefinitionScheduleState.Started:
+        case DefinitionScheduleState.Refused:
         case DefinitionScheduleState.Missed:
         case DefinitionScheduleState.Cancelled:
           break;
@@ -246,10 +255,9 @@ implements DefinitionScheduleRepository {
         process_id, version, schedule_id, source_kind, source_id, source_sha256,
         source_byte_length, source_declared_encoding, source_decoded_as,
         source_overlay_id, source_overlay_sha256, semantic_profile, start_capabilities_json, timer_start_event_id,
-        timer_duration_ms, activation_at, due_at, process_instance_id,
-        host_schedule_id, configured_workflow_id_base, state, cleanup_complete,
-        cancellation_origin, process_locator
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, NULL, NULL)
+        timer_duration_ms, due_at, process_instance_id, host_schedule_id, state,
+        cleanup_complete, cancellation_origin, process_locator, refusal_code
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, NULL, NULL, NULL)
     `).run(
       record.reference.processId,
       record.reference.version,
@@ -265,11 +273,9 @@ implements DefinitionScheduleRepository {
       encodeDefinitionStartCapabilities(record.definition.startCapabilities),
       record.timerStart.startEventId,
       record.timerStart.durationMs,
-      record.activationAt,
       record.dueAt,
       record.identity.processInstanceId,
       record.identity.hostScheduleId,
-      record.identity.configuredWorkflowIdBase,
       DefinitionScheduleState.Creating,
     );
   }
@@ -279,9 +285,8 @@ const selectColumns = `SELECT
   process_id, version, schedule_id, source_kind, source_id, source_sha256,
   source_byte_length, source_declared_encoding, source_decoded_as,
   source_overlay_id, source_overlay_sha256, semantic_profile, start_capabilities_json, timer_start_event_id,
-  timer_duration_ms, activation_at, due_at, process_instance_id,
-  host_schedule_id, configured_workflow_id_base, state, cleanup_complete,
-  cancellation_origin, process_locator
+  timer_duration_ms, due_at, process_instance_id, host_schedule_id, state,
+  cleanup_complete, cancellation_origin, process_locator, refusal_code
 FROM definition_schedules`;
 
 function initializeSchema(database: DatabaseSync): void {
@@ -299,11 +304,14 @@ function decodeRecord(row: Record<string, SQLOutputValue>): DefinitionScheduleRe
     requireNullableString(row, "cancellation_origin"),
   );
   const processLocator = requireNullableString(row, "process_locator");
-  requireStateFields(state, cancellationOrigin, processLocator);
+  const refusalCode = requireNullableString(row, "refusal_code");
+  requireStateFields(state, cancellationOrigin, processLocator, refusalCode);
   const definition = decodeDefinition(row, sourceKind, decodedAs);
   const timerStart = {
     startEventId: requireNonemptyString(row, "timer_start_event_id"),
-    durationMs: requirePositiveSafeInteger(row, "timer_duration_ms"),
+    durationMs: row.timer_duration_ms === null
+      ? null
+      : requirePositiveSafeInteger(row, "timer_duration_ms"),
   };
   if (
     definition.startCapabilities.timerStarts.length !== 1 ||
@@ -313,13 +321,7 @@ function decodeRecord(row: Record<string, SQLOutputValue>): DefinitionScheduleRe
   ) {
     throw new TypeError("SQLite schedule row has divergent Timer Start capability");
   }
-  const activationAt = requireWholeSecondActivation(
-    requireNonemptyString(row, "activation_at"),
-  );
-  const dueAt = requireWholeSecondActivation(requireNonemptyString(row, "due_at"));
-  if (deriveScheduleDueAt(activationAt, timerStart.durationMs) !== dueAt) {
-    throw new TypeError("SQLite schedule row has invalid derived due instant");
-  }
+  const dueAt = requireCanonicalDueAt(requireNonemptyString(row, "due_at"));
   const cleanupComplete = requireBoolean(row, "cleanup_complete");
   if (!isTerminal(state) && cleanupComplete) {
     throw new TypeError("SQLite schedule row cleaned a nonterminal Schedule");
@@ -332,20 +334,16 @@ function decodeRecord(row: Record<string, SQLOutputValue>): DefinitionScheduleRe
     },
     definition,
     timerStart,
-    activationAt,
     dueAt,
     identity: {
       processInstanceId: requireNonemptyString(row, "process_instance_id"),
       hostScheduleId: requireNonemptyString(row, "host_schedule_id"),
-      configuredWorkflowIdBase: requireNonemptyString(
-        row,
-        "configured_workflow_id_base",
-      ),
     },
     state,
     cleanupComplete,
     cancellationOrigin,
     processLocator,
+    refusalCode,
   };
 }
 
@@ -389,6 +387,9 @@ function applyTransition(
     processLocator: transition.processLocator === undefined
       ? current.processLocator
       : transition.processLocator,
+    refusalCode: transition.refusalCode === undefined
+      ? current.refusalCode
+      : transition.refusalCode,
   };
 }
 
@@ -408,6 +409,7 @@ function requireLegalTransition(
     next.state,
     next.cancellationOrigin,
     next.processLocator,
+    next.refusalCode,
   );
 }
 
@@ -420,21 +422,25 @@ function legalNextStates(state: DefinitionScheduleRecord["state"]): readonly Def
         DefinitionScheduleState.Scheduled,
         DefinitionScheduleState.Cancelling,
         DefinitionScheduleState.Started,
+        DefinitionScheduleState.Refused,
         DefinitionScheduleState.Missed,
       ];
     case DefinitionScheduleState.Scheduled:
       return [
         DefinitionScheduleState.Cancelling,
         DefinitionScheduleState.Started,
+        DefinitionScheduleState.Refused,
         DefinitionScheduleState.Missed,
       ];
     case DefinitionScheduleState.Cancelling:
       return [
         DefinitionScheduleState.Cancelled,
         DefinitionScheduleState.Started,
+        DefinitionScheduleState.Refused,
         DefinitionScheduleState.Missed,
       ];
     case DefinitionScheduleState.Started:
+    case DefinitionScheduleState.Refused:
     case DefinitionScheduleState.Missed:
     case DefinitionScheduleState.Cancelled:
       return [];
@@ -447,6 +453,7 @@ function requireStateFields(
   state: DefinitionScheduleRecord["state"],
   origin: DefinitionScheduleCancellationOrigin | null,
   processLocator: string | null,
+  refusalCode: string | null,
 ): void {
   if ((state === DefinitionScheduleState.Cancelling) !== (origin !== null)) {
     throw new TypeError("SQLite schedule row has invalid cancellation origin");
@@ -462,6 +469,12 @@ function requireStateFields(
     (processLocator.length === 0 || !processLocator.isWellFormed())
   ) {
     throw new TypeError("SQLite schedule row has malformed Process locator");
+  }
+  if ((state === DefinitionScheduleState.Refused) !== (refusalCode !== null)) {
+    throw new TypeError("SQLite schedule row has invalid refusal code");
+  }
+  if (refusalCode !== null && (refusalCode.length === 0 || !refusalCode.isWellFormed())) {
+    throw new TypeError("SQLite schedule row has malformed refusal code");
   }
 }
 
@@ -487,6 +500,7 @@ function decodeCancellationOrigin(
 
 function isTerminal(state: DefinitionScheduleRecord["state"]): boolean {
   return state === DefinitionScheduleState.Started ||
+    state === DefinitionScheduleState.Refused ||
     state === DefinitionScheduleState.Missed ||
     state === DefinitionScheduleState.Cancelled;
 }

@@ -22,7 +22,7 @@ import {
   readPlatformServerConfig,
 } from "@bpmn-lean/platform-server";
 import type { PlatformServerRuntime } from "@bpmn-lean/platform-server";
-import { workflowType } from "@bpmn-lean/temporal-host/client";
+import { processInstanceWorkflowId, workflowType } from "@bpmn-lean/temporal-host/client";
 
 import { showcaseEngineDeploymentEnvironment } from "../../engine-deployment.ts";
 import {
@@ -35,6 +35,7 @@ import {
 
 import {
   deployDefinition,
+  firstScheduleOccurrence,
   getDefinitionSchedule,
   getMessageStartPublication,
   putDefinitionSchedule,
@@ -47,9 +48,9 @@ import {
   assertWorkflowHostsInstance,
   listScheduleIds,
   listWorkflowExecutions,
-  nextWholeSecond,
   requireOnlyNewIdentity,
   waitForOnlyNewWorkflow,
+  waitForWorkflow,
 } from "./temporal-support.ts";
 import type { TemporalWorkflowExecution } from "./temporal-support.ts";
 
@@ -57,6 +58,11 @@ const directProfile = "bpmn-2.0.2";
 const timerProfile = "bpmn-2.0.2";
 const messageProfile = "bpmn-2.0.2";
 const taskQueue = "bpmn-m2-process-instance-search";
+/**
+ * The scheduled version's Timer Start duration: its one occurrence counts from the version's engine registration, and
+ * must still lie ahead when the test lists and schedules it.
+ */
+const timerDuration = "PT5S";
 const operationDeadlineMs = 10_000;
 const environmentStartupDeadlineMs = 40_000;
 const temporalCacheDirectory = fileURLToPath(
@@ -149,13 +155,12 @@ test("searches three confirmed Product 2 starts without discovering private Temp
       directDefinition.source.sha256,
     );
     const schedulesBefore = await listScheduleIds(client);
-    const workflowsBeforeSchedule = await listWorkflowExecutions(client);
     const scheduleId = `search-schedule-${token}`;
     const scheduled = await putDefinitionSchedule(
       origin,
       scheduleDefinition,
       scheduleId,
-      nextWholeSecond(2),
+      await firstScheduleOccurrence(origin, scheduleDefinition),
     );
     assert.equal(scheduled.value.status, DefinitionScheduleStatus.Scheduled);
     const privateScheduleId = requireOnlyNewIdentity(
@@ -169,11 +174,15 @@ test("searches three confirmed Product 2 starts without discovering private Temp
       scheduleId,
     );
     const scheduleInstance = requireScheduleInstance(startedSchedule.value);
-    const scheduleExecution = await waitForOnlyNewWorkflow(
+    assert.match(scheduleInstance.processInstanceId, /^timer:/u, "the engine names the instance an occurrence starts");
+    // The action starts a firing Workflow, which submits the occurrence to the population; that starts the Process
+    // chain under the engine's address of the instance.
+    const scheduleExecution = await waitForWorkflow(
       client,
-      workflowsBeforeSchedule,
+      processInstanceWorkflowId(scheduleInstance.processInstanceId),
       "one-action Timer Schedule",
     );
+    assert.equal(scheduleExecution.type, workflowType);
     await assertWorkflowHostsInstance(
       client,
       scheduleExecution,
@@ -529,6 +538,7 @@ async function runtimeSources(
       .replaceAll("Definitions_TimerStart", `Definitions_Timer_${token}`)
       .replaceAll("Process_TimerStart", sharedProcessId)
       .replace('name="Review"', `name="${scheduleTask}"`)
+      .replace(">PT1S<", `>${timerDuration}<`)
       .replace(
         "https://bpmn-lean.local/tests/timer-start",
         `https://third-party.invalid/search/timer/${token}`,

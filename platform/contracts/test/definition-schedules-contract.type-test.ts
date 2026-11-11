@@ -2,6 +2,7 @@ import type {
   DefinitionSchedule,
   DefinitionScheduleConflictErrorResponse,
   DefinitionScheduleListResponse,
+  DefinitionScheduleOccurrenceListResponse,
   DeployedDefinitionVersion,
   PutDefinitionScheduleRequest,
   PublicTimerStartCapability,
@@ -29,8 +30,8 @@ if (definition.startCapabilities.timerStarts[0] !== undefined) {
 
 declare const request: PutDefinitionScheduleRequest;
 
-// @ts-expect-error The activation request is immutable.
-request.activationAt = "2026-08-11T12:00:01.000Z";
+// @ts-expect-error The occurrence request is immutable.
+request.dueAt = "2026-08-11T12:00:01.000Z";
 
 declare const discriminantSchedule: DefinitionSchedule;
 
@@ -69,8 +70,20 @@ declare const list: DefinitionScheduleListResponse;
 list.schedules.push(schedule);
 if (list.schedules[0] !== undefined) {
   // @ts-expect-error Schedule values inside the list are immutable.
-  list.schedules[0].activationAt = "2026-08-11T12:00:01.000Z";
+  list.schedules[0].dueAt = "2026-08-11T12:00:01.000Z";
 }
+
+if (schedule.status === "refused") {
+  // @ts-expect-error The engine's refusal is immutable.
+  schedule.refusal = "replacement";
+}
+
+declare const occurrences: DefinitionScheduleOccurrenceListResponse;
+
+// @ts-expect-error Occurrence arrays are immutable.
+occurrences.occurrences.push({ dueAt: "2026-08-11T12:00:01.000Z" });
+// @ts-expect-error The semantic Process-instance identity of an occurrence is not public before it starts.
+occurrences.occurrences[0]?.processInstanceId;
 
 declare const conflict: DefinitionScheduleConflictErrorResponse;
 

@@ -28,6 +28,7 @@ import type { NewDefinitionMetadata } from "@bpmn-lean/platform-definitions";
 import {
   catalog,
   registerDefinitionsRepositoryContract,
+  type DefinitionsRepositoryContractFactory,
   sidecar,
   sourceBytes,
   sourceSha256,
@@ -36,6 +37,7 @@ import {
   laterOverlayBytes,
   laterOverlayIdentity,
 } from "../support/definitions-repository-contract.ts";
+import { registerDefinitionScheduleRepositoryContract } from "../support/definition-schedule-repository-contract.ts";
 
 const baseUrl = process.env.BPMN_TEST_POSTGRES_URL;
 
@@ -71,23 +73,22 @@ if (baseUrl === undefined) {
     await runtime.close();
   });
 
-  registerDefinitionsRepositoryContract(
-    "PostgreSQL Definitions repositories",
-    async () => {
-      await resetDatabase(runtime);
-      await artifacts.put({ sha256: sourceSha256, bytes: sourceBytes });
-      await artifacts.put({ ...overlayIdentity, bytes: overlayBytes });
-      await artifacts.put({ ...laterOverlayIdentity, bytes: laterOverlayBytes });
-      return {
-        definitions: new PostgresqlDefinitionRepository(runtime),
-        presentations: new PostgresqlDefinitionPresentationRepository(runtime),
-        confirmed: new PostgresqlConfirmedProcessInstanceRepository(runtime),
-        schedules: new PostgresqlDefinitionScheduleRepository(runtime),
-        messages: new PostgresqlMessageStartPublicationRepository(runtime),
-        dispose: async () => undefined,
-      };
-    },
-  );
+  const postgresqlRepositories: DefinitionsRepositoryContractFactory = async () => {
+    await resetDatabase(runtime);
+    await artifacts.put({ sha256: sourceSha256, bytes: sourceBytes });
+    await artifacts.put({ ...overlayIdentity, bytes: overlayBytes });
+    await artifacts.put({ ...laterOverlayIdentity, bytes: laterOverlayBytes });
+    return {
+      definitions: new PostgresqlDefinitionRepository(runtime),
+      presentations: new PostgresqlDefinitionPresentationRepository(runtime),
+      confirmed: new PostgresqlConfirmedProcessInstanceRepository(runtime),
+      schedules: new PostgresqlDefinitionScheduleRepository(runtime),
+      messages: new PostgresqlMessageStartPublicationRepository(runtime),
+      dispose: async () => undefined,
+    };
+  };
+  registerDefinitionsRepositoryContract("PostgreSQL Definitions repositories", postgresqlRepositories);
+  registerDefinitionScheduleRepositoryContract("PostgreSQL Definitions repositories", postgresqlRepositories);
 
   test("PostgreSQL refuses definition metadata before its exact artifact", async () => {
     await resetDatabase(runtime);

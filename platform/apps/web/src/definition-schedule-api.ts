@@ -1,8 +1,10 @@
 import {
   decodeDefinitionSchedule,
   decodeDefinitionScheduleListResponse,
+  decodeDefinitionScheduleOccurrenceListResponse,
   decodePublicApiErrorResponse,
   decodePutDefinitionScheduleRequest,
+  definitionScheduleOccurrencesPath,
   definitionSchedulePath,
   definitionSchedulesPath,
   DefinitionScheduleStatus,
@@ -12,6 +14,7 @@ import {
 import type {
   DefinitionSchedule,
   DefinitionScheduleListResponse,
+  DefinitionScheduleOccurrenceListResponse,
   DeployedDefinitionVersion,
   PutDefinitionScheduleRequest,
 } from "@bpmn-lean/platform-contracts";
@@ -46,7 +49,7 @@ export class DefinitionScheduleApiClient {
   ): Promise<DefinitionSchedule> {
     const expectedDefinition = snapshotExactDefinition(definition);
     const expectedRequest = decodePutDefinitionScheduleRequest({
-      activationAt: request.activationAt,
+      dueAt: request.dueAt,
     });
     const expectedScheduleId = snapshotScheduleId(scheduleId);
     const response = await this.#fetch(this.#url(definitionSchedulePath(
@@ -81,12 +84,45 @@ export class DefinitionScheduleApiClient {
       expectedDefinition,
       expectedScheduleId,
     );
-    if (schedule.activationAt !== expectedRequest.activationAt) {
+    if (schedule.dueAt !== expectedRequest.dueAt) {
       throw new DefinitionProtocolError(
-        "definition-schedule response does not match the requested activation instant",
+        "definition-schedule response does not match the requested occurrence",
       );
     }
     return schedule;
+  }
+
+  /** The engine's occurrences of the version's Timer start due at or after `from` (the server's now when absent). */
+  async occurrences(
+    definition: DeployedDefinitionVersion,
+    query: Readonly<{ from?: string; limit?: number }> = {},
+  ): Promise<DefinitionScheduleOccurrenceListResponse> {
+    const expectedDefinition = snapshotExactDefinition(definition);
+    const search = new URLSearchParams();
+    if (query.from !== undefined) search.set("from", query.from);
+    if (query.limit !== undefined) search.set("limit", String(query.limit));
+    const path = definitionScheduleOccurrencesPath(expectedDefinition.processId, expectedDefinition.version);
+    const response = await this.#fetch(this.#url(search.size === 0 ? path : `${path}?${search.toString()}`), {
+      headers: { accept: "application/json" },
+    });
+    if (response.status !== 200) {
+      return await this.#throwApiError(response);
+    }
+    const result = decodeResponse(
+      await readJson(response),
+      decodeDefinitionScheduleOccurrenceListResponse,
+      "definition-schedule occurrence response",
+    );
+    if (!sameExactDefinition(result.definition, expectedDefinition)) {
+      throw new DefinitionProtocolError(
+        "definition-schedule occurrences do not match the requested definition identity",
+      );
+    }
+    const from = query.from === undefined ? null : Date.parse(query.from);
+    if (from !== null && result.occurrences.some((occurrence) => Date.parse(occurrence.dueAt) < from)) {
+      throw new DefinitionProtocolError("definition-schedule occurrences precede the requested instant");
+    }
+    return result;
   }
 
   async list(

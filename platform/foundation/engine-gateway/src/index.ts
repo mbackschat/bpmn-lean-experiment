@@ -385,7 +385,6 @@ export {
 } from "./definition-message-start-gateway.js";
 export {
   definitionScheduleHostId,
-  definitionScheduleWorkflowIdBase,
   type DefinitionSchedulePublicReference,
 } from "./definition-schedule-address.js";
 export {
@@ -394,6 +393,10 @@ export {
   type DefinitionScheduleHost,
   type DefinitionScheduleHostRequest,
   type DefinitionScheduleHostResult,
+  type DefinitionTimerOccurrence,
+  type DefinitionTimerOccurrencesRequest,
+  type DefinitionTimerOccurrencesResult,
+  type DefinitionTimerStartRequest,
   type DefinitionScheduleValidationRequest,
   type DefinitionScheduleValidationResult,
 } from "./definition-schedule-gateway.js";

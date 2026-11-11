@@ -75,7 +75,7 @@ test("sets one shared epoch on an empty database before either repository create
     const database = new DatabaseSync(databaseFile, { readOnly: true });
     try {
       const row = database.prepare("PRAGMA user_version").get();
-      assert.equal(row?.user_version, 5);
+      assert.equal(row?.user_version, 6);
     } finally {
       database.close();
     }
@@ -161,7 +161,7 @@ test("migrates the exact epoch-3 confirmed-instance table with canonical legacy 
     assert.equal(Reflect.get(confirmed!, "startCommandBytes"), null);
     const migrated = new DatabaseSync(databaseFile, { readOnly: true });
     try {
-      assert.equal(migrated.prepare("PRAGMA user_version").get()?.user_version, 5);
+      assert.equal(migrated.prepare("PRAGMA user_version").get()?.user_version, 6);
     } finally {
       migrated.close();
     }
@@ -217,7 +217,7 @@ for (const [table, open] of [
       if (table === "definition_versions") {
         prior.prepare(`INSERT INTO definition_versions (process_id, version, source_kind, source_id, source_sha256, source_byte_length, semantic_profile, start_capabilities_json) VALUES ('retained', 1, 'bpmnSource', 'retained.bpmn', ?, 42, 'profile', '{"messageStarts":[],"timerStarts":[]}')`).run("a".repeat(64));
       } else {
-        prior.prepare(`INSERT INTO definition_schedules (process_id, version, schedule_id, source_kind, source_id, source_sha256, source_byte_length, semantic_profile, start_capabilities_json, timer_start_event_id, timer_duration_ms, activation_at, due_at, process_instance_id, host_schedule_id, configured_workflow_id_base, state, cleanup_complete) VALUES ('retained', 1, 'schedule', 'bpmnSource', 'retained.bpmn', ?, 42, 'profile', '{"messageStarts":[],"timerStarts":[]}', 'timer', 1000, '2026-10-09T00:00:00.000Z', '2026-10-09T00:00:01.000Z', 'instance', 'host', 'workflow', 'missed', 1)`).run("a".repeat(64));
+        prior.prepare(`INSERT INTO definition_schedules (process_id, version, schedule_id, source_kind, source_id, source_sha256, source_byte_length, semantic_profile, start_capabilities_json, timer_start_event_id, timer_duration_ms, due_at, process_instance_id, host_schedule_id, state, cleanup_complete) VALUES ('retained', 1, 'schedule', 'bpmnSource', 'retained.bpmn', ?, 42, 'profile', '{"messageStarts":[],"timerStarts":[]}', 'timer', 1000, '2026-10-09T00:00:01.000Z', 'instance', 'host', 'missed', 1)`).run("a".repeat(64));
       }
       prior.exec(`ALTER TABLE ${table} DROP COLUMN source_overlay_id;
         ALTER TABLE ${table} DROP COLUMN source_overlay_sha256;
@@ -236,3 +236,44 @@ for (const [table, open] of [
     } finally { await rm(root, { recursive: true, force: true }); }
   });
 }
+
+test("refuses an epoch-5 database whose schedule table keeps the activation-based shape, leaving it untouched", async () => {
+  const root = await mkdtemp(join(tmpdir(), "bpmn-lean-schema-epoch-activation-"));
+  const databaseFile = join(root, "definitions.sqlite");
+  try {
+    const prior = new DatabaseSync(databaseFile);
+    prior.exec(`
+      PRAGMA user_version = 5;
+      CREATE TABLE definition_schedules (
+        process_id TEXT NOT NULL,
+        version INTEGER NOT NULL,
+        schedule_id TEXT NOT NULL,
+        activation_at TEXT NOT NULL,
+        configured_workflow_id_base TEXT NOT NULL UNIQUE,
+        state TEXT NOT NULL,
+        PRIMARY KEY (process_id, version, schedule_id)
+      ) STRICT;
+      INSERT INTO definition_schedules VALUES (
+        'retained', 1, 'schedule', '2026-10-09T00:00:00.000Z', 'workflow', 'scheduled'
+      );
+    `);
+    const before = prior.prepare("SELECT name, sql FROM sqlite_schema ORDER BY name").all();
+    prior.close();
+
+    assert.throws(
+      () => new SqliteDefinitionScheduleRepository(databaseFile),
+      DefinitionSchemaResetRequiredError,
+    );
+
+    const retained = new DatabaseSync(databaseFile, { readOnly: true });
+    try {
+      assert.equal(retained.prepare("PRAGMA user_version").get()?.user_version, 5);
+      assert.deepEqual(retained.prepare("SELECT name, sql FROM sqlite_schema ORDER BY name").all(), before);
+      assert.equal(retained.prepare("SELECT count(*) AS count FROM definition_schedules").get()?.count, 1);
+    } finally {
+      retained.close();
+    }
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});

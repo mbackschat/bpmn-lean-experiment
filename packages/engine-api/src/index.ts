@@ -109,7 +109,6 @@ export {
   type EngineCorrelationTarget,
 } from "./definition-correlated-message.js";
 export {
-  EngineDefinitionScheduleIntegrityCode,
   EngineDefinitionScheduleStatus,
   createBpmnDefinitionSchedule,
   deleteBpmnDefinitionSchedule,
@@ -119,8 +118,19 @@ export {
   type EngineDefinitionScheduleAddressRequest,
   type EngineDefinitionScheduleBindingRequest,
   type EngineDefinitionScheduleResult,
-  type EngineTimerStartSelection,
 } from "./definition-schedule.js";
+export {
+  EngineDefinitionScheduleIntegrityCode,
+  EngineTimerStartOccurrencesStatus,
+  engineTimerOccurrenceListLimit,
+  engineTimerOccurrenceUnknownCode,
+  listEngineTimerStartOccurrences,
+  type EngineTimerStartDefinitionRequest,
+  type EngineTimerStartOccurrence,
+  type EngineTimerStartOccurrencesRequest,
+  type EngineTimerStartOccurrencesResult,
+  type EngineTimerStartSelection,
+} from "./definition-timer-occurrences.js";
 export {
   type EngineCommandResult,
   type EngineOpenWait,

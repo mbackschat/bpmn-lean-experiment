@@ -29,6 +29,7 @@ const expectedMigrationNames = [
   "0012_failed-process-publication__b0668bf6f541e5dd02f76021c9ffa63861e937ed430cb216e5f9fb7865c35a9a",
   "0013_definitions-source-overlay__ff4e6100a8c2623babacdad43ca474a49e29598b1ef37687ea2d6b23239d943b",
   "0014_definitions-engine-registration__06aabace6867ec7acab06c22aefb07cb6416bf1119c9a09d63839e6600611fa5",
+  "0015_definitions-schedule-occurrence__d29893488bac6eb463ae1dad0d29b80d69e01409019f8214976f7e60b100273b",
 ] as const;
 const requiredRelations = [
   "bpmn_platform.exact_artifacts",
@@ -127,7 +128,7 @@ test(
             WHERE singleton = true
           `,
         });
-        assert.deepEqual(schemaEpoch.rows, [{ epoch: 14 }]);
+        assert.deepEqual(schemaEpoch.rows, [{ epoch: 15 }]);
 
         const scheduleLocatorColumns = await database.query<
           Readonly<Record<string, unknown>> & Readonly<{ column_name: string }>
@@ -148,6 +149,37 @@ test(
         assert.deepEqual(
           scheduleLocatorColumns.rows.map(({ column_name }) => column_name),
           ["process_locator"],
+        );
+
+        const scheduleOccurrenceColumns = await database.query<
+          Readonly<Record<string, unknown>> & Readonly<{
+            column_name: string;
+            is_nullable: string;
+          }>
+        >({
+          text: `
+            SELECT column_name, is_nullable
+            FROM information_schema.columns
+            WHERE table_schema = 'bpmn_platform'
+              AND table_name = 'definition_schedules'
+              AND column_name IN (
+                'activation_at',
+                'configured_workflow_id_base',
+                'refusal_code',
+                'timer_duration_ms'
+              )
+            ORDER BY column_name
+          `,
+        });
+        assert.deepEqual(
+          scheduleOccurrenceColumns.rows.map(({ column_name, is_nullable }) => ({
+            column_name,
+            is_nullable,
+          })),
+          [
+            { column_name: "refusal_code", is_nullable: "YES" },
+            { column_name: "timer_duration_ms", is_nullable: "YES" },
+          ],
         );
 
         const relations = await database.query<

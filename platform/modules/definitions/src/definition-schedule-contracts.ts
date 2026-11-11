@@ -22,6 +22,7 @@ export const DefinitionScheduleState = {
   Scheduled: "scheduled",
   Cancelling: "cancelling",
   Started: "started",
+  Refused: "refused",
   Missed: "missed",
   Cancelled: "cancelled",
 } as const;
@@ -31,7 +32,11 @@ export type DefinitionScheduleState =
 
 export const DefinitionScheduleHostPhase = {
   Pending: "pending",
+  /** The action ran and the engine has not answered its firing yet. */
+  Firing: "firing",
   Started: "started",
+  /** The action ran and the engine refused the occurrence. */
+  Refused: "refused",
   Missed: "missed",
   IntegrityFailure: "integrityFailure",
 } as const;
@@ -41,13 +46,17 @@ export type DefinitionScheduleReference = DefinitionReference & Readonly<{
 }>;
 
 export type PutDefinitionSchedule = DefinitionScheduleReference & Readonly<{
-  activationAt: string;
+  /** The occurrence the schedule fires, a canonical UTC instant. */
+  dueAt: string;
 }>;
 
+/**
+ * `processInstanceId` is the engine's identity of the instance the occurrence starts, read from the engine's
+ * occurrence listing before reservation, so one occurrence binds at most one schedule.
+ */
 export type DefinitionSchedulePrivateIdentity = Readonly<{
   processInstanceId: string;
   hostScheduleId: string;
-  configuredWorkflowIdBase: string;
 }>;
 
 export type DefinitionScheduleCancellationOrigin =
@@ -58,16 +67,17 @@ export type NewDefinitionScheduleRecord = Readonly<{
   reference: DefinitionScheduleReference;
   definition: DefinitionMetadata;
   timerStart: DefinitionScheduledTimerStart;
-  activationAt: string;
   dueAt: string;
   identity: DefinitionSchedulePrivateIdentity;
 }>;
 
+/** `processLocator` is set exactly in `started`, `refusalCode` (the engine's code) exactly in `refused`. */
 export type DefinitionScheduleRecord = NewDefinitionScheduleRecord & Readonly<{
   state: DefinitionScheduleState;
   cleanupComplete: boolean;
   cancellationOrigin: DefinitionScheduleCancellationOrigin | null;
   processLocator: string | null;
+  refusalCode: string | null;
 }>;
 
 export type DefinitionScheduleReservation = Readonly<{
@@ -79,11 +89,16 @@ export type DefinitionScheduleTransition = Readonly<{
   state: DefinitionScheduleState;
   cancellationOrigin?: DefinitionScheduleCancellationOrigin | null;
   processLocator?: string | null;
+  refusalCode?: string | null;
   cleanupComplete?: boolean;
 }>;
 
 /** Atomic persistence operations; every method completes before any host await. */
 export interface DefinitionScheduleRepository {
+  /**
+   * Inserts the record, or returns the one its public identity already holds; throws
+   * `DefinitionScheduleConflictError` when another schedule identity already holds its process-instance identity.
+   */
   reserve(
     record: NewDefinitionScheduleRecord,
   ): Promise<DefinitionScheduleReservation>;
@@ -135,26 +150,43 @@ export type DefinitionScheduleValidationResult =
   | AcceptedDefinitionScheduleValidation
   | RejectedDefinitionScheduleValidation;
 
-export type DefinitionScheduleHostRequest = Readonly<{
+export type DefinitionTimerStartHostRequest = Readonly<{
   bytes: Uint8Array;
   sourceOverlay?: DefinitionSourceOverlaySelection | null;
   definition: DefinitionMetadata;
   timerStart: DefinitionScheduledTimerStart;
-  activationAt: string;
+}>;
+
+export type DefinitionScheduleHostRequest = DefinitionTimerStartHostRequest & Readonly<{
   dueAt: string;
   processInstanceId: string;
   hostScheduleId: string;
-  configuredWorkflowIdBase: string;
 }>;
 
+export type DefinitionTimerOccurrencesHostRequest = DefinitionTimerStartHostRequest & Readonly<{
+  from: string;
+  limit: number;
+}>;
+
+export type DefinitionTimerOccurrencesHostResult =
+  | Readonly<{ kind: "listed"; occurrences: ReadonlyArray<Readonly<{ dueAt: string; processInstanceId: string }>> }>
+  | Readonly<{ kind: "refused"; code: string; evidence: string }>
+  | Readonly<{ kind: "integrityFailure"; evidence: string }>;
+
 export type PendingDefinitionScheduleHostResult = Readonly<{
-  phase: typeof DefinitionScheduleHostPhase.Pending;
+  phase: typeof DefinitionScheduleHostPhase.Pending | typeof DefinitionScheduleHostPhase.Firing;
   paused: boolean;
 }>;
 
 export type StartedDefinitionScheduleHostResult = Readonly<{
   phase: typeof DefinitionScheduleHostPhase.Started;
+  processInstanceId: string;
   processLocator: string;
+}>;
+
+export type RefusedDefinitionScheduleHostResult = Readonly<{
+  phase: typeof DefinitionScheduleHostPhase.Refused;
+  code: string;
 }>;
 
 export type MissedDefinitionScheduleHostResult = Readonly<{
@@ -169,6 +201,7 @@ export type IntegrityDefinitionScheduleHostResult = Readonly<{
 export type DefinitionScheduleHostResult =
   | PendingDefinitionScheduleHostResult
   | StartedDefinitionScheduleHostResult
+  | RefusedDefinitionScheduleHostResult
   | MissedDefinitionScheduleHostResult
   | IntegrityDefinitionScheduleHostResult;
 
@@ -177,6 +210,9 @@ export interface DefinitionScheduleHost {
   validateDefinition(
     request: DefinitionScheduleValidationRequest,
   ): Promise<DefinitionScheduleValidationResult>;
+  occurrences(
+    request: DefinitionTimerOccurrencesHostRequest,
+  ): Promise<DefinitionTimerOccurrencesHostResult>;
   createOrCompare(
     request: DefinitionScheduleHostRequest,
   ): Promise<DefinitionScheduleHostResult>;
@@ -190,16 +226,13 @@ export interface DefinitionScheduleHost {
 }
 
 export type DefinitionScheduleIdentityGenerators = Readonly<{
-  processInstanceId: () => string;
   hostScheduleId: (reference: DefinitionScheduleReference) => string;
-  configuredWorkflowIdBase: (processInstanceId: string) => string;
 }>;
 
 export type DefinitionScheduleBase = Readonly<{
   scheduleId: string;
   definition: DefinitionMetadata;
   timerStart: DefinitionScheduledTimerStart;
-  activationAt: string;
   dueAt: string;
 }>;
 
@@ -216,6 +249,11 @@ export type DefinitionSchedule =
       }>;
     }>)
   | (DefinitionScheduleBase & Readonly<{
+      status: typeof DefinitionScheduleState.Refused;
+      instance: null;
+      refusal: string;
+    }>)
+  | (DefinitionScheduleBase & Readonly<{
       status: typeof DefinitionScheduleState.Missed;
       instance: null;
     }>)
@@ -223,6 +261,13 @@ export type DefinitionSchedule =
       status: typeof DefinitionScheduleState.Cancelled;
       instance: null;
     }>);
+
+/** The occurrences of one exact version's Timer start, due at or after the requested instant. */
+export type DefinitionScheduleOccurrences = Readonly<{
+  definition: DefinitionMetadata;
+  timerStart: DefinitionScheduledTimerStart;
+  occurrences: ReadonlyArray<Readonly<{ dueAt: string }>>;
+}>;
 
 export type PutDefinitionScheduleResult = Readonly<{
   created: boolean;

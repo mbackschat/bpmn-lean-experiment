@@ -118,9 +118,7 @@ test("started Schedule retry repairs recording without repeating its host action
       hostCreates += 1;
     }),
     identities: {
-      processInstanceId: () => "schedule-instance",
       hostScheduleId: () => "host-schedule",
-      configuredWorkflowIdBase: () => "configured-workflow",
     },
     now: () => Date.parse("2026-08-12T09:59:00.000Z"),
     confirmedInstances: confirmedInstances(publisher),
@@ -130,7 +128,7 @@ test("started Schedule retry repairs recording without repeating its host action
     processId: definition.processId,
     version: definition.version,
     scheduleId: "schedule",
-    activationAt: "2026-08-12T10:00:00.000Z",
+    dueAt: "2026-08-12T10:00:01.000Z",
   };
 
   await assert.rejects(service.put(request), /recording failed/u);
@@ -229,11 +227,9 @@ test("non-confirmed producer states never record an instance", async () => {
     artifacts: artifactStore(),
     definitions: new OneDefinitionRepository(),
     schedules,
-    host: scheduleHost(undefined, DefinitionScheduleHostPhase.Pending),
+    host: scheduleHost(undefined, DefinitionScheduleHostPhase.Pending, "scheduled-instance"),
     identities: {
-      processInstanceId: () => "scheduled-instance",
       hostScheduleId: () => "host-schedule",
-      configuredWorkflowIdBase: () => "configured-workflow",
     },
     now: () => Date.parse("2026-08-12T09:59:00.000Z"),
     confirmedInstances: confirmedInstances(publisher),
@@ -242,7 +238,7 @@ test("non-confirmed producer states never record an instance", async () => {
     processId: definition.processId,
     version: definition.version,
     scheduleId: "pending",
-    activationAt: "2026-08-12T10:00:00.000Z",
+    dueAt: "2026-08-12T10:00:01.000Z",
   });
 
   const missedSchedules = new MemoryScheduleRepository();
@@ -254,7 +250,7 @@ test("non-confirmed producer states never record an instance", async () => {
     processId: definition.processId,
     version: definition.version,
     scheduleId: "missed",
-    activationAt: "2026-08-12T10:00:00.000Z",
+    dueAt: "2026-08-12T10:00:01.000Z",
   });
   assert.equal(missed.schedule.status, DefinitionScheduleState.Missed);
 
@@ -271,7 +267,7 @@ test("non-confirmed producer states never record an instance", async () => {
   };
   await cancellable.put({
     ...cancelledReference,
-    activationAt: "2026-08-12T10:00:00.000Z",
+    dueAt: "2026-08-12T10:00:01.000Z",
   });
   const cancelled = await cancellable.delete(cancelledReference);
   assert.equal(cancelled?.status, DefinitionScheduleState.Cancelled);
@@ -386,6 +382,7 @@ class MemoryScheduleRepository implements DefinitionScheduleRepository {
       cleanupComplete: false,
       cancellationOrigin: null,
       processLocator: null,
+      refusalCode: null,
     };
     return { inserted: true, record: structuredClone(this.record) };
   }
@@ -493,12 +490,14 @@ function scheduleHost(
   phase: typeof DefinitionScheduleHostPhase.Started |
     typeof DefinitionScheduleHostPhase.Pending |
     typeof DefinitionScheduleHostPhase.Missed = DefinitionScheduleHostPhase.Started,
+  instanceId = "schedule-instance",
 ): DefinitionScheduleHost {
   let result: DefinitionScheduleHostResult;
   switch (phase) {
     case DefinitionScheduleHostPhase.Started:
       result = {
         phase,
+        processInstanceId: instanceId,
         processLocator: "bpmn-process-work-v1:execution-workflow",
       };
       break;
@@ -518,6 +517,7 @@ function scheduleHost(
       startCapabilities: structuredClone(definition.startCapabilities),
       sourceOverlay: null,
     }),
+    occurrences: async (request) => ({ kind: "listed", occurrences: [{ dueAt: request.from, processInstanceId: instanceId }] }),
     createOrCompare: async () => {
       onCreate?.();
       return result;
@@ -541,11 +541,9 @@ function scheduleService(
     artifacts: artifactStore(),
     definitions: new OneDefinitionRepository(),
     schedules,
-    host: scheduleHost(undefined, phase),
+    host: scheduleHost(undefined, phase, `${phase}-instance`),
     identities: {
-      processInstanceId: () => `${phase}-instance`,
       hostScheduleId: () => `${phase}-host-schedule`,
-      configuredWorkflowIdBase: () => `${phase}-configured-workflow`,
     },
     now: () => Date.parse("2026-08-12T09:59:00.000Z"),
     confirmedInstances: confirmedInstances(startedInstances),

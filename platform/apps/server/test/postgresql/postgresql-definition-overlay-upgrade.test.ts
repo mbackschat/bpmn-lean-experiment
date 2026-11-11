@@ -109,7 +109,7 @@ if (baseConnectionString === undefined) {
     const applied = await runPostgresqlMigrations({ connectionString, migrationDirectories });
     assert.equal(applied.appliedNames.length, 14);
     assert.match(applied.appliedNames[12] ?? "", /^0013_definitions-source-overlay__/u);
-    assert.deepEqual((await runtime.query({ text: "SELECT epoch FROM bpmn_platform_meta.schema_epoch" })).rows, [{ epoch: 14 }]);
+    assert.deepEqual((await runtime.query({ text: "SELECT epoch FROM bpmn_platform_meta.schema_epoch" })).rows, [{ epoch: 15 }]);
     assert.equal((await definitions.get(definition))?.sourceOverlay, null);
     assert.equal((await confirmed.get("reserved-🚀\u0000"))?.instance.definition.sourceOverlay, null);
     for (const [processInstanceId, prior] of priorSnapshots) {

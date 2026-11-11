@@ -87,6 +87,7 @@ export class PostgresqlDefinitionScheduleRecoveryStep {
         return await this.#cancel(record);
       case DefinitionScheduleState.Started:
         return await this.#finish(record, true);
+      case DefinitionScheduleState.Refused:
       case DefinitionScheduleState.Missed:
       case DefinitionScheduleState.Cancelled:
         return await this.#finish(record, false);
@@ -184,11 +185,9 @@ export class PostgresqlDefinitionScheduleRecoveryStep {
       ...retained,
       definition: structuredClone(record.definition),
       timerStart: { ...record.timerStart },
-      activationAt: record.activationAt,
       dueAt: record.dueAt,
       processInstanceId: record.identity.processInstanceId,
       hostScheduleId: record.identity.hostScheduleId,
-      configuredWorkflowIdBase: record.identity.configuredWorkflowIdBase,
     };
   }
 
@@ -230,8 +229,27 @@ function applyHostResult(
       return record.state === DefinitionScheduleState.CreatingHost
         ? apply(record, { state: DefinitionScheduleState.Scheduled })
         : completeWithoutDatabaseChange();
+    case DefinitionScheduleHostPhase.Firing:
+      if (result.paused !== expectPaused) {
+        return failRecovery(
+          PostgresqlDefinitionsRecoveryFailureCode.HostIntegrityFailure,
+          PostgresqlDefinitionsRecoveryFailureEvidence.HostResult,
+        );
+      }
+      // The action won any cancellation; the row keeps its state until the engine answers the firing.
+      return record.state === DefinitionScheduleState.CreatingHost
+        ? apply(record, { state: DefinitionScheduleState.Scheduled })
+        : completeWithoutDatabaseChange();
+    case DefinitionScheduleHostPhase.Refused:
+      if (!isIdentity(result.code)) {
+        return failRecovery(
+          PostgresqlDefinitionsRecoveryFailureCode.HostIntegrityFailure,
+          PostgresqlDefinitionsRecoveryFailureEvidence.HostResult,
+        );
+      }
+      return apply(record, { state: DefinitionScheduleState.Refused, refusalCode: result.code });
     case DefinitionScheduleHostPhase.Started:
-      if (!isIdentity(result.processLocator)) {
+      if (!isIdentity(result.processLocator) || result.processInstanceId !== record.identity.processInstanceId) {
         return failRecovery(
           PostgresqlDefinitionsRecoveryFailureCode.HostIntegrityFailure,
           PostgresqlDefinitionsRecoveryFailureEvidence.HostResult,

@@ -24,7 +24,7 @@ import {
   PostgresqlDefinitionsRecoveryFailureEvidence,
   DefinitionScheduleHostPhase,
 } from "@bpmn-lean/platform-definitions";
-import type { PostgresqlDefinitionScheduleRecoveryStepOptions } from "@bpmn-lean/platform-definitions";
+import type { DefinitionScheduleHostResult, PostgresqlDefinitionScheduleRecoveryStepOptions } from "@bpmn-lean/platform-definitions";
 import { PostgresqlDirectStartRecoveryStep } from "@bpmn-lean/platform-definitions";
 import {
   PostgresqlMessageStartRecoveryStep,
@@ -233,6 +233,48 @@ if (baseUrl === undefined) {
       (await confirmed.get(record.identity.processInstanceId))?.state,
       "confirmed",
     );
+  });
+
+  test("Schedule recovery keeps a firing row and records the engine's refusal without confirmation", async () => {
+    await resetDatabase(runtime);
+    const definition = await seedDefinition(runtime, artifacts);
+    const schedules = new PostgresqlDefinitionScheduleRepository(runtime);
+    const confirmed = new PostgresqlConfirmedProcessInstanceRepository(runtime);
+    const record = scheduleRecord(definition, "refused", "refused-instance");
+    await schedules.reserve(record);
+    await schedules.compareAndSet(record.reference, "creating", { state: "creatingHost" });
+    let inspected: DefinitionScheduleHostResult = { phase: DefinitionScheduleHostPhase.Firing, paused: false };
+    let deleteCalls = 0;
+    const recovery = new PostgresqlDefinitionScheduleRecoveryStep({
+      runtime,
+      artifacts,
+      host: {
+        createOrCompare: async () => ({ phase: DefinitionScheduleHostPhase.Firing, paused: false }),
+        inspect: async () => inspected,
+        pause: async () => { assert.fail("a firing schedule is not paused"); },
+        delete: async () => {
+          deleteCalls += 1;
+        },
+      },
+    });
+
+    await apply(runtime, await recovery.prepare(scheduleKey(record)));
+    assert.equal((await schedules.get(record.reference))?.state, "scheduled");
+    const unanswered = await schedules.get(record.reference);
+    await apply(runtime, await recovery.prepare(scheduleKey(record)));
+    assert.deepEqual(await schedules.get(record.reference), unanswered);
+
+    inspected = { phase: DefinitionScheduleHostPhase.Refused, code: "timer-start-superseded" };
+    await apply(runtime, await recovery.prepare(scheduleKey(record)));
+    const refused = await schedules.get(record.reference);
+    assert.equal(refused?.state, "refused");
+    assert.equal(refused?.refusalCode, "timer-start-superseded");
+    assert.equal(deleteCalls, 0);
+
+    await apply(runtime, await recovery.prepare(scheduleKey(record)));
+    assert.equal(deleteCalls, 1);
+    assert.equal((await schedules.get(record.reference))?.cleanupComplete, true);
+    assert.equal(await confirmed.get(record.identity.processInstanceId), null);
   });
 
   async function retainedSchedule(operation: "createOrCompare" | "inspect") {
