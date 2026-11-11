@@ -318,6 +318,37 @@ export const rows: readonly Row[] = [
     control: { xml: ending(`<bpmn:escalationEventDefinition escalationRef="Esc"/>`, `<bpmn:escalation id="Esc" escalationCode="Warning"/>`) },
   },
   {
+    code: "throw.message.implementation",
+    description: "a Message throw naming a Java class, which only a delegate binding replaces",
+    evidence: "camunda:class",
+    refused: { xml: ending(`<bpmn:messageEventDefinition camunda:class="org.example.Sender"/>`) },
+    control: { xml: ending(`<bpmn:messageEventDefinition camunda:delegateExpression="\${sender}"/>`) },
+  },
+  {
+    code: "throw.message.resultVariable",
+    description: "a Message throw writing its delegate's result to a variable",
+    refused: { xml: ending(`<bpmn:messageEventDefinition camunda:delegateExpression="\${sender}" camunda:resultVariable="r"/>`) },
+    control: { xml: ending(`<bpmn:messageEventDefinition camunda:delegateExpression="\${sender}"/>`) },
+  },
+  {
+    code: "throw.message.ioMapping",
+    description: "a Message throw with CIB input parameters",
+    refused: { xml: ending(`<bpmn:extensionElements><camunda:inputOutput><camunda:inputParameter name="a">1</camunda:inputParameter></camunda:inputOutput></bpmn:extensionElements><bpmn:messageEventDefinition camunda:delegateExpression="\${sender}"/>`) },
+    control: { xml: ending(`<bpmn:messageEventDefinition camunda:delegateExpression="\${sender}"/>`) },
+  },
+  {
+    code: "throw.message.asynchronous",
+    description: "a Message throw with an asynchronous continuation",
+    refused: { xml: model(`<bpmn:intermediateThrowEvent id="X" camunda:asyncBefore="true"><bpmn:messageEventDefinition camunda:delegateExpression="\${sender}"/></bpmn:intermediateThrowEvent>`) },
+    control: { xml: model(`<bpmn:intermediateThrowEvent id="X"><bpmn:messageEventDefinition camunda:delegateExpression="\${sender}"/></bpmn:intermediateThrowEvent>`) },
+  },
+  {
+    code: "throw.message.listener",
+    description: "a Message throw with an execution listener",
+    refused: { xml: ending(`<bpmn:extensionElements><camunda:executionListener event="start" delegateExpression="\${audit}"/></bpmn:extensionElements><bpmn:messageEventDefinition/>`) },
+    control: { xml: ending(`<bpmn:messageEventDefinition/>`) },
+  },
+  {
     code: "reader.multiInstanceWithoutCount",
     description: "a Multi-Instance loop with neither a collection nor a cardinality",
     refused: { xml: model(`<bpmn:userTask id="U"><bpmn:multiInstanceLoopCharacteristics/></bpmn:userTask>`) },

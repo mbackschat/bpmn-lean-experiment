@@ -26,12 +26,17 @@ export function declaredImplementation(ctx: ReadContext, element: ElementRecord)
   return null;
 }
 
+/**
+ * The binding whose source attributes the element declares. An event definition has no `implementation` attribute
+ * (`tMessageEventDefinition`, Semantic.xsd:999-1008), so it matches on its `delegateExpression` alone.
+ */
 function boundBy(ctx: ReadContext, element: ElementRecord): EffectBinding | undefined {
   const declared = declaredImplementation(ctx, element);
   const delegate = declared?.name === "delegateExpression" ? declared.value : null;
   const implementation = text(element, "implementation");
+  const eventDefinition = String(element.$type).endsWith("EventDefinition");
   return [...ctx.bindings, ...builtInBindings].find((binding) =>
-    binding.delegateExpression === delegate && binding.implementation === implementation);
+    binding.delegateExpression === delegate && (eventDefinition ? delegate !== null : binding.implementation === implementation));
 }
 
 /**

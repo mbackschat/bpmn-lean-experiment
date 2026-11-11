@@ -27,6 +27,7 @@ The [profile artifact](profile.json) is the CIB Seven 2.2.0 compatibility profil
 | `conditionalRetrigger` | `eachWrite` | `CIB-EXT-0035` |
 | `conditionalStart` | `submittedContext` | `CIB-EXT-0044` |
 | `calledElementResolution` | `cibKey` | `CIB-EXT-0045` |
+| `messageThrowForms` | `cibForms` | `CIB-EXT-0039`, `CIB-INT-0027` |
 | `malformedTimer` | `rollsBackArming` | `CIB-EXT-0036` |
 | `messageNames` | `addresses` | `CIB-LIM-0022` |
 | `messageCorrelation` | `apiCriteria` | `CIB-EXT-0025` |

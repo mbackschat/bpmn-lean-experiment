@@ -51,6 +51,7 @@ import {
   type EventPayload,
   type Expression,
   type Header,
+  type MessageThrow,
   type SignalThrow,
   type Subscription,
   type Throw,
@@ -78,7 +79,9 @@ import {
   leaveFlows,
   leaveOutgoing,
   occurrenceOf,
+  openItem,
   openKindView,
+  OpenKindTag,
   raisedIsCancel,
   signal,
   signalAddressMatches,
@@ -711,6 +714,20 @@ function throwSignal(ctx: Ctx, payload: EventPayload, record: SignalThrow, origi
     completeSignal(occurrence.id, throwLeave(payload), [], WriteRule.Outward)));
 }
 
+/**
+ * A Message throw under `MessageThrowForms.CibForms` (PC-MESSAGE-09): unbound, it passes its token on, as CIB's
+ * `IntermediateThrowNoneEventActivityBehavior` does (CIB-INT-0027); bound, it opens one effect item, as CIB runs its
+ * delegate as a Service Task's (CIB-EXT-0039), and `feature/work.ts#effectResult` answers it: a throw Event has no
+ * envelope, so a success leaves with no outputs and a business failure raises from the throw's occurrence.
+ */
+function throwMessage(record: MessageThrow, occurrence: Occurrence, leave: (current: State) => State, state: State): State {
+  if (record.binding === null) return leave(state);
+  return openItem(state, {
+    tag: OpenKindTag.Effect,
+    detail: { protocol: record.binding.protocol, operation: record.binding.operation, arguments: [], failures: 0, send: null },
+  }, occurrence);
+}
+
 export function arriveThrow(ctx: Ctx, header: Header, payload: EventPayload, thrown: Throw, occurrence: Occurrence, state: State): Outcome {
   const origin: Origin = { element: header.id, scope: occurrence.scope, activation: occurrence.activation, host: null, patch: [] };
   const leave = (current: State): State => signal(current, completeSignal(occurrence.id, throwLeave(payload), [], WriteRule.Outward));
@@ -729,9 +746,8 @@ export function arriveThrow(ctx: Ctx, header: Header, payload: EventPayload, thr
     // An Escalation is not critical: its thrower leaves after the search, unless the catcher interrupts it (`throwerLeaves`).
     case ThrowTag.Escalation:
       return committed(signal(state, { tag: SignalTag.Raise, event: { tag: RaisedTag.Escalation, code: thrown.payload.code }, origin }));
-    // Admission refuses it (`throw.message`).
     case ThrowTag.Message:
-      return failed(FailureTag.Unsupported, "throw-message");
+      return committed(throwMessage(thrown.payload, occurrence, leave, state));
     case ThrowTag.Signal:
       return throwSignal(ctx, payload, thrown.payload, origin, occurrence, state);
     case ThrowTag.Compensation:

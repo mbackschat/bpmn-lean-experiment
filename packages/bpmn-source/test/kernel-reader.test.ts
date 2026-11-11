@@ -239,6 +239,15 @@ test("throws carry their message, binding and Signal propagation", async () => {
   assert.equal(record("SigNone").signal.payload.propagateAll, null);
 });
 
+test("a Message throw's delegate selects its binding alone, since an event definition has no implementation", async () => {
+  const p = await program(model(`<bpmn:intermediateThrowEvent id="Probe">
+    <bpmn:messageEventDefinition camunda:delegateExpression="\${bpmnLeanEffectHandler}"/></bpmn:intermediateThrowEvent>
+    <bpmn:endEvent id="Mapped"><bpmn:messageEventDefinition camunda:delegateExpression="\${mappedSuccessHandler}"/></bpmn:endEvent>`));
+  const binding = (id: string): Json => element(p, id).event.payload.role.throw.record.message.payload.binding;
+  assert.deepEqual(binding("Probe"), { protocol: "urn:bpmn-lean:effect-protocol:activity-v1", operation: "urn:bpmn-lean:effect-operation:probe-v1" });
+  assert.deepEqual(binding("Mapped"), { protocol: "urn:bpmn-lean:effect-protocol:activity-v1", operation: "urn:bpmn-lean:effect-operation:mapped-success-v1" });
+});
+
 test("a Message throw's Message has no IL field and is reported", async () => {
   const result = await read(model(`<bpmn:intermediateThrowEvent id="Msg"><bpmn:messageEventDefinition messageRef="M"/></bpmn:intermediateThrowEvent>`,
     `<bpmn:message id="M"/>`));
@@ -352,6 +361,8 @@ test("the profile options are the full record, each non-default selected by the 
     messageThrowForms: "refused",
   });
   assert.equal(kernelProfileOptions(["CIB-EXT-0031"]).outputContext, "activityScope");
+  assert.equal(kernelProfileOptions(["CIB-EXT-0039"]).messageThrowForms, "cibForms");
+  assert.equal(kernelProfileOptions(["CIB-INT-0027"]).messageThrowForms, "cibForms");
   assert.equal(kernelProfileOptions(["CIB-INT-0014"]).multiInstanceBinding, "loopReferences");
   assert.equal(kernelProfileOptions(["CIB-EXT-0015"]).effectResultValues, "activityLocals");
   assert.equal(kernelProfileOptions(["CIB-INT-0018"]).multiInstanceCounters, "cibLocals");

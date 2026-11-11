@@ -333,7 +333,7 @@ export enum MessageThrowForms {
   Refused = "refused",
   /**
    * CIB runs a Message throw with a declared implementation as a Service Task and passes on one without
-   * (`BpmnParse.java:1643-1659`, `3174-3189`).
+   * (`BpmnParse.java:1643-1659`, `3174-3189`; CIB-EXT-0039, CIB-INT-0027).
    */
   CibForms = "cibForms",
 }

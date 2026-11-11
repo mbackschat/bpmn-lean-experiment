@@ -204,11 +204,27 @@ function conditionPayload(ctx: ReadContext, definition: ElementRecord): KernelJs
 }
 
 /**
- * CIB executes a Message throw with a declared implementation as a Service Task; without one it is an unbound
- * pass-through. `MessageThrow` has no field for the Message or Operation it names, so those are reported.
+ * CIB executes a Message throw with a declared implementation as a Service Task (`BpmnParse.java:1643-1653`,
+ * `3174-3184`); without one it is an unbound pass-through. `MessageThrow` carries only a `camunda:delegateExpression`
+ * binding, so every other implementation, a result variable, parameters, an asynchronous continuation and listeners,
+ * which CIB would run, are refused with their own codes. It has no field for the Message or Operation it names either,
+ * which CIB never reads, so those are reported.
  */
 function messageThrow(ctx: ReadContext, event: ElementRecord, definition: ElementRecord): KernelJson {
-  const binding = declaredImplementation(ctx, definition) === null ? null : effectBinding(ctx, definition);
+  const id = optionalId(event);
+  const declared = declaredImplementation(ctx, definition);
+  if (declared !== null && declared.name !== "delegateExpression") {
+    throw new ReadRefusal(ReadRefusalCode.ThrowMessageImplementation, id, `camunda:${declared.name}`);
+  }
+  const refusals: ReadonlyArray<readonly [boolean, ReadRefusalCode, string]> = [
+    [ctx.attribute(definition, "resultVariable") !== null, ReadRefusalCode.ThrowMessageResultVariable, "camunda:resultVariable"],
+    [ctx.extensions(event, "inputOutput").length > 0, ReadRefusalCode.ThrowMessageIoMapping, "camunda:inputOutput"],
+    [["async", "asyncBefore", "asyncAfter"].some((name) => ctx.attribute(event, name) !== null),
+      ReadRefusalCode.ThrowMessageAsynchronous, "camunda:asyncBefore or asyncAfter"],
+    [ctx.extensions(event, "executionListener").length > 0, ReadRefusalCode.ThrowMessageListener, "camunda:executionListener"],
+  ];
+  for (const [present, code, evidence] of refusals) if (present) throw new ReadRefusal(code, id, evidence);
+  const binding = declared === null ? null : effectBinding(ctx, definition);
   if (reference(definition, "messageRef", "bpmn:Message") !== null) {
     ctx.noteNotCarried({ element: optionalId(event), fact: "messageRef" });
   }

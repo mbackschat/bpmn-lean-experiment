@@ -70,12 +70,6 @@ export const rows: readonly Row[] = [
     mutate: (program) => terminatingCalledProcess(withOptions(program, { abnormalScopeEnd: "withoutOutflow" })),
     control: (program) => terminatingCalledProcess(withOptions(program, completesNormally)),
   },
-  {
-    code: "profile.messageThrowForms.cibForms",
-    description: "CIB's message throw forms",
-    mutate: option({ messageThrowForms: "cibForms" }),
-    control: option({ messageThrowForms: "refused" }),
-  },
 ];
 
 refusalTests("profile", rows);

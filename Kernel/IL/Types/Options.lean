@@ -312,7 +312,7 @@ inductive MessageThrowForms where
   /-- BPMN 2.0.2 Tables 10.88 and 10.89: a Message throw sends a Message and names no transport, so it is refused. -/
   | refused
   /-- CIB runs a Message throw with a declared implementation as a Service Task and passes on one without
-  (`BpmnParse.java:1643-1659`, `3174-3189`). -/
+  (`BpmnParse.java:1643-1659`, `3174-3189`; CIB-EXT-0039, CIB-INT-0027). -/
   | cibForms
   deriving DecidableEq, Repr
 

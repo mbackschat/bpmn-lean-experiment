@@ -171,7 +171,6 @@ Superseded first-profile restrictions: the boundary, catch and start profiles ea
 | PC-MESSAGE-01 | Expression names on different Messages of one event scope, refused as `message.expressionNames` also where CIB deploys them; a nameless Receive Task under `messageNames = addresses` (work admission). |
 | PC-MESSAGE-03 | Payload catches in branches and nested work; the runner does not yet deliver payloads, so no CIB evidence. |
 | PC-MESSAGE-06 | Interrupting Message Event Sub-Processes (refused). |
-| PC-MESSAGE-09 | Modeled Message throws and Message End (`throw.message`, see [propagation](PROPAGATION-SEMANTICS-SPEC.md)). |
 | PC-SIGNAL-01 to PC-SIGNAL-04 | Every Signal trigger. |
 | PC-CONDITION-03, PC-CONDITION-04 | Event-Based Gateway arms true at once, which CIB picks in a per-JVM arbitrary order ([#79](https://github.com/mbackschat/bpmn-lean-experiment/issues/79)); a completion's writes read by its own boundaries ([CIB-DEV-0005][r-dev-0005]); Event Sub-Process starts of one scope with one condition, which CIB refuses at deployment. |
 | PC-CONDITION-02 | Root Conditional starts (`start.condition`). |

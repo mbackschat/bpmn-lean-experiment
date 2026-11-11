@@ -39,6 +39,17 @@ def signalThrow (options : ProfileOptions) (site : ThrowSite) (record : SignalTh
     carried <|> site.signalAddress record.signalRef record.name <|> site.mappings record.payload <|>
       record.businessKey.bind (businessKey site)
 
+/-- A Message throw (PC-MESSAGE-09). BPMN 2.0.2 Tables 10.88 and 10.89 send a Message and name no transport, so the
+standards profile refuses it bound, by a CIB handler attribute, or unbound, where passing on would drop the send;
+`MessageThrowForms.cibForms` runs both of CIB's forms (CIB-EXT-0039, CIB-INT-0027). Its Data Input Associations are
+refused under every profile: CIB never executes them. -/
+def messageThrow (options : ProfileOptions) (record : MessageThrow) : Option String :=
+  if !record.payload.isEmpty then some "throw.message.payload"
+  else match options.messageThrowForms, record.binding with
+    | .refused, some _ => some "throw.message.bound"
+    | .refused, none => some "throw.message.unbound"
+    | .cibForms, _ => none
+
 /-- `inTransaction` says whether the throw's parent is a Transaction: a Cancel End is used only within a Transaction
 Sub-Process (BPMN 2.0.2 §10.3.5, §10.5.5 Cancel Event; `BpmnParse#parseEndEvents` refuses it elsewhere) (PC-TX-02). -/
 def throwRecord (options : ProfileOptions) (site : ThrowSite) (inTransaction : Bool) : Throw → Option String
@@ -50,7 +61,7 @@ def throwRecord (options : ProfileOptions) (site : ThrowSite) (inTransaction : B
     | none => none
   | .escalation _ => none
   | .terminate => none
-  | .message _ => some "throw.message"
+  | .message record => messageThrow options record
   | .signal record => signalThrow options site record
   | .compensation record =>
     if record.activity.isSome then some "throw.compensation.activity"

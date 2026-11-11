@@ -792,6 +792,16 @@ BPMN Table 10.101 lets `timeCycle` stand on any Timer Event but states nothing a
 
 **Boundary:** Normal-flow catches, Event-Based Gateway arms, interrupting boundaries and interrupting Event Sub-Process starts, ISO and Cron cycles alike. A root Timer start's cycle is population semantics instead, each due instant its own occurrence ([CIB-INT-0029](#cib-int-0029--a-timer-start-counts-from-its-deployment-and-fires-each-occurrence-once-while-the-deployment-is-current), PC-TIMER-04).
 
+### CIB-INT-0027 — an unbound Message throw passes its token on
+
+**Status:** Recorded bounded interpretation from the pinned source for `MessageThrowForms.cibForms`; selected by the cibseven profiles
+
+BPMN 2.0.2 Tables 10.88 and 10.89 have a Message End or Intermediate throw send its Message to a Participant, which a Message Flow may identify (Table 10.1), and §13.5.6 sends it at the End; `tMessageEventDefinition` carries only `messageRef` and `operationRef` (`Semantic.xsd:999-1008`), so the standard names no sending technology for a throw Event, and a Message Flow names a Participant, not a transport. CIB Seven `2.2.0` gives a Message throw that declares no `camunda:class`, `delegateExpression`, `expression` or `type` the `IntermediateThrowNoneEventActivityBehavior`, which leaves at once, and reads neither `messageRef`, `operationRef` nor a Message Flow (`BpmnParse.java:1654-1659`, `3185-3189`). Under `cibForms` the kernel does the same: the throw passes its token on as a None throw does, an End consumes it, and no send, effect or Message is created. The standards profile refuses the form (`throw.message.unbound`), since passing on would drop the send BPMN requires.
+
+**Evidence:** The cited source; the retained [unbound-throws-pass-through](../scenarios/open-rows/message-throw-unbound/README.md) answer, in which a throw naming only a Message, a throw that is the source of a Message Flow and a Message End naming only a Message all pass and the instance completes; `packages/kernel/test/message-throw.test.ts`.
+
+**Boundary:** Message Intermediate throws and Message End Events without a handler attribute. Their Data Input Associations, `camunda:inputOutput`, asynchronous continuations and execution listeners are refused (`throw.message.payload`, `throw.message.ioMapping`, `throw.message.asynchronous`, `throw.message.listener`). A Message Flow or a `messageRef` never creates a send.
+
 ### CIB-INT-0028 — a Signal is addressed by its name
 
 **Status:** Recorded bounded interpretation from the pinned source for `SignalNames.addresses`; selected by the cibseven profiles
@@ -1692,6 +1702,16 @@ Under CIB-EXT-0001 (CIB-EXT-0023 for a Send Task) CIB's effect wait is its `asyn
 **Evidence:** The cited source; the retained effect-host witnesses of `timer-boundary-hosts`, `message-boundary-interrupting` and `conditional-boundary-hosts`, in which the kernel holds the host's boundary subscriptions open where CIB holds none.
 
 **Boundary:** Timer, Message and Conditional boundaries (Signal boundaries once admitted) of a CIB-EXT-0001 or CIB-EXT-0023 effect host under the cibseven profiles. Error boundaries agree. Not an operational detail, since Timer firings and Message acceptance are required observations.
+
+### CIB-EXT-0039 — a Message throw performed by a configured handler
+
+**Status:** Selected bounded extension for `MessageThrowForms.cibForms`; selected by the cibseven profiles
+
+BPMN 2.0.2 names no sending technology for a Message throw Event (Tables 10.88 and 10.89; `tMessageEventDefinition`, `Semantic.xsd:999-1008`, has no `implementation`). CIB Seven `2.2.0` parses a Message throw whose event definition declares `camunda:class`, `delegateExpression`, `expression` or `type` as a Service Task, "same behavior as service task" (CAM-436; `BpmnParse.java:1643-1653`, `3174-3184`), without reading `messageRef`, `operationRef` or a Message Flow. Under `cibForms` the kernel reads the event definition's `camunda:delegateExpression` into an effect binding as for a Send Task under [CIB-EXT-0023](#cib-ext-0023--send-task-performed-by-a-configured-handler), matched on the delegate alone since an event definition has no `implementation`. The throw's occurrence opens one effect item with no arguments and waits for its result: a success, which carries no values since a throw Event has no output mappings, passes the token on or consumes it at an End; a business failure raises its Error from the throw's occurrence, which has no boundaries, so the search starts at the throw's scope; a technical failure opens an incident under CIB-EXT-0013 whose retry reopens the same item, so one modeled send keeps one occurrence. CIB runs the delegate inside the command that reaches the throw; the kernel's effect wait is the mapping [CIB-OP-0002](#cib-op-0002--synchronous-cib-delegate-transaction-mapped-to-a-durable-effect-boundary) makes for a Service Task. The standards profile refuses the form (`throw.message.bound`).
+
+**Evidence:** The cited source; the retained [message-throw-bound](../scenarios/open-rows/message-throw-bound/README.md) answers `both-sends-succeed`, `intermediate-send-refused` and `end-send-refused`; `packages/kernel/test/message-throw.test.ts`. The [retry witness](../scenarios/open-rows/message-throw-retry/README.md) has no CIB answer, since a throw without an asynchronous continuation fails its command, and checks the single occurrence in both kernels.
+
+**Boundary:** A `camunda:delegateExpression` on a Message Intermediate throw's or Message End's event definition. `camunda:class`, `expression` and `type` (`throw.message.implementation`), `camunda:resultVariable` (`throw.message.resultVariable`), `camunda:inputOutput`, asynchronous continuations, execution listeners and Data Input Associations are refused. `MessageThrow` carries no handler key, so CIB-LIM-0017's refusal of a declared name equal to the delegate's root identifier does not reach a throw; a program declaring such a name is outside the claim.
 
 ### CIB-EXT-0040 — a Signal throw carries `camunda:in` variables and a business key
 

@@ -1320,30 +1320,6 @@
     ]
   },
   {
-    "evidence": "scenarios/open-rows/message-throw-bound/both-sends-succeed.cibseven-evidence.json",
-    "owners": [
-      "PC-MESSAGE-09"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/message-throw-bound/end-send-refused.cibseven-evidence.json",
-    "owners": [
-      "PC-MESSAGE-09"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/message-throw-bound/intermediate-send-refused.cibseven-evidence.json",
-    "owners": [
-      "PC-MESSAGE-09"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/message-throw-unbound/unbound-throws-pass-through.cibseven-evidence.json",
-    "owners": [
-      "PC-MESSAGE-09"
-    ]
-  },
-  {
     "evidence": "scenarios/open-rows/multi-instance-activity-mapping-scope/sequential-loop-counter-async.cibseven-evidence.json",
     "owners": [
       "CIB-LIM-0019"

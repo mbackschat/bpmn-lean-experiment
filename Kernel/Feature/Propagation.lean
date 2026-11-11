@@ -414,6 +414,15 @@ def throwSignal (ctx : Ctx) (payload : EventPayload) (record : SignalThrow) (ori
   let intent : BroadcastIntent := { address, variables, businessKey, origin := throwerRef state origin }
   .ok ({ fired with outbox := fired.outbox ++ [intent] }.signal (.complete occurrence.id (throwLeave payload) [] .outward))
 
+/-- A Message throw under `MessageThrowForms.cibForms` (PC-MESSAGE-09): unbound, it passes its token on, as CIB's
+`IntermediateThrowNoneEventActivityBehavior` does (CIB-INT-0027); bound, it opens one effect item, as CIB runs its
+delegate as a Service Task's (CIB-EXT-0039), and `Kernel.Feature.Work.effectResult` answers it: a throw Event has no
+envelope, so a success leaves with no outputs and a business failure raises from the throw's occurrence. -/
+def throwMessage (record : MessageThrow) (occurrence : Occurrence) (leave : State → State) (state : State) : State :=
+  match record.binding with
+  | none => leave state
+  | some binding => state.openItem (.effect { protocol := binding.protocol, operation := binding.operation }) occurrence
+
 def arriveThrow (ctx : Ctx) (header : Header) (payload : EventPayload) (thrown : Throw) (occurrence : Occurrence)
     (state : State) : Outcome :=
   let origin : Origin := { element := header.id, scope := occurrence.scope, activation := occurrence.activation }
@@ -427,8 +436,7 @@ def arriveThrow (ctx : Ctx) (header : Header) (payload : EventPayload) (thrown :
     .ok ((leave state).signal (.raise (.error record.code (record.message.bind ValueSource.literal?)) origin))
   -- An Escalation is not critical: its thrower leaves after the search, unless the catcher interrupts it (`throwerLeaves`).
   | .escalation record => .ok (state.signal (.raise (.escalation record.code) origin))
-  -- Admission refuses it (`throw.message`).
-  | .message _ => .error (.unsupported "throw-message")
+  | .message record => .ok (throwMessage record occurrence leave state)
   | .signal record => throwSignal ctx payload record origin occurrence state
   | .compensation record => throwCompensation header payload record occurrence state
   | .cancel => .ok ((leave state).signal (.raise .cancel origin))

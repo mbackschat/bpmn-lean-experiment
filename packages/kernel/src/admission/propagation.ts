@@ -1,7 +1,7 @@
 /** Admission of throw Events, transcribed from `Kernel/Admission/Propagation.lean`. A refusal carries a stable code. */
 import {
-  ExpressionTag, MappingDialect, SignalPayload, ThrowTag, ValueSourceTag, assertNever, type Expression, type Mapping,
-  type ProfileOptions, type QName, type SignalThrow, type SignalTrigger, type Throw, type ValueSource,
+  ExpressionTag, MappingDialect, MessageThrowForms, SignalPayload, ThrowTag, ValueSourceTag, assertNever, type Expression,
+  type Mapping, type MessageThrow, type ProfileOptions, type QName, type SignalThrow, type SignalTrigger, type Throw, type ValueSource,
 } from "../il/types.js";
 
 /**
@@ -45,6 +45,23 @@ function signalThrow(options: ProfileOptions, site: ThrowSite, record: SignalThr
 }
 
 /**
+ * A Message throw (PC-MESSAGE-09). BPMN 2.0.2 Tables 10.88 and 10.89 send a Message and name no transport, so the
+ * standards profile refuses it bound, by a CIB handler attribute, or unbound, where passing on would drop the send;
+ * `MessageThrowForms.CibForms` runs both of CIB's forms (CIB-EXT-0039, CIB-INT-0027). Its Data Input Associations are
+ * refused under every profile: CIB never executes them.
+ */
+function messageThrow(options: ProfileOptions, record: MessageThrow): string | null {
+  if (record.payload.length > 0) return "throw.message.payload";
+  switch (options.messageThrowForms) {
+    case MessageThrowForms.Refused:
+      return record.binding === null ? "throw.message.unbound" : "throw.message.bound";
+    case MessageThrowForms.CibForms:
+      return null;
+  }
+  return assertNever(options.messageThrowForms);
+}
+
+/**
  * `inTransaction` says whether the throw's parent is a Transaction: a Cancel End is used only within a Transaction
  * Sub-Process (BPMN 2.0.2 §10.3.5, §10.5.5 Cancel Event; `BpmnParse#parseEndEvents` refuses it elsewhere) (PC-TX-02).
  */
@@ -61,7 +78,7 @@ export function throwRecord(options: ProfileOptions, site: ThrowSite, inTransact
         ? "throw.error.message"
         : null;
     case ThrowTag.Message:
-      return "throw.message";
+      return messageThrow(options, thrown.payload);
     case ThrowTag.Signal:
       return signalThrow(options, site, thrown.payload);
     case ThrowTag.Compensation:

@@ -31,6 +31,12 @@ export enum ReadRefusalCode {
   DataAssociationShape = "reader.dataAssociationShape",
   SignalWithoutReference = "reader.signalWithoutReference",
   ThrowWithoutCode = "reader.throwWithoutCode",
+  /** A Message throw's CIB attributes the IL has no field for, which CIB would run (PC-MESSAGE-09). */
+  ThrowMessageImplementation = "throw.message.implementation",
+  ThrowMessageResultVariable = "throw.message.resultVariable",
+  ThrowMessageIoMapping = "throw.message.ioMapping",
+  ThrowMessageAsynchronous = "throw.message.asynchronous",
+  ThrowMessageListener = "throw.message.listener",
   MultiInstanceWithoutCount = "reader.multiInstanceWithoutCount",
   EmptyLoopCardinality = "reader.emptyLoopCardinality",
   ConditionExpressionType = "reader.conditionExpressionType",

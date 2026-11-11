@@ -13,7 +13,6 @@ import {
   CompensationHandlerFailureTag,
   CompensationOrder,
   Evaluator,
-  MessageThrowForms,
   MultiInstanceCounters,
   MultiInstanceInputFailure,
   assertNever,
@@ -52,7 +51,5 @@ export function options(abnormalScope: boolean, loops: boolean, selected: Profil
   if (selected.callBindingTime === CallBindingTime.Invocation) return "profile.callBindingTime.invocation";
   if (selected.timerZone !== null) return "profile.timerZone";
   if (abnormalScope && selected.abnormalScopeEnd === AbnormalScopeEnd.WithoutOutflow) return "profile.abnormalScopeEnd.withoutOutflow";
-  const loop = multiInstance(loops, selected);
-  if (loop !== null) return loop;
-  return selected.messageThrowForms === MessageThrowForms.CibForms ? "profile.messageThrowForms.cibForms" : null;
+  return multiInstance(loops, selected);
 }

@@ -1,7 +1,7 @@
 /**
  * Refusal tests of `admission/propagation.ts`: an End Event throws only what `feature/propagation.ts` raises. An Error
- * message must be literal, a Compensation names no Activity and waits for its handlers, a Message throw has no kernel
- * meaning, and a Signal throw carries `camunda:in` copies and a business key only where a Signal carries variables.
+ * message must be literal, a Compensation names no Activity and waits for its handlers, a Message throw runs only in
+ * CIB's forms and carries no Data Input Associations, and a Signal throw carries `camunda:in` copies and a business key only where a Signal carries variables.
  */
 import {
   append, computed, end, flow, literalValue, mapping, qName, refusalTests, replace, scope, start, task, text, variable, withFlows,
@@ -25,6 +25,12 @@ const signalThrow = (over: Json): Json => ({
   },
 });
 
+/** A Message throw bound to `binding`, or unbound, with `payload` as its Data Input Associations. */
+const messageThrow = (binding: Json | null, payload: Json[] = []): Json => ({ message: { payload: { binding, payload } } });
+const binding: Json = { protocol: "urn:p", operation: "urn:send" };
+/** The profile selection that runs CIB's Message throw forms (CIB-EXT-0039, CIB-INT-0027). */
+const cibForms: Json = { messageThrowForms: "cibForms" };
+
 /** The profile selection under which a Signal carries variables read at the Events level (CIB-EXT-0040, CIB-EXT-0043). */
 const carrying: Json = { signalPayload: "variables", evaluator: "juel" };
 
@@ -38,10 +44,22 @@ export const rows: readonly Row[] = [
     control: throwing(errorThrow(text("failed"))),
   },
   {
-    code: "throw.message",
-    description: "a Message throw",
-    mutate: throwing({ message: { payload: { binding: null, payload: [] } } }),
-    control: throwing("none"),
+    code: "throw.message.unbound",
+    description: "a Message throw without a binding under the standards reading",
+    mutate: throwing(messageThrow(null)),
+    control: (program) => withOptions(throwing(messageThrow(null))(program), cibForms),
+  },
+  {
+    code: "throw.message.bound",
+    description: "a Message throw bound to a handler under the standards reading",
+    mutate: throwing(messageThrow(binding)),
+    control: (program) => withOptions(throwing(messageThrow(binding))(program), cibForms),
+  },
+  {
+    code: "throw.message.payload",
+    description: "a Message throw's Data Input Associations, under CIB's forms too",
+    mutate: (program) => withOptions(throwing(messageThrow(binding, [mapping("m", variable("order"), "dataAssociation")]))(program), cibForms),
+    control: (program) => withOptions(throwing(messageThrow(binding))(program), cibForms),
   },
   {
     code: "signal.unspecified",
