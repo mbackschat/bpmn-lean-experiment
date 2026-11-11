@@ -1,0 +1,406 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "call-raised-outputs-nested-escalation-caught-at-busy-root",
+    "sha256": "5fafbdbd36055210720aeb96711c931a3615f9190c541c3cd89208aa516b9cd6"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0",
+    "sha256": "4ba42187245bb54385253541eb59396076d54b24469a2cdb7550084e9bdadaa8"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232",
+    "timeZone": "UTC"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "seed",
+            "value": {
+              "kind": "string",
+              "value": "a"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-wiring-fails",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "progress",
+            "value": {
+              "kind": "string",
+              "value": "a"
+            }
+          },
+          {
+            "name": "seed",
+            "value": {
+              "kind": "string",
+              "value": "a"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-recover",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "progress",
+            "value": {
+              "kind": "string",
+              "value": "a"
+            }
+          },
+          {
+            "name": "seed",
+            "value": {
+              "kind": "string",
+              "value": "a"
+            }
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-accept",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": [
+          {
+            "name": "progress",
+            "value": {
+              "kind": "string",
+              "value": "a"
+            }
+          },
+          {
+            "name": "seed",
+            "value": {
+              "kind": "string",
+              "value": "a"
+            }
+          }
+        ]
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "s01-start",
+        "tasks": [
+          {
+            "elementId": "UserTask_Frame",
+            "name": "Build the frame"
+          },
+          {
+            "elementId": "UserTask_Wiring",
+            "name": "Wire the unit"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s02-wiring-fails",
+        "tasks": [
+          {
+            "elementId": "UserTask_Recover",
+            "name": "Recover the build"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-recover",
+        "tasks": [
+          {
+            "elementId": "UserTask_AfterBuild",
+            "name": "Accept the unit"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-accept",
+        "tasks": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "s01-start",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s02-wiring-fails",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s03-recover",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "s04-accept",
+        "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "s01-start",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s02-wiring-fails",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s03-recover",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "s04-accept",
+        "state": "COMPLETED"
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "committed"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "s01-start",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "seed",
+            "value": {
+              "kind": "string",
+              "value": "a"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:18:CallActivity_Build:1",
+              "elementId": "UserTask_Frame",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_Build",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Build the frame",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          },
+          {
+            "id": {
+              "processInstanceId": "call:42:call:10:Instance_1:18:CallActivity_Build:1:17:CallActivity_Wire:1",
+              "elementId": "UserTask_Wiring",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_Wire",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Wire the unit",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s02-wiring-fails",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "progress",
+            "value": {
+              "kind": "string",
+              "value": "a"
+            }
+          },
+          {
+            "name": "seed",
+            "value": {
+              "kind": "string",
+              "value": "a"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "call:10:Instance_1:18:CallActivity_Build:1",
+              "elementId": "UserTask_Recover",
+              "activation": 1
+            },
+            "definition": {
+              "key": "Process_Build",
+              "version": null,
+              "versionTag": null,
+              "deployment": null,
+              "tenant": null,
+              "sourceSha256": null
+            },
+            "detail": {
+              "kind": "userTask",
+              "name": "Recover the build",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s03-recover",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "running",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "progress",
+            "value": {
+              "kind": "string",
+              "value": "a"
+            }
+          },
+          {
+            "name": "seed",
+            "value": {
+              "kind": "string",
+              "value": "a"
+            }
+          }
+        ],
+        "openWaits": [
+          {
+            "id": {
+              "processInstanceId": "Instance_1",
+              "elementId": "UserTask_AfterBuild",
+              "activation": 1
+            },
+            "definition": null,
+            "detail": {
+              "kind": "userTask",
+              "name": "Accept the unit",
+              "assignee": null,
+              "candidateUsers": [],
+              "candidateGroups": [],
+              "formKey": null,
+              "formFields": [],
+              "dueDate": null,
+              "followUpDate": null,
+              "priority": null,
+              "inputs": []
+            },
+            "input": "command"
+          }
+        ]
+      },
+      {
+        "kind": "command",
+        "commandId": "s04-accept",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Instance_1",
+        "status": "completed",
+        "logicalTimeMs": 0,
+        "variables": [
+          {
+            "name": "progress",
+            "value": {
+              "kind": "string",
+              "value": "a"
+            }
+          },
+          {
+            "name": "seed",
+            "value": {
+              "kind": "string",
+              "value": "a"
+            }
+          }
+        ],
+        "openWaits": []
+      }
+    ]
+  }
+}
