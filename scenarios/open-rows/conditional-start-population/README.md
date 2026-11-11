@@ -4,7 +4,7 @@ Answer-free population schedules for [PC-CONDITION-02](../../../docs/PRACTICAL-C
 
 An `evaluateConditions` step carries the submitted variables, optionally one definition selected by process key or deployment ordinal, and no start Event: every Conditional start in scope is evaluated. The started instances' identities are derived by the engine, so no schedule addresses one of them.
 
-The CIB schedules run under `cibseven-2.2.0` with no source overlay; their CIB answer comes from the CIB runner's population mode in the hosted lane, so none is retained yet. [standards-conditional-start-refused](standards-conditional-start-refused.population-scenario.json) is kernel-only under `bpmn-2.0.2`, whose provenance names no CIB revision. It stands for the refusal fixture of the row, which belongs under `packages/kernel/test/fixtures` and is outside this directory.
+The CIB schedules run under `cibseven-2.2.0` with no source overlay; their CIB answer comes from the CIB runner's population mode in the hosted lane and is retained beside each schedule. [standards-conditional-start-refused](standards-conditional-start-refused.population-scenario.json) is kernel-only under `bpmn-2.0.2`, whose provenance names no CIB revision. [evaluate-replay-later-time](evaluate-replay-later-time.population-scenario.json) is kernel-only under `cibseven-2.2.0`, the profile that admits a Conditional start, and names no CIB revision either: CIB keeps no command ledger, so a retained CIB answer to it would say nothing about the kernel's contract. It stands for the refusal fixture of the row, which belongs under `packages/kernel/test/fixtures` and is outside this directory.
 
 ## Models
 
@@ -29,5 +29,6 @@ The schedules also bind four models of other directories:
 | [no-conditional-start-in-scope](no-conditional-start-in-scope.population-scenario.json) | order-intake | CIB | An evaluation over a population whose only definition has Message Starts. |
 | [one-start-fails-others-start](one-start-fails-others-start.population-scenario.json) | routed-orders | CIB | `amount` 2500 and `urgent` as a present null: the first start's condition holds and the second's reads a null. |
 | [standards-conditional-start-refused](standards-conditional-start-refused.population-scenario.json) | large-order | kernel-only, `bpmn-2.0.2` | The standards profile deploys a Conditional Start and is asked to evaluate it. |
+| [evaluate-replay-later-time](evaluate-replay-later-time.population-scenario.json) | routed-orders | kernel-only, `cibseven-2.2.0` | One evaluation over `amount` 2500 and `urgent` true at 0, then the identical step at 60,000 ms. |
 
 The schedules carry no expected deployment, instance, task or resolution.

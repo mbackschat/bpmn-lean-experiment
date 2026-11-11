@@ -7,7 +7,7 @@
  * different deployments, each driven by its own inputs, and Message publications routed with exact cardinality to a
  * waiting subscription, else to a root Message start (`publish`,
  * [specification](../../../docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md)). Every command is answered once: the
- * ledger keeps each command's result under the digest of its canonical wire form, so the same command again answers
+ * ledger keeps each command's result under the digest of its content, so the same command again answers
  * its recorded result and changes nothing, and the same command identifier with other content is
  * `rejected command-content-mismatch` (population contract §7). Timer-start occurrences fire once each while their
  * deployment is current (`timerStart`), Conditional root starts are evaluated over submitted variables, each start that

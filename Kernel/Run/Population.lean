@@ -178,7 +178,7 @@ def instanceStimulus (declared : List Declared) (scripts : List Script) (json : 
 /-- The population's stimuli, in scenario order: the definitions no `deploy` step names deploy at 0 in list order,
 then every step at its logical time, which a step gives as `at` or inherits from the step before (0 for the first) and
 which never decreases. Each deployment takes the next of `sources`, which must all be taken. `digests` holds each
-step's digest of its canonical wire form, which the harness computes. -/
+step's digest of its content, which the harness computes. -/
 def stimuliOfPopulation (declared : List Declared) (sources : List DeploymentSource) (steps : List Json)
     (digests : List String) : Except String (List Population.Stimulus) := do
   unless digests.length == steps.length do throw s!"{steps.length} steps, {digests.length} digests"

@@ -197,7 +197,7 @@ export interface StepResult {
   readonly resolution: Resolution;
 }
 
-/** A command the population answered, under the digest of its canonical wire form (contract §7). */
+/** A command the population answered, under the digest of its content (contract §7). */
 export interface LedgerEntry {
   readonly commandId: string;
   readonly digest: string;
@@ -241,7 +241,7 @@ export enum StimulusTag {
 
 /**
  * One population scenario stimulus, in scenario order: a deployment, an input for the instance of `script`, or a
- * command with its logical time and the digest of its canonical wire form, which the harness computes.
+ * command with its logical time and the digest of its content, which the harness computes.
  */
 export type Stimulus =
   | {

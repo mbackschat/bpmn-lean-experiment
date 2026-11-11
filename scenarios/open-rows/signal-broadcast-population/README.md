@@ -4,7 +4,7 @@ Answer-free population schedules for [PC-SIGNAL-02](../../../docs/PRACTICAL-CIB7
 
 A `broadcast` step addresses every eligible receiver by a Signal name (the `cibseven-2.2.0` schedules) or by the `signalRef` of the Signal element (the `bpmn-2.0.2` schedules), carries no business key and, here, no variables. A thrown Signal is not a step: it happens when the instance reaches the throw. The started instances' identities are derived by the engine, so no schedule addresses one of them.
 
-The CIB schedules run under `cibseven-2.2.0` with no source overlay; their CIB answer comes from the CIB runner's population mode in the hosted lane, so none is retained yet. The kernel-only schedules run under `bpmn-2.0.2`, whose provenance names no CIB revision: they probe meanings that CIB has no counterpart for (the standards reading of a duplicate Signal Start, the linearization of two receivers of one State, an explicit discovery order, the command ledger).
+The CIB schedules run under `cibseven-2.2.0` with no source overlay; their CIB answer comes from the CIB runner's population mode in the hosted lane and is retained beside each schedule. The kernel-only schedules run under `bpmn-2.0.2`, whose provenance names no CIB revision: they probe meanings that CIB has no counterpart for (the standards reading of a duplicate Signal Start, the linearization of two receivers of one State, an explicit discovery order, the command ledger).
 
 ## Models
 
@@ -43,5 +43,6 @@ The schedules also bind five models of [signal-start-compositions](../signal-sta
 | [broadcast-within-state-order](broadcast-within-state-order.population-scenario.json) | arm-order | kernel-only, `bpmn-2.0.2` | One broadcast names both arms of one Event-Based Gateway, in the defined linearization. |
 | [broadcast-explicit-order](broadcast-explicit-order.population-scenario.json) | arm-order | kernel-only, `bpmn-2.0.2` | The same broadcast with an explicit `order` that names the second arm first. |
 | [broadcast-replay](broadcast-replay.population-scenario.json) | shift-signals | kernel-only, `bpmn-2.0.2` | One broadcast, the identical broadcast again, then the same `commandId` addressing the other Signal. |
+| [broadcast-replay-later-time](broadcast-replay-later-time.population-scenario.json) | shift-signals | kernel-only, `bpmn-2.0.2` | One broadcast at 0 and the identical broadcast at 60,000 ms. |
 
 The schedules carry no expected deployment, instance, task, variable or fan-out entry.

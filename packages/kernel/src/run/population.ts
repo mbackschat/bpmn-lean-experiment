@@ -231,7 +231,7 @@ function instanceInput(json: unknown, at: number | null, where: string): Scenari
  * The population's stimuli, in scenario order: the definitions no `deploy` step names deploy at 0 in list order, then
  * every step at its logical time, which a step gives as `at` or inherits from the step before (0 for the first) and
  * which never decreases. Each deployment takes the next of `sources`, which must all be taken. `digests` holds each
- * step's digest of its canonical wire form, which the harness computes.
+ * step's digest of its content, which the harness computes.
  */
 export function stimuliOfPopulation(declared: readonly Declared[], sources: readonly DeploymentSource[], steps: readonly unknown[],
   digests: readonly string[], where: string): Stimulus[] {

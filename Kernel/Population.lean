@@ -19,7 +19,7 @@ while their deployment is current (`timerStart`), Conditional root starts evalua
 start that holds starting its own instance (`evaluateConditions`), and Signals broadcast to every receiver, each its
 own unit of commitment, the intents every committed step leaves cascading depth-first after it (`broadcast`), an
 instance input's into `inputCascades`. Every command is
-answered once: the ledger keeps each command's result under the digest of its canonical wire form, so the same command
+answered once: the ledger keeps each command's result under the digest of its content, so the same command
 again answers its recorded result and changes nothing, and the same command identifier with other content is
 `rejected command-content-mismatch` (population contract §7).
 

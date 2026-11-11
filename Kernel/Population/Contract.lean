@@ -128,7 +128,7 @@ structure StepResult where
   atMs : Nat
   resolution : Resolution
 
-/-- A command the population answered, under the digest of its canonical wire form (contract §7). -/
+/-- A command the population answered, under the digest of its content (contract §7). -/
 structure LedgerEntry where
   commandId : String
   digest : String
@@ -156,7 +156,7 @@ structure Instance where
 
 /-- One population scenario stimulus, in scenario order: a deployment, an input for the instance `instanceId` (one the
 input starts, or one a step or a command started before), or a command with its logical time and the digest of its
-canonical wire form, which the harness computes. -/
+content, which the harness computes. -/
 inductive Stimulus where
   | deploy (definitionRef : String) (ref : DeploymentRef) (program : Program) (atMs : Nat)
   /-- A deployment whose program the reader or the assembly refused with `code`. -/

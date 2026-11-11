@@ -4,7 +4,7 @@ Answer-free population schedules for [PC-TIMER-04](../../../docs/PRACTICAL-CIB7-
 
 Logical time zero is the Unix epoch `1970-01-01T00:00:00Z`. A `timerStart` step names the deployment by its deploy ordinal, the Start Event and the due instant of one occurrence, and its logical time `at` is the firing time. A duration and an undated cycle count from the deployment's logical time, so a deployment at 0 makes `PT1H` due at 3,600,000 ms. The started instances' identities are derived by the engine, so no schedule addresses one of them.
 
-The CIB schedules run under `cibseven-2.2.0` with no source overlay; their CIB answer comes from the CIB runner's population mode in the hosted lane, so none is retained yet. The two replay schedules are kernel-only under `bpmn-2.0.2`: CIB keeps no occurrence ledger, so a retained CIB answer to them would say nothing about the kernel's contract.
+The CIB schedules run under `cibseven-2.2.0` with no source overlay; their CIB answer comes from the CIB runner's population mode in the hosted lane and is retained beside each schedule. The three replay schedules are kernel-only under `bpmn-2.0.2`: CIB keeps no occurrence ledger, so a retained CIB answer to them would say nothing about the kernel's contract.
 
 ## Models
 
@@ -32,6 +32,7 @@ The schedules also bind two models of [timer-start-forms](../timer-start-forms/R
 | [duration-start-fired-late](duration-start-fired-late.population-scenario.json) | duration-start | CIB | The occurrence due at 3,600,000 ms fires at 3,660,000 ms. |
 | [cycle-start-late-firing](cycle-start-late-firing.population-scenario.json) | bounded-cycle-start | CIB | The cycle `R3/PT10M` fires its first occurrence at 25 minutes instead of 10, then its second occurrence at 25 minutes, then its third at 30. |
 | [timer-start-replay](timer-start-replay.population-scenario.json) | duration-start | kernel-only, `bpmn-2.0.2` | One firing and the identical step again. |
+| [timer-start-replay-later-time](timer-start-replay-later-time.population-scenario.json) | duration-start | kernel-only, `bpmn-2.0.2` | One firing at 3,600,000 ms and the identical step at 7,200,000 ms, after the occurrence is consumed. |
 | [timer-start-other-command-same-occurrence](timer-start-other-command-same-occurrence.population-scenario.json) | duration-start | kernel-only, `bpmn-2.0.2` | One firing and another command that fires the same occurrence. |
 
 The schedules carry no expected deployment, instance, task or resolution.

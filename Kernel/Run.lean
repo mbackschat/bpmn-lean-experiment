@@ -27,7 +27,7 @@ hostViews}`, one host view per committed input.
 `kernelRun --population <digests.json> <program.json>... <population-scenario.json>` prints the
 [engine-population result](../contracts/schemas/engine-population-result.schema.json) for a
 [population scenario](../contracts/schemas/engine-population-scenario.schema.json), one deployment source per
-deployment in deploy order (`Kernel.Run.Population`) and one digest of its canonical wire form per step, which the
+deployment in deploy order (`Kernel.Run.Population`) and one digest of its content per step, which the
 harness computes so that the kernel never reimplements canonical JSON or SHA-256. Its entry lives here because this is the one module that may import both
 registries; `Kernel.Run.Population` reads the scenario and renders the result. A source the reader or admission
 refuses is a refused deployment, a result; a malformed population scenario is a harness error with a stable code.

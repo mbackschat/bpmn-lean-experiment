@@ -1,0 +1,72 @@
+{
+  "kind": "populationScenario",
+  "id": "conditional-start-population-evaluate-replay-later-time",
+  "profile": "cibseven-2.2.0",
+  "definitions": [
+    {
+      "definitionRef": "routed-orders",
+      "bpmn": {
+        "id": "conditional-start-compositions-routed-orders",
+        "relativePath": "scenarios/open-rows/conditional-start-compositions/routed-orders.bpmn",
+        "sha256": "f661f5c037c14e40ed6cbaaaee20bdd73f73a00e46f239c8198bbcf375e2aaf7",
+        "sourceOverlay": null
+      }
+    }
+  ],
+  "steps": [
+    {
+      "kind": "evaluateConditions",
+      "commandId": "s01-evaluate",
+      "variables": [
+        {
+          "name": "amount",
+          "value": {
+            "kind": "integer",
+            "value": 2500
+          }
+        },
+        {
+          "name": "urgent",
+          "value": {
+            "kind": "boolean",
+            "value": true
+          }
+        }
+      ],
+      "at": 0
+    },
+    {
+      "kind": "evaluateConditions",
+      "commandId": "s01-evaluate",
+      "variables": [
+        {
+          "name": "amount",
+          "value": {
+            "kind": "integer",
+            "value": 2500
+          }
+        },
+        {
+          "name": "urgent",
+          "value": {
+            "kind": "boolean",
+            "value": true
+          }
+        }
+      ],
+      "at": 60000
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.5.2",
+      "BPMN 2.0.2 Clause 10.5.5",
+      "BPMN 2.0.2 Clause 13.2",
+      "BPMN 2.0.2 Clause 13.5.1",
+      "BPMN 2.0.2 Table 10.84",
+      "BPMN 2.0.2 Table 10.95"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

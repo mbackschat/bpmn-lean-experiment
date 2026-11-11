@@ -4,7 +4,7 @@ Answer-free population schedules for [PC-MESSAGE-02](../../../docs/PRACTICAL-CIB
 
 A `publish` step addresses a Message by its name (the `cibseven-2.2.0` schedules) or by its channel (the `bpmn-2.0.2` schedules), optionally within one definition selected by process key (the current deployment) or by deployment ordinal, and states its criteria as typed matches. The mode `startOnly` reaches only a Message Start, `executionsOnly` only a waiting catch and `any` a waiting catch first and a Message Start otherwise. The started instances' identities are derived by the engine, so no schedule addresses one of them.
 
-The CIB schedules run under `cibseven-2.2.0` with no source overlay; their CIB answer comes from the CIB runner's population mode in the hosted lane, so none is retained yet. The two replay schedules are kernel-only under `bpmn-2.0.2`: CIB keeps no command ledger, so a retained CIB answer to them would say nothing about the kernel's contract.
+The CIB schedules run under `cibseven-2.2.0` with no source overlay; their CIB answer comes from the CIB runner's population mode in the hosted lane and is retained beside each schedule. The three replay schedules are kernel-only under `bpmn-2.0.2`: CIB keeps no command ledger, so a retained CIB answer to them would say nothing about the kernel's contract.
 
 ## Models
 
@@ -34,6 +34,7 @@ The schedules also bind two models of other directories:
 | [delivery-variables-installed](delivery-variables-installed.population-scenario.json) | order-confirmation | CIB | The publication selects the one waiting instance by `orderId` and carries the variables `confirmedBy` and `packages`. |
 | [second-deployment-same-start-name-refused](second-deployment-same-start-name-refused.population-scenario.json) | order-intake, order-intake-copy | CIB | A second process key is deployed with a Message Start of the name `order-placed`, then that name is published. |
 | [start-replay-same-command](start-replay-same-command.population-scenario.json) | order-intake | kernel-only, `bpmn-2.0.2` | A start-only publication on the direct Message `Message_OrderPlaced`, then the identical step again. |
+| [start-replay-later-time](start-replay-later-time.population-scenario.json) | order-intake | kernel-only, `bpmn-2.0.2` | A start-only publication on the direct Message `Message_OrderPlaced` at 0, then the identical step at 60,000 ms. |
 | [start-replay-different-content](start-replay-different-content.population-scenario.json) | order-intake | kernel-only, `bpmn-2.0.2` | A start-only publication, then the same `commandId` on the direct Message `Message_OrderAmended`. |
 
 The schedules carry no expected deployment, instance, task, variable or resolution.
