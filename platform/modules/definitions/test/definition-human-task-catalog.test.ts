@@ -123,9 +123,34 @@ test("persists the exact accepted catalog atomically with its definition version
   });
 });
 
-test("refuses an absent or invalid required catalog before artifact or metadata writes", async () => {
+test("deploys a source without the structured rendering under the standards profile and stores no catalog", async () => {
+  await withRepository(async ({ repository }) => {
+    const artifacts = new MemoryArtifactStore();
+    const service = new DefinitionDeploymentService(
+      acceptedCompiler(),
+      artifacts,
+      repository,
+      { project: () => ({ kind: "absent" as const }) },
+    );
+
+    const result = await service.deploy({
+      bytes: source,
+      sourceId: "expense-exception-review.bpmn",
+      semanticProfile: profile,
+      expectedSha256: sourceSha256,
+    });
+
+    assert.equal(result.status, DefinitionDeploymentStatus.Deployed);
+    assert.deepEqual(result.diagnostics, []);
+    assert.equal(
+      await repository.getHumanTaskCatalog({ processId: catalog.processId, version: 1 }),
+      null,
+    );
+  });
+});
+
+test("refuses an invalid structured catalog before artifact or metadata writes", async () => {
   for (const projection of [
-    { kind: "absent" as const },
     { kind: "invalid" as const, evidence: "catalogContract" as const },
   ]) {
     await withRepository(async ({ repository }) => {

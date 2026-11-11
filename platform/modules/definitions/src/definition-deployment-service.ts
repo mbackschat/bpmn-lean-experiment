@@ -266,7 +266,9 @@ export class DefinitionDeploymentService {
       case "catalog":
         return { kind: "accepted", catalog: projection.catalog };
       case "absent":
-        return catalogRejection("Human Task catalog is required for structured Human Work");
+        // The structured-Human-Work profile became the standards profile in 3a10a909a, so a source opts into
+        // structured Human Work by carrying the project rendering, not by naming the profile.
+        return { kind: "accepted", catalog: null };
       case "invalid":
         return catalogRejection(`Human Task catalog is invalid: ${projection.evidence}`);
     }
