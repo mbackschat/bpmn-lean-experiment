@@ -12,8 +12,8 @@ import org.junit.Test;
 /**
  * CIB's refusals of a population command, told apart by the catalogued identifier its command logger gives a refusal
  * rather than by its wording: a publication reaching several candidates is `ambiguous`, one reaching none `noMatch`,
- * both rolled back; an evaluation without a Conditional start in scope is `rejected`, since CIB refuses it before it
- * changes any state.
+ * both rolled back; an evaluation without a Conditional start in scope and a start-only publication carrying a variable
+ * criterion are `rejected`, since CIB refuses each before it changes any state.
  */
 public class CibSevenPopulationRefusalTest {
 
@@ -38,6 +38,13 @@ public class CibSevenPopulationRefusalTest {
   @Test
   public void rejectsAnEvaluationWithoutAConditionalStartInScope() throws Exception {
     var step = step("scenarios/open-rows/conditional-start-population/no-conditional-start-in-scope", "s01-evaluate");
+    assertEquals("rejected", step.get("outcome").asText());
+  }
+
+  @Test
+  public void rejectsAStartOnlyPublicationCarryingAVariableCriterion() throws Exception {
+    var step = step("scenarios/open-rows/message-start-population/start-only-with-criteria",
+        "s01-publish-start-only-by-order");
     assertEquals("rejected", step.get("outcome").asText());
   }
 

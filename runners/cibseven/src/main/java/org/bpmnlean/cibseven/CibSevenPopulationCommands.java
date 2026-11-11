@@ -50,7 +50,17 @@ final class CibSevenPopulationCommands {
 
   private static final Pattern IDENTIFIER = Pattern.compile("(ENGINE-\\d{5}) ");
   private static final Set<String> SEVERAL_CANDIDATES = Set.of("ENGINE-13030", "ENGINE-13031");
-  private static final Set<String> NO_CONDITIONAL_START = Set.of("ENGINE-13042", "ENGINE-13043");
+  /**
+   * CIB's refusals of a population command raised before it changes any state, which the runner answers `rejected`
+   * (docs/CIB-OBSERVATION-POLICY.md#population-evidence): a start-only correlation carrying a variable criterion,
+   * `ENGINE-13026`, which the correlation builder refuses before it executes a command
+   * (`MessageCorrelationBuilderImpl.java:249-257`, `:332-336`; `CommandLogger.java:172-175`); and an evaluation
+   * without a Conditional start in scope, `ENGINE-13043` when no deployment holds a Conditional start subscription and
+   * `ENGINE-13042` when the named definition declares none (`DefaultConditionHandler.java:56`, `:96`;
+   * `CommandLogger.java:285-296`), before `EvaluateStartConditionCmd` instantiates anything
+   * (`EvaluateStartConditionCmd.java:54`, `:61-63`).
+   */
+  private static final Set<String> REFUSED_UNCHANGED = Set.of("ENGINE-13026", "ENGINE-13042", "ENGINE-13043");
 
   /** A command's outcome, its resolution when CIB names one, and the roots it started under their identities. */
   record Answer(CommandOutcome outcome, Resolution resolution, Map<String, String> started) {
@@ -95,7 +105,8 @@ final class CibSevenPopulationCommands {
    * `DefaultCorrelationHandler.java:46-71`); any other CIB failure rolls it back without a resolution. CIB raises its
    * two several-candidate refusals through its command logger, as `ENGINE-13030` for process definitions and
    * `ENGINE-13031` for executions (`CommandLogger.java:192-206`), and constructs each no-candidate refusal without an
-   * identifier (`CorrelateMessageCmd.java:73`, `:87`).
+   * identifier (`CorrelateMessageCmd.java:73`, `:87`). A refusal CIB raises before it changes any state
+   * ({@link #REFUSED_UNCHANGED}) is `rejected`.
    */
   Answer apply(PopulationCommand command, long atMs, Set<String> activities) {
     try {
@@ -109,6 +120,9 @@ final class CibSevenPopulationCommands {
       var several = SEVERAL_CANDIDATES.contains(identifier(mismatch));
       return new Answer(CibSevenEngineScenarioRunner.rolledBack(mismatch), several ? new Ambiguous() : new NoMatch(),
           Map.of());
+    } catch (ProcessEngineException failed) {
+      return Answer.of(
+          REFUSED_UNCHANGED.contains(identifier(failed)) ? REJECTED : CibSevenEngineScenarioRunner.rolledBack(failed));
     } catch (RuntimeException failed) {
       return Answer.of(CibSevenEngineScenarioRunner.rolledBack(failed));
     }
@@ -220,11 +234,8 @@ final class CibSevenPopulationCommands {
 
   /** Evaluates the Conditional starts of one deployment, or of every current one, against the given variables. */
   /**
-   * Evaluates the root Conditional starts in scope. A scope without one is `rejected`: CIB's condition handler refuses
-   * the request, as `ENGINE-13043` when no deployment holds a Conditional start subscription and `ENGINE-13042` when the
-   * named definition declares none (`DefaultConditionHandler.java:56`, `:96`; `CommandLogger.java:285-296`), before
-   * `EvaluateStartConditionCmd` instantiates anything (`EvaluateStartConditionCmd.java:54`, `:61-63`), so the command
-   * changed no state. Any other failure, such as a condition that is not Boolean, rolls the command back.
+   * Evaluates the root Conditional starts in scope. A scope without one is `rejected` ({@link #REFUSED_UNCHANGED}); any
+   * other failure, such as a condition that is not Boolean, rolls the command back.
    */
   private Answer evaluate(EvaluateConditionsStep evaluation) {
     var builder = engine.getRuntimeService().createConditionEvaluation();
@@ -238,16 +249,8 @@ final class CibSevenPopulationCommands {
     if (evaluation.businessKey() != null) {
       builder.processInstanceBusinessKey(evaluation.businessKey());
     }
-    List<ProcessInstance> instances;
-    try {
-      instances = builder.setVariables(ScenarioVariableBindings.toEngineMap(evaluation.variables()))
-          .evaluateStartConditions();
-    } catch (ProcessEngineException refused) {
-      if (NO_CONDITIONAL_START.contains(identifier(refused))) {
-        return Answer.of(REJECTED);
-      }
-      throw refused;
-    }
+    List<ProcessInstance> instances = builder.setVariables(ScenarioVariableBindings.toEngineMap(evaluation.variables()))
+        .evaluateStartConditions();
     return started(evaluation.commandId(), instances.stream().map(ProcessInstance::getId).toList());
   }
 
