@@ -29,8 +29,8 @@ export type Layer = typeof Layer[keyof typeof Layer];
 
 export type Module = Readonly<{ name: string; layer: Layer; family: string; file: string; imports: readonly string[] }>;
 
-/** Which layers a layer may import; a feature or admission module may also import its own family's modules, and the
- * runner its own parts. */
+/** Which layers a layer may import; a feature, admission or dispatch module may also import its own family's modules,
+ * so a family splits into paired parts instead of outgrowing the size target, and the runner its own parts. */
 const mayImport: Readonly<Record<Layer, readonly Layer[]>> = {
   [Layer.Il]: [Layer.Il],
   [Layer.Codec]: [Layer.Il, Layer.State, Layer.Codec],
@@ -106,8 +106,8 @@ export function typeScriptModules(root = projectRoot): Module[] {
   });
 }
 
-/** Guard 4: every import follows the layer table, features and admissions import no other family, and only the
- * codec and the runner reach outside the kernel. */
+/** Guard 4: every import follows the layer table, features, admissions and dispatch modules import no other family
+ * (population may import step), and only the codec and the runner reach outside the kernel. */
 export function layeringFindings(modules: readonly Module[], isKernel: (name: string) => boolean): string[] {
   const byName = new Map(modules.map((module) => [module.name, module]));
   return modules.flatMap((module) => module.imports.flatMap((imported) => {
@@ -117,7 +117,7 @@ export function layeringFindings(modules: readonly Module[], isKernel: (name: st
       return foreignImports.has(module.layer) || module.layer === Layer.Root ? [] : [`${module.file}: imports ${imported} outside the kernel`];
     }
     const sameFamily = target.layer === module.layer && target.family === module.family &&
-      (module.layer === Layer.Feature || module.layer === Layer.Admission);
+      (module.layer === Layer.Feature || module.layer === Layer.Admission || module.layer === Layer.Dispatch);
     // The population layer drives each instance through the one step function (proposal, module table and guard 13).
     const populationSteps = module.layer === Layer.Dispatch && module.family === "population" &&
       target.layer === Layer.Dispatch && target.family === "step";
