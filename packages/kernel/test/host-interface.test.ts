@@ -34,6 +34,7 @@ import {
   cycle,
   date,
   duration,
+  end,
   message,
   replace,
   serviceWork,
@@ -74,6 +75,16 @@ test("a program without a subscription or waiting work opens no wait, and one wh
     const started = withOptions(replace(base(), "S", start("S", trigger)), { conditionalStart: "submittedContext" });
     assert.equal(hostRequirements(admitted(started)).maxConcurrentWaits, null);
   }
+});
+
+test("a bound Message throw needs the host to serve effects, as a Service Task does, and an unbound one does not", () => {
+  const throwing = (binding: Json | null): Program => admitted(withOptions(
+    replace(base(), "E", end("E", { message: { payload: { binding, handlerKey: null, payload: [] } } })),
+    { messageThrowForms: "cibForms" }));
+  const bound = hostRequirements(throwing({ protocol: "urn:p", operation: "urn:send" }));
+  assert.deepEqual([bound.effects, bound.maxConcurrentWaits], [true, null]);
+  const unbound = hostRequirements(throwing(null));
+  assert.deepEqual([unbound.effects, unbound.maxConcurrentWaits], [false, 0]);
 });
 
 test("a Timer start offers the duration the kernel resolves from its schedule", () => {

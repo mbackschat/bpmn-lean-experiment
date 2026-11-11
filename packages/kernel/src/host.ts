@@ -14,9 +14,11 @@ import {
   elementScope,
   elementStart,
   eventPayloadCatch,
+  eventPayloadThrow,
   programChildren,
   programPublicId,
   scopeKindStart,
+  throwEffect,
   triggerMessage,
   triggerTimer,
   valueSourceLiteral,
@@ -29,6 +31,7 @@ import {
   type ElementId,
   type Program,
   type Subscription,
+  type Throw,
   type Work,
 } from "./il/types.js";
 import { resolve, type Resolved } from "./il/timer.js";
@@ -91,12 +94,22 @@ function activityWork(program: Program): readonly Work[] {
   });
 }
 
+/** Every throw a program's throw Events declare. */
+function throws(program: Program): readonly Throw[] {
+  return program.elements.flatMap((element) => {
+    const event = elementEvent(element);
+    const thrown = event === null ? null : eventPayloadThrow(event[1]);
+    return thrown === null ? [] : [thrown];
+  });
+}
+
 export function hostRequirements(program: Program): Requirements {
   const triggers = subscriptions(program).map(([, subscription]) => subscription.trigger);
   const work = activityWork(program);
   const timers = triggers.some((trigger) => triggerTimer(trigger) !== null);
   const messages = triggers.some((trigger) => triggerMessage(trigger) !== null) || work.some((entry) => workReceive(entry) !== null);
-  const effects = work.some(workIsService);
+  // A bound Message throw opens an effect item as a Service Task does (`feature/propagation.ts#throwMessage`).
+  const effects = work.some(workIsService) || throws(program).some((thrown) => throwEffect(thrown) !== null);
   const userTasks = work.some(workIsUser);
   const calls = work.some((entry) => workCall(entry) !== null);
   const waits = triggers.length > 0 || messages || effects || userTasks || calls;

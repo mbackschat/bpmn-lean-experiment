@@ -40,12 +40,17 @@ def subscriptions (program : Program) : List (ElementId × Subscription) :=
 def activityWork (program : Program) : List Work :=
   program.elements.filterMap fun element => element.activity?.map (·.2.work)
 
+/-- Every throw a program's throw Events declare. -/
+def throws (program : Program) : List Throw :=
+  program.elements.filterMap fun element => element.event?.bind (·.2.throw?)
+
 def hostRequirements (program : Program) : Requirements :=
   let triggers := (subscriptions program).map (·.2.trigger)
   let work := activityWork program
   let timers := triggers.any (·.timer?.isSome)
   let messages := triggers.any (·.message?.isSome) || work.any (·.receive?.isSome)
-  let effects := work.any (·.isService)
+  -- A bound Message throw opens an effect item as a Service Task does (`Feature.Propagation.throwMessage`).
+  let effects := work.any (·.isService) || (throws program).any (·.effect?.isSome)
   let userTasks := work.any (·.isUser)
   let calls := work.any (·.call?.isSome)
   let waits := !triggers.isEmpty || messages || effects || userTasks || calls
