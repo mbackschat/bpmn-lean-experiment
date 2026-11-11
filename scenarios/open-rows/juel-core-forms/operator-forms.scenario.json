@@ -1,0 +1,272 @@
+{
+  "kind": "scenario",
+  "id": "juel-core-forms-operator-forms",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "juel-core-forms-operator-forms",
+    "relativePath": "scenarios/open-rows/juel-core-forms/operator-forms.bpmn",
+    "sha256": "e1f12818909fa5af9fa2194efe481ced9aa358289a9f2d465dfaaa378f4c268d",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start",
+      "instanceId": "Run_1",
+      "variables": [
+        {
+          "name": "flag",
+          "value": {
+            "kind": "boolean",
+            "value": true
+          }
+        },
+        {
+          "name": "flags",
+          "value": {
+            "kind": "list",
+            "value": [
+              {
+                "kind": "boolean",
+                "value": true
+              },
+              {
+                "kind": "boolean",
+                "value": false
+              }
+            ]
+          }
+        },
+        {
+          "name": "mixed",
+          "value": {
+            "kind": "list",
+            "value": [
+              {
+                "kind": "null"
+              },
+              {
+                "kind": "string",
+                "value": "x"
+              },
+              {
+                "kind": "boolean",
+                "value": true
+              }
+            ]
+          }
+        },
+        {
+          "name": "n",
+          "value": {
+            "kind": "integer",
+            "value": 3
+          }
+        },
+        {
+          "name": "names",
+          "value": {
+            "kind": "list",
+            "value": [
+              {
+                "kind": "string",
+                "value": "a"
+              },
+              {
+                "kind": "string",
+                "value": "b"
+              },
+              {
+                "kind": "string",
+                "value": "c"
+              }
+            ]
+          }
+        },
+        {
+          "name": "nothing",
+          "value": {
+            "kind": "null"
+          }
+        },
+        {
+          "name": "off",
+          "value": {
+            "kind": "boolean",
+            "value": false
+          }
+        },
+        {
+          "name": "pairs",
+          "value": {
+            "kind": "map",
+            "value": [
+              {
+                "name": "a",
+                "value": {
+                  "kind": "string",
+                  "value": "x"
+                }
+              },
+              {
+                "name": "b",
+                "value": {
+                  "kind": "boolean",
+                  "value": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "pairsOtherKey",
+          "value": {
+            "kind": "map",
+            "value": [
+              {
+                "name": "a",
+                "value": {
+                  "kind": "string",
+                  "value": "x"
+                }
+              },
+              {
+                "name": "c",
+                "value": {
+                  "kind": "boolean",
+                  "value": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "pairsSame",
+          "value": {
+            "kind": "map",
+            "value": [
+              {
+                "name": "a",
+                "value": {
+                  "kind": "string",
+                  "value": "x"
+                }
+              },
+              {
+                "name": "b",
+                "value": {
+                  "kind": "boolean",
+                  "value": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "pairsShorter",
+          "value": {
+            "kind": "map",
+            "value": [
+              {
+                "name": "a",
+                "value": {
+                  "kind": "string",
+                  "value": "x"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "price",
+          "value": {
+            "kind": "decimal",
+            "coefficient": "15",
+            "scale": 1
+          }
+        },
+        {
+          "name": "prices",
+          "value": {
+            "kind": "list",
+            "value": [
+              {
+                "kind": "decimal",
+                "coefficient": "15",
+                "scale": 1
+              },
+              {
+                "kind": "decimal",
+                "coefficient": "25",
+                "scale": 2
+              }
+            ]
+          }
+        },
+        {
+          "name": "same",
+          "value": {
+            "kind": "list",
+            "value": [
+              {
+                "kind": "string",
+                "value": "a"
+              },
+              {
+                "kind": "string",
+                "value": "b"
+              },
+              {
+                "kind": "string",
+                "value": "c"
+              }
+            ]
+          }
+        },
+        {
+          "name": "shorter",
+          "value": {
+            "kind": "list",
+            "value": [
+              {
+                "kind": "string",
+                "value": "a"
+              },
+              {
+                "kind": "string",
+                "value": "b"
+              }
+            ]
+          }
+        },
+        {
+          "name": "word",
+          "value": {
+            "kind": "string",
+            "value": "abcabc"
+          }
+        }
+      ]
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.3",
+      "BPMN 2.0.2 Clause 10.4.2",
+      "BPMN 2.0.2 §13.3.2"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/el/JuelExpression.java",
+      "juel/src/main/java/org/cibseven/bpm/impl/juel/NumberOperations.java",
+      "juel/src/main/java/org/cibseven/bpm/impl/juel/BooleanOperations.java",
+      "juel/src/main/java/org/cibseven/bpm/impl/juel/TypeConverterImpl.java",
+      "juel/src/main/java/org/cibseven/bpm/impl/juel/AstBinary.java",
+      "juel/src/main/java/org/cibseven/bpm/impl/juel/AstUnary.java",
+      "juel/src/main/java/org/cibseven/bpm/impl/juel/AstProperty.java",
+      "juel/src/main/java/org/cibseven/bpm/impl/juel/AstMethod.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/variable/mapping/IoMapping.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/variable/mapping/InputParameter.java"
+    ]
+  }
+}

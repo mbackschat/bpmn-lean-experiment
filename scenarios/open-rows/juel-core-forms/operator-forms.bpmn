@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_OperatorForms" targetNamespace="urn:bpmn-lean:scenarios:juel-core-forms:operator-forms">
+  <process id="Process_OperatorForms" name="Evaluate operator, collection and method forms" isExecutable="true">
+    <startEvent id="StartEvent_Start" />
+    <sequenceFlow id="Flow_Start_Observe" sourceRef="StartEvent_Start" targetRef="UserTask_Observe" />
+    <userTask id="UserTask_Observe" name="Observe the evaluated inputs">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="stringGreater">${'b' &gt; 'a'}</camunda:inputParameter>
+          <camunda:inputParameter name="stringGreaterOrEqual">${'a' &gt;= 'a'}</camunda:inputParameter>
+          <camunda:inputParameter name="stringLessOrEqual">${'a' &lt;= 'a'}</camunda:inputParameter>
+          <camunda:inputParameter name="booleanGreater">${flag &gt; off}</camunda:inputParameter>
+          <camunda:inputParameter name="booleanLess">${off &lt; flag}</camunda:inputParameter>
+          <camunda:inputParameter name="listContainsNull">${mixed.contains(null)}</camunda:inputParameter>
+          <camunda:inputParameter name="listContainsBoolean">${flags.contains(true)}</camunda:inputParameter>
+          <camunda:inputParameter name="listContainsDecimal">${prices.contains(price)}</camunda:inputParameter>
+          <camunda:inputParameter name="listIndexOfPresent">${names.indexOf('c')}</camunda:inputParameter>
+          <camunda:inputParameter name="listIndexOfAbsent">${names.indexOf('z') &lt; 0}</camunda:inputParameter>
+          <camunda:inputParameter name="listLastIndexOf">${names.lastIndexOf('a')}</camunda:inputParameter>
+          <camunda:inputParameter name="listEqualsSame">${names.equals(same)}</camunda:inputParameter>
+          <camunda:inputParameter name="listEqualsShorter">${names.equals(shorter)}</camunda:inputParameter>
+          <camunda:inputParameter name="mapEqualsSame">${pairs.equals(pairsSame)}</camunda:inputParameter>
+          <camunda:inputParameter name="mapEqualsShorter">${pairs.equals(pairsShorter)}</camunda:inputParameter>
+          <camunda:inputParameter name="mapEqualsOtherKey">${pairs.equals(pairsOtherKey)}</camunda:inputParameter>
+          <camunda:inputParameter name="mapContainsBoolean">${pairs.containsValue(true)}</camunda:inputParameter>
+          <camunda:inputParameter name="textLastIndexOf">${word.lastIndexOf('b')}</camunda:inputParameter>
+          <camunda:inputParameter name="nullIndex">${pairs[nothing]}</camunda:inputParameter>
+          <camunda:inputParameter name="nullAsRemainderOperands">${nothing % nothing}</camunda:inputParameter>
+          <camunda:inputParameter name="negatedText">${-'12' &lt; 0}</camunda:inputParameter>
+          <camunda:inputParameter name="negatedNull">${-nothing == 0}</camunda:inputParameter>
+          <camunda:inputParameter name="negatedDecimal">${-price &lt; 0}</camunda:inputParameter>
+          <camunda:inputParameter name="negatedLongSum">${-(1 + 2) &lt; 0}</camunda:inputParameter>
+          <camunda:inputParameter name="negatedIntegerResult">${-word.length() &lt; 0}</camunda:inputParameter>
+          <camunda:inputParameter name="negatedVariable">${-n &lt; 0}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <sequenceFlow id="Flow_Observe_Done" sourceRef="UserTask_Observe" targetRef="EndEvent_Done" />
+    <endEvent id="EndEvent_Done" />
+  </process>
+</definitions>

@@ -1,0 +1,50 @@
+{
+  "kind": "scenario",
+  "id": "juel-core-forms-text-forms",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "juel-core-forms-text-forms",
+    "relativePath": "scenarios/open-rows/juel-core-forms/text-forms.bpmn",
+    "sha256": "c1598699385fb612a898ceae1cf39487296adce82c68fdfb188a836727bfa536",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start",
+      "instanceId": "Run_1",
+      "variables": [
+        {
+          "name": "tags",
+          "value": {
+            "kind": "stringList",
+            "value": [
+              "x",
+              "y"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.3",
+      "BPMN 2.0.2 Clause 10.4.2",
+      "BPMN 2.0.2 §13.3.2"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/el/JuelExpression.java",
+      "juel/src/main/java/org/cibseven/bpm/impl/juel/NumberOperations.java",
+      "juel/src/main/java/org/cibseven/bpm/impl/juel/BooleanOperations.java",
+      "juel/src/main/java/org/cibseven/bpm/impl/juel/TypeConverterImpl.java",
+      "juel/src/main/java/org/cibseven/bpm/impl/juel/AstBinary.java",
+      "juel/src/main/java/org/cibseven/bpm/impl/juel/AstUnary.java",
+      "juel/src/main/java/org/cibseven/bpm/impl/juel/AstProperty.java",
+      "juel/src/main/java/org/cibseven/bpm/impl/juel/AstMethod.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/variable/mapping/IoMapping.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/variable/mapping/InputParameter.java"
+    ]
+  }
+}

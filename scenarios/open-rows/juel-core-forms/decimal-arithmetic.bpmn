@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_DecimalArithmetic" targetNamespace="urn:bpmn-lean:scenarios:juel-core-forms:decimal-arithmetic">
+  <process id="Process_DecimalArithmetic" name="Evaluate Decimal arithmetic, coercion and rendering forms" isExecutable="true">
+    <startEvent id="StartEvent_Start" />
+    <sequenceFlow id="Flow_Start_Observe" sourceRef="StartEvent_Start" targetRef="UserTask_Observe" />
+    <userTask id="UserTask_Observe" name="Observe the evaluated inputs">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="difference">${price - tax}</camunda:inputParameter>
+          <camunda:inputParameter name="differenceInteger">${price - 1}</camunda:inputParameter>
+          <camunda:inputParameter name="negated">${-price}</camunda:inputParameter>
+          <camunda:inputParameter name="lessThan">${tax &lt; price}</camunda:inputParameter>
+          <camunda:inputParameter name="equalOrder">${price &gt;= same}</camunda:inputParameter>
+          <camunda:inputParameter name="equalOrderLe">${price &lt;= same}</camunda:inputParameter>
+          <camunda:inputParameter name="equalDecimals">${price == same}</camunda:inputParameter>
+          <camunda:inputParameter name="unequalDecimals">${price == tax}</camunda:inputParameter>
+          <camunda:inputParameter name="plusNull">${price + null}</camunda:inputParameter>
+          <camunda:inputParameter name="plusEmptyText">${price + ''}</camunda:inputParameter>
+          <camunda:inputParameter name="plusNegativeText">${price + '-0.25'}</camunda:inputParameter>
+          <camunda:inputParameter name="plusExponentText">${price + '2e1'}</camunda:inputParameter>
+          <camunda:inputParameter name="plusLeadingPointText">${price + '.25'}</camunda:inputParameter>
+          <camunda:inputParameter name="textFraction">v=${small}</camunda:inputParameter>
+          <camunda:inputParameter name="textScaleZero">v=${whole}</camunda:inputParameter>
+          <camunda:inputParameter name="textNegative">v=${-price}</camunda:inputParameter>
+          <camunda:inputParameter name="textScientific">v=${price * '1e3'}</camunda:inputParameter>
+          <camunda:inputParameter name="textScientificSingleDigit">v=${whole * '1e3'}</camunda:inputParameter>
+          <camunda:inputParameter name="textTinyProduct">v=${tiny * tiny}</camunda:inputParameter>
+          <camunda:inputParameter name="textFalse">v=${off}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <sequenceFlow id="Flow_Observe_Done" sourceRef="UserTask_Observe" targetRef="EndEvent_Done" />
+    <endEvent id="EndEvent_Done" />
+  </process>
+</definitions>
