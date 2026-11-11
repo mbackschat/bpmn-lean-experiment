@@ -12,6 +12,7 @@ import {
   EngineDefinitionCompilationStatus,
   EngineDefinitionScheduleIntegrityCode,
   EngineDefinitionScheduleStatus,
+  EngineOpenWorkStatus,
   EngineTimerStartOccurrencesStatus,
   compileBpmnDefinition,
   createBpmnDefinitionSchedule,
@@ -20,6 +21,7 @@ import {
   engineProcessLocatorForCanonicalProcess,
   inspectBpmnDefinitionSchedule,
   listEngineTimerStartOccurrences,
+  observeOpenWork,
   pauseBpmnDefinitionSchedule,
   type EngineDefinitionScheduleBindingRequest,
 } from "@bpmn-lean/engine-api";
@@ -117,6 +119,14 @@ test("a fired occurrence reports the instance the kernel started under its deriv
   });
   assert.equal((await host.processes.describe(processInstanceWorkflowId(testPopulation, processInstanceId)))?.running, true,
     "the population started the instance's chain");
+  const work = await observeOpenWork({
+    host, locator: engineProcessLocatorForCanonicalProcess(testPopulation, processInstanceId), hostingProcessInstanceId: processInstanceId,
+  });
+  assert.equal(work.status, EngineOpenWorkStatus.Open, "the started instance is observable by its locator");
+  const other = await observeOpenWork({
+    host, locator: engineProcessLocatorForCanonicalProcess(testPopulation, processInstanceId), hostingProcessInstanceId: "another",
+  });
+  assert.equal(other.status, EngineOpenWorkStatus.Unknown, "a chain hosting another instance is unknown");
 });
 
 test("a Schedule of a version a later registration superseded fires and is refused", async () => {

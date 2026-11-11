@@ -40,20 +40,24 @@ export type Observed =
 
 /**
  * The running chain's description and state. A chain the engine did not start for `processInstanceId`, or whose
- * instance never committed a start, is unknown.
+ * instance never committed a start, is unknown. A chain the population started, as a Timer-start firing does, carries
+ * no start memo; its running kernel state names the instance it hosts, and its address is already derived from that
+ * instance's identity (`processInstanceWorkflowId`).
  */
 export async function observeProcess(host: EngineHost, locator: EngineProcessLocator, processInstanceId: string): Promise<Observed> {
   const workflowId = engineProcessLocatorWorkflowId(locator);
   requireWireString(processInstanceId, "processInstanceId");
   try {
     const description = await host.processes.describe(workflowId);
-    if (description === null || retainedMemo(description.memo)?.processInstanceId !== processInstanceId) {
-      return { kind: ObservedKind.Unknown };
-    }
+    if (description === null) return { kind: ObservedKind.Unknown };
+    const memo = retainedMemo(description.memo);
+    if (memo !== null && memo.processInstanceId !== processInstanceId) return { kind: ObservedKind.Unknown };
     if (!description.running) return { kind: ObservedKind.Closed };
     const state = await host.processes.observation(workflowId);
     if (state === null) return { kind: ObservedKind.Unknown };
-    return { kind: ObservedKind.Running, workflowId, description, state: state as unknown as EngineStateObservation };
+    const observation = state as unknown as EngineStateObservation;
+    if (memo === null && observation.instanceId !== processInstanceId) return { kind: ObservedKind.Unknown };
+    return { kind: ObservedKind.Running, workflowId, description, state: observation };
   } catch {
     return { kind: ObservedKind.Unavailable };
   }
