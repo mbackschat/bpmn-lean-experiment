@@ -257,6 +257,12 @@ test("an unanswered firing keeps the schedule scheduled, and a cancellation it w
     (error: unknown) => error instanceof DefinitionScheduleConflictError,
   );
   assert.equal((await fixture.schedules.get(reference()))?.state, DefinitionScheduleState.Cancelling);
+  // The conflict changed nothing public: item GET and the list still answer what they answered before the DELETE.
+  fixture.host.pauseResults.push({ phase: DefinitionScheduleHostPhase.Firing, paused: true });
+  assert.equal((await fixture.service.get(reference()))?.status, DefinitionScheduleState.Scheduled);
+  fixture.host.pauseResults.push({ phase: DefinitionScheduleHostPhase.Firing, paused: true });
+  assert.deepEqual((await fixture.service.list({ processId: "Process_Timer", version: 1 })).map((schedule) => schedule.status),
+    [DefinitionScheduleState.Scheduled]);
 
   fixture.host.pauseResults.push({
     phase: DefinitionScheduleHostPhase.Started,

@@ -76,9 +76,12 @@ export function projectDefinitionSchedule(
           definition: cloneDefinitionMetadata(record.definition),
         },
       };
+    case DefinitionScheduleState.Cancelling:
+      // Reconciliation leaves a row cancelling only when the action won and its firing awaits the engine's verdict; the
+      // DELETE that lost answered a conflict, which changes nothing public, so the row reads as it did before.
+      return { ...base, status: DefinitionScheduleState.Scheduled, instance: null };
     case DefinitionScheduleState.Creating:
     case DefinitionScheduleState.CreatingHost:
-    case DefinitionScheduleState.Cancelling:
       throw new DefinitionScheduleIntegrityError(
         `internal schedule state ${record.state} escaped reconciliation`,
       );

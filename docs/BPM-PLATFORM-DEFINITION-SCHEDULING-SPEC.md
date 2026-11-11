@@ -191,7 +191,7 @@ Cancellation is permitted only before the Schedule action wins. `DELETE` first p
 
 From `cancelling`, the gateway pauses the Schedule before describing it. If the Schedule is temporarily absent after an ambiguous `creatingHost` call, reconciliation performs the same exact idempotent create-or-compare operation and then pauses it, rather than assuming the request failed. The post-pause description decides:
 
-- if one action was taken or is running, the action won: the platform persists the firing's verdict (`started` or `refused`) once the engine answers it, keeps `cancelling` until then, and `DELETE` returns the selected `409/conflict` error body;
+- if one action was taken or is running, the action won: the platform persists the firing's verdict (`started` or `refused`) once the engine answers it, keeps `cancelling` until then, and `DELETE` returns the selected `409/conflict` error body; the conflict changes nothing public, so until the verdict item `GET` and the list report the schedule as `scheduled`;
 - if no action was taken or is running and no future action can fire while paused, the platform persists `cancelled`, then deletes the Schedule;
 - if service state cannot establish either fact, cancellation fails without changing public state.
 
