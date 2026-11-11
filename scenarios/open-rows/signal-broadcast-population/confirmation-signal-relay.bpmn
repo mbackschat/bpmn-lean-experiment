@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             id="Definitions_ConfirmationSignalRelay" targetNamespace="urn:bpmn-lean:scenarios:signal-broadcast-population:confirmation-signal-relay">
+  <message id="Message_OrderConfirmed" name="order-confirmed" />
+  <signal id="Signal_ShiftClosed" name="shift-closed" />
+  <process id="Process_ConfirmationSignalRelay" name="Close the shift once an order is confirmed" isExecutable="true">
+    <startEvent id="StartRelay" name="Relay opened" />
+    <intermediateCatchEvent id="AwaitConfirmation" name="Await confirmation">
+      <messageEventDefinition id="AwaitConfirmation_Message" messageRef="Message_OrderConfirmed" />
+    </intermediateCatchEvent>
+    <endEvent id="ShiftClosedSent" name="Shift closed">
+      <signalEventDefinition id="ShiftClosedSent_Signal" signalRef="Signal_ShiftClosed" />
+    </endEvent>
+    <sequenceFlow id="Flow_Opened" sourceRef="StartRelay" targetRef="AwaitConfirmation" />
+    <sequenceFlow id="Flow_Confirmed" sourceRef="AwaitConfirmation" targetRef="ShiftClosedSent" />
+  </process>
+</definitions>

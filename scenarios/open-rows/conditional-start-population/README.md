@@ -30,5 +30,6 @@ The schedules also bind four models of other directories:
 | [one-start-fails-others-start](one-start-fails-others-start.population-scenario.json) | routed-orders | CIB | `amount` 2500 and `urgent` as a present null: the first start's condition holds and the second's reads a null. |
 | [standards-conditional-start-refused](standards-conditional-start-refused.population-scenario.json) | large-order | kernel-only, `bpmn-2.0.2` | The standards profile deploys a Conditional Start and is asked to evaluate it. |
 | [evaluate-replay-later-time](evaluate-replay-later-time.population-scenario.json) | routed-orders | kernel-only, `cibseven-2.2.0` | One evaluation over `amount` 2500 and `urgent` true at 0, then the identical step at 60,000 ms. |
+| [kernel-order-scope-and-filter](kernel-order-scope-and-filter.population-scenario.json) | routed-orders, large-order | kernel-only, `cibseven-2.2.0` | An explicit `order` naming the three starts in reverse, an `order` naming one of them, a selector naming no deployment, and `amount` alone, which the start filtered on `urgent` does not see. |
 
 The schedules carry no expected deployment, instance, task or resolution.

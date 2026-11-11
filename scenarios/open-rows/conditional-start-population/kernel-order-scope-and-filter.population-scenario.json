@@ -1,0 +1,146 @@
+{
+  "kind": "populationScenario",
+  "id": "conditional-start-population-kernel-order-scope-and-filter",
+  "profile": "cibseven-2.2.0",
+  "definitions": [
+    {
+      "definitionRef": "routed-orders",
+      "bpmn": {
+        "id": "conditional-start-compositions-routed-orders",
+        "relativePath": "scenarios/open-rows/conditional-start-compositions/routed-orders.bpmn",
+        "sha256": "f661f5c037c14e40ed6cbaaaee20bdd73f73a00e46f239c8198bbcf375e2aaf7",
+        "sourceOverlay": null
+      }
+    },
+    {
+      "definitionRef": "large-order",
+      "bpmn": {
+        "id": "conditional-start-compositions-large-order",
+        "relativePath": "scenarios/open-rows/conditional-start-compositions/large-order.bpmn",
+        "sha256": "7b319695497c8a24063f90b108ddbc778acb3c4399a516edc99299f1a784b161",
+        "sourceOverlay": null
+      }
+    }
+  ],
+  "steps": [
+    {
+      "kind": "evaluateConditions",
+      "commandId": "s01-evaluate-reversed",
+      "variables": [
+        {
+          "name": "amount",
+          "value": {
+            "kind": "integer",
+            "value": 2500
+          }
+        },
+        {
+          "name": "urgent",
+          "value": {
+            "kind": "boolean",
+            "value": true
+          }
+        }
+      ],
+      "at": 0,
+      "order": [
+        {
+          "kind": "start",
+          "deploymentId": 2,
+          "startEvent": "StartLargeOrder"
+        },
+        {
+          "kind": "start",
+          "deploymentId": 1,
+          "startEvent": "StartUrgentOrder"
+        },
+        {
+          "kind": "start",
+          "deploymentId": 1,
+          "startEvent": "StartLargeOrder"
+        }
+      ]
+    },
+    {
+      "kind": "evaluateConditions",
+      "commandId": "s02-evaluate-partial-order",
+      "variables": [
+        {
+          "name": "amount",
+          "value": {
+            "kind": "integer",
+            "value": 2500
+          }
+        },
+        {
+          "name": "urgent",
+          "value": {
+            "kind": "boolean",
+            "value": true
+          }
+        }
+      ],
+      "at": 10,
+      "order": [
+        {
+          "kind": "start",
+          "deploymentId": 2,
+          "startEvent": "StartLargeOrder"
+        }
+      ]
+    },
+    {
+      "kind": "evaluateConditions",
+      "commandId": "s03-evaluate-missing-deployment",
+      "variables": [
+        {
+          "name": "amount",
+          "value": {
+            "kind": "integer",
+            "value": 2500
+          }
+        },
+        {
+          "name": "urgent",
+          "value": {
+            "kind": "boolean",
+            "value": true
+          }
+        }
+      ],
+      "at": 20,
+      "definition": {
+        "deploymentId": 9
+      }
+    },
+    {
+      "kind": "evaluateConditions",
+      "commandId": "s04-evaluate-amount-only",
+      "variables": [
+        {
+          "name": "amount",
+          "value": {
+            "kind": "integer",
+            "value": 2500
+          }
+        }
+      ],
+      "at": 30,
+      "definition": {
+        "deploymentId": 1
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.5.2",
+      "BPMN 2.0.2 Clause 10.5.5",
+      "BPMN 2.0.2 Clause 13.2",
+      "BPMN 2.0.2 Clause 13.5.1",
+      "BPMN 2.0.2 Table 10.84",
+      "BPMN 2.0.2 Table 10.95"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

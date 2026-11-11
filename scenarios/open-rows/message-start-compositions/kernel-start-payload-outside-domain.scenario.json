@@ -1,0 +1,72 @@
+{
+  "kind": "scenario",
+  "id": "message-start-compositions-kernel-start-payload-outside-domain",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "message-start-compositions-shipment-start",
+    "relativePath": "scenarios/open-rows/message-start-compositions/shipment-start.bpmn",
+    "sha256": "75164aecb81b913cd7f20f3a7607728d8b24cc02d3bb5ce30d02cf2474934d6e",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [],
+      "startEvent": "StartShipmentAnnounced",
+      "trigger": {
+        "kind": "message",
+        "payload": {
+          "kind": "list",
+          "value": [
+            {
+              "kind": "list",
+              "value": [
+                {
+                  "kind": "list",
+                  "value": [
+                    {
+                      "kind": "list",
+                      "value": [
+                        {
+                          "kind": "list",
+                          "value": [
+                            {
+                              "kind": "integer",
+                              "value": 1
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "channel": {
+          "kind": "operationMessage",
+          "interfaceId": "Interface_Carrier",
+          "interfaceOperationId": "Operation_AnnounceShipment",
+          "messageId": "Message_ShipmentAnnounced"
+        }
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 8.4.11",
+      "BPMN 2.0.2 Clause 10.5.2",
+      "BPMN 2.0.2 Clause 10.5.5",
+      "BPMN 2.0.2 Clause 13.2",
+      "BPMN 2.0.2 Clause 13.5.1",
+      "BPMN 2.0.2 Table 10.84",
+      "BPMN 2.0.2 Table 10.87",
+      "BPMN 2.0.2 Table 10.99"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

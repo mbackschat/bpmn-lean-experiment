@@ -22,6 +22,7 @@ Answer-free schedules for [PC-MESSAGE-03](../../../docs/PRACTICAL-CIB7-COVERAGE-
 | [payload-offered-without-data-output](payload-offered-without-data-output.scenario.json) | process.bpmn | PC-MESSAGE-03 | The Receive Task, which declares no Data Output, is delivered a String payload ([CIB-LIM-0037](../../../docs/CIB-BPMN-RELATION-REGISTER.md#cib-lim-0037--a-payload-offered-to-a-message-wait-without-a-data-output-commits-in-cib)), then the same delivery without one. |
 | [sequential-bodies-previous-body](sequential-bodies-previous-body.scenario.json) | payload-catches | PC-MESSAGE-03 | Body 1's catch is delivered and its task completes; body 1's catch is addressed again, then body 2's catch is delivered and its task completes. |
 | [parallel-bodies-out-of-order](parallel-bodies-out-of-order.scenario.json) | payload-catches | PC-MESSAGE-03 | Body 2's catch is delivered before body 1's, each with its own payload; body 1's catch is addressed again after its task completes. |
+| [kernel-payload-outside-domain](kernel-payload-outside-domain.scenario.json) | [confirmation-payload](../message-correlation-criteria/confirmation-payload.bpmn) | PC-MESSAGE-03 | Kernel-only twin: a payload nested five Lists deep, outside the value domain, then a String payload. |
 
 ## Notes for the target runners
 
@@ -29,4 +30,4 @@ Answer-free schedules for [PC-MESSAGE-03](../../../docs/PRACTICAL-CIB7-COVERAGE-
 - `items` is the String list the Multi-Instance Sub-Processes iterate; a body's catch is addressed by activation, counted per begun occurrence of `Catch_SeqBody` or `Catch_ParBody` in the Process instance.
 - `Property_Quote` is a Process Property; `Property_Note`, `Property_SeqNote` and `Property_ParNote` are Properties of their Sub-Processes.
 
-The schedules carry no expected route, open wait, variable or Process state; the retained CIB evidence is the answer.
+The schedules carry no expected route, open wait, variable or Process state; the retained CIB evidence is the answer. The `kernel-` schedules are kernel-only twins of kernel unit tests whose branch no CIB schedule reaches: their provenance names no CIB revision (`not-applicable`), so no CIB run takes them, and the differential compares the Lean kernel with the TypeScript kernel on them.

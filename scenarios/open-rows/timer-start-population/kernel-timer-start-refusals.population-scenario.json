@@ -1,0 +1,46 @@
+{
+  "kind": "populationScenario",
+  "id": "timer-start-population-kernel-timer-start-refusals",
+  "profile": "bpmn-2.0.2",
+  "definitions": [
+    {
+      "definitionRef": "duration-start",
+      "bpmn": {
+        "id": "timer-start-forms-duration-start",
+        "relativePath": "scenarios/open-rows/timer-start-forms/duration-start.bpmn",
+        "sha256": "038c1e0976297e439590d684716d392502355c798224acd2de932c512ad55cf4",
+        "sourceOverlay": null
+      }
+    }
+  ],
+  "steps": [
+    {
+      "kind": "timerStart",
+      "commandId": "s01-fire-early",
+      "deploymentId": 1,
+      "startEvent": "StartAfterDuration",
+      "dueMs": 3600000,
+      "at": 3599999
+    },
+    {
+      "kind": "timerStart",
+      "commandId": "s02-fire-missing-deployment",
+      "deploymentId": 9,
+      "startEvent": "StartAfterDuration",
+      "dueMs": 3600000,
+      "at": 3600000
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.5.2",
+      "BPMN 2.0.2 Clause 10.5.5",
+      "BPMN 2.0.2 Clause 13.2",
+      "BPMN 2.0.2 Clause 13.5.1",
+      "BPMN 2.0.2 Table 10.84",
+      "BPMN 2.0.2 Table 10.101"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

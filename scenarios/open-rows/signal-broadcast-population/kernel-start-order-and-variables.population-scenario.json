@@ -1,0 +1,96 @@
+{
+  "kind": "populationScenario",
+  "id": "signal-broadcast-population-kernel-start-order-and-variables",
+  "profile": "bpmn-2.0.2",
+  "definitions": [
+    {
+      "definitionRef": "duplicate-signal-starts",
+      "bpmn": {
+        "id": "signal-start-compositions-duplicate-signal-starts",
+        "relativePath": "scenarios/open-rows/signal-start-compositions/duplicate-signal-starts.bpmn",
+        "sha256": "b594fcb3b307f9dcc20ba7ce373a93c74d66d2b986468886849d69556f6df4c0",
+        "sourceOverlay": null
+      }
+    }
+  ],
+  "steps": [
+    {
+      "kind": "broadcast",
+      "commandId": "s01-broadcast-reversed",
+      "address": {
+        "signalRef": {
+          "id": "Signal_ShiftOpened",
+          "namespace": "urn:bpmn-lean:scenarios:signal-start-compositions:duplicate-signal-starts"
+        }
+      },
+      "variables": [],
+      "at": 0,
+      "order": [
+        {
+          "kind": "start",
+          "deploymentId": 1,
+          "startEvent": "StartShiftOpenedBack"
+        },
+        {
+          "kind": "start",
+          "deploymentId": 1,
+          "startEvent": "StartShiftOpenedFront"
+        }
+      ]
+    },
+    {
+      "kind": "broadcast",
+      "commandId": "s02-broadcast-partial-order",
+      "address": {
+        "signalRef": {
+          "id": "Signal_ShiftOpened",
+          "namespace": "urn:bpmn-lean:scenarios:signal-start-compositions:duplicate-signal-starts"
+        }
+      },
+      "variables": [],
+      "at": 10,
+      "order": [
+        {
+          "kind": "start",
+          "deploymentId": 1,
+          "startEvent": "StartShiftOpenedBack"
+        }
+      ]
+    },
+    {
+      "kind": "broadcast",
+      "commandId": "s03-broadcast-with-variables",
+      "address": {
+        "signalRef": {
+          "id": "Signal_ShiftOpened",
+          "namespace": "urn:bpmn-lean:scenarios:signal-start-compositions:duplicate-signal-starts"
+        }
+      },
+      "at": 20,
+      "variables": [
+        {
+          "name": "shift",
+          "value": {
+            "kind": "integer",
+            "value": 1
+          }
+        }
+      ]
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.5.2",
+      "BPMN 2.0.2 Clause 10.5.4",
+      "BPMN 2.0.2 Clause 10.5.5",
+      "BPMN 2.0.2 Clause 13.2",
+      "BPMN 2.0.2 Clause 13.5.1",
+      "BPMN 2.0.2 Clause 13.5.2",
+      "BPMN 2.0.2 Table 10.84",
+      "BPMN 2.0.2 Table 10.89",
+      "BPMN 2.0.2 Table 10.100"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

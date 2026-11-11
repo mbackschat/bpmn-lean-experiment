@@ -1,0 +1,124 @@
+{
+  "kind": "populationScenario",
+  "id": "message-start-population-kernel-business-key-and-criteria",
+  "profile": "cibseven-2.2.0",
+  "definitions": [
+    {
+      "definitionRef": "order-confirmation",
+      "bpmn": {
+        "id": "message-correlation-criteria-order-confirmation",
+        "relativePath": "scenarios/open-rows/message-correlation-criteria/order-confirmation.bpmn",
+        "sha256": "04f9e455a7064fda3193bd836ea8fec3360301564f41ffabbcc2681140b49340",
+        "sourceOverlay": null
+      }
+    }
+  ],
+  "steps": [
+    {
+      "kind": "instance",
+      "definitionRef": "order-confirmation",
+      "instanceId": "Order_1",
+      "at": 0,
+      "stimulus": {
+        "kind": "start",
+        "commandId": "s01-start-order-1",
+        "instanceId": "Order_1",
+        "variables": [
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "A-1"
+            }
+          }
+        ],
+        "businessKey": "ORD-7"
+      }
+    },
+    {
+      "kind": "publish",
+      "commandId": "s02-publish-other-key",
+      "address": {
+        "name": "order-confirmed"
+      },
+      "criteria": [],
+      "variables": [],
+      "mode": "executionsOnly",
+      "at": 10,
+      "businessKey": "ORD-9"
+    },
+    {
+      "kind": "publish",
+      "commandId": "s03-publish-repeated-criterion",
+      "address": {
+        "name": "order-confirmed"
+      },
+      "criteria": [
+        {
+          "target": {
+            "kind": "processVariable",
+            "name": "orderId"
+          },
+          "expected": {
+            "kind": "string",
+            "value": "A-1"
+          }
+        },
+        {
+          "target": {
+            "kind": "processVariable",
+            "name": "orderId"
+          },
+          "expected": {
+            "kind": "string",
+            "value": "A-1"
+          }
+        }
+      ],
+      "variables": [],
+      "mode": "executionsOnly",
+      "at": 20
+    },
+    {
+      "kind": "publish",
+      "commandId": "s04-publish-own-key",
+      "address": {
+        "name": "order-confirmed"
+      },
+      "criteria": [],
+      "variables": [],
+      "mode": "executionsOnly",
+      "at": 30,
+      "businessKey": "ORD-7"
+    },
+    {
+      "kind": "publish",
+      "commandId": "s05-publish-channel-after-the-catch",
+      "address": {
+        "channel": {
+          "kind": "directMessage",
+          "messageId": "Message_OrderConfirmed"
+        }
+      },
+      "criteria": [],
+      "variables": [],
+      "mode": "executionsOnly",
+      "at": 40
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 8.4.2",
+      "BPMN 2.0.2 Clause 8.4.11",
+      "BPMN 2.0.2 Clause 10.5.4",
+      "BPMN 2.0.2 Table 8.31",
+      "BPMN 2.0.2 Table 8.35",
+      "BPMN 2.0.2 Table 10.99",
+      "BPMN 2.0.2 Clause 10.5.2",
+      "BPMN 2.0.2 Table 10.84",
+      "BPMN 2.0.2 Table 10.87"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

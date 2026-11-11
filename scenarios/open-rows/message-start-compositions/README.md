@@ -26,7 +26,8 @@ A Message start stimulus names its Start Event and the Message it triggers; a Me
 | [shipment-payload-map](shipment-payload-map.scenario.json) | shipment-start | The trigger carries a Map with a String, an Integer and a present Null. |
 | [shipment-payload-absent](shipment-payload-absent.scenario.json) | shipment-start | The trigger carries no payload. |
 | [duplicate-message-starts-start](duplicate-message-starts-start.scenario.json) | duplicate-message-starts | The shared Message triggers the first of the two starts. |
+| [kernel-start-payload-outside-domain](kernel-start-payload-outside-domain.scenario.json) | shipment-start | Kernel-only twin: the trigger carries a payload nested five Lists deep, outside the value domain. |
 
 The population witnesses of these rows, which need more than one instance or definition, are in [message-start-population](../message-start-population/README.md).
 
-The schedules carry no expected instance, task or variable; the retained CIB evidence is the answer.
+The schedules carry no expected instance, task or variable; the retained CIB evidence is the answer. The `kernel-` schedules are kernel-only twins of kernel unit tests whose branch no CIB schedule reaches: their provenance names no CIB revision (`not-applicable`), so no CIB run takes them, and the differential compares the Lean kernel with the TypeScript kernel on them.

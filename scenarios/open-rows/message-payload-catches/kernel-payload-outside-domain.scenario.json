@@ -1,0 +1,105 @@
+{
+  "kind": "scenario",
+  "id": "message-payload-catches-kernel-payload-outside-domain",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "message-correlation-criteria-confirmation-payload",
+    "relativePath": "scenarios/open-rows/message-correlation-criteria/confirmation-payload.bpmn",
+    "sha256": "4f5f6a31ba3173a124faa3781514fe1d7440a42f8fd30d947ceefa0440ecd462",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "orderId",
+          "value": {
+            "kind": "string",
+            "value": "A-1"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "deliver",
+      "commandId": "s02-deliver-nested-payload",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "AwaitConfirmation",
+        "activation": 1
+      },
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "operationMessage",
+          "interfaceId": "Interface_Warehouse",
+          "interfaceOperationId": "Operation_ConfirmOrder",
+          "messageId": "Message_ConfirmationSent"
+        }
+      },
+      "payload": {
+        "kind": "list",
+        "value": [
+          {
+            "kind": "list",
+            "value": [
+              {
+                "kind": "list",
+                "value": [
+                  {
+                    "kind": "list",
+                    "value": [
+                      {
+                        "kind": "list",
+                        "value": [
+                          {
+                            "kind": "integer",
+                            "value": 1
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "deliver",
+      "commandId": "s03-deliver-payload",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "AwaitConfirmation",
+        "activation": 1
+      },
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "operationMessage",
+          "interfaceId": "Interface_Warehouse",
+          "interfaceOperationId": "Operation_ConfirmOrder",
+          "messageId": "Message_ConfirmationSent"
+        }
+      },
+      "payload": {
+        "kind": "string",
+        "value": "CONF-9"
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 Table 10.99",
+      "BPMN 2.0.2 §10.5.1"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

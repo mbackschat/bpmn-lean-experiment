@@ -19,6 +19,7 @@ The CIB schedules run under `cibseven-2.2.0` with no source overlay; their CIB a
 | [own-start-throw](own-start-throw.bpmn) | A None Start *Sync started by hand* and a Signal Start *Sync requested* (`sync-requested`) into the User Task *Prepare the sync*, an Intermediate throw of `sync-requested` and the User Task *Finish the sync*. |
 | [guarded-work](guarded-work.bpmn) | The User Task *Do the work* with an interrupting Signal boundary (`stop`) to *Handle the stop*, and the Event Sub-Process *AlertWatch* with a non-interrupting Signal start (`alert`) to *Handle the alert*. |
 | [arm-order](arm-order.bpmn) | A None Start into an Event-Based Gateway whose two arms, *First arm* and *Second arm*, catch the one Signal `Signal_Go` and lead to their own User Tasks. |
+| [confirmation-signal-relay](confirmation-signal-relay.bpmn) | A None Start, the Message catch *Await confirmation* (`order-confirmed`) and an End Event throwing `shift-closed`. |
 
 The schedules also bind five models of [signal-start-compositions](../signal-start-compositions/README.md):
 
@@ -46,5 +47,8 @@ The schedules also bind five models of [signal-start-compositions](../signal-sta
 | [broadcast-explicit-order](broadcast-explicit-order.population-scenario.json) | arm-order | kernel-only, `bpmn-2.0.2` | The same broadcast with an explicit `order` that names the second arm first. |
 | [broadcast-replay](broadcast-replay.population-scenario.json) | shift-signals | kernel-only, `bpmn-2.0.2` | One broadcast, the identical broadcast again, then the same `commandId` addressing the other Signal. |
 | [broadcast-replay-later-time](broadcast-replay-later-time.population-scenario.json) | shift-signals | kernel-only, `bpmn-2.0.2` | One broadcast at 0 and the identical broadcast at 60,000 ms. |
+| [kernel-start-order-and-variables](kernel-start-order-and-variables.population-scenario.json) | duplicate-signal-starts | kernel-only, `bpmn-2.0.2` | An `order` naming the two root Signal starts in reverse, an `order` naming one of them, then a broadcast carrying a variable where the Signal carries no data. |
+| [kernel-targeted-delivery-standards](kernel-targeted-delivery-standards.population-scenario.json) | shift-awaiting | kernel-only, `bpmn-2.0.2` | A caller's Signal delivery to the waiting catch, then a broadcast to it. |
+| [kernel-publication-cascade](kernel-publication-cascade.population-scenario.json) | shift-awaiting, confirmation-signal-relay | kernel-only, `cibseven-2.2.0` | A publication delivered to the relay's catch, whose step throws the `shift-closed` the other instance waits for. |
 
-The schedules carry no expected deployment, instance, task, variable or fan-out entry.
+The schedules carry no expected deployment, instance, task, variable or fan-out entry. The `kernel-` schedules are kernel-only twins of kernel unit tests whose branch no CIB schedule reaches: their provenance names no CIB revision (`not-applicable`), so no CIB run takes them, and the differential compares the Lean kernel with the TypeScript kernel on them.

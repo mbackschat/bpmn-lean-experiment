@@ -1,0 +1,79 @@
+{
+  "kind": "populationScenario",
+  "id": "signal-broadcast-population-kernel-publication-cascade",
+  "profile": "cibseven-2.2.0",
+  "definitions": [
+    {
+      "definitionRef": "shift-awaiting",
+      "bpmn": {
+        "id": "signal-broadcast-population-shift-awaiting",
+        "relativePath": "scenarios/open-rows/signal-broadcast-population/shift-awaiting.bpmn",
+        "sha256": "6b9fb58efd5b1faa90d1df17bdd787c308327f53d598c6a28538771f05b786fe",
+        "sourceOverlay": null
+      }
+    },
+    {
+      "definitionRef": "confirmation-signal-relay",
+      "bpmn": {
+        "id": "signal-broadcast-population-confirmation-signal-relay",
+        "relativePath": "scenarios/open-rows/signal-broadcast-population/confirmation-signal-relay.bpmn",
+        "sha256": "a4807c9299293714d34cf760e053a8de70f89144e8cb90565a20f8fbbadccc64",
+        "sourceOverlay": null
+      }
+    }
+  ],
+  "steps": [
+    {
+      "kind": "instance",
+      "definitionRef": "shift-awaiting",
+      "instanceId": "Till_1",
+      "at": 0,
+      "stimulus": {
+        "kind": "start",
+        "commandId": "s01-start-till-1",
+        "instanceId": "Till_1",
+        "variables": []
+      }
+    },
+    {
+      "kind": "instance",
+      "definitionRef": "confirmation-signal-relay",
+      "instanceId": "Relay_1",
+      "at": 0,
+      "stimulus": {
+        "kind": "start",
+        "commandId": "s02-start-relay-1",
+        "instanceId": "Relay_1",
+        "variables": []
+      }
+    },
+    {
+      "kind": "publish",
+      "commandId": "s03-publish-order-confirmed",
+      "address": {
+        "name": "order-confirmed"
+      },
+      "criteria": [],
+      "variables": [],
+      "mode": "any",
+      "at": 10
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.5.2",
+      "BPMN 2.0.2 Clause 10.5.4",
+      "BPMN 2.0.2 Clause 10.5.5",
+      "BPMN 2.0.2 Clause 13.2",
+      "BPMN 2.0.2 Clause 13.5.1",
+      "BPMN 2.0.2 Clause 13.5.2",
+      "BPMN 2.0.2 Table 10.84",
+      "BPMN 2.0.2 Table 10.89",
+      "BPMN 2.0.2 Table 10.100",
+      "BPMN 2.0.2 Clause 10.5.3",
+      "BPMN 2.0.2 Table 10.88"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

@@ -14,10 +14,11 @@ The CIB schedules run under `cibseven-2.2.0` with no source overlay; their CIB a
 | [order-intake-copy](order-intake-copy.bpmn) | A second process key, `Process_OrderIntakeCopy`, with one Message Start on the Message name `order-placed` into the User Task *Pick the copied order*. |
 | [confirmation-intake](confirmation-intake.bpmn) | A Message Start on the Message name `order-confirmed` into the User Task *Record the confirmation*. |
 
-The schedules also bind two models of other directories:
+The schedules also bind three models of other directories:
 
 - [order-intake](../message-start-compositions/order-intake.bpmn): two Message Starts, `order-placed` and `order-amended`, each to its own User Task.
 - [order-confirmation](../message-correlation-criteria/order-confirmation.bpmn): a None Start, the Message catch *Await confirmation* (`order-confirmed`) and the User Task *Fulfil the order*.
+- [duplicate-message-starts](../message-start-compositions/duplicate-message-starts.bpmn): two Message Starts of one process on the one Message `order-placed`.
 
 ## Population schedules
 
@@ -36,5 +37,7 @@ The schedules also bind two models of other directories:
 | [start-replay-same-command](start-replay-same-command.population-scenario.json) | order-intake | kernel-only, `bpmn-2.0.2` | A start-only publication on the direct Message `Message_OrderPlaced`, then the identical step again. |
 | [start-replay-later-time](start-replay-later-time.population-scenario.json) | order-intake | kernel-only, `bpmn-2.0.2` | A start-only publication on the direct Message `Message_OrderPlaced` at 0, then the identical step at 60,000 ms. |
 | [start-replay-different-content](start-replay-different-content.population-scenario.json) | order-intake | kernel-only, `bpmn-2.0.2` | A start-only publication, then the same `commandId` on the direct Message `Message_OrderAmended`. |
+| [kernel-start-refusals-standards](kernel-start-refusals-standards.population-scenario.json) | order-intake, duplicate-message-starts, order-confirmation | kernel-only, `bpmn-2.0.2` | A start-only publication with a payload to a start that writes none, one that reaches both starts of one process, one selecting a missing process key, then a caller's delivery that carries variables. |
+| [kernel-business-key-and-criteria](kernel-business-key-and-criteria.population-scenario.json) | order-confirmation | kernel-only, `cibseven-2.2.0` | An instance under the business key `ORD-7`: a publication under `ORD-9`, one naming the criterion `orderId` twice, one under `ORD-7`, then one on the channel while the instance waits at its task. |
 
 The schedules carry no expected deployment, instance, task, variable or resolution.

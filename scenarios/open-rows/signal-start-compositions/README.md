@@ -29,7 +29,8 @@ A Signal start stimulus names its Start Event and carries the Signal name with t
 | [duplicate-signal-starts-start](duplicate-signal-starts-start.scenario.json) | duplicate-signal-starts | The shared Signal fires the first of the two starts. |
 | [failing-signal-start-start](failing-signal-start-start.scenario.json) | failing-signal-start | The Signal Start fires. |
 | [race-approved-standards](race-approved-standards.scenario.json) | approval-race | The `bpmn-2.0.2` profile: `Signal_Approved` is delivered to its arm by QName. Separates a targeted delivery, which only `signalDelivery = occurrenceTargeted` admits, from a broadcast. No CIB evidence: CIB runs only its own profile. |
+| [kernel-signal-start-variables-standards](kernel-signal-start-variables-standards.scenario.json) | duplicate-signal-starts | Kernel-only twin under `bpmn-2.0.2`: the Signal trigger carries a variable where a Signal carries no data. |
 
 The population witnesses of these rows, which need more than one instance or definition, are in [signal-broadcast-population](../signal-broadcast-population/README.md).
 
-The schedules carry no expected instance, task or variable; the retained CIB evidence is the answer.
+The schedules carry no expected instance, task or variable; the retained CIB evidence is the answer. The `kernel-` schedules are kernel-only twins of kernel unit tests whose branch no CIB schedule reaches: their provenance names no CIB revision (`not-applicable`), so no CIB run takes them, and the differential compares the Lean kernel with the TypeScript kernel on them.

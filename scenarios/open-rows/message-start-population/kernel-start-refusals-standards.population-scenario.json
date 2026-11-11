@@ -1,0 +1,156 @@
+{
+  "kind": "populationScenario",
+  "id": "message-start-population-kernel-start-refusals-standards",
+  "profile": "bpmn-2.0.2",
+  "definitions": [
+    {
+      "definitionRef": "order-intake",
+      "bpmn": {
+        "id": "message-start-compositions-order-intake",
+        "relativePath": "scenarios/open-rows/message-start-compositions/order-intake.bpmn",
+        "sha256": "347a0155ddfecb032e92bb9940c61931b8058bab867209343bd39d41e54937e5",
+        "sourceOverlay": null
+      }
+    },
+    {
+      "definitionRef": "duplicate-message-starts",
+      "bpmn": {
+        "id": "message-start-compositions-duplicate-message-starts",
+        "relativePath": "scenarios/open-rows/message-start-compositions/duplicate-message-starts.bpmn",
+        "sha256": "e637805644973229fc63d15630f682faf3aeeb35fb099ccbf4a3b1bbec3737d8",
+        "sourceOverlay": null
+      }
+    },
+    {
+      "definitionRef": "order-confirmation",
+      "bpmn": {
+        "id": "message-correlation-criteria-order-confirmation",
+        "relativePath": "scenarios/open-rows/message-correlation-criteria/order-confirmation.bpmn",
+        "sha256": "04f9e455a7064fda3193bd836ea8fec3360301564f41ffabbcc2681140b49340",
+        "sourceOverlay": null
+      }
+    }
+  ],
+  "steps": [
+    {
+      "kind": "publish",
+      "commandId": "s01-publish-placed-with-payload",
+      "address": {
+        "channel": {
+          "kind": "directMessage",
+          "messageId": "Message_OrderPlaced"
+        },
+        "definition": {
+          "deploymentId": 1
+        }
+      },
+      "criteria": [],
+      "variables": [],
+      "mode": "startOnly",
+      "at": 0,
+      "payload": {
+        "kind": "string",
+        "value": "P-1"
+      }
+    },
+    {
+      "kind": "publish",
+      "commandId": "s02-publish-placed-to-both-starts",
+      "address": {
+        "channel": {
+          "kind": "directMessage",
+          "messageId": "Message_OrderPlaced"
+        },
+        "definition": {
+          "deploymentId": 2
+        }
+      },
+      "criteria": [],
+      "variables": [],
+      "mode": "startOnly",
+      "at": 10
+    },
+    {
+      "kind": "publish",
+      "commandId": "s03-publish-placed-missing-key",
+      "address": {
+        "channel": {
+          "kind": "directMessage",
+          "messageId": "Message_OrderPlaced"
+        },
+        "definition": {
+          "processKey": "Process_Missing"
+        }
+      },
+      "criteria": [],
+      "variables": [],
+      "mode": "startOnly",
+      "at": 20
+    },
+    {
+      "kind": "instance",
+      "definitionRef": "order-confirmation",
+      "instanceId": "Order_1",
+      "at": 30,
+      "stimulus": {
+        "kind": "start",
+        "commandId": "s04-start-order-1",
+        "instanceId": "Order_1",
+        "variables": [
+          {
+            "name": "orderId",
+            "value": {
+              "kind": "string",
+              "value": "A-1"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "instance",
+      "definitionRef": "order-confirmation",
+      "instanceId": "Order_1",
+      "at": 40,
+      "stimulus": {
+        "kind": "deliver",
+        "commandId": "s05-deliver-with-variables",
+        "occurrence": {
+          "processInstanceId": "Order_1",
+          "elementId": "AwaitConfirmation",
+          "activation": 1
+        },
+        "trigger": {
+          "kind": "message",
+          "channel": {
+            "kind": "directMessage",
+            "messageId": "Message_OrderConfirmed"
+          }
+        },
+        "variables": [
+          {
+            "name": "confirmedBy",
+            "value": {
+              "kind": "string",
+              "value": "clerk"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 8.4.11",
+      "BPMN 2.0.2 Clause 10.5.2",
+      "BPMN 2.0.2 Clause 10.5.5",
+      "BPMN 2.0.2 Clause 13.2",
+      "BPMN 2.0.2 Clause 13.5.1",
+      "BPMN 2.0.2 Table 10.84",
+      "BPMN 2.0.2 Table 10.87",
+      "BPMN 2.0.2 Table 10.99"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}
