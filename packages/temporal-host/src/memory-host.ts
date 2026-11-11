@@ -34,6 +34,9 @@ import {
 } from "./host-contract.js";
 import { applyInput, assertNever, clockStimulus, hostOwnsLogicalTime } from "./host-machine.js";
 import { kernelPort } from "./kernel-port.js";
+
+export { MemoryPopulation } from "./population-memory.js";
+export { populationPort } from "./population-port.js";
 import { Route, type HostView, type JsonValue, type KernelPort } from "./port.js";
 import { appendJournal, initialCursor, openLog, readPage, type PublicationLog, type PublicationPage } from "./publication.js";
 import type { ProcessDescription, ProcessHost, StartRequest } from "./process-port.js";

@@ -16,6 +16,8 @@ import {
   hostView,
   hostViewJson,
   InputTag,
+  refusesSignalVariables,
+  rootStarts,
   hooks,
   matching,
   step,
@@ -191,6 +193,17 @@ test("the host view names each open Message and Signal wait's address, which the
   }]);
   const plain = admitted(base());
   assert.equal((hostViewJson(hostView(plain, committed(run(plain, null, begin())))) as Json).addresses, undefined);
+});
+
+test("rootStarts pairs each root start's public identifier with its own, which a population start input names", () => {
+  const program = admitted(replace(base(), "S", start("S", signal())));
+  assert.deepEqual(rootStarts(program), [["S", "S"]]);
+  assert.deepEqual(rootStarts(admitted(base())), [["S", "S"]]);
+});
+
+test("an instance refuses Signal variables exactly when its program carries no Signal payload", () => {
+  assert.equal(refusesSignalVariables(admitted(withOptions(base(), { signalPayload: "none" }))), true);
+  assert.equal(refusesSignalVariables(admitted(withOptions(base(), { signalPayload: "variables", evaluator: "juel" }))), false);
 });
 
 test("an incident command naming another generation than the open incident's is rejected as stale", () => {

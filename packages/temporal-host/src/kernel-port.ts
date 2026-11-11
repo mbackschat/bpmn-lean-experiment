@@ -1,6 +1,6 @@
 /**
- * Binds the host's `KernelPort` to the TypeScript kernel, the only module of this package that imports it, and the
- * package's one input mapper: the one place that matches kernel input kinds, effect outcomes, failures and work kinds.
+ * Binds the host's `KernelPort` to the TypeScript kernel, one of the two modules of this package that import it (with
+ * `population-port.ts`), and the package's one input mapper: the one place that matches kernel input kinds, effect outcomes, failures and work kinds.
  *
  * Every name is the Lean name in TypeScript casing (`Kernel.Step.step` → `step`, `Kernel.Run.hostViewJson` →
  * `hostViewJson`), so a kernel rename is a change here alone. Views are taken in the runner's JSON rendering, which

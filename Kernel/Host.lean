@@ -116,6 +116,16 @@ def definitionCapabilities (program : Program) : Capabilities :=
       else some (trigger.channel, { element := program.publicId element, criteria := trigger.correlation })
   { starts, correlatedChannels := byChannel correlated, relations := program.options.relations }
 
+/-- Each root start Event's public identifier with its own, in document order: a population receiver names a start by
+its public identifier, the start input it is started with by its own. -/
+def rootStarts (program : Program) : List (String × ElementId) :=
+  ((program.children none).filterMap (·.start?)).map fun (header, _) => ((program.publicId header.id).value, header.id)
+
+/-- Whether an instance of `program` refuses a Signal that carries variables: a broadcast with variables that reaches
+one is `rejected broadcast-variables-not-admitted` before any receiver (`Kernel.Population.broadcast`). -/
+def refusesSignalVariables (program : Program) : Bool :=
+  program.options.signalPayload == SignalPayload.none
+
 /-- One open wait: its public occurrence identity, the called definition it runs in (`none` in the root instance, whose
 definition is the program's) and its view. -/
 structure OpenWait where

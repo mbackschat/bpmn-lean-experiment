@@ -19,22 +19,27 @@ export {
   type Decoded,
   type JsonValue,
 } from "./il/codec.js";
-export { channelFromJson, failureCode, failureName, signalAddressToJson, stimulusFromJson } from "./il/codec/stimulus.js";
+export { channelFromJson, channelToJson, failureCode, failureName, signalAddressToJson, stimulusFromJson } from "./il/codec/stimulus.js";
 export { admit } from "./admission-registry.js";
 export { hooks } from "./registry.js";
 export { step } from "./step.js";
-export { definitionCapabilities, hostRequirements, hostView } from "./host.js";
+export { definitionCapabilities, hostRequirements, hostView, refusesSignalVariables, rootStarts } from "./host.js";
 export { WorkTag, elementActivity, elementHeader } from "./il/types.js";
 export type { Program, Value } from "./il/types.js";
-export { EffectOutcomeTag, FailureTag, InputTag, SignalAddressTag, StartTriggerTag } from "./state.js";
+export {
+  DeliveryTriggerTag, EffectOutcomeTag, FailureTag, InputTag, SignalAddressTag, SignalReach, StartTriggerTag, targetsRepeat,
+} from "./state.js";
 export type {
-  Binding, BroadcastIntent, CorrelationMatch, EffectOutcome, Input, MessageChannel, OccurrenceRef, Outcome, SignalAddress,
-  StartInput, State,
+  Binding, BroadcastIntent, CorrelationMatch, EffectOutcome, Failure, Input, MessageChannel, OccurrenceRef, Outcome,
+  SignalAddress, StartInput, StartTrigger, State,
 } from "./state.js";
 export { matching, messageReceivers, messageStartCandidates } from "./population/messages.js";
 export {
   FanOutNextTag,
   PendingTag,
+  cascadeBound,
+  emissionStartedId,
+  inOrder,
   fanOutBegin,
   fanOutNext,
   fanOutPass,
@@ -51,12 +56,16 @@ export {
   type Pending,
 } from "./population/signals.js";
 export { conditionalStartVerdict, type ConditionalStartVerdict } from "./population/conditions.js";
-export { deploymentSummary, registerSummary, type DeploymentSummary } from "./population/deploy.js";
-export { timerStartCheck } from "./population/timers.js";
-export { fanOutEntryJson, populationCommandFromJson, resolutionJson } from "./run/population.js";
+export { currentSummary, deploy, deploymentSummary, registerSummary, type DeploymentSummary } from "./population/deploy.js";
+export { timerInstanceId, timerStartCheck } from "./population/timers.js";
+export {
+  definitionRefFromJson, deploymentSourceFromJson, fanOutEntryJson, populationCommandFromJson, resolutionJson, stimuliOfPopulation, type Declared,
+} from "./run/population.js";
 export {
   CommandTag,
   DefinitionSelectorTag,
+  DeploymentOutcomeTag,
+  StimulusTag,
   FanOutEntryTag,
   MessageAddressTag,
   PublishMode,
@@ -67,5 +76,5 @@ export {
 } from "./population/contract.js";
 export type {
   Command, DefinitionSelector, Deployment, DeploymentRef, FanOutEntry, Instance, MessageAddress, Publication, Receiver,
-  Resolution,
+  Resolution, Stimulus,
 } from "./population/contract.js";

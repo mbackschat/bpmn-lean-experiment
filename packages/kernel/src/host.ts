@@ -18,6 +18,7 @@ import {
   programChildren,
   programPublicId,
   scopeKindStart,
+  SignalPayload,
   throwEffect,
   triggerMessage,
   triggerTimer,
@@ -194,6 +195,25 @@ export function definitionCapabilities(program: Program): Capabilities {
       : [[messageTriggerChannel(trigger), { element: programPublicId(program, element), criteria: trigger.correlation }] as const];
   });
   return { starts, correlatedChannels: byChannel(correlated), relations: program.options.relations };
+}
+
+/**
+ * Each root start Event's public identifier with its own, in document order: a population receiver names a start by
+ * its public identifier, the start input it is started with by its own.
+ */
+export function rootStarts(program: Program): readonly (readonly [string, ElementId])[] {
+  return programChildren(program, null).flatMap((element) => {
+    const start = elementStart(element);
+    return start === null ? [] : [[programPublicId(program, start[0].id), start[0].id] as const];
+  });
+}
+
+/**
+ * Whether an instance of `program` refuses a Signal that carries variables: a broadcast with variables that reaches one
+ * is `rejected broadcast-variables-not-admitted` before any receiver (`Kernel.Population.broadcast`).
+ */
+export function refusesSignalVariables(program: Program): boolean {
+  return program.options.signalPayload === SignalPayload.None;
 }
 
 /**
