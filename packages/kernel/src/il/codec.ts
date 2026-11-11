@@ -514,14 +514,6 @@ export function encodeExpression(value: Expression): JsonValue {
   return expression.encode(value);
 }
 
-export function decodeValue(json: unknown): Decoded<Value> {
-  return valueCodec.decode(json);
-}
-
-export function encodeValue(value: Value): JsonValue {
-  return valueCodec.encode(value);
-}
-
 // Scenario stimuli and bindings, as `Kernel.Codec` reads and writes them.
 
 /** `[{name, value}]`, the scenario contract's variable bindings. */

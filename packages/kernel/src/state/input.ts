@@ -48,11 +48,6 @@ export type DeliveryTrigger =
   | { readonly tag: DeliveryTriggerTag.Message; readonly channel: MessageChannel }
   | { readonly tag: DeliveryTriggerTag.Signal; readonly address: SignalAddress; readonly reach: SignalReach };
 
-/** Whether a delivery is one receiver of a broadcast, which may carry the Signal's variables. */
-export function deliveryTriggerFromBroadcast(trigger: DeliveryTrigger): boolean {
-  return trigger.tag === DeliveryTriggerTag.Signal && trigger.reach === SignalReach.Broadcast;
-}
-
 export enum CriterionTargetTag {
   ProcessVariable = "processVariable",
   LocalVariable = "localVariable",

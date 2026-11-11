@@ -43,11 +43,6 @@ inductive DeliveryTrigger where
   | signal (address : SignalAddress) (reach : SignalReach)
   deriving Repr
 
-/-- Whether a delivery is one receiver of a broadcast, which may carry the Signal's variables. -/
-def DeliveryTrigger.fromBroadcast : DeliveryTrigger → Bool
-  | .signal _ reach => reach == .broadcast
-  | .message _ => false
-
 inductive CriterionTarget where
   | processVariable (name : String)
   | localVariable (name : String)

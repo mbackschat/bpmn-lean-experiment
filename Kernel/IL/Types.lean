@@ -574,9 +574,6 @@ def Trigger.timer? (trigger : Trigger) : Option TimerTrigger := (triggerView tri
 /-- The Message of a trigger, if it is one. -/
 def Trigger.message? (trigger : Trigger) : Option MessageTrigger := (triggerView trigger).message
 
-/-- The Signal of a trigger, if it is one. -/
-def Trigger.signal? (trigger : Trigger) : Option SignalTrigger := (triggerView trigger).signal
-
 /-- The Conditional trigger of a trigger, if it is one. -/
 def Trigger.condition? (trigger : Trigger) : Option ConditionTrigger := (triggerView trigger).condition
 

@@ -677,10 +677,9 @@ export function triggerView(trigger: Trigger): TriggerView {
   return assertNever(trigger);
 }
 
-/** The Timer, Message, Signal or Conditional trigger of a trigger, if it is one. */
+/** The Timer, Message or Conditional trigger of a trigger, if it is one. */
 export function triggerTimer(trigger: Trigger): TimerTrigger | null { return triggerView(trigger).timer; }
 export function triggerMessage(trigger: Trigger): MessageTrigger | null { return triggerView(trigger).message; }
-export function triggerSignal(trigger: Trigger): SignalTrigger | null { return triggerView(trigger).signal; }
 export function triggerCondition(trigger: Trigger): ConditionTrigger | null { return triggerView(trigger).condition; }
 
 /** The Call a work record names, if it is one. */
