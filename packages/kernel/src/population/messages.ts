@@ -50,11 +50,16 @@ export {
   cascadeInstanceId,
   current,
   currentDeployments,
+  currentSummary,
+  deploymentSummaryOf,
+  occurs,
   FanOutEntryTag,
   ReceiverTag,
   ResolutionTag,
   startedInstanceId,
+  timerStarts,
   type Broadcast,
+  type DeploymentSummary,
   type ConditionEvaluation,
   type Deployment,
   type FanOutEntry,
@@ -62,6 +67,7 @@ export {
   type Receiver,
   type Refusable,
   type Resolution,
+  type Resolved,
   type TimerOccurrence,
   type TimerStart,
 } from "./deploy.js";
@@ -101,7 +107,7 @@ export function matching(
  * that cannot be evaluated is no match) and, when the publication carries a business key, belong to an instance with
  * that key, a called instance's own (CIB `processInstanceBusinessKey`).
  */
-function receivers(
+export function messageReceivers(
   hooks: Hooks,
   program: Program,
   state: State,
@@ -122,11 +128,30 @@ function receivers(
 }
 
 /**
+ * The root Message starts of `program` a publication of `message` reaches, in document order, each with its channel:
+ * those on the channel, or, for a name, those whose literal name it is under the program's `MessageNames.addresses`
+ * (CIB-LIM-0022).
+ */
+export function messageStartCandidates(
+  program: Program,
+  message: MessageAddress,
+): readonly (readonly [ElementId, MessageChannel])[] {
+  return messageStarts(program).flatMap(([header, trigger]) => {
+    const channel = messageTriggerChannel(trigger);
+    const reached = message.tag === MessageAddressTag.Channel
+      ? messageChannelEquals(channel, message.channel)
+      : program.options.messageNames === MessageNames.Addresses &&
+        (trigger.name === null ? null : valueSourceLiteral(trigger.name)) === message.name;
+    return reached ? [[header.id, channel] as const] : [];
+  });
+}
+
+/**
  * The root Message starts a publication reaches in `scope`, or, without one, in the current deployment of every key
  * (CIB-INT-0031), each with its deployment and channel: those on the publication's channel, or, for a name, those whose
  * literal name it is under the deployment's `MessageNames.addresses` (CIB-LIM-0022).
  */
-function startCandidates(
+export function startCandidates(
   registry: readonly Deployment[],
   scope: Deployment | null,
   message: MessageAddress,
@@ -135,14 +160,8 @@ function startCandidates(
     const found = current(registry, key);
     return found === null ? [] : [found];
   });
-  return deployments.flatMap((deployment) => messageStarts(deployment.program).flatMap(([header, trigger]) => {
-    const channel = messageTriggerChannel(trigger);
-    const reached = message.tag === MessageAddressTag.Channel
-      ? messageChannelEquals(channel, message.channel)
-      : deployment.program.options.messageNames === MessageNames.Addresses &&
-        (trigger.name === null ? null : valueSourceLiteral(trigger.name)) === message.name;
-    return reached ? [[deployment, header.id, channel] as const] : [];
-  }));
+  return deployments.flatMap((deployment) => messageStartCandidates(deployment.program, message)
+    .map(([startEvent, channel]) => [deployment, startEvent, channel] as const));
 }
 
 /**
@@ -228,7 +247,7 @@ export function publish(
   if (scope === undefined) return answer({ tag: ResolutionTag.Rejected, code: "definition-not-deployed" });
   const reached = publication.mode === PublishMode.StartOnly ? [] : instances.flatMap((member, index) =>
     scope !== null && scope.deploymentId !== member.deployment.deploymentId ? []
-      : receivers(hooks, member.deployment.program, member.state, publication)
+      : messageReceivers(hooks, member.deployment.program, member.state, publication)
         .map(([target, channel]) => [index, target, channel] as const));
   const sole = reached[0];
   if (reached.length > 1) return answer({ tag: ResolutionTag.Ambiguous });

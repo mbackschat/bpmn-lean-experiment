@@ -34,7 +34,7 @@ delivery names: those on the publication's channel, or, for a name, those that r
 (only under `MessageNames.addresses`, CIB-LIM-0022), on their own channel. Each must accept the criteria
 (`Hooks.correlates`; a key that cannot be evaluated is no match) and, when the publication carries a business key,
 belong to an instance with that key, a called instance's own (CIB `processInstanceBusinessKey`). -/
-def receivers (hooks : Hooks) (program : Program) (state : State) (publication : Publication) :
+def messageReceivers (hooks : Hooks) (program : Program) (state : State) (publication : Publication) :
     List (OccurrenceRef × MessageChannel) :=
   let ctx := Step.context hooks program
   state.openItems.filterMap fun item =>
@@ -49,6 +49,17 @@ def receivers (hooks : Hooks) (program : Program) (state : State) (publication :
       | .ok true => if keyed then some (occurrence program state item, channel) else none
       | .ok false | .error _ => none
 
+/-- The root Message starts of `program` a publication of `message` reaches, in document order, each with its channel:
+those on the channel, or, for a name, those whose literal name it is under the program's `MessageNames.addresses`
+(CIB-LIM-0022). -/
+def messageStartCandidates (program : Program) (message : MessageAddress) :
+    List (ElementId × MessageChannel) :=
+  (messageStarts program).filterMap fun ((header, trigger) : Header × MessageTrigger) =>
+    let reached : Bool := match message with
+      | .channel channel => trigger.channel == channel
+      | .name name => program.options.messageNames == .addresses && (trigger.name.bind ValueSource.literal?) == some name
+    if reached then some (header.id, trigger.channel) else none
+
 /-- The root Message starts a publication reaches in `scope`, or, without one, in the current deployment of every key
 (CIB-INT-0031), each with its deployment and channel: those on the publication's channel, or, for a name, those whose
 literal name it is under the deployment's `MessageNames.addresses` (CIB-LIM-0022). -/
@@ -58,12 +69,8 @@ def startCandidates (registry : List Deployment) (scope : Option Deployment) (me
     | some deployment => [deployment]
     | none => (registry.map (·.key)).eraseDups.filterMap (current registry)
   deployments.flatMap fun deployment =>
-    (messageStarts deployment.program).filterMap fun ((header, trigger) : Header × MessageTrigger) =>
-      let reached : Bool := match message with
-        | .channel channel => trigger.channel == channel
-        | .name name =>
-          deployment.program.options.messageNames == .addresses && (trigger.name.bind ValueSource.literal?) == some name
-      if reached then some (deployment, header.id, trigger.channel) else none
+    (messageStartCandidates deployment.program message).map fun (startEvent, channel) =>
+      (deployment, startEvent, channel)
 
 /-- The deployment a selector names: the current deployment of a key, or one registered deployment; `some none` for
 no selector, `none` for a selector naming no registered deployment. -/
@@ -108,7 +115,7 @@ def publish (hooks : Hooks) (registry : List Deployment) (instances : List Insta
   let reached := if publication.mode == .startOnly then [] else
     instances.zipIdx.flatMap fun (member, index) =>
       if scope.any (·.deploymentId != member.deployment.deploymentId) then []
-      else (receivers hooks member.deployment.program member.state publication).map (index, ·)
+      else (messageReceivers hooks member.deployment.program member.state publication).map (index, ·)
   match reached with
   | [(index, target, channel)] =>
     let delivery : Input := .deliver { occurrence := target, trigger := .message channel

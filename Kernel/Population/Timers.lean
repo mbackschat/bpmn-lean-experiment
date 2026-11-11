@@ -1,6 +1,5 @@
 module
 
-public import Kernel.IL.Timer
 public import Kernel.Population.Messages
 
 /-! # Population: Timer starts
@@ -20,12 +19,6 @@ def timerInstanceId (deploymentId : Nat) (startEvent : String) (dueMs : Nat) : S
   let deployment := toString deploymentId
   s!"timer:{deployment.utf8ByteSize}:{deployment}:{startEvent.utf8ByteSize}:{startEvent}:{dueMs}"
 
-/-- A program's root Timer starts whose schedule resolves to what a host arms, in document order. -/
-def timerStarts (program : Program) : List (Header × Timer.Resolved) :=
-  ((program.children none).filterMap Element.start?).filterMap fun (header, start) =>
-    (start.subscription.bind (·.trigger.timer?)).bind fun trigger =>
-      (Timer.resolve trigger.schedule).toOption.map (header, ·)
-
 /-- Whether an occurrence of a start resolved as `resolved`, deployed at `originMs`, may fire at `atMs`: `dueMs` must be
 one of its due instants (`timer-occurrence-unknown`) and the firing not before it (`timer-not-due`). -/
 def timerFiring (originMs dueMs atMs : Nat) (resolved : Timer.Resolved) : Option String :=
@@ -41,28 +34,38 @@ def onTimeRefusal (program : Program) (named : Option ElementId) (dueMs : Nat) :
   | [(_, resolved)] => timerFiring 0 dueMs dueMs resolved
   | _ => none
 
-/-- Fire a Timer-start occurrence at `atMs` (PC-TIMER-04, M8-INT-A, CIB-INT-0031). It is rejected unless the deployment
-is registered (`definition-not-deployed`), `startEvent` is one of its root Timer starts (`no-start-event`), the
-occurrence is due (`timerFiring`), the deployment is still current for its key, as CIB deletes every Timer-start job of
-a key it redeploys (`timer-start-superseded`, `BpmnDeployer.java:251-258`), and the occurrence is unconsumed
-(`timer-start-occurrence-consumed`). The instance takes the firing time; a committed start consumes the occurrence. -/
+/-- Whether the occurrence `dueMs` of the root Timer start `startEvent` of `deploymentId` may fire at `atMs`, over the
+registered deployments' summaries; `consumed` is whether it already started an instance. The deployment must be
+registered (`definition-not-deployed`), `startEvent` one of its root Timer starts (`no-start-event`), the occurrence due
+(`timerFiring`), the deployment still current for its key, as CIB deletes every Timer-start job of a key it redeploys
+(`timer-start-superseded`, `BpmnDeployer.java:251-258`), and the occurrence unconsumed
+(`timer-start-occurrence-consumed`). -/
+def timerStartCheck (registry : List DeploymentSummary) (deploymentId : Nat) (startEvent : String) (dueMs atMs : Nat)
+    (consumed : Bool) : Option String :=
+  match registry.find? (·.deploymentId == deploymentId) with
+  | none => some "definition-not-deployed"
+  | some deployment =>
+    match deployment.timerStarts.find? (·.1 == startEvent) with
+    | none => some "no-start-event"
+    | some (_, resolved) =>
+      let superseded := (currentSummary registry deployment.key).all (·.deploymentId != deploymentId)
+      timerFiring deployment.deployedAtMs dueMs atMs resolved <|>
+        (if superseded then some "timer-start-superseded" else none) <|>
+        (if consumed then some "timer-start-occurrence-consumed" else none)
+
+/-- Fire a Timer-start occurrence at `atMs` (PC-TIMER-04, M8-INT-A, CIB-INT-0031) unless `timerStartCheck` refuses it.
+The instance takes the firing time; a committed start consumes the occurrence. -/
 def timerStart (hooks : Hooks) (registry : List Deployment) (instances : List Instance)
     (consumed : List TimerOccurrence) (atMs : Nat) (fired : TimerStart) :
     Except String (List Instance × List TimerOccurrence × Resolution) := do
-  let refuse (code : String) := (instances, consumed, Resolution.rejected code)
-  let some deployment := registry.find? (·.deploymentId == fired.deploymentId)
-    | return refuse "definition-not-deployed"
-  let program := deployment.program
-  let reached (start : Header × Timer.Resolved) : Bool := (program.publicId start.1.id).value == fired.startEvent
-  let some (header, resolved) := (timerStarts program).find? reached
-    | return refuse "no-start-event"
-  let superseded := (current registry deployment.key).all (·.deploymentId != deployment.deploymentId)
   let spent := consumed.any fun occurrence => occurrence.deploymentId == fired.deploymentId &&
     occurrence.startEvent == fired.startEvent && occurrence.dueMs == fired.dueMs
-  let refusal := timerFiring deployment.deployedAtMs fired.dueMs atMs resolved <|>
-    (if superseded then some "timer-start-superseded" else none) <|>
-    (if spent then some "timer-start-occurrence-consumed" else none)
-  if let some code := refusal then return refuse code
+  let refusal := timerStartCheck (registry.map (·.summary)) fired.deploymentId fired.startEvent fired.dueMs atMs spent
+  if let some code := refusal then return (instances, consumed, .rejected code)
+  let some deployment := registry.find? (·.deploymentId == fired.deploymentId) | throw "timer-start-without-deployment"
+  let program := deployment.program
+  let reached (start : Header × Timer.Resolved) : Bool := (program.publicId start.1.id).value == fired.startEvent
+  let some (header, _) := (timerStarts program).find? reached | throw "timer-start-without-start"
   let instanceId := timerInstanceId fired.deploymentId fired.startEvent fired.dueMs
   let (started, entry) ← startInstance hooks deployment fired.startEvent
     { instanceId, startEvent := some header.id, trigger := .timer atMs, atMs := some atMs }

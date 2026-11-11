@@ -26,8 +26,45 @@ export { step } from "./step.js";
 export { definitionCapabilities, hostRequirements, hostView } from "./host.js";
 export { WorkTag, elementActivity, elementHeader } from "./il/types.js";
 export type { Program, Value } from "./il/types.js";
-export { EffectOutcomeTag, FailureTag, InputTag, SignalAddressTag } from "./state.js";
-export type { CorrelationMatch, EffectOutcome, Input, MessageChannel, OccurrenceRef, Outcome, State } from "./state.js";
-export { matching } from "./population/messages.js";
-export { cascadeInstanceId } from "./population/contract.js";
-export type { DeploymentRef } from "./population/contract.js";
+export { EffectOutcomeTag, FailureTag, InputTag, SignalAddressTag, StartTriggerTag } from "./state.js";
+export type {
+  Binding, BroadcastIntent, CorrelationMatch, EffectOutcome, Input, MessageChannel, OccurrenceRef, Outcome, SignalAddress,
+  StartInput, State,
+} from "./state.js";
+export { matching, messageReceivers, messageStartCandidates } from "./population/messages.js";
+export {
+  FanOutNextTag,
+  PendingTag,
+  fanOutBegin,
+  fanOutNext,
+  fanOutRecord,
+  fanOutSnapshot,
+  linearizeReceivers,
+  reachOccurrence,
+  signalReceiversOf,
+  signalStartReceivers,
+  type Emission,
+  type FanOutMachine,
+  type FanOutNext,
+  type OccurrenceReach,
+  type Pending,
+} from "./population/signals.js";
+export { conditionalStartVerdict, type ConditionalStartVerdict } from "./population/conditions.js";
+export { deploymentSummary, registerSummary, type DeploymentSummary } from "./population/deploy.js";
+export { timerStartCheck } from "./population/timers.js";
+export { fanOutEntryJson, populationCommandFromJson, resolutionJson } from "./run/population.js";
+export {
+  CommandTag,
+  DefinitionSelectorTag,
+  FanOutEntryTag,
+  MessageAddressTag,
+  PublishMode,
+  ReceiverTag,
+  ResolutionTag,
+  cascadeInstanceId,
+  startedInstanceId,
+} from "./population/contract.js";
+export type {
+  Command, DefinitionSelector, Deployment, DeploymentRef, FanOutEntry, Instance, MessageAddress, Publication, Receiver,
+  Resolution,
+} from "./population/contract.js";

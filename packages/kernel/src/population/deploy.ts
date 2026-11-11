@@ -9,13 +9,19 @@ import {
   elementStart,
   programChildren,
   programProcessOf,
+  programPublicId,
   triggerMessage,
+  triggerTimer,
   valueSourceLiteral,
   type CalledProcess,
   type Header,
   type MessageTrigger,
   type Program,
 } from "../il/types.js";
+import { resolve, type Resolved } from "../il/timer.js";
+
+// `Kernel/Population/Deploy.lean` imports `Kernel.IL.Timer` publicly, so `Timers` reads it through Deploy.
+export { occurs, type Resolved } from "../il/timer.js";
 import {
   DeploymentOutcomeTag,
   type Deployment,
@@ -159,20 +165,86 @@ function messageStartNames(program: Program): readonly string[] {
   });
 }
 
+/** A program's root Timer starts whose schedule resolves to what a host arms, in document order. */
+export function timerStarts(program: Program): readonly (readonly [Header, Resolved])[] {
+  return programChildren(program, null).flatMap((element) => {
+    const started = elementStart(element);
+    const trigger = started?.[1].subscription?.trigger;
+    const timer = trigger === undefined ? null : triggerTimer(trigger);
+    const resolved = timer === null ? null : resolve(timer.schedule);
+    return started === null || resolved === null || !resolved.ok ? [] : [[started[0], resolved.value] as const];
+  });
+}
+
+/**
+ * What registering a deployment and firing its Timer starts read of it, as plain data a host keeps without the program:
+ * its deploy ordinal, root key and own keys with their versions, its deploy time, whether Message names address its
+ * starts (CIB-LIM-0022), its root Message start names and its root Timer starts by public identifier.
+ */
+export interface DeploymentSummary {
+  readonly deploymentId: number;
+  readonly key: string;
+  readonly keys: readonly string[];
+  readonly versions: readonly (readonly [string, number])[];
+  readonly deployedAtMs: number;
+  readonly namesAddress: boolean;
+  readonly messageStartNames: readonly string[];
+  readonly timerStarts: readonly (readonly [string, Resolved])[];
+}
+
+/**
+ * The summary of `program`, not yet registered: its ordinal is the deployment its identity names, 0 for none, and it has
+ * no versions and the deploy time 0 until it is registered.
+ */
+export function deploymentSummary(program: Program): DeploymentSummary {
+  const deploymentId = program.identity.deployment ?? 0;
+  return {
+    deploymentId, key: program.identity.processId, keys: ownKeys(deploymentId, program), versions: [], deployedAtMs: 0,
+    namesAddress: program.options.messageNames === MessageNames.Addresses, messageStartNames: messageStartNames(program),
+    timerStarts: timerStarts(program).map(([header, resolved]) => [programPublicId(program, header.id), resolved] as const),
+  };
+}
+
+/** A registered deployment's summary. */
+export function deploymentSummaryOf(deployment: Deployment): DeploymentSummary {
+  return {
+    ...deploymentSummary(deployment.program),
+    deploymentId: deployment.deploymentId, versions: deployment.versions, deployedAtMs: deployment.deployedAtMs,
+  };
+}
+
+/** The current summary of `key`: its last registered deployment. */
+export function currentSummary(registry: readonly DeploymentSummary[], key: string): DeploymentSummary | null {
+  return registry.filter((summary) => summary.key === key).at(-1) ?? null;
+}
+
+/** The version each key of `candidate` takes: 1 + the number of registered deployments containing that key. */
+function summaryVersions(registry: readonly DeploymentSummary[], candidate: DeploymentSummary): readonly (readonly [string, number])[] {
+  return candidate.keys.map((key) => [key, 1 + registry.filter((earlier) => earlier.versions.some(([known]) => known === key)).length] as const);
+}
+
 /**
  * Under `MessageNames.addresses` a root Message start name is unique across the current deployments of other keys: CIB
  * refuses deploying one another key's current deployment already subscribes (`BpmnDeployer.java:328-363`,
  * CIB-LIM-0028).
  */
-function messageStartClash(registry: readonly Deployment[], program: Program): string | null {
-  const others = [...new Set(registry.map((deployment) => deployment.key))].filter((key) => key !== program.identity.processId);
-  const taken = others.flatMap((key) => {
-    const deployment = current(registry, key);
-    return deployment === null ? [] : messageStartNames(deployment.program);
-  });
-  return program.options.messageNames === MessageNames.Addresses && messageStartNames(program).some((name) => taken.includes(name))
-    ? "deployment.messageStartName"
-    : null;
+function summaryClash(registry: readonly DeploymentSummary[], candidate: DeploymentSummary): string | null {
+  const others = [...new Set(registry.map((summary) => summary.key))].filter((key) => key !== candidate.key);
+  const taken = others.flatMap((key) => currentSummary(registry, key)?.messageStartNames ?? []);
+  return candidate.namesAddress && candidate.messageStartNames.some((name) => taken.includes(name)) ? "deployment.messageStartName" : null;
+}
+
+/**
+ * Register `candidate` as `deploymentId` over the summaries of the registered deployments: its versions, or the refusal
+ * of a Message start name another key's current deployment subscribes.
+ */
+export function registerSummary(
+  registry: readonly DeploymentSummary[],
+  deploymentId: number,
+  candidate: DeploymentSummary,
+): Refusable<{ readonly deploymentId: number; readonly versions: readonly (readonly [string, number])[] }> {
+  const code = summaryClash(registry, candidate);
+  return code === null ? { ok: true, value: { deploymentId, versions: summaryVersions(registry, candidate) } } : { ok: false, error: code };
 }
 
 /**
@@ -194,8 +266,9 @@ export function deploy(
 ): readonly [DeploymentResult, Deployment | null] {
   const refusal = (code: string): readonly [DeploymentResult, Deployment | null] =>
     [{ deploymentId, definitionRef, versions: [], outcome: { tag: DeploymentOutcomeTag.Refused, code } }, null];
-  const versions = ownKeys(deploymentId, program).map((key) =>
-    [key, 1 + registry.filter((earlier) => earlier.versions.some(([known]) => known === key)).length] as const);
+  const summaries = registry.map(deploymentSummaryOf);
+  const candidate = deploymentSummary({ ...program, identity: { ...program.identity, deployment: deploymentId } });
+  const versions = summaryVersions(summaries, candidate);
   const unreachable = (process: CalledProcess): boolean => {
     const source = process.definition.deployment;
     return source !== null && (source > deploymentId || refused.includes(source));
@@ -208,7 +281,7 @@ export function deploy(
     processes.push(stamped.value);
   }
   const stamped: Program = { ...carried, processes, identity: { ...carried.identity, deployment: deploymentId } };
-  const code = admission(stamped) ?? messageStartClash(registry, stamped);
+  const code = admission(stamped) ?? summaryClash(summaries, candidate);
   if (code !== null) return refusal(code);
   const deployment: Deployment = {
     deploymentId, definitionRef, ref, key: program.identity.processId, versions, deployedAtMs: atMs, program: stamped,

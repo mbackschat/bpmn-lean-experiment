@@ -22,10 +22,19 @@ def conditionalStarts (registry : List Deployment) (scope : Option Deployment) :
       (start.subscription.bind (·.trigger.condition?)).map fun _ =>
         (deployment, header, (deployment.program.publicId header.id).value)
 
+/-- Whether the Conditional root start `input` names in `program` holds, or the failure of its predicate: the start
+step's own predicate (`Hooks.startsFired`) over the start's own input, so a caller passes the exact input it then starts
+the instance with, its identity, business key, logical time and submitted variables alone included (CIB-EXT-0044). -/
+def conditionalStartVerdict (hooks : Hooks) (program : Program) (input : StartInput) : Except Failure Bool :=
+  match hooks.startsFired (Step.context hooks program) input with
+  | .ok [] => .ok false
+  | .ok (_ :: _) => .ok true
+  | .error failure => .error failure
+
 /-- Evaluate one start for `evaluation` at `atMs`: a start whose predicate does not hold adds nothing, one whose
 predicate fails adds its `failed` entry, and one that holds starts its instance with the business key and every
 submitted variable, adding the start's entry, and the intents its step left cascade before the next start. The
-predicate is asked first (`Hooks.startsFired`), so a false start is never read off a refused start step. -/
+predicate is asked first (`conditionalStartVerdict`), so a false start is never read off a refused start step. -/
 def evaluateStart (hooks : Hooks) (registry : List Deployment) (evaluation : ConditionEvaluation) (atMs : Nat)
     (fanning : Fanning) : Deployment × Header × String → Except String Fanning
   | (deployment, header, publicStart) => do
@@ -36,13 +45,13 @@ def evaluateStart (hooks : Hooks) (registry : List Deployment) (evaluation : Con
       { instanceId := startedInstanceId evaluation.commandId deployment.deploymentId publicStart
         startEvent := some header.id, variables := evaluation.variables, trigger := .condition
         businessKey := evaluation.businessKey, atMs := some atMs }
-    match hooks.startsFired (Step.context hooks deployment.program) input with
-    | .ok [] => pure fanning
-    | .ok (_ :: _) =>
+    match conditionalStartVerdict hooks deployment.program input with
+    | .ok false => pure fanning
+    | .ok true =>
       let (started, entry) ← startInstance hooks deployment publicStart input
       let fanning := { fanning.add entry with instances := fanning.instances ++ started.toList }
       match started with
-      | some member => cascade hooks registry evaluation.commandId atMs fanning member.state deployment.program
+      | some member => cascade hooks registry atMs fanning member.state deployment.program
       | none => pure fanning
     | .error failure => pure (fanning.add (.failed receiver failure))
 
@@ -59,7 +68,8 @@ def evaluateConditions (hooks : Hooks) (registry : List Deployment) (instances :
   if starts.isEmpty then return (instances, .rejected "no-conditional-start")
   let some ordered := inOrder (fun (deployment, _, start) => .start deployment.deploymentId start) starts evaluation.order
     | return (instances, .rejected "discovery-order-mismatch")
-  let fanning ← ordered.foldlM (evaluateStart hooks registry evaluation atMs) { instances }
+  let fanning ← ordered.foldlM (evaluateStart hooks registry evaluation atMs)
+    (fanningOf evaluation.commandId instances)
   pure (fanning.instances, .fanOut fanning.entries)
 
 end Kernel.Population

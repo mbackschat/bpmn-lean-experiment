@@ -18,6 +18,8 @@ import {
   signalAddressMatches,
   type BroadcastIntent,
   type Binding,
+  type Failure,
+  type Outcome,
   type OccurrenceRef,
   type SignalAddress,
   type StartInput,
@@ -89,159 +91,331 @@ export function inOrder<T>(receiver: (item: T) => Receiver, listed: readonly T[]
 
 /**
  * A Signal on its way to the population: its address and variables, the business key of the instances it starts, the
- * identity of the instance it starts at a deployment's start Event, and the State that threw it, which never receives
- * it again: its own receivers fired inside the throwing step (M7 OP-A).
+ * throw occurrence it left by public identifier, which names the instances it starts (`cascadeInstanceId`; without one,
+ * `startedInstanceId` after the command), and the State that threw it, which never receives it again: its own receivers
+ * fired inside the throwing step (M7 OP-A). Plain data, so a host can carry it in a fan-out in progress.
  */
 export type Emission = Readonly<{
   address: SignalAddress;
   variables: readonly Binding[];
   businessKey: string | null;
-  startedId: (deploymentId: number, startEvent: string) => string;
+  origin: OccurrenceRef | null;
   emitter: string | null;
 }>;
 
+/** The identity of the instance `emission` starts at `startEvent` of `deploymentId` in the fan-out `commandId` began. */
+export function emissionStartedId(emission: Emission, commandId: string, deploymentId: number, startEvent: string): string {
+  return emission.origin === null
+    ? startedInstanceId(commandId, deploymentId, startEvent)
+    : cascadeInstanceId(commandId, deploymentId, startEvent, emission.origin);
+}
+
+/** The emission of an intent a committed step of the instance `emitter` left, its origin by public identifier. */
+export function intentEmission(emitter: string, intent: BroadcastIntent): Emission {
+  return { address: intent.address, variables: intent.variables, businessKey: intent.businessKey, origin: intent.origin, emitter };
+}
+
 /**
- * The receivers of `emission` when its delivery begins (population contract §6), each with the program it runs: the
- * open Signal items of its address in running instances other than the emitter's, by process instance identifier, then
- * arming order; then the root Signal starts of its address in each key's current deployment, in deploy order, then
- * document order. A receiver armed later in the delivery is not reached.
+ * The open Signal items of `address` in one instance's `state` of `program`, by process instance identifier (a called
+ * instance's own), then arming order: none unless the instance is running, and none for the `emitter`'s own State. A
+ * host asks it of each instance a delivery may reach.
+ */
+export function signalReceiversOf(
+  program: Program,
+  state: State,
+  address: SignalAddress,
+  emitter: string | null,
+): readonly OccurrenceRef[] {
+  if (state.status !== InstanceStatus.Running || emitter === state.instanceId) return [];
+  const waiting = state.openItems.flatMap((item) => {
+    const signal = openKindView(item.kind).signal;
+    if (signal === null || !signalAddressMatches(address, signal.address)) return [];
+    return [[instanceOf(state, item.scope), item.id, occurrence(program, state, item)] as const];
+  });
+  const ordered = mergeSort(waiting, ([leftInstance, leftItem], [rightInstance, rightItem]) =>
+    compareStrings(leftInstance, rightInstance) < 0 || (leftInstance === rightInstance && leftItem <= rightItem));
+  return ordered.map(([, , ref]) => ref);
+}
+
+/**
+ * The root Signal starts of `program`, deployed as `deploymentId`, that a delivery of `address` carrying `variables`
+ * fires (`Hooks.startsFired`), in document order.
+ */
+export function signalStartReceivers(
+  hooks: Hooks,
+  deploymentId: number,
+  program: Program,
+  address: SignalAddress,
+  variables: readonly Binding[],
+): readonly Receiver[] {
+  const ctx = context(hooks, program);
+  return programChildren(program, null).flatMap((element) => {
+    const started = elementStart(element);
+    if (started === null) return [];
+    const probe: StartInput = {
+      instanceId: "", startEvent: started[0].id, variables: [], businessKey: null, atMs: null,
+      trigger: { tag: StartTriggerTag.Signal, address, variables },
+    };
+    const fired = hooks.startsFired(ctx, probe);
+    if (!fired.ok || fired.value.length === 0) return [];
+    return [{ tag: ReceiverTag.Start, deploymentId, startEvent: programPublicId(program, started[0].id) } as Receiver];
+  });
+}
+
+/**
+ * The defined linearization of a delivery's snapshot (population contract §6, CIB-INT-0030): the waiting receivers of
+ * every instance by their process instance identifier, each instance's own in the order its list gives, then the start
+ * receivers of each deployment in deploy order. No process instance identifier spans two instances' lists.
+ */
+export function linearizeReceivers(
+  waiting: readonly (readonly [instanceId: string, receivers: readonly OccurrenceRef[]])[],
+  starts: readonly (readonly [deploymentId: number, receivers: readonly Receiver[]])[],
+): readonly Receiver[] {
+  const occurrences = mergeSort(waiting.flatMap(([, refs]) => refs), (left, right) =>
+    compareStrings(left.processInstanceId, right.processInstanceId) <= 0);
+  const deployments = mergeSort(starts, ([left], [right]) => left <= right);
+  return [
+    ...occurrences.map((ref): Receiver => ({ tag: ReceiverTag.Occurrence, ref })),
+    ...deployments.flatMap(([, receivers]) => receivers),
+  ];
+}
+
+/**
+ * The receivers of `emission` when its delivery begins: `signalReceiversOf` each instance and `signalStartReceivers`
+ * each key's current deployment, linearized; and the programs of the instances and deployments it reaches. A receiver
+ * armed later in the delivery is not reached.
  */
 export function receiversOf(
   hooks: Hooks,
   registry: readonly Deployment[],
   instances: readonly Instance[],
   emission: Emission,
-): readonly (readonly [Receiver, Program])[] {
-  const waiting = instances.flatMap((member) => {
-    if (member.state.status !== InstanceStatus.Running || emission.emitter === member.state.instanceId) return [];
-    return member.state.openItems.flatMap((item) => {
-      const signal = openKindView(item.kind).signal;
-      if (signal === null || !signalAddressMatches(emission.address, signal.address)) return [];
-      return [[instanceOf(member.state, item.scope), item.id, occurrence(member.deployment.program, member.state, item),
-        member.deployment.program] as const];
-    });
-  });
-  const ordered = mergeSort(waiting, ([leftInstance, leftItem], [rightInstance, rightItem]) =>
-    compareStrings(leftInstance, rightInstance) < 0 || (leftInstance === rightInstance && leftItem <= rightItem));
-  const starts = currentDeployments(registry).flatMap((deployment) => {
-    const ctx = context(hooks, deployment.program);
-    return programChildren(deployment.program, null).flatMap((element) => {
-      const started = elementStart(element);
-      if (started === null) return [];
-      const probe: StartInput = {
-        instanceId: "", startEvent: started[0].id, variables: [], businessKey: null, atMs: null,
-        trigger: { tag: StartTriggerTag.Signal, address: emission.address, variables: emission.variables },
-      };
-      const fired = hooks.startsFired(ctx, probe);
-      if (!fired.ok || fired.value.length === 0) return [];
-      const receiver: Receiver = { tag: ReceiverTag.Start, deploymentId: deployment.deploymentId, startEvent: programPublicId(deployment.program, started[0].id) };
-      return [[receiver, deployment.program] as const];
-    });
-  });
-  return [...ordered.map(([, , ref, program]) => [{ tag: ReceiverTag.Occurrence, ref } as Receiver, program] as const), ...starts];
+): readonly [readonly Receiver[], readonly Program[]] {
+  const waiting = instances.map((member) =>
+    [member, signalReceiversOf(member.deployment.program, member.state, emission.address, emission.emitter)] as const);
+  const starts = currentDeployments(registry).map((deployment) =>
+    [deployment, signalStartReceivers(hooks, deployment.deploymentId, deployment.program, emission.address, emission.variables)] as const);
+  const reached = [
+    ...waiting.filter(([, refs]) => refs.length > 0).map(([member]) => member.deployment.program),
+    ...starts.filter(([, receivers]) => receivers.length > 0).map(([deployment]) => deployment.program),
+  ];
+  const linearized = linearizeReceivers(
+    waiting.map(([member, refs]) => [member.state.instanceId, refs] as const),
+    starts.map(([deployment, receivers]) => [deployment.deploymentId, receivers] as const));
+  return [linearized, reached];
 }
 
 /**
- * The emission of the intent a committed step of `state`, an instance of `program`, left in the cascade the command
- * `commandId` began: the instances it starts are named after the throw's own occurrence (`cascadeInstanceId`).
+ * What reaching an occurrence of one instance did: nothing when it is no longer a receiver of the address, read off the
+ * open items and never off a Step failure (R8), else the step of its broadcast delivery.
  */
-export function intentEmission(commandId: string, program: Program, state: State, intent: BroadcastIntent): Emission {
-  const emitter = { ...intent.origin, element: programPublicId(program, intent.origin.element) };
-  return {
-    address: intent.address, variables: intent.variables, businessKey: intent.businessKey,
-    startedId: (deploymentId, startEvent) => cascadeInstanceId(commandId, deploymentId, startEvent, emitter),
-    emitter: state.instanceId,
-  };
-}
+export type OccurrenceReach = { readonly skipped: true } | { readonly skipped: false; readonly outcome: Outcome };
 
-/** An intent's emission and its receivers when its delivery begins. */
-export function intentReceivers(
+/**
+ * Reach `target` in `state`, an instance of `program`, with a broadcast delivery of `address` at `atMs`: the only place
+ * a delivery takes the `broadcast` reach.
+ */
+export function reachOccurrence(
   hooks: Hooks,
-  registry: readonly Deployment[],
-  commandId: string,
-  instances: readonly Instance[],
   program: Program,
   state: State,
-  intent: BroadcastIntent,
-): readonly [Emission, readonly Receiver[]] {
-  const emission = intentEmission(commandId, program, state, intent);
-  return [emission, receiversOf(hooks, registry, instances, emission).map(([receiver]) => receiver)];
+  address: SignalAddress,
+  variables: readonly Binding[],
+  target: OccurrenceRef,
+  atMs: number,
+): OccurrenceReach {
+  if (!signalReceiversOf(program, state, address, null).some((ref) => sameOccurrence(ref, target))) return { skipped: true };
+  const outcome = step(hooks, program, state, {
+    tag: InputTag.Deliver,
+    payload: {
+      occurrence: target, trigger: { tag: DeliveryTriggerTag.Signal, address, reach: SignalReach.Broadcast },
+      correlation: [], payload: null, variables, atMs,
+    },
+  });
+  return { skipped: false, outcome };
 }
 
-/** Lean's `List` built newest first: adding an entry shares the rest. */
-type Entries = Readonly<{ head: FanOutEntry; tail: Entries }> | null;
+/** A persistent stack, top first: Lean's `List`, so pushing and popping never copy. */
+type Stack<T> = Readonly<{ head: T; tail: Stack<T> }> | null;
+
+function pushAll<T>(items: readonly T[], onto: Stack<T>): Stack<T> {
+  let stack = onto;
+  for (let index = items.length - 1; index >= 0; index -= 1) stack = { head: items[index] as T, tail: stack };
+  return stack;
+}
+
+function stackItems<T>(stack: Stack<T>): T[] {
+  const items: T[] = [];
+  for (let at = stack; at !== null; at = at.tail) items.push(at.head);
+  return items;
+}
+
+export enum PendingTag {
+  Receiver = "receiver",
+  Intent = "intent",
+}
 
 /**
- * A fan-out in progress: the population's instances, the entries so far, newest first so that adding one costs the same
- * however long a cascade runs, how many receivers it may still reach and whether the cascade bound stopped it.
+ * What a fan-out still has to do, first item first: reach a receiver, or take the snapshot of an intent the instance
+ * `emitter` left, its origin by public identifier, and reach its receivers.
  */
-export type Fanning = Readonly<{ instances: readonly Instance[]; reversed: Entries; budget: number; stopped: boolean }>;
+export type Pending =
+  | { readonly tag: PendingTag.Receiver; readonly emission: Emission; readonly receiver: Receiver }
+  | { readonly tag: PendingTag.Intent; readonly emitter: string; readonly intent: BroadcastIntent };
 
-export function fanningOf(instances: readonly Instance[], budget = cascadeBound): Fanning {
-  return { instances, reversed: null, budget, stopped: false };
+/**
+ * A fan-out in progress as plain data (population contract §5): its command, the work still to do, the entries so far,
+ * newest first so that adding one costs the same however long a cascade runs, how many receivers it may still reach and
+ * whether the cascade bound stopped it.
+ */
+export type FanOutMachine = Readonly<{
+  commandId: string;
+  pending: Stack<Pending>;
+  reversed: Stack<FanOutEntry>;
+  budget: number;
+  stopped: boolean;
+}>;
+
+export enum FanOutNextTag {
+  Reach = "reach",
+  Snapshot = "snapshot",
+  Done = "done",
 }
 
-export function fanningAdd(fanning: Fanning, entry: FanOutEntry): Fanning {
-  return { ...fanning, reversed: { head: entry, tail: fanning.reversed } };
+/**
+ * The next thing a fan-out needs: a receiver reached, the snapshot of an intent the occurrence `emitter` threw taken, or
+ * nothing more, with every entry.
+ */
+export type FanOutNext =
+  | { readonly tag: FanOutNextTag.Reach; readonly receiver: Receiver; readonly emission: Emission }
+  | { readonly tag: FanOutNextTag.Snapshot; readonly intent: BroadcastIntent; readonly emitter: OccurrenceRef; readonly emission: Emission }
+  | { readonly tag: FanOutNextTag.Done; readonly entries: readonly FanOutEntry[] };
+
+/** A fan-out of `commandId` over `root`, which may reach `budget` receivers. */
+export function fanOutBegin(commandId: string, root: readonly Pending[], budget: number): FanOutMachine {
+  return { commandId, pending: pushAll(root, null), reversed: null, budget, stopped: false };
 }
 
 /** The entries in the order the fan-out reached them. */
-export function fanningEntries(fanning: Fanning): readonly FanOutEntry[] {
-  const entries: FanOutEntry[] = [];
-  for (let at = fanning.reversed; at !== null; at = at.tail) entries.push(at.head);
-  return entries.reverse();
+export function machineEntries(machine: FanOutMachine): readonly FanOutEntry[] {
+  return stackItems(machine.reversed).reverse();
+}
+
+export function machineAdd(machine: FanOutMachine, entry: FanOutEntry): FanOutMachine {
+  return { ...machine, reversed: { head: entry, tail: machine.reversed } };
 }
 
 /** Stop at `receiver`: the cascade bound is reached, receivers already committed stay committed. */
-export function fanningStop(fanning: Fanning, receiver: Receiver): Fanning {
-  const failure = { tag: FailureTag.Unsupported, code: "population-cascade-bound" } as const;
-  return { ...fanningAdd(fanning, { tag: FanOutEntryTag.Failed, target: receiver, failure }), stopped: true };
+function machineStop(machine: FanOutMachine, receiver: Receiver): FanOutMachine {
+  // dynamic-only: how far a cascade runs depends on the population and its run
+  const failure: Failure = { tag: FailureTag.Unsupported, code: "population-cascade-bound" };
+  return { ...machineAdd(machine, { tag: FanOutEntryTag.Failed, target: receiver, failure }), stopped: true, pending: null };
 }
 
 /** Spend one of the fan-out's receivers on `receiver`: `false` when the fan-out has stopped or stops now at it. */
-export function fanningSpend(fanning: Fanning, receiver: Receiver): readonly [Fanning, boolean] {
-  if (fanning.stopped) return [fanning, false];
-  if (fanning.budget === 0) return [fanningStop(fanning, receiver), false];
-  return [{ ...fanning, budget: fanning.budget - 1 }, true];
+export function machineSpend(machine: FanOutMachine, receiver: Receiver): readonly [FanOutMachine, boolean] {
+  if (machine.stopped) return [machine, false];
+  if (machine.budget === 0) return [machineStop(machine, receiver), false];
+  return [{ ...machine, budget: machine.budget - 1 }, true];
 }
 
-type Reached = readonly [Fanning, readonly [State, Program] | null];
+/** The machine stopped at its next receiver when no receiver is left to spend, else as it is. */
+export function machineStopWhenSpent(machine: FanOutMachine): FanOutMachine {
+  const next = machine.pending?.head;
+  if (next === undefined || next.tag === PendingTag.Intent) return machine;
+  return !machine.stopped && machine.budget === 0 ? machineStop(machine, next.receiver) : machine;
+}
 
 /**
- * Reach one receiver at `atMs`. An occurrence still open in a running instance takes a broadcast delivery, one gone
- * since the snapshot is `skipped`, read off the open items and never off a Step failure (R8); a start starts its
- * instance. Answers the fan-out with the receiver's entry and, when it committed, its State and program, whose intents
- * cascade.
+ * What the fan-out needs next. Past `cascadeBound` receivers it is done, its last entry `failed {receiver, unsupported,
+ * population-cascade-bound}`.
  */
-export function reach(
+export function fanOutNext(start: FanOutMachine): FanOutNext {
+  const machine = machineStopWhenSpent(start);
+  const next = machine.pending?.head;
+  if (machine.stopped || next === undefined) return { tag: FanOutNextTag.Done, entries: machineEntries(machine) };
+  if (next.tag === PendingTag.Receiver) return { tag: FanOutNextTag.Reach, receiver: next.receiver, emission: next.emission };
+  return { tag: FanOutNextTag.Snapshot, intent: next.intent, emitter: next.intent.origin, emission: intentEmission(next.emitter, next.intent) };
+}
+
+/**
+ * Take the snapshot of the intent `fanOutNext` named: its `receivers`, in `order` when given, which must name each of
+ * them exactly once (`discovery-order-mismatch`), go first, before the rest.
+ */
+export function fanOutSnapshot(machine: FanOutMachine, receivers: readonly Receiver[], order: readonly Receiver[] | null): Refusable<FanOutMachine> {
+  const next = machine.pending;
+  if (next === null || next.head.tag !== PendingTag.Intent) return { ok: false, error: "fan-out-not-at-snapshot" };
+  const ordered = inOrder((receiver: Receiver) => receiver, receivers, order);
+  if (ordered === null) return { ok: false, error: "discovery-order-mismatch" };
+  const emission = intentEmission(next.head.emitter, next.head.intent);
+  const items = ordered.map((receiver): Pending => ({ tag: PendingTag.Receiver, emission, receiver }));
+  return { ok: true, value: { ...machine, pending: pushAll(items, next.tail) } };
+}
+
+/**
+ * Record the entry of the receiver `fanOutNext` named and the intents its committed step in the instance `emitter` left,
+ * origins by public identifier: they go first, depth-first, before the next receiver.
+ */
+export function fanOutRecord(machine: FanOutMachine, entry: FanOutEntry, intents: readonly BroadcastIntent[], emitter: string): FanOutMachine {
+  const next = machine.pending;
+  if (next === null || next.head.tag !== PendingTag.Receiver) return machine;
+  const items = intents.map((intent): Pending => ({ tag: PendingTag.Intent, emitter, intent }));
+  return { ...machineAdd(machine, entry), budget: machine.budget - 1, pending: pushAll(items, next.tail) };
+}
+
+/** A fan-out over the population's instances. */
+export type Fanning = Readonly<{ instances: readonly Instance[]; machine: FanOutMachine }>;
+
+/** A fan-out of `commandId` over `instances` with nothing to do yet, which may reach `budget` receivers. */
+export function fanningOf(commandId: string, instances: readonly Instance[], budget = cascadeBound): Fanning {
+  return { instances, machine: fanOutBegin(commandId, [], budget) };
+}
+
+export function fanningAdd(fanning: Fanning, entry: FanOutEntry): Fanning {
+  return { ...fanning, machine: machineAdd(fanning.machine, entry) };
+}
+
+export function fanningEntries(fanning: Fanning): readonly FanOutEntry[] {
+  return machineEntries(fanning.machine);
+}
+
+export function fanningSpend(fanning: Fanning, receiver: Receiver): readonly [Fanning, boolean] {
+  const [machine, reachable] = machineSpend(fanning.machine, receiver);
+  return [{ ...fanning, machine }, reachable];
+}
+
+/** The intents a committed step of `state`, an instance of `program`, left, origins by public identifier. */
+export function publicIntents(program: Program, state: State): readonly BroadcastIntent[] {
+  return state.outbox.map((intent) => ({ ...intent, origin: { ...intent.origin, element: programPublicId(program, intent.origin.element) } }));
+}
+
+type Reached = readonly [readonly Instance[], FanOutEntry, readonly [State, Program] | null];
+
+/**
+ * Reach one receiver at `atMs` in the fan-out `commandId` began: an occurrence by `reachOccurrence` in the instance it
+ * is waiting in, `skipped` when none still waits there; a start starts its instance. Answers the instances, the
+ * receiver's entry and, when it committed, its State and program, whose intents cascade.
+ */
+export function reachReceiver(
   hooks: Hooks,
   registry: readonly Deployment[],
   atMs: number,
-  fanning: Fanning,
+  commandId: string,
+  instances: readonly Instance[],
   emission: Emission,
   receiver: Receiver,
 ): Refusable<Reached> {
   if (receiver.tag === ReceiverTag.Occurrence) {
     const target = receiver.ref;
-    const index = fanning.instances.findIndex((member) => member.state.status === InstanceStatus.Running &&
-      member.state.openItems.some((item) => {
-        const signal = openKindView(item.kind).signal;
-        return signal !== null && signalAddressMatches(emission.address, signal.address) &&
-          sameOccurrence(occurrence(member.deployment.program, member.state, item), target);
-      }));
-    const member = fanning.instances[index];
-    if (index < 0) return { ok: true, value: [fanningAdd(fanning, { tag: FanOutEntryTag.Skipped, target }), null] };
-    if (member === undefined) return { ok: false, error: "receiver-without-instance" };
-    const stepped = step(hooks, member.deployment.program, member.state, {
-      tag: InputTag.Deliver,
-      payload: {
-        occurrence: target, trigger: { tag: DeliveryTriggerTag.Signal, address: emission.address, reach: SignalReach.Broadcast },
-        correlation: [], payload: null, variables: emission.variables, atMs,
-      },
-    });
-    if (!stepped.ok) return { ok: true, value: [fanningAdd(fanning, { tag: FanOutEntryTag.Failed, target: receiver, failure: stepped.failure }), null] };
-    const instances = fanning.instances.map((other, at) => (at === index ? { ...member, state: stepped.value } : other));
-    return { ok: true, value: [{ ...fanningAdd(fanning, { tag: FanOutEntryTag.Delivered, target }), instances }, [stepped.value, member.deployment.program]] };
+    for (const [index, member] of instances.entries()) {
+      const reached = reachOccurrence(hooks, member.deployment.program, member.state, emission.address, emission.variables, target, atMs);
+      if (reached.skipped) continue;
+      const outcome = reached.outcome;
+      if (!outcome.ok) return { ok: true, value: [instances, { tag: FanOutEntryTag.Failed, target: receiver, failure: outcome.failure }, null] };
+      const stepped = instances.map((other, at) => (at === index ? { ...member, state: outcome.value } : other));
+      return { ok: true, value: [stepped, { tag: FanOutEntryTag.Delivered, target }, [outcome.value, member.deployment.program]] };
+    }
+    return { ok: true, value: [instances, { tag: FanOutEntryTag.Skipped, target }, null] };
   }
   const deployment = registry.find((candidate) => candidate.deploymentId === receiver.deploymentId);
   if (deployment === undefined) return { ok: false, error: "receiver-without-deployment" };
@@ -252,29 +426,15 @@ export function reach(
   })[0];
   if (header === undefined) return { ok: false, error: "receiver-without-start" };
   const started = startInstance(hooks, deployment, receiver.startEvent, {
-    instanceId: emission.startedId(receiver.deploymentId, receiver.startEvent), startEvent: header.id, variables: [],
+    instanceId: emissionStartedId(emission, commandId, receiver.deploymentId, receiver.startEvent), startEvent: header.id, variables: [],
     trigger: { tag: StartTriggerTag.Signal, address: emission.address, variables: emission.variables },
     businessKey: emission.businessKey, atMs,
   });
   if (!started.ok) return started;
   const [instance, entry] = started.value;
-  const added = fanningAdd(fanning, entry);
-  if (instance === null) return { ok: true, value: [added, null] };
-  return { ok: true, value: [{ ...added, instances: [...fanning.instances, instance] }, [instance.state, program]] };
+  if (instance === null) return { ok: true, value: [instances, entry, null] };
+  return { ok: true, value: [[...instances, instance], entry, [instance.state, program]] };
 }
-
-/**
- * What a fan-out still has to do: reach a receiver, or take the snapshot of an intent a committed step left and reach
- * its receivers.
- */
-export enum PendingTag {
-  Receiver = "receiver",
-  Intent = "intent",
-}
-
-export type Pending =
-  | Readonly<{ tag: PendingTag.Receiver; emission: Emission; receiver: Receiver }>
-  | Readonly<{ tag: PendingTag.Intent; program: Program; state: State; intent: BroadcastIntent }>;
 
 /**
  * Enough items for any fan-out: it takes at most `cascadeBound + 1` receivers, the last stopping it, of which at most
@@ -283,56 +443,51 @@ export type Pending =
  */
 export const pendingFuel = (cascadeBound + 1) * (closureBound + 2);
 
+/** Take the snapshot or reach the receiver `next` names at `atMs`. */
+function fanOutStep(hooks: Hooks, registry: readonly Deployment[], atMs: number, fanning: Fanning, next: FanOutNext): Refusable<Fanning> {
+  const machine = fanning.machine;
+  switch (next.tag) {
+    case FanOutNextTag.Done:
+      return { ok: true, value: fanning };
+    case FanOutNextTag.Snapshot: {
+      const taken = fanOutSnapshot(machine, receiversOf(hooks, registry, fanning.instances, next.emission)[0], null);
+      return taken.ok ? { ok: true, value: { ...fanning, machine: taken.value } } : taken;
+    }
+    case FanOutNextTag.Reach: {
+      const reached = reachReceiver(hooks, registry, atMs, machine.commandId, fanning.instances, next.emission, next.receiver);
+      if (!reached.ok) return reached;
+      const [instances, entry, committed] = reached.value;
+      const [emitter, intents] = committed === null ? ["", []] as const : [committed[0].instanceId, publicIntents(committed[1], committed[0])] as const;
+      return { ok: true, value: { instances, machine: fanOutRecord(machine, entry, intents, emitter) } };
+    }
+  }
+  return assertNever(next);
+}
+
 /**
- * Work off `pending` in order, each receiver its own unit of commitment (population contract §5): a committed
- * receiver's intents go first, depth-first, each taking its snapshot when its own delivery begins, before the next
- * receiver. Past `cascadeBound` receivers the fan-out stops with `failed {receiver, unsupported,
- * population-cascade-bound}` and the rest is dropped. A stack, not recursion per intent, so a long cascade needs no deep
- * call stack.
+ * Run the fan-out's machine to its end at `atMs`, each receiver its own unit of commitment (population contract §5): a
+ * committed receiver's intents go first, depth-first, each taking its snapshot (`receiversOf`) when its own delivery
+ * begins, before the next receiver. The work list is the machine's, so a long cascade needs no deep call stack.
  */
-export function fanOut(
-  hooks: Hooks,
-  registry: readonly Deployment[],
-  commandId: string,
-  atMs: number,
-  start: Fanning,
-  pending: readonly Pending[],
-): Refusable<Fanning> {
+export function fanOut(hooks: Hooks, registry: readonly Deployment[], atMs: number, start: Fanning): Refusable<Fanning> {
   let fanning = start;
-  const stack = [...pending].reverse();
   for (let fuel = pendingFuel; ; fuel -= 1) {
-    const next = stack.pop();
-    if (next === undefined) return { ok: true, value: fanning };
+    const machine = machineStopWhenSpent(fanning.machine);
+    fanning = { ...fanning, machine };
+    const next = fanOutNext(machine);
+    if (next.tag === FanOutNextTag.Done) return { ok: true, value: fanning };
     // `pendingFuel` bounds every fan-out, so running out of it is a harness defect.
     if (fuel === 0) return { ok: false, error: "population-fan-out-fuel" };
-    if (next.tag === PendingTag.Intent) {
-      const [emission, receivers] = intentReceivers(hooks, registry, commandId, fanning.instances, next.program, next.state, next.intent);
-      for (const receiver of [...receivers].reverse()) stack.push({ tag: PendingTag.Receiver, emission, receiver });
-      continue;
-    }
-    const [spent, reachable] = fanningSpend(fanning, next.receiver);
-    if (!reachable) return { ok: true, value: spent };
-    const reached = reach(hooks, registry, atMs, spent, next.emission, next.receiver);
-    if (!reached.ok) return reached;
-    const [after, committed] = reached.value;
-    fanning = after;
-    if (committed === null) continue;
-    const [state, program] = committed;
-    for (const intent of [...state.outbox].reverse()) stack.push({ tag: PendingTag.Intent, program, state, intent });
+    const stepped = fanOutStep(hooks, registry, atMs, fanning, next);
+    if (!stepped.ok) return stepped;
+    fanning = stepped.value;
   }
 }
 
-/** Deliver the intents a committed step of `state`, an instance of `program`, left, in the cascade `commandId` began. */
-export function cascade(
-  hooks: Hooks,
-  registry: readonly Deployment[],
-  commandId: string,
-  atMs: number,
-  start: Fanning,
-  state: State,
-  program: Program,
-): Refusable<Fanning> {
-  return fanOut(hooks, registry, commandId, atMs, start, state.outbox.map((intent) => ({ tag: PendingTag.Intent, program, state, intent })));
+/** Deliver the intents a committed step of `state`, an instance of `program`, left, before the fan-out's other work. */
+export function cascade(hooks: Hooks, registry: readonly Deployment[], atMs: number, fanning: Fanning, state: State, program: Program): Refusable<Fanning> {
+  const items = publicIntents(program, state).map((intent): Pending => ({ tag: PendingTag.Intent, emitter: state.instanceId, intent }));
+  return fanOut(hooks, registry, atMs, { ...fanning, machine: { ...fanning.machine, pending: pushAll(items, fanning.machine.pending) } });
 }
 
 /**
@@ -350,7 +505,7 @@ export function cascadeOf(
 ): Refusable<Fanning> {
   const member = instances.find((candidate) => candidate.state.instanceId === instanceId);
   if (member === undefined) return { ok: false, error: "cascade-without-instance" };
-  return cascade(hooks, registry, commandId, atMs, fanningOf(instances, budget), member.state, member.deployment.program);
+  return cascade(hooks, registry, atMs, fanningOf(commandId, instances, budget), member.state, member.deployment.program);
 }
 
 /**
@@ -407,20 +562,17 @@ export function broadcast(
   atMs: number,
   sent: Broadcast,
 ): Refusable<readonly [readonly Instance[], Resolution]> {
-  const emission: Emission = {
-    address: sent.address, variables: sent.variables, businessKey: null,
-    startedId: (deploymentId, startEvent) => startedInstanceId(sent.commandId, deploymentId, startEvent), emitter: null,
-  };
-  const snapshot = receiversOf(hooks, registry, instances, emission);
+  const emission: Emission = { address: sent.address, variables: sent.variables, businessKey: null, origin: null, emitter: null };
+  const [snapshot, programs] = receiversOf(hooks, registry, instances, emission);
   const rejected = (code: string): Refusable<readonly [readonly Instance[], Resolution]> =>
     ({ ok: true, value: [instances, { tag: ResolutionTag.Rejected, code }] });
-  if (sent.variables.length > 0 && snapshot.some(([, program]) => program.options.signalPayload === SignalPayload.None)) {
+  if (sent.variables.length > 0 && programs.some((program) => program.options.signalPayload === SignalPayload.None)) {
     return rejected("broadcast-variables-not-admitted");
   }
-  const ordered = inOrder(([receiver]) => receiver, snapshot, sent.order);
+  const ordered = inOrder((receiver: Receiver) => receiver, snapshot, sent.order);
   if (ordered === null) return rejected("discovery-order-mismatch");
-  const fanned = fanOut(hooks, registry, sent.commandId, atMs, fanningOf(instances),
-    ordered.map(([receiver]) => ({ tag: PendingTag.Receiver, emission, receiver })));
+  const root = ordered.map((receiver): Pending => ({ tag: PendingTag.Receiver, emission, receiver }));
+  const fanned = fanOut(hooks, registry, atMs, { instances, machine: fanOutBegin(sent.commandId, root, cascadeBound) });
   if (!fanned.ok) return fanned;
   return { ok: true, value: [fanned.value.instances, { tag: ResolutionTag.FanOut, entries: fanningEntries(fanned.value) }] };
 }

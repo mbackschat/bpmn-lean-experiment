@@ -182,7 +182,7 @@ function publicationFromJson(json: unknown, where: string): Publication {
 }
 
 /** A population command step, or `null` for another step kind. */
-function commandFromJson(kind: string, json: unknown, where: string): Command | null {
+export function populationCommandFromJson(kind: string, json: unknown, where: string): Command | null {
   const commandId = (): string => requiredString(json, "commandId", where);
   const variables = (): readonly Binding[] => decoded(decodeBindings(json, "variables"), where);
   switch (kind) {
@@ -257,7 +257,7 @@ export function stimuliOfPopulation(declared: readonly Declared[], sources: read
       stimuli.push(instanceStimulus(declared, scripts, json, at, where));
       return;
     }
-    const command = commandFromJson(kind, json, where);
+    const command = populationCommandFromJson(kind, json, where);
     if (command === null) throw new Error(`${where}: unsupported population step ${kind}`);
     stimuli.push({ tag: StimulusTag.Command, command, atMs: clock, digest: digests[index] ?? "" });
   });
@@ -300,7 +300,7 @@ function receiverJson(receiver: Receiver): JsonValue {
   return assertNever(receiver);
 }
 
-function fanOutEntryJson(entry: FanOutEntry): JsonValue {
+export function fanOutEntryJson(entry: FanOutEntry): JsonValue {
   switch (entry.tag) {
     case FanOutEntryTag.Delivered:
       return { kind: "delivered", target: referenceJson(entry.target) };
@@ -322,7 +322,7 @@ function cascadeField(entries: readonly FanOutEntry[]): Readonly<Record<string, 
   return entries.length === 0 ? {} : { cascade: entries.map(fanOutEntryJson) };
 }
 
-function resolutionJson(resolution: Resolution): JsonValue {
+export function resolutionJson(resolution: Resolution): JsonValue {
   switch (resolution.tag) {
     case ResolutionTag.Committed:
       return { kind: "committed", target: referenceJson(resolution.target), ...cascadeField(resolution.cascade) };

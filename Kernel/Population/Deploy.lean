@@ -1,5 +1,6 @@
 module
 
+public import Kernel.IL.Timer
 public import Kernel.Population.Contract
 
 /-! # Population: deployments
@@ -77,15 +78,62 @@ def messageStarts (program : Program) : List (Header × MessageTrigger) :=
 def messageStartNames (program : Program) : List String :=
   (messageStarts program).filterMap fun (_, trigger) => trigger.name.bind ValueSource.literal?
 
+/-- A program's root Timer starts whose schedule resolves to what a host arms, in document order. -/
+def timerStarts (program : Program) : List (Header × Timer.Resolved) :=
+  ((program.children none).filterMap Element.start?).filterMap fun (header, start) =>
+    (start.subscription.bind (·.trigger.timer?)).bind fun trigger =>
+      (Timer.resolve trigger.schedule).toOption.map (header, ·)
+
+/-- What registering a deployment and firing its Timer starts read of it, as plain data a host keeps without the
+program: its deploy ordinal, root key and own keys with their versions, its deploy time, whether Message names address
+its starts (CIB-LIM-0022), its root Message start names and its root Timer starts by public identifier. -/
+structure DeploymentSummary where
+  deploymentId : Nat
+  key : String
+  keys : List String
+  versions : List (String × Nat) := []
+  deployedAtMs : Nat := 0
+  namesAddress : Bool
+  messageStartNames : List String
+  timerStarts : List (String × Timer.Resolved)
+
+/-- The summary of `program`, not yet registered: its ordinal is the deployment its identity names, 0 for none, and it
+has no versions and the deploy time 0 until it is registered. -/
+def deploymentSummary (program : Program) : DeploymentSummary :=
+  let deploymentId := program.identity.deployment.getD 0
+  { deploymentId, key := program.identity.processId, keys := ownKeys deploymentId program
+    namesAddress := program.options.messageNames == .addresses, messageStartNames := messageStartNames program
+    timerStarts := (timerStarts program).map fun (header, resolved) => ((program.publicId header.id).value, resolved) }
+
+/-- A registered deployment's summary. -/
+def Deployment.summary (deployment : Deployment) : DeploymentSummary :=
+  { deploymentSummary deployment.program with
+    deploymentId := deployment.deploymentId, versions := deployment.versions, deployedAtMs := deployment.deployedAtMs }
+
+/-- The current summary of `key`: its last registered deployment. -/
+def currentSummary (registry : List DeploymentSummary) (key : String) : Option DeploymentSummary :=
+  (registry.filter (·.key == key)).getLast?
+
+/-- The version each key of `candidate` takes: 1 + the number of registered deployments containing that key. -/
+def summaryVersions (registry : List DeploymentSummary) (candidate : DeploymentSummary) : List (String × Nat) :=
+  candidate.keys.map fun key => (key, 1 + (registry.filter fun earlier => earlier.versions.any (·.1 == key)).length)
+
 /-- Under `MessageNames.addresses` a root Message start name is unique across the current deployments of other keys:
 CIB refuses deploying one another key's current deployment already subscribes (`BpmnDeployer.java:328-363`,
 CIB-LIM-0028). -/
-def messageStartClash (registry : List Deployment) (program : Program) : Option String :=
-  let others := (registry.map (·.key)).eraseDups.filter (· != program.identity.processId)
-  let taken := others.flatMap fun key => ((current registry key).map (messageStartNames ·.program)).getD []
-  if program.options.messageNames == .addresses && (messageStartNames program).any taken.contains then
-    some "deployment.messageStartName"
+def summaryClash (registry : List DeploymentSummary) (candidate : DeploymentSummary) : Option String :=
+  let others := (registry.map (·.key)).eraseDups.filter (· != candidate.key)
+  let taken := others.flatMap fun key => ((currentSummary registry key).map (·.messageStartNames)).getD []
+  if candidate.namesAddress && candidate.messageStartNames.any taken.contains then some "deployment.messageStartName"
   else none
+
+/-- Register `candidate` as `deploymentId` over the summaries of the registered deployments: its versions, or the
+refusal of a Message start name another key's current deployment subscribes. -/
+def registerSummary (registry : List DeploymentSummary) (deploymentId : Nat) (candidate : DeploymentSummary) :
+    Except String (Nat × List (String × Nat)) :=
+  match summaryClash registry candidate with
+  | some code => .error code
+  | none => .ok (deploymentId, summaryVersions registry candidate)
 
 /-- Deploy `program` as `deploymentId` at `atMs` (population contract §2.3, PC-SCOPE-03). Each key it contains takes
 1 + the number of registered deployments containing that key, so a refused deployment numbers nothing, as CIB registers
@@ -97,8 +145,9 @@ def deploy (admission : Program → Option String) (registry : List Deployment) 
     DeploymentResult × Option Deployment :=
   let refusal (code : String) : DeploymentResult × Option Deployment :=
     ({ deploymentId, definitionRef, versions := [], outcome := .refused code }, none)
-  let versions := (ownKeys deploymentId program).map fun key =>
-    (key, 1 + (registry.filter fun earlier => earlier.versions.any (·.1 == key)).length)
+  let summaries := registry.map (·.summary)
+  let candidate := deploymentSummary { program with identity := { program.identity with deployment := some deploymentId } }
+  let versions := summaryVersions summaries candidate
   let unreachable (process : CalledProcess) : Bool :=
     process.definition.deployment.any fun source => source > deploymentId || refused.contains source
   let carried := withoutCarried program unreachable
@@ -106,7 +155,7 @@ def deploy (admission : Program → Option String) (registry : List Deployment) 
   | .error code => refusal code
   | .ok processes =>
     let stamped := { carried with processes, identity := { carried.identity with deployment := some deploymentId } }
-    match admission stamped <|> messageStartClash registry stamped with
+    match admission stamped <|> summaryClash summaries candidate with
     | some code => refusal code
     | none =>
       ({ deploymentId, definitionRef, versions, outcome := .deployed },

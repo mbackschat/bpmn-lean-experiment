@@ -4,9 +4,9 @@
  * an instance at each start that holds, each start its own unit of commitment (PC-CONDITION-02, CIB-EXT-0044,
  * [specification](../../../../docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md)).
  */
-import { elementStart, programChildren, programPublicId, triggerCondition, type Header } from "../il/types.js";
+import { elementStart, programChildren, programPublicId, triggerCondition, type Header, type Program } from "../il/types.js";
 import type { Hooks } from "../hooks.js";
-import { StartTriggerTag, type StartInput } from "../state.js";
+import { StartTriggerTag, type Result, type StartInput } from "../state.js";
 import { context } from "../step.js";
 import {
   FanOutEntryTag,
@@ -48,11 +48,24 @@ export function conditionalStarts(registry: readonly Deployment[], scope: Deploy
   }));
 }
 
+/** Whether a Conditional root start holds, or the failure of its predicate. */
+export type ConditionalStartVerdict = Result<boolean>;
+
+/**
+ * Whether the Conditional root start `input` names in `program` holds, or the failure of its predicate: the start step's
+ * own predicate (`Hooks.startsFired`) over the start's own input, so a caller passes the exact input it then starts the
+ * instance with, its identity, business key, logical time and submitted variables alone included (CIB-EXT-0044).
+ */
+export function conditionalStartVerdict(hooks: Hooks, program: Program, input: StartInput): ConditionalStartVerdict {
+  const fired = hooks.startsFired(context(hooks, program), input);
+  return fired.ok ? { ok: true, value: fired.value.length > 0 } : fired;
+}
+
 /**
  * Evaluate one start for `evaluation` at `atMs`: a start whose predicate does not hold adds nothing, one whose predicate
  * fails adds its `failed` entry, and one that holds starts its instance with the business key and every submitted
  * variable, adding the start's entry, and the intents its step left cascade before the next start. The predicate is
- * asked first (`Hooks.startsFired`), so a false start is never read off a refused start step.
+ * asked first (`conditionalStartVerdict`), so a false start is never read off a refused start step.
  */
 export function evaluateStart(
   hooks: Hooks,
@@ -69,16 +82,15 @@ export function evaluateStart(
     instanceId: startedInstanceId(evaluation.commandId, deployment.deploymentId, publicStart), startEvent: header.id,
     variables: evaluation.variables, trigger: { tag: StartTriggerTag.Condition }, businessKey: evaluation.businessKey, atMs,
   };
-  const fired = hooks.startsFired(context(hooks, deployment.program), input);
-  if (!fired.ok) return { ok: true, value: fanningAdd(fanning, { tag: FanOutEntryTag.Failed, target: receiver, failure: fired.failure }) };
-  if (fired.value.length === 0) return { ok: true, value: fanning };
+  const verdict = conditionalStartVerdict(hooks, deployment.program, input);
+  if (!verdict.ok) return { ok: true, value: fanningAdd(fanning, { tag: FanOutEntryTag.Failed, target: receiver, failure: verdict.failure }) };
+  if (!verdict.value) return { ok: true, value: fanning };
   const started = startInstance(hooks, deployment, publicStart, input);
   if (!started.ok) return started;
   const [instance, entry] = started.value;
   const added = fanningAdd(fanning, entry);
   if (instance === null) return { ok: true, value: added };
-  return cascade(hooks, registry, evaluation.commandId, atMs, { ...added, instances: [...added.instances, instance] }, instance.state,
-    deployment.program);
+  return cascade(hooks, registry, atMs, { ...added, instances: [...added.instances, instance] }, instance.state, deployment.program);
 }
 
 /**
@@ -105,7 +117,7 @@ export function evaluateConditions(
   const ordered = inOrder(([deployment, , start]) => ({ tag: ReceiverTag.Start, deploymentId: deployment.deploymentId, startEvent: start }),
     starts, evaluation.order);
   if (ordered === null) return rejected("discovery-order-mismatch");
-  let fanning = fanningOf(instances);
+  let fanning = fanningOf(evaluation.commandId, instances);
   for (const start of ordered) {
     const next = evaluateStart(hooks, registry, evaluation, atMs, fanning, start);
     if (!next.ok) return next;

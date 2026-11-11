@@ -128,7 +128,7 @@ def publicationFromJson (json : Json) : Except String Population.Publication := 
          mode := ← publishModeFromJson (← json.getObjValAs? String "mode") }
 
 /-- A population command step, or `none` for another step kind. -/
-def commandFromJson (json : Json) : String → Except String (Option Population.Command)
+def populationCommandFromJson (json : Json) : String → Except String (Option Population.Command)
   | "publish" => (some ∘ .publish) <$> publicationFromJson json
   | "broadcast" => do
     pure (some (.broadcast { commandId := ← json.getObjValAs? String "commandId"
@@ -212,7 +212,7 @@ def stimuliOfPopulation (declared : List Declared) (sources : List DeploymentSou
       scripts := known
       stimuli := stimuli ++ [stimulus]
     | kind =>
-      match ← commandFromJson json kind with
+      match ← populationCommandFromJson json kind with
       | some command => stimuli := stimuli ++ [.command command clock (digests.getD index "")]
       | none => throw s!"unsupported population step {kind}"
   unless pending.isEmpty do throw s!"{sources.length} deployment sources, {sources.length - pending.length} deployments"

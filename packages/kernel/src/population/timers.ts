@@ -4,17 +4,7 @@
  * semantics, so a host asks this check rather than reimplementing it
  * ([specification](../../../../docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md)).
  */
-import {
-  elementStart,
-  programChildren,
-  programPublicId,
-  triggerTimer,
-  utf8ByteSize,
-  type ElementId,
-  type Header,
-  type Program,
-} from "../il/types.js";
-import { occurs, resolve, type Resolved } from "../il/timer.js";
+import { programPublicId, utf8ByteSize, type ElementId, type Program } from "../il/types.js";
 import type { Hooks } from "../hooks.js";
 import { StartTriggerTag } from "../state.js";
 import {
@@ -25,8 +15,13 @@ import {
   type Resolution,
   type TimerOccurrence,
   type TimerStart,
-  current,
+  type DeploymentSummary,
+  type Resolved,
+  currentSummary,
+  deploymentSummaryOf,
+  occurs,
   startInstance,
+  timerStarts,
 } from "./messages.js";
 
 /**
@@ -38,16 +33,6 @@ export function timerInstanceId(deploymentId: number, startEvent: string, dueMs:
   return `timer:${utf8ByteSize(deployment)}:${deployment}:${utf8ByteSize(startEvent)}:${startEvent}:${dueMs}`;
 }
 
-/** A program's root Timer starts whose schedule resolves to what a host arms, in document order. */
-export function timerStarts(program: Program): readonly (readonly [Header, Resolved])[] {
-  return programChildren(program, null).flatMap((element) => {
-    const started = elementStart(element);
-    const trigger = started?.[1].subscription?.trigger;
-    const timer = trigger === undefined ? null : triggerTimer(trigger);
-    const resolved = timer === null ? null : resolve(timer.schedule);
-    return started === null || resolved === null || !resolved.ok ? [] : [[started[0], resolved.value] as const];
-  });
-}
 
 /**
  * Whether an occurrence of a start resolved as `resolved`, deployed at `originMs`, may fire at `atMs`: `dueMs` must be one
@@ -71,11 +56,33 @@ export function onTimeRefusal(program: Program, named: ElementId | null, dueMs: 
 }
 
 /**
- * Fire a Timer-start occurrence at `atMs` (PC-TIMER-04, M8-INT-A, CIB-INT-0031). It is rejected unless the deployment is
- * registered (`definition-not-deployed`), `startEvent` is one of its root Timer starts (`no-start-event`), the occurrence
- * is due (`timerFiring`), the deployment is still current for its key, as CIB deletes every Timer-start job of a key it
- * redeploys (`timer-start-superseded`, `BpmnDeployer.java:251-258`), and the occurrence is unconsumed
- * (`timer-start-occurrence-consumed`). The instance takes the firing time; a committed start consumes the occurrence.
+ * Whether the occurrence `dueMs` of the root Timer start `startEvent` of `deploymentId` may fire at `atMs`, over the
+ * registered deployments' summaries; `consumed` is whether it already started an instance. The deployment must be
+ * registered (`definition-not-deployed`), `startEvent` one of its root Timer starts (`no-start-event`), the occurrence
+ * due (`timerFiring`), the deployment still current for its key, as CIB deletes every Timer-start job of a key it
+ * redeploys (`timer-start-superseded`, `BpmnDeployer.java:251-258`), and the occurrence unconsumed
+ * (`timer-start-occurrence-consumed`).
+ */
+export function timerStartCheck(
+  registry: readonly DeploymentSummary[],
+  deploymentId: number,
+  startEvent: string,
+  dueMs: number,
+  atMs: number,
+  consumed: boolean,
+): string | null {
+  const deployment = registry.find((candidate) => candidate.deploymentId === deploymentId);
+  if (deployment === undefined) return "definition-not-deployed";
+  const reached = deployment.timerStarts.find(([publicStart]) => publicStart === startEvent);
+  if (reached === undefined) return "no-start-event";
+  const superseded = currentSummary(registry, deployment.key)?.deploymentId !== deploymentId;
+  return timerFiring(deployment.deployedAtMs, dueMs, atMs, reached[1]) ??
+    (superseded ? "timer-start-superseded" : null) ?? (consumed ? "timer-start-occurrence-consumed" : null);
+}
+
+/**
+ * Fire a Timer-start occurrence at `atMs` (PC-TIMER-04, M8-INT-A, CIB-INT-0031) unless `timerStartCheck` refuses it.
+ * The instance takes the firing time; a committed start consumes the occurrence.
  */
 export function timerStart(
   hooks: Hooks,
@@ -87,18 +94,15 @@ export function timerStart(
 ): Refusable<readonly [readonly Instance[], readonly TimerOccurrence[], Resolution]> {
   const refuse = (code: string): Refusable<readonly [readonly Instance[], readonly TimerOccurrence[], Resolution]> =>
     ({ ok: true, value: [instances, consumed, { tag: ResolutionTag.Rejected, code }] });
-  const deployment = registry.find((candidate) => candidate.deploymentId === fired.deploymentId);
-  if (deployment === undefined) return refuse("definition-not-deployed");
-  const program = deployment.program;
-  const reached = timerStarts(program).find(([header]) => programPublicId(program, header.id) === fired.startEvent);
-  if (reached === undefined) return refuse("no-start-event");
-  const [header, resolved] = reached;
-  const superseded = current(registry, deployment.key)?.deploymentId !== deployment.deploymentId;
   const spent = consumed.some((occurrence) => occurrence.deploymentId === fired.deploymentId &&
     occurrence.startEvent === fired.startEvent && occurrence.dueMs === fired.dueMs);
-  const refusal = timerFiring(deployment.deployedAtMs, fired.dueMs, atMs, resolved) ??
-    (superseded ? "timer-start-superseded" : null) ?? (spent ? "timer-start-occurrence-consumed" : null);
+  const refusal = timerStartCheck(registry.map(deploymentSummaryOf), fired.deploymentId, fired.startEvent, fired.dueMs, atMs, spent);
   if (refusal !== null) return refuse(refusal);
+  const deployment = registry.find((candidate) => candidate.deploymentId === fired.deploymentId);
+  if (deployment === undefined) return { ok: false, error: "timer-start-without-deployment" };
+  const program = deployment.program;
+  const header = timerStarts(program).find(([started]) => programPublicId(program, started.id) === fired.startEvent)?.[0];
+  if (header === undefined) return { ok: false, error: "timer-start-without-start" };
   const started = startInstance(hooks, deployment, fired.startEvent, {
     instanceId: timerInstanceId(fired.deploymentId, fired.startEvent, fired.dueMs), startEvent: header.id, variables: [],
     trigger: { tag: StartTriggerTag.Timer, logicalTimeMs: atMs }, businessKey: null, atMs,
