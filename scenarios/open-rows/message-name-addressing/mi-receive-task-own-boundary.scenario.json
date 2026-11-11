@@ -1,0 +1,44 @@
+{
+  "kind": "scenario",
+  "id": "message-name-addressing-mi-receive-task-own-boundary",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "message-name-mi-receive-task-own-boundary",
+    "relativePath": "scenarios/open-rows/message-name-addressing/mi-receive-task-own-boundary.bpmn",
+    "sha256": "ce30e9897c782d57306a6e8adfb6245f7e3d4edf7108812940806cae9abeeab5",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "items",
+          "value": {
+            "kind": "stringList",
+            "value": [
+              "a",
+              "b"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 Table 10.99"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/EventSubscriptionDeclaration.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/cmd/MessageEventReceivedCmd.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/persistence/entity/EventSubscriptionEntity.java",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/event/message/MessageIntermediateEventTest.java"
+    ]
+  }
+}

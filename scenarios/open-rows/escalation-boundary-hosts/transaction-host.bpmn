@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_SlipTransactionHost"
+  targetNamespace="urn:bpmn-lean:scenarios:escalation-boundary-hosts:transaction-host">
+  <bpmn:escalation id="Escalation_Slip" name="Slip" escalationCode="SLIP" />
+  <bpmn:process id="Process_SlipTransactionHost" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Start" />
+    <bpmn:transaction id="Book" name="Book the trip">
+      <bpmn:startEvent id="StartEvent_Book" />
+      <bpmn:userTask id="Reserve" name="Reserve the seat" />
+      <bpmn:intermediateThrowEvent id="Raise_Slip">
+        <bpmn:escalationEventDefinition id="EscalationEventDefinition_Raise_Slip" escalationRef="Escalation_Slip" />
+      </bpmn:intermediateThrowEvent>
+      <bpmn:endEvent id="EndEvent_Book" />
+      <bpmn:sequenceFlow id="Flow_Book_Start_Reserve" sourceRef="StartEvent_Book" targetRef="Reserve" />
+      <bpmn:sequenceFlow id="Flow_Book_Reserve_Raise" sourceRef="Reserve" targetRef="Raise_Slip" />
+      <bpmn:sequenceFlow id="Flow_Book_Raise_End" sourceRef="Raise_Slip" targetRef="EndEvent_Book" />
+    </bpmn:transaction>
+    <bpmn:endEvent id="EndEvent_Done" />
+    <bpmn:sequenceFlow id="Flow_Start_Book" sourceRef="StartEvent_Start" targetRef="Book" />
+    <bpmn:sequenceFlow id="Flow_Book_End" sourceRef="Book" targetRef="EndEvent_Done" />
+    <bpmn:boundaryEvent id="Boundary_Book_Slip" attachedToRef="Book" cancelActivity="true">
+      <bpmn:escalationEventDefinition id="EscalationEventDefinition_Book_Slip" escalationRef="Escalation_Slip" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handle" name="Handle the slip" />
+    <bpmn:endEvent id="EndEvent_Handled" />
+    <bpmn:sequenceFlow id="Flow_Slip_Handle" sourceRef="Boundary_Book_Slip" targetRef="Handle" />
+    <bpmn:sequenceFlow id="Flow_Handle_End" sourceRef="Handle" targetRef="EndEvent_Handled" />
+  </bpmn:process>
+</bpmn:definitions>

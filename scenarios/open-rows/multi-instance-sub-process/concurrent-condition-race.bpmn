@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:tns="urn:bpmn-lean:scenarios:multi-instance-sub-process:concurrent-condition-race"
+  id="Definitions_ConcurrentConditionRace"
+  targetNamespace="urn:bpmn-lean:scenarios:multi-instance-sub-process:concurrent-condition-race"
+  expressionLanguage="urn:bpmn-lean:expression:simple-boolean:v1">
+  <bpmn:itemDefinition id="ItemDefinition_String" itemKind="Information" structureRef="xsd:string" isCollection="false" />
+  <bpmn:itemDefinition id="ItemDefinition_StringList" itemKind="Information" isCollection="true" />
+  <bpmn:process id="Process_ConcurrentConditionRace" isExecutable="true">
+    <bpmn:property id="items" itemSubjectRef="ItemDefinition_StringList" />
+    <bpmn:startEvent id="Start_Race" />
+    <bpmn:sequenceFlow id="Flow_Start_Lot" sourceRef="Start_Race" targetRef="SubProcess_Lot" />
+    <bpmn:subProcess id="SubProcess_Lot" name="Process one lot">
+      <bpmn:ioSpecification id="IoSpecification_Lot">
+        <bpmn:dataInput id="DataInput_Items" itemSubjectRef="ItemDefinition_StringList" isCollection="true" />
+        <bpmn:dataInput id="item" itemSubjectRef="ItemDefinition_String" isCollection="false" />
+        <bpmn:inputSet id="InputSet_Lot">
+          <bpmn:dataInputRefs>DataInput_Items</bpmn:dataInputRefs>
+          <bpmn:dataInputRefs>item</bpmn:dataInputRefs>
+        </bpmn:inputSet>
+        <bpmn:outputSet id="OutputSet_Lot" />
+      </bpmn:ioSpecification>
+      <bpmn:dataInputAssociation id="DataInputAssociation_Items">
+        <bpmn:sourceRef>items</bpmn:sourceRef>
+        <bpmn:targetRef>DataInput_Items</bpmn:targetRef>
+      </bpmn:dataInputAssociation>
+      <bpmn:dataInputAssociation id="DataInputAssociation_Item">
+        <bpmn:sourceRef>InputDataItem_Item</bpmn:sourceRef>
+        <bpmn:targetRef>item</bpmn:targetRef>
+      </bpmn:dataInputAssociation>
+      <bpmn:multiInstanceLoopCharacteristics isSequential="false">
+        <bpmn:loopDataInputRef>DataInput_Items</bpmn:loopDataInputRef>
+        <bpmn:inputDataItem id="InputDataItem_Item" itemSubjectRef="ItemDefinition_String" isCollection="false" />
+        <bpmn:completionCondition xsi:type="bpmn:tFormalExpression">stringEquals(item,"b")</bpmn:completionCondition>
+      </bpmn:multiInstanceLoopCharacteristics>
+      <bpmn:startEvent id="Lot_Start" />
+      <bpmn:endEvent id="Lot_End" />
+      <bpmn:sequenceFlow id="Flow_Lot_Start_End" sourceRef="Lot_Start" targetRef="Lot_End" />
+    </bpmn:subProcess>
+    <bpmn:sequenceFlow id="Flow_Lot_End" sourceRef="SubProcess_Lot" targetRef="End_Race" />
+    <bpmn:endEvent id="End_Race" />
+  </bpmn:process>
+</bpmn:definitions>

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_GatewayArmsOneName"
+  targetNamespace="urn:bpmn-lean:scenarios:message-name-addressing:gateway-arms-one-name">
+  <bpmn:message id="Message_PaymentA" name="payment-received" />
+  <bpmn:message id="Message_PaymentB" name="payment-received" />
+  <bpmn:process id="Process_GatewayArmsOneName" name="Two payment arms of one name" isExecutable="true">
+    <bpmn:startEvent id="Start_Invoice" />
+    <bpmn:eventBasedGateway id="Gateway_Payment" name="Await payment" />
+    <bpmn:intermediateCatchEvent id="Catch_PaymentA" name="Payment received by transfer">
+      <bpmn:messageEventDefinition id="MED_PaymentA" messageRef="Message_PaymentA" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="Catch_PaymentB" name="Payment received by card">
+      <bpmn:messageEventDefinition id="MED_PaymentB" messageRef="Message_PaymentB" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:userTask id="Book_PaymentA" name="Book the transfer" />
+    <bpmn:userTask id="Book_PaymentB" name="Book the card payment" />
+    <bpmn:endEvent id="End_PaymentA" />
+    <bpmn:endEvent id="End_PaymentB" />
+    <bpmn:sequenceFlow id="Flow_Start_Invoice_Gateway_Payment" sourceRef="Start_Invoice" targetRef="Gateway_Payment" />
+    <bpmn:sequenceFlow id="Flow_Gateway_Payment_Catch_PaymentA" sourceRef="Gateway_Payment" targetRef="Catch_PaymentA" />
+    <bpmn:sequenceFlow id="Flow_Gateway_Payment_Catch_PaymentB" sourceRef="Gateway_Payment" targetRef="Catch_PaymentB" />
+    <bpmn:sequenceFlow id="Flow_Catch_PaymentA_Book_PaymentA" sourceRef="Catch_PaymentA" targetRef="Book_PaymentA" />
+    <bpmn:sequenceFlow id="Flow_Catch_PaymentB_Book_PaymentB" sourceRef="Catch_PaymentB" targetRef="Book_PaymentB" />
+    <bpmn:sequenceFlow id="Flow_Book_PaymentA_End_PaymentA" sourceRef="Book_PaymentA" targetRef="End_PaymentA" />
+    <bpmn:sequenceFlow id="Flow_Book_PaymentB_End_PaymentB" sourceRef="Book_PaymentB" targetRef="End_PaymentB" />
+  </bpmn:process>
+</bpmn:definitions>

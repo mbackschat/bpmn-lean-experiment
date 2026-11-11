@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_SlipTaskHost"
+  targetNamespace="urn:bpmn-lean:scenarios:escalation-boundary-hosts:task-host">
+  <bpmn:escalation id="Escalation_Slip" name="Slip" escalationCode="SLIP" />
+  <bpmn:process id="Process_SlipTaskHost" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Start" />
+    <bpmn:task id="Tidy" name="Tidy the depot" />
+    <bpmn:endEvent id="EndEvent_Done" />
+    <bpmn:sequenceFlow id="Flow_Start_Tidy" sourceRef="StartEvent_Start" targetRef="Tidy" />
+    <bpmn:sequenceFlow id="Flow_Tidy_End" sourceRef="Tidy" targetRef="EndEvent_Done" />
+    <bpmn:boundaryEvent id="Boundary_Tidy_Slip" attachedToRef="Tidy" cancelActivity="true">
+      <bpmn:escalationEventDefinition id="EscalationEventDefinition_Tidy_Slip" escalationRef="Escalation_Slip" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handle" name="Handle the slip" />
+    <bpmn:endEvent id="EndEvent_Handled" />
+    <bpmn:sequenceFlow id="Flow_Slip_Handle" sourceRef="Boundary_Tidy_Slip" targetRef="Handle" />
+    <bpmn:sequenceFlow id="Flow_Handle_End" sourceRef="Handle" targetRef="EndEvent_Handled" />
+  </bpmn:process>
+</bpmn:definitions>

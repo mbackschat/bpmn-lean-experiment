@@ -1,0 +1,47 @@
+{
+  "kind": "scenario",
+  "id": "error-event-subprocess-precedence-duplicate-code-handlers",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "error-event-subprocess-precedence-duplicate-code",
+    "relativePath": "scenarios/open-rows/error-event-subprocess-precedence/duplicate-code.bpmn",
+    "sha256": "c4f643810a87e8083e979abde900b04943cfbb3d3d47f29c979dd6bff89f6e6c",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-complete-Pack",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Pack",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.5.1",
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 §13.5.3",
+      "BPMN 2.0.2 §13.5.4"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/helper/BpmnExceptionHandler.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/helper/ErrorDeclarationForProcessInstanceFinder.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/ErrorEventDefinition.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java"
+    ]
+  }
+}

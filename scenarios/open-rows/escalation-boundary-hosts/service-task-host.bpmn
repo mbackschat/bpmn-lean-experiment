@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_SlipServiceTaskHost"
+  targetNamespace="urn:bpmn-lean:scenarios:escalation-boundary-hosts:service-task-host">
+  <bpmn:escalation id="Escalation_Slip" name="Slip" escalationCode="SLIP" />
+  <bpmn:process id="Process_SlipServiceTaskHost" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Start" />
+    <bpmn:serviceTask id="Dispatch" name="Dispatch the parcel" implementation="urn:bpmn-lean:effect:probe-v1" camunda:delegateExpression="${bpmnLeanEffectHandler}" camunda:asyncBefore="true" />
+    <bpmn:endEvent id="EndEvent_Done" />
+    <bpmn:sequenceFlow id="Flow_Start_Dispatch" sourceRef="StartEvent_Start" targetRef="Dispatch" />
+    <bpmn:sequenceFlow id="Flow_Dispatch_End" sourceRef="Dispatch" targetRef="EndEvent_Done" />
+    <bpmn:boundaryEvent id="Boundary_Dispatch_Slip" attachedToRef="Dispatch" cancelActivity="true">
+      <bpmn:escalationEventDefinition id="EscalationEventDefinition_Dispatch_Slip" escalationRef="Escalation_Slip" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handle" name="Handle the slip" />
+    <bpmn:endEvent id="EndEvent_Handled" />
+    <bpmn:sequenceFlow id="Flow_Slip_Handle" sourceRef="Boundary_Dispatch_Slip" targetRef="Handle" />
+    <bpmn:sequenceFlow id="Flow_Handle_End" sourceRef="Handle" targetRef="EndEvent_Handled" />
+  </bpmn:process>
+</bpmn:definitions>

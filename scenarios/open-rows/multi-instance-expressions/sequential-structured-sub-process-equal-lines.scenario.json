@@ -1,0 +1,192 @@
+{
+  "kind": "scenario",
+  "id": "mi-expr-sequential-structured-sub-process-equal-lines",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "mi-expr-sequential-structured-sub-process",
+    "relativePath": "scenarios/open-rows/multi-instance-expressions/sequential-structured-sub-process.bpmn",
+    "sha256": "df60b612594be3f742e129f6100fe4d72f95e0852fa000837ea9f2877c904b31",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "line",
+          "value": {
+            "kind": "string",
+            "value": "outer-line"
+          }
+        },
+        {
+          "name": "lines",
+          "value": {
+            "kind": "list",
+            "value": [
+              {
+                "kind": "map",
+                "value": [
+                  {
+                    "name": "quantity",
+                    "value": {
+                      "kind": "integer",
+                      "value": 1
+                    }
+                  },
+                  {
+                    "name": "sku",
+                    "value": {
+                      "kind": "string",
+                      "value": "A"
+                    }
+                  }
+                ]
+              },
+              {
+                "kind": "map",
+                "value": [
+                  {
+                    "name": "quantity",
+                    "value": {
+                      "kind": "integer",
+                      "value": 1
+                    }
+                  },
+                  {
+                    "name": "sku",
+                    "value": {
+                      "kind": "string",
+                      "value": "A"
+                    }
+                  }
+                ]
+              },
+              {
+                "kind": "map",
+                "value": [
+                  {
+                    "name": "quantity",
+                    "value": {
+                      "kind": "integer",
+                      "value": 2
+                    }
+                  },
+                  {
+                    "name": "sku",
+                    "value": {
+                      "kind": "string",
+                      "value": "B"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "sku",
+          "value": {
+            "kind": "string",
+            "value": "process-sku"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-complete-UserTask_Line-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Line",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "v1"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-complete-UserTask_Line-2",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Line",
+        "activation": 2
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "v2"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s04-complete-UserTask_Line-3",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Line",
+        "activation": 3
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "v3"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s05-complete-UserTask_Publish",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Publish",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.8",
+      "BPMN 2.0.2 §13.3.7",
+      "BPMN 2.0.2 Table 10.29",
+      "BPMN 2.0.2 Table 10.30",
+      "BPMN 2.0.2 §10.3.4",
+      "BPMN 2.0.2 §10.4.1"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/MultiInstanceActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/SequentialMultiInstanceActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ParallelMultiInstanceActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/variable/mapping/IoParameter.java"
+    ]
+  }
+}

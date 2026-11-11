@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_TwoHandlersOneName"
+  targetNamespace="urn:bpmn-lean:scenarios:message-name-addressing:two-handlers-one-name">
+  <bpmn:message id="Message_CancelA" name="order-cancelled" />
+  <bpmn:message id="Message_CancelB" name="order-cancelled" />
+  <bpmn:process id="Process_TwoHandlersOneName" name="Two cancellation handlers of one name" isExecutable="true">
+    <bpmn:startEvent id="Start_Order" />
+    <bpmn:userTask id="Prepare_Order" name="Prepare order" />
+    <bpmn:endEvent id="End_Order" />
+    <bpmn:sequenceFlow id="Flow_Start_Order_Prepare_Order" sourceRef="Start_Order" targetRef="Prepare_Order" />
+    <bpmn:sequenceFlow id="Flow_Prepare_Order_End_Order" sourceRef="Prepare_Order" targetRef="End_Order" />
+    <bpmn:subProcess id="ESP_CancelA" triggeredByEvent="true">
+      <bpmn:startEvent id="Start_CancelA" isInterrupting="false">
+        <bpmn:messageEventDefinition id="MED_CancelA" messageRef="Message_CancelA" />
+      </bpmn:startEvent>
+      <bpmn:userTask id="Handle_CancelA" name="Handle the first cancellation" />
+      <bpmn:endEvent id="End_CancelA" />
+      <bpmn:sequenceFlow id="Flow_Start_CancelA_Handle_CancelA" sourceRef="Start_CancelA" targetRef="Handle_CancelA" />
+      <bpmn:sequenceFlow id="Flow_Handle_CancelA_End_CancelA" sourceRef="Handle_CancelA" targetRef="End_CancelA" />
+    </bpmn:subProcess>
+    <bpmn:subProcess id="ESP_CancelB" triggeredByEvent="true">
+      <bpmn:startEvent id="Start_CancelB" isInterrupting="false">
+        <bpmn:messageEventDefinition id="MED_CancelB" messageRef="Message_CancelB" />
+      </bpmn:startEvent>
+      <bpmn:userTask id="Handle_CancelB" name="Handle the second cancellation" />
+      <bpmn:endEvent id="End_CancelB" />
+      <bpmn:sequenceFlow id="Flow_Start_CancelB_Handle_CancelB" sourceRef="Start_CancelB" targetRef="Handle_CancelB" />
+      <bpmn:sequenceFlow id="Flow_Handle_CancelB_End_CancelB" sourceRef="Handle_CancelB" targetRef="End_CancelB" />
+    </bpmn:subProcess>
+  </bpmn:process>
+</bpmn:definitions>

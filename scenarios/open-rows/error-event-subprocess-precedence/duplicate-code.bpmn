@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_DuplicateErrorCode"
+  targetNamespace="urn:bpmn-lean:scenarios:error-event-subprocess-precedence:duplicate-code">
+  <bpmn:error id="Error_Fault" name="Fault" errorCode="E1" />
+  <bpmn:process id="Process_DuplicateErrorCode" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Start" />
+    <bpmn:userTask id="Pack" name="Pack the shipment" />
+    <bpmn:endEvent id="EndEvent_Fault">
+      <bpmn:errorEventDefinition id="ErrorEventDefinition_Fault" errorRef="Error_Fault" />
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_Start_Pack" sourceRef="StartEvent_Start" targetRef="Pack" />
+    <bpmn:sequenceFlow id="Flow_Pack_Fault" sourceRef="Pack" targetRef="EndEvent_Fault" />
+    <bpmn:subProcess id="Handler_First" triggeredByEvent="true">
+      <bpmn:startEvent id="Start_First" isInterrupting="true">
+        <bpmn:errorEventDefinition id="ErrorEventDefinition_First" errorRef="Error_Fault" />
+      </bpmn:startEvent>
+      <bpmn:userTask id="Review_First" name="Review the fault in the first handler" />
+      <bpmn:endEvent id="End_First" />
+      <bpmn:sequenceFlow id="Flow_First_Start_Review" sourceRef="Start_First" targetRef="Review_First" />
+      <bpmn:sequenceFlow id="Flow_First_Review_End" sourceRef="Review_First" targetRef="End_First" />
+    </bpmn:subProcess>
+    <bpmn:subProcess id="Handler_Second" triggeredByEvent="true">
+      <bpmn:startEvent id="Start_Second" isInterrupting="true">
+        <bpmn:errorEventDefinition id="ErrorEventDefinition_Second" errorRef="Error_Fault" />
+      </bpmn:startEvent>
+      <bpmn:userTask id="Review_Second" name="Review the fault in the second handler" />
+      <bpmn:endEvent id="End_Second" />
+      <bpmn:sequenceFlow id="Flow_Second_Start_Review" sourceRef="Start_Second" targetRef="Review_Second" />
+      <bpmn:sequenceFlow id="Flow_Second_Review_End" sourceRef="Review_Second" targetRef="End_Second" />
+    </bpmn:subProcess>
+  </bpmn:process>
+</bpmn:definitions>

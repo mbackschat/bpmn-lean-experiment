@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_ReceiveTaskOwnBoundary"
+  targetNamespace="urn:bpmn-lean:scenarios:message-name-addressing:receive-task-own-boundary">
+  <bpmn:message id="Message_Approval" name="approval" />
+  <bpmn:message id="Message_ApprovalReminder" name="approval" />
+  <bpmn:process id="Process_ReceiveTaskOwnBoundary" name="A Receive Task and its own boundary of one name" isExecutable="true">
+    <bpmn:startEvent id="Start_Approval" />
+    <bpmn:receiveTask id="Receive_Approval" name="Await the approval" messageRef="Message_Approval" />
+    <bpmn:endEvent id="End_Approval" />
+    <bpmn:sequenceFlow id="Flow_Start_Approval_Receive_Approval" sourceRef="Start_Approval" targetRef="Receive_Approval" />
+    <bpmn:sequenceFlow id="Flow_Receive_Approval_End_Approval" sourceRef="Receive_Approval" targetRef="End_Approval" />
+    <bpmn:boundaryEvent id="Approval_Reminder" name="Approval reminder" attachedToRef="Receive_Approval" cancelActivity="false">
+      <bpmn:messageEventDefinition id="MED_Approval_Reminder" messageRef="Message_ApprovalReminder" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handle_Reminder" name="Handle the reminder" />
+    <bpmn:endEvent id="End_Reminder" />
+    <bpmn:sequenceFlow id="Flow_Approval_Reminder_Handle_Reminder" sourceRef="Approval_Reminder" targetRef="Handle_Reminder" />
+    <bpmn:sequenceFlow id="Flow_Handle_Reminder_End_Reminder" sourceRef="Handle_Reminder" targetRef="End_Reminder" />
+  </bpmn:process>
+</bpmn:definitions>

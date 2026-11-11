@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_SubProcessBoundaryAndHandler"
+  targetNamespace="urn:bpmn-lean:scenarios:message-name-addressing:subprocess-boundary-and-handler">
+  <bpmn:message id="Message_CallBoundary" name="customer-call" />
+  <bpmn:message id="Message_CallHandler" name="customer-call" />
+  <bpmn:process id="Process_SubProcessBoundaryAndHandler" name="A Sub-Process boundary and its own handler of one name" isExecutable="true">
+    <bpmn:startEvent id="Start_Call" />
+    <bpmn:subProcess id="Region" name="Serve the customer">
+      <bpmn:startEvent id="Start_Region" />
+      <bpmn:userTask id="Serve_Customer" name="Serve the customer" />
+      <bpmn:endEvent id="End_Region" />
+      <bpmn:sequenceFlow id="Flow_Start_Region_Serve_Customer" sourceRef="Start_Region" targetRef="Serve_Customer" />
+      <bpmn:sequenceFlow id="Flow_Serve_Customer_End_Region" sourceRef="Serve_Customer" targetRef="End_Region" />
+      <bpmn:subProcess id="ESP_CallHandler" triggeredByEvent="true">
+        <bpmn:startEvent id="Start_CallHandler" isInterrupting="false">
+          <bpmn:messageEventDefinition id="MED_CallHandler" messageRef="Message_CallHandler" />
+        </bpmn:startEvent>
+        <bpmn:userTask id="Handle_CallHandler" name="Handle the call in the region" />
+        <bpmn:endEvent id="End_CallHandler" />
+        <bpmn:sequenceFlow id="Flow_Start_CallHandler_Handle_CallHandler" sourceRef="Start_CallHandler" targetRef="Handle_CallHandler" />
+        <bpmn:sequenceFlow id="Flow_Handle_CallHandler_End_CallHandler" sourceRef="Handle_CallHandler" targetRef="End_CallHandler" />
+      </bpmn:subProcess>
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_Call" />
+    <bpmn:sequenceFlow id="Flow_Start_Call_Region" sourceRef="Start_Call" targetRef="Region" />
+    <bpmn:sequenceFlow id="Flow_Region_End_Call" sourceRef="Region" targetRef="End_Call" />
+    <bpmn:boundaryEvent id="Call_Boundary" name="Customer calls" attachedToRef="Region">
+      <bpmn:messageEventDefinition id="MED_Call_Boundary" messageRef="Message_CallBoundary" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Handle_Boundary_Call" name="Handle the call on the boundary" />
+    <bpmn:endEvent id="End_Boundary_Call" />
+    <bpmn:sequenceFlow id="Flow_Call_Boundary_Handle_Boundary_Call" sourceRef="Call_Boundary" targetRef="Handle_Boundary_Call" />
+    <bpmn:sequenceFlow id="Flow_Handle_Boundary_Call_End_Boundary_Call" sourceRef="Handle_Boundary_Call" targetRef="End_Boundary_Call" />
+  </bpmn:process>
+</bpmn:definitions>

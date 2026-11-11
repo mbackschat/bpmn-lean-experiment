@@ -1,0 +1,85 @@
+{
+  "kind": "scenario",
+  "id": "escalation-call-relay-double-pass-through-root-handler",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "escalation-call-relay-double-pass-claim",
+    "relativePath": "scenarios/open-rows/escalation-call-relay/double-pass-claim.bpmn",
+    "sha256": "0742fd6e44f52c7e350b8f75b5210c6cb8da4038af99d575f1a7bfe97db56155",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "claim",
+          "value": {
+            "kind": "string",
+            "value": "CLM-1"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-complete-draft",
+      "occurrence": {
+        "processInstanceId": "call:10:Instance_1:6:Review:1",
+        "elementId": "Draft",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "status",
+            "value": {
+              "kind": "string",
+              "value": "draft"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-complete-revise",
+      "occurrence": {
+        "processInstanceId": "call:10:Instance_1:6:Review:1",
+        "elementId": "Revise",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "status",
+            "value": {
+              "kind": "string",
+              "value": "revised"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.5.1",
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 §13.5.3",
+      "BPMN 2.0.2 §13.5.4"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/helper/EscalationHandler.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/helper/EscalationEventDefinitionFinder.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ThrowEscalationEventActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/tree/OutputVariablesPropagator.java"
+    ]
+  }
+}

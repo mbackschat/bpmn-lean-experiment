@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_MiUserParallelOutputCollection"
+  targetNamespace="urn:bpmn-lean:scenarios:multi-instance-user-task:parallel-output-collection">
+  <bpmn:itemDefinition id="ItemDefinition_String" itemKind="Information" structureRef="xsd:string" isCollection="false" />
+  <bpmn:itemDefinition id="ItemDefinition_StringList" itemKind="Information" isCollection="true" />
+  <bpmn:process id="Process_MiUserParallelOutputCollection" isExecutable="true">
+    <bpmn:dataObject id="DataObject_Items" itemSubjectRef="ItemDefinition_StringList" isCollection="true" />
+    <bpmn:dataObjectReference id="DataObjectReference_Items" dataObjectRef="DataObject_Items" />
+    <bpmn:dataObject id="DataObject_Results" itemSubjectRef="ItemDefinition_StringList" isCollection="true" />
+    <bpmn:dataObjectReference id="DataObjectReference_Results" dataObjectRef="DataObject_Results" />
+    <bpmn:startEvent id="StartEvent_Start" />
+    <bpmn:sequenceFlow id="Flow_Start_Review" sourceRef="StartEvent_Start" targetRef="UserTask_Review" />
+    <bpmn:userTask id="UserTask_Review" name="Review item">
+      <bpmn:ioSpecification id="IoSpecification_Review">
+        <bpmn:dataInput id="DataInput_Items" itemSubjectRef="ItemDefinition_StringList" isCollection="true" />
+        <bpmn:dataInput id="DataInput_Item" itemSubjectRef="ItemDefinition_String" isCollection="false" />
+        <bpmn:dataOutput id="DataOutput_Result" itemSubjectRef="ItemDefinition_String" isCollection="false" />
+        <bpmn:dataOutput id="DataOutput_Results" itemSubjectRef="ItemDefinition_StringList" isCollection="true" />
+        <bpmn:inputSet id="InputSet_Review">
+          <bpmn:dataInputRefs>DataInput_Items</bpmn:dataInputRefs>
+          <bpmn:dataInputRefs>DataInput_Item</bpmn:dataInputRefs>
+          <bpmn:outputSetRefs>OutputSet_Review</bpmn:outputSetRefs>
+        </bpmn:inputSet>
+        <bpmn:outputSet id="OutputSet_Review">
+          <bpmn:dataOutputRefs>DataOutput_Result</bpmn:dataOutputRefs>
+          <bpmn:dataOutputRefs>DataOutput_Results</bpmn:dataOutputRefs>
+          <bpmn:inputSetRefs>InputSet_Review</bpmn:inputSetRefs>
+        </bpmn:outputSet>
+      </bpmn:ioSpecification>
+      <bpmn:dataInputAssociation id="DataInputAssociation_Items">
+        <bpmn:sourceRef>DataObjectReference_Items</bpmn:sourceRef>
+        <bpmn:targetRef>DataInput_Items</bpmn:targetRef>
+      </bpmn:dataInputAssociation>
+      <bpmn:dataInputAssociation id="DataInputAssociation_Item">
+        <bpmn:sourceRef>InputDataItem_Item</bpmn:sourceRef>
+        <bpmn:targetRef>DataInput_Item</bpmn:targetRef>
+      </bpmn:dataInputAssociation>
+      <bpmn:dataOutputAssociation id="DataOutputAssociation_Result">
+        <bpmn:sourceRef>DataOutput_Result</bpmn:sourceRef>
+        <bpmn:targetRef>OutputDataItem_Result</bpmn:targetRef>
+      </bpmn:dataOutputAssociation>
+      <bpmn:dataOutputAssociation id="DataOutputAssociation_Results">
+        <bpmn:sourceRef>DataOutput_Results</bpmn:sourceRef>
+        <bpmn:targetRef>DataObjectReference_Results</bpmn:targetRef>
+      </bpmn:dataOutputAssociation>
+      <bpmn:multiInstanceLoopCharacteristics isSequential="false">
+        <bpmn:loopDataInputRef>DataInput_Items</bpmn:loopDataInputRef>
+        <bpmn:loopDataOutputRef>DataOutput_Results</bpmn:loopDataOutputRef>
+        <bpmn:inputDataItem id="InputDataItem_Item" name="item" itemSubjectRef="ItemDefinition_String" isCollection="false" />
+        <bpmn:outputDataItem id="OutputDataItem_Result" itemSubjectRef="ItemDefinition_String" isCollection="false" />
+      </bpmn:multiInstanceLoopCharacteristics>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="Flow_Review_Publish" sourceRef="UserTask_Review" targetRef="UserTask_Publish" />
+    <bpmn:userTask id="UserTask_Publish" name="Publish outcome" />
+    <bpmn:sequenceFlow id="Flow_Publish_End" sourceRef="UserTask_Publish" targetRef="EndEvent_Done" />
+    <bpmn:endEvent id="EndEvent_Done" />
+  </bpmn:process>
+</bpmn:definitions>

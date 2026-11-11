@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_MiExpressionsParallelStructuredSubProcess"
+  targetNamespace="urn:bpmn-lean:scenarios:multi-instance-expressions:parallel-structured-sub-process">
+
+  <bpmn:process id="Process_MiExpressionsParallelStructuredSubProcess" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Start" />
+    <bpmn:sequenceFlow id="Flow_Start_Line" sourceRef="StartEvent_Start" targetRef="SubProcess_Line" />
+    <bpmn:subProcess id="SubProcess_Line" name="Review one order line">
+      <bpmn:multiInstanceLoopCharacteristics isSequential="false" camunda:collection="${order.lines}" camunda:elementVariable="line" />
+      <bpmn:startEvent id="StartEvent_Line" />
+      <bpmn:sequenceFlow id="Flow_Line_Review" sourceRef="StartEvent_Line" targetRef="UserTask_Line" />
+      <bpmn:userTask id="UserTask_Line" name="Review order line">
+        <bpmn:extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="sku">${line.sku}</camunda:inputParameter>
+            <camunda:inputParameter name="quantity">${line.quantity}</camunda:inputParameter>
+            <camunda:inputParameter name="position">${loopCounter}</camunda:inputParameter>
+          </camunda:inputOutput>
+        </bpmn:extensionElements>
+      </bpmn:userTask>
+      <bpmn:sequenceFlow id="Flow_Review_End" sourceRef="UserTask_Line" targetRef="EndEvent_Line" />
+      <bpmn:endEvent id="EndEvent_Line" />
+    </bpmn:subProcess>
+    <bpmn:sequenceFlow id="Flow_Line_Publish" sourceRef="SubProcess_Line" targetRef="UserTask_Publish" />
+    <bpmn:userTask id="UserTask_Publish" name="Publish outcome" />
+    <bpmn:sequenceFlow id="Flow_Publish_End" sourceRef="UserTask_Publish" targetRef="EndEvent_Done" />
+    <bpmn:endEvent id="EndEvent_Done" />
+  </bpmn:process>
+</bpmn:definitions>

@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_DoublePassClaim"
+  targetNamespace="urn:bpmn-lean:scenarios:escalation-call-relay:double-pass-claim">
+  <bpmn:escalation id="Escalation_Raise" name="Raise" escalationCode="RAISE" />
+  <bpmn:process id="Process_DoublePassIntake" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_ClaimReceived" />
+    <bpmn:callActivity id="Review" name="Review the claim" calledElement="Process_DoublePassExamine">
+      <bpmn:extensionElements>
+        <camunda:in source="claim" target="dossier" />
+        <camunda:out source="status" target="relayedStatus" />
+      </bpmn:extensionElements>
+    </bpmn:callActivity>
+    <bpmn:boundaryEvent id="Boundary_Review_Raise" attachedToRef="Review" cancelActivity="true">
+      <bpmn:escalationEventDefinition id="EscalationEventDefinition_Review_Raise" escalationRef="Escalation_Raise" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Inspect" name="Inspect the raised claim" />
+    <bpmn:endEvent id="EndEvent_Reviewed" />
+    <bpmn:endEvent id="EndEvent_Inspected" />
+    <bpmn:sequenceFlow id="Flow_Start_Review" sourceRef="StartEvent_ClaimReceived" targetRef="Review" />
+    <bpmn:sequenceFlow id="Flow_Review_End" sourceRef="Review" targetRef="EndEvent_Reviewed" />
+    <bpmn:sequenceFlow id="Flow_Raise_Inspect" sourceRef="Boundary_Review_Raise" targetRef="Inspect" />
+    <bpmn:sequenceFlow id="Flow_Inspect_End" sourceRef="Inspect" targetRef="EndEvent_Inspected" />
+  </bpmn:process>
+
+  <bpmn:process id="Process_DoublePassExamine" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_ExamineRequested" />
+    <bpmn:userTask id="Draft" name="Draft the examination" />
+    <bpmn:intermediateThrowEvent id="Raise_Draft">
+      <bpmn:escalationEventDefinition id="EscalationEventDefinition_Raise_Draft" escalationRef="Escalation_Raise" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:endEvent id="EndEvent_ExamineDone" />
+    <bpmn:sequenceFlow id="Flow_Examine_Start_Draft" sourceRef="StartEvent_ExamineRequested" targetRef="Draft" />
+    <bpmn:sequenceFlow id="Flow_Examine_Draft_Raise" sourceRef="Draft" targetRef="Raise_Draft" />
+    <bpmn:sequenceFlow id="Flow_Examine_Raise_End" sourceRef="Raise_Draft" targetRef="EndEvent_ExamineDone" />
+    <bpmn:subProcess id="Handler_Examine_Raise" triggeredByEvent="true">
+      <bpmn:startEvent id="Start_Examine_Raise" isInterrupting="true">
+        <bpmn:escalationEventDefinition id="EscalationEventDefinition_Examine_Raise" escalationRef="Escalation_Raise" />
+      </bpmn:startEvent>
+      <bpmn:userTask id="Revise" name="Revise the examination" />
+      <bpmn:endEvent id="Relay_Raise">
+        <bpmn:escalationEventDefinition id="EscalationEventDefinition_Relay_Raise" escalationRef="Escalation_Raise" />
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="Flow_Handler_Start_Revise" sourceRef="Start_Examine_Raise" targetRef="Revise" />
+      <bpmn:sequenceFlow id="Flow_Handler_Revise_Relay" sourceRef="Revise" targetRef="Relay_Raise" />
+    </bpmn:subProcess>
+  </bpmn:process>
+</bpmn:definitions>
