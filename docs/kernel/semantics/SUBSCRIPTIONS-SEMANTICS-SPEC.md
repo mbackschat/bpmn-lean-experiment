@@ -140,9 +140,9 @@ Superseded first-profile restrictions: the boundary, catch and start profiles ea
 |---|---|
 | PC-TIMER-03 | Acceptance of data-derived values; the clock after a rolled-back firing ([CIB-OP-0017][r-op-0017]). |
 | PC-TIMER-04 | Root Timer start schedules bound to an exact definition version (see [population](POPULATION-SEMANTICS-SPEC.md)); the engine-published Timer start capability ([TST scheduling][tst-schedule]). |
-| PC-TIMER-06, PC-TIMER-08 | Several boundaries per host on every host kind, the effect host's under CIB-EXT-0038, and lifetimes across Transaction owners. |
+| PC-TIMER-08 | Timer lifetimes across Transaction owners, which consume the PC-TX contracts. |
 | PC-MESSAGE-01 | Two Event Sub-Process starts or Event-Based Gateway arms of one Message name (`message.duplicateName` covers one host's boundaries only); a nameless Receive Task under `messageNames = addresses` (work admission). |
-| PC-MESSAGE-03, PC-MESSAGE-04 | Payload catches in branches and nested work; interrupting Message boundaries on every host, the effect host's under CIB-EXT-0038. |
+| PC-MESSAGE-03 | Payload catches in branches and nested work; the runner does not yet deliver payloads, so no CIB evidence. |
 | PC-MESSAGE-06 | Interrupting Message Event Sub-Processes (refused). |
 | PC-MESSAGE-09 | Modeled Message throws and Message End (`throw.message`, see [propagation](PROPAGATION-SEMANTICS-SPEC.md)). |
 | PC-SIGNAL-01 to PC-SIGNAL-04 | Every Signal trigger. |

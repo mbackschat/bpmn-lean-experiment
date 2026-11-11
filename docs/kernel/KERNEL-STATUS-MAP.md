@@ -66,13 +66,13 @@ The kernel column reads: `accepted`, the row is `done` and the listed kernel sce
 | PC-TIMER-03 | absent | — | — |
 | PC-TIMER-04 | slice | [`timer-start-event`](../../scenarios/timer-start-event/README.md) | — |
 | PC-TIMER-05 | accepted | [`timer-catch-cycles`](../../scenarios/open-rows/timer-catch-cycles/README.md) | — |
-| PC-TIMER-06 | slice | [`activity-boundary-timer`](../../scenarios/activity-boundary-timer/README.md); [`non-interrupting-boundary-timer`](../../scenarios/non-interrupting-boundary-timer/README.md); [`subprocess-boundary-timer`](../../scenarios/subprocess-boundary-timer/README.md); [`timer-user-task-composition`](../../scenarios/timer-user-task-composition/README.md); [`repeatable-event-subscriptions`](../../scenarios/repeatable-event-subscriptions/README.md) (refused: `profile.abnormalScopeEnd.withoutOutflow`) | cancellation |
+| PC-TIMER-06 | accepted | [`activity-boundary-timer`](../../scenarios/activity-boundary-timer/README.md); [`non-interrupting-boundary-timer`](../../scenarios/non-interrupting-boundary-timer/README.md); [`subprocess-boundary-timer`](../../scenarios/subprocess-boundary-timer/README.md); [`timer-user-task-composition`](../../scenarios/timer-user-task-composition/README.md); [`repeatable-event-subscriptions`](../../scenarios/repeatable-event-subscriptions/README.md) (refused: `profile.abnormalScopeEnd.withoutOutflow`); [`timer-boundary-hosts`](../../scenarios/open-rows/timer-boundary-hosts/README.md) | cancellation |
 | PC-TIMER-07 | accepted | [`timer-event-subprocess`](../../scenarios/open-rows/timer-event-subprocess/README.md) | concurrency, cancellation |
 | PC-TIMER-08 | absent | — | cancellation |
 | PC-MESSAGE-01 | absent | — | — |
 | PC-MESSAGE-02 | slice | [`message-start-event`](../../scenarios/message-start-event/README.md) | — |
 | PC-MESSAGE-03 | slice | [`intermediate-catch-message`](../../scenarios/intermediate-catch-message/README.md); [`message-payload-catch`](../../scenarios/message-payload-catch/README.md); [`portable-business-message-payload`](../../scenarios/portable-business-message-payload/README.md) | — |
-| PC-MESSAGE-04 | slice | [`activity-boundary-message`](../../scenarios/activity-boundary-message/README.md) | cancellation |
+| PC-MESSAGE-04 | accepted | [`activity-boundary-message`](../../scenarios/activity-boundary-message/README.md); [`message-boundary-interrupting`](../../scenarios/open-rows/message-boundary-interrupting/README.md) | cancellation |
 | PC-MESSAGE-05 | accepted | [`repeatable-event-subscriptions`](../../scenarios/repeatable-event-subscriptions/README.md); [`message-boundary-repeated`](../../scenarios/open-rows/message-boundary-repeated/README.md) | — |
 | PC-MESSAGE-06 | absent | — | cancellation |
 | PC-MESSAGE-07 | accepted | [`message-esp-repeatable`](../../scenarios/open-rows/message-esp-repeatable/README.md) | concurrency |
