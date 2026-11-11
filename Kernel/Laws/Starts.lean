@@ -9,7 +9,8 @@ The rules of [start selection](../../docs/kernel/semantics/POPULATION-SEMANTICS-
 [triggered starts](../../docs/kernel/semantics/SUBSCRIPTIONS-SEMANTICS-SPEC.md#starts), independent of
 `Kernel.Feature.Starts`' and `Kernel.Step`'s code: the root starts are the start Events at process level, never one
 inside a Sub-Process; a named start input considers only the start it names; the starts an input fires keep document
-order; one input starts one instance at one start, refusing none and several; and an instance begins at most once.
+order; admission keeps one initial root start, so an unnamed none input is never ambiguous in an admitted process; one
+input starts one instance at one start, refusing none and several; and an instance begins at most once.
 
 The laws take a process's elements, their parents and their triggers as parameters, since reading them is the IL's and
 `Kernel.Step`'s, and whether a trigger fires a start as a function `fires`, whose matching on `Trigger`
@@ -56,16 +57,15 @@ theorem RootStarts.ordered {elements : List ElementId} {isStart : ElementId → 
 /-- The root starts a start input fires, and the starts whose trigger predicate it evaluates. A named input evaluates
 only the start it names, so no other start's predicate runs for it: each start is its own unit of commitment
 ([population](../../docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md#conditional-start-evaluations)). An unnamed
-none trigger evaluates nothing and fires the sole none start, and nothing when there is none or several. Any other
-unnamed trigger evaluates every root start and fires those it fires. -/
+none trigger evaluates nothing and fires every none start, so several are `start-ambiguous` (`Chosen`), not
+`no-start-event`. Any other unnamed trigger evaluates every root start and fires those it fires. -/
 def Fired (starts : List RootStart) (fires : ElementId → Bool) (named : Option ElementId) (noneTrigger : Bool)
     (evaluated fired : List ElementId) : Prop :=
   match named with
   | some id => evaluated = ((starts.filter (·.id == id)).map (·.id)) ∧ fired = evaluated.filter fires
   | none =>
     if noneTrigger then
-      evaluated = [] ∧ ((∃ only, starts.filter (·.untriggered) = [only] ∧ fired = [only.id]) ∨
-        ((starts.filter (·.untriggered)).length ≠ 1 ∧ fired = []))
+      evaluated = [] ∧ fired = (starts.filter (·.untriggered)).map (·.id)
     else evaluated = starts.map (·.id) ∧ fired = evaluated.filter fires
 
 /-- The fired starts keep document order. -/
@@ -77,12 +77,36 @@ theorem Fired.ordered {starts : List RootStart} {fires : ElementId → Bool} {na
   · rw [law.2, law.1]
     exact (List.filter_sublist).trans ((List.filter_sublist).map _)
   · split at law
-    · rcases law.2 with ⟨only, untriggered, rfl⟩ | ⟨_, rfl⟩
-      · have : [only].Sublist starts := untriggered ▸ List.filter_sublist
-        simpa using this.map (·.id)
-      · exact List.nil_sublist _
+    · rw [law.2]
+      exact (List.filter_sublist).map _
     · rw [law.2, law.1]
       exact List.filter_sublist
+
+/-! ## Admitted root starts -/
+
+/-- Admission's verdict on a process's root starts: a second initial start, a None or a Timer start, is refused as
+`start.rootCombination`, as pinned CIB parses one initial start per process; BPMN 2.0.2 §10.5.2 admits several, which
+lie outside the target ([CIB-LIM-0007](../../docs/CIB-BPMN-RELATION-REGISTER.md#cib-lim-0007-pinned-cib-parses-one-initial-start-per-process-and-one-start-per-sub-process),
+[flow, start combinations](../../docs/kernel/semantics/FLOW-SEMANTICS-SPEC.md)). `timer` says which starts a Timer
+triggers. -/
+def RootCombination (starts : List RootStart) (timer : ElementId → Bool) : Option String → Prop
+  | some code => 2 ≤ (starts.filter fun start => start.untriggered || timer start.id).length ∧
+      code = "start.rootCombination"
+  | none => (starts.filter fun start => start.untriggered || timer start.id).length < 2
+
+/-- So an admitted process fires at most one start for an unnamed none trigger, and such an input is never
+`start-ambiguous`. -/
+theorem RootCombination.noneUnambiguous {starts : List RootStart} {timer : ElementId → Bool}
+    {fires : ElementId → Bool} {evaluated fired : List ElementId} (admitted : RootCombination starts timer none)
+    (law : Fired starts fires none true evaluated fired) : fired.length ≤ 1 := by
+  simp only [Fired, ite_true] at law
+  rw [law.2, List.length_map, ← List.countP_eq_length_filter]
+  have : (starts.filter (·.untriggered)).length ≤ (starts.filter fun start => start.untriggered || timer start.id).length := by
+    simp only [← List.countP_eq_length_filter]
+    exact List.countP_mono_left fun start _ untriggered => by simp [untriggered]
+  simp only [RootCombination] at admitted
+  rw [List.countP_eq_length_filter]
+  omega
 
 /-! ## The one start an input starts -/
 
@@ -149,12 +173,28 @@ theorem named_evaluates_other_rejected : ¬ Fired roots firesM (some startM) fal
   simp [Fired, roots, noneStart, messageStart, startS, startM]
 
 theorem sole_none_fires : Fired roots firesM none true [] [startS] := by
-  simp only [Fired, ite_true, true_and]
-  exact .inl ⟨noneStart, by simp [roots, noneStart, messageStart], rfl⟩
+  simp [Fired, roots, noneStart, messageStart]
 
-/-- Two none starts fire nothing for an unnamed none trigger. -/
-theorem several_none_fire_nothing : Fired [noneStart, { noneStart with id := task }] firesM none true [] [] := by
+/-- Two none starts both fire for an unnamed none trigger, so the input is `start-ambiguous`. -/
+theorem several_none_fire : Fired [noneStart, { noneStart with id := task }] firesM none true [] [startS, task] := by
   simp [Fired, noneStart]
+
+/-- Firing nothing for several none starts, which answers `no-start-event`, is rejected. -/
+theorem several_none_silent_rejected : ¬ Fired [noneStart, { noneStart with id := task }] firesM none true [] [] := by
+  simp [Fired, noneStart]
+
+/-- A process whose only initial start is `S` is admitted. -/
+theorem one_initial_admitted : RootCombination roots (fun _ => false) none := by
+  simp [RootCombination, roots, noneStart, messageStart]
+
+/-- A None start beside a Timer start is refused. -/
+theorem none_and_timer_refused :
+    RootCombination roots (· == startM) (some "start.rootCombination") := by
+  simp [RootCombination, roots, noneStart, messageStart]
+
+/-- Admitting two none starts is rejected. -/
+theorem two_none_admitted_rejected : ¬ RootCombination [noneStart, { noneStart with id := task }] (fun _ => false) none := by
+  simp [RootCombination, noneStart]
 
 /-- Firing a start out of document order is rejected. -/
 theorem out_of_order_rejected : ¬ Fired roots (fun _ => true) none false [startS, startM] [startM, startS] := by
