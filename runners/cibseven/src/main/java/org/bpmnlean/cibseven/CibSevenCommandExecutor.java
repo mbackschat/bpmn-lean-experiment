@@ -33,13 +33,16 @@ import org.bpmnlean.cibseven.ScenarioProtocol.TimerDetail;
 import org.bpmnlean.cibseven.ScenarioProtocol.TimerFire;
 import org.bpmnlean.cibseven.ScenarioProtocol.UnspecifiedMessageChannel;
 import org.bpmnlean.cibseven.ScenarioProtocol.UserTaskDetail;
+import org.cibseven.bpm.engine.MismatchingMessageCorrelationException;
 import org.cibseven.bpm.engine.ProcessEngine;
 import org.cibseven.bpm.engine.impl.util.ClockUtil;
+import org.cibseven.bpm.engine.runtime.MessageCorrelationResult;
 
 /**
  * Executes the five scenario inputs against one engine instance. Every input names an occurrence; the executor
  * resolves it against the projected open waits, so an input whose occurrence is not open with a matching wait kind is
- * rejected without touching the engine, the same identity rule the canonical trace publishes.
+ * rejected without touching the engine, the same identity rule the canonical trace publishes; so is a Message
+ * correlation CIB finds no single target for ({@link #deliver}).
  */
 final class CibSevenCommandExecutor {
 
@@ -141,8 +144,11 @@ final class CibSevenCommandExecutor {
    *
    * <p>The delivery's variables travel with CIB's own delivery call, which installs them (CIB-EXT-0025). Its criteria
    * correlate the Message within the addressed occurrence's instance ({@link CibSevenCriteria}), and CIB must then have
-   * delivered to that occurrence. A payload fills the catch's Data Output, which CIB never parses (CIB-LIM-0013): CIB's
-   * Message carries only variables, so the payload has no CIB form and is not sent.
+   * delivered to that occurrence. A correlation CIB matches to no execution, or to several, is `rejected`: CIB throws
+   * `MismatchingMessageCorrelationException` while it selects the target (`CorrelateMessageCmd.java:86-88`,
+   * `DefaultCorrelationHandler.java:46-53`), before it triggers anything, so the input changed no state. A payload
+   * fills the catch's Data Output, which CIB never parses (CIB-LIM-0013): CIB's Message carries only variables, so the
+   * payload has no CIB form and is not sent.
    */
   Execution deliver(String engineRootId, String stableRootId, Deliver deliver) {
     var wait = open(engineRootId, stableRootId, deliver.occurrence());
@@ -157,6 +163,7 @@ final class CibSevenCommandExecutor {
         if (!(wait.openWait().detail() instanceof MessageDetail detail) || !detail.channel().equals(message.channel())) {
           yield Execution.of(REJECTED);
         }
+        var delivered = true;
         switch (wait.handle()) {
           case AddresslessHandle addressless when message.channel() instanceof UnspecifiedMessageChannel -> {
             if (!criteria.isEmpty()) {
@@ -169,20 +176,22 @@ final class CibSevenCommandExecutor {
             if (criteria.isEmpty()) {
               runtime.messageEventReceived(subscription.eventName(), subscription.executionId(), variables);
             } else {
-              correlate(engineRootId, stableRootId, deliver, subscription, engineInstance, variables);
+              delivered = correlate(engineRootId, stableRootId, deliver, subscription, engineInstance, variables);
             }
-            projector.occurrences().delivered(
-                engineInstance,
-                deliver.occurrence().elementId(),
-                subscription.subscriptionId(),
-                runtime.createEventSubscriptionQuery()
-                        .eventSubscriptionId(subscription.subscriptionId())
-                        .count()
-                    == 1);
+            if (delivered) {
+              projector.occurrences().delivered(
+                  engineInstance,
+                  deliver.occurrence().elementId(),
+                  subscription.subscriptionId(),
+                  runtime.createEventSubscriptionQuery()
+                          .eventSubscriptionId(subscription.subscriptionId())
+                          .count()
+                      == 1);
+            }
           }
           default -> throw new IllegalStateException("Message wait without a deliverable handle");
         }
-        yield Execution.of(COMMITTED);
+        yield Execution.of(delivered ? COMMITTED : REJECTED);
       }
       case SignalDelivery signal -> {
         if (!(wait.openWait().detail() instanceof SignalDetail detail)
@@ -200,11 +209,11 @@ final class CibSevenCommandExecutor {
   }
 
   /**
-   * Correlates the delivery's Message by its criteria within the subscription's instance. The criteria cannot name
-   * another instance than the addressed one, and CIB must deliver to the addressed execution; anything else is a
-   * delivery CIB cannot make as addressed, a harness failure.
+   * Correlates the delivery's Message by its criteria within the subscription's instance; false when CIB matches no
+   * execution or several. The criteria cannot name another instance than the addressed one, and CIB must deliver to the
+   * addressed execution; anything else is a delivery CIB cannot make as addressed, a harness failure.
    */
-  private void correlate(
+  private boolean correlate(
       String engineRootId,
       String stableRootId,
       Deliver deliver,
@@ -224,10 +233,16 @@ final class CibSevenCommandExecutor {
           .findFirst()
           .orElse(null);
     });
-    var result = builder.setVariables(variables).correlateWithResult();
+    MessageCorrelationResult result;
+    try {
+      result = builder.setVariables(variables).correlateWithResult();
+    } catch (MismatchingMessageCorrelationException noSingleTarget) {
+      return false;
+    }
     if (result.getExecution() == null || !subscription.executionId().equals(result.getExecution().getId())) {
       throw new IllegalStateException("CIB correlated the Message to another execution than the addressed one");
     }
+    return true;
   }
 
   /** The name CIB addresses a Signal delivery by: its own, or the one its QName names in the waiting instance's model. */
