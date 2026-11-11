@@ -63,6 +63,8 @@ export interface MemoryProcessHostOptions {
 export interface MemoryProcessHost extends ProcessHost {
   /** Applies a `timerFire` or `effectResult` stimulus as the host's own arrival, at the host clock under durable scheduling. */
   arrive(workflowId: string, stimulus: JsonValue): Promise<CommandResult>;
+  /** The chain's encoded kernel state, `null` before a committed start, as the Workflow's `state` query answers it. */
+  state(workflowId: string): Promise<JsonValue>;
 }
 
 export class UnknownWorkflow extends Error {
@@ -152,6 +154,11 @@ class MemoryHost<P, S, I> implements MemoryProcessHost {
   async observation(workflowId: string): Promise<JsonValue> {
     const chain = this.#chain(workflowId);
     return chain.instance === null ? null : this.port.observation(chain.program, chain.instance.state);
+  }
+
+  async state(workflowId: string): Promise<JsonValue> {
+    const chain = this.#chain(workflowId);
+    return chain.instance === null ? null : this.port.encodeState(chain.instance.state);
   }
 
   async hostView(workflowId: string): Promise<HostSnapshot> {

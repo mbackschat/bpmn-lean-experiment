@@ -149,7 +149,7 @@ def effectOutcomeFromJson (json : Json) : Except String EffectOutcome := do
   | other => throw s!"unknown effect outcome kind {other}"
 
 /-- The firing a start stimulus states when its trigger is a Timer: the start it names, if any, and the due instant its
-trigger's logical time gives. A single-instance run checks it before the step (`Population.onTimeRefusal`). -/
+trigger's logical time gives. A single-instance run checks it before the step (`Run.runStep`). -/
 structure TimerFiring where
   startEvent : Option ElementId
   dueMs : Nat

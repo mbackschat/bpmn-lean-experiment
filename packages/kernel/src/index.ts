@@ -10,6 +10,7 @@ export {
   runHostView,
   runPopulation,
   runScenario,
+  runStep,
   unsupportedDeploymentResult,
 } from "./run.js";
 export {
@@ -23,7 +24,16 @@ export {
   type Decoded,
   type JsonValue,
 } from "./il/codec.js";
-export { channelFromJson, channelToJson, failureCode, failureName, signalAddressToJson, stimulusFromJson } from "./il/codec/stimulus.js";
+export {
+  channelFromJson,
+  channelToJson,
+  failureCode,
+  failureName,
+  firingStimulusFromJson,
+  signalAddressToJson,
+  stimulusFromJson,
+  type TimerFiring,
+} from "./il/codec/stimulus.js";
 export { admit } from "./admission-registry.js";
 export { hooks } from "./registry.js";
 export { step } from "./step.js";

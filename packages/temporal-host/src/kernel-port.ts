@@ -25,11 +25,13 @@ import {
   hostView,
   hostViewJson,
   matching,
+  firingStimulusFromJson,
   observationJson,
-  step,
+  runStep,
   stimulusFromJson,
   type EffectOutcome,
   type Input,
+  type TimerFiring,
   type OccurrenceRef,
   type Program,
   type State,
@@ -120,22 +122,32 @@ function correlatedMatches(program: Program, state: State, channel: JsonValue, c
     ({ processInstanceId: ref.processInstanceId, elementId: ref.element, activation: ref.activation }));
 }
 
-export const kernelPort: KernelPort<Program, State, Input> = {
+/**
+ * A chain input as the host carries it: the kernel input and the Timer firing its stimulus stated, which the
+ * single-instance run's step checks before the step (`Kernel.Run.runStep`); a host-made input states none.
+ */
+export type HostInput = Readonly<{ input: Input; firing: TimerFiring | null }>;
+
+export const kernelPort: KernelPort<Program, State, HostInput> = {
   decodeProgram: (json) => decoded(decodeProgram(json), "program"),
   admit,
   requirements: hostRequirements,
   capabilities: (program) => capabilitiesJson(definitionCapabilities(program)),
   decodeStimulus: (json) => {
-    const [commandId, input] = decoded(stimulusFromJson(json), "stimulus");
-    return { commandId, input };
+    const [commandId, input, firing] = decoded(firingStimulusFromJson(json), "stimulus");
+    return { commandId, input: { input, firing } };
   },
-  route,
-  timerInput: (timer, deadlineMs, atMs) =>
-    ({ tag: InputTag.TimerFire, payload: { occurrence: reference(timer), logicalTimeMs: deadlineMs, atMs } }),
-  effectInput: (effect, result, atMs) =>
-    ({ tag: InputTag.EffectResult, payload: { occurrence: reference(effect), outcome: effectOutcome(result), atMs } }),
-  step: (program, before, input) => {
-    const outcome = step(hooks, program, before, input);
+  route: (held) => route(held.input),
+  timerInput: (timer, deadlineMs, atMs) => ({
+    input: { tag: InputTag.TimerFire, payload: { occurrence: reference(timer), logicalTimeMs: deadlineMs, atMs } }, firing: null,
+  }),
+  effectInput: (effect, result, atMs) => ({
+    input: { tag: InputTag.EffectResult, payload: { occurrence: reference(effect), outcome: effectOutcome(result), atMs } }, firing: null,
+  }),
+  // The single-instance run's step, not the bare step: a chain is the degenerate population, so a Timer start that is
+  // not on time is refused before the step exactly as the kernel runner refuses it (`Kernel.Run.runStep`).
+  step: (program, before, held) => {
+    const outcome = runStep(program, before, held.input, held.firing);
     if (outcome.ok) return { committed: true, state: outcome.value };
     return {
       committed: false,

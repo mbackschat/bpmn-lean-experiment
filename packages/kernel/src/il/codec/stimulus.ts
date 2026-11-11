@@ -339,7 +339,7 @@ function effectOutcomeFromJson(json: unknown): EffectOutcome {
 
 /**
  * The firing a start stimulus states when its trigger is a Timer: the start it names, if any, and the due instant its
- * trigger's logical time gives. A single-instance run checks it before the step (`onTimeRefusal`).
+ * trigger's logical time gives. A single-instance run checks it before the step (`runStep`).
  */
 export type TimerFiring = Readonly<{ startEvent: ElementId | null; dueMs: number }>;
 

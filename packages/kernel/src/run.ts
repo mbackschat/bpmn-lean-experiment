@@ -26,6 +26,7 @@ import { assertNever, compareStrings, mergeSort, type DefinitionRef, type Progra
 import { bindingsToJson, decodeProgram, encodeExpression, type JsonValue } from "./il/codec.js";
 import {
   channelFromJson, channelToJson, decodeCorrelation, failureCode, failureName, firingStimulusFromJson, signalAddressToJson,
+  type TimerFiring,
 } from "./il/codec/stimulus.js";
 import {
   CauseTag,
@@ -66,7 +67,7 @@ import { deploymentSummary, registerSummary, type DeploymentSummary } from "./po
 import { matching } from "./population/messages.js";
 import { hooks } from "./registry.js";
 import { admit } from "./admission-registry.js";
-import { arrayField, field, referenceJson, requiredString, stimulusOf, type ScenarioStimulus } from "./run/wire.js";
+import { arrayField, field, referenceJson, requiredString, stimulusOf } from "./run/wire.js";
 import {
   definitionRefFromJson, deploymentSourceFromJson, populationResultJson, stimuliOfPopulation, type Declared,
 } from "./run/population.js";
@@ -243,20 +244,26 @@ function snapshot(program: Program, state: State | null): JsonValue[] {
   return state === null ? [] : [observationJson(program, state)];
 }
 
-/** A scenario stimulus with the refusal it meets before its step, `null` for none. */
-type CheckedStimulus = readonly [ScenarioStimulus, string | null];
-
-/** A stimulus's step, or its refusal before the step when one is given. */
-function stepChecked(program: Program, state: State | null, input: Input, refusal: string | null): Outcome {
+/**
+ * The step of a single-instance run: a stimulus stating a Timer firing (`firingStimulusFromJson`) is refused before the
+ * step unless it is on time in the degenerate population (`onTimeRefusal`). A host that serves one instance per chain
+ * steps every input through it with the firing its stimulus stated, so its verdicts are the runner's. The codec reads
+ * the firing from the stimulus, so nothing outside the step matches the input.
+ */
+export function runStep(program: Program, state: State | null, input: Input, firing: TimerFiring | null): Outcome {
+  const refusal = firing === null ? null : onTimeRefusal(program, firing.startEvent, firing.dueMs);
   return refusal === null ? step(hooks, program, state, input) : { ok: false, failure: { tag: FailureTag.Rejected, code: refusal } };
 }
 
-/** The trace after deployment and the scenario outcome; a stimulus's refusal, when given, rejects it before the step. */
-function execute(program: Program, stimuli: readonly CheckedStimulus[]): readonly [JsonValue[], string] {
+/** A scenario stimulus: its command identifier, its input and the Timer firing it states. */
+type RunStimulus = readonly [string, Input, TimerFiring | null];
+
+/** The trace after deployment and the scenario outcome. */
+function execute(program: Program, stimuli: readonly RunStimulus[]): readonly [JsonValue[], string] {
   const trace: JsonValue[] = [];
   let state: State | null = null;
-  for (const [index, [[commandId, input], refusal]] of stimuli.entries()) {
-    const outcome = stepChecked(program, state, input, refusal);
+  for (const [index, [commandId, input, firing]] of stimuli.entries()) {
+    const outcome = runStep(program, state, input, firing);
     if (outcome.ok) {
       trace.push(commandJson(commandId, "committed", null), ...snapshot(program, outcome.value));
       state = outcome.value;
@@ -282,7 +289,7 @@ export function unsupportedDeploymentResult(code: string): JsonValue {
   return { outcome: semantic("unsupported"), trace: [deploymentJson("unsupported", code)] };
 }
 
-function result(program: Program, stimuli: readonly CheckedStimulus[]): JsonValue {
+function result(program: Program, stimuli: readonly RunStimulus[]): JsonValue {
   const code = admit(program);
   if (code !== null) return unsupportedDeploymentResult(code);
   const [trace, outcome] = execute(program, stimuli);
@@ -290,13 +297,12 @@ function result(program: Program, stimuli: readonly CheckedStimulus[]): JsonValu
 }
 
 
-/** The stimuli with the refusal of each single-instance Timer start that is not on time (`onTimeRefusal`). */
-function stimuliFromJson(program: Program, json: unknown, where: string): readonly CheckedStimulus[] {
+/** A scenario's stimuli, decoded by the stimulus codec with the Timer firing each states. */
+function stimuliFromJson(json: unknown, where: string): readonly RunStimulus[] {
   return arrayField(json, "stimuli", where).map((item) => {
     const decoded = firingStimulusFromJson(item);
     if (!decoded.ok) throw new Error(`${where}: ${decoded.refusal}`);
-    const [commandId, input, firing] = decoded.value;
-    return [[commandId, input], firing === null ? null : onTimeRefusal(program, firing.startEvent, firing.dueMs)] as const;
+    return decoded.value;
   });
 }
 
@@ -309,7 +315,7 @@ function programFromJson(programJson: unknown, where: string): Program {
 /** `kernelRun <program.json> <scenario.json>`. */
 export function runScenario(programJson: unknown, scenarioJson: unknown): unknown {
   const program = programFromJson(programJson, "program");
-  return result(program, stimuliFromJson(program, scenarioJson, "scenario"));
+  return result(program, stimuliFromJson(scenarioJson, "scenario"));
 }
 
 // Host-view mode
@@ -398,11 +404,11 @@ export function hostViewJson(view: View): JsonValue {
 }
 
 /** Every committed input's host view, up to the first input that neither commits nor is rejected. */
-function hostViews(program: Program, stimuli: readonly CheckedStimulus[]): readonly View[] {
+function hostViews(program: Program, stimuli: readonly RunStimulus[]): readonly View[] {
   const views: View[] = [];
   let state: State | null = null;
-  for (const [[, input], refusal] of stimuli) {
-    const outcome = stepChecked(program, state, input, refusal);
+  for (const [, input, firing] of stimuli) {
+    const outcome = runStep(program, state, input, firing);
     if (outcome.ok) {
       views.push(hostView(program, outcome.value));
       state = outcome.value;
@@ -471,7 +477,7 @@ export function capabilitiesJson(capabilities: Capabilities): JsonValue {
 /** `kernelRun --host-view <program.json> <scenario.json>`. */
 export function runHostView(programJson: unknown, scenarioJson: unknown): unknown {
   const program = programFromJson(programJson, "program");
-  const stimuli = stimuliFromJson(program, scenarioJson, "scenario");
+  const stimuli = stimuliFromJson(scenarioJson, "scenario");
   const views = admit(program) !== null ? [] : hostViews(program, stimuli);
   return {
     result: result(program, stimuli),
