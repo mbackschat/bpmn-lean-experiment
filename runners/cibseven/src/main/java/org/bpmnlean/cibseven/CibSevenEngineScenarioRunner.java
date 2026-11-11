@@ -14,10 +14,14 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.sql.SQLException;
 import java.sql.SQLIntegrityConstraintViolationException;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import org.bpmnlean.cibseven.CibSevenCommandExecutor.Execution;
+import org.bpmnlean.cibseven.PopulationProtocol.InstanceStep;
+import org.bpmnlean.cibseven.PopulationProtocol.PopulationDiagnostics;
+import org.bpmnlean.cibseven.PopulationProtocol.PopulationResult;
+import org.bpmnlean.cibseven.PopulationProtocol.PopulationScenario;
 import org.bpmnlean.cibseven.ScenarioDiagnosticsProtocol.CleanupProjection;
 import org.bpmnlean.cibseven.ScenarioDiagnosticsProtocol.Diagnostics;
 import org.bpmnlean.cibseven.ScenarioDiagnosticsProtocol.EffectExecutionSnapshot;
@@ -30,28 +34,18 @@ import org.bpmnlean.cibseven.ScenarioProtocol.CommandOutcome;
 import org.cibseven.bpm.dmn.engine.DmnEngineException;
 import org.cibseven.bpm.dmn.feel.impl.FeelException;
 import org.cibseven.bpm.engine.ProcessEngineException;
-import org.bpmnlean.cibseven.ScenarioProtocol.ConditionStart;
 import org.bpmnlean.cibseven.ScenarioProtocol.Deliver;
 import org.bpmnlean.cibseven.ScenarioProtocol.DeploymentObservation;
-import org.bpmnlean.cibseven.ScenarioProtocol.DirectMessageChannel;
 import org.bpmnlean.cibseven.ScenarioProtocol.EffectResult;
-import org.bpmnlean.cibseven.ScenarioProtocol.MessageStart;
-import org.bpmnlean.cibseven.ScenarioProtocol.NoneStart;
-import org.bpmnlean.cibseven.ScenarioProtocol.OperationMessageChannel;
 import org.bpmnlean.cibseven.ScenarioProtocol.ScenarioDefinition;
 import org.bpmnlean.cibseven.ScenarioProtocol.ScenarioResult;
 import org.bpmnlean.cibseven.ScenarioProtocol.SemanticOutcome;
-import org.bpmnlean.cibseven.ScenarioProtocol.SignalStart;
 import org.bpmnlean.cibseven.ScenarioProtocol.Start;
 import org.bpmnlean.cibseven.ScenarioProtocol.TimerFire;
-import org.bpmnlean.cibseven.ScenarioProtocol.TimerStart;
-import org.bpmnlean.cibseven.ScenarioProtocol.UnspecifiedMessageChannel;
 import org.cibseven.bpm.engine.ProcessEngine;
 import org.cibseven.bpm.engine.impl.ManagementServiceImpl;
 import org.cibseven.bpm.engine.impl.cfg.ProcessEngineConfigurationImpl;
 import org.cibseven.bpm.engine.impl.util.ClockUtil;
-import org.cibseven.bpm.model.bpmn.instance.CallActivity;
-import org.cibseven.bpm.model.bpmn.instance.Message;
 
 /**
  * Embedded, single-threaded CIB Seven calibration oracle.
@@ -71,6 +65,7 @@ final class CibSevenEngineScenarioRunner implements AutoCloseable {
   private final CibSevenScenarioValidator scenarioValidator;
   private final ProcessEngineConfigurationImpl configuration;
   private final PvmDefinitionProjector pvmProjector;
+  private final CibSevenStarts starts;
   private final CibSevenScriptedEffect effects;
   private final CibSevenEngineBundleFactory.ScenarioIds ids;
   private final boolean incidentCreationEnabled;
@@ -84,6 +79,7 @@ final class CibSevenEngineScenarioRunner implements AutoCloseable {
     this.scenarioValidator = new CibSevenScenarioValidator(release);
     this.configuration = bundle.configuration();
     this.pvmProjector = new PvmDefinitionProjector();
+    this.starts = new CibSevenStarts(processEngine, LOGICAL_EPOCH);
     this.effects = bundle.effects();
     this.ids = bundle.ids();
     this.incidentCreationEnabled = bundle.incidentCreationEnabled();
@@ -115,6 +111,68 @@ final class CibSevenEngineScenarioRunner implements AutoCloseable {
     }
   }
 
+  /**
+   * Runs a population scenario ({@link CibSevenPopulationRunner}) under the same clock lock and boot-state discipline
+   * as a single-instance scenario, then deletes every deployment it made and records the cleanup.
+   */
+  public synchronized PopulationResult runPopulation(PopulationScenario scenario, Path projectRoot) throws IOException {
+    synchronized (PROCESS_GLOBAL_CLOCK_LOCK) {
+      if (closed) {
+        throw new IllegalStateException("Runner is closed");
+      }
+      if (incidentCreationEnabled) {
+        throw new IllegalStateException("A population runs in the default engine environment");
+      }
+      var resources = scenarioValidator.validatePopulation(scenario, projectRoot);
+      restoreBootTables();
+      ids.restart();
+      var results = scenario.steps().stream()
+          .filter(InstanceStep.class::isInstance)
+          .map(step -> ((InstanceStep) step).stimulus())
+          .filter(EffectResult.class::isInstance)
+          .map(EffectResult.class::cast)
+          .toList();
+      // The scripted effect answers a synchronous Service Task with the next result for its element, whichever
+      // instance runs it, so results for one element in several instances could answer the wrong one.
+      var instancesByElement = results.stream().collect(Collectors.groupingBy(
+          result -> result.occurrence().elementId(),
+          Collectors.mapping(result -> result.occurrence().processInstanceId(), Collectors.toSet())));
+      if (instancesByElement.values().stream().anyMatch(instances -> instances.size() > 1)) {
+        throw new IllegalStateException("Effect results of one element in several instances have no realization");
+      }
+      effects.beginScenario(CibEffectExecutionSchedule.PLAIN_SUCCESS, results);
+      var population = new CibSevenPopulationRunner(processEngine, effects, LOGICAL_EPOCH);
+      PopulationResult answer;
+      CleanupProjection cleanup;
+      RuntimeException undeletable = null;
+      try {
+        answer = population.run(scenario, resources);
+      } finally {
+        try {
+          for (var deploymentId : population.deploymentIds()) {
+            var failure = deleteDeployment(deploymentId);
+            undeletable = undeletable == null ? failure : undeletable;
+          }
+          cleanup = population.observeCleanup();
+        } finally {
+          ClockUtil.reset();
+        }
+      }
+      if (undeletable != null) {
+        throw new IllegalStateException(
+            "CIB could not delete the population's deployments; the engine was purged", undeletable);
+      }
+      return new PopulationResult(
+          answer.kind(),
+          answer.scenarioId(),
+          answer.deployments(),
+          answer.steps(),
+          answer.inputFailures(),
+          answer.processStates(),
+          new PopulationDiagnostics(release.version(), H2_VERSION, cleanup));
+    }
+  }
+
   private ScenarioResult runWithProcessGlobalClock(
       ScenarioDefinition scenario, Path projectRoot, CibEffectExecutionSchedule effectSchedule)
       throws IOException {
@@ -124,7 +182,11 @@ final class CibSevenEngineScenarioRunner implements AutoCloseable {
     var options = scenario.declaredOptions();
     var projector =
         new CibSevenStateProjector(
-            processEngine, LOGICAL_EPOCH, options.incidentsEnabled(), options.incidentsCancellable());
+            processEngine,
+            LOGICAL_EPOCH,
+            options.incidentsEnabled(),
+            options.incidentsCancellable(),
+            CibSevenOccurrences::keyOnly);
     var executor =
         new CibSevenCommandExecutor(processEngine, projector, effects, effectSchedule, options, LOGICAL_EPOCH);
     var totalStartedAt = System.nanoTime();
@@ -166,7 +228,7 @@ final class CibSevenEngineScenarioRunner implements AutoCloseable {
         timings.deploymentNanos = positiveElapsedSince(deploymentStartedAt);
         trace.add(new DeploymentObservation(COMMITTED, null));
 
-        var definitionId = rootDefinitionId(deploymentId);
+        var definitionId = rootDefinitionId(processEngine, deploymentId, Files.readAllBytes(validated.bpmnPath()));
         var processId =
             processEngine.getRepositoryService().getProcessDefinition(definitionId).getKey();
         var definitionProjectionStartedAt = System.nanoTime();
@@ -183,8 +245,10 @@ final class CibSevenEngineScenarioRunner implements AutoCloseable {
           var startedAt = System.nanoTime();
           CommandOutcome outcome;
           try {
-            if (stimulus instanceof Start start) {
-              engineRootId = start(start, definitionId);
+            if (!advanceClock(stimulus)) {
+              outcome = REJECTED;
+            } else if (stimulus instanceof Start start) {
+              engineRootId = starts.start(start, definitionId);
               stableRootId = engineRootId == null ? null : start.instanceId();
               outcome = engineRootId == null ? REJECTED : COMMITTED;
             } else if (engineRootId == null) {
@@ -196,20 +260,8 @@ final class CibSevenEngineScenarioRunner implements AutoCloseable {
                 effectExecutions.add(execution.evidence());
               }
             }
-          } catch (ProcessEngineException | DmnEngineException | FeelException failed) {
-            requireNoIntegrityViolation(failed);
-            // An engine exception inside the command rolls back its transaction; the runner's own harness exceptions are
-            // none of these and stay harness failures. A DMN evaluation failure is a DmnEngineException or, from the
-            // FEEL engine, a FeelException (`ScalaFeelLogger`), neither a ProcessEngineException, and rolls back the same way.
-            outcome = ROLLED_BACK;
           } catch (RuntimeException failed) {
-            if (!thrownByCib(failed)) {
-              throw failed;
-            }
-            requireNoIntegrityViolation(failed);
-            // CIB also lets unchecked JDK exceptions escape its own code unwrapped, such as the NumberFormatException of
-            // a text cardinality (`MultiInstanceActivityBehavior:148-151`); the command's transaction rolls back alike.
-            outcome = ROLLED_BACK;
+            outcome = rolledBack(failed);
           }
           var commandNanos = positiveElapsedSince(startedAt);
           trace.add(new CommandObservation(stimulus.commandId(), outcome));
@@ -278,7 +330,42 @@ final class CibSevenEngineScenarioRunner implements AutoCloseable {
             Objects.requireNonNull(cleanup, "cleanup")));
   }
 
-  private static Execution execute(
+  /**
+   * The outcome of a command CIB failed: its transaction rolled back. An engine exception inside the command rolls it
+   * back; the runner's own harness exceptions are none of these and are rethrown as harness failures. A DMN evaluation
+   * failure is a DmnEngineException or, from the FEEL engine, a FeelException (`ScalaFeelLogger`), neither a
+   * ProcessEngineException, and rolls back the same way. CIB also lets unchecked JDK exceptions escape its own code
+   * unwrapped, such as the NumberFormatException of a text cardinality (`MultiInstanceActivityBehavior:148-151`); the
+   * command's transaction rolls back alike.
+   */
+  static CommandOutcome rolledBack(RuntimeException failed) {
+    var engineFailure =
+        failed instanceof ProcessEngineException || failed instanceof DmnEngineException || failed instanceof FeelException;
+    if (!engineFailure && !thrownByCib(failed)) {
+      throw failed;
+    }
+    requireNoIntegrityViolation(failed);
+    return ROLLED_BACK;
+  }
+
+  /**
+   * Advances the controlled clock to an input's logical time (`Kernel.Step.advanceClock`); false for a time before the
+   * clock, which the input is rejected for without reaching the engine. A Timer firing's time is the executor's to
+   * apply, since it must first find the job due.
+   */
+  static boolean advanceClock(ScenarioProtocol.Stimulus stimulus) {
+    if (stimulus instanceof TimerFire || stimulus.at() == null) {
+      return true;
+    }
+    var nowMs = ClockUtil.getCurrentTime().getTime() - LOGICAL_EPOCH.getTime();
+    if (stimulus.at() < nowMs) {
+      return false;
+    }
+    ClockUtil.setCurrentTime(new Date(LOGICAL_EPOCH.getTime() + stimulus.at()));
+    return true;
+  }
+
+  static Execution execute(
       CibSevenCommandExecutor executor, String engineRootId, String stableRootId, ScenarioProtocol.Stimulus stimulus) {
     return switch (stimulus) {
       case Command command -> executor.command(engineRootId, stableRootId, command);
@@ -289,130 +376,18 @@ final class CibSevenEngineScenarioRunner implements AutoCloseable {
     };
   }
 
-  /** The deployed executable process no Call Activity of the same deployment calls. */
-  private String rootDefinitionId(String deploymentId) {
-    var repository = processEngine.getRepositoryService();
-    var definitions = repository.createProcessDefinitionQuery().deploymentId(deploymentId).list();
-    var called = new HashSet<String>();
-    for (var definition : definitions) {
-      repository.getBpmnModelInstance(definition.getId()).getModelElementsByType(CallActivity.class).stream()
-          .map(CallActivity::getCalledElement)
-          .filter(Objects::nonNull)
-          .map(element -> element.substring(element.indexOf(':') + 1))
-          .forEach(called::add);
-    }
-    var roots = definitions.stream().filter(definition -> !called.contains(definition.getKey())).toList();
-    if (roots.size() != 1) {
-      throw new IllegalStateException("Deployment has no unique root process: " + roots.size());
-    }
-    return roots.getFirst().getId();
-  }
-
-  /** Starts the root instance as the start input states; `null` when CIB refuses the start. */
-  private String start(Start start, String definitionId) {
-    var runtime = processEngine.getRuntimeService();
-    var variables = ScenarioVariableBindings.toEngineMap(start.variables());
-    var businessKey = start.businessKey();
-    return switch (start.trigger() == null ? new NoneStart() : start.trigger()) {
-      case NoneStart ignored ->
-          start.startEvent() == null
-              ? runtime.startProcessInstanceById(definitionId, businessKey, variables).getId()
-              : runtime.createProcessInstanceById(definitionId)
-                  .businessKey(businessKey)
-                  .startBeforeActivity(start.startEvent())
-                  .setVariables(variables)
-                  .execute()
-                  .getId();
-      case MessageStart message -> {
-        if (message.payload() != null) {
-          throw new IllegalStateException("A Message start payload has no realization in this runner yet");
-        }
-        var messageId =
-            switch (message.channel()) {
-              case DirectMessageChannel direct -> direct.messageId();
-              case OperationMessageChannel operation -> operation.messageId();
-              case UnspecifiedMessageChannel ignored ->
-                  throw new IllegalStateException("A Message start needs a Message");
-            };
-        var model = processEngine.getRepositoryService().getBpmnModelInstance(definitionId);
-        var name = ((Message) model.getModelElementById(messageId)).getName();
-        // CIB's builders refuse a null business key (`ensureNotNull`), so an absent key is left unset.
-        var correlation = runtime.createMessageCorrelation(name).processDefinitionId(definitionId);
-        if (businessKey != null) {
-          correlation.processInstanceBusinessKey(businessKey);
-        }
-        yield correlation.setVariables(variables).correlateStartMessage().getId();
-      }
-      case TimerStart timer -> {
-        requireNoBusinessKey(start, "timer");
-        yield fireTimerStart(start, timer, definitionId);
-      }
-      case SignalStart signal -> {
-        requireNoBusinessKey(start, "Signal");
-        // CIB's Signal carries one variable map, so start variables beside the Signal's own have no realization.
-        if (!start.variables().isEmpty()) {
-          throw new IllegalStateException("Start variables beside a Signal start's own have no realization in this runner");
-        }
-        runtime.createSignalEvent(signal.name())
-            .setVariables(ScenarioVariableBindings.toEngineMap(signal.variables()))
-            .send();
-        yield startedAt(start, definitionId, "Signal");
-      }
-      case ConditionStart ignored -> {
-        var evaluation = runtime.createConditionEvaluation().processDefinitionId(definitionId);
-        if (businessKey != null) {
-          evaluation.processInstanceBusinessKey(businessKey);
-        }
-        var started = evaluation.setVariables(variables).evaluateStartConditions();
-        if (started.isEmpty()) {
-          yield null;
-        }
-        yield startedAt(start, definitionId, "conditional");
-      }
-    };
-  }
-
-  private static void requireNoBusinessKey(Start start, String trigger) {
-    if (start.businessKey() != null) {
-      throw new IllegalStateException("A business key on a " + trigger + " start has no realization in this runner");
-    }
-  }
-
   /**
-   * The one instance an event start created, which began at the start input's named Start Event when it names one. CIB
-   * starts one instance per matching start event, so more than one has no single-instance realization.
+   * The deployed definition of the document's root process ({@link CibSevenModelAddresses#rootProcessId}); a root the
+   * deployment does not hold (a non-executable process) has no CIB realization.
    */
-  private String startedAt(Start start, String definitionId, String trigger) {
-    var started = processEngine.getHistoryService().createHistoricProcessInstanceQuery()
-        .processDefinitionId(definitionId).list();
-    if (started.size() != 1) {
-      throw new IllegalStateException("A " + trigger + " start created " + started.size() + " instances, not one");
+  static String rootDefinitionId(ProcessEngine engine, String deploymentId, byte[] bpmn) {
+    var key = CibSevenModelAddresses.rootProcessId(bpmn);
+    var definitions = engine.getRepositoryService().createProcessDefinitionQuery()
+        .deploymentId(deploymentId).processDefinitionKey(key).list();
+    if (definitions.size() != 1) {
+      throw new IllegalStateException("Deployment holds no executable root process " + key);
     }
-    var instance = started.getFirst();
-    if (start.startEvent() != null && !start.startEvent().equals(instance.getStartActivityId())) {
-      throw new IllegalStateException("A " + trigger + " start began at " + instance.getStartActivityId()
-          + ", not at " + start.startEvent());
-    }
-    return instance.getId();
-  }
-
-  /** A timer start fires only at its job's due date, by the same controlled-clock rule as a timer wait. */
-  private String fireTimerStart(Start start, TimerStart timer, String definitionId) {
-    var management = processEngine.getManagementService();
-    var jobs =
-        management.createJobQuery().processDefinitionId(definitionId).activityId(start.startEvent()).timers().list();
-    if (jobs.size() != 1
-        || jobs.getFirst().getDuedate().getTime() - LOGICAL_EPOCH.getTime() != timer.logicalTimeMs()) {
-      return null;
-    }
-    ClockUtil.setCurrentTime(new Date(LOGICAL_EPOCH.getTime() + timer.logicalTimeMs()));
-    management.executeJob(jobs.getFirst().getId());
-    var started =
-        processEngine.getRuntimeService().createProcessInstanceQuery().processDefinitionId(definitionId).list();
-    if (started.size() != 1) {
-      throw new IllegalStateException("Timer start did not create exactly one instance");
-    }
-    return started.getFirst().getId();
+    return definitions.getFirst().getId();
   }
 
   @Override

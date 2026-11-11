@@ -3,6 +3,7 @@ package org.bpmnlean.cibseven;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
+import java.util.function.Function;
 import org.bpmnlean.cibseven.CibSevenIncidentProtocol.IncidentJobSnapshot;
 import org.bpmnlean.cibseven.CibSevenOpenWaitProjector.ProjectedWait;
 import org.bpmnlean.cibseven.CibStateQueryEvidence.MessageSubscriptionSnapshot;
@@ -13,12 +14,14 @@ import org.bpmnlean.cibseven.ScenarioDiagnosticsProtocol.EffectJobSnapshot;
 import org.bpmnlean.cibseven.ScenarioDiagnosticsProtocol.HistoricProcessStateSnapshot;
 import org.bpmnlean.cibseven.ScenarioDiagnosticsProtocol.TaskQuerySnapshot;
 import org.bpmnlean.cibseven.ScenarioDiagnosticsProtocol.TimerJobSnapshot;
+import org.bpmnlean.cibseven.ScenarioProtocol.DefinitionRef;
 import org.bpmnlean.cibseven.ScenarioProtocol.ProcessStatus;
 import org.bpmnlean.cibseven.ScenarioProtocol.StateObservation;
 import org.bpmnlean.cibseven.ScenarioProtocol.VariableBinding;
 import org.cibseven.bpm.engine.ProcessEngine;
 import org.cibseven.bpm.engine.history.HistoricProcessInstance;
 import org.cibseven.bpm.engine.impl.util.ClockUtil;
+import org.cibseven.bpm.engine.repository.ProcessDefinition;
 
 /**
  * Projects one scenario's engine state into the canonical state observation and its aligned raw evidence: the
@@ -35,12 +38,16 @@ final class CibSevenStateProjector {
   private final CibSevenOccurrences occurrences;
 
   CibSevenStateProjector(
-      ProcessEngine engine, Date logicalEpoch, boolean incidentsEnabled, boolean incidentsCancellable) {
+      ProcessEngine engine,
+      Date logicalEpoch,
+      boolean incidentsEnabled,
+      boolean incidentsCancellable,
+      Function<ProcessDefinition, DefinitionRef> calledDefinition) {
     this.engine = engine;
     this.logicalEpoch = logicalEpoch;
     this.incidentsEnabled = incidentsEnabled;
     this.waits = new CibSevenOpenWaitProjector(engine, logicalEpoch, incidentsCancellable);
-    this.occurrences = new CibSevenOccurrences(engine);
+    this.occurrences = new CibSevenOccurrences(engine, calledDefinition);
   }
 
   /** The occurrence numbering the executor reports its firings to. */

@@ -8,6 +8,11 @@ This contributor map groups the Java runner by source responsibility. Human orie
 | [`ScenarioJson.java`](src/main/java/org/bpmnlean/cibseven/ScenarioJson.java) | Strict JSON-lines codec |
 | [`CibSevenScenarioRunner.java`](src/main/java/org/bpmnlean/cibseven/CibSevenScenarioRunner.java) | Profile and schedule alignment plus the environment-keyed runner facade |
 | [`CibSevenEngineScenarioRunner.java`](src/main/java/org/bpmnlean/cibseven/CibSevenEngineScenarioRunner.java) | Deployment, command execution, public querying, clock control, timing, and cleanup |
+| [`CibSevenStarts.java`](src/main/java/org/bpmnlean/cibseven/CibSevenStarts.java) | Root instance starts by trigger, shared by single-instance scenarios and population instance steps |
+| [`CibSevenModelAddresses.java`](src/main/java/org/bpmnlean/cibseven/CibSevenModelAddresses.java) | A document's root process by the kernel reader's rule, and the CIB names of scenario Signal and Message identifiers |
+| [`CibSevenCriteria.java`](src/main/java/org/bpmnlean/cibseven/CibSevenCriteria.java) | Correlation criteria as CIB Message-correlation builder calls |
+| [`PopulationProtocol.java`](src/main/java/org/bpmnlean/cibseven/PopulationProtocol.java) | Population scenario and CIB population result vocabularies |
+| [`CibSevenPopulationRunner.java`](src/main/java/org/bpmnlean/cibseven/CibSevenPopulationRunner.java), [`CibSevenPopulationRegistry.java`](src/main/java/org/bpmnlean/cibseven/CibSevenPopulationRegistry.java), [`CibSevenPopulationCommands.java`](src/main/java/org/bpmnlean/cibseven/CibSevenPopulationCommands.java) | Population mode: deployments at logical times, instance steps, publish, broadcast, Conditional start evaluation, Timer-start firing and the derived instance identities (M8-OP-A) |
 | [`CibSevenEngineBundleFactory.java`](src/main/java/org/bpmnlean/cibseven/CibSevenEngineBundleFactory.java) | Isolated engine construction by selected configuration |
 | `CibSeven*Projector.java` and `CibSeven*Gateway.java` under [`src/main/java/org/bpmnlean/cibseven/`](src/main/java/org/bpmnlean/cibseven/) | Projection from public engine facts into canonical tasks, messages, timers, effects, incidents, and diagnostics |
 | [`PvmDefinitionProjector.java`](src/main/java/org/bpmnlean/cibseven/PvmDefinitionProjector.java) | Read-only diagnostic definition projection |

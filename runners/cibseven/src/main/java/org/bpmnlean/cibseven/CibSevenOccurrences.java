@@ -12,9 +12,11 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import org.bpmnlean.cibseven.ScenarioProtocol.DefinitionRef;
 import org.cibseven.bpm.engine.ProcessEngine;
 import org.cibseven.bpm.engine.impl.bpmn.parser.BpmnParse;
+import org.cibseven.bpm.engine.repository.ProcessDefinition;
 import org.cibseven.bpm.engine.runtime.ActivityInstance;
 import org.cibseven.bpm.engine.runtime.TransitionInstance;
 import org.cibseven.bpm.model.bpmn.BpmnModelInstance;
@@ -60,6 +62,7 @@ final class CibSevenOccurrences {
   private static final String SEPARATOR = "\u0000";
 
   private final ProcessEngine engine;
+  private final Function<ProcessDefinition, DefinitionRef> calledDefinition;
   private final Map<String, List<String>> ordinals = new HashMap<>();
   private final Set<String> numbered = new HashSet<>();
   private final Map<String, BpmnModelInstance> models = new HashMap<>();
@@ -78,8 +81,18 @@ final class CibSevenOccurrences {
   /** The activation each begun activity instance of a subscription element took. */
   private final Map<String, Long> begun = new HashMap<>();
 
-  CibSevenOccurrences(ProcessEngine engine) {
+  /** `calledDefinition` names the definition a called instance runs, as its open waits publish it. */
+  CibSevenOccurrences(ProcessEngine engine, Function<ProcessDefinition, DefinitionRef> calledDefinition) {
     this.engine = engine;
+    this.calledDefinition = calledDefinition;
+  }
+
+  /**
+   * A single-instance scenario's called definition: its key alone, as the kernel names a callee its one document
+   * carries unstamped.
+   */
+  static DefinitionRef keyOnly(ProcessDefinition definition) {
+    return new DefinitionRef(definition.getKey(), null, null, null, null, null);
   }
 
   /** One running process instance: its engine and stable identifiers and the called definition it runs. */
@@ -116,10 +129,12 @@ final class CibSevenOccurrences {
       var call = calls.getFirst();
       var activation = ordinal(caller.engineId(), call.getActivityId(), call.getId());
       var stableId = calledInstanceId(caller.stableId(), call.getActivityId(), activation);
-      var key =
-          engine.getRepositoryService().getProcessDefinition(child.getProcessDefinitionId()).getKey();
       var called =
-          instance(child.getId(), stableId, new DefinitionRef(key, null, null, null, null, null));
+          instance(
+              child.getId(),
+              stableId,
+              calledDefinition.apply(
+                  engine.getRepositoryService().getProcessDefinition(child.getProcessDefinitionId())));
       if (called != null) {
         collect(called, instances);
       }

@@ -27,11 +27,11 @@ enum CibSevenRelease {
                     "Unsupported packaged CIB Seven release: " + loadedVersion));
   }
 
-  void requireScenarioRevision(ScenarioProtocol.ScenarioDefinition scenario) {
-    if (!revision.equals(scenario.provenance().cibRevision())) {
+  void requireScenarioRevision(ScenarioProtocol.Provenance provenance) {
+    if (!revision.equals(provenance.cibRevision())) {
       throw new IllegalArgumentException(
           "Scenario CIB revision "
-              + scenario.provenance().cibRevision()
+              + provenance.cibRevision()
               + " does not match packaged "
               + version
               + " revision "

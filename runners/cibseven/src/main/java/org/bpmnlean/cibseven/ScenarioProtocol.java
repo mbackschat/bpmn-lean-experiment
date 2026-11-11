@@ -235,6 +235,21 @@ public final class ScenarioProtocol {
   })
   public sealed interface Stimulus permits Start, Command, Deliver, TimerFire, EffectResult {
     String commandId();
+
+    /**
+     * The input's logical time (`scenario.schema.json#/$defs/logicalTime`): the clock advances to it before the input
+     * applies and never runs backward; absent leaves the clock where it is. A Timer firing's `at` is the later time the
+     * host woke at.
+     */
+    Long at();
+  }
+
+  /** A logical time as the wire states it: absent, or a non-negative safe integer. */
+  static Long requireLogicalTime(Long at) {
+    if (at != null && (at < 0 || at > MAX_SAFE_WIRE_INTEGER)) {
+      throw new IllegalArgumentException("at must be a non-negative safe wire integer");
+    }
+    return at;
   }
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -244,11 +259,13 @@ public final class ScenarioProtocol {
       String startEvent,
       StartTrigger trigger,
       String businessKey,
-      List<VariableBinding> variables) implements Stimulus {
+      List<VariableBinding> variables,
+      Long at) implements Stimulus {
     public Start {
       Objects.requireNonNull(commandId, "commandId");
       Objects.requireNonNull(instanceId, "instanceId");
       variables = ScenarioVariableBindings.requireCanonical(variables, "variables");
+      requireLogicalTime(at);
     }
   }
 
@@ -274,21 +291,44 @@ public final class ScenarioProtocol {
     }
   }
 
-  public record SignalStart(String name, List<VariableBinding> variables) implements StartTrigger {
+  /** A Signal start names its Signal by `name` or by `signalRef`, exactly one of them. */
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  public record SignalStart(String name, SignalRef signalRef, List<VariableBinding> variables) implements StartTrigger {
     public SignalStart {
-      Objects.requireNonNull(name, "name");
+      requireOneSignalAddress(name, signalRef);
       variables = List.copyOf(variables);
+    }
+  }
+
+  /**
+   * A Signal addressed by the QName of its definition (`scenario.schema.json#/$defs/signalRef`): the Signal element's id
+   * and, when its Definitions have one, their `targetNamespace`.
+   */
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  public record SignalRef(String id, String namespace) {
+    public SignalRef {
+      if (id == null || id.isEmpty()) {
+        throw new IllegalArgumentException("signalRef id must be non-empty");
+      }
+    }
+  }
+
+  static void requireOneSignalAddress(String name, SignalRef signalRef) {
+    if ((name == null) == (signalRef == null) || (name != null && name.isEmpty())) {
+      throw new IllegalArgumentException("A Signal is addressed by exactly one non-empty name or signalRef");
     }
   }
 
   public record ConditionStart() implements StartTrigger {}
 
-  public record Command(String commandId, OccurrenceId occurrence, CommandAction action)
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  public record Command(String commandId, OccurrenceId occurrence, CommandAction action, Long at)
       implements Stimulus {
     public Command {
       Objects.requireNonNull(commandId, "commandId");
       Objects.requireNonNull(occurrence, "occurrence");
       Objects.requireNonNull(action, "action");
+      requireLogicalTime(at);
     }
   }
 
@@ -327,18 +367,31 @@ public final class ScenarioProtocol {
     }
   }
 
+  /** `variables`, absent on the wire when empty, are the ones the delivery carries beside its payload. */
   @JsonInclude(JsonInclude.Include.NON_NULL)
   public record Deliver(
       String commandId,
       OccurrenceId occurrence,
       DeliveryTrigger trigger,
       List<CorrelationMatch> correlation,
-      VariableValue payload) implements Stimulus {
+      VariableValue payload,
+      List<VariableBinding> variables,
+      Long at) implements Stimulus {
     public Deliver {
       Objects.requireNonNull(commandId, "commandId");
       Objects.requireNonNull(occurrence, "occurrence");
       Objects.requireNonNull(trigger, "trigger");
       correlation = correlation == null ? null : List.copyOf(correlation);
+      variables = variables == null ? null : ScenarioVariableBindings.requireCanonical(variables, "variables");
+      requireLogicalTime(at);
+    }
+
+    List<VariableBinding> declaredVariables() {
+      return variables == null ? List.of() : variables;
+    }
+
+    List<CorrelationMatch> declaredCorrelation() {
+      return correlation == null ? List.of() : correlation;
     }
   }
 
@@ -355,9 +408,11 @@ public final class ScenarioProtocol {
     }
   }
 
-  public record SignalDelivery(String name) implements DeliveryTrigger {
+  /** A Signal delivery names its Signal by `name` or by `signalRef`, exactly one of them. */
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  public record SignalDelivery(String name, SignalRef signalRef) implements DeliveryTrigger {
     public SignalDelivery {
-      Objects.requireNonNull(name, "name");
+      requireOneSignalAddress(name, signalRef);
     }
   }
 
@@ -402,9 +457,7 @@ public final class ScenarioProtocol {
       if (logicalTimeMs < 0 || logicalTimeMs > MAX_SAFE_WIRE_INTEGER) {
         throw new IllegalArgumentException("logicalTimeMs must be a non-negative safe wire integer");
       }
-      if (at != null && (at < 0 || at > MAX_SAFE_WIRE_INTEGER)) {
-        throw new IllegalArgumentException("at must be a non-negative safe wire integer");
-      }
+      requireLogicalTime(at);
     }
 
     public TimerFire(String commandId, OccurrenceId occurrence, long logicalTimeMs) {
@@ -417,12 +470,14 @@ public final class ScenarioProtocol {
     }
   }
 
-  public record EffectResult(String commandId, OccurrenceId occurrence, EffectOutcome outcome)
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  public record EffectResult(String commandId, OccurrenceId occurrence, EffectOutcome outcome, Long at)
       implements Stimulus {
     public EffectResult {
       Objects.requireNonNull(commandId, "commandId");
       Objects.requireNonNull(occurrence, "occurrence");
       Objects.requireNonNull(outcome, "outcome");
+      requireLogicalTime(at);
     }
   }
 
@@ -600,11 +655,12 @@ public final class ScenarioProtocol {
 
   public record RelatedOccurrence(String name, OccurrenceId occurrence) {}
 
+  /** `deployment` is the deploy ordinal of the deployment that carries the called process. */
   public record DefinitionRef(
       String key,
       Long version,
       String versionTag,
-      String deployment,
+      Long deployment,
       String tenant,
       String sourceSha256) {
     public DefinitionRef {

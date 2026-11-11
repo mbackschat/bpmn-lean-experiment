@@ -9,15 +9,19 @@ import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
+import org.bpmnlean.cibseven.PopulationProtocol.PopulationScenario;
+import org.bpmnlean.cibseven.ScenarioProtocol.BpmnResource;
 import org.bpmnlean.cibseven.ScenarioProtocol.ScenarioDefinition;
 import org.bpmnlean.cibseven.ScenarioProtocol.Start;
 
-/** Validates the closed scenario shape and binds its content-addressed BPMN and DMN resources. */
+/** Validates the closed scenario shape and binds its content-addressed BPMN and DMN resources, a population's too. */
 final class CibSevenScenarioValidator {
 
   private static final String BPMN_MODEL = "http://www.omg.org/spec/BPMN/20100524/MODEL";
@@ -32,7 +36,7 @@ final class CibSevenScenarioValidator {
   ValidatedScenario validate(ScenarioDefinition scenario, Path projectRoot) throws IOException {
     Objects.requireNonNull(scenario, "scenario");
     Objects.requireNonNull(projectRoot, "projectRoot");
-    release.requireScenarioRevision(scenario);
+    release.requireScenarioRevision(scenario.provenance());
     if (!ScenarioProtocol.SCENARIO_KIND.equals(scenario.kind()) || scenario.profile().isBlank()) {
       throw new IllegalArgumentException("Scenario kind and profile identity are required");
     }
@@ -42,18 +46,43 @@ final class CibSevenScenarioValidator {
         || stimuli.stream().skip(1).anyMatch(Start.class::isInstance)) {
       throw new IllegalArgumentException("Scenario starts exactly once, with its first stimulus");
     }
-    var bpmnPath = projectRoot.resolve(scenario.bpmn().relativePath()).normalize();
+    var resource = resource(scenario.bpmn(), projectRoot);
+    return new ValidatedScenario(start, resource.bpmnPath(), resource.decisionPaths());
+  }
+
+  /**
+   * Binds every definition of a population by its `definitionRef`, which names one definition; a step naming another is
+   * a malformed scenario (harness refusal `population-unknown-definition`), which the population runner raises.
+   */
+  Map<String, ValidatedResource> validatePopulation(PopulationScenario scenario, Path projectRoot) throws IOException {
+    Objects.requireNonNull(scenario, "scenario");
+    Objects.requireNonNull(projectRoot, "projectRoot");
+    release.requireScenarioRevision(scenario.provenance());
+    if (scenario.profile().isBlank()) {
+      throw new IllegalArgumentException("Population profile identity is required");
+    }
+    var resources = new LinkedHashMap<String, ValidatedResource>();
+    for (var definition : scenario.definitions()) {
+      if (resources.put(definition.definitionRef(), resource(definition.bpmn(), projectRoot)) != null) {
+        throw new IllegalArgumentException("Population declares definition " + definition.definitionRef() + " twice");
+      }
+    }
+    return resources;
+  }
+
+  private static ValidatedResource resource(BpmnResource bpmn, Path projectRoot) throws IOException {
+    var bpmnPath = projectRoot.resolve(bpmn.relativePath()).normalize();
     requireContainedByProject(projectRoot, bpmnPath);
-    verifySha256(bpmnPath, scenario.bpmn().sha256());
-    var decisionPaths = scenario.bpmn().declaredDecisions().stream()
+    verifySha256(bpmnPath, bpmn.sha256());
+    var decisionPaths = bpmn.declaredDecisions().stream()
         .map(decision -> projectRoot.resolve(decision.relativePath()).normalize())
         .toList();
     for (var index = 0; index < decisionPaths.size(); index++) {
       requireContainedByProject(projectRoot, decisionPaths.get(index));
-      verifySha256(decisionPaths.get(index), scenario.bpmn().declaredDecisions().get(index).sha256());
+      verifySha256(decisionPaths.get(index), bpmn.declaredDecisions().get(index).sha256());
     }
     requireRealizable(bpmnPath, !decisionPaths.isEmpty());
-    return new ValidatedScenario(start, bpmnPath, decisionPaths);
+    return new ValidatedResource(bpmnPath, decisionPaths);
   }
 
   /**
@@ -131,4 +160,7 @@ final class CibSevenScenarioValidator {
   }
 
   record ValidatedScenario(Start start, Path bpmnPath, List<Path> decisionPaths) {}
+
+  /** A definition's BPMN document and the DMN resources deployed with it, each verified against its digest. */
+  record ValidatedResource(Path bpmnPath, List<Path> decisionPaths) {}
 }

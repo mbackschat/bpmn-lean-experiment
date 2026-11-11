@@ -5,6 +5,7 @@ import static org.bpmnlean.cibseven.ScenarioProtocol.CommandOutcome.REJECTED;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import org.bpmnlean.cibseven.CibSevenOpenWaitProjector.AddresslessHandle;
 import org.bpmnlean.cibseven.CibSevenOpenWaitProjector.JobHandle;
@@ -137,27 +138,39 @@ final class CibSevenCommandExecutor {
    * A delivery matches its wait's channel exactly. An unspecified delivery signals the execution waiting at an
    * addressless Receive Task (`CIB-OP-0011`); CIB would also accept the signal at a Message-addressed task, which
    * `CIB-INT-0004` refuses instead.
+   *
+   * <p>The delivery's variables travel with CIB's own delivery call, which installs them (CIB-EXT-0025). Its criteria
+   * correlate the Message within the addressed occurrence's instance ({@link CibSevenCriteria}), and CIB must then have
+   * delivered to that occurrence. A payload fills the catch's Data Output, which CIB never parses (CIB-LIM-0013): CIB's
+   * Message carries only variables, so the payload has no CIB form and is not sent.
    */
   Execution deliver(String engineRootId, String stableRootId, Deliver deliver) {
-    if (deliver.payload() != null || (deliver.correlation() != null && !deliver.correlation().isEmpty())) {
-      throw new IllegalStateException("A delivery payload or correlation has no CIB realization in this runner");
-    }
     var wait = open(engineRootId, stableRootId, deliver.occurrence());
     if (wait == null) {
       return Execution.of(REJECTED);
     }
     var runtime = engine.getRuntimeService();
+    var variables = ScenarioVariableBindings.toEngineMap(deliver.declaredVariables());
+    var criteria = deliver.declaredCorrelation();
     return switch (deliver.trigger()) {
       case MessageDelivery message -> {
         if (!(wait.openWait().detail() instanceof MessageDetail detail) || !detail.channel().equals(message.channel())) {
           yield Execution.of(REJECTED);
         }
         switch (wait.handle()) {
-          case AddresslessHandle addressless when message.channel() instanceof UnspecifiedMessageChannel ->
-              runtime.signal(addressless.executionId());
+          case AddresslessHandle addressless when message.channel() instanceof UnspecifiedMessageChannel -> {
+            if (!criteria.isEmpty()) {
+              throw new IllegalStateException("Criteria on an addressless Receive Task have no CIB form");
+            }
+            runtime.signal(addressless.executionId(), variables);
+          }
           case SubscriptionHandle subscription -> {
             var engineInstance = engineInstanceOf(subscription);
-            runtime.messageEventReceived(subscription.eventName(), subscription.executionId());
+            if (criteria.isEmpty()) {
+              runtime.messageEventReceived(subscription.eventName(), subscription.executionId(), variables);
+            } else {
+              correlate(engineRootId, stableRootId, deliver, subscription, engineInstance, variables);
+            }
             projector.occurrences().delivered(
                 engineInstance,
                 deliver.occurrence().elementId(),
@@ -173,14 +186,62 @@ final class CibSevenCommandExecutor {
       }
       case SignalDelivery signal -> {
         if (!(wait.openWait().detail() instanceof SignalDetail detail)
-            || !detail.name().equals(signal.name())
-            || !(wait.handle() instanceof SubscriptionHandle subscription)) {
+            || !(wait.handle() instanceof SubscriptionHandle subscription)
+            || !detail.name().equals(signalName(signal, subscription))) {
           yield Execution.of(REJECTED);
         }
-        runtime.signalEventReceived(subscription.eventName(), subscription.executionId());
+        if (!criteria.isEmpty()) {
+          throw new IllegalStateException("Criteria on a Signal delivery have no CIB form");
+        }
+        runtime.signalEventReceived(subscription.eventName(), subscription.executionId(), variables);
         yield Execution.of(COMMITTED);
       }
     };
+  }
+
+  /**
+   * Correlates the delivery's Message by its criteria within the subscription's instance. The criteria cannot name
+   * another instance than the addressed one, and CIB must deliver to the addressed execution; anything else is a
+   * delivery CIB cannot make as addressed, a harness failure.
+   */
+  private void correlate(
+      String engineRootId,
+      String stableRootId,
+      Deliver deliver,
+      SubscriptionHandle subscription,
+      String engineInstance,
+      Map<String, Object> variables) {
+    var instances = projector.occurrences().running(engineRootId, stableRootId);
+    var builder = engine.getRuntimeService().createMessageCorrelation(subscription.eventName())
+        .processInstanceId(engineInstance);
+    CibSevenCriteria.apply(builder, deliver.declaredCorrelation(), stableId -> {
+      if (!stableId.equals(deliver.occurrence().processInstanceId())) {
+        throw new IllegalStateException("A process instance criterion naming another instance has no CIB form");
+      }
+      return instances.stream()
+          .filter(instance -> instance.stableId().equals(stableId))
+          .map(CibSevenOccurrences.Instance::engineId)
+          .findFirst()
+          .orElse(null);
+    });
+    var result = builder.setVariables(variables).correlateWithResult();
+    if (result.getExecution() == null || !subscription.executionId().equals(result.getExecution().getId())) {
+      throw new IllegalStateException("CIB correlated the Message to another execution than the addressed one");
+    }
+  }
+
+  /** The name CIB addresses a Signal delivery by: its own, or the one its QName names in the waiting instance's model. */
+  private String signalName(SignalDelivery signal, SubscriptionHandle subscription) {
+    if (signal.name() != null) {
+      return signal.name();
+    }
+    var runtime = engine.getRuntimeService();
+    var instanceId = runtime.createExecutionQuery().executionId(subscription.executionId()).singleResult()
+        .getProcessInstanceId();
+    var definitionId = runtime.createProcessInstanceQuery().processInstanceId(instanceId).singleResult()
+        .getProcessDefinitionId();
+    return CibSevenModelAddresses.signalName(
+        engine.getRepositoryService().getBpmnModelInstance(definitionId), signal.signalRef());
   }
 
   /**

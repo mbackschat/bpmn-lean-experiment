@@ -64,6 +64,22 @@ public final class CibSevenScenarioRunner implements AutoCloseable {
     return runner.run(scenario, projectRoot, effectSchedule);
   }
 
+  /**
+   * A population declares no options; it runs in the default environment, whose effects succeed, so a scenario
+   * needing incidents stays single-instance.
+   */
+  public synchronized PopulationProtocol.PopulationResult runPopulation(
+      PopulationProtocol.PopulationScenario scenario, Path projectRoot) throws IOException {
+    if (closed) {
+      throw new IllegalStateException("Runner is closed");
+    }
+    return runners
+        .computeIfAbsent(
+            EngineEnvironment.DEFAULT,
+            selected -> CibSevenEngineScenarioRunner.create(selected.incidentCreationEnabled))
+        .runPopulation(scenario, projectRoot);
+  }
+
   @Override
   public synchronized void close() {
     if (!closed) {

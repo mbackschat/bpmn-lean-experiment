@@ -6,6 +6,8 @@ This Java 21 module executes selected scenarios against pinned CIB Seven release
 
 Run the retained CIB oracle cases, inspect bounded source-grounded probes, and explicitly replace content-bound evidence after review. The runner deploys exact BPMN resources, uses public engine services, reports diagnostics separately from canonical results, and removes scenario-owned engine state after each run.
 
+The same JSON-lines boundary also runs population scenarios (`kind: populationScenario`): several deployments at logical times, instance steps and population commands, answered with a `cibSevenPopulationResult` that keeps the kernel's population result within CIB's observation boundary.
+
 ## Quick start
 
 Run the complete pinned oracle gate:

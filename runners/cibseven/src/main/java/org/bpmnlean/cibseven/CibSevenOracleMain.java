@@ -15,9 +15,9 @@ import java.nio.file.Path;
 /**
  * Persistent JSON Lines boundary for callers in other runtimes.
  *
- * <p>Each non-empty input line is one scenario and each output line is its result, or its harness failure when the
- * runner cannot run it. The engine is started once per process and scenario cleanup is enforced by
- * {@link CibSevenScenarioRunner}.
+ * <p>Each non-empty input line is one scenario, single-instance or population, and each output line is its result,
+ * or its harness failure when the runner cannot run it. The engine is started once per process and scenario cleanup
+ * is enforced by {@link CibSevenScenarioRunner}.
  */
 public final class CibSevenOracleMain {
 
@@ -53,8 +53,13 @@ public final class CibSevenOracleMain {
         }
         var scenarioId = ScenarioJson.scenarioIdOf(line);
         try {
-          var scenario = ScenarioJson.read(line);
-          writer.write(ScenarioJson.write(runner.run(scenario, projectRoot, effectSchedule)));
+          if (ScenarioJson.isPopulation(line)) {
+            var population = ScenarioJson.readPopulation(line);
+            writer.write(ScenarioJson.writePopulation(runner.runPopulation(population, projectRoot)));
+          } else {
+            var scenario = ScenarioJson.read(line);
+            writer.write(ScenarioJson.write(runner.run(scenario, projectRoot, effectSchedule)));
+          }
         } catch (RuntimeException | JsonProcessingException failed) {
           // A line naming no scenario cannot be answered for one, so it fails the whole batch.
           if (scenarioId == null) {

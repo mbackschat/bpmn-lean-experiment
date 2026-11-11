@@ -38,11 +38,25 @@ public final class ScenarioJson {
     return MAPPER.readValue(json, ScenarioProtocol.ScenarioResult.class);
   }
 
+  public static PopulationProtocol.PopulationScenario readPopulation(String json) throws JsonProcessingException {
+    rejectInvalidWireTokens(json);
+    return MAPPER.readValue(json, PopulationProtocol.PopulationScenario.class);
+  }
+
   /** The `id` of a scenario line, read leniently so a scenario the protocol refuses can still be named; else null. */
   public static String scenarioIdOf(String json) {
+    return textMember(json, "id");
+  }
+
+  /** Whether a scenario line is a population scenario, read leniently like {@link #scenarioIdOf}. */
+  public static boolean isPopulation(String json) {
+    return PopulationProtocol.POPULATION_SCENARIO_KIND.equals(textMember(json, "kind"));
+  }
+
+  private static String textMember(String json, String name) {
     try {
-      var id = MAPPER.readTree(json).get("id");
-      return id != null && id.isTextual() ? id.textValue() : null;
+      var member = MAPPER.readTree(json).get(name);
+      return member != null && member.isTextual() ? member.textValue() : null;
     } catch (JsonProcessingException exception) {
       return null;
     }
@@ -78,6 +92,10 @@ public final class ScenarioJson {
 
   public static String write(ScenarioProtocol.ScenarioResult result)
       throws JsonProcessingException {
+    return MAPPER.writeValueAsString(result);
+  }
+
+  public static String writePopulation(PopulationProtocol.PopulationResult result) throws JsonProcessingException {
     return MAPPER.writeValueAsString(result);
   }
 
