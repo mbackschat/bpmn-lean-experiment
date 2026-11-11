@@ -1,0 +1,59 @@
+{
+  "kind": "scenario",
+  "id": "signal-throw-literal-throw-interrupts-own-region",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "signal-throw-literal-self-interrupting-throw",
+    "relativePath": "scenarios/open-rows/signal-throw-literal/self-interrupting-throw.bpmn",
+    "sha256": "4a5c47651701ed36a47a2ed1718ebcd0b3cd333185954fb07a41ea0a1d2aee7d",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start-process",
+      "instanceId": "Instance_1",
+      "variables": []
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-prepare",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Prepare",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-stopped",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Stopped",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.5.3",
+      "BPMN 2.0.2 §10.5.4",
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 §13.5.3"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ThrowSignalEventActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/BoundaryEventActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java"
+    ]
+  }
+}

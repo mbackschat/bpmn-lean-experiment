@@ -30,6 +30,7 @@ A Signal start stimulus names its Start Event and carries the Signal name with t
 | [failing-signal-start-start](failing-signal-start-start.scenario.json) | failing-signal-start | The Signal Start fires. |
 | [race-approved-standards](race-approved-standards.scenario.json) | approval-race | The `bpmn-2.0.2` profile: `Signal_Approved` is delivered to its arm by QName. Separates a targeted delivery, which only `signalDelivery = occurrenceTargeted` admits, from a broadcast. No CIB evidence: CIB runs only its own profile. |
 | [kernel-signal-start-variables-standards](kernel-signal-start-variables-standards.scenario.json) | duplicate-signal-starts | Kernel-only twin under `bpmn-2.0.2`: the Signal trigger carries a variable where a Signal carries no data. |
+| [kernel-misaddressed-firings](kernel-misaddressed-firings.scenario.json) | approval-race | Kernel-only twin under `cibseven-2.2.0`: a Timer firing of a Signal arm, a Message and a Signal delivery to the Timer arm, and a Signal delivery that carries a payload are each rejected; `approved` then fires its arm and *Proceed* completes. |
 
 The population witnesses of these rows, which need more than one instance or definition, are in [signal-broadcast-population](../signal-broadcast-population/README.md).
 

@@ -24,6 +24,7 @@ Answer-free schedules for [PC-CONDITION-03](../../../docs/PRACTICAL-CIB7-COVERAG
 | [true-at-the-gateway](true-at-the-gateway.scenario.json) | race | PC-CONDITION-03 | `approved` is `true` at the start; `Prepare` completes and reaches the gateway; the Message arm is then delivered. |
 | [timer-wins-then-condition-changes](timer-wins-then-condition-changes.scenario.json) | race | PC-CONDITION-03 | `approved` is `false` at the start; `Prepare` completes; the Timer arm fires at 30,000; `approved` is then set to `true` on `Expired`; `Expired` completes. |
 | — | arms | PC-CONDITION-03 | Two true arms at the gateway (`ready` true at the start) have no retained CIB answer: CIB fires the first true arm in `ScopeImpl.eventActivities` HashSet order, which varies between JVM runs, so one retained answer is a sample a replay cannot reproduce ([#79](https://github.com/mbackschat/bpmn-lean-experiment/issues/79)). The scenario returns once PC-CONDITION-03 makes the arm choice an explicit input; `arms.bpmn` stays as the kernel's preemption-test model. |
+| [kernel-submission-outside-domain](kernel-submission-outside-domain.scenario.json) | catches | PC-DATA-02 | Kernel-only: `Prepare` is completed with a value nested beyond the value domain, which is rejected `value-outside-domain`, then with `ready` true; `Proceed_Ready` completes. |
 
 ## Notes for the target runners
 
@@ -31,3 +32,5 @@ Answer-free schedules for [PC-CONDITION-03](../../../docs/PRACTICAL-CIB7-COVERAG
 - A gateway arm is addressed by its catch Event and the activation of the gateway occurrence that armed it.
 
 The schedules carry no expected route, open wait, variable or Process state; the retained CIB evidence is the answer.
+
+The `kernel-only` schedules name no CIB revision (`not-applicable`), so no CIB run takes them, and the differential compares the Lean kernel with the TypeScript kernel on them.

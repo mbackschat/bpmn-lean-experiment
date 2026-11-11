@@ -15,6 +15,7 @@ Answer-free schedules for [PC-CF-04](../../../docs/PRACTICAL-CIB7-COVERAGE-TARGE
 | [scoped-join](scoped-join.bpmn) | An Inclusive split over a Sub-Process, a Call Activity of `Process_Audit`, a parallel Multi-Instance User Task over `items`, and a default User Task, all joined before *Decide*. |
 | [scoped-join-counted](scoped-join-counted.bpmn) | The *scoped-join* source with the Multi-Instance branch replaced by the parallel Service Task *Notify item*, whose `loopCardinality` is `${count}` and whose inner instances begin asynchronously, so each one waits for an `effectResult`. |
 | [no-default-split](no-default-split.bpmn) | An Inclusive split whose two flows are both conditioned and which has no default, joined before *Decide*. |
+| [join-reach-paths](join-reach-paths.bpmn) | A Parallel fork over *Review A*, which reaches the Inclusive join *Join*; *Review B*, which ends on its own but whose interrupting `PT1M` Timer boundary leads to *Join*; and *Review C*, which reaches *Join* through the Link throw and catch `to-join`. *Join* leads to *Decide*. |
 
 ## Schedules
 
@@ -42,6 +43,8 @@ Answer-free schedules for [PC-CF-04](../../../docs/PRACTICAL-CIB7-COVERAGE-TARGE
 | [call-and-batch-reversed](scoped-join-counted-call-and-batch-reversed.scenario.json) | scoped-join-counted | The Call and the Multi-Instance branch are selected; the second instance's effect settles before the first, and the Call's task completes last. |
 | [none-selected](no-default-split-none-selected.scenario.json) | no-default-split | No candidate holds. |
 | [one-selected](no-default-split-one-selected.scenario.json) | no-default-split | One candidate holds. |
+| [link-and-boundary](join-reach-paths-link-and-boundary.scenario.json) | join-reach-paths | `cibseven-2.2.0`: A, then C, then B complete. The join waits for C through the Link and not for B, whose only path to it is a boundary (CIB-INT-0020), so *Decide* opens when C arrives; CIB is predicted to answer the same, since `BpmnParse` rewires the flow into a Link throw to its catch and `InclusiveGatewayActivityBehavior#isReachable` follows only outgoing transitions. |
+| [link-and-boundary-standards](join-reach-paths-link-and-boundary-standards.scenario.json) | join-reach-paths | Kernel-only, `bpmn-2.0.2`: the same journey; the standards reading follows the boundary as well, so the join waits for B and fires once B ends without reaching it. |
 
 ## Kernel restrictions these inputs reconcile
 
@@ -55,3 +58,5 @@ Notes for the target runners:
 - In [scoped-join-counted](scoped-join-counted.bpmn) the Multi-Instance branch is counted by the start value `count`, 2; its instances are addressed as `NotifyItem` activations 1 and 2, and each `effectResult` succeeds with no outputs.
 
 The schedules carry no expected route or state; the retained CIB evidence is the answer.
+
+The `kernel-only` schedules name no CIB revision (`not-applicable`), so no CIB run takes them, and the differential compares the Lean kernel with the TypeScript kernel on them.

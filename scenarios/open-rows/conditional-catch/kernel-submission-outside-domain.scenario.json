@@ -1,0 +1,120 @@
+{
+  "kind": "scenario",
+  "id": "conditional-catch-kernel-submission-outside-domain",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "conditional-catch-waits",
+    "relativePath": "scenarios/open-rows/conditional-catch/catches.bpmn",
+    "sha256": "ae0f107e28dbb532e353fd64bb89cd6e5346f48f6a3f2c12a219f0a28911e08e",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "ready",
+          "value": {
+            "kind": "boolean",
+            "value": false
+          }
+        }
+      ]
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-complete-Prepare-outside-domain",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Prepare",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "ready",
+            "value": {
+              "kind": "list",
+              "value": [
+                {
+                  "kind": "list",
+                  "value": [
+                    {
+                      "kind": "list",
+                      "value": [
+                        {
+                          "kind": "list",
+                          "value": [
+                            {
+                              "kind": "list",
+                              "value": [
+                                {
+                                  "kind": "list",
+                                  "value": [
+                                    {
+                                      "kind": "string",
+                                      "value": "x"
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s04-complete-Prepare",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Prepare",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "ready",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s05-complete-Proceed_Ready",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Proceed_Ready",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.3.3",
+      "BPMN 2.0.2 Clause 10.4.1"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

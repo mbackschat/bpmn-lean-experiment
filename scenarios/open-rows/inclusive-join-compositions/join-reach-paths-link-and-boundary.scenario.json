@@ -1,0 +1,84 @@
+{
+  "kind": "scenario",
+  "id": "inclusive-join-compositions-join-reach-paths-link-and-boundary",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "inclusive-join-compositions-join-reach-paths",
+    "relativePath": "scenarios/open-rows/inclusive-join-compositions/join-reach-paths.bpmn",
+    "sha256": "0fe413c4b18d3325d91bfd34e7e2490246d3fa3091cdf06361358f5d381b8486",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-complete-ReviewA",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "ReviewA",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-complete-ReviewC",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "ReviewC",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s04-complete-ReviewB",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "ReviewB",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s05-complete-Decide",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Decide",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.5.6",
+      "BPMN 2.0.2 Clause 13.3.4",
+      "BPMN 2.0.2 Clause 13.5.3",
+      "BPMN 2.0.2 Table 13.3"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/InclusiveGatewayActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java"
+    ]
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "kind": "scenario",
+  "id": "region-interruption-subtree-boundary-clears-held-activity",
+  "profile": "bpmn-2.0.2",
+  "bpmn": {
+    "id": "region-interruption-subtree-held-input-region",
+    "relativePath": "scenarios/open-rows/region-interruption-subtree/held-input-region.bpmn",
+    "sha256": "fa438f104a1390971618bacc66a65c1fdc8d123a5ef2d0750993d26bd0458aa2",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_boundary_clears_held_activity",
+      "variables": []
+    },
+    {
+      "kind": "timerFire",
+      "commandId": "s02-deadline",
+      "occurrence": {
+        "processInstanceId": "Instance_boundary_clears_held_activity",
+        "elementId": "Deadline",
+        "activation": 1
+      },
+      "logicalTimeMs": 60000
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-complete-Escalate",
+      "occurrence": {
+        "processInstanceId": "Instance_boundary_clears_held_activity",
+        "elementId": "Escalate",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.4.2",
+      "BPMN 2.0.2 Clause 10.5.6",
+      "BPMN 2.0.2 Clause 13.5.3",
+      "BPMN 2.0.2 Table 10.91"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

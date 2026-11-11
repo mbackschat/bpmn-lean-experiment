@@ -1,0 +1,75 @@
+{
+  "kind": "scenario",
+  "id": "multi-instance-user-task-parallel-output-collection-quorum-standards",
+  "profile": "bpmn-2.0.2",
+  "bpmn": {
+    "id": "multi-instance-user-task-parallel-output-collection-quorum",
+    "relativePath": "scenarios/open-rows/multi-instance-user-task/parallel-output-collection-quorum.bpmn",
+    "sha256": "15569ebc4946aa0a6514da07d80ebe32d843d737a37ac882a54faafb19f2a705",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "DataObjectReference_Items",
+          "value": {
+            "kind": "stringList",
+            "value": [
+              "a",
+              "b",
+              "c"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-complete-UserTask_Review-2",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Review",
+        "activation": 2
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "DataOutput_Result",
+            "value": {
+              "kind": "string",
+              "value": "result-b"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s04-complete-UserTask_Publish",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Publish",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 \u00a710.3.8",
+      "BPMN 2.0.2 \u00a713.3.7",
+      "BPMN 2.0.2 Table 10.29",
+      "BPMN 2.0.2 Table 10.30"
+    ],
+    "cibRevision": "not-applicable",
+    "cibRefs": []
+  }
+}

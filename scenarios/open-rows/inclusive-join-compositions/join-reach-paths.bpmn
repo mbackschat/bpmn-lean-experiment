@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_JoinReachPaths"
+  targetNamespace="urn:bpmn-lean:scenarios:inclusive-join-compositions:join-reach-paths">
+  <bpmn:process id="Process_JoinReachPaths" isExecutable="true">
+    <bpmn:startEvent id="Start" />
+    <bpmn:parallelGateway id="Fork" />
+    <bpmn:userTask id="ReviewA" name="Review A" />
+    <bpmn:userTask id="ReviewB" name="Review B" />
+    <bpmn:boundaryEvent id="Deadline_ReviewB" attachedToRef="ReviewB">
+      <bpmn:timerEventDefinition id="Deadline_ReviewB_Timer">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT1M</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:endEvent id="ReviewedB" />
+    <bpmn:userTask id="ReviewC" name="Review C" />
+    <bpmn:intermediateThrowEvent id="ToJoin" name="to-join">
+      <bpmn:linkEventDefinition id="ToJoin_Link" name="to-join" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:intermediateCatchEvent id="FromC" name="to-join">
+      <bpmn:linkEventDefinition id="FromC_Link" name="to-join" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:inclusiveGateway id="Join" />
+    <bpmn:userTask id="Decide" name="Decide" />
+    <bpmn:endEvent id="Done" />
+    <bpmn:sequenceFlow id="Flow_Start_Fork" sourceRef="Start" targetRef="Fork" />
+    <bpmn:sequenceFlow id="Flow_Fork_A" sourceRef="Fork" targetRef="ReviewA" />
+    <bpmn:sequenceFlow id="Flow_Fork_B" sourceRef="Fork" targetRef="ReviewB" />
+    <bpmn:sequenceFlow id="Flow_Fork_C" sourceRef="Fork" targetRef="ReviewC" />
+    <bpmn:sequenceFlow id="Flow_A_Join" sourceRef="ReviewA" targetRef="Join" />
+    <bpmn:sequenceFlow id="Flow_B_End" sourceRef="ReviewB" targetRef="ReviewedB" />
+    <bpmn:sequenceFlow id="Flow_Deadline_Join" sourceRef="Deadline_ReviewB" targetRef="Join" />
+    <bpmn:sequenceFlow id="Flow_C_Link" sourceRef="ReviewC" targetRef="ToJoin" />
+    <bpmn:sequenceFlow id="Flow_Link_Join" sourceRef="FromC" targetRef="Join" />
+    <bpmn:sequenceFlow id="Flow_Join_Decide" sourceRef="Join" targetRef="Decide" />
+    <bpmn:sequenceFlow id="Flow_Decide_Done" sourceRef="Decide" targetRef="Done" />
+  </bpmn:process>
+</bpmn:definitions>

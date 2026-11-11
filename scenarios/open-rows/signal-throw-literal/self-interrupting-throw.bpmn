@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  id="Definitions_SelfInterruptingThrow"
+  targetNamespace="urn:bpmn-lean:scenarios:signal-throw-literal:self-interrupting-throw">
+  <bpmn:signal id="Signal_StopRegion" name="stop-region" />
+  <bpmn:process id="Process_SelfInterruptingThrow" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Opened" />
+    <bpmn:subProcess id="Region">
+      <bpmn:startEvent id="RegionStart" />
+      <bpmn:userTask id="Prepare" name="Prepare the stop" />
+      <bpmn:intermediateThrowEvent id="Throw_StopRegion" name="Throw stop-region">
+        <bpmn:signalEventDefinition id="SignalEventDefinition_Throw_StopRegion" signalRef="Signal_StopRegion" />
+      </bpmn:intermediateThrowEvent>
+      <bpmn:userTask id="AfterThrow" name="Continue after the throw" />
+      <bpmn:endEvent id="RegionEnd" />
+      <bpmn:sequenceFlow id="Flow_RegionStart_Prepare" sourceRef="RegionStart" targetRef="Prepare" />
+      <bpmn:sequenceFlow id="Flow_Prepare_Throw" sourceRef="Prepare" targetRef="Throw_StopRegion" />
+      <bpmn:sequenceFlow id="Flow_Throw_AfterThrow" sourceRef="Throw_StopRegion" targetRef="AfterThrow" />
+      <bpmn:sequenceFlow id="Flow_AfterThrow_RegionEnd" sourceRef="AfterThrow" targetRef="RegionEnd" />
+    </bpmn:subProcess>
+    <bpmn:boundaryEvent id="Boundary_StopRegion" attachedToRef="Region">
+      <bpmn:signalEventDefinition id="SignalEventDefinition_Boundary_StopRegion" signalRef="Signal_StopRegion" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Stopped" name="Handle the stop" />
+    <bpmn:endEvent id="EndEvent_Stopped" />
+    <bpmn:endEvent id="EndEvent_Done" />
+    <bpmn:sequenceFlow id="Flow_Start_Region" sourceRef="StartEvent_Opened" targetRef="Region" />
+    <bpmn:sequenceFlow id="Flow_Region_Done" sourceRef="Region" targetRef="EndEvent_Done" />
+    <bpmn:sequenceFlow id="Flow_Boundary_Stopped" sourceRef="Boundary_StopRegion" targetRef="Stopped" />
+    <bpmn:sequenceFlow id="Flow_Stopped_End" sourceRef="Stopped" targetRef="EndEvent_Stopped" />
+  </bpmn:process>
+</bpmn:definitions>

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_HeldInputEsp"
+  targetNamespace="urn:bpmn-lean:scenarios:region-interruption-subtree:held-input-esp">
+  <bpmn:process id="Process_HeldInputEsp" isExecutable="true">
+    <bpmn:property id="Property_ReviewContext" />
+    <bpmn:startEvent id="Start">
+      <bpmn:outgoing>Flow_Start_Review</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_Start_Review" sourceRef="Start" targetRef="Review" />
+    <bpmn:userTask id="Review" name="Review with context">
+      <bpmn:incoming>Flow_Start_Review</bpmn:incoming>
+      <bpmn:outgoing>Flow_Review_End</bpmn:outgoing>
+      <bpmn:ioSpecification id="IoSpecification_Review">
+        <bpmn:dataInput id="DataInput_ReviewContext" name="Review context" />
+        <bpmn:inputSet id="InputSet_Review">
+          <bpmn:dataInputRefs>DataInput_ReviewContext</bpmn:dataInputRefs>
+        </bpmn:inputSet>
+        <bpmn:outputSet id="OutputSet_Review" />
+      </bpmn:ioSpecification>
+      <bpmn:dataInputAssociation id="DataInputAssociation_ReviewContext">
+        <bpmn:sourceRef>Property_ReviewContext</bpmn:sourceRef>
+        <bpmn:targetRef>DataInput_ReviewContext</bpmn:targetRef>
+      </bpmn:dataInputAssociation>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="Flow_Review_End" sourceRef="Review" targetRef="Reviewed" />
+    <bpmn:endEvent id="Reviewed">
+      <bpmn:incoming>Flow_Review_End</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:subProcess id="Deadline" triggeredByEvent="true">
+      <bpmn:startEvent id="DeadlineStart" isInterrupting="true">
+        <bpmn:outgoing>Flow_DeadlineStart_Escalate</bpmn:outgoing>
+        <bpmn:timerEventDefinition id="DeadlineStart_Timer">
+          <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT1M</bpmn:timeDuration>
+        </bpmn:timerEventDefinition>
+      </bpmn:startEvent>
+      <bpmn:sequenceFlow id="Flow_DeadlineStart_Escalate" sourceRef="DeadlineStart" targetRef="Escalate" />
+      <bpmn:userTask id="Escalate" name="Escalate the review">
+        <bpmn:incoming>Flow_DeadlineStart_Escalate</bpmn:incoming>
+        <bpmn:outgoing>Flow_Escalate_End</bpmn:outgoing>
+      </bpmn:userTask>
+      <bpmn:sequenceFlow id="Flow_Escalate_End" sourceRef="Escalate" targetRef="Escalated" />
+      <bpmn:endEvent id="Escalated">
+        <bpmn:incoming>Flow_Escalate_End</bpmn:incoming>
+      </bpmn:endEvent>
+    </bpmn:subProcess>
+  </bpmn:process>
+</bpmn:definitions>
