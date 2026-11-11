@@ -10,6 +10,7 @@ Every scenario binds the DMN resource [decisions.dmn](decisions.dmn) by its exac
 - [decision-contexts.bpmn](decision-contexts.bpmn): `gradeUnique` (mapped `singleEntry` to `grade`) reached in three contexts the gateway selects: inside a Sub-Process whose input parameter binds a local `grade`, after an `asyncBefore` Service Task's effect result, and after a `PT10S` Timer.
 - [unknown-decision.bpmn](unknown-decision.bpmn): one Business Rule Task whose `decisionRef` `noSuchDecision` no bound resource declares.
 - [forms.bpmn](forms.bpmn): one Business Rule Task per table of [forms.dmn](forms.dmn), selected by `policy` as in `hit-policies.bpmn`; the schedules on it bind `forms.dmn` instead of `decisions.dmn`.
+- [value-outputs.bpmn](value-outputs.bpmn): one Business Rule Task per table of [value-outputs.dmn](value-outputs.dmn), selected by `policy` as in `hit-policies.bpmn` and mapped `singleEntry` to `result`; the schedules on it bind `value-outputs.dmn` instead of `decisions.dmn`.
 
 The [scenario value contract](../../../scripts/scenario-variable-value-contract.ts) admits Integer start values only for registered process ids, so every number below is a numeric String that the decision's `integer` type reference converts.
 
@@ -42,6 +43,15 @@ The tables of [forms.dmn](forms.dmn) witness the remaining admitted FEEL forms; 
 | `inverted` | COLLECT | `score` | `[70..40]` → `"inverted"`; `-` → `"any"` |
 | `escapes` | UNIQUE | String `channel` | `"a\"b"` → `"quote"`; `"a\\b"` → `"backslash"` |
 | `flags` | UNIQUE | `score` | `< 50` → Boolean `approved` `false`, String `note` `null`; `>= 50` → `true`, `"ok"` |
+
+The tables of [value-outputs.dmn](value-outputs.dmn) witness output values of each kind under ANY and an output with no declared type; each reads the Integer `score`.
+
+| Table | Hit policy | Input | Rules (test → output) |
+|---|---|---|---|
+| `anyBoolean` | ANY | `score` | `< 50` → Boolean `approved` `true`; `[40..70]` → `true` |
+| `anyInteger` | ANY | `score` | `< 50` → Integer `points` `1`; `[40..70]` → `1` |
+| `anyNull` | ANY | `score` | `< 50` → String `note` `null`; `[40..70]` → `null` |
+| `untyped` | UNIQUE | `score` | `< 50` → `label` `"seen"`, an output with no `typeRef` |
 
 ## Schedules
 
@@ -92,6 +102,17 @@ Every schedule starts the process; the two on `decision-contexts.bpmn` that reac
 | [form-escaped-quote](form-escaped-quote.scenario.json), [form-escaped-backslash](form-escaped-backslash.scenario.json) | `escapes` `singleEntry`, `channel` the text `a"b` and `a\b` | The `\"` and `\\` escapes of a String literal. |
 | [form-boolean-output-true](form-boolean-output-true.scenario.json), [form-boolean-and-null-output](form-boolean-and-null-output.scenario.json) | `flags` `singleResult`, `score = "60"` and `"10"` | `true`, `false` and `null` output literals under `boolean` and `string`. |
 | [unknown-decision](unknown-decision.scenario.json) | `noSuchDecision`, `score = "55"` | A Business Rule Task that names a decision no deployment contains. |
+| [integer-from-large-decimal](integer-from-large-decimal.scenario.json) | `gradeUnique`, `score` the Decimal `3000000000` | A Decimal input beyond Java's `int` under an `integer` type. Predicted CIB answer: the decision fails and the start is rolled back, since `IntegerDataTypeTransformer` accepts a `Number` only when it equals its `int` narrowing. |
+| [boolean-from-false-text](boolean-from-false-text.scenario.json) | `vipLabel`, `vip = "false"` | The text `false` under a `boolean` type. Predicted CIB answer: the `false` rule matches and `label` is `"regular"`. |
+| [boolean-from-integer](boolean-from-integer.scenario.json) | `vipLabel`, `vip` the Integer `1` | An Integer input under a `boolean` type. Predicted CIB answer: the decision fails and the start is rolled back, since `BooleanDataTypeTransformer` takes only a Boolean or text. |
+| [boolean-from-decimal](boolean-from-decimal.scenario.json) | `vipLabel`, `vip` the Decimal `0.5` | A Decimal input under a `boolean` type. Predicted CIB answer: the decision fails and the start is rolled back, since `BooleanDataTypeTransformer` takes only a Boolean or text. |
+| [string-from-boolean](string-from-boolean.scenario.json) | `fee`, `channel` the Boolean `false` | A Boolean input under a `string` type. Predicted CIB answer: the input reads as the text `false`, which only the negated rule matches, since `StringDataTypeTransformer` is `String.valueOf`. |
+| [first-no-match](first-no-match.scenario.json) | `gradeFirst` `singleEntry`, `score` a present Null | FIRST when no rule can test true. Predicted CIB answer: no rule matches and `grade` is null. |
+| [any-no-match](any-no-match.scenario.json) | `gradeAnyAgree` `singleEntry`, `score` a present Null | ANY when no rule can test true. Predicted CIB answer: no rule matches and `grade` is null. |
+| [any-boolean-outputs](any-boolean-outputs.scenario.json) | `anyBoolean` `singleEntry`, `score = "45"` | ANY over Boolean outputs that agree. Predicted CIB answer: ANY accepts two matching rules that give the same Boolean, and `result` is `true`. |
+| [any-integer-outputs](any-integer-outputs.scenario.json) | `anyInteger` `singleEntry`, `score = "45"` | ANY over Integer outputs that agree. Predicted CIB answer: ANY accepts two matching rules that give the same Integer, and `result` is `1`. |
+| [any-null-outputs](any-null-outputs.scenario.json) | `anyNull` `singleEntry`, `score = "45"` | ANY over null outputs that agree. Predicted CIB answer: ANY accepts two matching rules that both give null, and `result` is null. |
+| [untyped-output](untyped-output.scenario.json) | `untyped` `singleEntry`, `score = "45"` | An output column with no `typeRef`. Predicted CIB answer: `result` is `"seen"`, the output literal as CIB holds an untyped text. |
 
 ## Observation boundary
 

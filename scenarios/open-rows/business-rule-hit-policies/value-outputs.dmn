@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" id="Definitions_ValueOutputs" name="Output value kinds" namespace="urn:bpmn-lean:business-rule-hit-policies:value-outputs">
+  <decision id="anyBoolean" name="Any over Boolean outputs">
+    <decisionTable id="DecisionTable_anyBoolean" hitPolicy="ANY">
+      <input id="Input_anyBoolean" label="Score">
+        <inputExpression id="InputExpression_anyBoolean" typeRef="integer"><text>score</text></inputExpression>
+      </input>
+      <output id="Output_anyBoolean_approved" name="approved" typeRef="boolean" />
+      <rule id="Rule_anyBoolean_1">
+        <inputEntry id="InputEntry_anyBoolean_1"><text>&lt; 50</text></inputEntry>
+        <outputEntry id="OutputEntry_anyBoolean_1_1"><text>true</text></outputEntry>
+      </rule>
+      <rule id="Rule_anyBoolean_2">
+        <inputEntry id="InputEntry_anyBoolean_2"><text>[40..70]</text></inputEntry>
+        <outputEntry id="OutputEntry_anyBoolean_2_1"><text>true</text></outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <decision id="anyInteger" name="Any over Integer outputs">
+    <decisionTable id="DecisionTable_anyInteger" hitPolicy="ANY">
+      <input id="Input_anyInteger" label="Score">
+        <inputExpression id="InputExpression_anyInteger" typeRef="integer"><text>score</text></inputExpression>
+      </input>
+      <output id="Output_anyInteger_points" name="points" typeRef="integer" />
+      <rule id="Rule_anyInteger_1">
+        <inputEntry id="InputEntry_anyInteger_1"><text>&lt; 50</text></inputEntry>
+        <outputEntry id="OutputEntry_anyInteger_1_1"><text>1</text></outputEntry>
+      </rule>
+      <rule id="Rule_anyInteger_2">
+        <inputEntry id="InputEntry_anyInteger_2"><text>[40..70]</text></inputEntry>
+        <outputEntry id="OutputEntry_anyInteger_2_1"><text>1</text></outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <decision id="anyNull" name="Any over null outputs">
+    <decisionTable id="DecisionTable_anyNull" hitPolicy="ANY">
+      <input id="Input_anyNull" label="Score">
+        <inputExpression id="InputExpression_anyNull" typeRef="integer"><text>score</text></inputExpression>
+      </input>
+      <output id="Output_anyNull_note" name="note" typeRef="string" />
+      <rule id="Rule_anyNull_1">
+        <inputEntry id="InputEntry_anyNull_1"><text>&lt; 50</text></inputEntry>
+        <outputEntry id="OutputEntry_anyNull_1_1"><text>null</text></outputEntry>
+      </rule>
+      <rule id="Rule_anyNull_2">
+        <inputEntry id="InputEntry_anyNull_2"><text>[40..70]</text></inputEntry>
+        <outputEntry id="OutputEntry_anyNull_2_1"><text>null</text></outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <decision id="untyped" name="Unique with an output of no declared type">
+    <decisionTable id="DecisionTable_untyped" hitPolicy="UNIQUE">
+      <input id="Input_untyped" label="Score">
+        <inputExpression id="InputExpression_untyped" typeRef="integer"><text>score</text></inputExpression>
+      </input>
+      <output id="Output_untyped_label" name="label" />
+      <rule id="Rule_untyped_1">
+        <inputEntry id="InputEntry_untyped_1"><text>&lt; 50</text></inputEntry>
+        <outputEntry id="OutputEntry_untyped_1_1"><text>"seen"</text></outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+</definitions>

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_ValueOutputs" targetNamespace="urn:bpmn-lean:scenarios:business-rule-hit-policies:value-outputs">
+  <process id="Process_ValueOutputs" name="One Business Rule Task per decision, selected by the start variable policy" isExecutable="true">
+    <startEvent id="ApplicantReceived" name="Applicant received" />
+    <exclusiveGateway id="Select" name="Select decision" gatewayDirection="Diverging" default="Flow_NoPolicy" />
+    <businessRuleTask id="AnyBoolean" name="anyBoolean" camunda:decisionRef="anyBoolean"
+                      camunda:mapDecisionResult="singleEntry" camunda:resultVariable="result" />
+    <businessRuleTask id="AnyInteger" name="anyInteger" camunda:decisionRef="anyInteger"
+                      camunda:mapDecisionResult="singleEntry" camunda:resultVariable="result" />
+    <businessRuleTask id="AnyNull" name="anyNull" camunda:decisionRef="anyNull"
+                      camunda:mapDecisionResult="singleEntry" camunda:resultVariable="result" />
+    <businessRuleTask id="Untyped" name="untyped" camunda:decisionRef="untyped"
+                      camunda:mapDecisionResult="singleEntry" camunda:resultVariable="result" />
+    <exclusiveGateway id="Merge" name="Merge" gatewayDirection="Converging" />
+    <userTask id="Inspect" name="Inspect result" />
+    <endEvent id="ApplicantClosed" name="Applicant closed" />
+    <sequenceFlow id="Flow_Received" sourceRef="ApplicantReceived" targetRef="Select" />
+    <sequenceFlow id="Flow_ToAnyBoolean" sourceRef="Select" targetRef="AnyBoolean">
+      <conditionExpression xsi:type="tFormalExpression">${policy == 'any-boolean'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_AnyBooleanDone" sourceRef="AnyBoolean" targetRef="Merge" />
+    <sequenceFlow id="Flow_ToAnyInteger" sourceRef="Select" targetRef="AnyInteger">
+      <conditionExpression xsi:type="tFormalExpression">${policy == 'any-integer'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_AnyIntegerDone" sourceRef="AnyInteger" targetRef="Merge" />
+    <sequenceFlow id="Flow_ToAnyNull" sourceRef="Select" targetRef="AnyNull">
+      <conditionExpression xsi:type="tFormalExpression">${policy == 'any-null'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_AnyNullDone" sourceRef="AnyNull" targetRef="Merge" />
+    <sequenceFlow id="Flow_ToUntyped" sourceRef="Select" targetRef="Untyped">
+      <conditionExpression xsi:type="tFormalExpression">${policy == 'untyped'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_UntypedDone" sourceRef="Untyped" targetRef="Merge" />
+    <sequenceFlow id="Flow_NoPolicy" sourceRef="Select" targetRef="Merge" />
+    <sequenceFlow id="Flow_Merged" sourceRef="Merge" targetRef="Inspect" />
+    <sequenceFlow id="Flow_Inspected" sourceRef="Inspect" targetRef="ApplicantClosed" />
+  </process>
+</definitions>
