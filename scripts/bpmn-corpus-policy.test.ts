@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
+import { externalRoot } from "./external-root.ts";
 
 /**
  * Contract for the external, non-redistributed OMG BPMN 2.0.2 corpus.
@@ -14,8 +15,6 @@ import { fileURLToPath } from "node:url";
  * used by the two executable consumers.
  */
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
-const externalRoot = process.env["BPMN_EXTERNAL_ROOT"] ??
-  path.resolve(projectRoot, "../oss");
 const manifestPath = path.join(
   projectRoot,
   "docs/reference/bpmn-2.0.2/LOCAL-CORPUS.sha256",
@@ -58,7 +57,7 @@ test("defaults executable consumers to the external corpus with explicit overrid
   assert.match(validator, /BPMN_EXTERNAL_ROOT/u);
   assert.match(metamodelCheck, /BPMN_CMOF_PATH/u);
   assert.match(metamodelCheck, /BPMN_SEMANTIC_XSD_PATH/u);
-  assert.match(metamodelCheck, /BPMN_EXTERNAL_ROOT/u);
+  assert.match(metamodelCheck, /import \{ externalRoot \} from "\.\/external-root\.ts";/u);
   assert.match(verifyScript, /LOCAL-CORPUS\.sha256/u);
 });
 

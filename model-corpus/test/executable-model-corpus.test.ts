@@ -27,9 +27,9 @@ import type {
   CorpusScenario,
   ExecutableModelCorpusManifest,
 } from "../../scripts/executable-model-corpus.ts";
+import { externalRoot } from "../../scripts/external-root.ts";
 
 const projectRoot = fileURLToPath(new URL("../../", import.meta.url));
-const externalRoot = process.env["BPMN_EXTERNAL_ROOT"] ?? path.resolve(projectRoot, "../oss");
 const manifestPath = path.join(projectRoot, "model-corpus/manifest.json");
 const corpusMapPath = path.join(projectRoot, "model-corpus/EXECUTABLE-MODEL-CORPUS-MAP.md");
 

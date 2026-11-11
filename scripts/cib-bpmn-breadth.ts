@@ -1,6 +1,6 @@
 import { access, readdir, readFile } from "node:fs/promises";
 import path from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { pathToFileURL } from "node:url";
 
 import {
   flattenElements,
@@ -10,6 +10,7 @@ import {
   type XmlElement,
 } from "./minimal-xml-tree.ts";
 import { compareCanonicalStrings } from "./strict-json.ts";
+import { externalRoot } from "./external-root.ts";
 
 type CandidateCounts = {
   boundaryEvent: {
@@ -176,11 +177,6 @@ const candidateMetricNames = [
   "receiveTask.withoutMessageRef",
 ] as const;
 
-const projectRoot = fileURLToPath(new URL("../", import.meta.url));
-const externalRoot = process.env["BPMN_EXTERNAL_ROOT"] ?? path.resolve(
-  projectRoot,
-  "../oss",
-);
 const defaultCorpusRoot = path.join(
   externalRoot,
   "cibseven/cibseven/engine/src/test/resources/org/cibseven/bpm/engine/test/bpmn",

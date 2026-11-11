@@ -18,10 +18,9 @@ import {
   extractNormativeLabels,
   serializeDigest,
 } from "./bpmn-normative-labels.ts";
+import { externalRoot } from "./external-root.ts";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
-const externalRoot = process.env["BPMN_EXTERNAL_ROOT"] ??
-  path.resolve(projectRoot, "../oss");
 const conversionName = "BPMN-2.0.2.md";
 const conversionPath = process.env["BPMN_CORPUS_MARKDOWN_PATH"] ??
   path.join(externalRoot, "omg-bpmn-2.0.2", conversionName);

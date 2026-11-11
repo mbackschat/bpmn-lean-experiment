@@ -6,6 +6,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { parseStrictJson } from "./strict-json.ts";
+import { externalRoot } from "./external-root.ts";
 
 /** The bounded machine-readable facts this calibration re-derives from OMG artifacts. */
 type ClassFact = Readonly<{
@@ -50,10 +51,6 @@ const manifestPath = fileURLToPath(
     "../packages/bpmn-source/src/bpmn-2.0.2-semantic-process-metamodel.json",
     import.meta.url,
   ),
-);
-const externalRoot = process.env["BPMN_EXTERNAL_ROOT"] ?? path.resolve(
-  projectRoot,
-  "../oss",
 );
 const cmofPath = process.env["BPMN_CMOF_PATH"] ?? path.join(
   externalRoot,

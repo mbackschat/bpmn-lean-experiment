@@ -355,6 +355,7 @@ test("external evidence consumers fail closed and honor the shared root", async 
     cibGate,
     cibTests,
     validator,
+    sharedRoot,
   ] = await Promise.all([
     readFile(path.join(projectRoot, "scripts/check-bpmn-semantic-process-metamodel.ts"), "utf8"),
     readFile(path.join(projectRoot, "packages/bpmn-source/calibration/miwg-observation.ts"), "utf8"),
@@ -362,11 +363,15 @@ test("external evidence consumers fail closed and honor the shared root", async 
     readFile(path.join(projectRoot, "scripts/test-cibseven-oracle.sh"), "utf8"),
     readFile(path.join(projectRoot, "scripts/run-cibseven-tests.ts"), "utf8"),
     readFile(path.join(projectRoot, "scripts/validate-bpmn-xml.sh"), "utf8"),
+    readFile(path.join(projectRoot, "scripts/external-root.ts"), "utf8"),
   ]);
 
-  for (const consumer of [metamodel, miwg, breadth, validator]) {
-    assert.match(consumer, /BPMN_EXTERNAL_ROOT/u);
+  // The TypeScript consumers honor the root through the one helper that reads `BPMN_EXTERNAL_ROOT`.
+  for (const consumer of [metamodel, miwg, breadth]) {
+    assert.match(consumer, /import \{ externalRoot \} from "[./]*(scripts\/)?external-root\.ts";/u);
   }
+  assert.match(sharedRoot, /BPMN_EXTERNAL_ROOT/u);
+  assert.match(validator, /BPMN_EXTERNAL_ROOT/u);
   assert.doesNotMatch(metamodel, /METAMODEL_CHECK skipped/u);
   assert.doesNotMatch(miwg, /BPMN_MIWG_IMPORT skipped/u);
   assert.match(cibGate, /check-external-sources\.sh" verify/u);

@@ -15,10 +15,10 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import type { ComplexType, Occurs, Particle, SchemaTable } from "../packages/bpmn-source/src/kernel-reader/schema.ts";
+import { externalRoot } from "./external-root.ts";
 
 export const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 export const tablePath = "packages/bpmn-source/src/bpmn-2.0.2-schema-table.json";
-const externalRoot = process.env["BPMN_EXTERNAL_ROOT"] ?? path.resolve(projectRoot, "../oss");
 const schemaDirectory = path.join(externalRoot, "omg-bpmn-2.0.2/machine-readable");
 const schemaFiles = ["BPMN20.xsd", "Semantic.xsd"] as const;
 

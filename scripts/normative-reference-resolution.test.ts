@@ -35,10 +35,9 @@ import {
   resolvesQualifier,
 } from "./bpmn-normative-labels.ts";
 import type { NormativeLabelDigest } from "./bpmn-normative-labels.ts";
+import { externalRoot } from "./external-root.ts";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
-const externalRoot = process.env["BPMN_EXTERNAL_ROOT"] ??
-  path.resolve(projectRoot, "../oss");
 const conversionPath = process.env["BPMN_CORPUS_MARKDOWN_PATH"] ??
   path.join(externalRoot, "omg-bpmn-2.0.2/BPMN-2.0.2.md");
 const digestPath = path.join(

@@ -11,15 +11,10 @@ import assert from "node:assert/strict";
 import { readFile, readdir, access } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 
 import { readKernelProgram, ReadRefusalCode } from "@bpmn-lean/bpmn-source";
+import { externalRoot } from "../../../scripts/external-root.ts";
 
-const projectRoot = fileURLToPath(new URL("../../../", import.meta.url));
-const externalRoot = process.env["BPMN_EXTERNAL_ROOT"] ?? path.resolve(
-  projectRoot,
-  "../oss",
-);
 const defaultSuiteRoot = path.join(
   externalRoot,
   "bpmn-miwg/bpmn-miwg-test-suite",
