@@ -152,8 +152,12 @@ function continueAfter(hooks: Hooks, ctx: Ctx, occurrence: Occurrence, leave: Le
  * The one completion pipeline: disarm, write, retain, continue, remove and journal, in that order. The occurrence's
  * record and owned scope go before its continuation runs, so that a continuation leaving its instance or handler scope
  * does not cancel the occurrence that just completed. An occurrence raised away gets no retention, outflow or
- * continuation. A completion naming an occurrence an earlier signal removed is dropped: CIB leaves a Signal thrower only
- * after its receivers ran (`ThrowSignalEventActivityBehavior#execute`), and one of them may have ended it.
+ * continuation. A completion naming an occurrence that is gone is dropped defensively, and no admitted schedule reaches
+ * it (a 2026-11-11 probe catching one throw at interrupting Signal boundaries on a Sub-Process and on a task inside it
+ * did not): signals run first in, first out, and an interrupting firing withdraws the items inside at once, so a
+ * thrower's completion runs before any cancellation its receivers queue. The kernel thus completes a thrower its
+ * receiver then removes, where CIB leaves it only after its receivers ran (`ThrowSignalEventActivityBehavior#execute`);
+ * the order matters only once a per-activity end state is observed.
  */
 function complete(
   hooks: Hooks, ctx: Ctx, id: number, requested: Leave, writes: readonly Binding[], rule: WriteRule, before: State,
