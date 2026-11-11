@@ -326,6 +326,7 @@ export interface PopulationPort<P, S> {
   readonly goneFailure: (code: string) => Wire;
   readonly intentsOf: (program: P, state: S) => readonly Wire[];
   readonly instanceIdOf: (state: S) => string;
+  readonly failureCode: (failure: Wire) => string;
   // A deployment, over its program.
   readonly signalStartReceivers: (program: P, deploymentId: number, address: Wire, variables: Wire) => readonly Wire[];
   readonly emissionAddress: (emission: Wire) => Wire;

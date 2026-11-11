@@ -5,7 +5,8 @@
  */
 import type { Registered } from "./correlation.js";
 import type { PublicationCursor } from "./publication.js";
-import type { HostView, JsonValue, OccurrenceId } from "./port.js";
+import type { PopulationCarry, PopulationScope } from "./population-contract.js";
+import type { HostView, JsonValue, OccurrenceId, Wire } from "./port.js";
 
 /** The Workflow type every process instance runs. */
 export const workflowType = "runProcess";
@@ -33,6 +34,8 @@ export interface HostConfig {
 
 export enum RunKind {
   Start = "start",
+  /** A start the population ingress makes for a receiver: its outcome is the `populationStart` Update's answer. */
+  PopulationStart = "populationStart",
   Continue = "continue",
 }
 
@@ -48,16 +51,27 @@ export type RunProcessArgs =
       readonly program: JsonValue;
       readonly config: HostConfig;
       readonly correlationScope: string | null;
+      readonly population: PopulationScope | null;
       readonly start: JsonValue;
+    }
+  | {
+      readonly kind: RunKind.PopulationStart;
+      readonly program: JsonValue;
+      readonly config: HostConfig;
+      readonly correlationScope: null;
+      readonly population: PopulationScope;
+      readonly request: Wire;
     }
   | {
       readonly kind: RunKind.Continue;
       readonly program: JsonValue;
       readonly config: HostConfig;
       readonly correlationScope: string | null;
+      readonly population: PopulationScope | null;
       readonly state: JsonValue;
       readonly cursor: PublicationCursor;
       readonly registered: readonly Registered[];
+      readonly carry: PopulationCarry;
     };
 
 /** The kernel's verdict on one input as a client sees it. A rejection reaches the client as a refused Update. */

@@ -24,6 +24,7 @@ import {
   type HostActivities,
   type IngressArgs,
 } from "./protocol.js";
+import { createPopulationActivities } from "./population-activities.js";
 import { UnsupportedScriptFormat, evaluateScript } from "./script-handler.js";
 
 export interface EffectContext {
@@ -40,6 +41,7 @@ export interface HostActivityOptions {
 
 export function createHostActivities(options: HostActivityOptions): HostActivities {
   return {
+    ...createPopulationActivities(),
     executeEffect: (request) => options.effects(request, { idempotencyKey: request.key }),
     evaluateScript: async (request) => {
       try {

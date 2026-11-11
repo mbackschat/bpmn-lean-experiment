@@ -4,6 +4,7 @@
  */
 import type { CommandResult, CorrelatedPublication, HostConfig, HostSnapshot, PublicationResult } from "./host-contract.js";
 import type { PublicationPage } from "./publication.js";
+import type { PopulationScope } from "./population-contract.js";
 import type { JsonValue } from "./port.js";
 
 export interface StartRequest {
@@ -17,6 +18,8 @@ export interface StartRequest {
    * instance's open correlated waits. Absent, only an addressed delivery reaches them.
    */
   readonly correlationScope?: string;
+  /** The population the instance registers its Message and Signal waits with, and the deployment it runs. */
+  readonly population?: PopulationScope;
   /** Caller-owned facts about the start, returned verbatim by `describe`; the host never reads them. */
   readonly memo?: Readonly<Record<string, JsonValue>>;
 }

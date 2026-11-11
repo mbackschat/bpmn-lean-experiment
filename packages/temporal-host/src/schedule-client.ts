@@ -48,6 +48,7 @@ export class ScheduleClient implements ScheduleHost {
             program: request.program,
             config: request.config,
             correlationScope: request.correlationScope,
+            population: null,
             start: request.start,
           }],
           memo: request.memo,

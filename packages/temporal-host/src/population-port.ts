@@ -424,6 +424,7 @@ export const populationPort: PopulationPort<Program, State> = {
   goneFailure: (code) => toWire({ tag: FailureTag.Rejected, code } satisfies Failure),
   intentsOf: (program, state) => hostView(program, state).broadcasts.map(toWire),
   instanceIdOf: (state) => state.instanceId,
+  failureCode: (failure) => decode<Failure>(failure).code,
   signalStartReceivers: (program, deploymentId, address, variables) =>
     signalStartReceivers(hooks, deploymentId, program, decode<SignalAddress>(address), decode<readonly Binding[]>(variables)).map(toWire),
   emissionAddress: (emission) => toWire(decode<Emission>(emission).address),
